@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
   @Inject
   internal lateinit var appComposeNavigator: AppComposeNavigator
 
-//  private val viewModel: MusicViewModel by viewModels()
+  private val viewModel: MusicViewModel by viewModels()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)

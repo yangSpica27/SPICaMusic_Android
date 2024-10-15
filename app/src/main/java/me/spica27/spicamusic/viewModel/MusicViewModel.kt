@@ -18,25 +18,25 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Song
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
-class MusicViewModel @Inject constructor(
-  private val songDao: SongDao,
-  ) : ViewModel() {
+class MusicViewModel @Inject constructor(private val songDao: SongDao) : ViewModel() {
 
-    // 所有歌曲
+  // 所有歌曲
   val allSongs: Flow<List<Song>> = songDao.getAll()
 
   // 所有喜欢的歌曲
   val allLikeSongs: Flow<List<Song>> = songDao.getAllLikeSong()
 
   // 播放列表
-  private val _songsList = MutableStateFlow(listOf<Song>())
-  val songsList: Flow<List<Song>>
-    get() = _songsList
+  private val _playlist = MutableStateFlow(listOf<Song>())
+  val playList: Flow<List<Song>>
+    get() = _playlist
 
 
   // 当前播放的乐曲
@@ -78,10 +78,13 @@ class MusicViewModel @Inject constructor(
 
 
   init {
+    Timber.tag("MusicViewModel").e("init")
     StarrySky.with().addPlayerEventListener(object : OnPlayerEventListener {
       override fun onPlaybackStageChange(stage: PlaybackStage) {
         _isPlaying.value = !stage.isStop
-//        _song.value = songDao.getSongWithMediaStoreId(StarrySky.with().getNowPlayingSongInfo()?.songId?.toLong() ?: 0)
+        viewModelScope.launch(Dispatchers.IO) {
+          _song.value = songDao.getSongWithMediaStoreId(StarrySky.with().getNowPlayingSongInfo()?.songId?.toLong() ?: 0)
+        }
       }
     }, "MusicViewModel")
 
@@ -107,21 +110,21 @@ class MusicViewModel @Inject constructor(
   }
 
   fun play(song: Song, list: List<Song>) {
-    viewModelScope.launch {
+    viewModelScope.launch(Dispatchers.IO) {
       StarrySky.with().updatePlayList(list.map {
         it.toSongInfo()
       }.toMutableList())
-      StarrySky.with().playMusicById(song.mediaStoreId.toString())
+      withContext(Dispatchers.Main) {
+        StarrySky.with().playMusicById(song.mediaStoreId.toString())
+      }
       _song.value = song
-      _songsList.value = list
+      _playlist.value = list
     }
   }
 
   fun play(song: Song) {
-    viewModelScope.launch {
-      StarrySky.with().addSongInfo(StarrySky.with().getNowPlayingIndex(), song.toSongInfo())
-      _song.value = song
-    }
+    StarrySky.with().addSongInfo(StarrySky.with().getNowPlayingIndex(), song.toSongInfo())
+    _song.value = song
   }
 
   fun seekTo(position: Long) {

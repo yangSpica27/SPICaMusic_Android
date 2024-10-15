@@ -42,8 +42,8 @@ interface SongDao {
     @Query("SELECT * FROM song WHERE songId == :id")
     fun getSongWithId(id: Long): Song
 
-//    @Query("SELECT * FROM song WHERE mediaStoreId == :id")
-//    fun getSongWithMediaStoreId(id: Long): Song?
+    @Query("SELECT * FROM song WHERE mediaStoreId == :id")
+    fun getSongWithMediaStoreId(id: Long): Song?
 
     @Query("SELECT * FROM song WHERE songId == :id")
     fun getSongFlowWithId(id: Long): Flow<Song?>

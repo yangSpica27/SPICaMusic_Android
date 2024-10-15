@@ -7,8 +7,6 @@ import android.provider.MediaStore
 import androidx.core.database.getIntOrNull
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
-import me.spica.music.tool.contentResolverSafe
-import me.spica.music.tool.safeQuery
 import me.spica27.spicamusic.db.entity.Song
 import timber.log.Timber
 

@@ -7,8 +7,8 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.lzx.starrysky.SongInfo
-import me.spica.music.tool.toAudioUri
-import me.spica.music.tool.toCoverUri
+import me.spica27.spicamusic.utils.toAudioUri
+import me.spica27.spicamusic.utils.toCoverUri
 
 @kotlinx.parcelize.Parcelize
 @Entity(

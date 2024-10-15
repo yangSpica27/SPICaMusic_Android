@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,7 +41,8 @@ import me.spica27.spicamusic.viewModel.MusicViewModel
 
 @Composable
 fun HomePage(
-  modifier: Modifier = Modifier, musicViewModel: MusicViewModel = hiltViewModel()
+  modifier: Modifier = Modifier,
+  musicViewModel: MusicViewModel = hiltViewModel()
 ) {
 
   val allSongState = musicViewModel.allSongs.collectAsState(emptyList())
@@ -93,18 +95,24 @@ fun HomePage(
 
 @Composable
 private fun SongList(modifier: Modifier = Modifier, songs: List<Song> = emptyList()) {
-  LazyColumn(modifier = modifier.fillMaxWidth()) {
+  val musicViewModel = hiltViewModel<MusicViewModel>()
+  LazyColumn(modifier = modifier.fillMaxSize(),
+    verticalArrangement = Arrangement.Top) {
     item { Spacer(modifier = Modifier.width(12.dp)) }
     items(count = songs.size, key = { songs[it].songId ?: -1 }) {
-      SongItem(songs[it])
+      SongItem(songs[it], onClick = {
+        musicViewModel.play(songs[it], songs)
+      })
     }
     item { Spacer(modifier = Modifier.width(50.dp)) }
   }
 }
 
 @Composable
-private fun SongItem(song: Song) {
-  Row(verticalAlignment = Alignment.CenterVertically) {
+private fun SongItem(song: Song, onClick: () -> Unit = {}) {
+  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier
+    .fillMaxWidth()
+    .clickable { onClick() }) {
     Spacer(modifier = Modifier.width(16.dp))
     Box(
       modifier = Modifier
@@ -124,11 +132,17 @@ private fun SongItem(song: Song) {
     Spacer(modifier = Modifier.width(16.dp))
     Column(modifier = Modifier.weight(1f)) {
       Text(
-        text = song.displayName, style = MaterialTheme.typography.bodyMedium.copy(
+        text = song.displayName,
+        maxLines = 1,
+        style = MaterialTheme.typography.bodyMedium.copy(
           color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.W600
         )
       )
-      Text(text = song.artist, style = MaterialTheme.typography.bodySmall)
+      Text(
+        text = song.artist,
+        style = MaterialTheme.typography.bodySmall,
+        maxLines = 1
+      )
     }
 
     IconButton(onClick = {}) {

@@ -33,7 +33,7 @@ class RefreshMusicListService : Service() {
             try {
                 val songs = AudioTool.getSongsFromPhone(applicationContext)
                 Timber.tag("更新曲目成功").e("共${songs.size}首")
-                songDao.updateSongs(songs)
+                songDao.updateSongs(songs.filter { it.displayName.endsWith(".mp3") })
                 stopSelf()
             } catch (e: Exception) {
                 Timber.tag("更新曲目错误").e(e)

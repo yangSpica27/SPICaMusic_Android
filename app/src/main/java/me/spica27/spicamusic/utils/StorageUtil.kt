@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package me.spica.music.tool
+package me.spica27.spicamusic.utils
 
 import android.annotation.SuppressLint
 import android.content.ContentResolver
@@ -9,13 +9,11 @@ import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import java.io.File
-import java.lang.reflect.Method
 import java.util.*
 
 
