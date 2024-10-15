@@ -31,5 +31,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "SPICaMusic"
 include ':app'
-include(':extension-flac2120')
+//include(':extension-flac2120')
 //include(":starrysky")

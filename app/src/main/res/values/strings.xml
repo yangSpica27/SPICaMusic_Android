@@ -1,3 +1,36 @@
 <resources>
   <string name="app_name">SPICaMusic</string>
+  <string name="action_settings">Settings</string>
+
+  <string name="first_fragment_label">First Fragment</string>
+  <string name="second_fragment_label">Second Fragment</string>
+  <string name="next">Next</string>
+  <string name="previous">Previous</string>
+
+  <string name="play_list_header">由此向下轻扫回到详情</string>
+  <string name="playing">正在播放</string>
+  <string name="queue">播放列表</string>
+  <string name="select_all">选择全部</string>
+  <string name="select_none">全不选</string>
+  <string name="eq_preset_flat">原始</string>
+  <string name="eq_preset_custom">自定义</string>
+  <string name="eq_preset_bass_boost">低音增强</string>
+  <string name="eq_preset_bass_reduce">低音减弱</string>
+  <string name="eq_preset_vocal_boost">人声增强</string>
+  <string name="eq_preset_vocal_Reduce">人声减弱</string>
+  <string name="dsp_replay_gain_title">回放增益</string>
+  <string name="dsp_replay_gain_track">曲目增益</string>
+  <string name="dsp_replay_gain_album">专辑增益</string>
+  <string name="dsp_replay_gain_off">关</string>
+  <string name="dsp_dialog_frequency_response_title">频率响应</string>
+  <string name="dsp_replay_gain_hint_mode">模式</string>
+  <string name="dsp_preamp">前级</string>
+  <string name="dsp_equalizer_title">均衡器</string>
+  <string name="dsp_equalizer_hint_preset">预设</string>
+  <string name="dsp_frequency_response_curve_title">频响曲线</string>
+  <string name="key_words">关键字...</string>
+  <string name="add">新增</string>
+  <string name="delete">删除</string>
+  <string name="add_to_list">添加到播放列表</string>
+  <string name="info">信息</string>
 </resources>

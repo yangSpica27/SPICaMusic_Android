@@ -47,6 +47,9 @@ android {
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation "com.google.android.exoplayer:exoplayer-core:2.12.0"
+  // 播放器
+  implementation("com.google.android.exoplayer:exoplayer-core:2.19.1")
+  //    implementation 'com.google.android.exoplayer:exoplayer-core:2.X.X'
+  implementation "androidx.media:media:1.7.0"
     compileOnly 'org.checkerframework:checker-qual:3.3.0'
 }

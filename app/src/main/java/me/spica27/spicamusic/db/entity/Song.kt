@@ -6,7 +6,6 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.lzx.starrysky.SongInfo
 import me.spica27.spicamusic.utils.toAudioUri
 import me.spica27.spicamusic.utils.toCoverUri
 
@@ -33,17 +32,6 @@ data class Song constructor(
   var lastPlayTime: Int
 ) : Parcelable {
 
-  fun toSongInfo(): SongInfo {
-    return SongInfo(
-      songId = mediaStoreId.toString(),
-      songName = displayName,
-      artist = artist,
-      duration = duration,
-      songCover = mediaStoreId.toCoverUri().toString(),
-      songUrl = mediaStoreId.toAudioUri().toString(),
-      decode = true
-    )
-  }
 
   fun getCoverUri(): Uri {
     return mediaStoreId.toCoverUri()
