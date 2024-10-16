@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,9 +10,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -22,31 +25,39 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
-import me.spica27.spicamusic.db.entity.Playlist
+import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.navigator.AppComposeNavigator
+import me.spica27.spicamusic.navigator.AppScreens
+import me.spica27.spicamusic.utils.formatDurationSecs
+import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.viewModel.MusicViewModel
 
 
 @Composable
 fun CurrentListPage(
   modifier: Modifier = Modifier,
-  musicViewModel: MusicViewModel = hiltViewModel()
+  musicViewModel: MusicViewModel = hiltViewModel(),
+  navigator: AppComposeNavigator? = null
 ) {
 
   val isPlaying = musicViewModel.isPlaying.collectAsState(false)
 
-  val currentSong = musicViewModel.currentSongFlow.collectAsState(null)
+  val currentIndex = musicViewModel.playlistCurrentIndex.collectAsState(0)
 
   val playList = musicViewModel.playList.collectAsState(emptyList())
 
@@ -62,7 +73,7 @@ fun CurrentListPage(
         fontWeight = androidx.compose.ui.text.font.FontWeight.W600
       ), modifier = Modifier.padding(20.dp)
     )
-    NowPlayIngSong(song = currentSong.value)
+    NowPlayIngSong(musicViewModel, navigator)
     Box(
       modifier = Modifier
         .fillMaxWidth()
@@ -77,7 +88,7 @@ fun CurrentListPage(
       }
       Box(modifier = Modifier.align(Alignment.CenterEnd)) {
         Text(
-          text = "0/100", style = MaterialTheme.typography.bodyMedium
+          text = "${currentIndex.value}/${playList.value.size}", style = MaterialTheme.typography.bodyMedium
         )
       }
     }
@@ -89,24 +100,30 @@ fun CurrentListPage(
         .weight(1f)
         .fillMaxWidth()
     ) {
-      CurrentList(currentSong.value, playList.value, musicViewModel)
+      CurrentList(musicViewModel)
     }
   }
 }
 
 @Composable
 private fun CurrentList(
-  current: Song? = null,
-  playlist: List<Song> = emptyList(),
-  viewModel: MusicViewModel
+  viewModel: MusicViewModel,
 ) {
+
+  val currentSong = viewModel.currentSongFlow.collectAsState(null)
+
+  val playlist = viewModel.playList.collectAsState(emptyList())
+
   LazyColumn {
-    items(count = playlist.size, key = { playlist[it].songId ?: -1 }) {
-      SongItem(isPlaying = current?.songId == playlist[it].songId, song = playlist[it],
+
+    itemsIndexed(playlist.value, key = { _, song -> song.songId.toString() }) { index, song ->
+      SongItem(
+        isPlaying = currentSong.value?.songId == song.songId, song = song,
         onClick = {
-          viewModel.play(playlist[it], playlist)
+          viewModel.play(playlist.value[index], playlist.value)
         })
     }
+
     item {
       Spacer(modifier = Modifier.size(60.dp))
     }
@@ -115,6 +132,7 @@ private fun CurrentList(
 
 @Composable
 private fun SongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit = { }) {
+  val painter = rememberAsyncImagePainter(song.getCoverUri())
   Row(
     Modifier
       .background(
@@ -153,10 +171,27 @@ private fun SongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit
           )
         }
       } else {
-        AsyncImage(
-          model = song.getCoverUri(),
-          contentDescription = "封面", modifier = Modifier.size(48.dp),
-        )
+
+        if (painter.state is AsyncImagePainter.State.Success) {
+          Image(
+            painter = painter, contentDescription = "封面", modifier = Modifier.size(48.dp)
+          )
+        } else {
+          Box(
+            modifier = Modifier
+              .size(48.dp)
+              .background(
+                color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium
+              ),
+            contentAlignment = Alignment.Center,
+          ) {
+            Text(
+              text = song.displayName.first().toString(), style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface
+              )
+            )
+          }
+        }
       }
     }
 
@@ -189,8 +224,11 @@ private fun SongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit
 }
 
 @Composable
-fun NowPlayIngSong(song: Song?, isPlaying: Boolean = false) {
-
+fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = null) {
+  val song = viewModel.currentSongFlow.collectAsState(null)
+  val positionMsState = viewModel.positionDs.collectAsState(0L)
+  val isPlaying = viewModel.isPlaying.collectAsState(false)
+  val painter = rememberAsyncImagePainter(song.value?.getCoverUri())
   Box(
     modifier = Modifier.fillMaxWidth()
   ) {
@@ -204,16 +242,34 @@ fun NowPlayIngSong(song: Song?, isPlaying: Boolean = false) {
         // 封面
         Box(
           modifier = Modifier
-            .size(64.dp)
-            .background(
-              color = MaterialTheme.colorScheme.surfaceContainer, shape = androidx.compose.foundation.shape.CircleShape
-            ),
+            .clickable {
+              navigator?.navigate(AppScreens.Player.route)
+            }
+            .size(64.dp),
           contentAlignment = Alignment.Center,
         ) {
-          AsyncImage(
-            model = song?.getCoverUri(),
-            contentDescription = "封面", modifier = Modifier.size(64.dp)
-          )
+
+          if (painter.state is AsyncImagePainter.State.Success) {
+            Image(
+              painter = painter, contentDescription = "封面", modifier = Modifier.size(64.dp)
+            )
+          } else {
+            Box(
+              modifier = Modifier
+                .size(64.dp)
+                .background(
+                  color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium
+                ),
+              contentAlignment = Alignment.Center,
+            ) {
+              Text(
+                text = song.value?.displayName?.first().toString(), style = MaterialTheme.typography.bodyMedium.copy(
+                  color = MaterialTheme.colorScheme.onSurface
+                )
+              )
+            }
+          }
+
         }
         // 歌曲信息
         Column(
@@ -222,10 +278,10 @@ fun NowPlayIngSong(song: Song?, isPlaying: Boolean = false) {
             .weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
           Text(
-            text = song?.displayName ?: "--", modifier = Modifier.fillMaxWidth(), fontWeight = androidx.compose.ui.text.font.FontWeight.W600, maxLines = 1
+            text = song.value?.displayName ?: "--", modifier = Modifier.fillMaxWidth(), fontWeight = androidx.compose.ui.text.font.FontWeight.W600, maxLines = 1
           )
           Text(
-            text = song?.artist ?: "--", maxLines = 1, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium.copy(
+            text = song.value?.artist ?: "--", maxLines = 1, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium.copy(
               color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
           )
@@ -234,54 +290,82 @@ fun NowPlayIngSong(song: Song?, isPlaying: Boolean = false) {
           horizontalArrangement = Arrangement.Center
         ) {
           IconButton(
-            onClick = { },
+            onClick = {
+              viewModel.playPre()
+            },
             modifier = Modifier.size(48.dp),
           ) {
-            Icon(
-              imageVector = Icons.AutoMirrored.Default.ArrowBack, contentDescription = "播放", tint = MaterialTheme.colorScheme.onSurface
-            )
+            Icon(painter = painterResource(id = R.drawable.ic_pre), contentDescription = "Previous")
           }
           Spacer(modifier = Modifier.size(16.dp))
           IconButton(
-            onClick = { }, modifier = Modifier.size(48.dp),
+            onClick = {
+              viewModel.togglePlaying()
+            }, modifier = Modifier.size(48.dp),
             colors = IconButtonDefaults.iconButtonColors(
               containerColor = MaterialTheme.colorScheme.primaryContainer
             )
           ) {
             Icon(
-              imageVector = if (isPlaying) {
-                Icons.Default.Close
+              painter = if (isPlaying.value) {
+                painterResource(id = R.drawable.ic_pause)
               } else {
-                Icons.Default.PlayArrow
+                painterResource(id = R.drawable.ic_play)
               }, contentDescription = "播放",
               tint = MaterialTheme.colorScheme.onPrimaryContainer
             )
           }
           Spacer(modifier = Modifier.size(16.dp))
           IconButton(
-            onClick = { },
+            onClick = {
+              viewModel.playNext()
+            },
             modifier = Modifier.size(48.dp),
           ) {
-            Icon(
-              imageVector = Icons.AutoMirrored.Default.ArrowForward, contentDescription = "播放", tint = MaterialTheme.colorScheme.onSurface
-            )
+            Icon(painter = painterResource(id = R.drawable.ic_next), contentDescription = "next")
           }
         }
       }
       Spacer(modifier = Modifier.size(16.dp))
       // 时长信息
-      Text(
-        text = "--:-- / --:--", modifier = Modifier
+      Box(
+        modifier = Modifier
           .fillMaxWidth()
-          .padding(horizontal = 20.dp), style = MaterialTheme.typography.bodyMedium.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        ), textAlign = androidx.compose.ui.text.style.TextAlign.End
-      )
+          .padding(horizontal = 20.dp)
+      ) {
+        Box(
+          modifier = Modifier
+            .align(Alignment.CenterStart)
+        ) {
+          Text(
+            text = positionMsState.value.formatDurationSecs(),
+            style = MaterialTheme.typography.bodyMedium.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+          )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Box(
+          modifier = Modifier
+            .align(Alignment.CenterEnd)
+        ) {
+          Text(
+            text = song.value?.duration?.msToSecs()?.formatDurationSecs() ?: "--:--",
+            style = MaterialTheme.typography.bodyMedium.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+          )
+        }
+      }
+
       // 播放进度条
-      Slider(
-        value = 0f, onValueChange = { }, modifier = Modifier
+      LinearProgressIndicator(
+        progress = {
+          positionMsState.value.toFloat() / (song.value?.duration?.msToSecs()?.toFloat() ?: 1f)
+        },
+        modifier = Modifier
           .fillMaxWidth()
-          .padding(20.dp)
+          .padding(horizontal = 20.dp)
       )
     }
   }

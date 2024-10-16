@@ -4,7 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 import me.spica.music.player.IPlayer
-import me.spica.music.player.Queue
+import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.dsp.EqualizerAudioProcessor
 import me.spica27.spicamusic.dsp.ReplayGainAudioProcessor

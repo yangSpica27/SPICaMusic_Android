@@ -77,5 +77,9 @@ data class Song constructor(
     return result
   }
 
+  override fun toString(): String {
+    return "Song(songId=$songId, mediaStoreId=$mediaStoreId, path='$path', displayName='$displayName', artist='$artist', size=$size, like=$like, duration=$duration, sort=$sort, playTimes=$playTimes, lastPlayTime=$lastPlayTime)"
+  }
+
 
 }

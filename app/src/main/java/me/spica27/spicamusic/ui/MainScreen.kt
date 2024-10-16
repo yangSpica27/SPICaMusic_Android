@@ -56,7 +56,7 @@ fun MainScreen(
       ) { page ->
         when (page) {
           0 -> HomePage()
-          1 -> CurrentListPage()
+          1 -> CurrentListPage(navigator = navigator)
           2 -> SettingPage()
         }
       }
@@ -71,7 +71,6 @@ fun MainScreen(
 }
 
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BottomNav(pagerState: PagerState) {
   val coroutineScope = rememberCoroutineScope()
@@ -85,12 +84,12 @@ fun BottomNav(pagerState: PagerState) {
   ) {
     Column(
       modifier = Modifier
-        .weight(1f)
         .clickable {
           coroutineScope.launch {
             pagerState.animateScrollToPage(0)
           }
         }
+        .weight(1f)
         .padding(12.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
     ) {
       if (pagerState.currentPage == 0) {

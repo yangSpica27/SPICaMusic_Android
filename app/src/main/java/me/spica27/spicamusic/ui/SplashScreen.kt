@@ -18,7 +18,7 @@ fun SplashScreen(modifier: Modifier = Modifier, navigator: AppComposeNavigator) 
 
   LaunchedEffect(Unit) {
     delay(1000) // 延迟2秒
-    navigator.navigate(AppScreens.Main.route)
+    navigator.navigateAndClearBackStack(AppScreens.Main.route)
   }
 
   Scaffold { padding ->

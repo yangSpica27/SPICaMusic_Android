@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
@@ -18,7 +17,7 @@ import coil.request.ImageRequest
 import coil.size.Size
 import coil.target.Target
 import me.spica27.spicamusic.playback.PlaybackStateManager
-import me.spica.music.player.Queue
+import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.service.MusicService
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song

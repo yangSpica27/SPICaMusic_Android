@@ -6,6 +6,7 @@ import androidx.navigation.compose.composable
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
 import me.spica27.spicamusic.ui.MainScreen
+import me.spica27.spicamusic.ui.PlayerScreen
 import me.spica27.spicamusic.ui.SplashScreen
 
 fun NavGraphBuilder.appHomeNavigation(
@@ -25,5 +26,13 @@ fun NavGraphBuilder.appHomeNavigation(
     MainScreen(
       navigator = composeNavigator
     )
+  }
+
+  composable(
+    route = AppScreens.Player.name,
+    arguments = AppScreens.Player.navArguments,
+
+    ) {
+    PlayerScreen()
   }
 }

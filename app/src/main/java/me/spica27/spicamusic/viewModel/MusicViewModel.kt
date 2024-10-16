@@ -15,21 +15,27 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import me.spica.music.player.Queue
+import me.spica27.spicamusic.db.dao.PlaylistDao
+import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.db.dao.SongDao
+import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import javax.inject.Inject
 import me.spica27.spicamusic.playback.RepeatMode
+import me.spica27.spicamusic.utils.msToSecs
 
 @HiltViewModel
-class MusicViewModel @Inject constructor(private val songDao: SongDao) : ViewModel(), PlaybackStateManager.Listener {
+class MusicViewModel @Inject constructor(private val songDao: SongDao, private val playlistDao: PlaylistDao) : ViewModel(), PlaybackStateManager.Listener {
 
   // 所有歌曲
   val allSongs: Flow<List<Song>> = songDao.getAll()
 
   // 所有喜欢的歌曲
   val allLikeSongs: Flow<List<Song>> = songDao.getAllLikeSong()
+
+  // 所有歌单
+  val allPlayList: Flow<List<Playlist>> = playlistDao.getAllPlaylist()
 
   // 播放列表
   private val _playList = MutableStateFlow(listOf<Song>())
@@ -65,12 +71,18 @@ class MusicViewModel @Inject constructor(private val songDao: SongDao) : ViewMod
   private val _positionDs = flow {
     while (true) {
       PlaybackStateManager.getInstance().synchronizeState()
-      emit(PlaybackStateManager.getInstance().playerState.currentPositionMs)
+      emit(PlaybackStateManager.getInstance().playerState.currentPositionMs.msToSecs())
       delay(1000)
     }
   }
+
   val positionDs: Flow<Long>
     get() = _positionDs.distinctUntilChanged()
+
+  private val _playlistCurrentIndex = MutableStateFlow(0)
+
+  val playlistCurrentIndex: Flow<Int>
+    get() = _playlistCurrentIndex
 
 
   // 循环模式
@@ -132,13 +144,14 @@ class MusicViewModel @Inject constructor(private val songDao: SongDao) : ViewMod
     super.onIndexMoved(queue)
     viewModelScope.launch {
       _song.emit(queue.currentSong())
+      _playlistCurrentIndex.emit(queue.index)
     }
   }
 
   override fun onNewListLoad(queue: Queue) {
     super.onNewListLoad(queue)
     viewModelScope.launch {
-      _playList.emit(queue.heap)
+      _playList.emit(ArrayList(queue.heap))
       _song.emit(queue.currentSong())
     }
 

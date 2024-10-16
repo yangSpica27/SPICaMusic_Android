@@ -22,14 +22,14 @@ sealed class AppScreens(
   // player screen
   data object Player : AppScreens(
     route = "player",
-    navArguments = listOf(
-      navArgument(song_Id) { type = NavType.StringType },
-      navArgument(song_name) { type = NavType.StringType }
-    )
+//    navArguments = listOf(
+//      navArgument(song_Id) { type = NavType.StringType },
+//      navArgument(song_name) { type = NavType.StringType }
+//    )
   ) {
-    fun createRoute(songId: String, songName: String) =
-      name.replace("{${navArguments[0].name}}", songId)
-        .replace("{${navArguments[1].name}}", songName)
+//    fun createRoute(songId: String, songName: String) =
+//      name.replace("{${navArguments[0].name}}", songId)
+//        .replace("{${navArguments[1].name}}", songName)
   }
 
 
