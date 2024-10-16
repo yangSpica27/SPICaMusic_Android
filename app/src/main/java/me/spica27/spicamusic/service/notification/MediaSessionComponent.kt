@@ -16,11 +16,11 @@ import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.size.Size
 import coil.target.Target
+import me.spica27.spicamusic.R
+import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.service.MusicService
-import me.spica27.spicamusic.R
-import me.spica27.spicamusic.db.entity.Song
 
 class MediaSessionComponent(
   private val context: Context,

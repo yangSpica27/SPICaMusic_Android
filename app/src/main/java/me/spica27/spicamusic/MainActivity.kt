@@ -6,6 +6,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import dagger.hilt.android.AndroidEntryPoint
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.service.MusicService
@@ -19,7 +21,6 @@ class MainActivity : ComponentActivity() {
   @Inject
   internal lateinit var appComposeNavigator: AppComposeNavigator
 
-  private val viewModel: MusicViewModel by viewModels()
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)

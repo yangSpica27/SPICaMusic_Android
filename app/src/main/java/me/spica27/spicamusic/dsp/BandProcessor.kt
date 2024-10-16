@@ -2,7 +2,12 @@ package me.spica27.spicamusic.dsp
 
 
 import timber.log.Timber
-import kotlin.math.*
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sqrt
+import kotlin.math.tan
 
 class BandProcessor(val band: NyquistBand, val sampleRate: Int, val channelCount: Int, val referenceGain: Double) {
 

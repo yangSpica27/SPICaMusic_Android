@@ -16,17 +16,22 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.dao.PlaylistDao
-import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
-import javax.inject.Inject
 import me.spica27.spicamusic.playback.RepeatMode
+import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.utils.msToSecs
+import timber.log.Timber
+import javax.inject.Inject
 
 @HiltViewModel
-class MusicViewModel @Inject constructor(private val songDao: SongDao, private val playlistDao: PlaylistDao) : ViewModel(), PlaybackStateManager.Listener {
+class MusicViewModel @Inject constructor(
+  private val songDao: SongDao,
+  private val playlistDao: PlaylistDao
+) : ViewModel(),
+  PlaybackStateManager.Listener {
 
   // 所有歌曲
   val allSongs: Flow<List<Song>> = songDao.getAll()
@@ -68,7 +73,7 @@ class MusicViewModel @Inject constructor(private val songDao: SongDao, private v
     get() = _isPlaying
 
   // 当前的进度
-  private val _positionDs = flow {
+  private val _positionSec = flow {
     while (true) {
       PlaybackStateManager.getInstance().synchronizeState()
       emit(PlaybackStateManager.getInstance().playerState.currentPositionMs.msToSecs())
@@ -76,8 +81,8 @@ class MusicViewModel @Inject constructor(private val songDao: SongDao, private v
     }
   }
 
-  val positionDs: Flow<Long>
-    get() = _positionDs.distinctUntilChanged()
+  val positionSec: Flow<Long>
+    get() = _positionSec.distinctUntilChanged()
 
   private val _playlistCurrentIndex = MutableStateFlow(0)
 
@@ -98,7 +103,14 @@ class MusicViewModel @Inject constructor(private val songDao: SongDao, private v
 
 
   init {
+    Timber.tag("MusicViewModel").d("init")
     PlaybackStateManager.getInstance().addListener(this)
+    viewModelScope.launch(Dispatchers.Default) {
+      _song.emit(PlaybackStateManager.getInstance().getCurrentSong())
+      _playList.emit(PlaybackStateManager.getInstance().getCurrentList())
+      _isPlaying.emit(PlaybackStateManager.getInstance().playerState.isPlaying)
+      _playlistCurrentIndex.emit(PlaybackStateManager.getInstance().getCurrentSongIndex())
+    }
   }
 
   override fun onCleared() {
@@ -144,14 +156,14 @@ class MusicViewModel @Inject constructor(private val songDao: SongDao, private v
     super.onIndexMoved(queue)
     viewModelScope.launch {
       _song.emit(queue.currentSong())
-      _playlistCurrentIndex.emit(queue.index)
+      _playlistCurrentIndex.emit(queue.getIndex())
     }
   }
 
   override fun onNewListLoad(queue: Queue) {
     super.onNewListLoad(queue)
     viewModelScope.launch {
-      _playList.emit(ArrayList(queue.heap))
+      _playList.emit(queue.getPlayList())
       _song.emit(queue.currentSong())
     }
 
@@ -165,5 +177,11 @@ class MusicViewModel @Inject constructor(private val songDao: SongDao, private v
   override fun onRepeatChanged(repeatMode: RepeatMode) {
     super.onRepeatChanged(repeatMode)
     _repeatMode.value = repeatMode
+  }
+
+  fun addPlayList(value: String) {
+    viewModelScope.launch {
+      playlistDao.insertPlaylist(Playlist(playlistName = value))
+    }
   }
 }

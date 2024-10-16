@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,27 +17,24 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import me.spica27.spicamusic.R
@@ -61,47 +59,55 @@ fun CurrentListPage(
 
   val playList = musicViewModel.playList.collectAsState(emptyList())
 
-  Column(
-    modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.Top
-  ) {
-    Text(
-      text = if (isPlaying.value) {
-        "正在播放"
-      } else {
-        "未在播放"
-      }, style = MaterialTheme.typography.headlineMedium.copy(
-        fontWeight = androidx.compose.ui.text.font.FontWeight.W600
-      ), modifier = Modifier.padding(20.dp)
-    )
-    NowPlayIngSong(musicViewModel, navigator)
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 8.dp, horizontal = 20.dp)
+
+  if (playList.value.isNotEmpty()) {
+    Column(
+      modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.Top
     ) {
-      Box {
-        Text(
-          text = "当前播放列表", style = MaterialTheme.typography.bodyMedium.copy(
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+      Text(
+        text = if (isPlaying.value) {
+          "正在播放"
+        } else {
+          "未在播放"
+        }, style = MaterialTheme.typography.headlineMedium.copy(
+          fontWeight = androidx.compose.ui.text.font.FontWeight.W600
+        ), modifier = Modifier.padding(20.dp)
+      )
+
+
+      NowPlayIngSong(musicViewModel, navigator)
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(vertical = 8.dp, horizontal = 20.dp)
+      ) {
+        Box {
+          Text(
+            text = "当前播放列表", style = MaterialTheme.typography.bodyMedium.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
           )
-        )
+        }
+        Box(modifier = Modifier.align(Alignment.CenterEnd)) {
+          Text(
+            text = "${currentIndex.value}/${playList.value.size}",
+            style = MaterialTheme.typography.bodyMedium
+          )
+        }
       }
-      Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-        Text(
-          text = "${currentIndex.value}/${playList.value.size}", style = MaterialTheme.typography.bodyMedium
-        )
+      HorizontalDivider(
+        thickness = 1.dp / 2, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+      )
+      Box(
+        modifier = Modifier
+          .weight(1f)
+          .fillMaxWidth()
+      ) {
+        CurrentList(musicViewModel)
       }
     }
-    HorizontalDivider(
-      thickness = 1.dp / 2, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-    )
-    Box(
-      modifier = Modifier
-        .weight(1f)
-        .fillMaxWidth()
-    ) {
-      CurrentList(musicViewModel)
-    }
+  } else {
+    EmptyPlaceHolder()
   }
 }
 
@@ -117,11 +123,9 @@ private fun CurrentList(
   LazyColumn {
 
     itemsIndexed(playlist.value, key = { _, song -> song.songId.toString() }) { index, song ->
-      SongItem(
-        isPlaying = currentSong.value?.songId == song.songId, song = song,
-        onClick = {
-          viewModel.play(playlist.value[index], playlist.value)
-        })
+      SongItem(isPlaying = currentSong.value?.songId == song.songId, song = song, onClick = {
+        viewModel.play(playlist.value[index], playlist.value)
+      })
     }
 
     item {
@@ -133,18 +137,16 @@ private fun CurrentList(
 @Composable
 private fun SongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit = { }) {
   val painter = rememberAsyncImagePainter(song.getCoverUri())
-  Row(
-    Modifier
-      .background(
-        color = if (isPlaying) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-        else MaterialTheme.colorScheme.surface,
-      )
-      .clickable {
-        onClick()
-      }
-      .padding(vertical = 12.dp, horizontal = 16.dp)
-      .fillMaxWidth()
-  ) {
+  Row(Modifier
+    .background(
+      color = if (isPlaying) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+      else MaterialTheme.colorScheme.surface,
+    )
+    .clickable {
+      onClick()
+    }
+    .padding(vertical = 12.dp, horizontal = 16.dp)
+    .fillMaxWidth()) {
     // 封面
     Box(
       modifier = Modifier
@@ -160,7 +162,8 @@ private fun SongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit
           modifier = Modifier
             .size(48.dp)
             .background(
-              color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f), shape = MaterialTheme.shapes.medium
+              color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f),
+              shape = MaterialTheme.shapes.medium
             ),
           contentAlignment = Alignment.Center,
         ) {
@@ -181,12 +184,14 @@ private fun SongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit
             modifier = Modifier
               .size(48.dp)
               .background(
-                color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                shape = MaterialTheme.shapes.medium
               ),
             contentAlignment = Alignment.Center,
           ) {
             Text(
-              text = song.displayName.first().toString(), style = MaterialTheme.typography.bodyMedium.copy(
+              text = (song.displayName.firstOrNull() ?: "S").toString(),
+              style = MaterialTheme.typography.bodyMedium.copy(
                 color = MaterialTheme.colorScheme.onSurface
               )
             )
@@ -202,10 +207,17 @@ private fun SongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit
         .weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       Text(
-        text = song.displayName, modifier = Modifier.fillMaxWidth(), fontWeight = androidx.compose.ui.text.font.FontWeight.W600, maxLines = 1
+        text = song.displayName,
+        modifier = if (isPlaying) Modifier
+          .fillMaxWidth()
+          .basicMarquee() else Modifier.fillMaxWidth(),
+        fontWeight = androidx.compose.ui.text.font.FontWeight.W600,
+        maxLines = 1
       )
       Text(
-        text = song.artist, maxLines = 1, modifier = Modifier.fillMaxWidth(),
+        text = song.artist,
+        maxLines = 1,
+        modifier = Modifier.fillMaxWidth(),
         style = MaterialTheme.typography.bodyMedium.copy(
           color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
@@ -223,10 +235,28 @@ private fun SongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit
   }
 }
 
+/// 没有正在播放的音乐时候占位
 @Composable
-fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = null) {
+private fun EmptyPlaceHolder() {
+  Column(
+    modifier = Modifier.fillMaxSize(),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.Center
+  ) {
+    Text(text = "没有正在播放的音乐", style = MaterialTheme.typography.bodyMedium)
+    Spacer(modifier = Modifier.size(16.dp))
+    OutlinedButton(
+      onClick = { },
+    ) {
+      Text(text = "选取音乐")
+    }
+  }
+}
+
+@Composable
+private fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = null) {
   val song = viewModel.currentSongFlow.collectAsState(null)
-  val positionMsState = viewModel.positionDs.collectAsState(0L)
+  val positionMsState = viewModel.positionSec.collectAsState(0L)
   val isPlaying = viewModel.isPlaying.collectAsState(false)
   val painter = rememberAsyncImagePainter(song.value?.getCoverUri())
   Box(
@@ -258,14 +288,18 @@ fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = 
               modifier = Modifier
                 .size(64.dp)
                 .background(
-                  color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium
+                  color = MaterialTheme.colorScheme.surfaceContainer,
+                  shape = MaterialTheme.shapes.medium
                 ),
               contentAlignment = Alignment.Center,
             ) {
-              Text(
-                text = song.value?.displayName?.first().toString(), style = MaterialTheme.typography.bodyMedium.copy(
-                  color = MaterialTheme.colorScheme.onSurface
-                )
+              Icon(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .scale(1.5f),
+                painter = painterResource(id = R.drawable.ic_dvd),
+                contentDescription = "封面",
+                tint = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
               )
             }
           }
@@ -278,7 +312,12 @@ fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = 
             .weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
           Text(
-            text = song.value?.displayName ?: "--", modifier = Modifier.fillMaxWidth(), fontWeight = androidx.compose.ui.text.font.FontWeight.W600, maxLines = 1
+            text = song.value?.displayName ?: "--",
+            modifier = Modifier
+              .fillMaxWidth()
+              .basicMarquee(),
+            fontWeight = androidx.compose.ui.text.font.FontWeight.W600,
+            maxLines = 1
           )
           Text(
             text = song.value?.artist ?: "--", maxLines = 1, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium.copy(
@@ -301,8 +340,7 @@ fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = 
           IconButton(
             onClick = {
               viewModel.togglePlaying()
-            }, modifier = Modifier.size(48.dp),
-            colors = IconButtonDefaults.iconButtonColors(
+            }, modifier = Modifier.size(48.dp), colors = IconButtonDefaults.iconButtonColors(
               containerColor = MaterialTheme.colorScheme.primaryContainer
             )
           ) {
@@ -311,8 +349,7 @@ fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = 
                 painterResource(id = R.drawable.ic_pause)
               } else {
                 painterResource(id = R.drawable.ic_play)
-              }, contentDescription = "播放",
-              tint = MaterialTheme.colorScheme.onPrimaryContainer
+              }, contentDescription = "播放", tint = MaterialTheme.colorScheme.onPrimaryContainer
             )
           }
           Spacer(modifier = Modifier.size(16.dp))
@@ -334,8 +371,7 @@ fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = 
           .padding(horizontal = 20.dp)
       ) {
         Box(
-          modifier = Modifier
-            .align(Alignment.CenterStart)
+          modifier = Modifier.align(Alignment.CenterStart)
         ) {
           Text(
             text = positionMsState.value.formatDurationSecs(),
@@ -346,8 +382,7 @@ fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = 
         }
         Spacer(modifier = Modifier.height(12.dp))
         Box(
-          modifier = Modifier
-            .align(Alignment.CenterEnd)
+          modifier = Modifier.align(Alignment.CenterEnd)
         ) {
           Text(
             text = song.value?.duration?.msToSecs()?.formatDurationSecs() ?: "--:--",
@@ -362,8 +397,7 @@ fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = 
       LinearProgressIndicator(
         progress = {
           positionMsState.value.toFloat() / (song.value?.duration?.msToSecs()?.toFloat() ?: 1f)
-        },
-        modifier = Modifier
+        }, modifier = Modifier
           .fillMaxWidth()
           .padding(horizontal = 20.dp)
       )

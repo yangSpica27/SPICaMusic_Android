@@ -1,8 +1,6 @@
 package me.spica27.spicamusic.navigator
 
 import androidx.navigation.NamedNavArgument
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
 
 sealed class AppScreens(
   val route: String,

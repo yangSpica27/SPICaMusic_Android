@@ -1,28 +1,45 @@
+@file:Suppress("DEPRECATION")
+
 package me.spica27.spicamusic.service
+
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaSessionCompat
+import androidx.annotation.RequiresApi
 import androidx.media.MediaBrowserServiceCompat
-import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.audio.*
+import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.DefaultRenderersFactory
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.PlaybackException
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.Renderer
+import com.google.android.exoplayer2.audio.AudioAttributes
+import com.google.android.exoplayer2.audio.AudioCapabilities
+import com.google.android.exoplayer2.audio.AudioRendererEventListener
+import com.google.android.exoplayer2.audio.AudioSink
+import com.google.android.exoplayer2.audio.DefaultAudioSink
+import com.google.android.exoplayer2.audio.MediaCodecAudioRenderer
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.mediacodec.MediaCodecSelector
 import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
-import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica.music.player.IPlayer
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.service.notification.MediaSessionComponent
 import me.spica27.spicamusic.service.notification.NotificationComponent
 
 private const val MY_MEDIA_ROOT_ID = "media_root_id"
 private const val MY_EMPTY_MEDIA_ROOT_ID = "empty_root_id"
+
 
 class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer, MediaSessionComponent.Listener {
 
@@ -42,6 +59,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer, Medi
 
   private val systemReceiver = PlaybackReceiver()
 
+  @RequiresApi(Build.VERSION_CODES.O)
   override fun onCreate() {
     super.onCreate()
     mediaSession = MediaSessionCompat(this, "spica_music")
@@ -163,7 +181,11 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer, Medi
   /**
    * 连接时候触发
    */
-  override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
+  override fun onGetRoot(
+    clientPackageName: String,
+    clientUid: Int,
+    rootHints: Bundle?
+  ): BrowserRoot {
 
     return if (
       false

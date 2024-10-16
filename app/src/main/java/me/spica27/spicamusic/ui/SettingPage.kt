@@ -22,14 +22,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import me.spica27.spicamusic.service.RefreshMusicListService
+import me.spica27.spicamusic.viewModel.SettingViewModel
 
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -55,9 +58,11 @@ fun SettingPage() {
     )
   }
 
-
   val context = LocalContext.current
-
+  val settingViewModel = hiltViewModel<SettingViewModel>()
+  val autoPlaySettingState = settingViewModel.autoPlay.collectAsState(false)
+  val autoScannerSettingState = settingViewModel.autoScanner.collectAsState(false)
+  val forceDarkThemeSettingState = settingViewModel.forceDarkTheme.collectAsState(false)
 
   Box(modifier = Modifier.fillMaxSize()) {
     LazyColumn(contentPadding = PaddingValues(16.dp)) {
@@ -107,16 +112,26 @@ fun SettingPage() {
         Card {
           Column {
             SwitchSettingItem(
-              title = "自动播放", desc = "自动播放下一首", value = true
+              title = "自动播放", desc = "自动播放下一首", value = autoPlaySettingState.value,
+              onClick = {
+                settingViewModel.saveAutoPlay(!autoPlaySettingState.value)
+              }
             )
             SwitchSettingItem(
               title = "自动扫描",
               desc = "定时更新/扫描本地音乐",
+              value = autoScannerSettingState.value,
+              onClick = {
+                settingViewModel.saveAutoScanner(!autoScannerSettingState.value)
+              }
             )
             SwitchSettingItem(
               title = "暗色模式",
               desc = "是否启用暗色模式",
-              value = false
+              value = forceDarkThemeSettingState.value,
+              onClick = {
+                settingViewModel.saveForceDarkTheme(!forceDarkThemeSettingState.value)
+              }
             )
           }
         }
@@ -146,11 +161,14 @@ private fun SwitchSettingItem(
   title: String = "设置项",
   desc: String = "设置项描述",
   value: Boolean = false,
+  onClick: () -> Unit = {}
 ) {
 
   Row(
     Modifier
-      .clickable { }
+      .clickable {
+        onClick()
+      }
       .fillMaxWidth()
       .padding(16.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
     Column(modifier = Modifier.weight(1f)) {
@@ -165,14 +183,18 @@ private fun SwitchSettingItem(
         )
       )
     }
-    Switch(checked = value, onCheckedChange = { })
+    Switch(checked = value, onCheckedChange = {
+      onClick()
+    })
   }
 
 }
 
 @Composable
 private fun TextSettingItem(
-  title: String = "设置项", desc: String = "设置项描述", onClick: () -> Unit = {}
+  title: String = "设置项",
+  desc: String = "设置项描述",
+  onClick: () -> Unit = {}
 ) {
   Row(
     Modifier

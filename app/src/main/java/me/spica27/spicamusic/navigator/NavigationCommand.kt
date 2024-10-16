@@ -1,5 +1,3 @@
-
-
 package me.spica27.spicamusic.navigator
 
 import androidx.navigation.NavOptions

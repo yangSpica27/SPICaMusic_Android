@@ -7,6 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import me.spica27.spicamusic.db.AppDatabase
+import me.spica27.spicamusic.utils.DataStoreUtil
 import javax.inject.Singleton
 
 @Module
@@ -26,6 +27,10 @@ object PersistenceModule {
       .fallbackToDestructiveMigration()
       .build()
   }
+
+  @Provides
+  @Singleton
+  fun provideDataStoreUtil(application: Application) = DataStoreUtil(application)
 
   @Provides
   @Singleton

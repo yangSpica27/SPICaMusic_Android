@@ -6,10 +6,10 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.annotation.DrawableRes
 import androidx.core.app.NotificationCompat
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.playback.RepeatMode
 import me.spica27.spicamusic.service.ForegroundServiceNotification
 import me.spica27.spicamusic.service.MusicService
-import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.newBroadcastPendingIntent
 import me.spica27.spicamusic.utils.newMainPendingIntent
 
@@ -22,7 +22,7 @@ class NotificationComponent(private val context: Context, sessionToken: MediaSes
     get() = 0x102030
 
   init {
-    setSmallIcon(R.drawable.ic_launcher_foreground)
+    setSmallIcon(R.drawable.ic_app)
     setCategory(NotificationCompat.CATEGORY_SERVICE)
     setShowWhen(false)
     setSilent(true)

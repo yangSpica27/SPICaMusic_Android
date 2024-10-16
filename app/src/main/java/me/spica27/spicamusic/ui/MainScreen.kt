@@ -14,6 +14,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -31,18 +32,21 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(
   modifier: Modifier = Modifier,
   navigator: AppComposeNavigator? = null
 ) {
 
-  val pagerState = rememberPagerState(pageCount = {
-    10
-  })
+  val pagerState = rememberPagerState(
+    pageCount = {
+      10
+    },
+  )
 
-  Scaffold() { innerPadding ->
+
+
+  Scaffold { innerPadding ->
 
     Box(
       modifier = modifier
@@ -51,8 +55,11 @@ fun MainScreen(
     ) {
 
       HorizontalPager(
-        state = pagerState, modifier = Modifier.fillMaxSize(), userScrollEnabled = false,
-        key = { it }
+        state = pagerState,
+        modifier = Modifier.fillMaxSize(),
+        userScrollEnabled = false,
+        key = { it },
+        beyondViewportPageCount = 3
       ) { page ->
         when (page) {
           0 -> HomePage()
@@ -114,11 +121,13 @@ fun BottomNav(pagerState: PagerState) {
     ) {
       if (pagerState.currentPage == 1) {
         Icon(
-          imageVector = Icons.Default.Home, contentDescription = "CurrentList", tint = MaterialTheme.colorScheme.primary
+          imageVector = Icons.AutoMirrored.Default.List,
+          contentDescription = "CurrentList",
+          tint = MaterialTheme.colorScheme.primary
         )
         Text("播放列表", style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
       } else {
-        Icon(imageVector = Icons.Default.Home, contentDescription = "CurrentList")
+        Icon(imageVector = Icons.AutoMirrored.Default.List, contentDescription = "CurrentList")
         Text("播放列表", style = MaterialTheme.typography.bodyMedium.copy())
       }
     }

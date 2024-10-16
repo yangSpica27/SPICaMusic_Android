@@ -1,27 +1,34 @@
 package me.spica27.spicamusic.player
 
+import androidx.lifecycle.AtomicReference
 import me.spica27.spicamusic.db.entity.Song
-import timber.log.Timber
 
 
 /**
  * 播放列表
  */
+@Suppress("unused")
 class Queue {
 
   // 指针
-  @Volatile
-  var index = 0
-    private set
+  private val index = AtomicReference(0)
 
   // 播放列表
-  @Volatile
-  var heap = ArrayList<Song>()
-    private set
+
+  private val heap = ArrayList<Song>()
+
+  fun getPlayList(): List<Song> {
+    return ArrayList(heap)
+  }
+
+  fun getIndex(): Int {
+    return index.get()
+  }
+
 
   fun currentSong(): Song? {
     return if (heap.isNotEmpty()) {
-      heap[index]
+      heap[index.get()]
     } else {
       null
     }
@@ -46,40 +53,35 @@ class Queue {
 
   fun playNextSong(): Boolean {
     synchronized(this) {
-      if (index >= heap.size - 1) return false
-      index++
+      if (index.get() >= heap.size - 1) return false
+      index.getAndUpdate { it + 1 }
       return true
     }
   }
 
   fun playPreSong(): Boolean {
     synchronized(this) {
-      if (index <= 0) return false
-      index--
+      if (index.get() <= 0) return false
+      index.getAndUpdate { it - 1 }
       return true
     }
   }
 
   fun reloadNewList(song: Song, songs: List<Song>) {
     synchronized(this) {
-      Timber.tag("QUEUE2.5").d("播放歌曲${song.displayName}")
-      Timber.tag("QUEUE2.5").d("播放列表${songs}")
       heap.clear()
       heap.addAll(songs)
-      this.index = 0
-      Timber.tag("QUEUE3").d("播放歌曲${song.displayName}")
-      Timber.tag("QUEUE3").d("播放列表${songs}")
+      this.index.set(0)
       heap.forEachIndexed { index, sg ->
         run {
           if (song.songId == sg.songId) {
-            this.index = index
-            Timber.tag("Queue").e("reloadNewList: $index")
+            this.index.set(index)
             return
           }
         }
       }
       heap.add(0, song)
-      index = 0
+      index.set(0)
     }
   }
 

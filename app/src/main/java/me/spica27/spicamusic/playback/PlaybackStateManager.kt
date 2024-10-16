@@ -2,15 +2,14 @@ package me.spica27.spicamusic.playback
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
 import me.spica.music.player.IPlayer
-import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.dsp.EqualizerAudioProcessor
 import me.spica27.spicamusic.dsp.ReplayGainAudioProcessor
 import me.spica27.spicamusic.player.FFTAudioProcessor
+import me.spica27.spicamusic.player.Queue
 
-
+@Suppress("unused")
 class PlaybackStateManager {
 
   private var player: IPlayer? = null
@@ -50,9 +49,11 @@ class PlaybackStateManager {
 
   fun getCurrentSong() = queue.currentSong()
 
-  fun getCurrentListSize() = queue.heap.size
+  fun getCurrentList() = queue.getPlayList()
 
-  fun getCurrentSongIndex() = queue.index
+  fun getCurrentListSize() = queue.getPlayList().size
+
+  fun getCurrentSongIndex() = queue.getIndex()
 
   @Synchronized
   fun addListener(listener: Listener) {
@@ -95,7 +96,7 @@ class PlaybackStateManager {
 
 
   suspend fun playAsync(song: Song) = withContext(Dispatchers.IO) {
-    queue.reloadNewList(song, queue.heap.toList())
+    queue.reloadNewList(song, queue.getPlayList())
     withContext(Dispatchers.Main) {
       player?.loadSong(song, true)
       updateListenersNewList()
@@ -104,7 +105,7 @@ class PlaybackStateManager {
 
   @Synchronized
   fun play(song: Song) {
-    queue.reloadNewList(song, queue.heap.toList())
+    queue.reloadNewList(song, queue.getPlayList())
     player?.loadSong(song, true)
     updateListenersNewList()
   }
