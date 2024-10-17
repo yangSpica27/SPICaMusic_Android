@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -62,7 +61,7 @@ fun MainScreen(
         beyondViewportPageCount = 3
       ) { page ->
         when (page) {
-          0 -> HomePage()
+          0 -> HomePage(navigator = navigator)
           1 -> CurrentListPage(navigator = navigator)
           2 -> SettingPage()
         }
@@ -97,13 +96,20 @@ fun BottomNav(pagerState: PagerState) {
           }
         }
         .weight(1f)
-        .padding(12.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
+        .padding(12.dp),
+      verticalArrangement = Arrangement.Center,
+      horizontalAlignment = Alignment.CenterHorizontally
     ) {
       if (pagerState.currentPage == 0) {
         Icon(
-          imageVector = Icons.Default.Home, contentDescription = "Home", tint = MaterialTheme.colorScheme.primary
+          imageVector = Icons.Default.Home,
+          contentDescription = "Home",
+          tint = MaterialTheme.colorScheme.primary
         )
-        Text("主页", style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
+        Text(
+          "主页",
+          style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary)
+        )
       } else {
         Icon(imageVector = Icons.Default.Home, contentDescription = "Home")
         Text("主页", style = MaterialTheme.typography.bodyMedium.copy())
@@ -117,7 +123,9 @@ fun BottomNav(pagerState: PagerState) {
             pagerState.animateScrollToPage(1)
           }
         }
-        .padding(12.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
+        .padding(12.dp),
+      verticalArrangement = Arrangement.Center,
+      horizontalAlignment = Alignment.CenterHorizontally
     ) {
       if (pagerState.currentPage == 1) {
         Icon(
@@ -125,7 +133,10 @@ fun BottomNav(pagerState: PagerState) {
           contentDescription = "CurrentList",
           tint = MaterialTheme.colorScheme.primary
         )
-        Text("播放列表", style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
+        Text(
+          "播放列表",
+          style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary)
+        )
       } else {
         Icon(imageVector = Icons.AutoMirrored.Default.List, contentDescription = "CurrentList")
         Text("播放列表", style = MaterialTheme.typography.bodyMedium.copy())
@@ -139,13 +150,20 @@ fun BottomNav(pagerState: PagerState) {
             pagerState.animateScrollToPage(2)
           }
         }
-        .padding(12.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
+        .padding(12.dp),
+      verticalArrangement = Arrangement.Center,
+      horizontalAlignment = Alignment.CenterHorizontally
     ) {
       if (pagerState.currentPage == 2) {
         Icon(
-          imageVector = Icons.Default.Settings, contentDescription = "Setting", tint = MaterialTheme.colorScheme.primary
+          imageVector = Icons.Default.Settings,
+          contentDescription = "Setting",
+          tint = MaterialTheme.colorScheme.primary
         )
-        Text("主页", style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary))
+        Text(
+          "主页",
+          style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary)
+        )
       } else {
         Icon(imageVector = Icons.Default.Settings, contentDescription = "Setting")
         Text("主页", style = MaterialTheme.typography.bodyMedium.copy())

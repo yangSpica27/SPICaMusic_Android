@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.PlaylistSongCrossRef
 import me.spica27.spicamusic.db.entity.PlaylistWithSongs
+import me.spica27.spicamusic.db.entity.Song
 
 
 @Dao
@@ -24,6 +25,10 @@ interface PlaylistDao {
   fun getAllPlaylist(): Flow<List<Playlist>>
 
 
+  @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
+  fun getPlayListById(playlistId: Long): Flow<Playlist>
+
+
   @Transaction
   @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
   fun getPlaylistsWithSongsWithPlayListId(playlistId: Long): PlaylistWithSongs?
@@ -32,6 +37,10 @@ interface PlaylistDao {
   @Transaction
   @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
   fun getPlaylistsWithSongsWithPlayListIdFlow(playlistId: Long): Flow<PlaylistWithSongs?>
+
+
+  @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")
+  fun getSongsByPlaylistId(playlistId: Long): Flow<List<Song>>
 
   @Transaction
   @Query("DELETE FROM playlist WHERE playlistId ==:playlistId")

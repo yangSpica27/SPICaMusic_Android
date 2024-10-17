@@ -57,6 +57,8 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.navigator.AppComposeNavigator
+import me.spica27.spicamusic.navigator.AppScreens
 import me.spica27.spicamusic.viewModel.MusicViewModel
 import kotlin.math.roundToInt
 
@@ -65,6 +67,7 @@ import kotlin.math.roundToInt
 fun HomePage(
   modifier: Modifier = Modifier,
   musicViewModel: MusicViewModel = hiltViewModel(),
+  navigator: AppComposeNavigator? = null
 ) {
 
   val allSongState = musicViewModel.allSongs.collectAsState(emptyList())
@@ -82,11 +85,10 @@ fun HomePage(
       tabs.size
     })
 
-
     Column {
       // 标题
       Spacer(modifier = Modifier.height(10.dp))
-      SearchButton()
+      SearchButton(navigator)
       Spacer(modifier = Modifier.height(10.dp))
       // 分类tab
       TabRow(
@@ -105,7 +107,10 @@ fun HomePage(
       ) {
         when (it) {
           0 -> SongList(songs = allSongState.value)
-          1 -> PLayListItems()
+          1 -> PLayListItems(
+            navigator = navigator
+          )
+
           2 -> SongList(songs = allSongState.value)
         }
       }
@@ -175,6 +180,7 @@ fun convertIntOffsetToDpOffset(intOffset: IntOffset): DpOffset {
   }
 }
 
+/// 歌曲列表项
 @Composable
 private fun SongItem(
   song: Song, onClick: () -> Unit = {}, onMenuClick: (
@@ -192,7 +198,7 @@ private fun SongItem(
     Spacer(modifier = Modifier.width(16.dp))
     Box(
       modifier = Modifier
-        .padding(vertical = 16.dp)
+        .padding(vertical = 8.dp)
         .width(66.dp)
         .height(66.dp)
         .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium),
@@ -242,13 +248,15 @@ private fun SongItem(
 }
 
 @Composable
-private fun SearchButton() {
+private fun SearchButton(navigator: AppComposeNavigator? = null) {
   Row(
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp)
       .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.medium)
-      .clickable { }
+      .clickable {
+        navigator?.navigate(AppScreens.SearchAll.route)
+      }
       .padding(16.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
@@ -327,7 +335,8 @@ private fun Tab(isSelected: Boolean, text: String, onClick: () -> Unit) {
 
 @Composable
 private fun PLayListItems(
-  viewModel: MusicViewModel = hiltViewModel()
+  viewModel: MusicViewModel = hiltViewModel(),
+  navigator: AppComposeNavigator? = null
 ) {
 
   val showAddPlaylistDialog = remember { mutableStateOf(false) }
@@ -389,7 +398,9 @@ private fun PLayListItems(
       itemsIndexed(
         allPlayList.value ?: listOf(),
         key = { _, item -> item.playlistId ?: 0 }) { _, playList ->
-        PlaylistItem(playList)
+        PlaylistItem(playList, onClick = {
+          navigator?.navigate(AppScreens.PlaylistDetail.createRoute(playList.playlistId ?: -1))
+        })
       }
     }
   }
@@ -403,7 +414,7 @@ private fun AddPlayListItem(onClick: () -> Unit = {}) {
     .clickable {
       onClick()
     }
-    .padding(16.dp)
+    .padding(vertical = 6.dp, horizontal = 16.dp)
     .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
     Box(
       Modifier
@@ -430,10 +441,12 @@ private fun AddPlayListItem(onClick: () -> Unit = {}) {
 
 
 @Composable
-private fun PlaylistItem(playlist: Playlist) {
+private fun PlaylistItem(playlist: Playlist, onClick: () -> Unit = {}) {
   Row(modifier = Modifier
-    .clickable { }
-    .padding(16.dp)
+    .clickable {
+      onClick()
+    }
+    .padding(horizontal = 16.dp, vertical = 6.dp)
     .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
     Box(
       modifier = Modifier

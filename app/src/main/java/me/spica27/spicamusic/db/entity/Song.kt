@@ -4,8 +4,10 @@ import android.net.Uri
 import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.parcelize.IgnoredOnParcel
 import me.spica27.spicamusic.utils.toAudioUri
 import me.spica27.spicamusic.utils.toCoverUri
 
@@ -29,7 +31,7 @@ data class Song constructor(
   val duration: Long,
   var sort: Int,
   var playTimes: Int,
-  var lastPlayTime: Int
+  var lastPlayTime: Int,
 ) : Parcelable {
 
 

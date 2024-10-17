@@ -72,6 +72,10 @@ interface SongDao {
   @Query("DELETE FROM song")
   fun deleteAllSync()
 
+
+  @Query("SELECT * FROM song WHERE songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId)")
+  fun getSongsNotInPlayList(playlistId: Long): Flow<List<Song>>
+
   @Delete
   suspend fun delete(song: Song)
 

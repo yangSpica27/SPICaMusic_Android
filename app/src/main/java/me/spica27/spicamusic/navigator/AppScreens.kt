@@ -1,7 +1,10 @@
 package me.spica27.spicamusic.navigator
 
 import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 
+/// App的导航
 sealed class AppScreens(
   val route: String,
   val index: Int? = null,
@@ -20,23 +23,46 @@ sealed class AppScreens(
   // player screen
   data object Player : AppScreens(
     route = "player",
-//    navArguments = listOf(
-//      navArgument(song_Id) { type = NavType.StringType },
-//      navArgument(song_name) { type = NavType.StringType }
-//    )
+  )
+
+
+  // search all screen
+  data object SearchAll : AppScreens(
+    route = "searchAll",
+  )
+
+  data object AddSongScreen : AppScreens(
+    route = "addSong",
+    navArguments = listOf(
+      navArgument(playlist_id) {
+        type = NavType.LongType
+      }
+    )
   ) {
-//    fun createRoute(songId: String, songName: String) =
-//      name.replace("{${navArguments[0].name}}", songId)
-//        .replace("{${navArguments[1].name}}", songName)
+    fun createRoute(playlistId: Long) =
+      name.replace("{${navArguments[0].name}}", playlistId.toString())
+  }
+
+  data object PlaylistDetail : AppScreens(
+    route = "playlistDetail",
+    navArguments = listOf(
+      navArgument(playlist_id) {
+        type = NavType.LongType
+      }
+    )
+  ) {
+    fun createRoute(playlistId: Long) =
+      name.replace("{${navArguments[0].name}}", playlistId.toString())
   }
 
 
   companion object {
-    const val song_Id = "songId"
-    const val song_name = "songName"
+    // arguments 歌单id
+    const val playlist_id = "playlist_id"
   }
 }
 
+/// 拼接参数
 private fun String.appendArguments(navArguments: List<NamedNavArgument>): String {
   val mandatoryArguments = navArguments.filter { it.argument.defaultValue == null }
     .takeIf { it.isNotEmpty() }
