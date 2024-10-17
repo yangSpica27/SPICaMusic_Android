@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,8 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -22,11 +21,11 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,37 +39,33 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.R
-import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
-import me.spica27.spicamusic.viewModel.MusicViewModel
+import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.widget.PlaylistItem
+import me.spica27.spicamusic.widget.SongItemWithCover
 import kotlin.math.roundToInt
 
-
+// 主页
 @Composable
 fun HomePage(
   modifier: Modifier = Modifier,
-  musicViewModel: MusicViewModel = hiltViewModel(),
+  playBackViewModel: PlayBackViewModel = hiltViewModel(),
   navigator: AppComposeNavigator? = null
 ) {
 
-  val allSongState = musicViewModel.allSongs.collectAsState(emptyList())
+  val likeSongState = playBackViewModel.allLikeSongs.collectAsState(emptyList())
+  val allSongState = playBackViewModel.allSongs.collectAsState(emptyList())
 
 
   Box(
@@ -98,6 +93,11 @@ fun HomePage(
           }
         }, tabs = listOf("收藏", "歌单", "最近添加")
       )
+      HorizontalDivider(
+        modifier = Modifier.fillMaxWidth(),
+        thickness = 1.dp / 2,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+      )
       // 歌曲列表
       HorizontalPager(
         state = pagerState,
@@ -106,7 +106,16 @@ fun HomePage(
         beyondViewportPageCount = 3
       ) {
         when (it) {
-          0 -> SongList(songs = allSongState.value)
+          0 -> if (likeSongState.value.isEmpty()) {
+            Box(
+              modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+            ) {
+              Text(text = "暂无收藏", modifier = Modifier.offset(y = (-50).dp))
+            }
+          } else {
+            SongList(songs = likeSongState.value)
+          }
+
           1 -> PLayListItems(
             navigator = navigator
           )
@@ -121,7 +130,7 @@ fun HomePage(
 // 歌曲列表
 @Composable
 private fun SongList(modifier: Modifier = Modifier, songs: List<Song> = emptyList()) {
-  val musicViewModel = hiltViewModel<MusicViewModel>()
+  val playBackViewModel = hiltViewModel<PlayBackViewModel>()
 
   val isExpandedMenu = remember { mutableStateOf(false) }
 
@@ -158,14 +167,24 @@ private fun SongList(modifier: Modifier = Modifier, songs: List<Song> = emptyLis
     modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.Top
   ) {
     item { Spacer(modifier = Modifier.width(12.dp)) }
-    itemsIndexed(songs, key = { _, song -> song.songId.toString() }) { index, song ->
-      SongItem(song, onClick = {
-        musicViewModel.play(song, songs)
-      }, onMenuClick = {
-        selectedSong.value = song
-        menuOffset.value = it
-        isExpandedMenu.value = true
-      })
+    itemsIndexed(songs, key = { _, song -> song.songId.toString() }) { _, song ->
+      SongItemWithCover(
+        modifier = Modifier.animateItem(),
+        song = song,
+        coverSize = 56.dp,
+        onClick = {
+          playBackViewModel.play(song, songs)
+        },
+        onMenuClick = {
+          selectedSong.value = song
+          menuOffset.value = it
+          isExpandedMenu.value = true
+        },
+        onLikeClick = {
+          playBackViewModel.toggleLike(song)
+        },
+        showLike = true,
+      )
     }
 
     item { Spacer(modifier = Modifier.width(50.dp)) }
@@ -180,72 +199,6 @@ fun convertIntOffsetToDpOffset(intOffset: IntOffset): DpOffset {
   }
 }
 
-/// 歌曲列表项
-@Composable
-private fun SongItem(
-  song: Song, onClick: () -> Unit = {}, onMenuClick: (
-    Offset
-  ) -> Unit = {}
-) {
-
-  val painter = rememberAsyncImagePainter(song.getCoverUri())
-
-  val itemCoordinates = remember { mutableStateOf(Offset.Zero) }
-
-  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier
-    .fillMaxWidth()
-    .clickable { onClick() }) {
-    Spacer(modifier = Modifier.width(16.dp))
-    Box(
-      modifier = Modifier
-        .padding(vertical = 8.dp)
-        .width(66.dp)
-        .height(66.dp)
-        .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium),
-      contentAlignment = Alignment.Center
-    ) {
-
-      if (painter.state is AsyncImagePainter.State.Success) {
-        Image(
-          painter = painter, contentDescription = "封面", modifier = Modifier.size(66.dp)
-        )
-      } else {
-        Icon(
-          modifier = Modifier
-            .fillMaxWidth()
-            .scale(1.5f),
-          painter = painterResource(id = R.drawable.ic_dvd),
-          contentDescription = "封面",
-          tint = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
-      }
-    }
-    Spacer(modifier = Modifier.width(16.dp))
-    Column(modifier = Modifier.weight(1f)) {
-      Text(
-        text = song.displayName, maxLines = 1, style = MaterialTheme.typography.bodyMedium.copy(
-          color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.W600
-        )
-      )
-      Text(
-        text = song.artist, style = MaterialTheme.typography.bodySmall, maxLines = 1
-      )
-    }
-
-
-
-    IconButton(modifier = Modifier.onGloballyPositioned {
-      itemCoordinates.value = it.localToWindow(Offset.Zero)
-    }, onClick = {
-      onMenuClick(itemCoordinates.value)
-    }) {
-      Icon(
-        imageVector = Icons.Default.MoreVert, contentDescription = "更多"
-      )
-    }
-    Spacer(modifier = Modifier.width(16.dp))
-  }
-}
 
 @Composable
 private fun SearchButton(navigator: AppComposeNavigator? = null) {
@@ -335,7 +288,7 @@ private fun Tab(isSelected: Boolean, text: String, onClick: () -> Unit) {
 
 @Composable
 private fun PLayListItems(
-  viewModel: MusicViewModel = hiltViewModel(),
+  viewModel: PlayBackViewModel = hiltViewModel(),
   navigator: AppComposeNavigator? = null
 ) {
 
@@ -398,9 +351,14 @@ private fun PLayListItems(
       itemsIndexed(
         allPlayList.value ?: listOf(),
         key = { _, item -> item.playlistId ?: 0 }) { _, playList ->
-        PlaylistItem(playList, onClick = {
-          navigator?.navigate(AppScreens.PlaylistDetail.createRoute(playList.playlistId ?: -1))
-        })
+        PlaylistItem(
+          modifier = Modifier.animateItem(),
+          playlist = playList,
+          showMenu = true,
+          onClickMenu = {},
+          onClick = {
+            navigator?.navigate(AppScreens.PlaylistDetail.createRoute(playList.playlistId ?: -1))
+          })
       }
     }
   }
@@ -440,35 +398,6 @@ private fun AddPlayListItem(onClick: () -> Unit = {}) {
 }
 
 
-@Composable
-private fun PlaylistItem(playlist: Playlist, onClick: () -> Unit = {}) {
-  Row(modifier = Modifier
-    .clickable {
-      onClick()
-    }
-    .padding(horizontal = 16.dp, vertical = 6.dp)
-    .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-    Box(
-      modifier = Modifier
-        .width(50.dp)
-        .height(50.dp)
-        .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium),
-      contentAlignment = Alignment.Center
-    ) {
-      Text(
-        text = (playlist.playlistName.firstOrNull() ?: "A").toString(),
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurface
-      )
-    }
-    Spacer(modifier = Modifier.width(16.dp))
-    Text(
-      text = playlist.playlistName, style = MaterialTheme.typography.bodyMedium.copy(
-        color = MaterialTheme.colorScheme.onSurface,
-      )
-    )
-  }
 
-}
 
 

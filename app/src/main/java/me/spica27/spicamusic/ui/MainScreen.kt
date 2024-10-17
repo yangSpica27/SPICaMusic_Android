@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 
 
+/// 主页
 @Composable
 fun MainScreen(
   modifier: Modifier = Modifier,
@@ -52,7 +53,7 @@ fun MainScreen(
         .fillMaxSize()
         .padding(innerPadding)
     ) {
-
+      // 水平滚动的页面
       HorizontalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize(),
@@ -66,6 +67,7 @@ fun MainScreen(
           2 -> SettingPage()
         }
       }
+      // 底部导航栏
       Box(
         modifier = Modifier.align(Alignment.BottomCenter)
       ) {
@@ -77,6 +79,7 @@ fun MainScreen(
 }
 
 
+// 底部导航栏
 @Composable
 fun BottomNav(pagerState: PagerState) {
   val coroutineScope = rememberCoroutineScope()

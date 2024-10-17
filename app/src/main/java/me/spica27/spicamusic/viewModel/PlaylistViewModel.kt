@@ -8,8 +8,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.dao.PlaylistDao
 import me.spica27.spicamusic.db.entity.PlaylistSongCrossRef
@@ -69,7 +67,7 @@ class PlaylistViewModel @Inject constructor(
     _selectedSongs.value = selectSongsSet.toHashSet()
   }
 
-  private fun clearSelectedSongs() {
+  fun clearSelectedSongs() {
     selectSongsSet.clear()
     _selectedSongs.value = selectSongsSet.toHashSet()
   }

@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,26 +36,26 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import me.spica27.spicamusic.R
-import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
 import me.spica27.spicamusic.utils.formatDurationSecs
 import me.spica27.spicamusic.utils.msToSecs
-import me.spica27.spicamusic.viewModel.MusicViewModel
+import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.widget.PlayingSongItem
 
 
 @Composable
 fun CurrentListPage(
   modifier: Modifier = Modifier,
-  musicViewModel: MusicViewModel = hiltViewModel(),
+  playBackViewModel: PlayBackViewModel = hiltViewModel(),
   navigator: AppComposeNavigator? = null
 ) {
 
-  val isPlaying = musicViewModel.isPlaying.collectAsState(false)
+  val isPlaying = playBackViewModel.isPlaying.collectAsState(false)
 
-  val currentIndex = musicViewModel.playlistCurrentIndex.collectAsState(0)
+  val currentIndex = playBackViewModel.playlistCurrentIndex.collectAsState(0)
 
-  val playList = musicViewModel.playList.collectAsState(emptyList())
+  val playList = playBackViewModel.playList.collectAsState(emptyList())
 
 
   if (playList.value.isNotEmpty()) {
@@ -75,7 +73,7 @@ fun CurrentListPage(
       )
 
 
-      NowPlayIngSong(musicViewModel, navigator)
+      NowPlayIngSong(playBackViewModel, navigator)
       Box(
         modifier = Modifier
           .fillMaxWidth()
@@ -103,7 +101,7 @@ fun CurrentListPage(
           .weight(1f)
           .fillMaxWidth()
       ) {
-        CurrentList(musicViewModel)
+        CurrentList(playBackViewModel)
       }
     }
   } else {
@@ -113,7 +111,7 @@ fun CurrentListPage(
 
 @Composable
 private fun CurrentList(
-  viewModel: MusicViewModel,
+  viewModel: PlayBackViewModel,
 ) {
 
   val currentSong = viewModel.currentSongFlow.collectAsState(null)
@@ -123,7 +121,7 @@ private fun CurrentList(
   LazyColumn {
 
     itemsIndexed(playlist.value, key = { _, song -> song.songId.toString() }) { index, song ->
-      SongItem(isPlaying = currentSong.value?.songId == song.songId, song = song, onClick = {
+      PlayingSongItem(isPlaying = currentSong.value?.songId == song.songId, song = song, onClick = {
         viewModel.play(playlist.value[index], playlist.value)
       })
     }
@@ -134,106 +132,6 @@ private fun CurrentList(
   }
 }
 
-@Composable
-private fun SongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit = { }) {
-  val painter = rememberAsyncImagePainter(song.getCoverUri())
-  Row(Modifier
-    .background(
-      color = if (isPlaying) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
-      else MaterialTheme.colorScheme.surface,
-    )
-    .clickable {
-      onClick()
-    }
-    .padding(vertical = 12.dp, horizontal = 16.dp)
-    .fillMaxWidth()) {
-    // 封面
-    Box(
-      modifier = Modifier
-        .size(48.dp)
-        .fillMaxWidth()
-        .background(
-          color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium
-        ),
-      contentAlignment = Alignment.Center,
-    ) {
-      if (isPlaying) {
-        Box(
-          modifier = Modifier
-            .size(48.dp)
-            .background(
-              color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f),
-              shape = MaterialTheme.shapes.medium
-            ),
-          contentAlignment = Alignment.Center,
-        ) {
-          Text(
-            text = "播放中", style = MaterialTheme.typography.bodySmall.copy(
-              color = MaterialTheme.colorScheme.background
-            )
-          )
-        }
-      } else {
-
-        if (painter.state is AsyncImagePainter.State.Success) {
-          Image(
-            painter = painter, contentDescription = "封面", modifier = Modifier.size(48.dp)
-          )
-        } else {
-          Box(
-            modifier = Modifier
-              .size(48.dp)
-              .background(
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                shape = MaterialTheme.shapes.medium
-              ),
-            contentAlignment = Alignment.Center,
-          ) {
-            Text(
-              text = (song.displayName.firstOrNull() ?: "S").toString(),
-              style = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface
-              )
-            )
-          }
-        }
-      }
-    }
-
-    // 歌曲信息
-    Column(
-      modifier = Modifier
-        .padding(start = 16.dp)
-        .weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-      Text(
-        text = song.displayName,
-        modifier = if (isPlaying) Modifier
-          .fillMaxWidth()
-          .basicMarquee() else Modifier.fillMaxWidth(),
-        fontWeight = androidx.compose.ui.text.font.FontWeight.W600,
-        maxLines = 1
-      )
-      Text(
-        text = song.artist,
-        maxLines = 1,
-        modifier = Modifier.fillMaxWidth(),
-        style = MaterialTheme.typography.bodyMedium.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-      )
-    }
-    // 菜单
-    IconButton(
-      onClick = { },
-      modifier = Modifier.size(48.dp),
-    ) {
-      Icon(
-        imageVector = Icons.Default.MoreVert, contentDescription = "播放", tint = MaterialTheme.colorScheme.onSurface
-      )
-    }
-  }
-}
 
 /// 没有正在播放的音乐时候占位
 @Composable
@@ -254,7 +152,7 @@ private fun EmptyPlaceHolder() {
 }
 
 @Composable
-private fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavigator? = null) {
+private fun NowPlayIngSong(viewModel: PlayBackViewModel, navigator: AppComposeNavigator? = null) {
   val song = viewModel.currentSongFlow.collectAsState(null)
   val positionMsState = viewModel.positionSec.collectAsState(0L)
   val isPlaying = viewModel.isPlaying.collectAsState(false)
@@ -320,7 +218,10 @@ private fun NowPlayIngSong(viewModel: MusicViewModel, navigator: AppComposeNavig
             maxLines = 1
           )
           Text(
-            text = song.value?.artist ?: "--", maxLines = 1, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium.copy(
+            text = song.value?.artist ?: "--",
+            maxLines = 1,
+            modifier = Modifier.fillMaxWidth(),
+            style = MaterialTheme.typography.bodyMedium.copy(
               color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
           )

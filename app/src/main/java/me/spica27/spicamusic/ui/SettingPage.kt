@@ -3,6 +3,7 @@ package me.spica27.spicamusic.ui
 import android.content.Intent
 import android.os.Build
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,10 +36,12 @@ import me.spica27.spicamusic.service.RefreshMusicListService
 import me.spica27.spicamusic.viewModel.SettingViewModel
 
 
+// 设置页面
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun SettingPage() {
 
+  // 权限状态
   val permissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
     rememberMultiplePermissionsState(
       listOf(
@@ -66,7 +69,6 @@ fun SettingPage() {
 
   Box(modifier = Modifier.fillMaxSize()) {
     LazyColumn(contentPadding = PaddingValues(16.dp)) {
-
       item {
         Text(
           text = "设置", style = MaterialTheme.typography.headlineMedium.copy(
@@ -78,12 +80,17 @@ fun SettingPage() {
       item {
         Card {
           Column {
-            TextSettingItem(
-              title = "申请权限", desc = "申请应用正常运行所需要的必要权限",
-              onClick = {
-                permissionState.launchMultiplePermissionRequest()
-              }
-            )
+            AnimatedVisibility(
+              visible = permissionState.shouldShowRationale,
+              modifier = Modifier.padding(16.dp)
+            ) {
+              TextSettingItem(
+                title = "申请权限", desc = "申请应用正常运行所需要的必要权限",
+                onClick = {
+                  permissionState.launchMultiplePermissionRequest()
+                }
+              )
+            }
             TextSettingItem(
               title = "扫描", desc = "使用MediaStore扫描本地音乐",
               onClick = {
@@ -190,6 +197,7 @@ private fun SwitchSettingItem(
 
 }
 
+/// 文字设置项
 @Composable
 private fun TextSettingItem(
   title: String = "设置项",

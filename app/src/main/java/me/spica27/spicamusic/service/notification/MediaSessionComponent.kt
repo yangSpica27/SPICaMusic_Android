@@ -153,7 +153,8 @@ class MediaSessionComponent(
           .target(object : Target {
             override fun onError(error: Drawable?) {
               super.onError(error)
-              val coverBitmap = ContextCompat.getDrawable(context, R.mipmap.default_cover)!!.toBitmap()
+              val coverBitmap =
+                ContextCompat.getDrawable(context, R.mipmap.default_cover)!!.toBitmap()
               coverCache.put("${song.songId}-${song.mediaStoreId}", coverBitmap)
               builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, coverBitmap)
               val metadata = builder.build()

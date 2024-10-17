@@ -13,6 +13,8 @@ import kotlinx.coroutines.delay
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
 
+
+//  Splash Screen
 @Composable
 fun SplashScreen(modifier: Modifier = Modifier, navigator: AppComposeNavigator) {
 

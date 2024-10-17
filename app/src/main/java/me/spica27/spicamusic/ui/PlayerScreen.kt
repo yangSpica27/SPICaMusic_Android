@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
@@ -30,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -40,13 +43,14 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.formatDurationDs
 import me.spica27.spicamusic.utils.formatDurationSecs
 import me.spica27.spicamusic.utils.msToDs
+import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.utils.secsToMs
-import me.spica27.spicamusic.viewModel.MusicViewModel
+import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import timber.log.Timber
 
 @Composable
 fun PlayerScreen(
-  musicViewModel: MusicViewModel = hiltViewModel()
+  playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
   Scaffold(
@@ -57,7 +61,9 @@ fun PlayerScreen(
         .padding(paddingValues)
     ) {
       Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+          .fillMaxSize()
+          .padding(horizontal = 10.dp),
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.Top
       ) {
         AppBar(onSettings = {}, onBack = {})
@@ -80,12 +86,12 @@ fun PlayerScreen(
 }
 
 @Composable
-fun SingInfo(
+private fun SingInfo(
   modifier: Modifier = Modifier,
-  musicViewModel: MusicViewModel = hiltViewModel()
+  playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
-  val song = musicViewModel.currentSongFlow.collectAsState(null)
+  val song = playBackViewModel.currentSongFlow.collectAsState(null)
 
   LaunchedEffect(song) {
     Timber.tag("PlayerScreen").d("Song: $song")
@@ -118,17 +124,18 @@ fun SingInfo(
   }
 }
 
+// 播放控制面板
 @Composable
 private fun PlayerControls(
   modifier: Modifier = Modifier,
-  musicViewModel: MusicViewModel = hiltViewModel()
+  playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
-  val isPlaying = musicViewModel.isPlaying.collectAsState(false)
+  val isPlaying = playBackViewModel.isPlaying.collectAsState(false)
 
-  val song = musicViewModel.currentSongFlow.collectAsState(null)
+  val song = playBackViewModel.currentSongFlow.collectAsState(null)
 
-  val positionSec = musicViewModel.positionSec.collectAsState(0L)
+  val positionSec = playBackViewModel.positionSec.collectAsState(0L)
 
   val isSeeking = remember { mutableStateOf(false) }
 
@@ -138,7 +145,6 @@ private fun PlayerControls(
     if (isSeeking.value) return@LaunchedEffect
     seekValue.floatValue = positionSec.value.secsToMs() * 1f
   }
-
 
   Box(
     modifier = modifier
@@ -156,7 +162,7 @@ private fun PlayerControls(
           isSeeking.value = true
         },
         onValueChangeFinished = {
-          musicViewModel.seekTo(seekValue.floatValue.toLong())
+          playBackViewModel.seekTo(seekValue.floatValue.toLong())
           isSeeking.value = false
         },
         modifier = Modifier.fillMaxWidth()
@@ -164,13 +170,34 @@ private fun PlayerControls(
       // Time
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
+        verticalAlignment = Alignment.CenterVertically
       ) {
         // Current Time
         Text(
+          modifier = Modifier
+            .padding(vertical = 4.dp, horizontal = 8.dp),
           text = positionSec.value.formatDurationSecs(),
           style = MaterialTheme.typography.bodyMedium
         )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // 滑动到的地方
+        AnimatedVisibility(
+          visible = isSeeking.value,
+        ) {
+          Text(
+            modifier = Modifier
+              .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small)
+              .padding(vertical = 4.dp, horizontal = 8.dp),
+            text = seekValue.floatValue.toLong().msToSecs().formatDurationSecs(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer
+          )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
         // Total Time
         Text(
           text = song.value?.duration?.msToDs()?.formatDurationDs() ?: "0:00",
@@ -190,7 +217,7 @@ private fun PlayerControls(
         IconButton(
           modifier = Modifier.size(48.dp),
           onClick = {
-            musicViewModel.togglePlaying()
+            playBackViewModel.togglePlaying()
           }, colors = IconButtonDefaults.iconButtonColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
           )
@@ -214,10 +241,10 @@ private fun PlayerControls(
 @Composable
 private fun Cover(
   modifier: Modifier = Modifier,
-  musicViewModel: MusicViewModel = hiltViewModel()
+  playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
-  val song = musicViewModel.currentSongFlow.collectAsState(null)
+  val song = playBackViewModel.currentSongFlow.collectAsState(null)
 
   val painter = song.value?.getCoverUri()?.let { rememberAsyncImagePainter(it) }
 
@@ -253,11 +280,11 @@ private fun AppBar(
   modifier: Modifier = Modifier,
   onBack: () -> Unit,
   onSettings: () -> Unit,
-  musicViewModel: MusicViewModel = hiltViewModel()
+  playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
-  val isPlaying = musicViewModel.isPlaying.collectAsState(false)
-  val song = musicViewModel.currentSongFlow.collectAsState(null)
+  val isPlaying = playBackViewModel.isPlaying.collectAsState(false)
+  val song = playBackViewModel.currentSongFlow.collectAsState(null)
 
   Row(
     modifier = modifier

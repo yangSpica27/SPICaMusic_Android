@@ -50,6 +50,10 @@ object AudioTool {
       val isMusic =
         cursor.getIntOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.IS_MUSIC))
       if (isMusic != 1) continue
+      val mineType =
+        cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.MIME_TYPE))
+      val isSupportMineType = (mineType == "audio/mpeg" || mineType == "audio/ogg")
+      if (!isSupportMineType) continue
       songs.add(
         Song(
           mediaStoreId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID)),

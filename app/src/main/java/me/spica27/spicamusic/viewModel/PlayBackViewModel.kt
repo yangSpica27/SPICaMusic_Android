@@ -27,7 +27,7 @@ import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
-class MusicViewModel @Inject constructor(
+class PlayBackViewModel @Inject constructor(
   private val songDao: SongDao,
   private val playlistDao: PlaylistDao
 ) : ViewModel(),
@@ -129,6 +129,13 @@ class MusicViewModel @Inject constructor(
 
   fun playNext() {
     PlaybackStateManager.getInstance().playNext()
+  }
+
+  // 喜欢/不喜欢歌曲
+  fun toggleLike(song: Song) {
+    viewModelScope.launch {
+      songDao.toggleLike(song.songId ?: -1)
+    }
   }
 
   fun play(song: Song, list: List<Song>) {
