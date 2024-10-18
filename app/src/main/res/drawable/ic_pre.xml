@@ -2,20 +2,9 @@
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:width="24dp"
   android:height="24dp"
-  android:viewportWidth="48"
-  android:viewportHeight="48">
+  android:viewportWidth="960"
+  android:viewportHeight="960">
   <path
-    android:fillColor="#00000000"
-    android:pathData="M34,36L22,24L34,12"
-    android:strokeWidth="4"
-    android:strokeColor="#333"
-    android:strokeLineCap="round"
-    android:strokeLineJoin="round" />
-  <path
-    android:fillColor="#00000000"
-    android:pathData="M14,12V36"
-    android:strokeWidth="4"
-    android:strokeColor="#333"
-    android:strokeLineCap="round"
-    android:strokeLineJoin="round" />
+    android:fillColor="#5f6368"
+    android:pathData="M220,720v-480h80v480h-80ZM740,720L380,480l360,-240v480Z" />
 </vector>

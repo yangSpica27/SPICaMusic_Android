@@ -109,6 +109,7 @@ class PlaybackStateManager {
     queue.reloadNewList(song, queue.getPlayList())
     player?.loadSong(song, true)
     updateListenersNewList()
+    updateListenersIndexMove()
   }
 
 

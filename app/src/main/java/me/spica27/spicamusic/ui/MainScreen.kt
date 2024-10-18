@@ -62,7 +62,7 @@ fun MainScreen(
       ) { page ->
         when (page) {
           0 -> HomePage(navigator = navigator)
-          1 -> CurrentListPage(navigator = navigator)
+          1 -> NowPlayingPage(navigator = navigator)
           2 -> SettingPage()
         }
       }

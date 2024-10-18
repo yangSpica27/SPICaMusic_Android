@@ -1,19 +1,12 @@
 package me.spica27.spicamusic.viewModel
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.dao.PlaylistDao
@@ -43,20 +36,23 @@ class PlayBackViewModel @Inject constructor(
   // 所有歌单
   val allPlayList: Flow<List<Playlist>> = playlistDao.getAllPlaylist()
 
+
   // 播放列表
-  private val _playList = MutableStateFlow(listOf<Song>())
+  private val _nowPlayingList = MutableStateFlow(listOf<Song>())
+
   val playList: Flow<List<Song>>
-    get() = _playList
+    get() = _nowPlayingList
+
+  // 当前歌单大小大小
+  val nowPlayingListSize: Flow<Int> = playList.map { it.size }
 
 
   // 当前播放的乐曲
-  private val _song = MutableStateFlow<Song?>(null)
+  private val _playingSong = MutableStateFlow<Song?>(null)
 
 
   val currentSongFlow: Flow<Song?>
-    get() = _song
-
-
+    get() = _playingSong
 
 
   // 是否正在播放
@@ -92,8 +88,8 @@ class PlayBackViewModel @Inject constructor(
     Timber.tag("MusicViewModel").d("init")
     PlaybackStateManager.getInstance().addListener(this)
     viewModelScope.launch(Dispatchers.Default) {
-      _song.emit(PlaybackStateManager.getInstance().getCurrentSong())
-      _playList.emit(PlaybackStateManager.getInstance().getCurrentList())
+      _playingSong.emit(PlaybackStateManager.getInstance().getCurrentSong())
+      _nowPlayingList.emit(PlaybackStateManager.getInstance().getCurrentList())
       _isPlaying.emit(PlaybackStateManager.getInstance().playerState.isPlaying)
       _playlistCurrentIndex.emit(PlaybackStateManager.getInstance().getCurrentSongIndex())
     }
@@ -106,7 +102,8 @@ class PlayBackViewModel @Inject constructor(
 
 
   fun togglePlaying() {
-    PlaybackStateManager.getInstance().setPlaying(!PlaybackStateManager.getInstance().playerState.isPlaying)
+    PlaybackStateManager.getInstance()
+      .setPlaying(!PlaybackStateManager.getInstance().playerState.isPlaying)
   }
 
   fun playPre() {
@@ -127,8 +124,8 @@ class PlayBackViewModel @Inject constructor(
   fun play(song: Song, list: List<Song>) {
     viewModelScope.launch(Dispatchers.Default) {
       PlaybackStateManager.getInstance().playAsync(song, list)
-      _song.emit(song)
-      _playList.emit(list)
+      _playingSong.emit(song)
+      _nowPlayingList.emit(list)
     }
 
   }
@@ -136,7 +133,7 @@ class PlayBackViewModel @Inject constructor(
   fun play(song: Song) {
     viewModelScope.launch(Dispatchers.Default) {
       PlaybackStateManager.getInstance().playAsync(song)
-      _song.emit(song)
+      _playingSong.emit(song)
     }
   }
 
@@ -148,7 +145,7 @@ class PlayBackViewModel @Inject constructor(
   override fun onIndexMoved(queue: Queue) {
     super.onIndexMoved(queue)
     viewModelScope.launch {
-      _song.emit(queue.currentSong())
+      _playingSong.emit(queue.currentSong())
       _playlistCurrentIndex.emit(queue.getIndex())
     }
   }
@@ -156,10 +153,9 @@ class PlayBackViewModel @Inject constructor(
   override fun onNewListLoad(queue: Queue) {
     super.onNewListLoad(queue)
     viewModelScope.launch {
-      _playList.emit(queue.getPlayList())
-      _song.emit(queue.currentSong())
+      _nowPlayingList.emit(queue.getPlayList())
+      _playingSong.emit(queue.currentSong())
     }
-
   }
 
   override fun onPositionChanged(positionMs: Long) {

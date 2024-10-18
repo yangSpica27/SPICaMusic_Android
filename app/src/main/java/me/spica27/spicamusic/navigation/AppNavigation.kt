@@ -7,7 +7,6 @@ import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
 import me.spica27.spicamusic.ui.AddSongScreen
 import me.spica27.spicamusic.ui.MainScreen
-import me.spica27.spicamusic.ui.PlayerScreen
 import me.spica27.spicamusic.ui.PlaylistDetailScreen
 import me.spica27.spicamusic.ui.SearchAllScreen
 import me.spica27.spicamusic.ui.SplashScreen
@@ -32,13 +31,13 @@ fun NavGraphBuilder.appHomeNavigation(
     )
   }
 
-  composable(
-    route = AppScreens.Player.name,
-    arguments = AppScreens.Player.navArguments,
-
-    ) {
-    PlayerScreen()
-  }
+//  composable(
+//    route = AppScreens.Player.name,
+//    arguments = AppScreens.Player.navArguments,
+//
+//    ) {
+//    PlayerScreen()
+//  }
 
   composable(
     route = AppScreens.PlaylistDetail.name,

@@ -82,9 +82,9 @@ private fun SongList(
   musicViewModel: MusicSearchViewModel = hiltViewModel()
 ) {
 
-  val songs = musicViewModel.songFlow.collectAsState(emptyList())
+  val dataState = musicViewModel.songFlow.collectAsState(emptyList())
 
-  if (songs.value.isEmpty()) {
+  if (dataState.value.isEmpty()) {
     Box(
       modifier = modifier,
       contentAlignment = androidx.compose.ui.Alignment.Center
@@ -95,7 +95,8 @@ private fun SongList(
   } else {
     // 歌曲列表
     LazyColumn(modifier = modifier) {
-      itemsIndexed(songs.value,
+      itemsIndexed(
+        dataState.value,
         key = { _, song -> song.songId ?: -1 }
       ) { _, song ->
         SongItemWithCover(
@@ -173,14 +174,14 @@ private fun FiltersBar(
   viewModel: MusicSearchViewModel = hiltViewModel()
 ) {
 
-  val filterNoLike = viewModel.filterNoLike.collectAsState(false)
+  val filterNoLikeState = viewModel.filterNoLike.collectAsState(false)
 
-  val filterShort = viewModel.filterShort.collectAsState(false)
+  val filterShortState = viewModel.filterShort.collectAsState(false)
 
   Row(modifier = modifier) {
     FilterItem(
       title = "过滤非喜欢的",
-      checked = filterNoLike.value,
+      checked = filterNoLikeState.value,
       onChange = {
         viewModel.toggleFilterNoLike()
       },
@@ -188,7 +189,7 @@ private fun FiltersBar(
     )
     FilterItem(
       title = "过滤过短的",
-      checked = filterShort.value,
+      checked = filterShortState.value,
       onChange = {
         viewModel.toggleFilterShort()
       },

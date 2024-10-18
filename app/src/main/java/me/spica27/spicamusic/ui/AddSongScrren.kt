@@ -74,7 +74,7 @@ fun AddSongScreen(
       // 歌曲列表
 
 
-      val songs =
+      val listDataState =
         combine(
           viewModel.getAllSongsNotInPlaylist(),
           viewModel.selectedSongsIds
@@ -86,11 +86,11 @@ fun AddSongScreen(
           .collectAsState(initial = emptyList())
 
 
-      if (songs.value.isEmpty()) {
+      if (listDataState.value.isEmpty()) {
         Text("没有更多歌曲了", modifier = Modifier.align(Alignment.Center))
       } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-          itemsIndexed(songs.value, key = { _, item ->
+          itemsIndexed(listDataState.value, key = { _, item ->
             item.first.songId.toString()
           }) { _, song ->
             // 歌曲条目

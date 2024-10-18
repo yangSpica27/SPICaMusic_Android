@@ -57,11 +57,11 @@ fun PlaylistDetailScreen(
 
 
   Scaffold(topBar = {
-    val playlist = playlistViewModel.playlistFlow.collectAsState(null)
+    val playlistState = playlistViewModel.playlistFlow.collectAsState(null)
     // 顶部栏
     TopAppBar(title = {
       // 标题
-      playlist.value?.let { Text(it.playlistName) }
+      playlistState.value?.let { Text(it.playlistName) }
     }, actions = {
       // 右侧操作按钮
 
@@ -134,10 +134,10 @@ private fun PlaylistDetailList(
 ) {
 
 
-  val playlist =
+  val playlistState =
     playlistViewModel.songInfoWithSongsFlow.map { it?.songs }.collectAsState(emptyList())
 
-  val isSelectMode = playlistViewModel.isSelectMode.collectAsState(false)
+  val isSelectModeState = playlistViewModel.isSelectMode.collectAsState(false)
 
   val selectedModePlaylist = combine(
     playlistViewModel.songsFlow,
@@ -149,7 +149,7 @@ private fun PlaylistDetailList(
   }.collectAsState(emptyList())
 
 
-  if (playlist.value == null) {
+  if (playlistState.value == null) {
     // 加载中
     Box(
       modifier = Modifier.fillMaxSize(),
@@ -158,7 +158,7 @@ private fun PlaylistDetailList(
       CircularProgressIndicator()
     }
   } else
-    if (playlist.value?.isEmpty() == true) {
+    if (playlistState.value?.isEmpty() == true) {
       // 空内容
       EmptyContent(
         modifier = Modifier.fillMaxSize(),
@@ -167,10 +167,10 @@ private fun PlaylistDetailList(
     } else {
       // 歌单列表
       Box(modifier = Modifier.fillMaxSize()) {
-        if (isSelectMode.value) {
+        if (isSelectModeState.value) {
           SelectedList(playlistViewModel = playlistViewModel, songs = selectedModePlaylist)
         } else {
-          NormalList(songListState = playlist)
+          NormalList(songListState = playlistState)
         }
       }
     }
@@ -300,13 +300,13 @@ private fun Toolbar(
   modifier: Modifier = Modifier, playlistViewModel: PlaylistViewModel
 ) {
 
-  val isSelectMode = playlistViewModel.isSelectMode.collectAsState(false)
+  val isSelectModeState = playlistViewModel.isSelectMode.collectAsState(false)
 
   Row(modifier = modifier) {
     // 清楚所有选中按钮
 
     AnimatedVisibility(
-      visible = isSelectMode.value,
+      visible = isSelectModeState.value,
       enter = fadeIn(),
       exit = fadeOut()
     ) {
@@ -322,14 +322,14 @@ private fun Toolbar(
       playlistViewModel.toggleSelectMode()
     }) {
       Icon(
-        Icons.AutoMirrored.Outlined.List, tint = isSelectMode.value.let {
+        Icons.AutoMirrored.Outlined.List, tint = isSelectModeState.value.let {
           if (it) MaterialTheme.colorScheme.primary
           else MaterialTheme.colorScheme.onSurface
         }, contentDescription = "多选模式开关"
       )
     }
     AnimatedVisibility(
-      isSelectMode.value
+      isSelectModeState.value
     ) {
       // 多选模式下的额外按钮
       Row {

@@ -20,10 +20,10 @@ sealed class AppScreens(
     route = "main"
   )
 
-  // player screen
-  data object Player : AppScreens(
-    route = "player",
-  )
+//  // player screen
+//  data object Player : AppScreens(
+//    route = "player",
+//  )
 
 
   // search all screen

@@ -210,15 +210,15 @@ private fun SearchButton(navigator: AppComposeNavigator? = null) {
       .clickable {
         navigator?.navigate(AppScreens.SearchAll.route)
       }
-      .padding(16.dp),
+      .padding(horizontal = 16.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     Text(
       modifier = Modifier.weight(1f),
       text = "从本地乐库中进行搜索",
       style = MaterialTheme.typography.bodyLarge.copy(
-        color = MaterialTheme.colorScheme.onSecondaryContainer,
-        fontWeight = FontWeight.Normal,
+        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
+        fontWeight = FontWeight.W600,
       )
     )
     Box(
@@ -292,14 +292,14 @@ private fun PLayListItems(
   navigator: AppComposeNavigator? = null
 ) {
 
-  val showAddPlaylistDialog = remember { mutableStateOf(false) }
+  val showAddPlaylistDialogState = remember { mutableStateOf(false) }
 
-  val allPlayList = viewModel.allPlayList.collectAsState(null)
+  val dataState = viewModel.allPlayList.collectAsState(null)
 
-  if (showAddPlaylistDialog.value) {
+  if (showAddPlaylistDialogState.value) {
     val playlistNameState = remember { mutableStateOf("") }
     AlertDialog(
-      onDismissRequest = { showAddPlaylistDialog.value = false },
+      onDismissRequest = { showAddPlaylistDialogState.value = false },
       title = { Text("创建歌单") },
       text = {
         TextField(
@@ -313,7 +313,7 @@ private fun PLayListItems(
       confirmButton = {
         IconButton(onClick = {
           viewModel.addPlayList(playlistNameState.value)
-          showAddPlaylistDialog.value = false
+          showAddPlaylistDialogState.value = false
         }) {
           Text(
             "确定",
@@ -323,7 +323,7 @@ private fun PLayListItems(
         }
       },
       dismissButton = {
-        IconButton(onClick = { showAddPlaylistDialog.value = false }) {
+        IconButton(onClick = { showAddPlaylistDialogState.value = false }) {
           Text(
             "取消",
             color = MaterialTheme.colorScheme.onSurface,
@@ -333,7 +333,7 @@ private fun PLayListItems(
       })
   }
 
-  if (allPlayList.value == null) {
+  if (dataState.value == null) {
     return Box(
       modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
@@ -345,11 +345,11 @@ private fun PLayListItems(
     ) { // 歌单列表
       item {
         AddPlayListItem(onClick = {
-          showAddPlaylistDialog.value = true
+          showAddPlaylistDialogState.value = true
         })
       }
       itemsIndexed(
-        allPlayList.value ?: listOf(),
+        dataState.value ?: listOf(),
         key = { _, item -> item.playlistId ?: 0 }) { _, playList ->
         PlaylistItem(
           modifier = Modifier.animateItem(),

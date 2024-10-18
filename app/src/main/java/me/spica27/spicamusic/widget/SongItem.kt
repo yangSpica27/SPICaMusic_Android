@@ -132,7 +132,7 @@ fun SongItemWithCover(
         onLikeClick()
       }) {
         Icon(
-          tint = if (song.like) Color.Red else
+          tint = if (song.like) Color(0xFFF44336) else
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
           imageVector = if (song.like) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
           contentDescription = "更多"
@@ -157,32 +157,39 @@ fun SongItemWithCover(
 }
 
 @Composable
-fun PlayingSongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit = { }) {
+fun PlayingSongItem(
+  modifier: Modifier = Modifier,
+  showRemove: Boolean = false,
+  onRemoveClick: () -> Unit = { },
+  isPlaying: Boolean = false,
+  song: Song, onClick: () -> Unit = { }
+) {
 
   val coverPainter = rememberAsyncImagePainter(song.getCoverUri().toCoilUri())
   val coverPainterState = coverPainter.state.collectAsState()
 
   val borderColor = MaterialTheme.colorScheme.tertiary
-  Row(Modifier
-    .background(
-      color = if (isPlaying) MaterialTheme.colorScheme.surfaceContainer
-      else MaterialTheme.colorScheme.surface,
-    )
-    .drawBehind {
-      if (isPlaying) {
-        drawLine(
-          color = borderColor,
-          start = Offset(0f, 0f),
-          end = Offset(0f, size.height),
-          strokeWidth = 10.dp.toPx(),
-        )
+  Row(
+    modifier = modifier
+      .background(
+        color = if (isPlaying) MaterialTheme.colorScheme.surfaceContainer
+        else MaterialTheme.colorScheme.surface,
+      )
+      .drawBehind {
+        if (isPlaying) {
+          drawLine(
+            color = borderColor,
+            start = Offset(0f, 0f),
+            end = Offset(0f, size.height),
+            strokeWidth = 10.dp.toPx(),
+          )
+        }
       }
-    }
-    .clickable {
-      onClick()
-    }
-    .padding(vertical = 12.dp, horizontal = 16.dp)
-    .fillMaxWidth())
+      .clickable {
+        onClick()
+      }
+      .padding(vertical = 12.dp, horizontal = 16.dp)
+      .fillMaxWidth())
   {
     // 封面
     Box(
@@ -256,16 +263,20 @@ fun PlayingSongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit 
         )
       )
     }
-    // 菜单
-    IconButton(
-      onClick = { },
-      modifier = Modifier.size(48.dp),
-    ) {
-      Icon(
-        imageVector = Icons.Default.MoreVert,
-        contentDescription = "播放",
-        tint = MaterialTheme.colorScheme.onSurface
-      )
+
+    if (showRemove) {
+      IconButton(
+        onClick = {
+          onRemoveClick()
+        },
+        modifier = Modifier.size(48.dp),
+      ) {
+        Icon(
+          painter = painterResource(id = R.drawable.ic_remove),
+          contentDescription = "delete from list",
+          tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+        )
+      }
     }
   }
 }
