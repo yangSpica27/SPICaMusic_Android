@@ -14,6 +14,7 @@ import android.os.Handler
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.annotation.RequiresApi
+import androidx.core.app.ServiceCompat
 import androidx.media.MediaBrowserServiceCompat
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.DefaultRenderersFactory
@@ -31,6 +32,11 @@ import com.google.android.exoplayer2.audio.MediaCodecAudioRenderer
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
 import com.google.android.exoplayer2.mediacodec.MediaCodecSelector
 import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import me.spica.music.player.IPlayer
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
@@ -57,6 +63,8 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
 
   private lateinit var mediaSessionComponent: MediaSessionComponent
 
+  private val serviceJob = Job()
+  private val positionScope = CoroutineScope(serviceJob + Dispatchers.Main)
 
   private val systemReceiver = PlaybackReceiver()
 
@@ -144,6 +152,14 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
         addAction(ACTION_EXIT)
       }, RECEIVER_NOT_EXPORTED
     )
+
+    positionScope.launch {
+      while (true) {
+        // 每秒同步一次播放进度
+        PlaybackStateManager.getInstance().synchronizePosition(exoPlayer.currentPosition)
+        delay(1000L)
+      }
+    }
   }
 
 
@@ -154,14 +170,17 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     return START_NOT_STICKY
   }
 
+
   override fun onPositionDiscontinuity(
     oldPosition: Player.PositionInfo,
     newPosition: Player.PositionInfo,
     reason: Int
   ) {
-    super.onPositionDiscontinuity(oldPosition, newPosition, reason)
-    mediaSessionComponent.onPositionDiscontinuity()
+    if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+      PlaybackStateManager.getInstance().synchronizePosition(exoPlayer.currentPosition)
+    }
   }
+
 
   override fun onEvents(player: Player, events: Player.Events) {
     super.onEvents(player, events)
@@ -170,11 +189,9 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
       hasPlayed = true
     }
 
-
     if (events.containsAny(
         Player.EVENT_PLAY_WHEN_READY_CHANGED,
         Player.EVENT_IS_PLAYING_CHANGED,
-        Player.EVENT_POSITION_DISCONTINUITY
       )
     ) {
       // 控制器同步状态
@@ -242,6 +259,8 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   override fun onDestroy() {
     super.onDestroy()
     // 解除绑定
+    serviceJob.cancel()
+    ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
     PlaybackStateManager.getInstance().unRegisterPlayer()
     exoPlayer.release()
     foregroundManager.release()

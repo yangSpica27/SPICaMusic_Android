@@ -66,7 +66,6 @@ class PlayBackViewModel @Inject constructor(
   // 当前的进度
   private val _positionSec = flow {
     while (true) {
-      PlaybackStateManager.getInstance().synchronizeState()
       emit(PlaybackStateManager.getInstance().playerState.currentPositionMs.msToSecs())
       delay(1000)
     }

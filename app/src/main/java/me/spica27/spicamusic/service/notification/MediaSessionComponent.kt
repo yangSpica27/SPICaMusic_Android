@@ -121,10 +121,6 @@ class MediaSessionComponent(
     context.sendBroadcast(Intent(MusicService.ACTION_EXIT))
   }
 
-  fun onPositionDiscontinuity(
-  ) {
-    updatePlaybackState()
-  }
 
 
   private fun updateMediaMetadata(song: Song?) {

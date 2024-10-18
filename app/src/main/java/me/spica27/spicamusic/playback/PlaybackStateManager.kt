@@ -138,12 +138,29 @@ class PlaybackStateManager {
 
   //
   fun seekTo(positionMs: Long) {
-    player?.seekTo(positionMs)
+    synchronized(this) {
+      player?.seekTo(positionMs)
+      playerState = IPlayer.State(playerState.isPlaying, positionMs)
+      updatePositionChanged()
+    }
   }
 
 
   fun setPlaying(isPlaying: Boolean) {
-    player?.setPlaying(isPlaying)
+    synchronized(this) {
+      player?.setPlaying(isPlaying)
+    }
+  }
+
+
+  fun synchronizePosition(positionMs: Long) {
+    synchronized(this) {
+      val maxDuration = queue.currentSong()?.duration ?: -1
+      if (positionMs <= maxDuration) {
+        playerState = IPlayer.State(playerState.isPlaying, positionMs)
+        updatePositionChanged()
+      }
+    }
   }
 
   @Synchronized
@@ -176,6 +193,12 @@ class PlaybackStateManager {
     }
   }
 
+  private fun updatePositionChanged() {
+    listeners.forEach {
+      it.onPositionChanged(playerState.currentPositionMs)
+    }
+  }
+
 
   interface Listener {
     /**
@@ -193,6 +216,12 @@ class PlaybackStateManager {
      * 状态发生变化
      */
     fun onStateChanged(isPlaying: Boolean) {}
+
+
+    /**
+     * 播放位置发生变化
+     */
+    fun onPositionChanged(positionMs: Long) {}
 
     /**
      * 循环方式发生变化
