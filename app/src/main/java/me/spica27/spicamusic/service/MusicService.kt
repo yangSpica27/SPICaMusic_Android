@@ -41,7 +41,8 @@ private const val MY_MEDIA_ROOT_ID = "media_root_id"
 private const val MY_EMPTY_MEDIA_ROOT_ID = "empty_root_id"
 
 
-class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer, MediaSessionComponent.Listener {
+class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
+  MediaSessionComponent.Listener {
 
   private var mediaSession: MediaSessionCompat? = null
 
@@ -153,6 +154,15 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer, Medi
     return START_NOT_STICKY
   }
 
+  override fun onPositionDiscontinuity(
+    oldPosition: Player.PositionInfo,
+    newPosition: Player.PositionInfo,
+    reason: Int
+  ) {
+    super.onPositionDiscontinuity(oldPosition, newPosition, reason)
+    mediaSessionComponent.onPositionDiscontinuity()
+  }
+
   override fun onEvents(player: Player, events: Player.Events) {
     super.onEvents(player, events)
     if (events.contains(Player.EVENT_PLAY_WHEN_READY_CHANGED) && player.playWhenReady) {
@@ -170,6 +180,10 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer, Medi
       // 控制器同步状态
       PlaybackStateManager.getInstance().synchronizeState()
     }
+  }
+
+  override fun onIsPlayingChanged(isPlaying: Boolean) {
+    super.onIsPlayingChanged(isPlaying)
   }
 
   override fun onPlayerError(error: PlaybackException) {
@@ -210,7 +224,10 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer, Medi
   /**
    * 客户端连接后，可以通过重复调用 MediaBrowserCompat.subscribe() 来遍历内容层次结构，
    */
-  override fun onLoadChildren(parentId: String, result: Result<MutableList<MediaBrowserCompat.MediaItem>>) {
+  override fun onLoadChildren(
+    parentId: String,
+    result: Result<MutableList<MediaBrowserCompat.MediaItem>>
+  ) {
     //  对于不允许连接的 客户端返回空
     if (MY_EMPTY_MEDIA_ROOT_ID == parentId) {
       result.sendResult(null)
@@ -302,7 +319,8 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer, Medi
         // 当音频输出切回到内置扬声器时的广播（自动暂停）
         AudioManager.ACTION_AUDIO_BECOMING_NOISY -> pauseFromHeadsetPlug()
         ACTION_PLAY_PAUSE ->
-          PlaybackStateManager.getInstance().setPlaying(!PlaybackStateManager.getInstance().playerState.isPlaying)
+          PlaybackStateManager.getInstance()
+            .setPlaying(!PlaybackStateManager.getInstance().playerState.isPlaying)
 
         ACTION_SKIP_PREV -> PlaybackStateManager.getInstance().playPre()
         ACTION_SKIP_NEXT -> PlaybackStateManager.getInstance().playNext()

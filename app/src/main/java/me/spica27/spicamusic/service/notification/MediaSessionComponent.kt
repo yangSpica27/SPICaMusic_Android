@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.SystemClock
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -108,7 +109,6 @@ class MediaSessionComponent(
 
   override fun onSeekTo(position: Long) {
     playbackManager.seekTo(position)
-    updatePlaybackState()
   }
 
   override fun onCustomAction(action: String?, extras: Bundle?) {
@@ -119,6 +119,11 @@ class MediaSessionComponent(
 
   override fun onStop() {
     context.sendBroadcast(Intent(MusicService.ACTION_EXIT))
+  }
+
+  fun onPositionDiscontinuity(
+  ) {
+    updatePlaybackState()
   }
 
 
@@ -189,7 +194,8 @@ class MediaSessionComponent(
         if (playbackManager.playerState.isPlaying) PlaybackStateCompat.STATE_PLAYING
         else PlaybackStateCompat.STATE_PAUSED,
         playbackManager.playerState.currentPositionMs,
-        1f
+        1.0f,
+        SystemClock.elapsedRealtime()
       )
     mediaSession.setPlaybackState(builder.build())
   }

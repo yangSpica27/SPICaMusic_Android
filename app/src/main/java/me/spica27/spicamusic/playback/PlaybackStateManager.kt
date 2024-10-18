@@ -17,6 +17,7 @@ class PlaybackStateManager {
   var playerState = IPlayer.State.from(isPlaying = false, isAdvancing = false, 0)
     private set
 
+  private var repeatMode = RepeatMode.ALL
 
   val fftAudioProcessor = FFTAudioProcessor()
 
@@ -115,6 +116,9 @@ class PlaybackStateManager {
   fun playNext() {
     if (queue.playNextSong()) {
       player?.loadSong(queue.currentSong(), true)
+    } else if (repeatMode == RepeatMode.ALL && queue.getPlayList().isNotEmpty()) {
+      queue.reloadNewList(queue.getPlayList().first(), queue.getPlayList())
+      player?.loadSong(queue.currentSong(), true)
     }
     updateListenersIndexMove()
   }
@@ -122,8 +126,12 @@ class PlaybackStateManager {
 
   // 上一曲
   fun playPre() {
-    queue.playPreSong()
-    player?.loadSong(queue.currentSong(), true)
+    if (queue.playPreSong()) {
+      player?.loadSong(queue.currentSong(), true)
+    } else if (repeatMode == RepeatMode.ALL && queue.getPlayList().isNotEmpty()) {
+      queue.reloadNewList(queue.getPlayList().last(), queue.getPlayList())
+      player?.loadSong(queue.currentSong(), true)
+    }
     updateListenersIndexMove()
   }
 

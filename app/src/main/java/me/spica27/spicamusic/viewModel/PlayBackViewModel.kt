@@ -56,15 +56,6 @@ class PlayBackViewModel @Inject constructor(
     get() = _song
 
 
-  @OptIn(ExperimentalCoroutinesApi::class)
-  val likeFlow: Flow<Boolean>
-    get() = _song.filterNotNull()
-      .flatMapLatest {
-        songDao.getSongIsLikeFlowWithId(it.songId ?: 0)
-      }
-      .map { it == 1 }
-      .distinctUntilChanged()
-      .flowOn(Dispatchers.IO)
 
 
   // 是否正在播放
