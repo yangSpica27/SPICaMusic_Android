@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,13 +33,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
+import coil3.toCoilUri
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.formatDurationDs
 import me.spica27.spicamusic.utils.formatDurationSecs
@@ -141,7 +142,7 @@ private fun PlayerControls(
 
   val seekValue = remember { mutableFloatStateOf(0f) }
 
-  LaunchedEffect(positionSec) {
+  LaunchedEffect(positionSec.value) {
     if (isSeeking.value) return@LaunchedEffect
     seekValue.floatValue = positionSec.value.secsToMs() * 1f
   }
@@ -246,10 +247,28 @@ private fun Cover(
 
   val song = playBackViewModel.currentSongFlow.collectAsState(null)
 
-  val painter = song.value?.getCoverUri()?.let { rememberAsyncImagePainter(it) }
+  val painter = rememberAsyncImagePainter(song.value?.getCoverUri()?.toCoilUri())
+
+
+  val painterState = painter.state.collectAsState()
+
 
   Box(
     modifier = modifier
+      .clickable {
+        Timber
+          .tag("cover Uri")
+          .e("Cover Uri: ${song.value?.getCoverUri()}")
+        Timber
+          .tag("cover Uri")
+          .e(
+            "Cover Uri: ${
+              song.value
+                ?.getCoverUri()
+                ?.toCoilUri()
+            }"
+          )
+      }
       .fillMaxWidth()
       .padding(16.dp)
       .background(
@@ -259,10 +278,17 @@ private fun Cover(
     contentAlignment = Alignment.Center
   ) {
     // Cover Image
-    if (painter?.state is AsyncImagePainter.State.Success) {
+    if (painterState.value is AsyncImagePainter.State.Success) {
       Image(
         modifier = Modifier.fillMaxSize(),
         painter = painter, contentDescription = "封面",
+      )
+    } else if (painterState.value is AsyncImagePainter.State.Error) {
+      Image(
+        modifier = Modifier.fillMaxSize(),
+        painter = painterResource(R.mipmap.default_cover),
+        contentDescription = "封面",
+        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
       )
     } else {
       Image(

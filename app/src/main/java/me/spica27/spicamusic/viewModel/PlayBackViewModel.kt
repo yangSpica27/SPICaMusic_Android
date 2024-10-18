@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.viewModel
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -64,15 +65,10 @@ class PlayBackViewModel @Inject constructor(
     get() = _isPlaying
 
   // 当前的进度
-  private val _positionSec = flow {
-    while (true) {
-      emit(PlaybackStateManager.getInstance().playerState.currentPositionMs.msToSecs())
-      delay(1000)
-    }
-  }
+  private val _positionSec = MutableStateFlow(0L)
 
   val positionSec: Flow<Long>
-    get() = _positionSec.distinctUntilChanged()
+    get() = _positionSec
 
   private val _playlistCurrentIndex = MutableStateFlow(0)
 
@@ -164,6 +160,11 @@ class PlayBackViewModel @Inject constructor(
       _song.emit(queue.currentSong())
     }
 
+  }
+
+  override fun onPositionChanged(positionMs: Long) {
+    super.onPositionChanged(positionMs)
+    _positionSec.value = positionMs.msToSecs()
   }
 
   override fun onStateChanged(isPlaying: Boolean) {

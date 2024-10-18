@@ -3,7 +3,6 @@ package me.spica27.spicamusic.service.notification
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.SystemClock
 import android.support.v4.media.MediaMetadataCompat
@@ -12,11 +11,12 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.collection.LruCache
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.net.toFile
 import androidx.media.session.MediaButtonReceiver
-import coil.ImageLoader
-import coil.request.ImageRequest
-import coil.size.Size
-import coil.target.Target
+import coil3.ImageLoader
+import coil3.request.ImageRequest
+import coil3.toBitmap
+import coil3.toCoilUri
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
@@ -122,7 +122,6 @@ class MediaSessionComponent(
   }
 
 
-
   private fun updateMediaMetadata(song: Song?) {
     if (song == null) {
       mediaSession.setMetadata(emptyMetadata)
@@ -148,12 +147,19 @@ class MediaSessionComponent(
       if (cache != null) {
         builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, cache)
       } else {
+
         val reqBitmap = ImageRequest.Builder(context)
-          .data(song.getCoverUri())
-          .size(Size.ORIGINAL)
-          .target(object : Target {
-            override fun onError(error: Drawable?) {
-              super.onError(error)
+          .data(song.getCoverUri().toCoilUri())
+          .size(100)
+          .target(
+            onSuccess = { result ->
+              val coverBitmap = result.toBitmap()
+              coverCache.put("${song.songId}-${song.mediaStoreId}", coverBitmap)
+              builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, coverBitmap)
+              val metadata = builder.build()
+              mediaSession.setMetadata(metadata)
+            },
+            onError = {
               val coverBitmap =
                 ContextCompat.getDrawable(context, R.mipmap.default_cover)!!.toBitmap()
               coverCache.put("${song.songId}-${song.mediaStoreId}", coverBitmap)
@@ -161,16 +167,9 @@ class MediaSessionComponent(
               val metadata = builder.build()
               mediaSession.setMetadata(metadata)
             }
+          )
+          .build()
 
-            override fun onSuccess(result: Drawable) {
-              super.onSuccess(result)
-              val coverBitmap = result.toBitmap()
-              coverCache.put("${song.songId}-${song.mediaStoreId}", coverBitmap)
-              builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, coverBitmap)
-              val metadata = builder.build()
-              mediaSession.setMetadata(metadata)
-            }
-          }).build()
 
         ImageLoader(context).enqueue(reqBitmap)
       }

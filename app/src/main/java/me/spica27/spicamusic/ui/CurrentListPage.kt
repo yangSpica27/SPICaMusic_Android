@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,8 +34,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImagePainter
-import coil.compose.rememberAsyncImagePainter
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
+import coil3.toCoilUri
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
@@ -42,6 +44,7 @@ import me.spica27.spicamusic.utils.formatDurationSecs
 import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.PlayingSongItem
+import timber.log.Timber
 
 
 @Composable
@@ -156,7 +159,12 @@ private fun NowPlayIngSong(viewModel: PlayBackViewModel, navigator: AppComposeNa
   val song = viewModel.currentSongFlow.collectAsState(null)
   val positionMsState = viewModel.positionSec.collectAsState(0L)
   val isPlaying = viewModel.isPlaying.collectAsState(false)
-  val painter = rememberAsyncImagePainter(song.value?.getCoverUri())
+
+  val coverPainter = rememberAsyncImagePainter(song.value?.getCoverUri()?.toCoilUri())
+  val coverPainterState = coverPainter.state.collectAsState()
+
+
+
   Box(
     modifier = Modifier.fillMaxWidth()
   ) {
@@ -177,9 +185,11 @@ private fun NowPlayIngSong(viewModel: PlayBackViewModel, navigator: AppComposeNa
           contentAlignment = Alignment.Center,
         ) {
 
-          if (painter.state is AsyncImagePainter.State.Success) {
+          if (coverPainterState.value is AsyncImagePainter.State.Success) {
             Image(
-              painter = painter, contentDescription = "封面", modifier = Modifier.size(64.dp)
+              painter = coverPainter,
+              contentDescription = "封面",
+              modifier = Modifier.size(64.dp)
             )
           } else {
             Box(
@@ -201,6 +211,7 @@ private fun NowPlayIngSong(viewModel: PlayBackViewModel, navigator: AppComposeNa
               )
             }
           }
+
 
         }
         // 歌曲信息
