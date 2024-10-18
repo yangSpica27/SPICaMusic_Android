@@ -162,10 +162,10 @@ fun PlayingSongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit 
   val coverPainter = rememberAsyncImagePainter(song.getCoverUri().toCoilUri())
   val coverPainterState = coverPainter.state.collectAsState()
 
-  val borderColor = MaterialTheme.colorScheme.inversePrimary
+  val borderColor = MaterialTheme.colorScheme.tertiary
   Row(Modifier
     .background(
-      color = if (isPlaying) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)
+      color = if (isPlaying) MaterialTheme.colorScheme.surfaceContainer
       else MaterialTheme.colorScheme.surface,
     )
     .drawBehind {
@@ -199,14 +199,14 @@ fun PlayingSongItem(isPlaying: Boolean = false, song: Song, onClick: () -> Unit 
           modifier = Modifier
             .size(48.dp)
             .background(
-              color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f),
+              color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
               shape = MaterialTheme.shapes.medium
             ),
           contentAlignment = Alignment.Center,
         ) {
           Text(
             text = "播放中", style = MaterialTheme.typography.bodySmall.copy(
-              color = MaterialTheme.colorScheme.background
+              color = MaterialTheme.colorScheme.onTertiaryContainer
             )
           )
         }

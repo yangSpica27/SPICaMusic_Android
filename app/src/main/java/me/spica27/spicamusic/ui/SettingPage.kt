@@ -72,7 +72,8 @@ fun SettingPage() {
       item {
         Text(
           text = "设置", style = MaterialTheme.typography.headlineMedium.copy(
-            fontWeight = FontWeight.W600
+            fontWeight = FontWeight.W600,
+            color = MaterialTheme.colorScheme.tertiary
           ), modifier = Modifier.padding(vertical = 20.dp)
         )
       }

@@ -71,7 +71,8 @@ fun CurrentListPage(
         } else {
           "未在播放"
         }, style = MaterialTheme.typography.headlineMedium.copy(
-          fontWeight = androidx.compose.ui.text.font.FontWeight.W600
+          fontWeight = androidx.compose.ui.text.font.FontWeight.W600,
+          color = MaterialTheme.colorScheme.tertiary
         ), modifier = Modifier.padding(20.dp)
       )
 
