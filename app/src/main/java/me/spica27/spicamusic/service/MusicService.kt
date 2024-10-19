@@ -37,7 +37,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.spica.music.player.IPlayer
+import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.service.notification.MediaSessionComponent

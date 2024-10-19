@@ -2,7 +2,7 @@
 
 <p align="center">
 
-<img src="/img/Screenshot_2024-10-18-22-39-54-578_me.spica27.spi.jpg" width="20%"/>
+<img src="/img/Screenshot_2024-10-19-14-53-57-602_me.spica27.spi.jpg" width="20%"/>
 <img src="/img/Screenshot_2024-10-18-22-40-02-391_me.spica27.spi.jpg" width="20%"/>
 <img src="/img/Screenshot_2024-10-16-13-46-08-319_me.spica27.spi.jpg" width="20%"/>
 <img src="/img/Screenshot_2024-10-18-22-40-08-428_me.spica27.spi.jpg" width="20%"/>

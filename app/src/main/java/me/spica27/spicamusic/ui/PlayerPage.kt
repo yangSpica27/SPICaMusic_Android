@@ -67,15 +67,15 @@ fun PlayerPage(
   playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
+  // 当前播放的歌曲
   val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState(null)
 
+  // 快速傅里叶变换后的振幅
   val amp = playBackViewModel.playingSongAmplitudes.collectAsState(emptyList())
 
   LaunchedEffect(amp.value) {
     Timber.d("Amplitudes: ${amp.value}")
   }
-
-
   Box(
     modifier = Modifier
       .fillMaxSize(),
@@ -86,10 +86,12 @@ fun PlayerPage(
         .fillMaxSize(),
     ) {
       Spacer(modifier = Modifier.height(15.dp))
+      //  标题
       Title(
         modifier = Modifier.padding(vertical = 10.dp, horizontal = 20.dp),
       )
       Spacer(modifier = Modifier.height(15.dp))
+      // 封面
       Cover(
         modifier = Modifier
           .fillMaxWidth()
@@ -98,6 +100,7 @@ fun PlayerPage(
         songState = currentPlayingSong
       )
       Spacer(modifier = Modifier.height(20.dp))
+      // 歌名和歌手
       SongInfo(
         song = currentPlayingSong.value,
         modifier = Modifier
@@ -158,7 +161,6 @@ private fun Title(
 }
 
 /// 封面
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Cover(
   modifier: Modifier = Modifier,

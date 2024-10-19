@@ -1,4 +1,4 @@
-package me.spica.music.player
+package me.spica27.spicamusic.player
 
 import me.spica27.spicamusic.db.entity.Song
 
