@@ -83,7 +83,8 @@ fun AudioWaveform(
       minHeight = MinSpikeHeight,
       maxHeight = canvasSize.height.coerceAtLeast(MinSpikeHeight)
     )
-  }.map { animateFloatAsState(it, spikeAnimationSpec, label = "").value }
+  }
+    .map { animateFloatAsState(it, spikeAnimationSpec, label = "").value }
 
   Slider(
     modifier = modifier,

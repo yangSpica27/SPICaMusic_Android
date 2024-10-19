@@ -2,12 +2,13 @@ package me.spica27.spicamusic.playback
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.dsp.EqualizerAudioProcessor
 import me.spica27.spicamusic.dsp.ReplayGainAudioProcessor
-import me.spica27.spicamusic.player.FFTAudioProcessor
+import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.player.Queue
+import me.spica27.spicamusic.processer.FFTAudioProcessor
+import me.spica27.spicamusic.processer.VisualizerHelper
 
 @Suppress("unused")
 class PlaybackStateManager {

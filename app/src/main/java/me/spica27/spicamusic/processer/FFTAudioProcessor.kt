@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.player
+package me.spica27.spicamusic.processer
 
 import android.media.AudioTrack
 import com.google.android.exoplayer2.C

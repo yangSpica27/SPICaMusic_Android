@@ -1,8 +1,6 @@
 package me.spica27.spicamusic.ui
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,16 +33,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import me.spica27.spicamusic.R
@@ -54,6 +51,7 @@ import me.spica27.spicamusic.utils.msToDs
 import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.widget.VisualizerSurfaceView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveform
 import timber.log.Timber
 
@@ -69,9 +67,6 @@ fun PlayerPage(
   // 快速傅里叶变换后的振幅
   val amp = playBackViewModel.playingSongAmplitudes.collectAsState(emptyList())
 
-  LaunchedEffect(amp.value) {
-    Timber.d("Amplitudes: ${amp.value}")
-  }
   Box(
     modifier = Modifier
       .fillMaxSize(),
@@ -175,37 +170,49 @@ private fun Cover(
 
   val coverPainterState = coverPainter.state.collectAsState()
 
+  val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
+  val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+
   Box(
     modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainer),
     contentAlignment = Alignment.Center,
   ) {
 
-    if (coverPainterState.value is AsyncImagePainter.State.Success) {
-      Image(
-        painter = coverPainter,
-        contentDescription = "Cover",
-        modifier = Modifier
-          .fillMaxSize(),
-        contentScale = ContentScale.Crop
-      )
-    } else {
-      Text(
-        modifier = Modifier.rotate(45f),
-        text = songState.value?.displayName ?: "Unknown",
-        style = MaterialTheme.typography.headlineLarge.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-          fontWeight = FontWeight.W900
-        )
-      )
-    }
 
-    Image(
-      painter = coverPainter,
-      contentDescription = "Cover",
+    AndroidView(
+      factory = { context ->
+        VisualizerSurfaceView(context).apply {
+          setBgColor(backgroundColor.toArgb())
+          setColor(onSurfaceColor.toArgb())
+        }
+      },
+      update = { view ->
+        view.setBgColor(backgroundColor.toArgb())
+        view.setColor(onSurfaceColor.toArgb())
+      },
       modifier = Modifier
-        .fillMaxSize(),
-      contentScale = ContentScale.Crop
+        .fillMaxSize()
+        .aspectRatio(1f)
     )
+
+//    if (coverPainterState.value is AsyncImagePainter.State.Success) {
+//      Image(
+//        painter = coverPainter,
+//        contentDescription = "Cover",
+//        modifier = Modifier
+//          .fillMaxSize(),
+//        contentScale = ContentScale.Crop
+//      )
+//    } else {
+//      Text(
+//        modifier = Modifier.rotate(45f),
+//        text = songState.value?.displayName ?: "Unknown",
+//        style = MaterialTheme.typography.headlineLarge.copy(
+//          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+//          fontWeight = FontWeight.W900
+//        )
+//      )
+//    }
   }
 }
 
