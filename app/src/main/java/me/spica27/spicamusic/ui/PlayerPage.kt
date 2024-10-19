@@ -16,23 +16,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -214,7 +210,6 @@ private fun Cover(
 }
 
 /// 控制面板
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ControlPanel(
   modifier: Modifier = Modifier,
@@ -223,94 +218,53 @@ private fun ControlPanel(
 ) {
 
 
-  val isPlaying = playBackViewModel.isPlaying.collectAsState(false)
+  val isPlayingState = playBackViewModel.isPlaying.collectAsState(false)
 
-  val song = playBackViewModel.currentSongFlow.collectAsState(null)
+  val songState = playBackViewModel.currentSongFlow.collectAsState(null)
 
-  val positionSec = playBackViewModel.positionSec.collectAsState(0L)
+  val positionSecState = playBackViewModel.positionSec.collectAsState(0L)
 
-  val isSeeking = remember { mutableStateOf(false) }
+  val isSeekingState = remember { mutableStateOf(false) }
 
-  val seekValue = remember { mutableFloatStateOf(0f) }
-
-
-  val trackLineWidth by animateDpAsState(
-    if (isSeeking.value) {
-      6.dp
-    } else {
-      2.5.dp
-    }, label = "trackWidth"
-  )
-
-  val thumbSize by animateDpAsState(
-    if (isSeeking.value) {
-      25.dp
-    } else {
-      15.dp
-    }, label = "thumbSize"
-  )
+  val seekValueState = remember { mutableFloatStateOf(0f) }
 
 
-  LaunchedEffect(positionSec.value) {
-    if (isSeeking.value) return@LaunchedEffect
-    seekValue.floatValue = positionSec.value.secsToMs() * 1f
+
+  LaunchedEffect(positionSecState.value) {
+    if (isSeekingState.value) return@LaunchedEffect
+    seekValueState.floatValue = positionSecState.value.secsToMs() * 1f
   }
 
   Column(
     modifier = modifier,
   ) {
 
-    // 振幅
-    AudioWaveform(
-      amplitudes = ampState.value,
-      waveformBrush = SolidColor(MaterialTheme.colorScheme.surfaceVariant),
-      progressBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
+    // 振幅 进度条
+    Box(
       modifier = Modifier
         .fillMaxWidth()
-        .height(100.dp),
-      progress = positionSec.value.toFloat() / (song.value?.duration?.msToSecs() ?: 1).toFloat(),
-      onProgressChangeFinished = {
+        .height(80.dp),
+      contentAlignment = Alignment.Center
+    ) {
+      AudioWaveform(
+        amplitudes = ampState.value,
+        waveformBrush = SolidColor(MaterialTheme.colorScheme.surfaceVariant),
+        progressBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
+        modifier = Modifier
+          .fillMaxWidth(),
+        progress = seekValueState.floatValue / (songState.value?.duration ?: 1).toFloat(),
+        onProgressChangeFinished = {
+          playBackViewModel.seekTo(seekValueState.floatValue.toLong())
+          isSeekingState.value = false
+        },
+        onProgressChange = {
+          Timber.d("Seeking to $it")
+          seekValueState.floatValue = it * (songState.value?.duration ?: 1).toFloat()
+          isSeekingState.value = true
+        }
+      )
+    }
 
-      },
-      onProgressChange = {
-
-      }
-    )
-
-    // 进度条
-    Slider(
-      modifier = Modifier
-        .fillMaxWidth(),
-      track = {
-        Box(
-          Modifier
-            .fillMaxWidth()
-            .background(
-              MaterialTheme.colorScheme.onSurface,
-              CircleShape
-            )
-            .height(trackLineWidth)
-
-        )
-      },
-      thumb = {
-        Box(
-          Modifier
-            .background(MaterialTheme.colorScheme.onSurface, CircleShape)
-            .size(thumbSize)
-        )
-      },
-      value = seekValue.floatValue,
-      valueRange = 0f..(song.value?.duration ?: 0).toFloat(),
-      onValueChange = {
-        seekValue.floatValue = it
-        isSeeking.value = true
-      },
-      onValueChangeFinished = {
-        playBackViewModel.seekTo(seekValue.floatValue.toLong())
-        isSeeking.value = false
-      },
-    )
     Row(
       modifier = Modifier.fillMaxWidth(),
       verticalAlignment = Alignment.CenterVertically
@@ -319,7 +273,7 @@ private fun ControlPanel(
       Text(
         modifier = Modifier
           .padding(vertical = 4.dp, horizontal = 8.dp),
-        text = positionSec.value.formatDurationSecs(),
+        text = positionSecState.value.formatDurationSecs(),
         style = MaterialTheme.typography.bodyMedium
       )
 
@@ -327,13 +281,13 @@ private fun ControlPanel(
 
       // 滑动到的地方
       AnimatedVisibility(
-        visible = isSeeking.value,
+        visible = isSeekingState.value,
       ) {
         Text(
           modifier = Modifier
             .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small)
             .padding(vertical = 4.dp, horizontal = 8.dp),
-          text = seekValue.floatValue.toLong().msToSecs().formatDurationSecs(),
+          text = seekValueState.floatValue.toLong().msToSecs().formatDurationSecs(),
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSecondaryContainer
         )
@@ -343,7 +297,7 @@ private fun ControlPanel(
 
       // Total Time
       Text(
-        text = song.value?.duration?.msToDs()?.formatDurationDs() ?: "0:00",
+        text = songState.value?.duration?.msToDs()?.formatDurationDs() ?: "0:00",
         style = MaterialTheme.typography.bodyMedium
       )
     }
@@ -370,7 +324,7 @@ private fun ControlPanel(
         )
       ) {
         Icon(
-          painter = painterResource(id = if (isPlaying.value) R.drawable.ic_pause else R.drawable.ic_play),
+          painter = painterResource(id = if (isPlayingState.value) R.drawable.ic_pause else R.drawable.ic_play),
           contentDescription = "Play/Pause",
           tint = MaterialTheme.colorScheme.onSecondaryContainer
         )
