@@ -1,16 +1,18 @@
 package me.spica27.spicamusic.dsp
 
+import androidx.annotation.OptIn
 import androidx.core.math.MathUtils
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.audio.AudioProcessor
-import com.google.android.exoplayer2.audio.BaseAudioProcessor
+import androidx.media3.common.C
+import androidx.media3.common.audio.AudioProcessor
+import androidx.media3.common.audio.BaseAudioProcessor
+import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.dsp.ByteUtils.Int24_MAX_VALUE
 import me.spica27.spicamusic.dsp.ByteUtils.Int24_MIN_VALUE
 import me.spica27.spicamusic.dsp.ByteUtils.getInt24
 import me.spica27.spicamusic.dsp.ByteUtils.putInt24
 import java.nio.ByteBuffer
 
-
+@OptIn(UnstableApi::class)
 class ReplayGainAudioProcessor(var preAmpGain: Double = 0.0) : BaseAudioProcessor() {
 
 

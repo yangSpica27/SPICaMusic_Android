@@ -9,20 +9,20 @@ import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import me.spica27.spicamusic.playback.PlaybackStateManager
-import me.spica27.spicamusic.processer.VisualizerHelper
+import android.view.animation.DecelerateInterpolator
+import androidx.core.graphics.ColorUtils
+import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.utils.dp
+import me.spica27.spicamusic.visualiser.MusicVisualiser
 import timber.log.Timber
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.math.cos
-import kotlin.math.sin
 
+
+@UnstableApi
 class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
-  VisualizerHelper.OnVisualizerEnergyCallBack {
+  MusicVisualiser.Listener {
 
-  private val drawThread = HandlerThread("VisualizerSurfaceView").apply { start() }
+  private lateinit var drawThread: HandlerThread
 
   private lateinit var drawHandler: Handler
 
@@ -40,6 +40,8 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
 
   private var backgroundColor = Color.WHITE
 
+  private var radius = 0
+
   fun setBgColor(color: Int) {
     backgroundColor = color
   }
@@ -50,15 +52,17 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
     // set style
     style = Paint.Style.FILL
     strokeWidth = 8.dp
+    strokeCap = Paint.Cap.ROUND
   }
+
+  private var lineColor = Color.BLACK
 
   fun setColor(color: Int) {
     pointPaint.color = color
+    lineColor = color
   }
 
   private val lock = ReentrantLock()
-
-  private var executor: ExecutorService = Executors.newSingleThreadExecutor()
 
   private var isWork = false
 
@@ -66,132 +70,147 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
     while (isWork && !Thread.interrupted()) {
       val canvas = holder.lockCanvas()
       if (canvas != null) {
-        // draw something
-        lock.lock()
         canvas.drawColor(backgroundColor)
-        canvas.save()
         canvas.translate(width / 2f, height / 2f)
-        widths.forEachIndexed { index, width ->
-          canvas.rotate(angles[index])
-          canvas.drawLine(0f, 0f, width, 0f, pointPaint)
+        lock.lock()
 
-          canvas.rotate(angles[index])
+        val fraction =
+          decelerateInterpolator.getInterpolation(((System.currentTimeMillis() - lastSampleTime).toFloat() / interval))
+
+        if (lastYList.size == yList.size) {
+          canvas.save()
+
+          for (i in 0 until lastYList.size) {
+            canvas.rotate(360f / lastYList.size)
+            val lastY = lastYList[i]
+            val y = yList[i]
+
+            val curY = lastY + (y - lastY) * fraction
+
+            if (maxYList.size == yList.size) {
+              val maxY = maxYList[i]
+              if (maxY < curY) {
+                maxYList[i] = curY.toInt()
+              } else {
+                maxYList[i] = (maxYList[i] - (1.dp) / 60f).toInt()
+              }
+              pointPaint.color = ColorUtils.setAlphaComponent(lineColor, 100)
+              canvas.drawLine(
+                0f,
+                maxYList[i] * 1f,
+                0f,
+                radius * 1f,
+                pointPaint
+              )
+              pointPaint.color = lineColor
+            }
+
+
+            canvas.drawLine(
+              0f,
+              curY * 1f,
+              0f,
+              radius * 1f,
+              pointPaint
+            )
+
+
+          }
+          canvas.restore()
         }
-        canvas.restore()
-        holder.unlockCanvasAndPost(canvas)
-        lock.unlock()
 
-        SystemClock.sleep(16)
+        lock.unlock()
       }
+      holder.unlockCanvasAndPost(canvas)
+      SystemClock.sleep(16)
     }
   }
 
+  // 记录最高的Y值 用于回落动画
+  private val maxYList = arrayListOf<Int>()
+
+
+  private val musicVisualiser: MusicVisualiser = MusicVisualiser()
+
   override fun surfaceCreated(holder: SurfaceHolder) {
-    executor = Executors.newSingleThreadExecutor()
+    musicVisualiser.setListener(this)
+    musicVisualiser.ready()
+    drawThread = HandlerThread("drawThread")
+    drawThread.start()
     drawHandler = Handler(drawThread.looper)
     isWork = true
     drawHandler.post(drawRunnable)
-    PlaybackStateManager.getInstance().fftAudioProcessor.setFftListener(VisualizerHelper.getInstance().fftListener)
-    VisualizerHelper.getInstance().addCallBack(this)
   }
 
   override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-    radius = width / 2
+    radius = (width / 2 - 40.dp).toInt()
   }
 
   override fun surfaceDestroyed(holder: SurfaceHolder) {
-    PlaybackStateManager.getInstance().fftAudioProcessor.setFftListener(null)
-    VisualizerHelper.getInstance().removeCallBack(this)
+    musicVisualiser.dispose()
     isWork = false
     drawHandler.removeCallbacksAndMessages(null)
     drawThread.quitSafely()
     drawThread.join(32)
     drawThread.interrupt()
-    executor.awaitTermination(32, java.util.concurrent.TimeUnit.MILLISECONDS)
+    Timber.tag("VisualizerSurfaceView").e("surfaceDestroyed")
   }
 
-  private var radius = 100
 
-  private val scope = 50
-
-  private val between = 1
-
-  // 角度
-  private val angles = arrayListOf<Float>()
-
-  // 间隔长度
-  private val widths = arrayListOf<Float>()
-
-  // 每个点的x坐标
-  private val xPoints = arrayListOf<Int>()
-
-  // 每个点的y坐标
-  private val yPoints = arrayListOf<Int>()
-
-  // 每个点的高度
-  private val lineHeights = arrayListOf<Int>()
 
   // 上次采样的时间
   private var lastSampleTime = 0L
 
   // 采样间隔
-  private val interval = 1000
+  private val interval = 500
 
-  override fun setWaveData(data: FloatArray, totalEnergy: Float) {
 
-    if (System.currentTimeMillis() - lastSampleTime < interval) {
+  // 采集到的数据
+  private val yList = arrayListOf<Int>()
+
+  // 前一次采集的数据
+  private val lastYList = arrayListOf<Int>()
+
+
+  private val decelerateInterpolator = DecelerateInterpolator()
+
+  override fun getDrawData(list: List<Float>) {
+    lock.lock()
+
+    if (
+      ((System.currentTimeMillis() - lastSampleTime) < interval)
+      && yList.isNotEmpty()
+      && lastYList.isNotEmpty()
+    ) {
+      lock.unlock()
       return
     }
 
-    executor.execute {
-      lock.lock()
-      angles.clear()
-      widths.clear()
-      xPoints.clear()
-      yPoints.clear()
-      lineHeights.clear()
-
-      val total: Int = data.size - scope
-
-      //圆周长
-      val totalLength: Float = 3.14f * 2 * radius
-
-      //每个角度所占用的长度
-      val eachWidthByAngle = totalLength / 360
-
-      //每个能量所占用的长度
-      val eachWidthByDataLength = totalLength / total
-
-      //间隔所占的长度
-      val betweenWidth: Float = between * eachWidthByAngle
-
-      for (i in 0 until total) {
-        //每个能量在圆环上的角度位置
-        val positionAngle = i * 1.0f / total * 360
-        angles.add(positionAngle)
-        widths.add(eachWidthByDataLength * data[i] + betweenWidth)
-        val xy = calcPoint(width / 2, height / 2, radius, positionAngle)
-        lineHeights.add((data[i] / totalEnergy * 30.dp).toInt())
-        xPoints.add(xy[0])
-        yPoints.add(xy[0])
-      }
-      lastSampleTime = System.currentTimeMillis()
-      lock.unlock()
-      Timber.tag("dataSize").d("dataSize: ${data.size}")
-      data.forEach {
-        Timber.tag("data").d("data: $it")
-      }
+    //  记录上次的结果
+    if (yList.isNotEmpty()) {
+      lastYList.clear()
+      lastYList.addAll(yList)
     }
-  }
 
+    // 计算
+    yList.clear()
+    list.forEachIndexed { index, value ->
+      val cur = radius + 30.dp * value
+      val next = if (index == list.size - 1) {
+        radius + 30.dp * list[0]
+      } else {
+        radius + 30.dp * list[index + 1]
+      }
+      yList.add(cur.toInt())
+      yList.add(next.toInt())
+    }
+    if (maxYList.size != yList.size) {
+      maxYList.clear()
+      maxYList.addAll(yList)
+    }
 
-  /**
-   * 计算圆弧上的某一点
-   */
-  private fun calcPoint(centerX: Int, centerY: Int, radius: Int, angle: Float): IntArray {
-    val x = (centerX + radius * cos((angle) * Math.PI / 180)).toInt()
-    val y = (centerY + radius * sin((angle) * Math.PI / 180)).toInt()
-    return intArrayOf(x, y)
+    lastSampleTime = System.currentTimeMillis()
+    lock.unlock()
   }
 
 }

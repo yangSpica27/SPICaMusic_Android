@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toFile
 import androidx.media.session.MediaButtonReceiver
+import androidx.media3.common.util.UnstableApi
 import coil3.ImageLoader
 import coil3.request.ImageRequest
 import coil3.toBitmap
@@ -23,6 +24,7 @@ import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.service.MusicService
 
+@UnstableApi
 class MediaSessionComponent(
   private val context: Context,
   private val listener: Listener

@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package me.spica27.spicamusic.service
 
 
@@ -13,33 +11,35 @@ import android.os.Bundle
 import android.os.Handler
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaSessionCompat
+import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.core.app.ServiceCompat
 import androidx.media.MediaBrowserServiceCompat
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.DefaultRenderersFactory
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.PlaybackException
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.Renderer
-import com.google.android.exoplayer2.audio.AudioAttributes
-import com.google.android.exoplayer2.audio.AudioCapabilities
-import com.google.android.exoplayer2.audio.AudioRendererEventListener
-import com.google.android.exoplayer2.audio.AudioSink
-import com.google.android.exoplayer2.audio.DefaultAudioSink
-import com.google.android.exoplayer2.audio.MediaCodecAudioRenderer
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
-import com.google.android.exoplayer2.mediacodec.MediaCodecSelector
-import com.google.android.exoplayer2.source.DefaultMediaSourceFactory
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.audio.AudioCapabilities
+import androidx.media3.exoplayer.audio.AudioRendererEventListener
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
+import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.extractor.DefaultExtractorsFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
+import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.service.notification.MediaSessionComponent
 import me.spica27.spicamusic.service.notification.NotificationComponent
 
@@ -47,6 +47,7 @@ private const val MY_MEDIA_ROOT_ID = "media_root_id"
 private const val MY_EMPTY_MEDIA_ROOT_ID = "empty_root_id"
 
 
+@OptIn(UnstableApi::class)
 class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   MediaSessionComponent.Listener {
 
@@ -81,6 +82,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
         .setConstantBitrateSeekingAlwaysEnabled(true)
     )
 
+
     exoPlayer = ExoPlayer.Builder(this, object : DefaultRenderersFactory(this) {
       override fun buildAudioRenderers(
         context: Context,
@@ -100,8 +102,14 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
             enableDecoderFallback,
             eventHandler,
             eventListener,
-            DefaultAudioSink.Builder()
-              .setAudioCapabilities(AudioCapabilities.getCapabilities(context))
+            DefaultAudioSink.Builder(context)
+              .setAudioCapabilities(
+                AudioCapabilities.getCapabilities(
+                  context,
+                  AudioAttributes.DEFAULT,
+                  null
+                )
+              )
               .setAudioProcessors(
                 arrayOf(
                   fftAudioProcessor,
@@ -132,6 +140,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
           .build(),
         true
       )
+      .setUsePlatformDiagnostics(false)
       .build().also {
         it.addListener(this)
       }
@@ -324,6 +333,8 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
 
   private inner class PlaybackReceiver : BroadcastReceiver() {
     private var initialHeadsetPlugEventHandled = false
+
+    @OptIn(UnstableApi::class)
     override fun onReceive(context: Context, intent: Intent) {
       when (intent.action) {
         // 有线耳机的插入和断开广播
@@ -350,6 +361,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
       }
     }
 
+    @OptIn(UnstableApi::class)
     private fun playFromHeadsetPlug() {
       if (PlaybackStateManager.getInstance().getCurrentSong() != null &&
         initialHeadsetPlugEventHandled

@@ -1,6 +1,13 @@
 package me.spica27.spicamusic.ui
 
+import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -33,16 +41,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.util.UnstableApi
+import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
+import coil3.request.transformations
+import coil3.transform.CircleCropTransformation
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.utils.formatDurationDs
@@ -152,6 +168,7 @@ private fun Title(
 }
 
 /// 封面
+@OptIn(UnstableApi::class)
 @Composable
 private fun Cover(
   modifier: Modifier = Modifier,
@@ -164,18 +181,31 @@ private fun Cover(
   val coverPainter = rememberAsyncImagePainter(
     model = ImageRequest.Builder(context)
       .data(songState.value?.getCoverUri())
+      .transformations(
+        CircleCropTransformation()
+      )
       .build(),
   )
 
 
   val coverPainterState = coverPainter.state.collectAsState()
+  val backgroundColor = MaterialTheme.colorScheme.surface
+  val onSurfaceColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
-  val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
-  val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+  val infiniteTransition = rememberInfiniteTransition(label = "infinite")
+  val rotateState = infiniteTransition.animateFloat(
+    initialValue = 0f,
+    targetValue = 360f,
+    animationSpec = infiniteRepeatable(
+      animation = tween(10000, easing = LinearEasing),
+      repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+    ),
+    label = ""
+  )
 
   Box(
-    modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainer),
     contentAlignment = Alignment.Center,
+    modifier = modifier
   ) {
 
 
@@ -191,28 +221,40 @@ private fun Cover(
         view.setColor(onSurfaceColor.toArgb())
       },
       modifier = Modifier
-        .fillMaxSize()
+        .fillMaxWidth()
         .aspectRatio(1f)
     )
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .aspectRatio(1f)
+        .padding(40.dp + 12.dp)
+        .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
+        .clip(CircleShape)
+        .rotate(rotateState.value),
+      contentAlignment = Alignment.Center
+    ) {
+      if (coverPainterState.value is AsyncImagePainter.State.Success) {
+        Image(
+          painter = coverPainter,
+          contentDescription = "Cover",
+          modifier = Modifier
+            .fillMaxSize(),
+          contentScale = ContentScale.Crop
+        )
+      } else {
+        Text(
+          modifier = Modifier.rotate(45f),
+          text = songState.value?.displayName ?: "Unknown",
+          style = MaterialTheme.typography.headlineLarge.copy(
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            fontWeight = FontWeight.W900
+          )
+        )
+      }
 
-//    if (coverPainterState.value is AsyncImagePainter.State.Success) {
-//      Image(
-//        painter = coverPainter,
-//        contentDescription = "Cover",
-//        modifier = Modifier
-//          .fillMaxSize(),
-//        contentScale = ContentScale.Crop
-//      )
-//    } else {
-//      Text(
-//        modifier = Modifier.rotate(45f),
-//        text = songState.value?.displayName ?: "Unknown",
-//        style = MaterialTheme.typography.headlineLarge.copy(
-//          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-//          fontWeight = FontWeight.W900
-//        )
-//      )
-//    }
+    }
+
   }
 }
 
@@ -369,7 +411,7 @@ private fun SongInfo(song: Song?, modifier: Modifier = Modifier) {
         text = song.displayName,
         style = MaterialTheme.typography.titleLarge.copy(
           color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-          fontWeight = androidx.compose.ui.text.font.FontWeight.W600
+          fontWeight = FontWeight.W600
         ),
         modifier = Modifier.basicMarquee(),
       )

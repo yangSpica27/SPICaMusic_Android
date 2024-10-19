@@ -1,21 +1,53 @@
-package me.spica27.spicamusic.processer
+/*
+
+MIT License
+
+Copyright (c) 2019 Dániel Zolnai
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+ */
+
+package me.spica27.spicamusic.visualiser
 
 import android.media.AudioTrack
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.Format
-import com.google.android.exoplayer2.audio.AudioProcessor
-import com.google.android.exoplayer2.util.Assertions
-import com.google.android.exoplayer2.util.Util
+import android.media.AudioTrack.ERROR_BAD_VALUE
+import androidx.media3.common.C
+import androidx.media3.common.Format
+import androidx.media3.common.audio.AudioProcessor
+import androidx.media3.common.util.Assertions
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.common.util.Util
 import com.paramsen.noise.Noise
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.max
 
 /**
- * 通过傅里叶将音频信息转化为
- * 振幅数组用于ui更新绘制对应的动效
+ * An audio processor which forwards the input to the output,
+ * but also takes the input and executes a Fast-Fourier Transformation (FFT) on it.
+ * The results of this transformation is a 'list' of frequencies with their amplitudes,
+ * which will be forwarded to the listener
  */
+@UnstableApi
 class FFTAudioProcessor : AudioProcessor {
+
   companion object {
     const val SAMPLE_SIZE = 4096
 
@@ -32,7 +64,7 @@ class FFTAudioProcessor : AudioProcessor {
     private const val BUFFER_EXTRA_SIZE = SAMPLE_SIZE * 8
   }
 
-  private var noise: Noise = Noise.real(SAMPLE_SIZE)
+  private var noise: Noise? = null
 
   private var isActive: Boolean = false
 
@@ -40,7 +72,7 @@ class FFTAudioProcessor : AudioProcessor {
   private var fftBuffer: ByteBuffer
   private var outputBuffer: ByteBuffer
 
-  var listener: FFTListener? = null
+  val listeners: MutableList<FFTListener> = mutableListOf()
   private var inputEnded: Boolean = false
 
   private lateinit var srcBuffer: ByteBuffer
@@ -51,7 +83,6 @@ class FFTAudioProcessor : AudioProcessor {
 
   private val src = FloatArray(SAMPLE_SIZE)
   private val dst = FloatArray(SAMPLE_SIZE + 2)
-
 
   interface FFTListener {
     fun onFFTReady(sampleRateHz: Int, channelCount: Int, fft: FloatArray)
@@ -64,9 +95,11 @@ class FFTAudioProcessor : AudioProcessor {
   }
 
   /**
-   * 创建一个和Exoplayer相同大小的缓冲区
-   * 进行处理 来匹配真实的音频输出
-   * 因为 processor 会提前获取到exoplayer的播放信息
+   * The following method matches the implementation of getDefaultBufferSize in DefaultAudioSink
+   * of ExoPlayer.
+   * Because there is an AudioTrack buffer between the processor and the sound output, the processor receives everything early.
+   * By putting the audio data to process in a buffer which has the same size as the audiotrack buffer,
+   * we will delay ourselves to match the audio output.
    */
   private fun getDefaultBufferSizeInBytes(audioFormat: AudioProcessor.AudioFormat): Int {
     val outputPcmFrameSize = Util.getPcmFrameSize(audioFormat.encoding, audioFormat.channelCount)
@@ -76,7 +109,7 @@ class FFTAudioProcessor : AudioProcessor {
         Util.getAudioTrackChannelConfig(audioFormat.channelCount),
         audioFormat.encoding
       )
-    Assertions.checkState(minBufferSize != AudioTrack.ERROR_BAD_VALUE)
+    Assertions.checkState(minBufferSize != ERROR_BAD_VALUE)
     val multipliedBufferSize = minBufferSize * EXO_BUFFER_MULTIPLICATION_FACTOR
     val minAppBufferSize =
       durationUsToFrames(EXO_MIN_BUFFER_DURATION_US).toInt() * outputPcmFrameSize
@@ -110,9 +143,13 @@ class FFTAudioProcessor : AudioProcessor {
     }
     this.inputAudioFormat = inputAudioFormat
     isActive = true
+
     noise = Noise.real(SAMPLE_SIZE)
+
     audioTrackBufferSize = getDefaultBufferSizeInBytes(inputAudioFormat)
+
     srcBuffer = ByteBuffer.allocate(audioTrackBufferSize + BUFFER_EXTRA_SIZE)
+
     return inputAudioFormat
   }
 
@@ -122,17 +159,21 @@ class FFTAudioProcessor : AudioProcessor {
     val frameCount = (limit - position) / (2 * inputAudioFormat.channelCount)
     val singleChannelOutputSize = frameCount * 2
     val outputSize = frameCount * inputAudioFormat.channelCount * 2
+
+
     if (processBuffer.capacity() < outputSize) {
       processBuffer = ByteBuffer.allocateDirect(outputSize).order(ByteOrder.nativeOrder())
     } else {
       processBuffer.clear()
     }
+
     if (fftBuffer.capacity() < singleChannelOutputSize) {
       fftBuffer =
         ByteBuffer.allocateDirect(singleChannelOutputSize).order(ByteOrder.nativeOrder())
     } else {
       fftBuffer.clear()
     }
+
     while (position < limit) {
       var summedUp = 0
       for (channelIndex in 0 until inputAudioFormat.channelCount) {
@@ -140,24 +181,27 @@ class FFTAudioProcessor : AudioProcessor {
         processBuffer.putShort(current)
         summedUp += current
       }
-      // 使用所有通道的 currentAverage
+      // For the FFT, we use an currentAverage of all the channels
       fftBuffer.putShort((summedUp / inputAudioFormat.channelCount).toShort())
       position += inputAudioFormat.channelCount * 2
     }
+
     inputBuffer.position(limit)
+
     processFFT(this.fftBuffer)
+
     processBuffer.flip()
     outputBuffer = this.processBuffer
   }
 
   private fun processFFT(buffer: ByteBuffer) {
-    if (listener == null) {
+    if (listeners.isEmpty()) {
       return
     }
     srcBuffer.put(buffer.array())
     srcBufferPosition += buffer.array().size
-    // PCM 16位，每个样本将是2字节。
-    // 获取两倍以获取到最终的大小
+    // Since this is PCM 16 bit, each sample will be 2 bytes.
+    // So to get the sample size in the end, we need to take twice as many bytes off the buffer
     val bytesToProcess = SAMPLE_SIZE * 2
     var currentByte: Byte? = null
     while (srcBufferPosition > audioTrackBufferSize) {
@@ -179,8 +223,11 @@ class FFTAudioProcessor : AudioProcessor {
       srcBuffer.compact()
       srcBufferPosition -= bytesToProcess
       srcBuffer.position(srcBufferPosition)
-      val fft = noise.fft(src, dst)
-      listener?.onFFTReady(inputAudioFormat.sampleRate, inputAudioFormat.channelCount, fft)
+
+      val fft = noise?.fft(src, dst)!!
+      for (listener in listeners) {
+        listener.onFFTReady(inputAudioFormat.sampleRate, inputAudioFormat.channelCount, fft)
+      }
     }
   }
 
@@ -202,6 +249,7 @@ class FFTAudioProcessor : AudioProcessor {
   override fun flush() {
     outputBuffer = AudioProcessor.EMPTY_BUFFER
     inputEnded = false
+    // A new stream is incoming.
   }
 
   override fun reset() {

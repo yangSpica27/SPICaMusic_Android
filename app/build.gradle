@@ -115,7 +115,9 @@ dependencies {
   implementation("com.google.accompanist:accompanist-permissions:$accompanistVersion")
 
   // 播放器
-  implementation("com.google.android.exoplayer:exoplayer-core:2.19.1")
+  def media3_version = "1.4.1"
+  // For media playback using ExoPlayer
+  implementation "androidx.media3:media3-exoplayer:$media3_version"
   //    implementation 'com.google.android.exoplayer:exoplayer-core:2.X.X'
   implementation "androidx.media:media:1.7.0"
   implementation 'com.github.lincollincol:amplituda:2.2.2'

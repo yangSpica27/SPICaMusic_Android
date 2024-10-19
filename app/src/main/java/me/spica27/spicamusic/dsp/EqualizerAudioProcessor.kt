@@ -1,17 +1,20 @@
 package me.spica27.spicamusic.dsp
 
 
+import androidx.annotation.OptIn
 import androidx.core.math.MathUtils.clamp
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.audio.AudioProcessor
-import com.google.android.exoplayer2.audio.AudioProcessor.UnhandledAudioFormatException
-import com.google.android.exoplayer2.audio.BaseAudioProcessor
+import androidx.media3.common.C
+import androidx.media3.common.audio.AudioProcessor
+import androidx.media3.common.audio.BaseAudioProcessor
+import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.dsp.ByteUtils.getInt24
 import me.spica27.spicamusic.dsp.ByteUtils.putInt24
 import timber.log.Timber
 import java.nio.ByteBuffer
 
-class EqualizerAudioProcessor(enabled: Boolean) : BaseAudioProcessor() {
+@OptIn(UnstableApi::class)
+class EqualizerAudioProcessor
+  (enabled: Boolean) : BaseAudioProcessor() {
 
   private var bandProcessors = emptyList<BandProcessor>()
 
@@ -49,7 +52,7 @@ class EqualizerAudioProcessor(enabled: Boolean) : BaseAudioProcessor() {
     super.onConfigure(inputAudioFormat)
 
     if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT && inputAudioFormat.encoding != C.ENCODING_PCM_24BIT) {
-      throw UnhandledAudioFormatException(inputAudioFormat)
+      throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)
     }
 
     updateBandProcessors()

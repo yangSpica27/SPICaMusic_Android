@@ -16,16 +16,16 @@ class App : Application() {
     super.onCreate()
     instance = this
     Timber.plant(Timber.DebugTree())
-    SingletonImageLoader.setSafe(factory = {
-      ImageLoader.Builder(this)
-        .crossfade(true)
-        .serviceLoaderEnabled(true)
-        .logger(DebugLogger(Logger.Level.Error))
-        .components {
-
-        }
-        .build()
-    })
+//    SingletonImageLoader.setSafe(factory = {
+//      ImageLoader.Builder(this)
+//        .crossfade(true)
+//        .serviceLoaderEnabled(true)
+//        .logger(DebugLogger(Logger.Level.Error))
+//        .components {
+//
+//        }
+//        .build()
+//    })
   }
 
   companion object {

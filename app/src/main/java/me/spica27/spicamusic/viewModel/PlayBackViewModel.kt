@@ -1,7 +1,9 @@
 package me.spica27.spicamusic.viewModel
 
+import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.util.UnstableApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -26,7 +28,8 @@ import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
-class PlayBackViewModel @Inject constructor(
+class PlayBackViewModel @OptIn(UnstableApi::class)
+@Inject constructor(
   private val songDao: SongDao,
   private val playlistDao: PlaylistDao,
   private val amplituda: Amplituda
