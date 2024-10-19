@@ -14,6 +14,7 @@ import timber.log.Timber
 class App : Application() {
   override fun onCreate() {
     super.onCreate()
+    instance = this
     Timber.plant(Timber.DebugTree())
     SingletonImageLoader.setSafe(factory = {
       ImageLoader.Builder(this)
@@ -26,5 +27,15 @@ class App : Application() {
         .build()
     })
   }
+
+  companion object {
+    private lateinit var instance: App
+
+    fun getInstance(): App {
+      return instance
+    }
+  }
+
+
 
 }

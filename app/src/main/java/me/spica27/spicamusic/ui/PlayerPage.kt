@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -57,6 +58,8 @@ import me.spica27.spicamusic.utils.msToDs
 import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveform
+import timber.log.Timber
 
 
 @Composable
@@ -65,6 +68,13 @@ fun PlayerPage(
 ) {
 
   val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState(null)
+
+  val amp = playBackViewModel.playingSongAmplitudes.collectAsState(emptyList())
+
+  LaunchedEffect(amp.value) {
+    Timber.d("Amplitudes: ${amp.value}")
+  }
+
 
   Box(
     modifier = Modifier
@@ -96,6 +106,7 @@ fun PlayerPage(
       )
       ControlPanel(
         modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp),
+        ampState = amp
       )
       Text(
         modifier = Modifier
@@ -117,9 +128,9 @@ private fun Title(
   playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
-  val index = playBackViewModel.playlistCurrentIndex.collectAsState(0)
+  val indexState = playBackViewModel.playlistCurrentIndex.collectAsState(0)
 
-  val playlistSize = playBackViewModel.nowPlayingListSize.collectAsState(0)
+  val playlistSizeState = playBackViewModel.nowPlayingListSize.collectAsState(0)
 
   Row(
     modifier = modifier,
@@ -138,7 +149,7 @@ private fun Title(
       modifier = Modifier
         .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small)
         .padding(vertical = 4.dp, horizontal = 8.dp),
-      text = "第 ${index.value + 1} / ${playlistSize.value} 首",
+      text = "第 ${indexState.value + 1} / ${playlistSizeState.value} 首",
       style = MaterialTheme.typography.bodyMedium.copy(
         color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
       )
@@ -205,8 +216,10 @@ private fun Cover(
 @Composable
 private fun ControlPanel(
   modifier: Modifier = Modifier,
-  playBackViewModel: PlayBackViewModel = hiltViewModel()
+  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  ampState: State<List<Int>>
 ) {
+
 
   val isPlaying = playBackViewModel.isPlaying.collectAsState(false)
 
@@ -217,6 +230,7 @@ private fun ControlPanel(
   val isSeeking = remember { mutableStateOf(false) }
 
   val seekValue = remember { mutableFloatStateOf(0f) }
+
 
   val trackLineWidth by animateDpAsState(
     if (isSeeking.value) {
@@ -243,6 +257,24 @@ private fun ControlPanel(
   Column(
     modifier = modifier,
   ) {
+
+    // 振幅
+    AudioWaveform(
+      amplitudes = ampState.value,
+      waveformBrush = SolidColor(MaterialTheme.colorScheme.surfaceVariant),
+      progressBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(100.dp),
+      progress = positionSec.value.toFloat() / (song.value?.duration?.msToSecs() ?: 1).toFloat(),
+      onProgressChangeFinished = {
+
+      },
+      onProgressChange = {
+
+      }
+    )
+
     // 进度条
     Slider(
       modifier = Modifier

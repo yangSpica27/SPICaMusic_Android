@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import dagger.hilt.android.AndroidEntryPoint
+import linc.com.amplituda.Amplituda
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.service.MusicService
 import me.spica27.spicamusic.ui.AppMain
@@ -26,5 +27,15 @@ class MainActivity : ComponentActivity() {
       AppMain(composeNavigator = appComposeNavigator)
     }
   }
+
+
+  @Inject
+  lateinit var amplituda: Amplituda
+
+  override fun onDestroy() {
+    super.onDestroy()
+    amplituda.clearCache()
+  }
+
 }
 

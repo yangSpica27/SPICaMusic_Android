@@ -33,6 +33,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
@@ -253,6 +255,9 @@ private fun NormalList(
   modifier: Modifier = Modifier,
   songListState: State<List<Song>?>,
 ) {
+
+  val coroutineScope = rememberCoroutineScope()
+
   LazyColumn(
     modifier = modifier
       .fillMaxSize()
@@ -264,7 +269,9 @@ private fun NormalList(
         showMenu = true,
         showPlus = false,
         song = song, onClick = {
-          PlaybackStateManager.getInstance().play(song, songListState.value ?: emptyList())
+          coroutineScope.launch {
+            PlaybackStateManager.getInstance().playAsync(song, songListState.value ?: emptyList())
+          }
         })
     }
   }

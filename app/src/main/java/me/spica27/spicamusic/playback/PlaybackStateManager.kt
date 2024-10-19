@@ -83,6 +83,7 @@ class PlaybackStateManager {
     queue.reloadNewList(song, list)
     player?.loadSong(song, true)
     updateListenersNewList()
+    updateListenersIndexMove()
   }
 
 
@@ -92,6 +93,7 @@ class PlaybackStateManager {
       withContext(Dispatchers.Main) {
         player?.loadSong(song, true)
         updateListenersNewList()
+        updateListenersIndexMove()
       }
     }
 

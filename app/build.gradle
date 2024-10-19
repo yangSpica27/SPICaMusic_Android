@@ -4,7 +4,7 @@ plugins {
   id 'com.google.dagger.hilt.android'
   id 'kotlin-android'
   id 'kotlin-parcelize'
-//  id 'com.google.devtools.ksp'
+  //  id 'com.google.devtools.ksp'
   id 'kotlin-kapt'
 }
 
@@ -39,14 +39,13 @@ android {
     abortOnError false
   }
 
-
   buildTypes {
     release {
       minifyEnabled false
       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
       signingConfig signingConfigs.signingConfig
     }
-    debug{
+    debug {
       signingConfig signingConfigs.signingConfig
     }
   }
@@ -63,9 +62,9 @@ android {
   composeOptions {
     kotlinCompilerExtensionVersion '1.5.7'
   }
-//  kapt {
-//    correctErrorTypes = true
-//  }
+  //  kapt {
+  //    correctErrorTypes = true
+  //  }
   packaging {
     resources {
       excludes += '/META-INF/{AL2.0,LGPL2.1}'
@@ -119,4 +118,5 @@ dependencies {
   implementation("com.google.android.exoplayer:exoplayer-core:2.19.1")
   //    implementation 'com.google.android.exoplayer:exoplayer-core:2.X.X'
   implementation "androidx.media:media:1.7.0"
+  implementation 'com.github.lincollincol:amplituda:2.2.2'
 }

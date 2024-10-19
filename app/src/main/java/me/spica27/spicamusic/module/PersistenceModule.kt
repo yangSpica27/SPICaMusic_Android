@@ -40,4 +40,5 @@ object PersistenceModule {
   @Singleton
   fun providePlaylistDao(appDatabase: AppDatabase) = appDatabase.playlistDao()
 
+
 }

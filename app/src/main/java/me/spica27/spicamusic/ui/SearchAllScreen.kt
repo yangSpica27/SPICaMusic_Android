@@ -23,10 +23,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.launch
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.viewModel.MusicSearchViewModel
 import me.spica27.spicamusic.widget.SongItemWithCover
@@ -83,6 +85,7 @@ private fun SongList(
 ) {
 
   val dataState = musicViewModel.songFlow.collectAsState(emptyList())
+  val coroutineScope = rememberCoroutineScope()
 
   if (dataState.value.isEmpty()) {
     Box(
@@ -112,7 +115,9 @@ private fun SongList(
             musicViewModel.toggleLike(song)
           },
           onPlusClick = {
-            PlaybackStateManager.getInstance().play(song)
+            coroutineScope.launch {
+              PlaybackStateManager.getInstance().playAsync(song)
+            }
           }
         )
       }

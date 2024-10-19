@@ -76,7 +76,7 @@ fun CurrentListPage(
       }
       Box(modifier = Modifier.align(Alignment.CenterEnd)) {
         Text(
-          text = "${playIndexState.value}/${playListSizeState.value}",
+          text = "${playIndexState.value + 1}/${playListSizeState.value}",
           style = MaterialTheme.typography.bodyMedium
         )
       }

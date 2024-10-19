@@ -6,9 +6,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import linc.com.amplituda.Amplituda
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.db.dao.PlaylistDao
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Playlist
@@ -16,6 +20,7 @@ import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.playback.RepeatMode
 import me.spica27.spicamusic.player.Queue
+import me.spica27.spicamusic.utils.contentResolverSafe
 import me.spica27.spicamusic.utils.msToSecs
 import timber.log.Timber
 import javax.inject.Inject
@@ -23,7 +28,8 @@ import javax.inject.Inject
 @HiltViewModel
 class PlayBackViewModel @Inject constructor(
   private val songDao: SongDao,
-  private val playlistDao: PlaylistDao
+  private val playlistDao: PlaylistDao,
+  private val amplituda: Amplituda
 ) : ViewModel(),
   PlaybackStateManager.Listener {
 
@@ -44,7 +50,9 @@ class PlayBackViewModel @Inject constructor(
     get() = _nowPlayingList
 
   // 当前歌单大小大小
-  val nowPlayingListSize: Flow<Int> = playList.map { it.size }
+  val nowPlayingListSize: Flow<Int> = playList.map {
+    it.size
+  }.distinctUntilChanged()
 
 
   // 当前播放的乐曲
@@ -78,6 +86,13 @@ class PlayBackViewModel @Inject constructor(
     get() = _repeatMode
 
 
+  // 正在播放的歌曲的振幅
+  private val _playingSongAmplitudes = MutableStateFlow(listOf<Int>())
+
+  val playingSongAmplitudes: Flow<List<Int>>
+    get() = _playingSongAmplitudes
+
+
   // 是否随机播放
   private val _isShuffled = MutableStateFlow(false)
   val isShuffled: Flow<Boolean>
@@ -88,10 +103,27 @@ class PlayBackViewModel @Inject constructor(
     Timber.tag("MusicViewModel").d("init")
     PlaybackStateManager.getInstance().addListener(this)
     viewModelScope.launch(Dispatchers.Default) {
+      Timber.tag("MusicViewModel").d("init")
       _playingSong.emit(PlaybackStateManager.getInstance().getCurrentSong())
       _nowPlayingList.emit(PlaybackStateManager.getInstance().getCurrentList())
       _isPlaying.emit(PlaybackStateManager.getInstance().playerState.isPlaying)
       _playlistCurrentIndex.emit(PlaybackStateManager.getInstance().getCurrentSongIndex())
+    }
+    viewModelScope.launch(Dispatchers.Default) {
+      _playingSong.collectLatest { song ->
+        if (song?.getSongUri() != null) {
+          val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
+          if (inputStream != null) {
+            val amplitudes = amplituda.processAudio(inputStream)
+            _playingSongAmplitudes.emit(amplitudes.get().amplitudesAsList())
+            withContext(Dispatchers.IO) {
+              inputStream.close()
+            }
+          } else {
+            _playingSongAmplitudes.emit(listOf())
+          }
+        }
+      }
     }
   }
 
@@ -124,6 +156,7 @@ class PlayBackViewModel @Inject constructor(
   fun play(song: Song, list: List<Song>) {
     viewModelScope.launch(Dispatchers.Default) {
       PlaybackStateManager.getInstance().playAsync(song, list)
+      Timber.tag("MusicViewModel").d("play: $song")
       _playingSong.emit(song)
       _nowPlayingList.emit(list)
     }
@@ -144,6 +177,7 @@ class PlayBackViewModel @Inject constructor(
 
   override fun onIndexMoved(queue: Queue) {
     super.onIndexMoved(queue)
+    Timber.tag("MusicViewModel").d("onIndexMoved")
     viewModelScope.launch {
       _playingSong.emit(queue.currentSong())
       _playlistCurrentIndex.emit(queue.getIndex())
@@ -152,6 +186,7 @@ class PlayBackViewModel @Inject constructor(
 
   override fun onNewListLoad(queue: Queue) {
     super.onNewListLoad(queue)
+    Timber.tag("MusicViewModel").d("onNewListLoad")
     viewModelScope.launch {
       _nowPlayingList.emit(queue.getPlayList())
       _playingSong.emit(queue.currentSong())
