@@ -34,13 +34,14 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
 
   private val fft2: FloatArray = FloatArray(size)
 
-  private val job = Job()
+  private var job = Job()
 
-  private val coroutineScope = CoroutineScope(job + Dispatchers.Default)
+  private var coroutineScope = CoroutineScope(job + Dispatchers.Default)
 
 
   fun ready() {
-    job.start()
+    job = Job()
+    coroutineScope = CoroutineScope(job + Dispatchers.Default)
     PlaybackStateManager.getInstance().fftAudioProcessor.listeners.add(this)
   }
 
@@ -51,7 +52,7 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
 
   private var listener: Listener? = null
 
-  fun setListener(listener: Listener) {
+  fun setListener(listener: Listener?) {
     this.listener = listener
   }
 
@@ -60,6 +61,7 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
   }
 
   private val res = mutableListOf<Float>()
+
 
   override fun onFFTReady(sampleRateHz: Int, channelCount: Int, fft: FloatArray) {
     if (listener == null) return

@@ -228,7 +228,7 @@ private fun Cover(
       modifier = Modifier
         .fillMaxWidth()
         .aspectRatio(1f)
-        .padding(40.dp + 12.dp)
+        .padding(60.dp + 12.dp)
         .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
         .clip(CircleShape)
         .rotate(rotateState.value),

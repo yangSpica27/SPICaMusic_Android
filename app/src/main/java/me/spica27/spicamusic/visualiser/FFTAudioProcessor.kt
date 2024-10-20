@@ -146,6 +146,7 @@ class FFTAudioProcessor : AudioProcessor {
 
     noise = Noise.real(SAMPLE_SIZE)
 
+
     audioTrackBufferSize = getDefaultBufferSizeInBytes(inputAudioFormat)
 
     srcBuffer = ByteBuffer.allocate(audioTrackBufferSize + BUFFER_EXTRA_SIZE)
@@ -194,10 +195,13 @@ class FFTAudioProcessor : AudioProcessor {
     outputBuffer = this.processBuffer
   }
 
+
   private fun processFFT(buffer: ByteBuffer) {
     if (listeners.isEmpty()) {
       return
     }
+
+
     srcBuffer.put(buffer.array())
     srcBufferPosition += buffer.array().size
     // Since this is PCM 16 bit, each sample will be 2 bytes.

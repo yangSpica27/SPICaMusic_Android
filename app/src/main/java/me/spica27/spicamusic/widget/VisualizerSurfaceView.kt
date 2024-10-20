@@ -76,6 +76,10 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
 
         val fraction =
           decelerateInterpolator.getInterpolation(((System.currentTimeMillis() - lastSampleTime).toFloat() / interval))
+            .coerceIn(
+              0f,
+              1f
+            )
 
         if (lastYList.size == yList.size) {
           canvas.save()
@@ -140,29 +144,28 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
     drawHandler = Handler(drawThread.looper)
     isWork = true
     drawHandler.post(drawRunnable)
+    Timber.tag("VisualizerSurfaceView").e("surfaceCreated")
   }
 
   override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-    radius = (width / 2 - 40.dp).toInt()
+    radius = (width / 2 - 60.dp).toInt()
   }
 
   override fun surfaceDestroyed(holder: SurfaceHolder) {
+    musicVisualiser.setListener(null)
     musicVisualiser.dispose()
     isWork = false
     drawHandler.removeCallbacksAndMessages(null)
     drawThread.quitSafely()
-    drawThread.join(32)
-    drawThread.interrupt()
     Timber.tag("VisualizerSurfaceView").e("surfaceDestroyed")
   }
-
 
 
   // 上次采样的时间
   private var lastSampleTime = 0L
 
   // 采样间隔
-  private val interval = 500
+  private val interval = 250
 
 
   // 采集到的数据
