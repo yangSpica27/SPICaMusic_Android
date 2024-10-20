@@ -20,7 +20,6 @@ class PlaylistViewModel @Inject constructor(
   private val playlistDao: PlaylistDao
 ) : ViewModel() {
 
-
   val playlistId: Long? = savedStateHandle.get<Long>(AppScreens.playlist_id)
 
   val songInfoWithSongsFlow =

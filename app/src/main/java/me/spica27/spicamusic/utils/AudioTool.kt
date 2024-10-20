@@ -67,7 +67,7 @@ object AudioTool {
             ?: "",
           like = false,
           sort = 0,
-          playTimes = -1,
+          playTimes = 0,
           lastPlayTime = -1,
           duration = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
             ?: 0,

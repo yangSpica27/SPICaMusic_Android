@@ -17,7 +17,7 @@ interface SongDao {
   suspend fun insert(song: Song)
 
 
-  // 切换是否喜欢
+  // 切换是否收藏
   @Query("UPDATE song SET `like` = (CASE WHEN`LIKE` == 1 THEN 0 ELSE 1 END)  WHERE( songId == :id)")
   suspend fun toggleLike(id: Long)
 
@@ -26,6 +26,9 @@ interface SongDao {
 
   @Insert(onConflict = OnConflictStrategy.IGNORE)
   fun insertSync(songs: List<Song>)
+
+  @Query("UPDATE song SET playTimes = (playTimes + 1) WHERE songId == :id")
+  suspend fun addPlayTime(id: Long)
 
 
   @Query("DELETE FROM song WHERE mediaStoreId NOT IN (:mediaIds)")

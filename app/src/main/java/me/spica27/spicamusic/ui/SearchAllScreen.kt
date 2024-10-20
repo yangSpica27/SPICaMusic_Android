@@ -185,7 +185,7 @@ private fun FiltersBar(
 
   Row(modifier = modifier) {
     FilterItem(
-      title = "过滤非喜欢的",
+      title = "过滤非收藏的",
       checked = filterNoLikeState.value,
       onChange = {
         viewModel.toggleFilterNoLike()

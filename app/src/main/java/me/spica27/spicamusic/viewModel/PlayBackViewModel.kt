@@ -15,9 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import linc.com.amplituda.Amplituda
 import me.spica27.spicamusic.App
-import me.spica27.spicamusic.db.dao.PlaylistDao
 import me.spica27.spicamusic.db.dao.SongDao
-import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.playback.RepeatMode
@@ -27,23 +25,14 @@ import me.spica27.spicamusic.utils.msToSecs
 import timber.log.Timber
 import javax.inject.Inject
 
+@OptIn(UnstableApi::class)
 @HiltViewModel
 class PlayBackViewModel @OptIn(UnstableApi::class)
 @Inject constructor(
   private val songDao: SongDao,
-  private val playlistDao: PlaylistDao,
   private val amplituda: Amplituda
 ) : ViewModel(),
   PlaybackStateManager.Listener {
-
-  // 所有歌曲
-  val allSongs: Flow<List<Song>> = songDao.getAll()
-
-  // 所有喜欢的歌曲
-  val allLikeSongs: Flow<List<Song>> = songDao.getAllLikeSong()
-
-  // 所有歌单
-  val allPlayList: Flow<List<Playlist>> = playlistDao.getAllPlaylist()
 
 
   // 播放列表
@@ -130,6 +119,7 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
     }
   }
 
+
   override fun onCleared() {
     super.onCleared()
     PlaybackStateManager.getInstance().removeListener(this)
@@ -149,17 +139,22 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
     PlaybackStateManager.getInstance().playNext()
   }
 
-  // 喜欢/不喜欢歌曲
+  // 收藏/不收藏歌曲
   fun toggleLike(song: Song) {
     viewModelScope.launch {
       songDao.toggleLike(song.songId ?: -1)
+      _playingSong.emit(
+        song.copy(
+          like = !song.like
+        )
+      )
     }
   }
 
   fun play(song: Song, list: List<Song>) {
     viewModelScope.launch(Dispatchers.Default) {
       PlaybackStateManager.getInstance().playAsync(song, list)
-      Timber.tag("MusicViewModel").d("play: $song")
+      songDao.addPlayTime(song.songId ?: -1)
       _playingSong.emit(song)
       _nowPlayingList.emit(list)
     }
@@ -211,9 +206,4 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
     _repeatMode.value = repeatMode
   }
 
-  fun addPlayList(value: String) {
-    viewModelScope.launch {
-      playlistDao.insertPlaylist(Playlist(playlistName = value))
-    }
-  }
 }

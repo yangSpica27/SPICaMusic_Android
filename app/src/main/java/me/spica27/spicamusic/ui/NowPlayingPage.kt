@@ -27,11 +27,11 @@ fun NowPlayingPage(
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
 ) {
 
-  val songListState = playBackViewModel.playList.collectAsState(emptyList())
+  val nowPlayingSongs = playBackViewModel.playList.collectAsState(emptyList()).value
 
   val pageState = rememberPagerState(pageCount = { 2 })
 
-  if (songListState.value.isEmpty()) {
+  if (nowPlayingSongs.isEmpty()) {
     // 播放列表为空
     EmptyPage()
   } else {

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -52,6 +53,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImagePainter
@@ -67,6 +69,8 @@ import me.spica27.spicamusic.utils.msToDs
 import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.viewModel.SongViewModel
+import me.spica27.spicamusic.widget.SongControllerPanel
 import me.spica27.spicamusic.widget.VisualizerSurfaceView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveform
 import timber.log.Timber
@@ -74,68 +78,77 @@ import timber.log.Timber
 
 @Composable
 fun PlayerPage(
-  playBackViewModel: PlayBackViewModel = hiltViewModel()
+  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  songViewModel: SongViewModel = hiltViewModel()
 ) {
 
   // 当前播放的歌曲
-  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState(null)
+  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState(null).value
 
   // 快速傅里叶变换后的振幅
   val amp = playBackViewModel.playingSongAmplitudes.collectAsState(emptyList())
 
-  Box(
-    modifier = Modifier
-      .fillMaxSize(),
-    contentAlignment = Alignment.Center,
-  ) {
-    Column(
-      modifier = Modifier
-        .fillMaxSize(),
+  if (currentPlayingSong == null) {
+    return Box(
+      modifier = Modifier.fillMaxSize(),
+      contentAlignment = Alignment.Center,
     ) {
-      Spacer(modifier = Modifier.height(15.dp))
-      //  标题
-      Title(
-        modifier = Modifier.padding(vertical = 10.dp, horizontal = 20.dp),
-      )
-      Spacer(modifier = Modifier.height(15.dp))
-      // 封面
-      Cover(
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 20.dp)
-          .weight(1f),
-        songState = currentPlayingSong
-      )
-      Spacer(modifier = Modifier.height(20.dp))
-      // 歌名和歌手
-      SongInfo(
-        song = currentPlayingSong.value,
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 20.dp)
-      )
-      ControlPanel(
-        modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp),
-        ampState = amp
-      )
-      Text(
-        modifier = Modifier
-          .padding(10.dp)
-          .fillMaxWidth(),
-        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        text = "向上滑动查看播放列表",
-        style = MaterialTheme.typography.bodyMedium.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+      CircularProgressIndicator()
+    }
+  } else {
+    Box(
+      modifier = Modifier.fillMaxSize(),
+      contentAlignment = Alignment.Center,
+    ) {
+      Column(
+        modifier = Modifier.fillMaxSize(),
+      ) {
+        Spacer(modifier = Modifier.height(15.dp))
+        //  标题
+        Title(
+          modifier = Modifier.padding(vertical = 10.dp, horizontal = 20.dp),
         )
-      )
+        Spacer(modifier = Modifier.height(15.dp))
+        // 封面
+        Cover(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .weight(1f),
+          songState = songViewModel.getSongFlow(currentPlayingSong.songId ?: -1)
+            .collectAsState(null)
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        // 歌名和歌手
+        SongInfo(
+          songId = currentPlayingSong.songId ?: -1,
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+        )
+        ControlPanel(
+          modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp), ampState = amp
+        )
+        Text(
+          modifier = Modifier
+            .padding(10.dp)
+            .fillMaxWidth(),
+          textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+          text = "向上滑动查看播放列表",
+          style = MaterialTheme.typography.bodyMedium.copy(
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+          )
+        )
+      }
     }
   }
+
+
 }
 
 @Composable
 private fun Title(
-  modifier: Modifier = Modifier,
-  playBackViewModel: PlayBackViewModel = hiltViewModel()
+  modifier: Modifier = Modifier, playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
   val indexState = playBackViewModel.playlistCurrentIndex.collectAsState(0)
@@ -147,7 +160,9 @@ private fun Title(
   ) {
     Text(
       modifier = Modifier
-        .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small)
+        .background(
+          MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small
+        )
         .padding(vertical = 4.dp, horizontal = 8.dp),
       text = "循环播放",
       style = MaterialTheme.typography.bodyMedium.copy(
@@ -157,7 +172,9 @@ private fun Title(
     Spacer(modifier = Modifier.width(10.dp))
     Text(
       modifier = Modifier
-        .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small)
+        .background(
+          MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small
+        )
         .padding(vertical = 4.dp, horizontal = 8.dp),
       text = "第 ${indexState.value + 1} / ${playlistSizeState.value} 首",
       style = MaterialTheme.typography.bodyMedium.copy(
@@ -179,12 +196,9 @@ private fun Cover(
   val context = LocalContext.current
 
   val coverPainter = rememberAsyncImagePainter(
-    model = ImageRequest.Builder(context)
-      .data(songState.value?.getCoverUri())
-      .transformations(
-        CircleCropTransformation()
-      )
-      .build(),
+    model = ImageRequest.Builder(context).data(songState.value?.getCoverUri()).transformations(
+      CircleCropTransformation()
+    ).build(),
   )
 
 
@@ -194,35 +208,28 @@ private fun Cover(
 
   val infiniteTransition = rememberInfiniteTransition(label = "infinite")
   val rotateState = infiniteTransition.animateFloat(
-    initialValue = 0f,
-    targetValue = 360f,
-    animationSpec = infiniteRepeatable(
+    initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(
       animation = tween(10000, easing = LinearEasing),
       repeatMode = androidx.compose.animation.core.RepeatMode.Restart
-    ),
-    label = ""
+    ), label = ""
   )
 
   Box(
-    contentAlignment = Alignment.Center,
-    modifier = modifier
+    contentAlignment = Alignment.Center, modifier = modifier
   ) {
 
 
-    AndroidView(
-      factory = { context ->
-        VisualizerSurfaceView(context).apply {
-          setBgColor(backgroundColor.toArgb())
-          setColor(onSurfaceColor.toArgb())
-        }
-      },
-      update = { view ->
-        view.setBgColor(backgroundColor.toArgb())
-        view.setColor(onSurfaceColor.toArgb())
-      },
-      modifier = Modifier
-        .fillMaxWidth()
-        .aspectRatio(1f)
+    AndroidView(factory = { context ->
+      VisualizerSurfaceView(context).apply {
+        setBgColor(backgroundColor.toArgb())
+        setColor(onSurfaceColor.toArgb())
+      }
+    }, update = { view ->
+      view.setBgColor(backgroundColor.toArgb())
+      view.setColor(onSurfaceColor.toArgb())
+    }, modifier = Modifier
+      .fillMaxWidth()
+      .aspectRatio(1f)
     )
     Box(
       modifier = Modifier
@@ -231,15 +238,13 @@ private fun Cover(
         .padding(60.dp + 12.dp)
         .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
         .clip(CircleShape)
-        .rotate(rotateState.value),
-      contentAlignment = Alignment.Center
+        .rotate(rotateState.value), contentAlignment = Alignment.Center
     ) {
       if (coverPainterState.value is AsyncImagePainter.State.Success) {
         Image(
           painter = coverPainter,
           contentDescription = "Cover",
-          modifier = Modifier
-            .fillMaxSize(),
+          modifier = Modifier.fillMaxSize(),
           contentScale = ContentScale.Crop
         )
       } else {
@@ -292,15 +297,12 @@ private fun ControlPanel(
     Box(
       modifier = Modifier
         .fillMaxWidth()
-        .height(80.dp),
-      contentAlignment = Alignment.Center
+        .height(80.dp), contentAlignment = Alignment.Center
     ) {
-      AudioWaveform(
-        amplitudes = ampState.value,
+      AudioWaveform(amplitudes = ampState.value,
         waveformBrush = SolidColor(MaterialTheme.colorScheme.surfaceVariant),
         progressBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
-        modifier = Modifier
-          .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         progress = seekValueState.floatValue / (songState.value?.duration ?: 1).toFloat(),
         onProgressChangeFinished = {
           playBackViewModel.seekTo(seekValueState.floatValue.toLong())
@@ -310,18 +312,15 @@ private fun ControlPanel(
           Timber.d("Seeking to $it")
           seekValueState.floatValue = it * (songState.value?.duration ?: 1).toFloat()
           isSeekingState.value = true
-        }
-      )
+        })
     }
 
     Row(
-      modifier = Modifier.fillMaxWidth(),
-      verticalAlignment = Alignment.CenterVertically
+      modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
     ) {
       // Current Time
       Text(
-        modifier = Modifier
-          .padding(vertical = 4.dp, horizontal = 8.dp),
+        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
         text = positionSecState.value.formatDurationSecs(),
         style = MaterialTheme.typography.bodyMedium
       )
@@ -334,7 +333,9 @@ private fun ControlPanel(
       ) {
         Text(
           modifier = Modifier
-            .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small)
+            .background(
+              MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small
+            )
             .padding(vertical = 4.dp, horizontal = 8.dp),
           text = seekValueState.floatValue.toLong().msToSecs().formatDurationSecs(),
           style = MaterialTheme.typography.bodyMedium,
@@ -352,8 +353,7 @@ private fun ControlPanel(
     }
 
     Row(
-      modifier = Modifier.fillMaxWidth(),
-      verticalAlignment = Alignment.CenterVertically
+      modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
     ) {
       Spacer(modifier = Modifier.weight(2f))
       // Previous
@@ -365,8 +365,7 @@ private fun ControlPanel(
       Spacer(modifier = Modifier.weight(1f))
       // Play/Pause
       IconButton(
-        modifier = Modifier.size(60.dp),
-        onClick = {
+        modifier = Modifier.size(60.dp), onClick = {
           playBackViewModel.togglePlaying()
         }, colors = IconButtonDefaults.iconButtonColors(
           containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -395,10 +394,34 @@ private fun ControlPanel(
 
 // 歌名和歌手
 @Composable
-private fun SongInfo(song: Song?, modifier: Modifier = Modifier) {
+private fun SongInfo(
+  songId: Long,
+  modifier: Modifier = Modifier,
+  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  songViewModel: SongViewModel = hiltViewModel()
+) {
+
+  val song = songViewModel.getSongFlow(songId).collectAsState(null).value
+
+  val showDialogState = remember { mutableStateOf(false) }
+
   if (song == null) {
+
+    Box(modifier = modifier)
     return
   }
+
+  if (showDialogState.value) {
+    Dialog(
+      onDismissRequest = {
+        showDialogState.value = false
+      }) {
+      SongControllerPanel(
+        songId = songId
+      )
+    }
+  }
+
   Row(
     modifier = modifier,
   ) {
@@ -427,7 +450,9 @@ private fun SongInfo(song: Song?, modifier: Modifier = Modifier) {
     }
     Spacer(modifier = Modifier.weight(1f))
     IconButton(
-      onClick = { /*TODO*/ },
+      onClick = {
+        songViewModel.toggleFavorite(songId)
+      },
     ) {
       if (song.like) {
         Icon(
@@ -445,7 +470,9 @@ private fun SongInfo(song: Song?, modifier: Modifier = Modifier) {
     }
     Spacer(Modifier.width(10.dp))
     IconButton(
-      onClick = { /*TODO*/ },
+      onClick = {
+        showDialogState.value = true
+      },
     ) {
       Icon(
         Icons.Default.MoreVert,

@@ -25,7 +25,7 @@ class MusicSearchViewModel @Inject constructor(
   val searchKey: Flow<String>
     get() = _searchKey
 
-  // 是否过滤喜欢的歌曲
+  // 是否过滤收藏的歌曲
   private val _filterNoLike = MutableStateFlow(false)
 
   val filterNoLike: Flow<Boolean>
@@ -57,7 +57,7 @@ class MusicSearchViewModel @Inject constructor(
   }
     .flowOn(Dispatchers.IO)
 
-  // 喜欢/不喜欢歌曲
+  // 收藏/不收藏歌曲
   fun toggleLike(song: Song) {
     viewModelScope.launch {
       songDao.toggleLike(song.songId ?: -1)

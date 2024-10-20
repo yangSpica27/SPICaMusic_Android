@@ -23,8 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,26 +44,28 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.PlaylistItem
+import me.spica27.spicamusic.widget.SongControllerPanel
 import me.spica27.spicamusic.widget.SongItemWithCover
-import kotlin.math.roundToInt
 
 // 主页
 @Composable
 fun HomePage(
-  modifier: Modifier = Modifier,
-  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  modifier: Modifier = Modifier, songViewModel: SongViewModel = hiltViewModel(),
   navigator: AppComposeNavigator? = null
 ) {
 
-  val likeSongState = playBackViewModel.allLikeSongs.collectAsState(emptyList())
-  val allSongState = playBackViewModel.allSongs.collectAsState(emptyList())
+  val likeSong = songViewModel.allLikeSongs.collectAsState(emptyList()).value
+
+  val allSong = songViewModel.allSongs.collectAsState(emptyList()).value
 
 
   Box(
@@ -106,21 +106,21 @@ fun HomePage(
         beyondViewportPageCount = 3
       ) {
         when (it) {
-          0 -> if (likeSongState.value.isEmpty()) {
+          0 -> if (likeSong.isEmpty()) {
             Box(
               modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
             ) {
               Text(text = "暂无收藏", modifier = Modifier.offset(y = (-50).dp))
             }
           } else {
-            SongList(songs = likeSongState.value)
+            SongList(songs = likeSong)
           }
 
           1 -> PLayListItems(
             navigator = navigator
           )
 
-          2 -> SongList(songs = allSongState.value)
+          2 -> SongList(songs = allSong)
         }
       }
     }
@@ -132,36 +132,26 @@ fun HomePage(
 private fun SongList(modifier: Modifier = Modifier, songs: List<Song> = emptyList()) {
   val playBackViewModel = hiltViewModel<PlayBackViewModel>()
 
-  val isExpandedMenu = remember { mutableStateOf(false) }
+  val isShowDialogState = remember { mutableStateOf(false) }
 
-  val selectedSong = remember { mutableStateOf<Song?>(null) }
+  val isShowDialog = isShowDialogState.value
+
+  val selectedSongState = remember { mutableStateOf<Song?>(null) }
+
+  val selectedSong = selectedSongState.value
 
   val menuOffset = remember { mutableStateOf(Offset.Zero) }
 
-  DropdownMenu(
-    expanded = isExpandedMenu.value,
-    onDismissRequest = { isExpandedMenu.value = false },
-    shape = MaterialTheme.shapes.medium,
-    offset = convertIntOffsetToDpOffset(
-      IntOffset(
-        menuOffset.value.x.roundToInt(),
-        menuOffset.value.y.roundToInt()
+  if (isShowDialog && selectedSong != null) {
+    Dialog(
+      onDismissRequest = { isShowDialogState.value = false }
+    ) {
+      SongControllerPanel(
+        songId = selectedSong.songId ?: 0,
       )
-    )
-  ) {
-    DropdownMenuItem(onClick = {}, text = {
-      Text(
-        if (selectedSong.value?.like == true) "取消收藏"
-        else "收藏"
-      )
-    })
-
-    DropdownMenuItem(onClick = {}, text = { Text("添加到播放列表") })
-
-    DropdownMenuItem(onClick = {}, text = { Text("歌曲信息") })
-
-
+    }
   }
+
 
   LazyColumn(
     modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.Top
@@ -176,9 +166,9 @@ private fun SongList(modifier: Modifier = Modifier, songs: List<Song> = emptyLis
           playBackViewModel.play(song, songs)
         },
         onMenuClick = {
-          selectedSong.value = song
+          selectedSongState.value = song
           menuOffset.value = it
-          isExpandedMenu.value = true
+          isShowDialogState.value = true
         },
         onLikeClick = {
           playBackViewModel.toggleLike(song)
@@ -288,13 +278,13 @@ private fun Tab(isSelected: Boolean, text: String, onClick: () -> Unit) {
 
 @Composable
 private fun PLayListItems(
-  viewModel: PlayBackViewModel = hiltViewModel(),
+  viewModel: SongViewModel = hiltViewModel(),
   navigator: AppComposeNavigator? = null
 ) {
 
   val showAddPlaylistDialogState = remember { mutableStateOf(false) }
 
-  val dataState = viewModel.allPlayList.collectAsState(null)
+  val playlists = viewModel.allPlayList.collectAsState(null)
 
   if (showAddPlaylistDialogState.value) {
     val playlistNameState = remember { mutableStateOf("") }
@@ -333,7 +323,7 @@ private fun PLayListItems(
       })
   }
 
-  if (dataState.value == null) {
+  if (playlists.value == null) {
     return Box(
       modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
@@ -349,7 +339,7 @@ private fun PLayListItems(
         })
       }
       itemsIndexed(
-        dataState.value ?: listOf(),
+        playlists.value ?: listOf(),
         key = { _, item -> item.playlistId ?: 0 }) { _, playList ->
         PlaylistItem(
           modifier = Modifier.animateItem(),
