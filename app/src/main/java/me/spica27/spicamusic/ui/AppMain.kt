@@ -2,17 +2,23 @@ package me.spica27.spicamusic.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.rememberNavController
 import com.example.compose.AppTheme
 import me.spica27.spicamusic.navigation.AppNavHost
 import me.spica27.spicamusic.navigator.AppComposeNavigator
+import me.spica27.spicamusic.utils.DataStoreUtil
 
 
 @Composable
 fun AppMain(
   composeNavigator: AppComposeNavigator,
 ) {
-  AppTheme {
+  val darkTheme = DataStoreUtil(LocalContext.current).getForceDarkTheme.collectAsState(false).value
+  AppTheme(
+    darkTheme = darkTheme
+  ) {
     val navHostController = rememberNavController()
     LaunchedEffect(Unit) {
       composeNavigator.handleNavigationCommands(navHostController)

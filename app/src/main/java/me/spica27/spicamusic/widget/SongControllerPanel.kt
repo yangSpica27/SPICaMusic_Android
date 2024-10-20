@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -214,11 +215,11 @@ fun SongControllerPanel(
           onclick = { },
           icon = {
             Icon(
-              imageVector = Icons.Outlined.AddCircle,
+              imageVector = Icons.Outlined.PlayArrow,
               contentDescription = null
             )
           },
-          text = "添加到歌单"
+          text = "立即播放"
         )
 
         BottomButton(

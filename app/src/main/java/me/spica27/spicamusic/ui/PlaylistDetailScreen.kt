@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.AddCircle
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,12 +35,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -57,6 +62,19 @@ fun PlaylistDetailScreen(
   navigator: AppComposeNavigator? = null
 ) {
 
+  val showDeleteSureDialog = remember { mutableStateOf(false) }
+
+  if (showDeleteSureDialog.value) {
+    // 删除确认对话框
+    DeleteSureDialog(
+      onDismissRequest = {
+        showDeleteSureDialog.value = false
+      },
+      playlistViewModel = playlistViewModel,
+      navigator = navigator
+    )
+  }
+
 
   Scaffold(topBar = {
     val playlistState = playlistViewModel.playlistFlow.collectAsState(null)
@@ -71,8 +89,7 @@ fun PlaylistDetailScreen(
       TextButton(
         onClick = {
           // 删除歌单
-          playlistViewModel.deletePlaylist()
-          navigator?.navigateUp()
+          showDeleteSureDialog.value = true
         }
       ) {
         Text("删除歌单")
@@ -129,6 +146,49 @@ fun PlaylistDetailScreen(
   })
 }
 
+
+@Composable
+fun DeleteSureDialog(
+  onDismissRequest: () -> Unit = { },
+  playlistViewModel: PlaylistViewModel = hiltViewModel(),
+  navigator: AppComposeNavigator? = null
+) {
+  val coroutineScope = rememberCoroutineScope()
+  AlertDialog(
+    onDismissRequest = { onDismissRequest() },
+    title = {
+      Text("删除歌单")
+    },
+    text = {
+      Text("确定要删除这个歌单吗?")
+    },
+    confirmButton = {
+      TextButton(
+        onClick = {
+          // 确认删除
+          coroutineScope.launch {
+            playlistViewModel.deletePlaylist()
+            onDismissRequest()
+            navigator?.navigateUp()
+          }
+        }
+      ) {
+        Text("确定")
+      }
+    },
+    dismissButton = {
+      TextButton(
+        onClick = {
+          // 取消删除
+          onDismissRequest()
+        }
+      ) {
+        Text("取消")
+      }
+    }
+  )
+}
+
 @Composable
 private fun PlaylistDetailList(
   playlistViewModel: PlaylistViewModel = hiltViewModel(),
@@ -136,10 +196,14 @@ private fun PlaylistDetailList(
 ) {
 
 
-  val playlistState =
-    playlistViewModel.songInfoWithSongsFlow.map { it?.songs }.collectAsState(emptyList())
+  val list =
+    playlistViewModel.songInfoWithSongsFlow.map { it?.songs }.collectAsState(emptyList()).value
 
-  val isSelectModeState = playlistViewModel.isSelectMode.collectAsState(false)
+  val isSelectedMode = playlistViewModel.isSelectMode.collectAsState(false).value
+
+  BackHandler(enabled = isSelectedMode) {
+    playlistViewModel.toggleSelectMode()
+  }
 
   val selectedModePlaylist = combine(
     playlistViewModel.songsFlow,
@@ -151,7 +215,7 @@ private fun PlaylistDetailList(
   }.collectAsState(emptyList())
 
 
-  if (playlistState.value == null) {
+  if (list == null) {
     // 加载中
     Box(
       modifier = Modifier.fillMaxSize(),
@@ -160,7 +224,7 @@ private fun PlaylistDetailList(
       CircularProgressIndicator()
     }
   } else
-    if (playlistState.value?.isEmpty() == true) {
+    if (list.isEmpty()) {
       // 空内容
       EmptyContent(
         modifier = Modifier.fillMaxSize(),
@@ -169,10 +233,10 @@ private fun PlaylistDetailList(
     } else {
       // 歌单列表
       Box(modifier = Modifier.fillMaxSize()) {
-        if (isSelectModeState.value) {
+        if (isSelectedMode) {
           SelectedList(playlistViewModel = playlistViewModel, songs = selectedModePlaylist)
         } else {
-          NormalList(songListState = playlistState)
+          NormalList(songList = list)
         }
       }
     }
@@ -189,7 +253,8 @@ private fun SelectedList(
     }) { _, item ->
       SelectedSongItem(item.first, item.second, onClick = {
         playlistViewModel.toggleSelectSong(item.first.songId)
-      })
+      }
+      )
     }
   }
 }
@@ -250,10 +315,11 @@ private fun SelectedSongItem(song: Song, selected: Boolean, onClick: () -> Unit 
 
 
 /// 歌单列表
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 private fun NormalList(
   modifier: Modifier = Modifier,
-  songListState: State<List<Song>?>,
+  songList: List<Song>,
 ) {
 
   val coroutineScope = rememberCoroutineScope()
@@ -262,15 +328,16 @@ private fun NormalList(
     modifier = modifier
       .fillMaxSize()
   ) {
-    itemsIndexed(songListState.value ?: emptyList(), key = { _, song ->
+    itemsIndexed(songList, key = { _, song ->
       song.songId ?: -1
     }) { _, song ->
       SongItemWithCover(
+        modifier = Modifier.animateItem(),
         showMenu = true,
         showPlus = false,
         song = song, onClick = {
           coroutineScope.launch {
-            PlaybackStateManager.getInstance().playAsync(song, songListState.value ?: emptyList())
+            PlaybackStateManager.getInstance().playAsync(song, songList)
           }
         })
     }

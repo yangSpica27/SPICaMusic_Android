@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -23,10 +22,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -37,13 +38,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
@@ -57,6 +58,7 @@ import me.spica27.spicamusic.widget.SongControllerPanel
 import me.spica27.spicamusic.widget.SongItemWithCover
 
 // 主页
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePage(
   modifier: Modifier = Modifier, songViewModel: SongViewModel = hiltViewModel(),
@@ -86,17 +88,12 @@ fun HomePage(
       SearchButton(navigator)
       Spacer(modifier = Modifier.height(10.dp))
       // 分类tab
-      TabRow(
+      TabBar(
         selectedTabIndex = pagerState.currentPage, onTabSelected = {
           coroutineScope.launch {
             pagerState.animateScrollToPage(it)
           }
         }, tabs = listOf("收藏", "歌单", "最近添加")
-      )
-      HorizontalDivider(
-        modifier = Modifier.fillMaxWidth(),
-        thickness = 1.dp / 2,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
       )
       // 歌曲列表
       HorizontalPager(
@@ -196,26 +193,16 @@ private fun SearchButton(navigator: AppComposeNavigator? = null) {
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp)
-      .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.medium)
+      .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
+      .clip(CircleShape)
       .clickable {
         navigator?.navigate(AppScreens.SearchAll.route)
       }
       .padding(horizontal = 16.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
-    Text(
-      modifier = Modifier.weight(1f),
-      text = "从本地乐库中进行搜索",
-      style = MaterialTheme.typography.bodyLarge.copy(
-        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
-        fontWeight = FontWeight.W600,
-      )
-    )
     Box(
       modifier = Modifier
-        .background(
-          MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f), shape = CircleShape
-        )
         .padding(8.dp),
     ) {
       Icon(
@@ -224,55 +211,39 @@ private fun SearchButton(navigator: AppComposeNavigator? = null) {
         tint = MaterialTheme.colorScheme.onPrimaryContainer
       )
     }
+    Text(
+      modifier = Modifier.weight(1f),
+      text = "从本地乐库中进行搜索",
+      style = MaterialTheme.typography.bodyLarge.copy(
+        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f),
+        fontWeight = FontWeight.W500,
+      )
+    )
   }
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TabRow(
+private fun TabBar(
   selectedTabIndex: Int,
   onTabSelected: (Int) -> Unit,
   tabs: List<String>,
 ) {
-  LazyRow {
-    item { Spacer(modifier = Modifier.width(16.dp)) }
-    items(tabs.size) { index ->
-      Tab(
-        isSelected = index == selectedTabIndex,
-        text = tabs[index],
-        onClick = { onTabSelected(index) })
-    }
-    item { Spacer(modifier = Modifier.width(16.dp)) }
-  }
 
-}
-
-@Composable
-private fun Tab(isSelected: Boolean, text: String, onClick: () -> Unit) {
-  Box(
-    modifier = Modifier
-      .padding(8.dp)
-      .background(
-        if (isSelected) {
-          MaterialTheme.colorScheme.primaryContainer
-        } else {
-          MaterialTheme.colorScheme.surfaceContainer
-        }, MaterialTheme.shapes.medium
-      )
-      .clickable {
-        onClick()
-      }, contentAlignment = Alignment.Center
+  PrimaryTabRow(
+    selectedTabIndex = selectedTabIndex,
   ) {
-    Text(
-      text = text, style = MaterialTheme.typography.bodyMedium.copy(
-        color = if (isSelected) {
-          MaterialTheme.colorScheme.onPrimaryContainer
-        } else {
-          MaterialTheme.colorScheme.onSurface
-        }, fontSize = 14.sp, fontWeight = if (isSelected) FontWeight.W600 else FontWeight.Normal
-      ), modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-    )
+    tabs.forEachIndexed { index, text ->
+      Tab(
+        selected = selectedTabIndex == index,
+        onClick = { onTabSelected(index) },
+        text = { Text(text) }
+      )
+    }
   }
+
+
 }
 
 
