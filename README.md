@@ -2,10 +2,10 @@
 
 <p align="center">
 
-<img src="/img/Screenshot_2024-10-20-10-39-29-195_me.spica27.spi.jpg" width="20%"/>
+<img src="/img/Screenshot_2024-10-21-22-12-05-734_me.spica27.spi.jpg" width="20%"/>
 <img src="/img/Screenshot_2024-10-18-22-40-02-391_me.spica27.spi.jpg" width="20%"/>
 <img src="/img/Screenshot_2024-10-16-13-46-08-319_me.spica27.spi.jpg" width="20%"/>
-<img src="/img/Screenshot_2024-10-18-22-40-08-428_me.spica27.spi.jpg" width="20%"/>
+<img src="/img/Screenshot_2024-10-21-22-14-25-719_me.spica27.spi.jpg" width="20%"/>
 </p>
 
 ## 项目简介
