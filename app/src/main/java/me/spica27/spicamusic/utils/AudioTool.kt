@@ -42,6 +42,7 @@ object AudioTool {
       MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, LocalAudioColumns, null, null
     )
 
+    val types = hashSetOf<String>()
     if (!cursor.moveToFirst()) return listOf()
 
     val songs = mutableListOf<Song>()
@@ -50,10 +51,18 @@ object AudioTool {
       val isMusic =
         cursor.getIntOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.IS_MUSIC))
       if (isMusic != 1) continue
-      val mineType =
+      val mimeType =
         cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.MIME_TYPE))
-      val isSupportMineType = (mineType == "audio/mpeg" || mineType == "audio/ogg")
+      types.add(mimeType ?: "")
+      val isSupportMineType =
+        (mimeType == "audio/mpeg" ||
+            mimeType == "audio/ogg" ||
+            mimeType == "audio/flac")
       if (!isSupportMineType) continue
+      // 过滤掉时长小于1秒的音频文件
+      val duration =
+        cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
+      if (duration == null || duration < 1000) continue
       songs.add(
         Song(
           mediaStoreId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID)),
@@ -68,13 +77,17 @@ object AudioTool {
           like = false,
           sort = 0,
           playTimes = 0,
-          lastPlayTime = -1,
+          lastPlayTime = 0,
           duration = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
-            ?: 0,
+            ?: 1,
+          mimeType = mimeType ?: ""
         )
       )
     } while (cursor.moveToNext())
     Timber.d("扫描音频文件完成，共扫描到${songs.size}个音频文件");
+    types.forEach {
+      Timber.d("音频类型：$it")
+    }
     cursor.close()
     return songs
 
@@ -130,11 +143,7 @@ object AudioTool {
     val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     val devices = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
     for (device in devices) {
-      if (device.type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
-        device.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
-        device.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
-        device.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO
-      ) {
+      if (device.type == AudioDeviceInfo.TYPE_WIRED_HEADSET || device.type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES || device.type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || device.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO) {
         return true
       }
     }

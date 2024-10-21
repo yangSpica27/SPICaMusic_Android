@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.service
 
 
+import android.app.Service.START_NOT_STICKY
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -9,6 +10,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.annotation.OptIn
@@ -21,9 +23,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.decoder.flac.LibflacAudioRenderer
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.Renderer
+import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.audio.AudioCapabilities
 import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.audio.AudioSink
@@ -47,6 +51,9 @@ private const val MY_MEDIA_ROOT_ID = "media_root_id"
 private const val MY_EMPTY_MEDIA_ROOT_ID = "empty_root_id"
 
 
+/**
+ * 音乐播放服务
+ */
 @OptIn(UnstableApi::class)
 class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   MediaSessionComponent.Listener {
@@ -82,66 +89,39 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
         .setConstantBitrateSeekingAlwaysEnabled(true)
     )
 
-
-    exoPlayer = ExoPlayer.Builder(this, object : DefaultRenderersFactory(this) {
-      override fun buildAudioRenderers(
-        context: Context,
-        extensionRendererMode: Int,
-        mediaCodecSelector: MediaCodecSelector,
-        enableDecoderFallback: Boolean,
-        audioSink: AudioSink,
-        eventHandler: Handler,
-        eventListener: AudioRendererEventListener,
-        out: ArrayList<Renderer>
-      ) {
-
-        out.add(
-          MediaCodecAudioRenderer(
-            context,
-            mediaCodecSelector,
-            enableDecoderFallback,
-            eventHandler,
-            eventListener,
-            DefaultAudioSink.Builder(context)
-              .setAudioCapabilities(
-                AudioCapabilities.getCapabilities(
-                  context,
-                  AudioAttributes.DEFAULT,
-                  null
-                )
-              )
-              .setAudioProcessors(
-                arrayOf(
-                  fftAudioProcessor,
-                  PlaybackStateManager.getInstance().equalizerAudioProcessor,
-                  PlaybackStateManager.getInstance().replayGainAudioProcessor
-                )
-              )
-              .build()
-          )
+    val audioRenderer = RenderersFactory { handler, _, audioListener, _, _ ->
+      arrayOf(
+        MediaCodecAudioRenderer(
+          this,
+          MediaCodecSelector.DEFAULT,
+          handler,
+          audioListener,
+          AudioCapabilities.DEFAULT_AUDIO_CAPABILITIES,
+          fftAudioProcessor,
+          PlaybackStateManager.getInstance().equalizerAudioProcessor,
+          PlaybackStateManager.getInstance().replayGainAudioProcessor
+        ),
+        LibflacAudioRenderer(
+          handler, audioListener, fftAudioProcessor,
+          PlaybackStateManager.getInstance().equalizerAudioProcessor,
+          PlaybackStateManager.getInstance().replayGainAudioProcessor
         )
-        super.buildAudioRenderers(
-          context,
-          extensionRendererMode,
-          mediaCodecSelector,
-          enableDecoderFallback,
-          audioSink,
-          eventHandler,
-          eventListener, out
-        )
-      }
-    })
+      )
+    }
+
+
+
+    exoPlayer = ExoPlayer.Builder(this, audioRenderer)
       .setWakeMode(C.WAKE_MODE_LOCAL)
       .setMediaSourceFactory(extractorsFactory)
       .setAudioAttributes(
         AudioAttributes.Builder()
           .setUsage(C.USAGE_MEDIA)
           .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-          .build(),
-        true
+          .build(), true
       )
-      .setUsePlatformDiagnostics(false)
-      .build().also {
+      .setUsePlatformDiagnostics(false).build()
+      .also {
         it.addListener(this)
       }
 
@@ -149,8 +129,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     foregroundManager = ForegroundManager(this)
     mediaSessionComponent = MediaSessionComponent(this, this)
     registerReceiver(
-      systemReceiver,
-      IntentFilter().apply {
+      systemReceiver, IntentFilter().apply {
         addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         addAction(AudioManager.ACTION_HEADSET_PLUG)
         addAction(ACTION_INC_REPEAT_MODE)
@@ -181,9 +160,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
 
 
   override fun onPositionDiscontinuity(
-    oldPosition: Player.PositionInfo,
-    newPosition: Player.PositionInfo,
-    reason: Int
+    oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int
   ) {
     if (reason == Player.DISCONTINUITY_REASON_SEEK) {
       PlaybackStateManager.getInstance().synchronizePosition(exoPlayer.currentPosition)
@@ -222,14 +199,10 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
    * 连接时候触发
    */
   override fun onGetRoot(
-    clientPackageName: String,
-    clientUid: Int,
-    rootHints: Bundle?
+    clientPackageName: String, clientUid: Int, rootHints: Bundle?
   ): BrowserRoot {
 
-    return if (
-      false
-    ) {
+    return if (false) {
       // 允许连接
       BrowserRoot(MY_MEDIA_ROOT_ID, null)
     } else {
@@ -251,8 +224,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
    * 客户端连接后，可以通过重复调用 MediaBrowserCompat.subscribe() 来遍历内容层次结构，
    */
   override fun onLoadChildren(
-    parentId: String,
-    result: Result<MutableList<MediaBrowserCompat.MediaItem>>
+    parentId: String, result: Result<MutableList<MediaBrowserCompat.MediaItem>>
   ) {
     //  对于不允许连接的 客户端返回空
     if (MY_EMPTY_MEDIA_ROOT_ID == parentId) {
@@ -289,9 +261,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
 
   override fun getState(durationMs: Long): IPlayer.State {
     return IPlayer.State(
-      exoPlayer.isPlaying,
-      exoPlayer.currentPosition.coerceAtLeast(0)
-        .coerceAtMost(durationMs)
+      exoPlayer.isPlaying, exoPlayer.currentPosition.coerceAtLeast(0).coerceAtMost(durationMs)
     )
   }
 
@@ -348,9 +318,8 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
         }
         // 当音频输出切回到内置扬声器时的广播（自动暂停）
         AudioManager.ACTION_AUDIO_BECOMING_NOISY -> pauseFromHeadsetPlug()
-        ACTION_PLAY_PAUSE ->
-          PlaybackStateManager.getInstance()
-            .setPlaying(!PlaybackStateManager.getInstance().playerState.isPlaying)
+        ACTION_PLAY_PAUSE -> PlaybackStateManager.getInstance()
+          .setPlaying(!PlaybackStateManager.getInstance().playerState.isPlaying)
 
         ACTION_SKIP_PREV -> PlaybackStateManager.getInstance().playPre()
         ACTION_SKIP_NEXT -> PlaybackStateManager.getInstance().playNext()
@@ -363,8 +332,8 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
 
     @OptIn(UnstableApi::class)
     private fun playFromHeadsetPlug() {
-      if (PlaybackStateManager.getInstance().getCurrentSong() != null &&
-        initialHeadsetPlugEventHandled
+      if (PlaybackStateManager.getInstance()
+          .getCurrentSong() != null && initialHeadsetPlugEventHandled
       ) {
         PlaybackStateManager.getInstance().setPlaying(true)
       }

@@ -86,9 +86,6 @@ fun PlayerPage(
   // 当前播放的歌曲
   val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle(null).value
 
-  // 快速傅里叶变换后的振幅
-  val amp = playBackViewModel.playingSongAmplitudes.collectAsStateWithLifecycle(emptyList())
-
   if (currentPlayingSong == null) {
     return Box(
       modifier = Modifier.fillMaxSize(),
@@ -128,7 +125,7 @@ fun PlayerPage(
             .padding(horizontal = 20.dp)
         )
         ControlPanel(
-          modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp), ampState = amp
+          modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp)
         )
         Text(
           modifier = Modifier
@@ -269,15 +266,16 @@ private fun Cover(
 private fun ControlPanel(
   modifier: Modifier = Modifier,
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
-  ampState: State<List<Int>>
 ) {
 
+  // 快速傅里叶变换后的振幅
+  val amp = playBackViewModel.playingSongAmplitudes.collectAsStateWithLifecycle(emptyList()).value
 
-  val isPlayingState = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false)
+  val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
 
-  val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle(null)
+  val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle(null).value
 
-  val positionSecState = playBackViewModel.positionSec.collectAsStateWithLifecycle(0L)
+  val positionSec = playBackViewModel.positionSec.collectAsStateWithLifecycle(0L).value
 
   val isSeekingState = remember { mutableStateOf(false) }
 
@@ -285,9 +283,11 @@ private fun ControlPanel(
 
 
 
-  LaunchedEffect(positionSecState.value) {
+
+
+  LaunchedEffect(positionSec) {
     if (isSeekingState.value) return@LaunchedEffect
-    seekValueState.floatValue = positionSecState.value.secsToMs() * 1f
+    seekValueState.floatValue = positionSec.secsToMs() * 1f
   }
 
   Column(
@@ -301,18 +301,18 @@ private fun ControlPanel(
         .height(80.dp), contentAlignment = Alignment.Center
     ) {
       AudioWaveSlider(
-        amplitudes = ampState.value,
+        amplitudes = amp,
         waveformBrush = SolidColor(MaterialTheme.colorScheme.surfaceVariant),
         progressBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
         modifier = Modifier.fillMaxWidth(),
-        progress = seekValueState.floatValue / (songState.value?.duration ?: 1).toFloat(),
+        progress = (seekValueState.floatValue / (songState?.duration ?: 1)).coerceIn(0f, 1f),
         onProgressChangeFinished = {
           playBackViewModel.seekTo(seekValueState.floatValue.toLong())
           isSeekingState.value = false
         },
         onProgressChange = {
           Timber.d("Seeking to $it")
-          seekValueState.floatValue = it * (songState.value?.duration ?: 1).toFloat()
+          seekValueState.floatValue = it * (songState?.duration ?: 1).toFloat()
           isSeekingState.value = true
         })
     }
@@ -323,7 +323,7 @@ private fun ControlPanel(
       // Current Time
       Text(
         modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
-        text = positionSecState.value.formatDurationSecs(),
+        text = positionSec.formatDurationSecs(),
         style = MaterialTheme.typography.bodyMedium
       )
 
@@ -349,7 +349,7 @@ private fun ControlPanel(
 
       // Total Time
       Text(
-        text = songState.value?.duration?.msToDs()?.formatDurationDs() ?: "0:00",
+        text = songState?.duration?.msToDs()?.formatDurationDs() ?: "0:00",
         style = MaterialTheme.typography.bodyMedium
       )
     }
@@ -374,7 +374,7 @@ private fun ControlPanel(
         )
       ) {
         Icon(
-          painter = painterResource(id = if (isPlayingState.value) R.drawable.ic_pause else R.drawable.ic_play),
+          painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
           contentDescription = "Play/Pause",
           tint = MaterialTheme.colorScheme.onSecondaryContainer
         )

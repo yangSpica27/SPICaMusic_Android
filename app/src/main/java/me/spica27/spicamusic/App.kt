@@ -1,12 +1,7 @@
 package me.spica27.spicamusic
 
 import android.app.Application
-import coil3.ImageLoader
-import coil3.SingletonImageLoader
-import coil3.request.crossfade
-import coil3.serviceLoaderEnabled
-import coil3.util.DebugLogger
-import coil3.util.Logger
+import androidx.media3.common.MimeTypes
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 
@@ -35,7 +30,6 @@ class App : Application() {
       return instance
     }
   }
-
 
 
 }

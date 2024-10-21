@@ -114,6 +114,8 @@ dependencies {
   def accompanistVersion = "0.36.0"
   implementation("com.google.accompanist:accompanist-permissions:$accompanistVersion")
 
+  implementation project(":decoder_flac")
+
   // 播放器
   def media3_version = "1.4.1"
   // For media playback using ExoPlayer

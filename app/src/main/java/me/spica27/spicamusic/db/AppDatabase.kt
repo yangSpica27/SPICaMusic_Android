@@ -12,7 +12,11 @@ import me.spica27.spicamusic.db.entity.Song
 /**
  * 数据库
  */
-@Database(entities = [Song::class, Playlist::class, PlaylistSongCrossRef::class], version = 3, exportSchema = false)
+@Database(
+  entities = [Song::class, Playlist::class, PlaylistSongCrossRef::class],
+  version = 5,
+  exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
 
   abstract fun songDao(): SongDao

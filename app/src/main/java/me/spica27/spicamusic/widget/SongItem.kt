@@ -82,8 +82,7 @@ fun SongItemWithCover(
         .width(coverSize)
         .height(coverSize)
         .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium)
-        .padding(vertical = 8.dp),
-      contentAlignment = Alignment.Center
+        .padding(vertical = 8.dp), contentAlignment = Alignment.Center
     ) {
 
       if (coverPainterState.value is AsyncImagePainter.State.Success) {
@@ -105,14 +104,32 @@ fun SongItemWithCover(
     Spacer(modifier = Modifier.width(16.dp))
     Column(modifier = Modifier.weight(1f)) {
       Text(
-        text = song.displayName, maxLines = 1, style = MaterialTheme.typography.bodyLarge.copy(
+        modifier = Modifier.fillMaxWidth(),
+        text = song.displayName,
+        maxLines = 1,
+        style = MaterialTheme.typography.bodyLarge.copy(
           color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.W600
         )
       )
       Spacer(modifier = Modifier.height(4.dp))
-      Text(
-        text = song.artist, style = MaterialTheme.typography.bodyMedium, maxLines = 1
-      )
+      Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+          modifier = Modifier
+            .padding(end = 8.dp)
+            .background(
+              color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.small
+            )
+            .padding(horizontal = 5.dp, vertical = 1.dp),
+          text = song.getFormatMimeType(),
+          style = MaterialTheme.typography.bodyMedium.copy(
+            color = MaterialTheme.colorScheme.onSurface
+          ),
+          maxLines = 1
+        )
+        Text(
+          text = song.artist, style = MaterialTheme.typography.bodyMedium, maxLines = 1
+        )
+      }
     }
 
 
@@ -121,8 +138,7 @@ fun SongItemWithCover(
         onPlusClick()
       }) {
         Icon(
-          imageVector = Icons.Default.Add,
-          contentDescription = "更多"
+          imageVector = Icons.Default.Add, contentDescription = "更多"
         )
       }
     }
@@ -132,8 +148,9 @@ fun SongItemWithCover(
         onLikeClick()
       }) {
         Icon(
-          tint = if (song.like) Color(0xFFF44336) else
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+          tint = if (song.like) Color(0xFFF44336) else MaterialTheme.colorScheme.onSurface.copy(
+            alpha = 0.6f
+          ),
           imageVector = if (song.like) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
           contentDescription = "更多"
         )
@@ -162,35 +179,34 @@ fun PlayingSongItem(
   showRemove: Boolean = false,
   onRemoveClick: () -> Unit = { },
   isPlaying: Boolean = false,
-  song: Song, onClick: () -> Unit = { }
+  song: Song,
+  onClick: () -> Unit = { }
 ) {
 
   val coverPainter = rememberAsyncImagePainter(song.getCoverUri().toCoilUri())
   val coverPainterState = coverPainter.state.collectAsState()
 
   val borderColor = MaterialTheme.colorScheme.tertiary
-  Row(
-    modifier = modifier
-      .background(
-        color = if (isPlaying) MaterialTheme.colorScheme.surfaceContainer
-        else MaterialTheme.colorScheme.surface,
-      )
-      .drawBehind {
-        if (isPlaying) {
-          drawLine(
-            color = borderColor,
-            start = Offset(0f, 0f),
-            end = Offset(0f, size.height),
-            strokeWidth = 10.dp.toPx(),
-          )
-        }
+  Row(modifier = modifier
+    .background(
+      color = if (isPlaying) MaterialTheme.colorScheme.surfaceContainer
+      else MaterialTheme.colorScheme.surface,
+    )
+    .drawBehind {
+      if (isPlaying) {
+        drawLine(
+          color = borderColor,
+          start = Offset(0f, 0f),
+          end = Offset(0f, size.height),
+          strokeWidth = 10.dp.toPx(),
+        )
       }
-      .clickable {
-        onClick()
-      }
-      .padding(vertical = 12.dp, horizontal = 16.dp)
-      .fillMaxWidth())
-  {
+    }
+    .clickable {
+      onClick()
+    }
+    .padding(vertical = 12.dp, horizontal = 16.dp)
+    .fillMaxWidth()) {
     // 封面
     Box(
       modifier = Modifier
@@ -221,9 +237,7 @@ fun PlayingSongItem(
 
         if (coverPainterState.value is AsyncImagePainter.State.Success) {
           Image(
-            painter = coverPainter,
-            contentDescription = "封面",
-            modifier = Modifier.size(66.dp)
+            painter = coverPainter, contentDescription = "封面", modifier = Modifier.size(66.dp)
           )
         } else {
           Icon(
@@ -244,7 +258,8 @@ fun PlayingSongItem(
     Column(
       modifier = Modifier
         .padding(start = 16.dp)
-        .weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)
+        .weight(1f),
+      verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       Text(
         text = song.displayName,
@@ -295,7 +310,8 @@ fun SelectableSongItem(
       onToggle()
     }
     .padding(horizontal = 16.dp, vertical = 6.dp)
-    .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    .fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically) {
 
     // 选中图标
     Box(
@@ -311,13 +327,10 @@ fun SelectableSongItem(
           }, CircleShape
         )
         .border(
-          width = 1.dp,
-          color = if (selected) Color.Transparent
-          else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-          shape = CircleShape
+          width = 1.dp, color = if (selected) Color.Transparent
+          else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), shape = CircleShape
         )
-        .padding(2.dp),
-      contentAlignment = Alignment.Center
+        .padding(2.dp), contentAlignment = Alignment.Center
     ) {
       if (selected) {
         Icon(
@@ -336,8 +349,7 @@ fun SelectableSongItem(
             MaterialTheme.colorScheme.secondary
           } else {
             MaterialTheme.colorScheme.onSurface
-          },
-          fontWeight = FontWeight.W600
+          }, fontWeight = FontWeight.W600
         )
       )
       Spacer(modifier = Modifier.height(4.dp))
@@ -347,8 +359,7 @@ fun SelectableSongItem(
             MaterialTheme.colorScheme.secondary
           } else {
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-          },
-          fontWeight = FontWeight.W500
+          }, fontWeight = FontWeight.W500
         )
       )
     }
