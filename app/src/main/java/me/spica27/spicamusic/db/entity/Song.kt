@@ -30,7 +30,12 @@ data class Song constructor(
   var sort: Int,
   var playTimes: Int,
   var lastPlayTime: Int,
-  var mimeType: String
+  var mimeType: String,
+  var albumId: Long,
+  var sampleRate: Int, // 采样率
+  var bitRate: Int, // 比特率
+  var channels: Int, // 声道数
+  var digit: Int // 位深度
 ) : Parcelable {
 
   fun getFormatMimeType(): String {
@@ -41,7 +46,7 @@ data class Song constructor(
   }
 
   fun getCoverUri(): Uri {
-    return mediaStoreId.toCoverUri()
+    return albumId.toCoverUri()
   }
 
   fun getSongUri(): Uri {

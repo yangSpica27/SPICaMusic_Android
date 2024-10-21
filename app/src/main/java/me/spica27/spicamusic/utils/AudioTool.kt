@@ -3,6 +3,8 @@ package me.spica27.spicamusic.utils
 import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.media.MediaExtractor
+import android.media.MediaFormat
 import android.provider.MediaStore
 import androidx.core.database.getIntOrNull
 import androidx.core.database.getLongOrNull
@@ -38,6 +40,7 @@ object AudioTool {
 
 
   fun getSongsFromPhone(context: Context): List<Song> {
+
     val cursor = context.contentResolverSafe.safeQuery(
       MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, LocalAudioColumns, null, null
     )
@@ -55,34 +58,60 @@ object AudioTool {
         cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.MIME_TYPE))
       types.add(mimeType ?: "")
       val isSupportMineType =
-        (mimeType == "audio/mpeg" ||
-            mimeType == "audio/ogg" ||
-            mimeType == "audio/flac")
+        (mimeType == "audio/mpeg" || mimeType == "audio/ogg" || mimeType == "audio/flac")
       if (!isSupportMineType) continue
       // 过滤掉时长小于1秒的音频文件
       val duration =
         cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
       if (duration == null || duration < 1000) continue
-      songs.add(
-        Song(
-          mediaStoreId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID)),
-          path = cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DATA))
-            ?: "",
-          size = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.SIZE))
-            ?: 0,
-          displayName = cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DISPLAY_NAME))
-            ?: MediaStore.UNKNOWN_STRING,
-          artist = cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ARTIST))
-            ?: "",
-          like = false,
-          sort = 0,
-          playTimes = 0,
-          lastPlayTime = 0,
-          duration = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
-            ?: 1,
-          mimeType = mimeType ?: ""
-        )
+
+
+      val song = Song(
+        mediaStoreId = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns._ID)),
+        path = cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DATA))
+          ?: "",
+        size = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.SIZE))
+          ?: 0,
+        displayName = cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DISPLAY_NAME))
+          ?: MediaStore.UNKNOWN_STRING,
+        artist = cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ARTIST))
+          ?: "",
+        like = false,
+        sort = 0,
+        playTimes = 0,
+        lastPlayTime = 0,
+        duration = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
+          ?: 1,
+        mimeType = mimeType ?: "",
+        albumId = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM_ID))
+          ?: 0,
+        sampleRate = 0,
+        bitRate = 0,
+        channels = 0,
+        digit = 0
       )
+
+//      // 获取音频文件的采样率、比特率、声道数、位深度
+//      if (mimeType != "audio/flac"){
+//        try {
+//          val extractor = MediaExtractor()
+//          extractor.setDataSource(song.path)
+//          val mf: MediaFormat = extractor.getTrackFormat(0)
+//          val sampleRate = mf.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+//          val bitRate = mf.getInteger(MediaFormat.KEY_BIT_RATE)
+//          val channelCount = mf.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+//          val digit = bitRate * 8 / (sampleRate * channelCount)
+//          song.sampleRate = sampleRate
+//          song.bitRate = bitRate
+//          song.channels = channelCount
+//          song.digit = digit
+//          extractor.release()
+//        } catch (e: Exception) {
+//          e.printStackTrace()
+//        }
+//      }
+//
+      songs.add(song)
     } while (cursor.moveToNext())
     Timber.d("扫描音频文件完成，共扫描到${songs.size}个音频文件");
     types.forEach {

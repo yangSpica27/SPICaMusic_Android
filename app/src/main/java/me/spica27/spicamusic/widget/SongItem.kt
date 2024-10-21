@@ -32,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -41,6 +42,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.toCoilUri
@@ -68,7 +70,7 @@ fun SongItemWithCover(
 
   val itemCoordinates = remember { mutableStateOf(Offset.Zero) }
   val coverPainter = rememberAsyncImagePainter(song.getCoverUri().toCoilUri())
-  val coverPainterState = coverPainter.state.collectAsState()
+  val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
 
   Row(
     verticalAlignment = Alignment.CenterVertically,
@@ -82,7 +84,7 @@ fun SongItemWithCover(
         .width(coverSize)
         .height(coverSize)
         .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium)
-        .padding(vertical = 8.dp), contentAlignment = Alignment.Center
+        .clip(MaterialTheme.shapes.medium), contentAlignment = Alignment.Center
     ) {
 
       if (coverPainterState.value is AsyncImagePainter.State.Success) {
@@ -90,14 +92,18 @@ fun SongItemWithCover(
           painter = coverPainter, contentDescription = "封面", modifier = Modifier.size(66.dp)
         )
       } else {
-        Icon(
-          modifier = Modifier
+        Box(
+          Modifier
             .fillMaxWidth()
-            .scale(1.5f),
-          painter = painterResource(id = R.drawable.ic_dvd),
-          contentDescription = "封面",
-          tint = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
+            .padding(8.dp),
+        ) {
+          Icon(
+            modifier = Modifier.fillMaxWidth(),
+            painter = painterResource(id = R.drawable.ic_dvd),
+            contentDescription = "封面",
+            tint = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+          )
+        }
       }
 
     }
@@ -214,26 +220,19 @@ fun PlayingSongItem(
         .fillMaxWidth()
         .background(
           color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium
-        ),
+        )
+        .clip(MaterialTheme.shapes.medium),
       contentAlignment = Alignment.Center,
     ) {
-      if (isPlaying) {
-        Box(
-          modifier = Modifier
-            .size(48.dp)
-            .background(
-              color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
-              shape = MaterialTheme.shapes.medium
-            ),
-          contentAlignment = Alignment.Center,
-        ) {
-          Text(
-            text = "播放中", style = MaterialTheme.typography.bodySmall.copy(
-              color = MaterialTheme.colorScheme.onTertiaryContainer
-            )
-          )
-        }
-      } else {
+      Box(
+        modifier = Modifier
+          .size(48.dp)
+          .background(
+            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+            shape = MaterialTheme.shapes.medium
+          ),
+        contentAlignment = Alignment.Center,
+      ) {
 
         if (coverPainterState.value is AsyncImagePainter.State.Success) {
           Image(
@@ -249,8 +248,6 @@ fun PlayingSongItem(
             tint = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
           )
         }
-
-
       }
     }
 
