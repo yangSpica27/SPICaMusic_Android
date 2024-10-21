@@ -24,7 +24,7 @@ private val FREQUENCY_BAND_LIMITS = arrayOf(
 @UnstableApi
 class MusicVisualiser() : FFTAudioProcessor.FFTListener {
 
-  private val max_const = 20_000 // Reference max value for accum magnitude
+  private val max_const = 14_000 // Reference max value for accum magnitude
   private val bands = FREQUENCY_BAND_LIMITS.size
   private val size = FFTAudioProcessor.SAMPLE_SIZE / 2
 
@@ -121,7 +121,7 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
           }
           smoothedAccum /= (smoothing_factor + 1) // +1 because it also includes the current value
 
-          val value = (smoothedAccum / max_const.toDouble()).toFloat()
+          val value = (smoothedAccum / max_const.toDouble()).toFloat().coerceIn(0f, 1f)
 
           // 添加增益
           res.add(decelerateInterpolator.getInterpolation(value))

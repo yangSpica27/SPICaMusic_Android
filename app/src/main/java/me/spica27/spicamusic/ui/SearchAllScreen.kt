@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.viewModel.MusicSearchViewModel
@@ -78,6 +79,7 @@ fun SearchAllScreen(
   )
 }
 
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 private fun SongList(
   modifier: Modifier = Modifier,

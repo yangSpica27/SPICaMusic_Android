@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package me.spica27.spicamusic.ui
 
 import androidx.compose.foundation.background
@@ -25,17 +27,21 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,11 +53,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.PlaylistItem
 import me.spica27.spicamusic.widget.SongControllerPanel
@@ -61,7 +69,8 @@ import me.spica27.spicamusic.widget.SongItemWithCover
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePage(
-  modifier: Modifier = Modifier, songViewModel: SongViewModel = hiltViewModel(),
+  modifier: Modifier = Modifier,
+  songViewModel: SongViewModel = hiltViewModel(),
   navigator: AppComposeNavigator? = null
 ) {
 
@@ -140,9 +149,7 @@ private fun SongList(modifier: Modifier = Modifier, songs: List<Song> = emptyLis
   val menuOffset = remember { mutableStateOf(Offset.Zero) }
 
   if (isShowDialog && selectedSong != null) {
-    Dialog(
-      onDismissRequest = { isShowDialogState.value = false }
-    ) {
+    Dialog(onDismissRequest = { isShowDialogState.value = false }) {
       SongControllerPanel(
         songId = selectedSong.songId ?: 0,
       )
@@ -202,8 +209,7 @@ private fun SearchButton(navigator: AppComposeNavigator? = null) {
     verticalAlignment = Alignment.CenterVertically,
   ) {
     Box(
-      modifier = Modifier
-        .padding(8.dp),
+      modifier = Modifier.padding(8.dp),
     ) {
       Icon(
         imageVector = Icons.Default.Search,
@@ -235,11 +241,9 @@ private fun TabBar(
     selectedTabIndex = selectedTabIndex,
   ) {
     tabs.forEachIndexed { index, text ->
-      Tab(
-        selected = selectedTabIndex == index,
+      Tab(selected = selectedTabIndex == index,
         onClick = { onTabSelected(index) },
-        text = { Text(text) }
-      )
+        text = { Text(text) })
     }
   }
 
@@ -249,13 +253,87 @@ private fun TabBar(
 
 @Composable
 private fun PLayListItems(
-  viewModel: SongViewModel = hiltViewModel(),
-  navigator: AppComposeNavigator? = null
+  songViewModel: SongViewModel = hiltViewModel(),
+  navigator: AppComposeNavigator? = null,
+  playlistViewModel: PlaylistViewModel = hiltViewModel()
 ) {
 
-  val showAddPlaylistDialogState = remember { mutableStateOf(false) }
+  val showAddPlaylistDialogState = rememberSaveable { mutableStateOf(false) }
 
-  val playlists = viewModel.allPlayList.collectAsState(null)
+  val showMenu = rememberSaveable { mutableStateOf(false) }
+
+  val selectedPlayListId = rememberSaveable { mutableLongStateOf(-1L) }
+
+  val playlists = songViewModel.allPlayList.collectAsState(null)
+
+  val showRenameDialog = rememberSaveable { mutableStateOf(false) }
+
+
+  if (showRenameDialog.value) {
+    val playlistNameState = remember { mutableStateOf("") }
+    AlertDialog(onDismissRequest = {
+      showRenameDialog.value = false
+    }, title = { Text("重命名歌单") }, text = {
+      TextField(
+        value = playlistNameState.value,
+        onValueChange = { playlistNameState.value = it },
+        placeholder = { Text("请输入新的歌单名称") },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
+      )
+    }, confirmButton = {
+      IconButton(onClick = {
+        playlistViewModel.renamePlaylist(selectedPlayListId.longValue, playlistNameState.value)
+        showRenameDialog.value = false
+      }) {
+        Text(
+          "确定",
+          color = MaterialTheme.colorScheme.primary,
+          style = MaterialTheme.typography.bodyMedium
+        )
+      }
+    }, dismissButton = {
+      IconButton(onClick = { showRenameDialog.value = false }) {
+        Text(
+          "取消",
+          color = MaterialTheme.colorScheme.onSurface,
+          style = MaterialTheme.typography.bodyMedium
+        )
+      }
+    })
+  }
+
+
+  // 歌单操作菜单
+  if (showMenu.value && selectedPlayListId.longValue != -1L) {
+    Dialog(
+      onDismissRequest = {
+        showMenu.value = false
+      },
+    ) {
+      Column(
+        modifier = Modifier
+          .clip(MaterialTheme.shapes.medium)
+          .background(MaterialTheme.colorScheme.surfaceContainer)
+      ) {
+        ListItem(
+          modifier = Modifier.clickable {
+            showMenu.value = false
+            showRenameDialog.value = true
+          },
+          headlineContent = { Text("重命名") },
+        )
+        ListItem(
+          modifier = Modifier.clickable {
+            playlistViewModel.deletePlaylist(selectedPlayListId.longValue)
+            showMenu.value = false
+          },
+          headlineContent = { Text("删除") },
+        )
+      }
+    }
+
+  }
 
   if (showAddPlaylistDialogState.value) {
     val playlistNameState = remember { mutableStateOf("") }
@@ -273,7 +351,7 @@ private fun PLayListItems(
       },
       confirmButton = {
         IconButton(onClick = {
-          viewModel.addPlayList(playlistNameState.value)
+          songViewModel.addPlayList(playlistNameState.value)
           showAddPlaylistDialogState.value = false
         }) {
           Text(
@@ -316,7 +394,10 @@ private fun PLayListItems(
           modifier = Modifier.animateItem(),
           playlist = playList,
           showMenu = true,
-          onClickMenu = {},
+          onClickMenu = {
+            selectedPlayListId.longValue = playList.playlistId ?: -1
+            showMenu.value = true
+          },
           onClick = {
             navigator?.navigate(AppScreens.PlaylistDetail.createRoute(playList.playlistId ?: -1))
           })
@@ -334,7 +415,8 @@ private fun AddPlayListItem(onClick: () -> Unit = {}) {
       onClick()
     }
     .padding(vertical = 6.dp, horizontal = 16.dp)
-    .fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    .fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically) {
     Box(
       Modifier
         .width(50.dp)

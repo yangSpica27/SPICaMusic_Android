@@ -3,12 +3,12 @@
 package me.spica27.spicamusic.widget.audio_seekbar
 
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
@@ -50,7 +50,7 @@ private const val DefaultGraphicsLayerAlpha: Float = 0.99F
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AudioWaveform(
+fun AudioWaveSlider(
   modifier: Modifier = Modifier,
   style: DrawStyle = Fill,
   waveformBrush: Brush = SolidColor(Color.White),
@@ -66,7 +66,12 @@ fun AudioWaveform(
   amplitudes: List<Int>,
   onProgressChange: (Float) -> Unit,
 ) {
-  val _progress = remember(progress) { progress.coerceIn(MinProgress, MaxProgress) }
+  val _progress = animateFloatAsState(
+    progress.coerceIn(MinProgress, MaxProgress),
+    tween(125, easing = LinearEasing),
+    label = "",
+  ).value
+
   val _spikeWidth = remember(spikeWidth) { spikeWidth.coerceIn(MinSpikeWidthDp, MaxSpikeWidthDp) }
   val _spikePadding =
     remember(spikePadding) { spikePadding.coerceIn(MinSpikePaddingDp, MaxSpikePaddingDp) }

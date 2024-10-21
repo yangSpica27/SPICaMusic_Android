@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.PlaylistSongCrossRef
@@ -27,6 +28,9 @@ interface PlaylistDao {
 
   @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
   fun getPlayListById(playlistId: Long): Flow<Playlist>
+
+  @Query("update Playlist set playlistName = :newName where playlistId = :playlistId")
+  suspend fun renamePlaylist(playlistId: Long, newName: String)
 
 
   @Transaction

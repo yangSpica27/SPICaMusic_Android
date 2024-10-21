@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
@@ -72,7 +73,7 @@ import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SongControllerPanel
 import me.spica27.spicamusic.widget.VisualizerSurfaceView
-import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveform
+import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
 import timber.log.Timber
 
 
@@ -83,10 +84,10 @@ fun PlayerPage(
 ) {
 
   // 当前播放的歌曲
-  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState(null).value
+  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle(null).value
 
   // 快速傅里叶变换后的振幅
-  val amp = playBackViewModel.playingSongAmplitudes.collectAsState(emptyList())
+  val amp = playBackViewModel.playingSongAmplitudes.collectAsStateWithLifecycle(emptyList())
 
   if (currentPlayingSong == null) {
     return Box(
@@ -151,9 +152,9 @@ private fun Title(
   modifier: Modifier = Modifier, playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
-  val indexState = playBackViewModel.playlistCurrentIndex.collectAsState(0)
+  val indexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle(0)
 
-  val playlistSizeState = playBackViewModel.nowPlayingListSize.collectAsState(0)
+  val playlistSizeState = playBackViewModel.nowPlayingListSize.collectAsStateWithLifecycle(0)
 
   Row(
     modifier = modifier,
@@ -202,7 +203,7 @@ private fun Cover(
   )
 
 
-  val coverPainterState = coverPainter.state.collectAsState()
+  val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
   val backgroundColor = MaterialTheme.colorScheme.surface
   val onSurfaceColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
@@ -272,11 +273,11 @@ private fun ControlPanel(
 ) {
 
 
-  val isPlayingState = playBackViewModel.isPlaying.collectAsState(false)
+  val isPlayingState = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false)
 
-  val songState = playBackViewModel.currentSongFlow.collectAsState(null)
+  val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle(null)
 
-  val positionSecState = playBackViewModel.positionSec.collectAsState(0L)
+  val positionSecState = playBackViewModel.positionSec.collectAsStateWithLifecycle(0L)
 
   val isSeekingState = remember { mutableStateOf(false) }
 
@@ -299,7 +300,8 @@ private fun ControlPanel(
         .fillMaxWidth()
         .height(80.dp), contentAlignment = Alignment.Center
     ) {
-      AudioWaveform(amplitudes = ampState.value,
+      AudioWaveSlider(
+        amplitudes = ampState.value,
         waveformBrush = SolidColor(MaterialTheme.colorScheme.surfaceVariant),
         progressBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
         modifier = Modifier.fillMaxWidth(),
@@ -401,7 +403,7 @@ private fun SongInfo(
   songViewModel: SongViewModel = hiltViewModel()
 ) {
 
-  val song = songViewModel.getSongFlow(songId).collectAsState(null).value
+  val song = songViewModel.getSongFlow(songId).collectAsStateWithLifecycle(null).value
 
   val showDialogState = remember { mutableStateOf(false) }
 

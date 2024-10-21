@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.example.compose.AppTheme
 import me.spica27.spicamusic.navigation.AppNavHost
@@ -15,7 +16,9 @@ import me.spica27.spicamusic.utils.DataStoreUtil
 fun AppMain(
   composeNavigator: AppComposeNavigator,
 ) {
-  val darkTheme = DataStoreUtil(LocalContext.current).getForceDarkTheme.collectAsState(false).value
+  val darkTheme = DataStoreUtil(LocalContext.current)
+    .getForceDarkTheme.collectAsStateWithLifecycle(false)
+    .value
   AppTheme(
     darkTheme = darkTheme
   ) {

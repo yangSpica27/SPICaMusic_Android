@@ -72,6 +72,24 @@ class PlaylistViewModel @Inject constructor(
   }
 
 
+  fun deletePlaylist(id: Long) {
+    viewModelScope.launch(Dispatchers.IO) {
+      playlistDao.deleteById(id)
+    }
+  }
+
+  fun renameCurrentPlaylist(newName: String) {
+    viewModelScope.launch(Dispatchers.IO) {
+      playlistId?.let { playlistDao.renamePlaylist(it, newName) }
+    }
+  }
+
+  fun renamePlaylist(id: Long, newName: String) {
+    viewModelScope.launch(Dispatchers.IO) {
+      playlistDao.renamePlaylist(id, newName)
+    }
+  }
+
   // 删除歌单
   fun deletePlaylist() {
     if (playlistId != null) {

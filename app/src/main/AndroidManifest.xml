@@ -10,8 +10,8 @@
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
-  <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-permission android:name="android.permission.INTERNET" />
 
   <uses-permission
@@ -32,7 +32,6 @@
     </intent>
   </queries>
 
-
   <application
     android:name=".App"
     android:theme="@style/Theme.SPICaMusic"
@@ -45,6 +44,7 @@
     tools:targetApi="31">
     <activity
       android:name=".MainActivity"
+      android:launchMode="singleTask"
       android:theme="@style/Theme.SPICaMusic"
       android:exported="true"
       android:label="@string/app_name">
@@ -62,7 +62,7 @@
 
     <service
       android:exported="false"
-      android:name=".service.RefreshMusicListService"/>
+      android:name=".service.RefreshMusicListService" />
 
   </application>
 

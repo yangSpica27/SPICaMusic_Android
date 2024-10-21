@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import me.spica27.spicamusic.service.RefreshMusicListService
@@ -63,9 +64,10 @@ fun SettingPage() {
 
   val context = LocalContext.current
   val settingViewModel = hiltViewModel<SettingViewModel>()
-  val autoPlaySettingState = settingViewModel.autoPlay.collectAsState(false)
-  val autoScannerSettingState = settingViewModel.autoScanner.collectAsState(false)
-  val forceDarkThemeSettingState = settingViewModel.forceDarkTheme.collectAsState(false)
+  val autoPlaySettingState = settingViewModel.autoPlay.collectAsStateWithLifecycle(false)
+  val autoScannerSettingState = settingViewModel.autoScanner.collectAsStateWithLifecycle(false)
+  val forceDarkThemeSettingState =
+    settingViewModel.forceDarkTheme.collectAsStateWithLifecycle(false)
 
   Box(modifier = Modifier.fillMaxSize()) {
     LazyColumn(contentPadding = PaddingValues(16.dp)) {
@@ -119,20 +121,20 @@ fun SettingPage() {
       item {
         Card {
           Column {
-            SwitchSettingItem(
-              title = "自动播放", desc = "自动播放下一首", value = autoPlaySettingState.value,
-              onClick = {
-                settingViewModel.saveAutoPlay(!autoPlaySettingState.value)
-              }
-            )
-            SwitchSettingItem(
-              title = "自动扫描",
-              desc = "定时更新/扫描本地音乐",
-              value = autoScannerSettingState.value,
-              onClick = {
-                settingViewModel.saveAutoScanner(!autoScannerSettingState.value)
-              }
-            )
+//            SwitchSettingItem(
+//              title = "自动播放", desc = "自动播放下一首", value = autoPlaySettingState.value,
+//              onClick = {
+//                settingViewModel.saveAutoPlay(!autoPlaySettingState.value)
+//              }
+//            )
+//            SwitchSettingItem(
+//              title = "自动扫描",
+//              desc = "定时更新/扫描本地音乐",
+//              value = autoScannerSettingState.value,
+//              onClick = {
+//                settingViewModel.saveAutoScanner(!autoScannerSettingState.value)
+//              }
+//            )
             SwitchSettingItem(
               title = "暗色模式",
               desc = "是否启用暗色模式",
