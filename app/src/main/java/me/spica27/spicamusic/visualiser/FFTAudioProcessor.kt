@@ -26,15 +26,18 @@ SOFTWARE.
 
 package me.spica27.spicamusic.visualiser
 
+import android.icu.util.Calendar
 import android.media.AudioTrack
 import android.media.AudioTrack.ERROR_BAD_VALUE
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.Assertions
+import androidx.media3.common.util.SystemClock
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import com.paramsen.noise.Noise
+import timber.log.Timber
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.max
@@ -200,7 +203,6 @@ class FFTAudioProcessor : AudioProcessor {
     if (listeners.isEmpty()) {
       return
     }
-
 
     srcBuffer.put(buffer.array())
     srcBufferPosition += buffer.array().size

@@ -12,17 +12,19 @@ import kotlin.math.floor
 import kotlin.math.pow
 
 // https://github.com/dzolnai/ExoVisualizer
-// Modified for use with Compose
 
-// Taken from: https://en.wikipedia.org/wiki/Preferred_number#Audio_frequencies
-private val FREQUENCY_BAND_LIMITS = arrayOf(
-  20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630,
-  800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000,
-  12500, 16000, 20000
-)
 
 @UnstableApi
 class MusicVisualiser() : FFTAudioProcessor.FFTListener {
+
+  companion object {
+    // Taken from: https://en.wikipedia.org/wiki/Preferred_number#Audio_frequencies
+    val FREQUENCY_BAND_LIMITS = arrayOf(
+      20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630,
+      800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000,
+      12500, 16000, 20000
+    )
+  }
 
   private val max_const = 14_000 // Reference max value for accum magnitude
   private val bands = FREQUENCY_BAND_LIMITS.size

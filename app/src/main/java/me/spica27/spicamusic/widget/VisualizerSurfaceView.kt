@@ -13,14 +13,14 @@ import android.view.animation.DecelerateInterpolator
 import androidx.core.graphics.ColorUtils
 import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.utils.dp
+import me.spica27.spicamusic.visualiser.FFTAudioProcessor
 import me.spica27.spicamusic.visualiser.MusicVisualiser
 import timber.log.Timber
 import java.util.concurrent.locks.ReentrantLock
 
 
 @UnstableApi
-class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
-  MusicVisualiser.Listener {
+class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback, MusicVisualiser.Listener {
 
   private lateinit var drawThread: HandlerThread
 
@@ -29,9 +29,7 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
   constructor(context: Context?) : super(context)
   constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
   constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(
-    context,
-    attrs,
-    defStyleAttr
+    context, attrs, defStyleAttr
   )
 
   init {
@@ -77,8 +75,7 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
         val fraction =
           decelerateInterpolator.getInterpolation(((System.currentTimeMillis() - lastSampleTime).toFloat() / interval))
             .coerceIn(
-              0f,
-              1f
+              0f, 1f
             )
 
         if (lastYList.size == yList.size) {
@@ -100,22 +97,14 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
               }
               pointPaint.color = ColorUtils.setAlphaComponent(lineColor, 100)
               canvas.drawLine(
-                0f,
-                maxYList[i] * 1f,
-                0f,
-                radius * 1f,
-                pointPaint
+                0f, maxYList[i] * 1f, 0f, radius * 1f, pointPaint
               )
               pointPaint.color = lineColor
             }
 
 
             canvas.drawLine(
-              0f,
-              curY * 1f,
-              0f,
-              radius * 1f,
-              pointPaint
+              0f, curY * 1f, 0f, radius * 1f, pointPaint
             )
 
 
@@ -165,14 +154,28 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
   private var lastSampleTime = 0L
 
   // 采样间隔
-  private val interval = 250
+  private val interval = 125
 
 
   // 采集到的数据
-  private val yList = arrayListOf<Int>()
+  private val yList by lazy {
+    arrayListOf<Int>().apply {
+      for (i in 0 until MusicVisualiser.FREQUENCY_BAND_LIMITS.size) {
+        add(radius)
+        add(radius)
+      }
+    }
+  }
 
   // 前一次采集的数据
-  private val lastYList = arrayListOf<Int>()
+  private val lastYList by lazy {
+    arrayListOf<Int>().apply {
+      for (i in 0 until MusicVisualiser.FREQUENCY_BAND_LIMITS.size) {
+        add(radius)
+        add(radius)
+      }
+    }
+  }
 
 
   private val decelerateInterpolator = DecelerateInterpolator()
@@ -180,11 +183,7 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback,
   override fun getDrawData(list: List<Float>) {
     lock.lock()
 
-    if (
-      ((System.currentTimeMillis() - lastSampleTime) < interval)
-      && yList.isNotEmpty()
-      && lastYList.isNotEmpty()
-    ) {
+    if (((System.currentTimeMillis() - lastSampleTime) < interval) && yList.isNotEmpty() && lastYList.isNotEmpty()) {
       lock.unlock()
       return
     }
