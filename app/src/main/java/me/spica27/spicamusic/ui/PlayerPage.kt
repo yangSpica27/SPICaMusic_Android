@@ -220,11 +220,11 @@ private fun Cover(
     AndroidView(factory = { context ->
       VisualizerSurfaceView(context).apply {
         setBgColor(backgroundColor.toArgb())
-        setColor(onSurfaceColor.toArgb())
+        setThemeColor(onSurfaceColor.toArgb())
       }
     }, update = { view ->
       view.setBgColor(backgroundColor.toArgb())
-      view.setColor(onSurfaceColor.toArgb())
+      view.setThemeColor(onSurfaceColor.toArgb())
     }, modifier = Modifier
       .fillMaxWidth()
       .aspectRatio(1f)

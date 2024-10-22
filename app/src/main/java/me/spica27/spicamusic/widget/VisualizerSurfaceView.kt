@@ -15,6 +15,7 @@ import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.utils.dp
 import me.spica27.spicamusic.visualiser.FFTAudioProcessor
 import me.spica27.spicamusic.visualiser.MusicVisualiser
+import me.spica27.spicamusic.visualiser.VisualizerDrawableManager
 import timber.log.Timber
 import java.util.concurrent.locks.ReentrantLock
 
@@ -34,95 +35,52 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback, MusicVisualis
 
   init {
     holder.addCallback(this)
+    setOnClickListener {
+      nextVisualiserType()
+    }
   }
 
-  private var backgroundColor = Color.WHITE
-
-  private var radius = 0
 
   fun setBgColor(color: Int) {
-    backgroundColor = color
+    visualizerDrawableManager.setBackgroundColor(color)
   }
 
-  private val pointPaint = Paint().apply {
-    // set paint
-    color = Color.BLACK
-    // set style
-    style = Paint.Style.FILL
-    strokeWidth = 8.dp
-    strokeCap = Paint.Cap.ROUND
+  fun setThemeColor(color: Int) {
+    visualizerDrawableManager.setThemeColor(color)
   }
 
-  private var lineColor = Color.BLACK
 
-  fun setColor(color: Int) {
-    pointPaint.color = color
-    lineColor = color
-  }
+  private val visualizerDrawableManager = VisualizerDrawableManager()
+
 
   private val lock = ReentrantLock()
 
   private var isWork = false
 
+
+  fun nextVisualiserType() {
+    visualizerDrawableManager.nextVisualiserType()
+  }
+
+
   private val drawRunnable = Runnable {
     while (isWork && !Thread.interrupted()) {
       val canvas = holder.lockCanvas()
-      if (canvas != null) {
-        canvas.drawColor(backgroundColor)
-        canvas.translate(width / 2f, height / 2f)
-        lock.lock()
-
-        val fraction =
-          decelerateInterpolator.getInterpolation(((System.currentTimeMillis() - lastSampleTime).toFloat() / interval))
-            .coerceIn(
-              0f, 1f
-            )
-
-        if (lastYList.size == yList.size) {
-          canvas.save()
-
-          for (i in 0 until lastYList.size) {
-            canvas.rotate(360f / lastYList.size)
-            val lastY = lastYList[i]
-            val y = yList[i]
-
-            val curY = lastY + (y - lastY) * fraction
-
-            if (maxYList.size == yList.size) {
-              val maxY = maxYList[i]
-              if (maxY < curY) {
-                maxYList[i] = curY.toInt()
-              } else {
-                maxYList[i] = (maxYList[i] - (1.dp) / 60f).toInt()
-              }
-              pointPaint.color = ColorUtils.setAlphaComponent(lineColor, 100)
-              canvas.drawLine(
-                0f, maxYList[i] * 1f, 0f, radius * 1f, pointPaint
-              )
-              pointPaint.color = lineColor
-            }
-
-
-            canvas.drawLine(
-              0f, curY * 1f, 0f, radius * 1f, pointPaint
-            )
-
-
-          }
-          canvas.restore()
-        }
-
-        lock.unlock()
+      if (canvas == null) {
+        SystemClock.sleep(16)
+        continue
       }
+      lock.lock()
+      // 绘制
+      visualizerDrawableManager.getVisualiserDrawable().draw(canvas)
+      lock.unlock()
       holder.unlockCanvasAndPost(canvas)
       SystemClock.sleep(16)
     }
   }
 
-  // 记录最高的Y值 用于回落动画
-  private val maxYList = arrayListOf<Int>()
 
-
+  // 波形图绘制效果集合
   private val musicVisualiser: MusicVisualiser = MusicVisualiser()
 
   override fun surfaceCreated(holder: SurfaceHolder) {
@@ -137,7 +95,8 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback, MusicVisualis
   }
 
   override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-    radius = (width / 2 - 60.dp).toInt()
+    visualizerDrawableManager.setVisualiserBounds(width, height)
+    visualizerDrawableManager.setRadius((width / 2 - 60.dp).toInt())
   }
 
   override fun surfaceDestroyed(holder: SurfaceHolder) {
@@ -150,68 +109,9 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback, MusicVisualis
   }
 
 
-  // 上次采样的时间
-  private var lastSampleTime = 0L
-
-  // 采样间隔
-  private val interval = 125
-
-
-  // 采集到的数据
-  private val yList by lazy {
-    arrayListOf<Int>().apply {
-      for (i in 0 until MusicVisualiser.FREQUENCY_BAND_LIMITS.size) {
-        add(radius)
-        add(radius)
-      }
-    }
-  }
-
-  // 前一次采集的数据
-  private val lastYList by lazy {
-    arrayListOf<Int>().apply {
-      for (i in 0 until MusicVisualiser.FREQUENCY_BAND_LIMITS.size) {
-        add(radius)
-        add(radius)
-      }
-    }
-  }
-
-
-  private val decelerateInterpolator = DecelerateInterpolator()
-
   override fun getDrawData(list: List<Float>) {
     lock.lock()
-
-    if (((System.currentTimeMillis() - lastSampleTime) < interval) && yList.isNotEmpty() && lastYList.isNotEmpty()) {
-      lock.unlock()
-      return
-    }
-
-    //  记录上次的结果
-    if (yList.isNotEmpty()) {
-      lastYList.clear()
-      lastYList.addAll(yList)
-    }
-
-    // 计算
-    yList.clear()
-    list.forEachIndexed { index, value ->
-      val cur = radius + 30.dp * value
-      val next = if (index == list.size - 1) {
-        radius + 30.dp * list[0]
-      } else {
-        radius + 30.dp * list[index + 1]
-      }
-      yList.add(cur.toInt())
-      yList.add(next.toInt())
-    }
-    if (maxYList.size != yList.size) {
-      maxYList.clear()
-      maxYList.addAll(yList)
-    }
-
-    lastSampleTime = System.currentTimeMillis()
+    visualizerDrawableManager.getVisualiserDrawable().update(list)
     lock.unlock()
   }
 

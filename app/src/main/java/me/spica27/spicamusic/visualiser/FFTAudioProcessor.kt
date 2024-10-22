@@ -132,6 +132,7 @@ class FFTAudioProcessor : AudioProcessor {
     return durationUs * inputAudioFormat.sampleRate / C.MICROS_PER_SECOND
   }
 
+
   override fun isActive(): Boolean {
     return isActive
   }
