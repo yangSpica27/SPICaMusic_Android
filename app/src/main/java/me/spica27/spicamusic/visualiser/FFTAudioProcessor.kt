@@ -165,6 +165,7 @@ class FFTAudioProcessor : AudioProcessor {
     val outputSize = frameCount * inputAudioFormat.channelCount * 2
 
 
+
     if (processBuffer.capacity() < outputSize) {
       processBuffer = ByteBuffer.allocateDirect(outputSize).order(ByteOrder.nativeOrder())
     } else {
@@ -214,25 +215,38 @@ class FFTAudioProcessor : AudioProcessor {
       srcBuffer.position(0)
       srcBuffer.get(tempByteArray, 0, bytesToProcess)
 
-      tempByteArray.forEachIndexed { index, byte ->
-        if (currentByte == null) {
-          currentByte = byte
-        } else {
-          src[index / 2] =
-            (currentByte!!.toFloat() * Byte.MAX_VALUE + byte) / (Byte.MAX_VALUE * Byte.MAX_VALUE)
-          dst[index / 2] = 0f
-          currentByte = null
-        }
 
+//      tempByteArray.forEachIndexed { index, byte ->
+//        if (currentByte == null) {
+//          currentByte = byte
+//        } else {
+//          src[index / 2] =
+//            (currentByte!!.toFloat() * Byte.MAX_VALUE + byte) / (Byte.MAX_VALUE * Byte.MAX_VALUE)
+//          dst[index / 2] = 0f
+//          currentByte = null
+//        }
+//      }
+
+
+      for (i in 0 until bytesToProcess step 2) {
+        val sample =
+          (tempByteArray[i].toFloat() * Byte.MAX_VALUE + tempByteArray[i + 1]) / (Byte.MAX_VALUE * Byte.MAX_VALUE)
+        src[i / 2] = sample
+        dst[i / 2] = 0f
       }
+
       srcBuffer.position(bytesToProcess)
       srcBuffer.compact()
       srcBufferPosition -= bytesToProcess
       srcBuffer.position(srcBufferPosition)
 
       val fft = noise?.fft(src, dst)!!
-      for (listener in listeners) {
-        listener.onFFTReady(inputAudioFormat.sampleRate, inputAudioFormat.channelCount, fft)
+      listeners.forEach {
+        it.onFFTReady(
+          inputAudioFormat.sampleRate,
+          inputAudioFormat.channelCount,
+          fft
+        )
       }
     }
   }
