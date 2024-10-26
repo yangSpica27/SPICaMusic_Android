@@ -15,8 +15,11 @@ import me.spica27.spicamusic.utils.DataStoreUtil
 fun AppMain(
   composeNavigator: AppComposeNavigator,
 ) {
-  val darkTheme = DataStoreUtil(LocalContext.current)
-    .getForceDarkTheme.collectAsStateWithLifecycle(false)
+  val context = LocalContext.current
+  val systemIsDark = context.resources.configuration.uiMode and
+      android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+  val darkTheme = DataStoreUtil(context)
+    .getForceDarkTheme.collectAsStateWithLifecycle(systemIsDark)
     .value
   AppTheme(
     darkTheme = darkTheme

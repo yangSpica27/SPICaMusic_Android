@@ -17,7 +17,7 @@ class LineVisualiser : VisualiserDrawable() {
   // 上次采样的时间
   private var lastSampleTime = 0L
 
-  // 采样间隔
+  // 采样间隔 
   private val interval = 125
 
 

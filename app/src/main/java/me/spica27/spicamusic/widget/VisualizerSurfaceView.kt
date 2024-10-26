@@ -1,19 +1,14 @@
 package me.spica27.spicamusic.widget
 
 import android.content.Context
-import android.graphics.Color
-import android.graphics.Paint
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import android.view.animation.DecelerateInterpolator
-import androidx.core.graphics.ColorUtils
 import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.utils.dp
-import me.spica27.spicamusic.visualiser.FFTAudioProcessor
 import me.spica27.spicamusic.visualiser.MusicVisualiser
 import me.spica27.spicamusic.visualiser.VisualizerDrawableManager
 import timber.log.Timber

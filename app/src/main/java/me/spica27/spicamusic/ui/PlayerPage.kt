@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -236,6 +237,7 @@ private fun Cover(
         .padding(60.dp + 12.dp)
         .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
         .clip(CircleShape)
+        .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), CircleShape)
         .rotate(rotateState.value), contentAlignment = Alignment.Center
     ) {
       if (coverPainterState.value is AsyncImagePainter.State.Success) {

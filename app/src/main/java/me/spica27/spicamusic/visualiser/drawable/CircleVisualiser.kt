@@ -17,7 +17,7 @@ class CircleVisualiser : VisualiserDrawable() {
   private val paint = Paint().apply {
     pathEffect = CornerPathEffect(10f)
     style = Paint.Style.STROKE
-    strokeWidth = 2.dp
+    strokeWidth = 3.dp
     strokeCap = Paint.Cap.ROUND
   }
 

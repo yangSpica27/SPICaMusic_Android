@@ -10,6 +10,7 @@ import linc.com.amplituda.Amplituda
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.service.MusicService
 import me.spica27.spicamusic.ui.AppMain
+import me.spica27.spicamusic.utils.DataStoreUtil
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -19,10 +20,15 @@ class MainActivity : ComponentActivity() {
   internal lateinit var appComposeNavigator: AppComposeNavigator
 
 
+  @Inject
+  lateinit var dataStoreUtil: DataStoreUtil
+
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     startService(Intent(this, MusicService::class.java))
+
     setContent {
       AppMain(composeNavigator = appComposeNavigator)
     }
