@@ -1,16 +1,20 @@
 package me.spica27.spicamusic.viewModel
 
+import android.content.Context
+import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.handleCoroutineException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import linc.com.amplituda.Amplituda
@@ -22,6 +26,7 @@ import me.spica27.spicamusic.playback.RepeatMode
 import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.utils.contentResolverSafe
 import me.spica27.spicamusic.utils.msToSecs
+import me.spica27.spicamusic.utils.toast
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -101,7 +106,28 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
       _isPlaying.emit(PlaybackStateManager.getInstance().playerState.isPlaying)
       _playlistCurrentIndex.emit(PlaybackStateManager.getInstance().getCurrentSongIndex())
     }
-    viewModelScope.launch(Dispatchers.Default) {
+    viewModelScope.launch(
+      Dispatchers.Default +
+          CoroutineExceptionHandler { _, throwable ->
+            run {
+              Timber.tag("MusicViewModel").e(throwable)
+              if (throwable is NoSuchFileException) {
+                App.getInstance().toast("未找到音频文件", Toast.LENGTH_SHORT)
+                viewModelScope.launch {
+                  PlaybackStateManager.getInstance().getCurrentSong()?.let {
+                    songDao.delete(it)
+                    if (PlaybackStateManager.getInstance().getCurrentList().size > 1) {
+                      PlaybackStateManager.getInstance().playNext()
+                    }else{
+                      PlaybackStateManager.getInstance().setPlaying(false)
+                    }
+                  }
+                }
+              }
+            }
+          },
+
+      ) {
       _playingSong.collectLatest { song ->
         if (song?.getSongUri() != null) {
           val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())

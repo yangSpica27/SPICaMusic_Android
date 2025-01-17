@@ -1,5 +1,7 @@
 package me.spica27.spicamusic.ui
 
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -17,12 +19,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.app.ActivityCompat.finishAffinity
 import com.example.compose.AppTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.navigator.AppComposeNavigator
 
@@ -34,14 +46,39 @@ fun MainScreen(
   navigator: AppComposeNavigator? = null
 ) {
 
+
+  var showToast by remember { mutableStateOf(false) }
+
+  var backPressState by remember { mutableStateOf<BackPress>(BackPress.Idle) }
+  val context = LocalContext.current
+
+  if (showToast) {
+    Toast.makeText(context, "再次点按返回按键退出", Toast.LENGTH_SHORT).show()
+    showToast = false
+  }
+
+
+  LaunchedEffect(key1 = backPressState) {
+    if (backPressState == BackPress.InitialTouch) {
+      delay(2000)
+      backPressState = BackPress.Idle
+    }
+  }
+
+  BackHandler(backPressState == BackPress.Idle) {
+    backPressState = BackPress.InitialTouch
+    showToast = true
+  }
+
+  BackHandler(backPressState == BackPress.InitialTouch) {
+    Runtime.getRuntime().exit(0)
+  }
+
   val pagerState = rememberPagerState(
     pageCount = {
       10
     },
   )
-
-
-
   Scaffold(
     bottomBar = {
       BottomNav(pagerState)
@@ -101,10 +138,13 @@ fun BottomNav(pagerState: PagerState) {
       )
     }
   }
-
-
 }
 
+// 返回键状态
+private sealed class BackPress {
+  object Idle : BackPress()
+  object InitialTouch : BackPress()
+}
 
 @Preview
 @Composable

@@ -10,7 +10,7 @@ plugins {
 
 android {
   namespace 'me.spica27.spicamusic'
-  compileSdk 34
+  compileSdk 35
 
   defaultConfig {
     applicationId "me.spica27.spicamusic"
@@ -92,7 +92,7 @@ dependencies {
   debugImplementation libs.androidx.ui.tooling
   debugImplementation libs.androidx.ui.test.manifest
   implementation("io.coil-kt.coil3:coil-compose:3.0.0-rc01")
-  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
   //  implementation 'com.github.EspoirX:StarrySky:v2.6.9'
 
