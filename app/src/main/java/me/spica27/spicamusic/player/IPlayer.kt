@@ -23,7 +23,7 @@ interface IPlayer {
 
     companion object {
 
-      fun from(isPlaying: Boolean, isAdvancing: Boolean, positionMs: Long) =
+      fun from(isPlaying: Boolean, positionMs: Long) =
         State(
           isPlaying,
           positionMs

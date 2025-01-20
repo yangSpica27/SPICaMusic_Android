@@ -8,6 +8,7 @@ enum class RepeatMode {
   ALL, // 循环
   TRACK; // 单曲循环
 
+  // 切换循环方式
   fun increment() =
     when (this) {
       NONE -> ALL

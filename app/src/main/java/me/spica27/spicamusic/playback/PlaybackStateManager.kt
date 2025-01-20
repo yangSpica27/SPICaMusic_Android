@@ -17,9 +17,11 @@ class PlaybackStateManager {
 
   private var player: IPlayer? = null
 
-  var playerState = IPlayer.State.from(isPlaying = false, isAdvancing = false, 0)
+  // 播放状态
+  var playerState = IPlayer.State.from(isPlaying = false, 0)
     private set
 
+  // 循环模式
   private var repeatMode = RepeatMode.ALL
 
   val fftAudioProcessor = FFTAudioProcessor()
@@ -67,6 +69,15 @@ class PlaybackStateManager {
   @Synchronized
   fun removeListener(listener: Listener) {
     listeners.remove(listener)
+  }
+
+  fun removeSong(index: Int) {
+    if (index == queue.getIndex()) {
+      playNext()
+    }
+    queue.remove(index)
+    updateListenersNewList()
+    updateListenersIndexMove()
   }
 
 

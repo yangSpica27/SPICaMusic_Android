@@ -62,6 +62,7 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
 
   // 是否正在播放
   private val _isPlaying = MutableStateFlow(false)
+
   val isPlaying: Flow<Boolean>
     get() = _isPlaying
 
@@ -115,10 +116,16 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
                 App.getInstance().toast("未找到音频文件", Toast.LENGTH_SHORT)
                 viewModelScope.launch {
                   PlaybackStateManager.getInstance().getCurrentSong()?.let {
+                    // 从播放列表删除当前歌曲
+                    PlaybackStateManager.getInstance()
+                      .removeSong(PlaybackStateManager.getInstance().getCurrentSongIndex())
+                    // 从数据库删除当前歌曲
                     songDao.delete(it)
+                    // 如果播放列表还有歌曲，播放下一首
                     if (PlaybackStateManager.getInstance().getCurrentList().size > 1) {
                       PlaybackStateManager.getInstance().playNext()
-                    }else{
+                    } else {
+                      // 播放列表没有歌曲，停止播放
                       PlaybackStateManager.getInstance().setPlaying(false)
                     }
                   }
@@ -128,6 +135,7 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
           },
 
       ) {
+      // 播放歌曲时，获取歌曲的振幅
       _playingSong.collectLatest { song ->
         if (song?.getSongUri() != null) {
           val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
@@ -230,6 +238,10 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
   override fun onRepeatChanged(repeatMode: RepeatMode) {
     super.onRepeatChanged(repeatMode)
     _repeatMode.value = repeatMode
+  }
+
+  fun removeSong(index: Int) {
+    PlaybackStateManager.getInstance().removeSong(index)
   }
 
 }

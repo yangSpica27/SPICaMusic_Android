@@ -13,16 +13,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigator.AppComposeNavigator
+import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.PlayingSongItem
 
@@ -63,23 +67,52 @@ fun CurrentListPage(
         ), modifier = Modifier.padding(20.dp)
       )
     }
+    Spacer(modifier = Modifier.size(4.dp))
     Box(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(vertical = 8.dp, horizontal = 20.dp)
+        .padding(vertical = 4.dp, horizontal = 20.dp)
     ) {
       Box {
-        Text(
-          text = "当前播放列表", style = MaterialTheme.typography.bodyMedium.copy(
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        Column {
+          Text(
+            text = "当前播放列表",
+            style = MaterialTheme.typography.bodyMedium.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            ),
           )
-        )
+          Text(
+            text = "${playIndexState.value + 1}/${playListSizeState.value}",
+            style = MaterialTheme.typography.bodyMedium
+          )
+        }
       }
-      Box(modifier = Modifier.align(Alignment.CenterEnd)) {
-        Text(
-          text = "${playIndexState.value + 1}/${playListSizeState.value}",
-          style = MaterialTheme.typography.bodyMedium
-        )
+      Box(modifier = Modifier.align(Alignment.BottomEnd)) {
+        Row {
+          IconButton(
+            onClick = {
+              // 清空播放列表
+            }
+          ) {
+            Icon(
+              painter = painterResource(id = R.drawable.ic_playlist_remove),
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+          }
+          IconButton(
+            onClick = {
+              // 保存为新歌单
+
+            }
+          ) {
+            Icon(
+              painter = painterResource(id = R.drawable.ic_new),
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+          }
+        }
       }
     }
     HorizontalDivider(
@@ -116,7 +149,7 @@ private fun CurrentList(
       PlayingSongItem(
         showRemove = true,
         onRemoveClick = {
-
+          viewModel.removeSong(index)
         },
         modifier = Modifier
           .fillMaxWidth()

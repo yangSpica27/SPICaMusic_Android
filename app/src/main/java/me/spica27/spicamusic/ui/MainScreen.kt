@@ -47,9 +47,13 @@ fun MainScreen(
 ) {
 
 
+  // 显示是否退出的提示
   var showToast by remember { mutableStateOf(false) }
 
+  // 返回键状态
   var backPressState by remember { mutableStateOf<BackPress>(BackPress.Idle) }
+
+  // 获取当前的context
   val context = LocalContext.current
 
   if (showToast) {

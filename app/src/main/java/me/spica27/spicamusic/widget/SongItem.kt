@@ -1,5 +1,9 @@
 package me.spica27.spicamusic.widget
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -192,21 +196,32 @@ fun PlayingSongItem(
   val coverPainter = rememberAsyncImagePainter(song.getCoverUri().toCoilUri())
   val coverPainterState = coverPainter.state.collectAsState()
 
+  // 左指示器宽度
+  val leftStrokeWidth = animateFloatAsState(
+    targetValue = if (isPlaying) 20.dp.value else 0f, label = "leftStrokeWidth",
+    animationSpec = tween(225, easing = LinearEasing),
+  )
+
+  // 背景颜色
+  val backgroundColor = animateColorAsState(
+    targetValue = if (isPlaying) MaterialTheme.colorScheme.surfaceContainer
+    else MaterialTheme.colorScheme.surface, label = "backgroundColor"
+  )
+
   val borderColor = MaterialTheme.colorScheme.tertiary
+
+
   Row(modifier = modifier
     .background(
-      color = if (isPlaying) MaterialTheme.colorScheme.surfaceContainer
-      else MaterialTheme.colorScheme.surface,
+      color = backgroundColor.value,
     )
     .drawBehind {
-      if (isPlaying) {
-        drawLine(
-          color = borderColor,
-          start = Offset(0f, 0f),
-          end = Offset(0f, size.height),
-          strokeWidth = 10.dp.toPx(),
-        )
-      }
+      drawLine(
+        color = borderColor,
+        start = Offset(0f, 0f),
+        end = Offset(0f, size.height),
+        strokeWidth = leftStrokeWidth.value,
+      )
     }
     .clickable {
       onClick()
@@ -228,7 +243,7 @@ fun PlayingSongItem(
         modifier = Modifier
           .size(48.dp)
           .background(
-            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
             shape = MaterialTheme.shapes.medium
           ),
         contentAlignment = Alignment.Center,
@@ -242,7 +257,7 @@ fun PlayingSongItem(
           Icon(
             modifier = Modifier
               .fillMaxWidth()
-              .scale(1.5f),
+              .scale(0.8f),
             painter = painterResource(id = R.drawable.ic_dvd),
             contentDescription = "封面",
             tint = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)

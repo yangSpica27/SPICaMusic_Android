@@ -14,7 +14,6 @@ class Queue {
   private val index = AtomicReference(0)
 
   // 播放列表
-
   private val heap = ArrayList<Song>()
 
   fun getPlayList(): List<Song> {
@@ -35,9 +34,25 @@ class Queue {
   }
 
 
+  fun clear() {
+    synchronized(this) {
+      heap.clear()
+      index.set(0)
+    }
+  }
+
   fun remove(index: Int) {
+    if (index < 0 || index >= heap.size) return
     synchronized(this) {
       heap.removeAt(index)
+
+      if (index > heap.size - 1) {
+        // 如果删除的是最后一个元素 避免越界
+        this.index.set(heap.size - 1)
+      } else if (index < this.index.get()) {
+        // 如果删除的是当前播放的歌曲之前的歌曲 指针前移
+        this.index.getAndUpdate { it - 1 }
+      }
     }
   }
 
