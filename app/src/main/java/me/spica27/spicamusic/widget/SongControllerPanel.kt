@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.AccountBox
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
@@ -34,6 +33,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -46,11 +46,16 @@ import me.spica27.spicamusic.viewModel.SongViewModel
 
 
 /// 歌曲信息面板
+
 @Composable
 fun SongControllerPanel(
   modifier: Modifier = Modifier,
+  // 歌曲ID
   songId: Long,
-  songViewModel: SongViewModel = hiltViewModel<SongViewModel>()
+  // 歌曲ViewModel
+  songViewModel: SongViewModel = hiltViewModel<SongViewModel>(),
+  // 是否显示添加到播放列表
+  showAddToPlaylist: Boolean = false
 ) {
 
 
@@ -178,17 +183,19 @@ fun SongControllerPanel(
         thickness = 1.dp / 2
       )
 
-      BottomButton(
-        modifier = Modifier.fillMaxWidth(),
-        onclick = { },
-        icon = {
-          Icon(
-            imageVector = Icons.Outlined.Add,
-            contentDescription = null
-          )
-        },
-        text = "添加到当前播放列表"
-      )
+      if (showAddToPlaylist) {
+        BottomButton(
+          modifier = Modifier.fillMaxWidth(),
+          onclick = { },
+          icon = {
+            Icon(
+              imageVector = Icons.Outlined.Add,
+              contentDescription = null
+            )
+          },
+          text = "添加到当前播放列表"
+        )
+      }
 
       BottomButton(
         modifier = Modifier.fillMaxWidth(),
@@ -198,14 +205,13 @@ fun SongControllerPanel(
         icon = {
           Icon(
             imageVector = if (song.like) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
-            contentDescription = null
+            contentDescription = null,
+            tint = if (song.like) Color(0xFFF44336) else MaterialTheme.colorScheme.onSurface
           )
         },
         text = if (song.like) "取消收藏"
         else "收藏"
       )
-
-
       Row(
         modifier = Modifier
           .fillMaxWidth()

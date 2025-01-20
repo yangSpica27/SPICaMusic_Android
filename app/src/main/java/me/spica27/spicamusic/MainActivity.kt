@@ -28,7 +28,6 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     startService(Intent(this, MusicService::class.java))
-
     setContent {
       AppMain(composeNavigator = appComposeNavigator)
     }

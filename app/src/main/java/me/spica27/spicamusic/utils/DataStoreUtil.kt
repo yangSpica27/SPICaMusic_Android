@@ -8,7 +8,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 
 // 字典工具类
 class DataStoreUtil(private val context: Context) {
@@ -24,6 +26,10 @@ class DataStoreUtil(private val context: Context) {
     // 自动播放
     val AUTO_PLAY = booleanPreferencesKey("auto_play")
   }
+
+
+  val isForceDarkTheme: Boolean
+    get() = runBlocking { context.dataStore.data.first()[FORCE_DARK_THEME] ?: false }
 
   val getAutoPlay: Flow<Boolean> = context.dataStore.data
     .map { preferences ->

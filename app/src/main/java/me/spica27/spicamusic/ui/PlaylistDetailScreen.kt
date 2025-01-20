@@ -21,7 +21,6 @@ import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -281,11 +280,14 @@ private fun SelectedList(
 private fun SelectedSongItem(song: Song, selected: Boolean, onClick: () -> Unit = {}) {
   Row(modifier = Modifier
     .fillMaxWidth()
-    .padding(vertical = 6.dp, horizontal = 20.dp)
+    .padding(vertical = 6.dp, horizontal = 16.dp)
     .background(
       MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium
     )
-    .clickable {
+    .clickable(
+      indication = null,
+      interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    ) {
       onClick()
     }
     .padding(vertical = 12.dp, horizontal = 16.dp),
@@ -397,7 +399,7 @@ private fun Toolbar(
       TextButton(onClick = {
         playlistViewModel.clearSelectedSongs()
       }) {
-        Text("清除所有选中")
+        Text("取消所有选中", fontStyle = MaterialTheme.typography.bodyMedium.fontStyle)
       }
     }
     Spacer(modifier = Modifier.weight(1f))
@@ -418,19 +420,17 @@ private fun Toolbar(
       // 多选模式下的额外按钮
       Row {
         // 删除按钮
-        IconButton(onClick = {
+        TextButton(onClick = {
           /* 删除歌曲 */
           playlistViewModel.deleteSelectedSongs()
         }) {
-          Icon(
-            Icons.Default.Delete, contentDescription = "删除"
-          )
+          Text("删除")
         }
         // 添加到歌单
-        IconButton(onClick = { /* 添加到歌单 */ }) {
-          Icon(
-            Icons.Default.PlayArrow, contentDescription = "添加到歌单"
-          )
+        TextButton(onClick = {
+
+        }) {
+          Text("添加到播放列表")
         }
       }
     }

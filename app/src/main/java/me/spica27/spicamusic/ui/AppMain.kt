@@ -16,13 +16,13 @@ fun AppMain(
   composeNavigator: AppComposeNavigator,
 ) {
   val context = LocalContext.current
-  val systemIsDark = context.resources.configuration.uiMode and
-      android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+  val systemIsDark = DataStoreUtil(context).isForceDarkTheme
   val darkTheme = DataStoreUtil(context)
     .getForceDarkTheme.collectAsStateWithLifecycle(systemIsDark)
     .value
   AppTheme(
-    darkTheme = darkTheme
+    darkTheme = darkTheme,
+    dynamicColor = false
   ) {
     val navHostController = rememberNavController()
     LaunchedEffect(Unit) {
