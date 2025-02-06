@@ -9,6 +9,7 @@ import android.provider.MediaStore
 import androidx.core.database.getIntOrNull
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
+import androidx.media3.common.MimeTypes
 import me.spica27.spicamusic.db.entity.Song
 import timber.log.Timber
 
@@ -58,7 +59,9 @@ object AudioTool {
         cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.MIME_TYPE))
       types.add(mimeType ?: "")
       val isSupportMineType =
-        (mimeType == "audio/mpeg" || mimeType == "audio/ogg" || mimeType == "audio/flac")
+        (mimeType == MimeTypes.AUDIO_MPEG ||
+            mimeType == MimeTypes.AUDIO_OGG ||
+            mimeType == MimeTypes.AUDIO_FLAC)
       if (!isSupportMineType) continue
       // 过滤掉时长小于1秒的音频文件
       val duration =

@@ -144,7 +144,7 @@ class MediaSessionComponent(
         .putText(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, artist)
         .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, song.duration)
         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, song.mediaStoreId.toString())
-
+    // 从缓存中获取封面如果没有则尝试从歌曲原始文件信息中获取
     coverCache["${song.songId}-${song.mediaStoreId}"].let { cache ->
       if (cache != null) {
         builder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, cache)

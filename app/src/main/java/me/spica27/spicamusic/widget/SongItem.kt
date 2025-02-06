@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -46,12 +47,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.toCoilUri
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.utils.getColorFromMimeTypeString
 
 
 /// 带封面的歌曲列表项
@@ -127,12 +130,15 @@ fun SongItemWithCover(
           modifier = Modifier
             .padding(end = 8.dp)
             .background(
-              color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.small
+              color = Color(song.mimeType.getColorFromMimeTypeString()),
+              shape = RoundedCornerShape(4.dp)
             )
-            .padding(horizontal = 5.dp, vertical = 1.dp),
-          text = song.getFormatMimeType(),
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+          text = song.getFormatMimeType().uppercase(),
           style = MaterialTheme.typography.bodyMedium.copy(
-            color = MaterialTheme.colorScheme.onSurface
+            color = Color.Black,
+            fontWeight = FontWeight.W500,
+            letterSpacing = 0.5.sp
           ),
           maxLines = 1
         )
