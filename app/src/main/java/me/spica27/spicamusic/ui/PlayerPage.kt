@@ -85,7 +85,7 @@ fun PlayerPage(
 ) {
 
   // 当前播放的歌曲
-  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle(null).value
+  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
 
   if (currentPlayingSong == null) {
     return Box(
@@ -150,9 +150,9 @@ private fun Title(
   modifier: Modifier = Modifier, playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
-  val indexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle(0)
+  val indexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()
 
-  val playlistSizeState = playBackViewModel.nowPlayingListSize.collectAsStateWithLifecycle(0)
+  val playlistSizeState = playBackViewModel.nowPlayingListSize.collectAsStateWithLifecycle()
 
   Row(
     modifier = modifier,
@@ -271,13 +271,13 @@ private fun ControlPanel(
 ) {
 
   // 快速傅里叶变换后的振幅
-  val amp = playBackViewModel.playingSongAmplitudes.collectAsStateWithLifecycle(emptyList()).value
+  val amp = playBackViewModel.playingSongAmplitudes.collectAsStateWithLifecycle().value
 
-  val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
+  val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle().value
 
-  val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle(null).value
+  val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
 
-  val positionSec = playBackViewModel.positionSec.collectAsStateWithLifecycle(0L).value
+  val positionSec = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
 
   val isSeekingState = remember { mutableStateOf(false) }
 

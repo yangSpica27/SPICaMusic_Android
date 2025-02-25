@@ -26,7 +26,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigator.AppComposeNavigator
-import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.PlayingSongItem
 
@@ -37,11 +36,11 @@ fun CurrentListPage(
   navigator: AppComposeNavigator? = null
 ) {
 
-  val playState = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false)
+  val playState = playBackViewModel.isPlaying.collectAsStateWithLifecycle()
 
-  val playIndexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle(0)
+  val playIndexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()
 
-  val playListSizeState = playBackViewModel.nowPlayingListSize.collectAsStateWithLifecycle(0)
+  val playListSizeState = playBackViewModel.nowPlayingListSize.collectAsStateWithLifecycle()
 
 
   Column(
@@ -133,9 +132,11 @@ private fun CurrentList(
   viewModel: PlayBackViewModel,
 ) {
 
-  val playingSongState = viewModel.currentSongFlow.collectAsStateWithLifecycle(null)
+  val playingSongState = viewModel.currentSongFlow.collectAsStateWithLifecycle()
 
-  val listDataState = viewModel.playList.collectAsStateWithLifecycle(emptyList())
+  val listDataState = viewModel
+    .playList
+    .collectAsStateWithLifecycle()
 
   val listState = rememberLazyListState()
 

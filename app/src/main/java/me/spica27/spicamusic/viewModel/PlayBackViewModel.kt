@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.viewModel
 
-import android.content.Context
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
@@ -11,10 +10,11 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.handleCoroutineException
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import linc.com.amplituda.Amplituda
@@ -43,38 +43,44 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
   // 播放列表
   private val _nowPlayingList = MutableStateFlow(listOf<Song>())
 
-  val playList: Flow<List<Song>>
+
+  val playList: StateFlow<List<Song>>
     get() = _nowPlayingList
 
   // 当前歌单大小大小
-  val nowPlayingListSize: Flow<Int> = playList.map {
+  val nowPlayingListSize: StateFlow<Int> = playList.map {
     it.size
-  }.distinctUntilChanged()
+  }
+    .stateIn(
+      viewModelScope,
+      SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+      initialValue = 0
+    )
 
 
   // 当前播放的乐曲
   private val _playingSong = MutableStateFlow<Song?>(null)
 
 
-  val currentSongFlow: Flow<Song?>
+  val currentSongFlow: StateFlow<Song?>
     get() = _playingSong
 
 
   // 是否正在播放
   private val _isPlaying = MutableStateFlow(false)
 
-  val isPlaying: Flow<Boolean>
+  val isPlaying: StateFlow<Boolean>
     get() = _isPlaying
 
   // 当前的进度
   private val _positionSec = MutableStateFlow(0L)
 
-  val positionSec: Flow<Long>
+  val positionSec: StateFlow<Long>
     get() = _positionSec
 
   private val _playlistCurrentIndex = MutableStateFlow(0)
 
-  val playlistCurrentIndex: Flow<Int>
+  val playlistCurrentIndex: StateFlow<Int>
     get() = _playlistCurrentIndex
 
 
@@ -87,7 +93,7 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
   // 正在播放的歌曲的振幅
   private val _playingSongAmplitudes = MutableStateFlow(listOf<Int>())
 
-  val playingSongAmplitudes: Flow<List<Int>>
+  val playingSongAmplitudes: StateFlow<List<Int>>
     get() = _playingSongAmplitudes
 
 

@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.dao.PlaylistDao
 import me.spica27.spicamusic.db.dao.SongDao
@@ -23,13 +25,16 @@ class SongViewModel
   fun getSongFlow(id: Long) = songDao.getSongFlowWithId(id)
 
   // 所有歌曲
-  val allSongs: Flow<List<Song>> = songDao.getAll()
+  val allSongs: StateFlow<List<Song>> = songDao.getAll()
+    .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
   // 所有收藏的歌曲
-  val allLikeSongs: Flow<List<Song>> = songDao.getAllLikeSong()
+  val allLikeSongs: StateFlow<List<Song>> = songDao.getAllLikeSong()
+    .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
   // 所有歌单
-  val allPlayList: Flow<List<Playlist>> = playlistDao.getAllPlaylist()
+  val allPlayList: StateFlow<List<Playlist>> = playlistDao.getAllPlaylist()
+    .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
 
   // 切换喜欢状态

@@ -29,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -53,7 +52,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.navigator.AppComposeNavigator
@@ -74,9 +72,9 @@ fun HomePage(
   navigator: AppComposeNavigator? = null
 ) {
 
-  val likeSong = songViewModel.allLikeSongs.collectAsState(emptyList()).value
+  val likeSong = songViewModel.allLikeSongs.collectAsState().value
 
-  val allSong = songViewModel.allSongs.collectAsState(emptyList()).value
+  val allSong = songViewModel.allSongs.collectAsState().value
 
 
   Box(
@@ -264,7 +262,7 @@ private fun PLayListItems(
 
   val selectedPlayListId = rememberSaveable { mutableLongStateOf(-1L) }
 
-  val playlists = songViewModel.allPlayList.collectAsState(null)
+  val playlists = songViewModel.allPlayList.collectAsState()
 
   val showRenameDialog = rememberSaveable { mutableStateOf(false) }
 
@@ -274,8 +272,7 @@ private fun PLayListItems(
     AlertDialog(onDismissRequest = {
       showRenameDialog.value = false
     }, title = { Text("重命名歌单") }, text = {
-      TextField(
-        value = playlistNameState.value,
+      TextField(value = playlistNameState.value,
         onValueChange = { playlistNameState.value = it },
         placeholder = { Text("请输入新的歌单名称") },
         singleLine = true,
@@ -337,12 +334,10 @@ private fun PLayListItems(
 
   if (showAddPlaylistDialogState.value) {
     val playlistNameState = remember { mutableStateOf("") }
-    AlertDialog(
-      onDismissRequest = { showAddPlaylistDialogState.value = false },
+    AlertDialog(onDismissRequest = { showAddPlaylistDialogState.value = false },
       title = { Text("创建歌单") },
       text = {
-        TextField(
-          value = playlistNameState.value,
+        TextField(value = playlistNameState.value,
           onValueChange = { playlistNameState.value = it },
           placeholder = { Text("请输入歌单名称") },
           singleLine = true,
@@ -372,36 +367,27 @@ private fun PLayListItems(
       })
   }
 
-  if (playlists.value == null) {
-    return Box(
-      modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-    ) {
-      Text(text = "加载中")
+  LazyColumn(
+    modifier = Modifier.fillMaxSize()
+  ) { // 歌单列表
+    item {
+      AddPlayListItem(onClick = {
+        showAddPlaylistDialogState.value = true
+      })
     }
-  } else {
-    LazyColumn(
-      modifier = Modifier.fillMaxSize()
-    ) { // 歌单列表
-      item {
-        AddPlayListItem(onClick = {
-          showAddPlaylistDialogState.value = true
+    itemsIndexed(
+      playlists.value,
+      key = { _, item -> item.playlistId ?: 0 }) { _, playList ->
+      PlaylistItem(modifier = Modifier.animateItem(),
+        playlist = playList,
+        showMenu = true,
+        onClickMenu = {
+          selectedPlayListId.longValue = playList.playlistId ?: -1
+          showMenu.value = true
+        },
+        onClick = {
+          navigator?.navigate(AppScreens.PlaylistDetail.createRoute(playList.playlistId ?: -1))
         })
-      }
-      itemsIndexed(
-        playlists.value ?: listOf(),
-        key = { _, item -> item.playlistId ?: 0 }) { _, playList ->
-        PlaylistItem(
-          modifier = Modifier.animateItem(),
-          playlist = playList,
-          showMenu = true,
-          onClickMenu = {
-            selectedPlayListId.longValue = playList.playlistId ?: -1
-            showMenu.value = true
-          },
-          onClick = {
-            navigator?.navigate(AppScreens.PlaylistDetail.createRoute(playList.playlistId ?: -1))
-          })
-      }
     }
   }
 

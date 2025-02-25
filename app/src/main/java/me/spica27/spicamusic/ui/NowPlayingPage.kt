@@ -27,7 +27,7 @@ fun NowPlayingPage(
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
 ) {
 
-  val nowPlayingSongs = playBackViewModel.playList.collectAsState(emptyList()).value
+  val nowPlayingSongs = playBackViewModel.playList.collectAsState().value
 
   val pageState = rememberPagerState(pageCount = { 2 })
 
