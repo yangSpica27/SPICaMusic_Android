@@ -273,7 +273,7 @@ private fun ControlPanel(
   // 快速傅里叶变换后的振幅
   val amp = playBackViewModel.playingSongAmplitudes.collectAsStateWithLifecycle().value
 
-  val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle().value
+  val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
 
   val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
 

@@ -8,12 +8,15 @@ import androidx.media3.common.util.UnstableApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -69,8 +72,11 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
   // 是否正在播放
   private val _isPlaying = MutableStateFlow(false)
 
-  val isPlaying: StateFlow<Boolean>
+  @kotlin.OptIn(FlowPreview::class)
+  val isPlaying: Flow<Boolean>
     get() = _isPlaying
+      .debounce(250)
+      .shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
   // 当前的进度
   private val _positionSec = MutableStateFlow(0L)

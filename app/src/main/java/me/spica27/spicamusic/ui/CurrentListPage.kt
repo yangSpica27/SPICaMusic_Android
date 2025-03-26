@@ -36,7 +36,7 @@ fun CurrentListPage(
   navigator: AppComposeNavigator? = null
 ) {
 
-  val playState = playBackViewModel.isPlaying.collectAsStateWithLifecycle()
+  val playState = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false)
 
   val playIndexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()
 
