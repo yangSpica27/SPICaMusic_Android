@@ -85,7 +85,6 @@ private fun SongList(
   modifier: Modifier = Modifier,
   musicViewModel: MusicSearchViewModel = hiltViewModel()
 ) {
-
   val dataState = musicViewModel.songFlow.collectAsState(emptyList())
   val coroutineScope = rememberCoroutineScope()
 
@@ -96,7 +95,6 @@ private fun SongList(
     ) {
       Text(text = "没有找到相关歌曲")
     }
-
   } else {
     // 歌曲列表
     LazyColumn(modifier = modifier) {

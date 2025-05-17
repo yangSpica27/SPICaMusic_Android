@@ -38,7 +38,7 @@ class MusicSearchViewModel @Inject constructor(
     get() = _filterShort
 
 
-  val songFlow = combine(
+  val songFlow:Flow<List<Song>> = combine(
     songDao.getAll(),
     _searchKey,
     _filterNoLike,

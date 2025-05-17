@@ -3,6 +3,7 @@ package me.spica27.spicamusic.ui
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -43,6 +44,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -218,17 +220,18 @@ private fun Cover(
   ) {
 
 
-    AndroidView(factory = { context ->
-      VisualizerSurfaceView(context).apply {
-        setBgColor(backgroundColor.toArgb())
-        setThemeColor(onSurfaceColor.toArgb())
-      }
-    }, update = { view ->
-      view.setBgColor(backgroundColor.toArgb())
-      view.setThemeColor(onSurfaceColor.toArgb())
-    }, modifier = Modifier
-      .fillMaxWidth()
-      .aspectRatio(1f)
+    AndroidView(
+      factory = { context ->
+        VisualizerSurfaceView(context).apply {
+          setBgColor(backgroundColor.toArgb())
+          setThemeColor(onSurfaceColor.toArgb())
+        }
+      }, update = { view ->
+        view.setBgColor(backgroundColor.toArgb())
+        view.setThemeColor(onSurfaceColor.toArgb())
+      }, modifier = Modifier
+        .fillMaxWidth()
+        .aspectRatio(1f)
     )
     Box(
       modifier = Modifier
@@ -409,6 +412,8 @@ private fun SongInfo(
 
   val showDialogState = remember { mutableStateOf(false) }
 
+
+
   if (song == null) {
 
     Box(modifier = modifier)
@@ -427,10 +432,11 @@ private fun SongInfo(
   }
 
   Row(
-    modifier = modifier,
+    modifier = modifier
   ) {
     Column(
-      modifier = Modifier.weight(2f),
+      modifier = Modifier
+        .weight(2f),
       verticalArrangement = Arrangement.Center,
     ) {
       Text(
