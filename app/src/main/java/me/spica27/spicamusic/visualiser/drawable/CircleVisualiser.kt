@@ -1,9 +1,15 @@
 package me.spica27.spicamusic.visualiser.drawable
 
+import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.CornerPathEffect
 import android.graphics.Paint
 import android.graphics.Path
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SweepGradientShader
+import androidx.core.graphics.toColorInt
+import androidx.core.graphics.withScale
 import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.utils.dp
 import me.spica27.spicamusic.visualiser.MusicVisualiser
@@ -14,12 +20,33 @@ import kotlin.math.sin
 @UnstableApi
 class CircleVisualiser : VisualiserDrawable() {
 
+
   private val paint = Paint().apply {
+
     pathEffect = CornerPathEffect(10f)
-    style = Paint.Style.STROKE
-    strokeWidth = 3.dp
+    style = Paint.Style.FILL_AND_STROKE
+    setMaskFilter(
+      BlurMaskFilter(
+        43f, BlurMaskFilter.Blur.SOLID
+      )
+    )
+    pathEffect = CornerPathEffect(10f)
     strokeCap = Paint.Cap.ROUND
   }
+
+  private val paint2 = Paint().apply {
+    pathEffect = CornerPathEffect(10f)
+    style = Paint.Style.FILL_AND_STROKE
+    setMaskFilter(
+      BlurMaskFilter(
+        103f, BlurMaskFilter.Blur.NORMAL
+      )
+    )
+    pathEffect = CornerPathEffect(10f)
+    strokeCap = Paint.Cap.ROUND
+  }
+
+  private val paint3 = Paint()
 
 
   private val path1 = Path()
@@ -30,6 +57,41 @@ class CircleVisualiser : VisualiserDrawable() {
     android.view.animation.DecelerateInterpolator()
   }
 
+  override fun setBounds(width: Int, height: Int) {
+    super.setBounds(width, height)
+    paint.setShader(
+      SweepGradientShader(
+        center = Offset(width / 2f, height / 2f),
+        colors = listOf(
+          Color("#D0F2FB".toColorInt()),
+          Color("#D3E6F7".toColorInt()),
+          Color("#9FC1E0".toColorInt()),
+          Color("#DCDEF6".toColorInt()),
+          Color("#F3F1FC".toColorInt()),
+          Color("#D0F2FB".toColorInt()),
+        ),
+        colorStops = listOf(
+          0.0f, .25f, .5f, .75f, 85f, 1f
+        )
+      )
+    )
+    paint2.setShader(
+      SweepGradientShader(
+        center = Offset(width / 2f, height / 2f),
+        colors = listOf(
+          Color("#A7D0F0".toColorInt()),
+          Color("#D3E6F7".toColorInt()),
+          Color("#9FC1E0".toColorInt()),
+          Color("#DCDEF6".toColorInt()),
+          Color("#F3F1FC".toColorInt()),
+          Color("#D0F2FB".toColorInt()),
+        ),
+        colorStops = listOf(
+          0.0f, .25f, .5f, .75f, 85f, 1f
+        )
+      )
+    )
+  }
 
   override fun draw(canvas: Canvas) {
     canvas.drawColor(backgroundColor)
@@ -63,7 +125,7 @@ class CircleVisualiser : VisualiserDrawable() {
 
       val p2 = calcPoint(0, 0, curY2.toInt(), angle)
 
-      canvas.drawLine(p1[0].toFloat(), p1[1].toFloat(), p2[0].toFloat(), p2[1].toFloat(), paint)
+//      canvas.drawLine(p1[0].toFloat(), p1[1].toFloat(), p2[0].toFloat(), p2[1].toFloat(), paint)
 
       if (index == 0) {
         path1.moveTo(p1[0].toFloat(), p1[1].toFloat())
@@ -79,7 +141,12 @@ class CircleVisualiser : VisualiserDrawable() {
 
     canvas.drawPath(path1, paint)
 
-    canvas.drawPath(path2, paint)
+    canvas.withScale(1.1f,1.1f,0f,0f){
+      canvas.drawPath(path1, paint2)
+    }
+
+
+//    canvas.drawPath(path2, paint)
 
 
     canvas.restore()
@@ -121,6 +188,7 @@ class CircleVisualiser : VisualiserDrawable() {
 
   // 采样间隔
   private val interval = 125
+
 
   override fun update(list: List<Float>) {
     if (((System.currentTimeMillis() - lastSampleTime) < interval) && yList.isNotEmpty() && lastYList.isNotEmpty()) {

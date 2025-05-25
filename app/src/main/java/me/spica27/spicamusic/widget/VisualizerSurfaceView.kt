@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.widget
 
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.SystemClock
@@ -60,9 +61,13 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback, MusicVisualis
 
   private val drawRunnable = Runnable {
     while (isWork && !Thread.interrupted()) {
-      val canvas = holder.lockCanvas()
+      val canvas = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        holder.lockHardwareCanvas()
+      } else {
+        holder.lockCanvas()
+      }
       if (canvas == null) {
-        SystemClock.sleep(16)
+        SystemClock.sleep(8)
         continue
       }
       lock.lock()
@@ -70,7 +75,7 @@ class VisualizerSurfaceView : SurfaceView, SurfaceHolder.Callback, MusicVisualis
       visualizerDrawableManager.getVisualiserDrawable().draw(canvas)
       lock.unlock()
       holder.unlockCanvasAndPost(canvas)
-      SystemClock.sleep(16)
+      SystemClock.sleep(8)
     }
   }
 

@@ -2,6 +2,7 @@ package me.spica27.spicamusic.visualiser
 
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
+import me.spica27.spicamusic.visualiser.drawable.BlurVisualiser
 import me.spica27.spicamusic.visualiser.drawable.CircleVisualiser
 import me.spica27.spicamusic.visualiser.drawable.LineVisualiser
 import me.spica27.spicamusic.visualiser.drawable.VisualiserDrawable
@@ -10,7 +11,7 @@ import me.spica27.spicamusic.visualiser.drawable.VisualiserDrawable
 class VisualizerDrawableManager {
 
   enum class VisualiserType {
-    LINE, CIRCLE
+    LINE, CIRCLE,BLUR
   }
 
 
@@ -22,13 +23,16 @@ class VisualizerDrawableManager {
   fun nextVisualiserType() {
     currentVisualiserType = when (currentVisualiserType) {
       VisualiserType.LINE -> VisualiserType.CIRCLE
-      VisualiserType.CIRCLE -> VisualiserType.LINE
+      VisualiserType.CIRCLE -> VisualiserType.BLUR
+      VisualiserType.BLUR -> VisualiserType.LINE
+
     }
   }
 
   init {
     visualiserDrawables[VisualiserType.LINE] = LineVisualiser()
     visualiserDrawables[VisualiserType.CIRCLE] = CircleVisualiser()
+    visualiserDrawables[VisualiserType.BLUR] = BlurVisualiser()
   }
 
   fun setVisualiserType(type: VisualiserType) {
@@ -58,6 +62,8 @@ class VisualizerDrawableManager {
       it.backgroundColor = color
     }
   }
+
+
 
   fun setVisualiserBounds(width: Int, height: Int) {
     visualiserDrawables.values.forEach {

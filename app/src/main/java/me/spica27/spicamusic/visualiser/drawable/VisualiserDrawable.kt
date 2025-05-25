@@ -17,12 +17,11 @@ abstract class VisualiserDrawable {
 
   // 背景颜色
   var backgroundColor = 0
-
   var width = 0
 
   var height = 0
 
-  fun setBounds(width: Int, height: Int) {
+  open fun setBounds(width: Int, height: Int) {
     this.width = width
     this.height = height
   }
