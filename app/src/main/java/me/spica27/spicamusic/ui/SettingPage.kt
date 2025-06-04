@@ -42,22 +42,32 @@ import me.spica27.spicamusic.viewModel.SettingViewModel
 fun SettingPage() {
 
   // 权限状态
-  val permissionState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-    rememberMultiplePermissionsState(
-      listOf(
-        android.Manifest.permission.FOREGROUND_SERVICE,
-        android.Manifest.permission.READ_MEDIA_AUDIO,
-        android.Manifest.permission.POST_NOTIFICATIONS,
+  val permissionState =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+      rememberMultiplePermissionsState(
+        listOf(
+          android.Manifest.permission.FOREGROUND_SERVICE,
+          android.Manifest.permission.READ_MEDIA_AUDIO,
+          android.Manifest.permission.POST_NOTIFICATIONS,
+          android.Manifest.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK,
+        )
       )
-    )
-  } else {
-    rememberMultiplePermissionsState(
-      listOf(
-        android.Manifest.permission.READ_EXTERNAL_STORAGE,
-        android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-      )
-    )
-  }
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        rememberMultiplePermissionsState(
+          listOf(
+            android.Manifest.permission.FOREGROUND_SERVICE,
+            android.Manifest.permission.READ_MEDIA_AUDIO,
+            android.Manifest.permission.POST_NOTIFICATIONS,
+          )
+        )
+      } else {
+        rememberMultiplePermissionsState(
+          listOf(
+            android.Manifest.permission.READ_EXTERNAL_STORAGE,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+          )
+        )
+      }
 
   val context = LocalContext.current
   val settingViewModel = hiltViewModel<SettingViewModel>()

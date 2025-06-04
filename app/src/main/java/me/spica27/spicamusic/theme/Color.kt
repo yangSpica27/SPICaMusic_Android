@@ -1,4 +1,4 @@
-package com.example.compose
+package me.spica27.spicamusic.theme
 
 import androidx.compose.ui.graphics.Color
 

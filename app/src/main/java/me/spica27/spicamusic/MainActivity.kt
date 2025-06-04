@@ -7,7 +7,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import dagger.hilt.android.AndroidEntryPoint
 import linc.com.amplituda.Amplituda
-import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.service.MusicService
 import me.spica27.spicamusic.ui.AppMain
 import me.spica27.spicamusic.utils.DataStoreUtil
@@ -16,8 +15,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-  @Inject
-  internal lateinit var appComposeNavigator: AppComposeNavigator
+
 
 
   @Inject
@@ -29,7 +27,7 @@ class MainActivity : ComponentActivity() {
     enableEdgeToEdge()
     startService(Intent(this, MusicService::class.java))
     setContent {
-      AppMain(composeNavigator = appComposeNavigator)
+      AppMain()
     }
   }
 

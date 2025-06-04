@@ -1,76 +1,28 @@
 package me.spica27.spicamusic.navigator
 
-import androidx.navigation.NamedNavArgument
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 
 /// App的导航
-sealed class AppScreens(
-  val route: String,
-  val index: Int? = null,
-  val navArguments: List<NamedNavArgument> = emptyList()
-) {
-  val name: String = route.appendArguments(navArguments)
 
-  // splash screen
-  data object Splash : AppScreens("splash")
-
-  // main screen
-  data object Main : AppScreens(
-    route = "main"
-  )
-
-//  // player screen
-//  data object Player : AppScreens(
-//    route = "player",
-//  )
+object AppScreens {
 
 
-  // search all screen
-  data object SearchAll : AppScreens(
-    route = "searchAll",
-  )
+  @Serializable
+  data object Splash : NavKey
 
-  data object AddSongScreen : AppScreens(
-    route = "addSong",
-    navArguments = listOf(
-      navArgument(playlist_id) {
-        type = NavType.LongType
-      }
-    )
-  ) {
-    fun createRoute(playlistId: Long) =
-      name.replace("{${navArguments[0].name}}", playlistId.toString())
-  }
+  @Serializable
+  data object Main : NavKey
 
-  data object PlaylistDetail : AppScreens(
-    route = "playlistDetail",
-    navArguments = listOf(
-      navArgument(playlist_id) {
-        type = NavType.LongType
-      }
-    )
-  ) {
-    fun createRoute(playlistId: Long) =
-      name.replace("{${navArguments[0].name}}", playlistId.toString())
-  }
+  @Serializable
+  data class AddSong(val playlistId: Long) : NavKey
 
+  @Serializable
+  data class PlaylistDetail(val playlistId: Long) : NavKey
 
-  companion object {
-    // arguments 歌单id
-    const val playlist_id = "playlist_id"
-  }
+  @Serializable
+  data object SearchAll : NavKey
+
 }
 
-/// 拼接参数
-private fun String.appendArguments(navArguments: List<NamedNavArgument>): String {
-  val mandatoryArguments = navArguments.filter { it.argument.defaultValue == null }
-    .takeIf { it.isNotEmpty() }
-    ?.joinToString(separator = "/", prefix = "/") { "{${it.name}}" }
-    .orEmpty()
-  val optionalArguments = navArguments.filter { it.argument.defaultValue != null }
-    .takeIf { it.isNotEmpty() }
-    ?.joinToString(separator = "&", prefix = "?") { "${it.name}={${it.name}}" }
-    .orEmpty()
-  return "$this$mandatoryArguments$optionalArguments"
-}
+

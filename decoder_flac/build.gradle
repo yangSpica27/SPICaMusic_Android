@@ -8,8 +8,6 @@ android {
     namespace "androidx.media3.decoder.flac"
     minSdkVersion 24
     targetSdkVersion 33
-    versionCode 100
-    versionName "1.0.0"
 
     consumerProguardFiles "consumer-rules.pro"
 

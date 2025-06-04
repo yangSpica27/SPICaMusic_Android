@@ -1,7 +1,8 @@
 package me.spica27.spicamusic.player
 
-import androidx.lifecycle.AtomicReference
+
 import me.spica27.spicamusic.db.entity.Song
+import java.util.concurrent.atomic.AtomicReference
 
 
 /**

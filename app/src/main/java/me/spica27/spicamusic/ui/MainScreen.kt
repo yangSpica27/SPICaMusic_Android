@@ -19,8 +19,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,18 +30,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.app.ActivityCompat.finishAffinity
-import com.example.compose.AppTheme
+import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.navigator.AppComposeNavigator
+import me.spica27.spicamusic.theme.AppTheme
 
 
 /// 主页
 @Composable
 fun MainScreen(
   modifier: Modifier = Modifier,
-  navigator: AppComposeNavigator? = null
+  navigator: NavBackStack? = null
 ) {
 
 

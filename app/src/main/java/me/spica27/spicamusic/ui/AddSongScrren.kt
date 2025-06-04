@@ -18,14 +18,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.viewModel.SelectSongViewModel
 import me.spica27.spicamusic.widget.SelectableSongItem
 
@@ -34,17 +35,19 @@ import me.spica27.spicamusic.widget.SelectableSongItem
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSongScreen(
-  viewModel: SelectSongViewModel = hiltViewModel(), navController: AppComposeNavigator
+  viewModel: SelectSongViewModel = hiltViewModel(),
+  navigator: NavBackStack,
+  playlistId: Long
 ) {
   val coroutineScope = rememberCoroutineScope()
-
+  viewModel.setPlaylistId(playlistId)
   Scaffold(topBar = {
     TopAppBar(title = {
       Text(text = "选择新增歌曲")
     }, navigationIcon = {
       // 返回按钮
       IconButton(onClick = {
-        navController.navigateUp()
+        navigator.removeLastOrNull()
       }) {
         Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
       }
@@ -54,7 +57,7 @@ fun AddSongScreen(
         coroutineScope.launch(Dispatchers.IO) {
           viewModel.addSongToPlaylist()
           withContext(Dispatchers.Main) {
-            navController.navigateUp()
+            navigator.removeLastOrNull()
           }
         }
       }) {

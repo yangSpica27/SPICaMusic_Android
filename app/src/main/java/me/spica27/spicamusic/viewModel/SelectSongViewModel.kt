@@ -1,8 +1,10 @@
 package me.spica27.spicamusic.viewModel
 
+import androidx.annotation.OptIn
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.util.UnstableApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -23,10 +25,9 @@ import javax.inject.Inject
 class SelectSongViewModel @Inject constructor(
   private val songDao: SongDao,
   private val playlistDao: PlaylistDao,
-  savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-  val playlistId: Long? = savedStateHandle.get<Long>(AppScreens.playlist_id)
+  private var playlistId: Long? = null
 
   fun getAllSongsNotInPlaylist() = songDao.getSongsNotInPlayList(playlistId ?: -1)
 
@@ -39,6 +40,9 @@ class SelectSongViewModel @Inject constructor(
   val selectedSongsIds: Flow<HashSet<Long>>
     get() = _selectedSongsIds
 
+  fun setPlaylistId(playlistId: Long) {
+    this.playlistId = playlistId
+  }
 
   fun clearSelectedSongs() {
     selectIdsSet.clear()
@@ -57,6 +61,7 @@ class SelectSongViewModel @Inject constructor(
   }
 
   // 添加到当前播放列表
+  @OptIn(UnstableApi::class)
   fun addSongToCurrentPlaylist(song: Song) {
     viewModelScope.launch(Dispatchers.Default) {
       PlaybackStateManager.getInstance().play(song)

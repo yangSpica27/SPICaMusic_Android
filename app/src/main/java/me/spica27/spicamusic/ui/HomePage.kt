@@ -52,9 +52,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
-import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
@@ -69,7 +69,7 @@ import me.spica27.spicamusic.widget.SongItemWithCover
 fun HomePage(
   modifier: Modifier = Modifier,
   songViewModel: SongViewModel = hiltViewModel(),
-  navigator: AppComposeNavigator? = null
+  navigator: NavBackStack? = null
 ) {
 
   val likeSong = songViewModel.allLikeSongs.collectAsState().value
@@ -193,7 +193,7 @@ fun convertIntOffsetToDpOffset(intOffset: IntOffset): DpOffset {
 
 
 @Composable
-private fun SearchButton(navigator: AppComposeNavigator? = null) {
+private fun SearchButton(navigator: NavBackStack? = null) {
   Row(
     modifier = Modifier
       .fillMaxWidth()
@@ -201,7 +201,7 @@ private fun SearchButton(navigator: AppComposeNavigator? = null) {
       .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
       .clip(CircleShape)
       .clickable {
-        navigator?.navigate(AppScreens.SearchAll.route)
+        navigator?.add(AppScreens.SearchAll)
       }
       .padding(horizontal = 16.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
@@ -239,7 +239,8 @@ private fun TabBar(
     selectedTabIndex = selectedTabIndex,
   ) {
     tabs.forEachIndexed { index, text ->
-      Tab(selected = selectedTabIndex == index,
+      Tab(
+        selected = selectedTabIndex == index,
         onClick = { onTabSelected(index) },
         text = { Text(text) })
     }
@@ -252,7 +253,7 @@ private fun TabBar(
 @Composable
 private fun PLayListItems(
   songViewModel: SongViewModel = hiltViewModel(),
-  navigator: AppComposeNavigator? = null,
+  navigator: NavBackStack? = null,
   playlistViewModel: PlaylistViewModel = hiltViewModel()
 ) {
 
@@ -272,7 +273,8 @@ private fun PLayListItems(
     AlertDialog(onDismissRequest = {
       showRenameDialog.value = false
     }, title = { Text("重命名歌单") }, text = {
-      TextField(value = playlistNameState.value,
+      TextField(
+        value = playlistNameState.value,
         onValueChange = { playlistNameState.value = it },
         placeholder = { Text("请输入新的歌单名称") },
         singleLine = true,
@@ -334,10 +336,12 @@ private fun PLayListItems(
 
   if (showAddPlaylistDialogState.value) {
     val playlistNameState = remember { mutableStateOf("") }
-    AlertDialog(onDismissRequest = { showAddPlaylistDialogState.value = false },
+    AlertDialog(
+      onDismissRequest = { showAddPlaylistDialogState.value = false },
       title = { Text("创建歌单") },
       text = {
-        TextField(value = playlistNameState.value,
+        TextField(
+          value = playlistNameState.value,
           onValueChange = { playlistNameState.value = it },
           placeholder = { Text("请输入歌单名称") },
           singleLine = true,
@@ -378,7 +382,8 @@ private fun PLayListItems(
     itemsIndexed(
       playlists.value,
       key = { _, item -> item.playlistId ?: 0 }) { _, playList ->
-      PlaylistItem(modifier = Modifier.animateItem(),
+      PlaylistItem(
+        modifier = Modifier.animateItem(),
         playlist = playList,
         showMenu = true,
         onClickMenu = {
@@ -386,7 +391,7 @@ private fun PLayListItems(
           showMenu.value = true
         },
         onClick = {
-          navigator?.navigate(AppScreens.PlaylistDetail.createRoute(playList.playlistId ?: -1))
+          navigator?.add(AppScreens.PlaylistDetail(playlistId = playList.playlistId ?: -1))
         })
     }
   }
@@ -396,12 +401,13 @@ private fun PLayListItems(
 
 @Composable
 private fun AddPlayListItem(onClick: () -> Unit = {}) {
-  Row(modifier = Modifier
-    .clickable {
-      onClick()
-    }
-    .padding(vertical = 6.dp, horizontal = 16.dp)
-    .fillMaxWidth(),
+  Row(
+    modifier = Modifier
+      .clickable {
+        onClick()
+      }
+      .padding(vertical = 6.dp, horizontal = 16.dp)
+      .fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically) {
     Box(
       Modifier

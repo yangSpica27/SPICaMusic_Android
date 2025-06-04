@@ -4,18 +4,19 @@ plugins {
   id 'com.google.dagger.hilt.android'
   id 'kotlin-android'
   id 'kotlin-parcelize'
-  //  id 'com.google.devtools.ksp'
-  id 'kotlin-kapt'
+  id 'com.google.devtools.ksp'
+  alias(libs.plugins.jetbrains.kotlin.serialization)
+  alias(libs.plugins.compose.compiler)
 }
 
 android {
   namespace 'me.spica27.spicamusic'
-  compileSdk 35
+  compileSdk 36
 
   defaultConfig {
     applicationId "me.spica27.spicamusic"
     minSdk 24
-    targetSdk 33
+    targetSdk 35
     versionCode 1
     versionName "1.0"
 
@@ -91,37 +92,46 @@ dependencies {
   androidTestImplementation libs.androidx.ui.test.junit4
   debugImplementation libs.androidx.ui.tooling
   debugImplementation libs.androidx.ui.test.manifest
-  implementation("io.coil-kt.coil3:coil-compose:3.0.0-rc01")
-  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+  implementation(libs.coil.compose)
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
 
   //  implementation 'com.github.EspoirX:StarrySky:v2.6.9'
 
-  def room_version = "2.6.1"
+  def room_version = "2.7.1"
   implementation("androidx.room:room-runtime:$room_version")
-  kapt("androidx.room:room-compiler:$room_version")
+  ksp("androidx.room:room-compiler:$room_version")
   implementation("androidx.room:room-ktx:$room_version")
 
   /** hilt **/
-  implementation "com.google.dagger:hilt-android:2.52"
-  kapt "com.google.dagger:hilt-compiler:2.52"
-  implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'
+  implementation libs.hilt.android
+  ksp libs.hilt.compiler
+  implementation libs.androidx.hilt.navigation.compose
 
-  implementation "androidx.datastore:datastore-preferences:1.1.1"
+  implementation libs.androidx.datastore.preferences
 
-  implementation 'com.jakewharton.timber:timber:5.0.1'
-  implementation 'com.github.paramsen:noise:2.0.0'
+  implementation libs.timber
+  implementation libs.noise
 
   def accompanistVersion = "0.36.0"
-  implementation("com.google.accompanist:accompanist-permissions:$accompanistVersion")
+  implementation(libs.accompanist.permissions)
 
   implementation project(":decoder_flac")
+
+  implementation libs.kotlinx.serialization.core
+  implementation libs.androidx.adaptive
+  implementation libs.androidx.adaptive.layout
+  implementation libs.androidx.adaptive.navigation
+  implementation libs.androidx.lifecycle.viewmodel.navigation3
+  implementation libs.androidx.navigation3.runtime
+  implementation libs.androidx.navigation3.ui
+
 
   // 播放器
   def media3_version = "1.4.1"
   // For media playback using ExoPlayer
-  implementation "androidx.media3:media3-exoplayer:$media3_version"
+  implementation libs.androidx.media3.exoplayer
   //    implementation 'com.google.android.exoplayer:exoplayer-core:2.X.X'
-  implementation "androidx.media:media:1.7.0"
+  implementation libs.androidx.media
   implementation 'com.github.lincollincol:amplituda:2.2.2'
   // DSP 处理
 }

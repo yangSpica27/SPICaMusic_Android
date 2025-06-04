@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -40,17 +41,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
-import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.navigator.AppScreens
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
@@ -60,8 +63,12 @@ import me.spica27.spicamusic.widget.SongItemWithCover
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistDetailScreen(
-  playlistViewModel: PlaylistViewModel = hiltViewModel(), navigator: AppComposeNavigator? = null
+  playlistViewModel: PlaylistViewModel = hiltViewModel(),
+  navigator: NavBackStack? = null,
+  playlistId: Long
 ) {
+
+  playlistViewModel.setPlaylistId(playlistId)
 
   val showDeleteSureDialog = rememberSaveable() { mutableStateOf(false) }
 
@@ -143,11 +150,7 @@ fun PlaylistDetailScreen(
 
       // 新增歌曲
       IconButton(onClick = {
-        navigator?.navigate(
-          AppScreens.AddSongScreen.createRoute(
-            playlistViewModel.playlistId ?: -1
-          )
-        )
+        navigator?.add(AppScreens.AddSong(playlistViewModel.playlistId.value ?: -1L))
       }) {
         Icon(
           Icons.Outlined.AddCircle, contentDescription = "新增"
@@ -185,7 +188,7 @@ fun PlaylistDetailScreen(
 fun DeleteSureDialog(
   onDismissRequest: () -> Unit = { },
   playlistViewModel: PlaylistViewModel = hiltViewModel(),
-  navigator: AppComposeNavigator? = null
+  navigator: NavBackStack? = null
 ) {
   val coroutineScope = rememberCoroutineScope()
   AlertDialog(onDismissRequest = { onDismissRequest() }, title = {
@@ -198,7 +201,7 @@ fun DeleteSureDialog(
       coroutineScope.launch {
         playlistViewModel.deletePlaylist()
         onDismissRequest()
-        navigator?.navigateUp()
+        navigator?.removeLastOrNull()
       }
     }) {
       Text("确定")
@@ -215,7 +218,7 @@ fun DeleteSureDialog(
 
 @Composable
 private fun PlaylistDetailList(
-  playlistViewModel: PlaylistViewModel = hiltViewModel(), navigator: AppComposeNavigator? = null
+  playlistViewModel: PlaylistViewModel = hiltViewModel(), navigator: NavBackStack? = null
 ) {
 
 
@@ -278,19 +281,20 @@ private fun SelectedList(
 
 @Composable
 private fun SelectedSongItem(song: Song, selected: Boolean, onClick: () -> Unit = {}) {
-  Row(modifier = Modifier
-    .fillMaxWidth()
-    .padding(vertical = 6.dp, horizontal = 16.dp)
-    .background(
-      MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium
-    )
-    .clickable(
-      indication = null,
-      interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-    ) {
-      onClick()
-    }
-    .padding(vertical = 12.dp, horizontal = 16.dp),
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(vertical = 6.dp, horizontal = 16.dp)
+      .background(
+        MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium
+      )
+      .clickable(
+        indication = null,
+        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+      ) {
+        onClick()
+      }
+      .padding(vertical = 12.dp, horizontal = 16.dp),
     verticalAlignment = Alignment.CenterVertically) {
 
     AnimatedVisibility(
@@ -361,22 +365,18 @@ private fun NormalList(
   }
 }
 
-
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun EmptyContent(
   modifier: Modifier = Modifier,
-  navigator: AppComposeNavigator? = null,
+  navigator: NavBackStack? = null,
   viewModel: PlaylistViewModel = hiltViewModel()
 ) {
   Box(
     modifier = modifier, contentAlignment = Alignment.Center
   ) {
     TextButton(onClick = {
-      navigator?.navigate(
-        AppScreens.AddSongScreen.createRoute(
-          viewModel.playlistId ?: -1
-        )
-      )
+      navigator?.add(AppScreens.AddSong(viewModel.playlistId.value ?: -1))
     }) {
       Text("暂无歌曲,前往添加")
     }

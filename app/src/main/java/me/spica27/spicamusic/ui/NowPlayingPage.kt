@@ -16,14 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import me.spica27.spicamusic.navigator.AppComposeNavigator
+import androidx.navigation3.runtime.NavBackStack
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 
 
 /// 正在播放 页面
 @Composable
 fun NowPlayingPage(
-  navigator: AppComposeNavigator? = null,
+  navigator: NavBackStack? = null,
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
 ) {
 

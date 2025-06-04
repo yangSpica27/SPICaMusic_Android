@@ -1,7 +1,6 @@
 package me.spica27.spicamusic
 
 import android.app.Application
-import androidx.media3.common.MimeTypes
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 

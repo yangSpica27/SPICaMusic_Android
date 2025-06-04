@@ -24,8 +24,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavBackStack
 import me.spica27.spicamusic.R
-import me.spica27.spicamusic.navigator.AppComposeNavigator
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.PlayingSongItem
 
@@ -33,7 +33,7 @@ import me.spica27.spicamusic.widget.PlayingSongItem
 @Composable
 fun CurrentListPage(
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
-  navigator: AppComposeNavigator? = null
+  navigator: NavBackStack? = null
 ) {
 
   val playState = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false)
