@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.playback.PlaybackStateManager
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.pow
@@ -65,9 +66,12 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
   private val res = mutableListOf<Float>()
 
 
+  private val writeLock = ReentrantLock()
   override fun onFFTReady(sampleRateHz: Int, channelCount: Int, fft: FloatArray) {
     if (listener == null) return
+    if (writeLock.isLocked) return
     coroutineScope.launch {
+      writeLock.lock()
       synchronized(fft2) {
         System.arraycopy(fft, 2, fft2, 0, size)
         // Set up counters and widgets
@@ -132,6 +136,7 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
         }
         listener?.getDrawData(res)
       }
+      writeLock.unlock()
     }
   }
 

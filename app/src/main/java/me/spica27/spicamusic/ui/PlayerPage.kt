@@ -39,7 +39,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -77,7 +76,7 @@ import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SongControllerPanel
-import me.spica27.spicamusic.widget.VisualizerSurfaceView
+import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
 import timber.log.Timber
 
@@ -232,7 +231,7 @@ private fun Cover(
 
     AndroidView(
       factory = { context ->
-        VisualizerSurfaceView(context).apply {
+        VisualizerView(context).apply {
           setBgColor(backgroundColor.toArgb())
           setThemeColor(onSurfaceColor.toArgb())
         }

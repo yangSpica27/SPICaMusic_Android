@@ -40,12 +40,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -57,7 +55,6 @@ import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
-import me.spica27.spicamusic.widget.VisualizerSurfaceView
 
 
 @kotlin.OptIn(ExperimentalMaterial3Api::class)
@@ -225,19 +222,19 @@ private fun Cover(
   ) {
 
 
-    AndroidView(
-      factory = { context ->
-        VisualizerSurfaceView(context).apply {
-          setBgColor(backgroundColor.toArgb())
-          setThemeColor(onSurfaceColor.toArgb())
-        }
-      }, update = { view ->
-        view.setBgColor(backgroundColor.toArgb())
-        view.setThemeColor(onSurfaceColor.toArgb())
-      }, modifier = Modifier
-        .fillMaxWidth()
-        .aspectRatio(1f)
-    )
+//    AndroidView(
+//      factory = { context ->
+//        VisualizerSurfaceView(context).apply {
+//          setBgColor(backgroundColor.toArgb())
+//          setThemeColor(onSurfaceColor.toArgb())
+//        }
+//      }, update = { view ->
+//        view.setBgColor(backgroundColor.toArgb())
+//        view.setThemeColor(onSurfaceColor.toArgb())
+//      }, modifier = Modifier
+//        .fillMaxWidth()
+//        .aspectRatio(1f)
+//    )
     Box(
       modifier = Modifier
         .fillMaxWidth()

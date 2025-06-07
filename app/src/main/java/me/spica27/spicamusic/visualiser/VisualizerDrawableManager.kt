@@ -17,7 +17,7 @@ class VisualizerDrawableManager {
 
   private val visualiserDrawables = HashMap<VisualiserType, VisualiserDrawable>()
 
-  private var currentVisualiserType = VisualiserType.CIRCLE
+  private var currentVisualiserType = VisualiserType.LINE
 
 
   fun nextVisualiserType() {
@@ -25,7 +25,6 @@ class VisualizerDrawableManager {
       VisualiserType.LINE -> VisualiserType.CIRCLE
       VisualiserType.CIRCLE -> VisualiserType.BLUR
       VisualiserType.BLUR -> VisualiserType.LINE
-
     }
   }
 

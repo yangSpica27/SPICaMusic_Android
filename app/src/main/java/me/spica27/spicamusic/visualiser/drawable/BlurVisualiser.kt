@@ -10,6 +10,8 @@ import me.spica27.spicamusic.utils.dp
 import me.spica27.spicamusic.visualiser.MusicVisualiser
 import kotlin.math.cos
 import kotlin.math.sin
+import androidx.core.graphics.withSave
+import timber.log.Timber
 
 @OptIn(UnstableApi::class)
 class BlurVisualiser : VisualiserDrawable() {
@@ -69,57 +71,57 @@ class BlurVisualiser : VisualiserDrawable() {
 
 
   override fun draw(canvas: Canvas) {
-    canvas.drawColor(backgroundColor)
+    Timber.tag("BlurVisualiser").d("draw()")
+    Timber.tag("BlurVisualiser").d("width = ${width}")
+    Timber.tag("BlurVisualiser").d("height = ${height}")
     canvas.translate(width / 2f, height / 2f)
     if (yList.size != lastYList.size) {
       return
     }
-    canvas.save()
-    path1.reset()
-    path2.reset()
-    paint.color = themeColor
+    canvas.withSave {
+      path1.reset()
+      path2.reset()
+      paint.color = themeColor
 
-    val fraction =
-      decelerateInterpolator.getInterpolation(((System.currentTimeMillis() - lastSampleTime).toFloat() / interval))
-        .coerceIn(
-          0f, 1f
-        )
+      val fraction =
+        decelerateInterpolator.getInterpolation(((System.currentTimeMillis() - lastSampleTime).toFloat() / interval))
+          .coerceIn(
+            0f, 1f
+          )
 
 
-    for (index in 0 until yList.size) {
-      val lastY = lastYList[index]
-      val y = yList[index]
+      for (index in 0 until yList.size) {
+        val lastY = lastYList[index]
+        val y = yList[index]
 
-      val curY = lastY + (y - lastY) * fraction
+        val curY = lastY + (y - lastY) * fraction
 
-      val curY2 = radius - (curY - radius)
+        val curY2 = radius - (curY - radius)
 
-      val angle = 360f / yList.size * index
+        val angle = 360f / yList.size * index
 
-      val p1 = calcPoint(0, 0, curY.toInt(), angle)
+        val p1 = calcPoint(0, 0, curY.toInt(), angle)
 
-      val p2 = calcPoint(0, 0, curY2.toInt(), angle)
+        val p2 = calcPoint(0, 0, curY2.toInt(), angle)
 
-      canvas.drawLine(p1[0].toFloat(), p1[1].toFloat(), p2[0].toFloat(), p2[1].toFloat(), paint)
+        drawLine(p1[0].toFloat(), p1[1].toFloat(), p2[0].toFloat(), p2[1].toFloat(), paint)
 
-      if (index == 0) {
-        path1.moveTo(p1[0].toFloat(), p1[1].toFloat())
-        path2.moveTo(p2[0].toFloat(), p2[1].toFloat())
-      } else {
-        path1.lineTo(p1[0].toFloat(), p1[1].toFloat())
-        path2.lineTo(p2[0].toFloat(), p2[1].toFloat())
+        if (index == 0) {
+          path1.moveTo(p1[0].toFloat(), p1[1].toFloat())
+          path2.moveTo(p2[0].toFloat(), p2[1].toFloat())
+        } else {
+          path1.lineTo(p1[0].toFloat(), p1[1].toFloat())
+          path2.lineTo(p2[0].toFloat(), p2[1].toFloat())
+        }
       }
+
+      path1.close()
+      path2.close()
+
+      drawPath(path1, paint)
+
+      drawPath(path2, paint)
     }
-
-    path1.close()
-    path2.close()
-
-    canvas.drawPath(path1, paint)
-
-    canvas.drawPath(path2, paint)
-
-
-    canvas.restore()
   }
 
   override fun update(list: List<Float>) {
