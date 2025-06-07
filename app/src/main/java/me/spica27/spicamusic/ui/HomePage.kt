@@ -55,7 +55,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
-import me.spica27.spicamusic.navigator.AppScreens
+import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
@@ -201,7 +201,7 @@ private fun SearchButton(navigator: NavBackStack? = null) {
       .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
       .clip(CircleShape)
       .clickable {
-        navigator?.add(AppScreens.SearchAll)
+        navigator?.add(Routes.SearchAll)
       }
       .padding(horizontal = 16.dp, vertical = 8.dp),
     verticalAlignment = Alignment.CenterVertically,
@@ -237,12 +237,28 @@ private fun TabBar(
 
   PrimaryTabRow(
     selectedTabIndex = selectedTabIndex,
+    divider = {}
   ) {
     tabs.forEachIndexed { index, text ->
       Tab(
         selected = selectedTabIndex == index,
         onClick = { onTabSelected(index) },
-        text = { Text(text) })
+        text = {
+          if (selectedTabIndex == index) {
+            Text(
+              text,
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
+            )
+          } else {
+            Text(
+              text,
+              style = MaterialTheme.typography.titleMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+              )
+            )
+          }
+        },
+      )
     }
   }
 
@@ -391,7 +407,7 @@ private fun PLayListItems(
           showMenu.value = true
         },
         onClick = {
-          navigator?.add(AppScreens.PlaylistDetail(playlistId = playList.playlistId ?: -1))
+          navigator?.add(Routes.PlaylistDetail(playlistId = playList.playlistId ?: -1))
         })
     }
   }

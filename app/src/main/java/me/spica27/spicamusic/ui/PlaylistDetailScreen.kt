@@ -41,20 +41,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
-import me.spica27.spicamusic.navigator.AppScreens
+import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.widget.SongItemWithCover
@@ -150,7 +148,7 @@ fun PlaylistDetailScreen(
 
       // 新增歌曲
       IconButton(onClick = {
-        navigator?.add(AppScreens.AddSong(playlistViewModel.playlistId.value ?: -1L))
+        navigator?.add(Routes.AddSong(playlistViewModel.playlistId.value ?: -1L))
       }) {
         Icon(
           Icons.Outlined.AddCircle, contentDescription = "新增"
@@ -376,7 +374,7 @@ private fun EmptyContent(
     modifier = modifier, contentAlignment = Alignment.Center
   ) {
     TextButton(onClick = {
-      navigator?.add(AppScreens.AddSong(viewModel.playlistId.value ?: -1))
+      navigator?.add(Routes.AddSong(viewModel.playlistId.value ?: -1))
     }) {
       Text("暂无歌曲,前往添加")
     }

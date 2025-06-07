@@ -18,21 +18,20 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
-import me.spica27.spicamusic.navigator.AppScreens
+import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.theme.AppTheme
 import me.spica27.spicamusic.utils.DataStoreUtil
+import me.spica27.spicamusic.utils.sliderFromBottomRouteAnim
 
 
 @Composable
-fun AppMain(
-
-) {
+fun AppMain() {
   val context = LocalContext.current
   val systemIsDark = DataStoreUtil(context).isForceDarkTheme
   val darkTheme = DataStoreUtil(context)
     .getForceDarkTheme.collectAsStateWithLifecycle(systemIsDark)
     .value
-  val backStack = rememberNavBackStack(AppScreens.Splash)
+  val backStack = rememberNavBackStack(Routes.Splash)
   AppTheme(
     darkTheme = darkTheme,
     dynamicColor = false
@@ -46,36 +45,26 @@ fun AppMain(
       backStack = backStack,
       onBack = { backStack.removeLastOrNull() },
       entryProvider = entryProvider {
-        entry<AppScreens.AddSong> { key ->
+        entry<Routes.Player>(
+          metadata = sliderFromBottomRouteAnim()
+        ) { key ->
+          PlayerScreen(
+            navigator = backStack,
+          )
+        }
+        entry<Routes.AddSong> { key ->
           AddSongScreen(navigator = backStack, playlistId = key.playlistId)
         }
-        entry<AppScreens.PlaylistDetail> {
+        entry<Routes.PlaylistDetail> {
           PlaylistDetailScreen(
             navigator = backStack,
             playlistId = it.playlistId
           )
         }
-        entry<AppScreens.Main> { MainScreen(navigator = backStack) }
-        entry<AppScreens.Splash> { SplashScreen(navigator = backStack) }
-        entry<AppScreens.SearchAll>(
-          metadata = NavDisplay.transitionSpec {
-            slideInVertically(
-              initialOffsetY = { it },
-              animationSpec = tween(450)
-            ) togetherWith ExitTransition.KeepUntilTransitionsFinished
-          } + NavDisplay.popTransitionSpec {
-            EnterTransition.None togetherWith
-                slideOutVertically(
-                  targetOffsetY = { it },
-                  animationSpec = tween(450)
-                )
-          } + NavDisplay.predictivePopTransitionSpec {
-            EnterTransition.None togetherWith
-                slideOutVertically(
-                  targetOffsetY = { it },
-                  animationSpec = tween(450)
-                )
-          }
+        entry<Routes.Main> { MainScreen(navigator = backStack) }
+        entry<Routes.Splash> { SplashScreen(navigator = backStack) }
+        entry<Routes.SearchAll>(
+          metadata = sliderFromBottomRouteAnim()
         ) { SearchAllScreen() }
       },
       transitionSpec = {

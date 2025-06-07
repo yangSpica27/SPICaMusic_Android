@@ -15,7 +15,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.delay
-import me.spica27.spicamusic.navigator.AppScreens
+import me.spica27.spicamusic.route.Routes
 
 
 //  Splash Screen
@@ -32,7 +32,7 @@ fun SplashScreen(modifier: Modifier = Modifier, navigator: NavBackStack) {
 
   LaunchedEffect(Unit) {
     delay(1000) // 延迟2秒
-    navigator.add(AppScreens.Main)
+    navigator.add(Routes.Main)
   }
 
   Scaffold { padding ->

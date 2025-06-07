@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -73,7 +74,7 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
   private val _isPlaying = MutableStateFlow(false)
 
   @kotlin.OptIn(FlowPreview::class)
-  val isPlaying: Flow<Boolean>
+  val isPlaying: SharedFlow<Boolean>
     get() = _isPlaying
       .debounce(250)
       .shareIn(viewModelScope, SharingStarted.Lazily, 1)

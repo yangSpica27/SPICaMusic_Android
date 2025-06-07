@@ -1,11 +1,11 @@
-package me.spica27.spicamusic.navigator
+package me.spica27.spicamusic.route
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 
 /// App的导航
 
-object AppScreens {
+object Routes {
 
 
   @Serializable
@@ -19,6 +19,9 @@ object AppScreens {
 
   @Serializable
   data class PlaylistDetail(val playlistId: Long) : NavKey
+
+  @Serializable
+  data object Player : NavKey
 
   @Serializable
   data object SearchAll : NavKey

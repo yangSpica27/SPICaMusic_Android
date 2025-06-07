@@ -3,7 +3,6 @@ package me.spica27.spicamusic.ui
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -24,17 +23,25 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.VerticalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -44,7 +51,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -60,6 +66,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
@@ -80,71 +87,96 @@ import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
 import timber.log.Timber
 
 
+@kotlin.OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlayerPage(
+fun PlayerScreen(
+  navigator: NavBackStack? = null,
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
-  songViewModel: SongViewModel = hiltViewModel()
 ) {
 
-  // 当前播放的歌曲
-  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
+  val nowPlayingSongs = playBackViewModel.playList.collectAsState().value
 
-  if (currentPlayingSong == null) {
-    return Box(
-      modifier = Modifier.fillMaxSize(),
-      contentAlignment = Alignment.Center,
-    ) {
-      CircularProgressIndicator()
-    }
-  } else {
-    Box(
-      modifier = Modifier.fillMaxSize(),
-      contentAlignment = Alignment.Center,
-    ) {
-      Column(
-        modifier = Modifier.fillMaxSize(),
-      ) {
-        Spacer(modifier = Modifier.height(15.dp))
-        //  标题
-        Title(
-          modifier = Modifier.padding(vertical = 10.dp, horizontal = 20.dp),
-        )
-        Spacer(modifier = Modifier.height(15.dp))
-        // 封面
-        Cover(
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .weight(1f),
-          songState = songViewModel.getSongFlow(currentPlayingSong.songId ?: -1)
-            .collectAsState(null)
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-        // 歌名和歌手
-        SongInfo(
-          songId = currentPlayingSong.songId ?: -1,
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-        )
-        ControlPanel(
-          modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp)
-        )
-        Text(
-          modifier = Modifier
-            .padding(10.dp)
-            .fillMaxWidth(),
-          textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-          text = "向上滑动查看播放列表",
-          style = MaterialTheme.typography.bodyMedium.copy(
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+  val isPlaying = playBackViewModel.isPlaying.collectAsState(false).value
+
+  val pageState = rememberPagerState(pageCount = { 2 })
+
+  Scaffold(
+    topBar = {
+      TopAppBar(
+        navigationIcon = {
+          IconButton(
+            onClick = {
+              navigator?.removeLastOrNull()
+            }
+          ) {
+            Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
+          }
+        },
+        title = {
+          Text(
+            if (isPlaying) {
+              "Now Playing"
+            } else {
+              "Now Pause"
+            },
+            style = MaterialTheme.typography.titleLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+              fontWeight = FontWeight.ExtraBold
+            ),
           )
-        )
+        }
+      )
+    },
+  ) {
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(it)
+    ) {
+      if (nowPlayingSongs.isEmpty()) {
+        // 播放列表为空
+        EmptyPage()
+      } else {
+        // 播放列表不为空
+        VerticalPager(
+          modifier = Modifier.fillMaxSize(),
+          state = pageState,
+          key = { it },
+          flingBehavior =
+            PagerDefaults.flingBehavior(state = pageState, snapPositionalThreshold = .2f)
+        ) {
+          when (it) {
+            0 -> {
+              PlayerPage()
+            }
+
+            1 -> {
+              CurrentListPage(
+                navigator = navigator
+              )
+            }
+          }
+        }
       }
     }
   }
+}
 
-
+@Composable
+private fun EmptyPage() {
+  Column(
+    modifier = Modifier.fillMaxSize(),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+  ) {
+    Text("没有播放中的音乐", style = MaterialTheme.typography.bodyMedium)
+    Spacer(modifier = Modifier.height(16.dp))
+    OutlinedButton(
+      onClick = { }
+    ) {
+      Text("选取音乐")
+    }
+  }
 }
 
 @Composable
