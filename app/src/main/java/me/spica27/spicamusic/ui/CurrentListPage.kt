@@ -16,12 +16,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -47,26 +47,16 @@ fun CurrentListPage(
   Column(
     modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top
   ) {
-    Row(
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      Text(
-        text = if (playState.value) {
-          "正在播放"
-        } else {
-          "未在播放"
-        }, style = MaterialTheme.typography.headlineMedium.copy(
-          fontWeight = androidx.compose.ui.text.font.FontWeight.W600,
-          color = MaterialTheme.colorScheme.tertiary
-        ), modifier = Modifier.padding(20.dp)
-      )
-      Spacer(modifier = Modifier.weight(1f))
-      Text(
-        "向下轻扫回到播放页面", style = MaterialTheme.typography.bodyMedium.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        ), modifier = Modifier.padding(20.dp)
-      )
-    }
+    Text(
+      "向下轻扫回到播放页面",
+      style = MaterialTheme.typography.bodyMedium.copy(
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+      ),
+      modifier = Modifier
+        .padding(vertical = 12.dp, horizontal = 20.dp)
+        .fillMaxWidth(),
+      textAlign = TextAlign.Center
+    )
     Spacer(modifier = Modifier.size(4.dp))
     Box(
       modifier = Modifier

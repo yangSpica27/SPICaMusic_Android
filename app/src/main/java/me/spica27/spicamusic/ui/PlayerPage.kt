@@ -3,7 +3,6 @@ package me.spica27.spicamusic.ui
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -40,11 +39,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -65,8 +64,11 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
+import kotlinx.coroutines.flow.map
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.utils.contentResolverSafe
 import me.spica27.spicamusic.utils.formatDurationDs
 import me.spica27.spicamusic.utils.formatDurationSecs
 import me.spica27.spicamusic.utils.msToDs
@@ -87,9 +89,13 @@ fun PlayerPage(
 ) {
 
   // 当前播放的歌曲
-  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
+  val showEmpty =
+    playBackViewModel.currentSongFlow
+      .map { it == null }
+      .collectAsStateWithLifecycle(true)
+      .value
 
-  if (currentPlayingSong == null) {
+  if (showEmpty) {
     return Box(
       modifier = Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center,
@@ -97,6 +103,9 @@ fun PlayerPage(
       CircularProgressIndicator()
     }
   } else {
+
+    val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
+
     Box(
       modifier = Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center,
@@ -116,19 +125,20 @@ fun PlayerPage(
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
             .weight(1f),
-          songState = songViewModel.getSongFlow(currentPlayingSong.songId ?: -1)
+          songState = songViewModel.getSongFlow(currentPlayingSong?.songId ?: -1)
             .collectAsState(null)
         )
         Spacer(modifier = Modifier.height(20.dp))
         // 歌名和歌手
         SongInfo(
-          songId = currentPlayingSong.songId ?: -1,
+          songId = currentPlayingSong?.songId ?: -1,
           modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
         )
         ControlPanel(
-          modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp)
+          modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp),
+          playBackViewModel = playBackViewModel
         )
         Text(
           modifier = Modifier
@@ -273,8 +283,9 @@ private fun ControlPanel(
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
 ) {
 
+  val song = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
   // 快速傅里叶变换后的振幅
-  val amp = playBackViewModel.playingSongAmplitudes.collectAsStateWithLifecycle().value
+  val ampState = remember { mutableStateOf(listOf<Int>()) }
 
   val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
 
@@ -286,13 +297,24 @@ private fun ControlPanel(
 
   val seekValueState = remember { mutableFloatStateOf(0f) }
 
-
-
-
-
   LaunchedEffect(positionSec) {
     if (isSeekingState.value) return@LaunchedEffect
     seekValueState.floatValue = positionSec.secsToMs() * 1f
+  }
+
+  LaunchedEffect(song) {
+    val amplituda = playBackViewModel.getAmplituda()
+    if (song?.getSongUri() != null) {
+      val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
+      if (inputStream != null) {
+        val amplitudes = amplituda.processAudio(inputStream)
+        val amplitudesList = amplitudes.get().amplitudesAsList()
+        ampState.value = amplitudesList
+        inputStream.close()
+      } else {
+        ampState.value = arrayListOf<Int>()
+      }
+    }
   }
 
   Column(
@@ -306,7 +328,7 @@ private fun ControlPanel(
         .height(80.dp), contentAlignment = Alignment.Center
     ) {
       AudioWaveSlider(
-        amplitudes = amp,
+        amplitudes = ampState.value,
         waveformBrush = SolidColor(MaterialTheme.colorScheme.surfaceVariant),
         progressBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
         modifier = Modifier.fillMaxWidth(),

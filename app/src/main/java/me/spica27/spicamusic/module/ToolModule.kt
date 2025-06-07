@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.module
 
 import android.app.Application
+import android.util.Log
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -19,7 +20,10 @@ object ToolModule {
   fun provideAmplituda(
     application: Application,
   ): Amplituda {
-    return Amplituda(application)
+    return Amplituda(application).apply {
+      clearCache()
+      setLogConfig(Log.ERROR,true)
+    }
   }
 
 

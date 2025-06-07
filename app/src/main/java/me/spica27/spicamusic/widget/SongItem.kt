@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -96,7 +97,10 @@ fun SongItemWithCover(
 
       if (coverPainterState.value is AsyncImagePainter.State.Success) {
         Image(
-          painter = coverPainter, contentDescription = "封面", modifier = Modifier.size(66.dp)
+          painter = coverPainter,
+          contentDescription = "封面",
+          modifier = Modifier.size(66.dp),
+          contentScale = ContentScale.Crop
         )
       } else {
         Box(

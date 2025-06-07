@@ -9,18 +9,20 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import linc.com.amplituda.Amplituda
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.db.dao.SongDao
@@ -47,6 +49,9 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
   // 播放列表
   private val _nowPlayingList = MutableStateFlow(listOf<Song>())
 
+  fun getAmplituda(): Amplituda {
+    return amplituda
+  }
 
   val playList: StateFlow<List<Song>>
     get() = _nowPlayingList
@@ -97,18 +102,12 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
     get() = _repeatMode
 
 
-  // 正在播放的歌曲的振幅
-  private val _playingSongAmplitudes = MutableStateFlow(listOf<Int>())
-
-  val playingSongAmplitudes: StateFlow<List<Int>>
-    get() = _playingSongAmplitudes
-
-
   // 是否随机播放
   private val _isShuffled = MutableStateFlow(false)
   val isShuffled: Flow<Boolean>
     get() = _isShuffled
 
+  private var songCollectJob: Job? = null
 
   init {
     Timber.tag("MusicViewModel").d("init")
@@ -124,7 +123,7 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
       Dispatchers.Default +
           CoroutineExceptionHandler { _, throwable ->
             run {
-              Timber.tag("MusicViewModel").e(throwable)
+              Timber.tag("获取波形图错误").e(throwable)
               if (throwable is NoSuchFileException) {
                 App.getInstance().toast("未找到音频文件", Toast.LENGTH_SHORT)
                 viewModelScope.launch {
@@ -149,25 +148,15 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
 
       ) {
       // 播放歌曲时，获取歌曲的振幅
-      _playingSong.collectLatest { song ->
-        if (song?.getSongUri() != null) {
-          val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
-          if (inputStream != null) {
-            val amplitudes = amplituda.processAudio(inputStream)
-            _playingSongAmplitudes.emit(amplitudes.get().amplitudesAsList())
-            withContext(Dispatchers.IO) {
-              inputStream.close()
-            }
-          } else {
-            _playingSongAmplitudes.emit(listOf())
-          }
-        }
+      songCollectJob = _playingSong.collect {
+
       }
     }
   }
 
 
   override fun onCleared() {
+    songCollectJob?.cancel()
     super.onCleared()
     PlaybackStateManager.getInstance().removeListener(this)
   }
@@ -256,5 +245,6 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
   fun removeSong(index: Int) {
     PlaybackStateManager.getInstance().removeSong(index)
   }
+
 
 }

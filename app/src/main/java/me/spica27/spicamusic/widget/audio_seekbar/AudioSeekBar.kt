@@ -2,6 +2,7 @@
 
 package me.spica27.spicamusic.widget.audio_seekbar
 
+import android.util.Log
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
+import timber.log.Timber
 
 
 private val MinSpikeWidthDp: Dp = 1.dp
@@ -66,18 +68,18 @@ fun AudioWaveSlider(
   amplitudes: List<Int>,
   onProgressChange: (Float) -> Unit,
 ) {
-  val _progress = animateFloatAsState(
+  val progress = animateFloatAsState(
     progress.coerceIn(MinProgress, MaxProgress),
     tween(125, easing = LinearEasing),
     label = "",
   ).value
 
-  val _spikeWidth = remember(spikeWidth) { spikeWidth.coerceIn(MinSpikeWidthDp, MaxSpikeWidthDp) }
-  val _spikePadding =
+  val spikeWidth = remember(spikeWidth) { spikeWidth.coerceIn(MinSpikeWidthDp, MaxSpikeWidthDp) }
+  val spikePadding =
     remember(spikePadding) { spikePadding.coerceIn(MinSpikePaddingDp, MaxSpikePaddingDp) }
-  val _spikeRadius =
+  val spikeRadius =
     remember(spikeRadius) { spikeRadius.coerceIn(MinSpikeRadiusDp, MaxSpikeRadiusDp) }
-  val _spikeTotalWidth = remember(spikeWidth, spikePadding) { _spikeWidth + _spikePadding }
+  val spikeTotalWidth = remember(spikeWidth, spikePadding) { spikeWidth + spikePadding }
   var canvasSize by remember { mutableStateOf(Size(0f, 0f)) }
   var spikes by remember { mutableFloatStateOf(0F) }
 
@@ -93,7 +95,7 @@ fun AudioWaveSlider(
 
   Slider(
     modifier = modifier,
-    value = _progress,
+    value = progress,
     thumb = {
 
     },
@@ -105,12 +107,12 @@ fun AudioWaveSlider(
           .graphicsLayer(alpha = DefaultGraphicsLayerAlpha)
       ) {
         canvasSize = size
-        spikes = size.width / _spikeTotalWidth.toPx()
+        spikes = size.width / spikeTotalWidth.toPx()
         spikesAmplitudes.forEachIndexed { index, amplitude ->
           drawRoundRect(
             brush = waveformBrush,
             topLeft = Offset(
-              x = index * _spikeTotalWidth.toPx(),
+              x = index * spikeTotalWidth.toPx(),
               y = when (waveformAlignment) {
                 WaveformAlignment.Top -> 0F
                 WaveformAlignment.Bottom -> size.height - amplitude
@@ -118,16 +120,16 @@ fun AudioWaveSlider(
               }
             ),
             size = Size(
-              width = _spikeWidth.toPx(),
+              width = spikeWidth.toPx(),
               height = amplitude
             ),
-            cornerRadius = CornerRadius(_spikeRadius.toPx(), _spikeRadius.toPx()),
+            cornerRadius = CornerRadius(spikeRadius.toPx(), spikeRadius.toPx()),
             style = style
           )
           drawRect(
             brush = progressBrush,
             size = Size(
-              width = _progress * size.width,
+              width = progress * size.width,
               height = size.height
             ),
             blendMode = BlendMode.SrcAtop
@@ -153,7 +155,7 @@ private fun List<Int>.toDrawableAmplitudes(
   minHeight: Float,
   maxHeight: Float
 ): List<Float> {
-  val amplitudes = map(Int::toFloat)
+  val amplitudes = map { it * 1f }
   if (amplitudes.isEmpty() || spikes == 0) {
     return List(spikes) { minHeight }
   }
@@ -164,8 +166,11 @@ private fun List<Int>.toDrawableAmplitudes(
       AmplitudeType.Min -> data.min()
     }.toFloat().coerceIn(minHeight, maxHeight)
   }
-  return when {
+  val res = when {
     spikes > amplitudes.count() -> amplitudes.fillToSize(spikes, transform)
     else -> amplitudes.chunkToSize(spikes, transform)
   }.normalize(minHeight, maxHeight)
+
+
+  return res
 }
