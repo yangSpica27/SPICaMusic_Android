@@ -4,35 +4,40 @@ import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.visualiser.drawable.BlurVisualiser
 import me.spica27.spicamusic.visualiser.drawable.CircleVisualiser
-import me.spica27.spicamusic.visualiser.drawable.LineVisualiser
 import me.spica27.spicamusic.visualiser.drawable.VisualiserDrawable
 
 @OptIn(UnstableApi::class)
 class VisualizerDrawableManager {
 
   enum class VisualiserType {
-    LINE, CIRCLE,BLUR
+    LINE, CIRCLE, BLUR, RAIN
   }
 
 
-  private val visualiserDrawables = HashMap<VisualiserType, VisualiserDrawable>()
+  companion object {
+    private val visualiserDrawables = hashMapOf<VisualiserType, VisualiserDrawable>(
+      VisualiserType.CIRCLE to CircleVisualiser(),
+      VisualiserType.BLUR to BlurVisualiser()
+    )
+  }
 
-  private var currentVisualiserType = VisualiserType.LINE
+  private var currentVisualiserType = VisualiserType.CIRCLE
 
 
   fun nextVisualiserType() {
-    currentVisualiserType = when (currentVisualiserType) {
-      VisualiserType.LINE -> VisualiserType.CIRCLE
-      VisualiserType.CIRCLE -> VisualiserType.BLUR
-      VisualiserType.BLUR -> VisualiserType.LINE
+    currentVisualiserType = if (currentVisualiserType == VisualiserType.CIRCLE) {
+      VisualiserType.BLUR
+    } else {
+      VisualiserType.CIRCLE
     }
+//    currentVisualiserType = when (currentVisualiserType) {
+//      VisualiserType.LINE -> VisualiserType.CIRCLE
+//      VisualiserType.CIRCLE -> VisualiserType.BLUR
+//      VisualiserType.BLUR -> VisualiserType.RAIN
+//      VisualiserType.RAIN -> VisualiserType.LINE
+//    }
   }
 
-  init {
-    visualiserDrawables[VisualiserType.LINE] = LineVisualiser()
-    visualiserDrawables[VisualiserType.CIRCLE] = CircleVisualiser()
-    visualiserDrawables[VisualiserType.BLUR] = BlurVisualiser()
-  }
 
   fun setVisualiserType(type: VisualiserType) {
     currentVisualiserType = type
@@ -61,7 +66,6 @@ class VisualizerDrawableManager {
       it.backgroundColor = color
     }
   }
-
 
 
   fun setVisualiserBounds(width: Int, height: Int) {

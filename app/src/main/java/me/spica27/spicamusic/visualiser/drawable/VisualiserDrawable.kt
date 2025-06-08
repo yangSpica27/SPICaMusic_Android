@@ -1,9 +1,8 @@
 package me.spica27.spicamusic.visualiser.drawable
 
 import android.graphics.Canvas
-import androidx.media3.common.util.UnstableApi
 
-@UnstableApi
+
 abstract class VisualiserDrawable {
 
   // 半径

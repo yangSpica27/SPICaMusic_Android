@@ -29,6 +29,9 @@ class App : Application() {
       return instance
     }
   }
-
+  init {
+    System.loadLibrary("liquidfun")
+    System.loadLibrary("liquidfun_jni")
+  }
 
 }

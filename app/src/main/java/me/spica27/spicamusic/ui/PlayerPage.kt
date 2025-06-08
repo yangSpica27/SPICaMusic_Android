@@ -63,7 +63,9 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
@@ -122,7 +124,6 @@ fun PlayerPage(
         Cover(
           modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
             .weight(1f),
           songState = songViewModel.getSongFlow(currentPlayingSong?.songId ?: -1)
             .collectAsState(null)
@@ -133,14 +134,19 @@ fun PlayerPage(
           songId = currentPlayingSong?.songId ?: -1,
           modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .padding(horizontal = 20.dp)
+            .padding(top = 12.dp)
         )
         ControlPanel(
-          modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp),
+          modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(vertical = 15.dp, horizontal = 20.dp),
           playBackViewModel = playBackViewModel
         )
         Text(
           modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .padding(10.dp)
             .fillMaxWidth(),
           textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -225,22 +231,17 @@ private fun Cover(
   )
 
   Box(
-    contentAlignment = Alignment.Center, modifier = modifier
+    contentAlignment = Alignment.Center,
+    modifier = modifier
   ) {
-
-
     AndroidView(
       factory = { context ->
-        VisualizerView(context).apply {
-          setBgColor(backgroundColor.toArgb())
-          setThemeColor(onSurfaceColor.toArgb())
-        }
+        VisualizerView(context)
       }, update = { view ->
         view.setBgColor(backgroundColor.toArgb())
         view.setThemeColor(onSurfaceColor.toArgb())
       }, modifier = Modifier
         .fillMaxWidth()
-        .aspectRatio(1f)
     )
     Box(
       modifier = Modifier
@@ -249,7 +250,11 @@ private fun Cover(
         .padding(60.dp + 12.dp)
         .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
         .clip(CircleShape)
-        .border(2.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), CircleShape)
+        .border(
+          12.dp,
+          MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.6f),
+          CircleShape
+        )
         .rotate(rotateState.value), contentAlignment = Alignment.Center
     ) {
       if (coverPainterState.value is AsyncImagePainter.State.Success) {
@@ -302,16 +307,18 @@ private fun ControlPanel(
   }
 
   LaunchedEffect(song) {
-    val amplituda = playBackViewModel.getAmplituda()
-    if (song?.getSongUri() != null) {
-      val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
-      if (inputStream != null) {
-        val amplitudes = amplituda.processAudio(inputStream)
-        val amplitudesList = amplitudes.get().amplitudesAsList()
-        ampState.value = amplitudesList
-        inputStream.close()
-      } else {
-        ampState.value = arrayListOf<Int>()
+    withContext(Dispatchers.IO) {
+      val amplituda = playBackViewModel.getAmplituda()
+      if (song?.getSongUri() != null) {
+        val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
+        if (inputStream != null) {
+          val amplitudes = amplituda.processAudio(inputStream)
+          val amplitudesList = amplitudes.get().amplitudesAsList()
+          ampState.value = amplitudesList
+          inputStream.close()
+        } else {
+          ampState.value = arrayListOf<Int>()
+        }
       }
     }
   }

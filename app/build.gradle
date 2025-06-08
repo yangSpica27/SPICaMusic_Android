@@ -60,6 +60,15 @@ android {
   buildFeatures {
     compose true
   }
+  buildFeatures {
+    //    aidl=true
+    buildConfig=true
+  }
+  sourceSets {
+    main {
+      jniLibs.srcDirs = ['libs']
+    }
+  }
   composeOptions {
     kotlinCompilerExtensionVersion '1.5.7'
   }

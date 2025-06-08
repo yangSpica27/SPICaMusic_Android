@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "androidx.media3.decoder.flac.test.decoder_flac-mergeDebugAndroidTestResources-6:/values-lt/values-lt.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\SPICa27\\.gradle\\caches\\transforms-4\\41cab7c59e0ff0ec896454150715464b\\transformed\\media3-exoplayer-1.4.1\\res\\values-lt\\values-lt.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10",
+                        "startColumns": "4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,136,200,267,335,416,490,587,682",
+                        "endColumns": "80,63,66,67,80,73,96,94,74",
+                        "endOffsets": "131,195,262,330,411,485,582,677,752"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\SPICa27\\.gradle\\caches\\transforms-4\\054f7b3e2a5b04cf7adca0dd328408d1\\transformed\\core-1.9.0\\res\\values-lt\\values-lt.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "100",
+                        "endOffsets": "151"
+                    },
+                    "to": {
+                        "startLines": "11",
+                        "startColumns": "4",
+                        "startOffsets": "757",
+                        "endColumns": "100",
+                        "endOffsets": "853"
+                    }
+                }
+            ]
+        }
+    ]
+}
