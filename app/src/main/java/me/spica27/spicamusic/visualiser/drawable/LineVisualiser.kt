@@ -68,7 +68,6 @@ class LineVisualiser : VisualiserDrawable() {
   }
 
   override fun draw(canvas: Canvas) {
-    canvas.drawColor(backgroundColor)
     canvas.translate(width / 2f, height / 2f)
     val fraction =
       decelerateInterpolator.getInterpolation(((System.currentTimeMillis() - lastSampleTime).toFloat() / interval))

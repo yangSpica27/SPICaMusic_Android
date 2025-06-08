@@ -65,9 +65,6 @@ class VisualizerView : View, MusicVisualiser.Listener {
     Timber.tag("VisualizerSurfaceView").d("onDetachedFromWindow()")
   }
 
-  fun setBgColor(color: Int) {
-    visualizerDrawableManager.setBackgroundColor(color)
-  }
 
   fun setThemeColor(color: Int) {
     visualizerDrawableManager.setThemeColor(color)

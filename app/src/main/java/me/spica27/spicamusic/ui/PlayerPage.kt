@@ -109,17 +109,15 @@ fun PlayerPage(
 
     Box(
       modifier = Modifier.fillMaxSize(),
-      contentAlignment = Alignment.Center,
     ) {
       Column(
         modifier = Modifier.fillMaxSize(),
       ) {
-        Spacer(modifier = Modifier.height(15.dp))
         //  标题
         Title(
-          modifier = Modifier.padding(vertical = 10.dp, horizontal = 20.dp),
+          modifier = Modifier.padding(horizontal = 20.dp),
         )
-        Spacer(modifier = Modifier.height(15.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         // 封面
         Cover(
           modifier = Modifier
@@ -128,25 +126,21 @@ fun PlayerPage(
           songState = songViewModel.getSongFlow(currentPlayingSong?.songId ?: -1)
             .collectAsState(null)
         )
-        Spacer(modifier = Modifier.height(20.dp))
         // 歌名和歌手
         SongInfo(
           songId = currentPlayingSong?.songId ?: -1,
           modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .padding(horizontal = 20.dp)
             .padding(top = 12.dp)
         )
         ControlPanel(
           modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .padding(vertical = 15.dp, horizontal = 20.dp),
           playBackViewModel = playBackViewModel
         )
         Text(
           modifier = Modifier
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .padding(10.dp)
             .fillMaxWidth(),
           textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -219,7 +213,6 @@ private fun Cover(
 
 
   val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
-  val backgroundColor = MaterialTheme.colorScheme.surface
   val onSurfaceColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
   val infiniteTransition = rememberInfiniteTransition(label = "infinite")
@@ -232,13 +225,12 @@ private fun Cover(
 
   Box(
     contentAlignment = Alignment.Center,
-    modifier = modifier
+    modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)
   ) {
     AndroidView(
       factory = { context ->
         VisualizerView(context)
       }, update = { view ->
-        view.setBgColor(backgroundColor.toArgb())
         view.setThemeColor(onSurfaceColor.toArgb())
       }, modifier = Modifier
         .fillMaxWidth()
@@ -473,7 +465,7 @@ private fun SongInfo(
         text = song.displayName,
         style = MaterialTheme.typography.titleLarge.copy(
           color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-          fontWeight = FontWeight.W600
+          fontWeight = FontWeight.ExtraBold
         ),
         modifier = Modifier.basicMarquee(),
       )

@@ -94,7 +94,6 @@ class CircleVisualiser : VisualiserDrawable() {
   }
 
   override fun draw(canvas: Canvas) {
-    canvas.drawColor(backgroundColor)
     canvas.translate(width / 2f, height / 2f)
     if (yList.size != lastYList.size) {
       return
