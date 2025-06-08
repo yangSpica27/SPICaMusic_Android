@@ -1,11 +1,18 @@
 package me.spica27.spicamusic.ui
 
 import androidx.annotation.OptIn
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,7 +54,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
@@ -57,11 +63,12 @@ import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 
 
-@kotlin.OptIn(ExperimentalMaterial3Api::class)
+@kotlin.OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun PlayerScreen(
-  navigator: NavBackStack? = null,
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  sharedTransitionScope: SharedTransitionScope,
+  animatedVisibilityScope: AnimatedVisibilityScope
 ) {
 
   val nowPlayingSongs = playBackViewModel.playList.collectAsState().value
@@ -70,60 +77,70 @@ fun PlayerScreen(
 
   val pageState = rememberPagerState(pageCount = { 2 })
 
-  Scaffold(
-    topBar = {
-      TopAppBar(
-        navigationIcon = {
-          IconButton(
-            onClick = {
-              navigator?.removeLastOrNull()
-            }
-          ) {
-            Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
-          }
-        },
-        title = {
-          Text(
-            if (isPlaying) {
-              "Now Playing"
-            } else {
-              "Now Pause"
-            },
-            style = MaterialTheme.typography.titleLarge.copy(
-              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-              fontWeight = FontWeight.ExtraBold
-            ),
-          )
-        }
-      )
-    },
-  ) {
-    Box(
+  with(sharedTransitionScope) {
+    Scaffold(
       modifier = Modifier
         .fillMaxSize()
-        .padding(it)
-    ) {
-      if (nowPlayingSongs.isEmpty()) {
-        // 播放列表为空
-        EmptyPage()
-      } else {
-        // 播放列表不为空
-        VerticalPager(
-          modifier = Modifier.fillMaxSize(),
-          state = pageState,
-          key = { it },
-          flingBehavior =
-            PagerDefaults.flingBehavior(state = pageState, snapPositionalThreshold = .2f)
-        ) {
-          when (it) {
-            0 -> {
-              PlayerPage()
-            }
+        .sharedBounds(
+          rememberSharedContentState(key = "player_bound"),
+          animatedVisibilityScope = animatedVisibilityScope,
+          enter = fadeIn() + scaleIn(),
+          exit = fadeOut() + scaleOut(),
+          resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+        )
+      ,
+      topBar = {
+        TopAppBar(
+          navigationIcon = {
+            IconButton(
+              onClick = {
 
-            1 -> {
-              CurrentListPage(
-                navigator = navigator
-              )
+              }
+            ) {
+              Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
+            }
+          },
+          title = {
+            Text(
+              if (isPlaying) {
+                "Now Playing"
+              } else {
+                "Now Pause"
+              },
+              style = MaterialTheme.typography.titleLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                fontWeight = FontWeight.ExtraBold
+              ),
+            )
+          }
+        )
+      },
+    ) {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .padding(it)
+      ) {
+        if (nowPlayingSongs.isEmpty()) {
+          // 播放列表为空
+          EmptyPage()
+        } else {
+          // 播放列表不为空
+          VerticalPager(
+            modifier = Modifier.fillMaxSize(),
+            state = pageState,
+            key = { it },
+            flingBehavior =
+              PagerDefaults.flingBehavior(state = pageState, snapPositionalThreshold = .2f)
+          ) {
+            when (it) {
+              0 -> {
+                PlayerPage()
+              }
+
+              1 -> {
+                CurrentListPage()
+              }
             }
           }
         }

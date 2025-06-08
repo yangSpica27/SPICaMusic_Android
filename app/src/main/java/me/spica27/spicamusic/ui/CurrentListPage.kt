@@ -25,7 +25,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.NavBackStack
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.PlayingSongItem
@@ -33,9 +32,7 @@ import me.spica27.spicamusic.widget.PlayingSongItem
 
 @Composable
 fun CurrentListPage(
-  playBackViewModel: PlayBackViewModel = hiltViewModel(),
-  navigator: NavBackStack? = null
-) {
+  playBackViewModel: PlayBackViewModel = hiltViewModel()) {
 
   val playState = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false)
 

@@ -281,7 +281,10 @@ fun PlayingSongItem(
 
         if (coverPainterState.value is AsyncImagePainter.State.Success) {
           Image(
-            painter = coverPainter, contentDescription = "封面", modifier = Modifier.size(66.dp)
+            painter = coverPainter,
+            contentDescription = "封面",
+            modifier = Modifier.size(66.dp),
+            contentScale = ContentScale.Crop
           )
         } else {
           Icon(

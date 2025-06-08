@@ -34,7 +34,7 @@ fun AppMain() {
   val backStack = rememberNavBackStack(Routes.Splash)
   AppTheme(
     darkTheme = darkTheme,
-    dynamicColor = false
+    dynamicColor = true
   ) {
     NavDisplay(
       entryDecorators = listOf(
@@ -45,13 +45,6 @@ fun AppMain() {
       backStack = backStack,
       onBack = { backStack.removeLastOrNull() },
       entryProvider = entryProvider {
-        entry<Routes.Player>(
-          metadata = sliderFromBottomRouteAnim()
-        ) { key ->
-          PlayerScreen(
-            navigator = backStack,
-          )
-        }
         entry<Routes.AddSong> { key ->
           AddSongScreen(navigator = backStack, playlistId = key.playlistId)
         }

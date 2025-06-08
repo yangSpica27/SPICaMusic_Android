@@ -2,10 +2,16 @@ package me.spica27.spicamusic.ui
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
@@ -31,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +55,7 @@ import me.spica27.spicamusic.widget.PlayerBar
 
 
 /// 主页
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun MainScreen(
   modifier: Modifier = Modifier,
@@ -59,6 +67,8 @@ fun MainScreen(
   // 显示是否退出的提示
   var showToast by remember { mutableStateOf(false) }
 
+  // 是否展示播放器页面
+  var showPlayerState by rememberSaveable { mutableStateOf(false) }
 
   // 返回键状态
   var backPressState by remember { mutableStateOf<BackPress>(BackPress.Idle) }
@@ -79,7 +89,11 @@ fun MainScreen(
     }
   }
 
-  BackHandler(backPressState == BackPress.Idle) {
+  BackHandler((backPressState == BackPress.Idle) || (showPlayerState == true)) {
+    if (showPlayerState) {
+      showPlayerState = false
+      return@BackHandler
+    }
     backPressState = BackPress.InitialTouch
     showToast = true
   }
@@ -93,55 +107,78 @@ fun MainScreen(
       10
     },
   )
-  Scaffold(
-    bottomBar = {
-      BottomNav(pagerState)
-    }
-  ) { innerPadding ->
-    Box(
-      modifier = modifier
-        .fillMaxSize()
-        .padding(innerPadding)
-    ) {
-      // 水平滚动的页面
-      HorizontalPager(
-        state = pagerState,
-        modifier = Modifier.fillMaxSize(),
-        userScrollEnabled = false,
-        key = { it },
-        beyondViewportPageCount = 2
-      ) { page ->
-        when (page) {
-          0 -> HomePage(navigator = navigator)
-          1 -> SettingPage()
-        }
-      }
-      AnimatedVisibility(
-        visible = playBackViewModel.currentSongFlow.collectAsState().value != null,
-        modifier = Modifier
-          .align(alignment = Alignment.BottomCenter)
-          .fillMaxWidth(),
-        enter = slideInVertically(
-          initialOffsetY = { it },
-          animationSpec = tween(450)
-        ) + fadeIn(),
-        exit = slideOutVertically(
-          targetOffsetY = { it },
-          animationSpec = tween(450)
-        ) + fadeOut()
-      ) {
-        PlayerBar(
-          modifier = Modifier
-            .fillMaxWidth()
-            .noRippleClickable {
-              navigator?.add(Routes.Player)
-            }
+
+  SharedTransitionLayout {
+    AnimatedContent(
+      showPlayerState,
+      label = "main_screen_player_transition"
+    ) { showPlayer ->
+      if (showPlayer) {
+        PlayerScreen(
+          animatedVisibilityScope = this@AnimatedContent,
+          sharedTransitionScope = this@SharedTransitionLayout
         )
+      } else {
+        Scaffold(
+          bottomBar = {
+            BottomNav(pagerState)
+          }
+        ) { innerPadding ->
+          Box(
+            modifier = modifier
+              .fillMaxSize()
+              .padding(innerPadding)
+          ) {
+            // 水平滚动的页面
+            HorizontalPager(
+              state = pagerState,
+              modifier = Modifier.fillMaxSize(),
+              userScrollEnabled = false,
+              key = { it },
+              beyondViewportPageCount = 2
+            ) { page ->
+              when (page) {
+                0 -> HomePage(navigator = navigator)
+                1 -> SettingPage()
+              }
+            }
+            AnimatedVisibility(
+              visible = playBackViewModel.currentSongFlow.collectAsState().value != null,
+              modifier = Modifier
+                .align(alignment = Alignment.BottomCenter)
+                .fillMaxWidth(),
+              enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(450)
+              ) + fadeIn(),
+              exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(450)
+              ) + fadeOut()
+            ) {
+              PlayerBar(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .sharedBounds(
+                    rememberSharedContentState(key = "player_bound"),
+                    animatedVisibilityScope = this@AnimatedContent,
+                    enter = fadeIn() + scaleIn(),
+                    exit = fadeOut() + scaleOut(),
+                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+                  )
+                  .noRippleClickable {
+                    showPlayerState = true
+                  }
+              )
+            }
+          }
+        }
       }
     }
   }
-}
 
+
+}
 
 
 // 底部导航栏
