@@ -41,8 +41,9 @@
     android:fullBackupContent="@xml/backup_rules"
     android:icon="@mipmap/ic_launcher"
     android:label="@string/app_name"
+    android:enableOnBackInvokedCallback="true"
     android:supportsRtl="true"
-    tools:targetApi="31">
+    tools:targetApi="33">
     <activity
       android:name=".MainActivity"
       android:launchMode="singleTask"
