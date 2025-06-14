@@ -116,7 +116,10 @@ fun MainScreen(
       if (showPlayer) {
         PlayerScreen(
           animatedVisibilityScope = this@AnimatedContent,
-          sharedTransitionScope = this@SharedTransitionLayout
+          sharedTransitionScope = this@SharedTransitionLayout,
+          onBackClick = {
+            showPlayerState = false
+          }
         )
       } else {
         Scaffold(
@@ -139,7 +142,7 @@ fun MainScreen(
             ) { page ->
               when (page) {
                 0 -> HomePage(navigator = navigator)
-                1 -> SettingPage()
+                1 -> SettingPage(navigator = navigator)
               }
             }
             AnimatedVisibility(

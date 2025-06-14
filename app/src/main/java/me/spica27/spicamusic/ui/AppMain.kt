@@ -59,6 +59,9 @@ fun AppMain() {
         entry<Routes.SearchAll>(
           metadata = sliderFromBottomRouteAnim()
         ) { SearchAllScreen() }
+        entry<Routes.EQ> {
+          EqScreen(navigator = backStack)
+        }
       },
       transitionSpec = {
         slideInHorizontally(initialOffsetX = { it }) togetherWith

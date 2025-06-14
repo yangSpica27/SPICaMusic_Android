@@ -2,7 +2,6 @@ package me.spica27.spicamusic.dsp
 
 
 import androidx.annotation.OptIn
-import androidx.core.math.MathUtils.clamp
 import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
@@ -10,6 +9,7 @@ import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.dsp.ByteUtils.getInt24
 import me.spica27.spicamusic.dsp.ByteUtils.putInt24
 import timber.log.Timber
+import java.lang.Math.clamp
 import java.nio.ByteBuffer
 
 @OptIn(UnstableApi::class)

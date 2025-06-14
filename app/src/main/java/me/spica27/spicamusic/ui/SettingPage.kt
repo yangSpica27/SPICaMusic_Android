@@ -30,8 +30,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavBackStack
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.service.RefreshMusicListService
 import me.spica27.spicamusic.viewModel.SettingViewModel
 
@@ -39,7 +41,9 @@ import me.spica27.spicamusic.viewModel.SettingViewModel
 // 设置页面
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun SettingPage() {
+fun SettingPage(
+  navigator: NavBackStack? = null,
+) {
 
   // 权限状态
   val permissionState =
@@ -53,21 +57,21 @@ fun SettingPage() {
         )
       )
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        rememberMultiplePermissionsState(
-          listOf(
-            android.Manifest.permission.FOREGROUND_SERVICE,
-            android.Manifest.permission.READ_MEDIA_AUDIO,
-            android.Manifest.permission.POST_NOTIFICATIONS,
-          )
+      rememberMultiplePermissionsState(
+        listOf(
+          android.Manifest.permission.FOREGROUND_SERVICE,
+          android.Manifest.permission.READ_MEDIA_AUDIO,
+          android.Manifest.permission.POST_NOTIFICATIONS,
         )
-      } else {
-        rememberMultiplePermissionsState(
-          listOf(
-            android.Manifest.permission.READ_EXTERNAL_STORAGE,
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-          )
+      )
+    } else {
+      rememberMultiplePermissionsState(
+        listOf(
+          android.Manifest.permission.READ_EXTERNAL_STORAGE,
+          android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
         )
-      }
+      )
+    }
 
   val context = LocalContext.current
   val settingViewModel = hiltViewModel<SettingViewModel>()
@@ -112,6 +116,12 @@ fun SettingPage() {
                   permissionState.launchMultiplePermissionRequest()
                   Toast.makeText(context, "请授予权限", Toast.LENGTH_SHORT).show()
                 }
+              }
+            )
+            TextSettingItem(
+              title = "音效", desc = "调节EQ和增益效果",
+              onClick = {
+                navigator?.add(Routes.EQ)
               }
             )
             TextSettingItem(

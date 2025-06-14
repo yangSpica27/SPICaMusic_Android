@@ -68,7 +68,8 @@ import me.spica27.spicamusic.viewModel.PlayBackViewModel
 fun PlayerScreen(
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
   sharedTransitionScope: SharedTransitionScope,
-  animatedVisibilityScope: AnimatedVisibilityScope
+  animatedVisibilityScope: AnimatedVisibilityScope,
+  onBackClick: () -> Unit
 ) {
 
   val nowPlayingSongs = playBackViewModel.playList.collectAsState().value
@@ -87,14 +88,13 @@ fun PlayerScreen(
           enter = fadeIn() + scaleIn(),
           exit = fadeOut() + scaleOut(),
           resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
-        )
-      ,
+        ),
       topBar = {
         TopAppBar(
           navigationIcon = {
             IconButton(
               onClick = {
-
+                onBackClick.invoke()
               }
             ) {
               Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")

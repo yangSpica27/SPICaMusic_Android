@@ -26,6 +26,10 @@ object Routes {
   @Serializable
   data object SearchAll : NavKey
 
+
+  @Serializable
+  data object EQ : NavKey
+
 }
 
 

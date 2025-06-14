@@ -13,7 +13,7 @@ import me.spica27.spicamusic.utils.toCoverUri
 @Entity(
   indices = [
     Index("displayName"),
-    Index("mediaStoreId", unique = true)
+    Index("mediaStoreId", unique = true),
   ]
 )
 data class Song constructor(

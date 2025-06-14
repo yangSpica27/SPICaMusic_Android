@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -120,7 +121,17 @@ fun PlaylistDetailScreen(
   Scaffold(topBar = {
     val playlistState = playlistViewModel.playlistFlow.collectAsState(null)
     // 顶部栏
-    TopAppBar(title = {
+    TopAppBar(
+      navigationIcon = {
+        IconButton(
+          onClick = {
+            navigator?.removeLastOrNull()
+          }
+        ) {
+          Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
+        }
+      },
+      title = {
       // 标题
       playlistState.value?.let { Text(it.playlistName) }
     }, actions = {
