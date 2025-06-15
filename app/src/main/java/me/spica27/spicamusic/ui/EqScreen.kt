@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -209,8 +210,7 @@ fun EqScreen(
             Text("-10db", style = MaterialTheme.typography.bodyMedium)
           }
           for (band in selectedEq.value.bands) {
-            ItemEq(band = band, modifier = Modifier.weight(1f)) {
-            }
+            ItemEq(band = band, modifier = Modifier.weight(1f))
           }
         }
       }
@@ -223,10 +223,13 @@ fun EqScreen(
 fun ItemEq(
   modifier: Modifier = Modifier,
   band: NyquistBand,
-  onValueChange: (Float) -> Unit,
 ) {
 
-  val gain = remember { mutableFloatStateOf(band.gain.toFloat()) }
+  val gain = animateFloatAsState(
+    (band.gain).toFloat(),
+    label = "",
+    animationSpec = androidx.compose.animation.core.tween(120)
+  ).value
 
 //  val showGain = animateFloatAsState(gain.floatValue, label = "", animationSpec = tween(500)).value
 
@@ -238,11 +241,7 @@ fun ItemEq(
       modifier = Modifier
         .fillMaxWidth()
         .weight(1f),
-      value = gain.floatValue,
-      onValueChange = {
-        gain.floatValue = it
-        onValueChange(it)
-      },
+      value = gain,
       valueRange = -10f..10f
     )
   }
@@ -253,9 +252,9 @@ fun ItemEq(
 @Composable
 private fun VerticalSlider(
   value: Float,
-  onValueChange: (Float) -> Unit,
+  onValueChange: (Float) -> Unit = {},
   modifier: Modifier = Modifier,
-  enabled: Boolean = true,
+  enabled: Boolean = false,
   valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
   /*@IntRange(from = 0)*/
   steps: Int = 0,
