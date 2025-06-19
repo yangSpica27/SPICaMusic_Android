@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui
 
+import android.graphics.Color.toArgb
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -28,6 +29,7 @@ import androidx.compose.material3.SliderColors
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.indicatorColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -45,10 +48,12 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastRoundToInt
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation3.runtime.NavBackStack
 import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.NyquistBand
 import me.spica27.spicamusic.utils.noRippleClickable
+import me.spica27.spicamusic.widget.EqSettingView
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +67,8 @@ fun EqScreen(
 
   val selectedEq =
     remember { mutableStateOf<Equalizer.Presets.Preset>(Equalizer.Presets.vocalBoost) }
+
+
 
   Scaffold(
     topBar = {
@@ -191,28 +198,35 @@ fun EqScreen(
             .fillMaxWidth()
             .height(12.dp)
         )
-        Row(
+        val bgRowLineColor = MaterialTheme.colorScheme.surfaceContainerLow.toArgb()
+        val bgColumnLineColor = MaterialTheme.colorScheme.surfaceContainer.toArgb()
+        val centerRowLineColor = MaterialTheme.colorScheme.surfaceVariant.toArgb()
+        val indicatorColor = MaterialTheme.colorScheme.primary.toArgb()
+        val indicatorCenterColor = MaterialTheme.colorScheme.primary.toArgb()
+        val indicatorLineColor = MaterialTheme.colorScheme.primaryContainer.toArgb()
+        AndroidView(
+          factory = { context ->
+            EqSettingView(context)
+              .apply {
+                this.setColors(
+                  bgRowLineColor = bgRowLineColor,
+                  bgColumnLineColor = bgColumnLineColor,
+                  centerRowLineColor = centerRowLineColor,
+                  indicatorColor = indicatorColor,
+                  indicatorLineColor = indicatorLineColor,
+                  indicatorCenterColor = indicatorCenterColor
+                )
+              }
+          },
+          update = {
+
+          },
           modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .height(150.dp),
-        ) {
-          Column(
-            modifier = Modifier
-              .fillMaxHeight(),
-            verticalArrangement = Arrangement.SpaceBetween
-          ) {
-            Text("+10db", style = MaterialTheme.typography.bodyMedium)
-            Text("+5db", style = MaterialTheme.typography.bodyMedium)
-            Text("0db", style = MaterialTheme.typography.bodyMedium)
-            Text("-5db", style = MaterialTheme.typography.bodyMedium)
-            Text("-10db", style = MaterialTheme.typography.bodyMedium)
-          }
-          for (band in selectedEq.value.bands) {
-            ItemEq(band = band, modifier = Modifier.weight(1f)) {
-            }
-          }
-        }
+            .padding(horizontal = 16.dp)
+            .height(170.dp),
+          onReset = {},
+        )
       }
     }
   }
