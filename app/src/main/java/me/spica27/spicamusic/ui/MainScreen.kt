@@ -14,6 +14,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -108,71 +110,78 @@ fun MainScreen(
     },
   )
 
-  SharedTransitionLayout {
-    AnimatedContent(
-      showPlayerState,
-      label = "main_screen_player_transition"
-    ) { showPlayer ->
-      if (showPlayer) {
-        PlayerScreen(
-          animatedVisibilityScope = this@AnimatedContent,
-          sharedTransitionScope = this@SharedTransitionLayout,
-          onBackClick = {
-            showPlayerState = false
-          }
-        )
-      } else {
-        Scaffold(
-          bottomBar = {
-            BottomNav(pagerState)
-          }
-        ) { innerPadding ->
-          Box(
-            modifier = modifier
-              .fillMaxSize()
-              .padding(innerPadding)
-          ) {
-            // 水平滚动的页面
-            HorizontalPager(
-              state = pagerState,
-              modifier = Modifier.fillMaxSize(),
-              userScrollEnabled = false,
-              key = { it },
-              beyondViewportPageCount = 2
-            ) { page ->
-              when (page) {
-                0 -> HomePage(navigator = navigator)
-                1 -> SettingPage(navigator = navigator)
-              }
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(MaterialTheme.colorScheme.surface)
+  ) {
+    SharedTransitionLayout {
+      AnimatedContent(
+        showPlayerState,
+        label = "main_screen_player_transition"
+      ) { showPlayer ->
+        if (showPlayer) {
+          PlayerScreen(
+            animatedVisibilityScope = this@AnimatedContent,
+            sharedTransitionScope = this@SharedTransitionLayout,
+            onBackClick = {
+              showPlayerState = false
             }
-            AnimatedVisibility(
-              visible = playBackViewModel.currentSongFlow.collectAsState().value != null,
-              modifier = Modifier
-                .align(alignment = Alignment.BottomCenter)
-                .fillMaxWidth(),
-              enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = tween(450)
-              ) + fadeIn(),
-              exit = slideOutVertically(
-                targetOffsetY = { it },
-                animationSpec = tween(450)
-              ) + fadeOut()
+          )
+        } else {
+          Scaffold(
+            bottomBar = {
+              BottomNav(pagerState)
+            }
+          ) { innerPadding ->
+            Box(
+              modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
             ) {
-              PlayerBar(
+              // 水平滚动的页面
+              HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                userScrollEnabled = false,
+                key = { it },
+                beyondViewportPageCount = 2
+              ) { page ->
+                when (page) {
+                  0 -> HomePage(navigator = navigator)
+                  1 -> SettingPage(navigator = navigator)
+                }
+              }
+              AnimatedVisibility(
+                visible = playBackViewModel.currentSongFlow.collectAsState().value != null,
                 modifier = Modifier
-                  .fillMaxWidth()
-                  .sharedBounds(
-                    rememberSharedContentState(key = "player_bound"),
-                    animatedVisibilityScope = this@AnimatedContent,
-                    enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut(),
-                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
-                  )
-                  .noRippleClickable {
-                    showPlayerState = true
-                  }
-              )
+                  .align(alignment = Alignment.BottomCenter)
+                  .fillMaxWidth(),
+                enter = slideInVertically(
+                  initialOffsetY = { it },
+                  animationSpec = tween(450)
+                ) + fadeIn(),
+                exit = slideOutVertically(
+                  targetOffsetY = { it },
+                  animationSpec = tween(450)
+                ) + fadeOut()
+              ) {
+                PlayerBar(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .sharedBounds(
+                      rememberSharedContentState(key = "player_bound"),
+                      animatedVisibilityScope = this@AnimatedContent,
+                      enter = scaleIn() + fadeIn(),
+                      exit = scaleOut() + fadeOut(),
+                      resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
+                      placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
+                    )
+                    .noRippleClickable {
+                      showPlayerState = true
+                    }
+                )
+              }
             }
           }
         }
