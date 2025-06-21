@@ -12,8 +12,10 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.toColorInt
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.EqualizerBand
 import me.spica27.spicamusic.utils.dp
+import timber.log.Timber
 import kotlin.math.max
 import kotlin.math.min
 
@@ -37,15 +39,22 @@ class EqSettingView : View {
 
   private val path = Path()
 
+  private var listener: ((List<EqualizerBand>) -> Unit)? = null
+
+  fun setListener(listener: (List<EqualizerBand>) -> Unit) {
+    this.listener = listener
+  }
+
   fun setGainArray(eq: List<EqualizerBand>) {
     for ((index, equalizerBand) in eq.withIndex()) {
       gainArray[index] = equalizerBand.gain.toFloat()
+      Timber.tag(equalizerBand.centerFrequency.toString()).e("# ${gainArray[index]}")
     }
     val xl = width - paddingLeft - paddingRight
     itemWith = xl / 9f
 
     val yl = height - paddingTop - paddingBottom
-    itemHeight = yl / 9f
+    itemHeight = yl / 2f
     for ((index, f) in gainArray.withIndex()) {
       xs[index] = paddingLeft + itemWith * index
       ys[index] = height / 2f - f / 10f * itemHeight
@@ -105,7 +114,7 @@ class EqSettingView : View {
     itemWith = xl / 9f
 
     val yl = height - paddingTop - paddingBottom
-    itemHeight = yl / 9f
+    itemHeight = yl / 2f
     for ((index, f) in gainArray.withIndex()) {
       xs[index] = paddingLeft + itemWith * index
       ys[index] = height / 2f - f / 10f * itemHeight
@@ -141,15 +150,15 @@ class EqSettingView : View {
 
         gainArray[index] =
           if (event.y > height / 2) {
-            0f - ((event.y - height / 2f) / itemHeight)
+            0f - ((event.y - height / 2f) / itemHeight) * 10f
           } else {
-            0f + ((height / 2f - event.y) / itemHeight)
+            0f + ((height / 2f - event.y) / itemHeight) * 10f
           }
 
-        ys[index] = height / 2f - gainArray[index] * itemHeight
+        ys[index] = height / 2f - gainArray[index] / 10f * itemHeight
 
         path.reset()
-        for (i in 0 until xs.size) {
+        for (i in xs.indices) {
           if (i == 0) {
             path.moveTo(xs[i], ys[i])
           } else {
@@ -159,6 +168,14 @@ class EqSettingView : View {
         postInvalidateOnAnimation()
       }
 
+      MotionEvent.ACTION_CANCEL,
+      MotionEvent.ACTION_UP -> {
+        listener?.invoke(
+          Equalizer.centerFrequency.mapIndexed { i, f ->
+            EqualizerBand(f, gainArray[i].toDouble())
+          }
+        )
+      }
 
     }
     return true
@@ -172,7 +189,7 @@ class EqSettingView : View {
 
   private val linePaint = Paint().apply {
     pathEffect = CornerPathEffect(50f)
-    strokeCap = Paint.Cap.SQUARE
+    strokeCap = Paint.Cap.ROUND
     strokeWidth = 14f
     style = Paint.Style.STROKE
   }
@@ -182,6 +199,7 @@ class EqSettingView : View {
     bgPaint.strokeWidth = 2f
     bgPaint.color = bgRowLineColor
     val h = height / 2 - paddingTop / 2 - paddingBottom / 2
+
     for (i in 1 until 6) {
       canvas.drawLine(
         0f, height / 2f - h / 5 * i,
@@ -197,53 +215,58 @@ class EqSettingView : View {
 
 
     // 绘制背景
-    bgPaint.strokeWidth = 8.dp
+    bgPaint.strokeCap = Paint.Cap.ROUND
+    bgPaint.strokeWidth = 25.dp
     bgPaint.color = bgColumnLineColor
     for (i in 0 until xs.size) {
       canvas.drawLine(
-        xs[i], paddingTop * 1f,
-        xs[i], (height - paddingBottom) * 1f,
+        xs[i], paddingTop * 1f + bgPaint.strokeWidth,
+        xs[i], (height - paddingBottom) * 1f - bgPaint.strokeWidth,
         bgPaint
       )
     }
-    bgPaint.strokeWidth = 4.dp
-    bgPaint.color = centerRowLineColor
-    canvas.drawLine(
-      0f, height / 2f,
-      width * 1f, height / 2f,
-      bgPaint
-    )
+//    bgPaint.strokeWidth = 4.dp
+//    bgPaint.color = centerRowLineColor
+//    canvas.drawLine(
+//      0f, height / 2f,
+//      width * 1f, height / 2f,
+//      bgPaint
+//    )
 
 
     for ((index, f) in xs.withIndex()) {
-      linePaint.strokeWidth = 3.dp
+      linePaint.strokeWidth = 25.dp
       linePaint.color = indicatorLineColor
       canvas.drawLine(
         xs[index], ys[index],
-        xs[index], bottom - paddingBottom * 1f,
+        xs[index], height / 2f,
         linePaint
       )
 
 
       linePaint.strokeWidth = 15.dp
       linePaint.color = indicatorColor
-      canvas.drawLine(
-        xs[index] * 1f - itemWith / 4, ys[index],
-        xs[index] * 1f + itemWith / 4, ys[index],
+      canvas.drawCircle(
+        xs[index],
+        ys[index],
+        4.dp,
         linePaint
       )
 
       linePaint.strokeWidth = 2.dp
       linePaint.color = indicatorCenterColor
-
-      canvas.drawLine(
-        xs[index] * 1f - itemWith / 4, ys[index],
-        xs[index] * 1f + itemWith / 4, ys[index],
+      canvas.drawCircle(
+        xs[index],
+        ys[index],
+        4.dp,
         linePaint
       )
     }
 
   }
 
+  fun release() {
+    listener = null
+  }
 
 }

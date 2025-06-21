@@ -13,7 +13,7 @@
   <string name="select_all">选择全部</string>
   <string name="select_none">全不选</string>
   <string name="eq_preset_flat">原始</string>
-  <string name="eq_preset_custom">自定义</string>
+  <string name="eq_preset_custom">作者自用</string>
   <string name="eq_preset_bass_boost">低音增强</string>
   <string name="eq_preset_bass_reduce">低音减弱</string>
   <string name="eq_preset_vocal_boost">人声增强</string>

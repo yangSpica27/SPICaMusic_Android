@@ -102,11 +102,11 @@ dependencies {
   debugImplementation libs.androidx.ui.tooling
   debugImplementation libs.androidx.ui.test.manifest
   implementation(libs.coil.compose)
-  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0")
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
 
   //  implementation 'com.github.EspoirX:StarrySky:v2.6.9'
 
-  def room_version = "2.7.1"
+  def room_version = "2.7.2"
   implementation("androidx.room:room-runtime:$room_version")
   ksp("androidx.room:room-compiler:$room_version")
   implementation("androidx.room:room-ktx:$room_version")

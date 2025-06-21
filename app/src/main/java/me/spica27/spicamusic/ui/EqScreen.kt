@@ -62,9 +62,11 @@ fun EqScreen(
   navigator: NavBackStack? = null
 ) {
 
-  val replayGain = DataStoreUtil().getReplayGain.collectAsState(0)
+  val dataStoreUtil = DataStoreUtil()
 
-  val eq = DataStoreUtil().getEqualizerBand().collectAsState(Equalizer.Presets.flat.bands)
+  val replayGain = dataStoreUtil.getReplayGain.collectAsState(0)
+
+  val eq = dataStoreUtil.getEqualizerBand().collectAsState(Equalizer.Presets.flat.bands)
 
   val scope = rememberCoroutineScope()
 
@@ -114,7 +116,7 @@ fun EqScreen(
           value = replayGain.value * 1f,
           onValueChange = {
             scope.launch {
-              DataStoreUtil().saveReplayGain(it.roundToInt())
+              dataStoreUtil.saveReplayGain(it.roundToInt())
             }
           },
           valueRange = -10f..10f,
@@ -171,7 +173,7 @@ fun EqScreen(
           }) { _, item ->
             EqItem(isSelected = false, onClick = {
               scope.launch {
-                DataStoreUtil().saveEq(
+                dataStoreUtil.saveEq(
                   item.bands
                 )
               }
@@ -192,7 +194,7 @@ fun EqScreen(
         AndroidView(
           factory = { context ->
             EqSettingView(context).apply {
-              this.setColors(
+              setColors(
                 bgRowLineColor = bgRowLineColor,
                 bgColumnLineColor = bgColumnLineColor,
                 centerRowLineColor = centerRowLineColor,
@@ -200,6 +202,11 @@ fun EqScreen(
                 indicatorLineColor = indicatorLineColor,
                 indicatorCenterColor = indicatorCenterColor
               )
+              setListener {
+                scope.launch {
+                  dataStoreUtil.saveEq(it)
+                }
+              }
             }
           },
           update = { view ->
@@ -209,7 +216,9 @@ fun EqScreen(
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .height(170.dp),
-          onReset = {},
+          onRelease = {
+            it.release()
+          }
         )
       }
     }

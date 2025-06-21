@@ -18,6 +18,7 @@ import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.EqualizerBand
 import me.spica27.spicamusic.dsp.NyquistBand
 import me.spica27.spicamusic.dsp.toNyquistBand
+import timber.log.Timber
 
 // 字典工具类
 class DataStoreUtil(private val context: Context = App.getInstance()) {
@@ -45,6 +46,7 @@ class DataStoreUtil(private val context: Context = App.getInstance()) {
   ) {
     context.dataStore.edit { preferences ->
       for (equalizerBand in eq) {
+        Timber.tag("eq").d("saveEq: ${equalizerBand.centerFrequency} ${equalizerBand.gain}")
         preferences[doublePreferencesKey("EQ-${equalizerBand.centerFrequency}")] =
           equalizerBand.gain
       }

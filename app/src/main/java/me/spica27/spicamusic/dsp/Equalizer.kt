@@ -29,16 +29,16 @@ object Equalizer {
         "Custom",
         R.string.eq_preset_custom,
         listOf(
-          EqualizerBand(32, 0.0).toNyquistBand(),
-          EqualizerBand(63, 0.0).toNyquistBand(),
-          EqualizerBand(125, 0.0).toNyquistBand(),
-          EqualizerBand(250, 0.0).toNyquistBand(),
-          EqualizerBand(500, 0.0).toNyquistBand(),
-          EqualizerBand(1000, 0.0).toNyquistBand(),
-          EqualizerBand(2000, 0.0).toNyquistBand(),
-          EqualizerBand(4000, 0.0).toNyquistBand(),
-          EqualizerBand(8000, 0.0).toNyquistBand(),
-          EqualizerBand(16000, 0.0).toNyquistBand()
+          EqualizerBand(32, 3.0).toNyquistBand(),
+          EqualizerBand(63, 5.0).toNyquistBand(),
+          EqualizerBand(125, 4.0).toNyquistBand(),
+          EqualizerBand(250, -4.5).toNyquistBand(),
+          EqualizerBand(500, -6.0).toNyquistBand(),
+          EqualizerBand(1000, -7.0).toNyquistBand(),
+          EqualizerBand(2000, -4.0).toNyquistBand(),
+          EqualizerBand(4000, -3.0).toNyquistBand(),
+          EqualizerBand(8000, 0.5).toNyquistBand(),
+          EqualizerBand(16000, 1.0).toNyquistBand()
         )
       )
 
