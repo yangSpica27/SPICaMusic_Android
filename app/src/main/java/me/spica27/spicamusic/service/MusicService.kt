@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.service
 
 
-import android.app.Service.START_NOT_STICKY
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -9,8 +8,6 @@ import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.annotation.OptIn
@@ -24,14 +21,9 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.decoder.flac.LibflacAudioRenderer
-import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.RenderersFactory
 import androidx.media3.exoplayer.audio.AudioCapabilities
-import androidx.media3.exoplayer.audio.AudioRendererEventListener
-import androidx.media3.exoplayer.audio.AudioSink
-import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -40,12 +32,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.service.notification.MediaSessionComponent
 import me.spica27.spicamusic.service.notification.NotificationComponent
+import me.spica27.spicamusic.utils.DataStoreUtil
 
 private const val MY_MEDIA_ROOT_ID = "media_root_id"
 private const val MY_EMPTY_MEDIA_ROOT_ID = "empty_root_id"
@@ -72,7 +66,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   private lateinit var mediaSessionComponent: MediaSessionComponent
 
   private val serviceJob = Job()
-  private val positionScope = CoroutineScope(serviceJob + Dispatchers.Main)
+  private val coroutineScope = CoroutineScope(serviceJob + Dispatchers.Main)
 
   private val systemReceiver = PlaybackReceiver()
 
@@ -141,13 +135,26 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
       }, RECEIVER_NOT_EXPORTED
     )
 
-    positionScope.launch {
+    coroutineScope.launch {
       while (true) {
         // 每秒同步一次播放进度
         PlaybackStateManager.getInstance().synchronizePosition(exoPlayer.currentPosition)
         delay(1000L)
       }
     }
+    coroutineScope.launch {
+      DataStoreUtil().getReplayGain.collectLatest {
+        PlaybackStateManager.getInstance().replayGainAudioProcessor
+          .preAmpGain = it.toDouble()
+      }
+    }
+    coroutineScope.launch {
+      DataStoreUtil().getNyquistBand().collectLatest {
+        PlaybackStateManager.getInstance().equalizerAudioProcessor
+          .setBands(it)
+      }
+    }
+
   }
 
 

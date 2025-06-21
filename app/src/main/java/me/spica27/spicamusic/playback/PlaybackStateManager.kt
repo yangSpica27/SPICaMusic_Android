@@ -26,7 +26,7 @@ class PlaybackStateManager {
 
   val fftAudioProcessor = FFTAudioProcessor()
 
-  val equalizerAudioProcessor = EqualizerAudioProcessor(false)
+  val equalizerAudioProcessor = EqualizerAudioProcessor()
 
   val replayGainAudioProcessor = ReplayGainAudioProcessor()
 

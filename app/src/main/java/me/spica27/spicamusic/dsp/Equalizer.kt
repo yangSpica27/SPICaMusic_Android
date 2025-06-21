@@ -5,25 +5,24 @@ import me.spica27.spicamusic.R
 
 object Equalizer {
 
+  val centerFrequency = intArrayOf(
+    32, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000
+  )
+
   object Presets {
 
-    sealed class Preset(val name: String, @StringRes val nameResId: Int, val bands: List<NyquistBand>) {
+    sealed class Preset(
+      val name: String,
+      @StringRes val nameResId: Int,
+      val bands: List<NyquistBand>
+    ) {
 
       object Flat : Preset(
         "Flat",
         R.string.eq_preset_flat,
-        listOf(
-          EqualizerBand(32, 0.0).toNyquistBand(),
-          EqualizerBand(63, 0.0).toNyquistBand(),
-          EqualizerBand(125, 0.0).toNyquistBand(),
-          EqualizerBand(250, 0.0).toNyquistBand(),
-          EqualizerBand(500, 0.0).toNyquistBand(),
-          EqualizerBand(1000, 0.0).toNyquistBand(),
-          EqualizerBand(2000, 0.0).toNyquistBand(),
-          EqualizerBand(4000, 0.0).toNyquistBand(),
-          EqualizerBand(8000, 0.0).toNyquistBand(),
-          EqualizerBand(16000, 0.0).toNyquistBand()
-        )
+        centerFrequency.map {
+          EqualizerBand(it, 0.0).toNyquistBand()
+        }
       )
 
       object Custom : Preset(

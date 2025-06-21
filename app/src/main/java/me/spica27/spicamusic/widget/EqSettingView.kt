@@ -3,7 +3,6 @@ package me.spica27.spicamusic.widget
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.CornerPathEffect
 import android.graphics.Paint
 import android.graphics.Path
@@ -13,6 +12,7 @@ import android.view.View
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.toColorInt
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.dsp.EqualizerBand
 import me.spica27.spicamusic.utils.dp
 import kotlin.math.max
 import kotlin.math.min
@@ -37,6 +37,31 @@ class EqSettingView : View {
 
   private val path = Path()
 
+  fun setGainArray(eq: List<EqualizerBand>) {
+    for ((index, equalizerBand) in eq.withIndex()) {
+      gainArray[index] = equalizerBand.gain.toFloat()
+    }
+    val xl = width - paddingLeft - paddingRight
+    itemWith = xl / 9f
+
+    val yl = height - paddingTop - paddingBottom
+    itemHeight = yl / 9f
+    for ((index, f) in gainArray.withIndex()) {
+      xs[index] = paddingLeft + itemWith * index
+      ys[index] = height / 2f - f / 10f * itemHeight
+    }
+    path.reset()
+    for (i in 0 until xs.size) {
+      if (i == 0) {
+        path.moveTo(xs[i], ys[i])
+      } else {
+        path.lineTo(xs[i], ys[i])
+      }
+    }
+    postInvalidateOnAnimation()
+  }
+
+
   init {
     setPadding(16.dp.toInt(), 20, 16.dp.toInt(), 20)
   }
@@ -54,7 +79,7 @@ class EqSettingView : View {
   private var indicatorLineColor = "#666666".toColorInt()
 
 
-   fun setColors(
+  fun setColors(
     bgRowLineColor: Int,
     bgColumnLineColor: Int,
     centerRowLineColor: Int,

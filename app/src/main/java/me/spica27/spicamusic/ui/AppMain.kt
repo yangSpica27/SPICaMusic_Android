@@ -21,9 +21,8 @@ import me.spica27.spicamusic.utils.sliderFromBottomRouteAnim
 
 @Composable
 fun AppMain() {
-  val context = LocalContext.current
-  val systemIsDark = DataStoreUtil(context).isForceDarkTheme
-  val darkTheme = DataStoreUtil(context)
+  val systemIsDark = DataStoreUtil().isForceDarkTheme
+  val darkTheme = DataStoreUtil()
     .getForceDarkTheme.collectAsStateWithLifecycle(systemIsDark)
     .value
   val backStack = rememberNavBackStack(Routes.Splash)

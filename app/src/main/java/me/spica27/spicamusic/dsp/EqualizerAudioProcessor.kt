@@ -13,32 +13,33 @@ import java.lang.Math.clamp
 import java.nio.ByteBuffer
 
 @OptIn(UnstableApi::class)
-class EqualizerAudioProcessor
-  (enabled: Boolean) : BaseAudioProcessor() {
+class EqualizerAudioProcessor : BaseAudioProcessor() {
 
   private var bandProcessors = emptyList<BandProcessor>()
 
-  var preset: Equalizer.Presets.Preset = Equalizer.Presets.flat
-    set(value) {
-      field = value
-      updateBandProcessors()
-    }
 
   // Maximum allowed gain/cut for each band
   val maxBandGain = 12
 
-  var enabled: Boolean = enabled
-    set(value) {
-      field = value
-      Timber.v("Equalizer enabled: $value")
-    }
+  val bands: ArrayList<NyquistBand> = ArrayList<NyquistBand>()
+
+
+  /**
+   * 设置曲线数据
+   */
+  fun setBands(bands: List<NyquistBand>) {
+    this.bands.clear()
+    this.bands.addAll(bands)
+    updateBandProcessors()
+  }
+
 
   private fun updateBandProcessors() {
     if (outputAudioFormat.channelCount <= 0) {
       return
     }
 
-    bandProcessors = preset.bands.map { band ->
+    bandProcessors = bands.map { band ->
       BandProcessor(
         band.toNyquistBand(),
         sampleRate = outputAudioFormat.sampleRate,
@@ -68,7 +69,7 @@ class EqualizerAudioProcessor
   }
 
   override fun queueInput(inputBuffer: ByteBuffer) {
-    if (enabled) {
+    if (bands.isNotEmpty()) {
       val size = inputBuffer.remaining()
       val buffer = replaceOutputBuffer(size)
 
@@ -81,7 +82,13 @@ class EqualizerAudioProcessor
               for (band in bandProcessors) {
                 targetSample = band.processSample(targetSample, channelIndex)
               }
-              buffer.putShort(clamp(targetSample, Short.MIN_VALUE.toFloat(), Short.MAX_VALUE.toFloat()).toInt().toShort())
+              buffer.putShort(
+                clamp(
+                  targetSample,
+                  Short.MIN_VALUE.toFloat(),
+                  Short.MAX_VALUE.toFloat()
+                ).toInt().toShort()
+              )
               if (!inputBuffer.hasRemaining()) {
                 break
               }
@@ -97,7 +104,13 @@ class EqualizerAudioProcessor
               for (band in bandProcessors) {
                 targetSample = band.processSample(targetSample, channelIndex)
               }
-              buffer.putInt24(clamp(targetSample, ByteUtils.Int24_MIN_VALUE.toFloat(), ByteUtils.Int24_MAX_VALUE.toFloat()).toInt())
+              buffer.putInt24(
+                clamp(
+                  targetSample,
+                  ByteUtils.Int24_MIN_VALUE.toFloat(),
+                  ByteUtils.Int24_MAX_VALUE.toFloat()
+                ).toInt()
+              )
               if (!inputBuffer.hasRemaining()) {
                 break
               }

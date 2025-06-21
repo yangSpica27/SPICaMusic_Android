@@ -4,16 +4,23 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
+import me.spica27.spicamusic.App
+import me.spica27.spicamusic.dsp.Equalizer
+import me.spica27.spicamusic.dsp.EqualizerBand
+import me.spica27.spicamusic.dsp.NyquistBand
+import me.spica27.spicamusic.dsp.toNyquistBand
 
 // 字典工具类
-class DataStoreUtil(private val context: Context) {
+class DataStoreUtil(private val context: Context = App.getInstance()) {
   companion object {
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("settings")
 
@@ -25,7 +32,63 @@ class DataStoreUtil(private val context: Context) {
 
     // 自动播放
     val AUTO_PLAY = booleanPreferencesKey("auto_play")
+
+    // 响度增益
+    val REPLAY_GAIN = intPreferencesKey("REPLAY_GAIN")
+
+
   }
+
+
+  suspend fun saveEq(
+    eq: List<EqualizerBand>
+  ) {
+    context.dataStore.edit { preferences ->
+      for (equalizerBand in eq) {
+        preferences[doublePreferencesKey("EQ-${equalizerBand.centerFrequency}")] =
+          equalizerBand.gain
+      }
+    }
+  }
+
+  fun getEqualizerBand(): Flow<List<EqualizerBand>> {
+    return context.dataStore.data.map { preferences ->
+      Equalizer.centerFrequency.map {
+        val gain: Double = preferences[doublePreferencesKey("EQ-${it}")] ?: 0.0
+        EqualizerBand(
+          it,
+          gain
+        )
+      }
+    }.distinctUntilChanged()
+  }
+
+
+  fun getNyquistBand(): Flow<List<NyquistBand>> {
+    return context.dataStore.data.map { preferences ->
+      Equalizer.centerFrequency.map {
+        val gain: Double = preferences[doublePreferencesKey("EQ-${it}")] ?: 0.0
+        EqualizerBand(
+          it,
+          gain
+        ).toNyquistBand()
+      }
+    }.distinctUntilChanged()
+  }
+
+
+  suspend fun saveReplayGain(
+    replayGain: Int
+  ) {
+    context.dataStore.edit { preferences ->
+      preferences[REPLAY_GAIN] = replayGain
+    }
+  }
+
+  val getReplayGain: Flow<Int>
+    get() = context.dataStore.data.map { preferences ->
+      preferences[REPLAY_GAIN] ?: 0
+    }.distinctUntilChanged()
 
 
   val isForceDarkTheme: Boolean

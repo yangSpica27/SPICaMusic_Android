@@ -1,13 +1,11 @@
 package me.spica27.spicamusic.ui
 
-import android.graphics.Color.toArgb
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,11 +27,11 @@ import androidx.compose.material3.SliderColors
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.indicatorColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -47,13 +45,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation3.runtime.NavBackStack
+import kotlinx.coroutines.launch
 import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.NyquistBand
+import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.widget.EqSettingView
+import kotlin.math.roundToInt
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,28 +62,22 @@ fun EqScreen(
   navigator: NavBackStack? = null
 ) {
 
-  val replayGain = remember { mutableFloatStateOf(0f) }
+  val replayGain = DataStoreUtil().getReplayGain.collectAsState(0)
 
+  val eq = DataStoreUtil().getEqualizerBand().collectAsState(Equalizer.Presets.flat.bands)
 
-  val selectedEq =
-    remember { mutableStateOf<Equalizer.Presets.Preset>(Equalizer.Presets.vocalBoost) }
-
-
+  val scope = rememberCoroutineScope()
 
   Scaffold(
     topBar = {
-      TopAppBar(
-        navigationIcon = {
-          IconButton(onClick = { navigator?.removeLastOrNull() }) {
-            Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-          }
-        },
-        title = {
-          Text(text = "音效")
+      TopAppBar(navigationIcon = {
+        IconButton(onClick = { navigator?.removeLastOrNull() }) {
+          Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
         }
-      )
-    }
-  ) {
+      }, title = {
+        Text(text = "音效")
+      })
+    }) { it ->
     Box(
       modifier = Modifier
         .fillMaxSize()
@@ -91,32 +85,23 @@ fun EqScreen(
     ) {
 
       Column(
-        modifier = Modifier
-          .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
       ) {
         Text(
-          "音频增益",
-          style = MaterialTheme.typography.titleMedium.copy(
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-              .copy(alpha = 0.9f),
+          "音频增益", style = MaterialTheme.typography.titleMedium.copy(
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
             fontSize = 22.sp,
             fontWeight = FontWeight.W600
-          ),
-          modifier = Modifier
-            .padding(horizontal = 16.dp)
+          ), modifier = Modifier.padding(horizontal = 16.dp)
         )
 
 
 
 
         Text(
-          "调节音量的额外的增益强度",
-          style = MaterialTheme.typography.bodyLarge.copy(
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-              .copy(alpha = 0.6f),
-            fontSize = 15.sp
-          ),
-          modifier = Modifier
+          "调节音量的额外的增益强度", style = MaterialTheme.typography.bodyLarge.copy(
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontSize = 15.sp
+          ), modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
         )
@@ -126,21 +111,22 @@ fun EqScreen(
           modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-          value = replayGain.floatValue,
+          value = replayGain.value * 1f,
           onValueChange = {
-            replayGain.floatValue = it
+            scope.launch {
+              DataStoreUtil().saveReplayGain(it.roundToInt())
+            }
           },
-          valueRange = -5f..5f,
-          steps = 11
+          valueRange = -10f..10f,
+          steps = 21
         )
 
 
 
         Text(
-          "${replayGain.floatValue.fastRoundToInt()} DB", style = TextStyle().copy(
+          "${replayGain.value} DB", style = TextStyle().copy(
             fontSize = 20.sp, fontWeight = FontWeight.Bold,
-          ),
-          modifier = Modifier
+          ), modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
         )
@@ -150,14 +136,11 @@ fun EqScreen(
 
 
         Text(
-          "均衡效果器(EQ)",
-          style = MaterialTheme.typography.titleMedium.copy(
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-              .copy(alpha = 0.9f),
+          "均衡效果器(EQ)", style = MaterialTheme.typography.titleMedium.copy(
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f),
             fontSize = 22.sp,
             fontWeight = FontWeight.W600
-          ),
-          modifier = Modifier
+          ), modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
         )
@@ -166,9 +149,7 @@ fun EqScreen(
         Text(
           "通过滑杆控制不同频段增益，选择喜欢的频响曲线",
           style = MaterialTheme.typography.bodyLarge.copy(
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-              .copy(alpha = 0.6f),
-            fontSize = 15.sp
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f), fontSize = 15.sp
           ),
           modifier = Modifier
             .fillMaxWidth()
@@ -188,8 +169,12 @@ fun EqScreen(
           itemsIndexed(Equalizer.Presets.all, key = { _, item ->
             item.name
           }) { _, item ->
-            EqItem(isSelected = item.name == selectedEq.value.name, onClick = {
-              selectedEq.value = item
+            EqItem(isSelected = false, onClick = {
+              scope.launch {
+                DataStoreUtil().saveEq(
+                  item.bands
+                )
+              }
             }, name = stringResource(item.nameResId))
           }
         }
@@ -206,20 +191,19 @@ fun EqScreen(
         val indicatorLineColor = MaterialTheme.colorScheme.primaryContainer.toArgb()
         AndroidView(
           factory = { context ->
-            EqSettingView(context)
-              .apply {
-                this.setColors(
-                  bgRowLineColor = bgRowLineColor,
-                  bgColumnLineColor = bgColumnLineColor,
-                  centerRowLineColor = centerRowLineColor,
-                  indicatorColor = indicatorColor,
-                  indicatorLineColor = indicatorLineColor,
-                  indicatorCenterColor = indicatorCenterColor
-                )
-              }
+            EqSettingView(context).apply {
+              this.setColors(
+                bgRowLineColor = bgRowLineColor,
+                bgColumnLineColor = bgColumnLineColor,
+                centerRowLineColor = centerRowLineColor,
+                indicatorColor = indicatorColor,
+                indicatorLineColor = indicatorLineColor,
+                indicatorCenterColor = indicatorCenterColor
+              )
+            }
           },
-          update = {
-
+          update = { view ->
+            view.setGainArray(eq.value)
           },
           modifier = Modifier
             .fillMaxWidth()
@@ -251,13 +235,10 @@ fun ItemEq(
     VerticalSlider(
       modifier = Modifier
         .fillMaxWidth()
-        .weight(1f),
-      value = gain.floatValue,
-      onValueChange = {
+        .weight(1f), value = gain.floatValue, onValueChange = {
         gain.floatValue = it
         onValueChange(it)
-      },
-      valueRange = -10f..10f
+      }, valueRange = -10f..10f
     )
   }
 
@@ -270,8 +251,7 @@ private fun VerticalSlider(
   onValueChange: (Float) -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
-  valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
-  /*@IntRange(from = 0)*/
+  valueRange: ClosedFloatingPointRange<Float> = 0f..1f,/*@IntRange(from = 0)*/
   steps: Int = 0,
   onValueChangeFinished: (() -> Unit)? = null,
   interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
@@ -332,8 +312,7 @@ private fun VerticalSlider(
     },
     thumb = {
 
-    }
-  )
+    })
 }
 
 @Composable
