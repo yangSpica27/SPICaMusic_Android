@@ -7,6 +7,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -15,9 +17,12 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
@@ -29,13 +34,13 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,13 +48,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.theme.AppTheme
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
@@ -204,25 +213,119 @@ private fun BottomNav(pagerState: PagerState) {
   val unselectedIcons =
     listOf(Icons.Outlined.Home, Icons.Outlined.Settings)
 
-  NavigationBar {
-    items.forEachIndexed { index, item ->
-      NavigationBarItem(
-        icon = {
-          Icon(
-            if (pagerState.currentPage == index) selectedIcons[index] else unselectedIcons[index],
-            contentDescription = item
-          )
-        },
-//        label = { Text(item) },
-        selected = pagerState.currentPage == index,
-        onClick = {
-          coroutineScope.launch {
-            pagerState.animateScrollToPage(index)
-          }
-        }
-      )
-    }
+  val currentIndex = remember { mutableIntStateOf(pagerState.currentPage) }
+
+  val indicationIndex = animateFloatAsState(
+    currentIndex.intValue * 1f,
+    tween(500),
+    label = ""
+  )
+
+
+  val indicationPadding = remember { mutableFloatStateOf(1f) }
+
+  val indicationPaddingAnim =
+    animateFloatAsState(indicationPadding.floatValue, tween(800), label = "")
+
+  val pauseColor = MaterialTheme.colorScheme.surfaceContainerHigh
+
+  val playColor = MaterialTheme.colorScheme.surfaceContainerHighest
+
+  val indicationColor = remember {
+    mutableStateOf(pauseColor)
   }
+
+  val indicationColorAnim = animateColorAsState(
+    indicationColor.value,
+    tween(550),
+    label = ""
+  )
+
+  LaunchedEffect(currentIndex.intValue) {
+    indicationColor.value = playColor
+    indicationPadding.floatValue = 0.5f
+    delay(300)
+    indicationColor.value = pauseColor
+    indicationPadding.floatValue = 1f
+  }
+
+
+
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(80.dp)
+      .background(MaterialTheme.colorScheme.surfaceContainerLow)
+  ) {
+
+    Row(
+      modifier = Modifier
+        .fillMaxSize()
+        .align(Alignment.Center)
+        .drawBehind {
+          val itemWidth = size.width / items.size
+
+          val centerX = itemWidth * indicationIndex.value + itemWidth / 2
+
+          val paddingWidth = itemWidth / 3 * indicationPaddingAnim.value
+
+          val paddingHeight = size.height / 5 * indicationPaddingAnim.value
+
+          drawRoundRect(
+            color = indicationColorAnim.value,
+            topLeft = Offset(
+              x = centerX - itemWidth / 2 + paddingWidth,
+              y = paddingHeight
+            ),
+            size = Size(
+              width = itemWidth - paddingWidth * 2,
+              height = size.height - paddingHeight * 2
+            ),
+            cornerRadius = CornerRadius(40.dp.value)
+          )
+
+        },
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+
+      selectedIcons.forEachIndexed {
+          index, _ ->
+        val isSelected = currentIndex.intValue == index
+        Box(
+          modifier = Modifier
+            .weight(1f)
+            .fillMaxSize()
+            .noRippleClickable {
+              coroutineScope.launch {
+                pagerState.animateScrollToPage(index)
+              }
+              currentIndex.intValue = index
+            },
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            imageVector = if (
+              isSelected
+            ) {
+              selectedIcons[index]
+            } else {
+              unselectedIcons[index]
+            },
+            contentDescription = items[index],
+            tint = if (isSelected) {
+              MaterialTheme.colorScheme.inversePrimary
+            } else {
+              MaterialTheme.colorScheme.onBackground
+            }
+          )
+        }
+      }
+
+    }
+
+  }
+
 }
 
 // 返回键状态

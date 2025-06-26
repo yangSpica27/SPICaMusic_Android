@@ -2,6 +2,9 @@
 
 package me.spica27.spicamusic.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,12 +32,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,18 +47,24 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
@@ -131,6 +140,7 @@ fun HomePage(
   }
 }
 
+
 // 歌曲列表
 @Composable
 private fun SongList(modifier: Modifier = Modifier, songs: List<Song> = emptyList()) {
@@ -198,8 +208,8 @@ private fun SearchButton(navigator: NavBackStack? = null) {
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp)
-      .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
-      .clip(CircleShape)
+      .background(MaterialTheme.colorScheme.surfaceContainer,MaterialTheme.shapes.medium )
+      .clip(MaterialTheme.shapes.medium)
       .clickable {
         navigator?.add(Routes.SearchAll)
       }
@@ -227,7 +237,6 @@ private fun SearchButton(navigator: NavBackStack? = null) {
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TabBar(
   selectedTabIndex: Int,
@@ -235,31 +244,134 @@ private fun TabBar(
   tabs: List<String>,
 ) {
 
-  PrimaryTabRow(
-    selectedTabIndex = selectedTabIndex,
-    divider = {}
+  val paddingFlag = remember { mutableFloatStateOf(0f) }
+
+  val pauseColor = MaterialTheme.colorScheme.surfaceContainer
+
+  val playColor = MaterialTheme.colorScheme.surfaceContainerHigh
+
+  val radius = remember { mutableFloatStateOf(100000f) }
+
+
+  val currentPadding = animateFloatAsState(
+    paddingFlag.floatValue,
+    tween(475)
+  )
+
+  val indicatorColor = remember {
+    mutableStateOf(pauseColor)
+  }
+
+  val currentColor = animateColorAsState(
+    indicatorColor.value,
+    tween(575)
+  )
+
+  val indicationIndex = animateFloatAsState(
+    selectedTabIndex * 1f,
+    tween(425),
+    label = ""
+  )
+
+  LaunchedEffect(selectedTabIndex) {
+    paddingFlag.floatValue = 1f
+    indicatorColor.value = playColor
+    delay(450)
+    paddingFlag.floatValue = 0f
+    indicatorColor.value = pauseColor
+  }
+
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(60.dp)
   ) {
-    tabs.forEachIndexed { index, text ->
-      Tab(
-        selected = selectedTabIndex == index,
-        onClick = { onTabSelected(index) },
-        text = {
-          if (selectedTabIndex == index) {
-            Text(
-              text,
-              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
-            )
-          } else {
-            Text(
-              text,
-              style = MaterialTheme.typography.titleMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-              )
-            )
-          }
+
+
+    Row(
+      modifier = Modifier
+        .fillMaxSize()
+        .align(Alignment.Center)
+        .drawBehind {
+
+          val left = 16.dp.toPx()
+
+          val right = size.width - 16.dp.toPx()
+
+          val itemWidth = size.width / tabs.size
+
+          val itemHeight = size.height
+
+          val centerX = itemWidth * indicationIndex.value + itemWidth / 2f
+
+          val paddingWidth = 16.dp.toPx()
+
+          val paddingHeight = 8.dp.toPx()
+
+          val topY = paddingHeight - paddingHeight * currentPadding.value
+
+          val bottomY = size.height - paddingHeight + paddingHeight * currentPadding.value
+
+          val leftX = left + (
+              (centerX - itemWidth / 2f + paddingWidth) -
+                  left
+              ) * currentPadding.value
+
+          val rightX = right - (
+              right - (
+                  centerX - paddingWidth + itemWidth / 2f
+                  )
+              ) * currentPadding.value
+
+
+          drawRoundRect(
+            color = currentColor.value,
+            topLeft = Offset(
+              leftX, topY
+            ),
+            size = Size(
+              width = rightX - leftX,
+              height = bottomY - topY
+            ),
+            cornerRadius = CornerRadius(radius.floatValue)
+          )
         },
-      )
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+
+      tabs.forEachIndexed { index, _ ->
+        val isSelected = index == selectedTabIndex
+        Box(
+          modifier = Modifier
+            .weight(1f)
+            .fillMaxSize()
+            .noRippleClickable {
+              onTabSelected(index)
+            },
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            text = tabs[index],
+            style = MaterialTheme.typography.bodyMedium.copy(
+              color = if (isSelected) {
+                MaterialTheme.colorScheme.onBackground.copy(0.9f)
+              } else {
+                MaterialTheme.colorScheme.onBackground.copy(0.5f)
+              },
+              fontSize = 18.sp,
+              fontWeight = if (isSelected) {
+                FontWeight.W600
+              } else {
+                FontWeight.W500
+              }
+            ),
+          )
+        }
+      }
+
     }
+
   }
 
 
