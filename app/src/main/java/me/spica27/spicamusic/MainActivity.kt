@@ -8,10 +8,10 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import com.linc.amplituda.Amplituda
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import linc.com.amplituda.Amplituda
 import me.spica27.spicamusic.service.MusicService
 import me.spica27.spicamusic.ui.AppMain
 import me.spica27.spicamusic.utils.DataStoreUtil

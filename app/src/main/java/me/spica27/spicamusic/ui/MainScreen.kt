@@ -60,6 +60,7 @@ import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.theme.AppTheme
+import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.PlayerBar
@@ -241,13 +242,23 @@ private fun BottomNav(pagerState: PagerState) {
     label = ""
   )
 
-  LaunchedEffect(currentIndex.intValue) {
+  val isFirst = remember { mutableStateOf(true) }
+
+  val isNight = DataStoreUtil().getForceDarkTheme.collectAsState(false)
+
+  LaunchedEffect(currentIndex.intValue, isNight.value) {
+    if (isFirst.value) {
+      isFirst.value = false
+      return@LaunchedEffect
+    }
     indicationColor.value = playColor
     indicationPadding.floatValue = 0.5f
     delay(300)
     indicationColor.value = pauseColor
     indicationPadding.floatValue = 1f
   }
+
+
 
 
 
@@ -289,8 +300,7 @@ private fun BottomNav(pagerState: PagerState) {
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
 
-      selectedIcons.forEachIndexed {
-          index, _ ->
+      selectedIcons.forEachIndexed { index, _ ->
         val isSelected = currentIndex.intValue == index
         Box(
           modifier = Modifier

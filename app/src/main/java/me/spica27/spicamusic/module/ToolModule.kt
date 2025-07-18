@@ -2,11 +2,11 @@ package me.spica27.spicamusic.module
 
 import android.app.Application
 import android.util.Log
+import com.linc.amplituda.Amplituda
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import linc.com.amplituda.Amplituda
 import javax.inject.Singleton
 
 

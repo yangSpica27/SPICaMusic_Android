@@ -141,6 +141,6 @@ dependencies {
   implementation libs.androidx.media3.exoplayer
   //    implementation 'com.google.android.exoplayer:exoplayer-core:2.X.X'
   implementation libs.androidx.media
-  implementation 'com.github.lincollincol:amplituda:2.2.2'
+  implementation 'com.github.lincollincol:amplituda:2.3.0'
   // DSP 处理
 }

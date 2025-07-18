@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
@@ -47,7 +46,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -64,6 +63,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
@@ -208,7 +208,7 @@ private fun SearchButton(navigator: NavBackStack? = null) {
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp)
-      .background(MaterialTheme.colorScheme.surfaceContainer,MaterialTheme.shapes.medium )
+      .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium)
       .clip(MaterialTheme.shapes.medium)
       .clickable {
         navigator?.add(Routes.SearchAll)
@@ -252,6 +252,9 @@ private fun TabBar(
 
   val radius = remember { mutableFloatStateOf(100000f) }
 
+  val isNight = DataStoreUtil().getForceDarkTheme.collectAsState(false)
+
+  val isFirst = remember { mutableStateOf(true) }
 
   val currentPadding = animateFloatAsState(
     paddingFlag.floatValue,
@@ -273,7 +276,12 @@ private fun TabBar(
     label = ""
   )
 
-  LaunchedEffect(selectedTabIndex) {
+
+  LaunchedEffect(selectedTabIndex, isNight.value) {
+    if (isFirst.value){
+      isFirst.value = false
+      return@LaunchedEffect
+    }
     paddingFlag.floatValue = 1f
     indicatorColor.value = playColor
     delay(450)
@@ -292,7 +300,7 @@ private fun TabBar(
       modifier = Modifier
         .fillMaxSize()
         .align(Alignment.Center)
-        .drawBehind {
+        .drawWithCache {
 
           val left = 16.dp.toPx()
 
@@ -323,18 +331,19 @@ private fun TabBar(
                   )
               ) * currentPadding.value
 
-
-          drawRoundRect(
-            color = currentColor.value,
-            topLeft = Offset(
-              leftX, topY
-            ),
-            size = Size(
-              width = rightX - leftX,
-              height = bottomY - topY
-            ),
-            cornerRadius = CornerRadius(radius.floatValue)
-          )
+          onDrawBehind {
+            drawRoundRect(
+              color = currentColor.value,
+              topLeft = Offset(
+                leftX, topY
+              ),
+              size = Size(
+                width = rightX - leftX,
+                height = bottomY - topY
+              ),
+              cornerRadius = CornerRadius(radius.floatValue)
+            )
+          }
         },
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.SpaceEvenly
@@ -371,7 +380,6 @@ private fun TabBar(
       }
 
     }
-
   }
 
 
