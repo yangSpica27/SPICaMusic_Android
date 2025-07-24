@@ -133,8 +133,8 @@ dependencies {
   implementation libs.androidx.lifecycle.viewmodel.navigation3
   implementation libs.androidx.navigation3.runtime
   implementation libs.androidx.navigation3.ui
-
-
+  implementation libs.material3
+  implementation("ir.mahozad.multiplatform:wavy-slider:2.1.0")
   // 播放器
   def media3_version = "1.4.1"
   // For media playback using ExoPlayer

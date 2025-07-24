@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.SliderDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -40,6 +41,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
+import ir.mahozad.multiplatform.wavyslider.WaveDirection
+import ir.mahozad.multiplatform.wavyslider.material.WavySlider
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
@@ -48,7 +51,8 @@ import me.spica27.spicamusic.viewModel.PlayBackViewModel
  * 底部播放条
  */
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable fun PlayerBar(
+@Composable
+fun PlayerBar(
   modifier: Modifier = Modifier,
   playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
@@ -72,6 +76,7 @@ import me.spica27.spicamusic.viewModel.PlayBackViewModel
   val seekValueState = remember { mutableFloatStateOf(0f) }
 
 
+
   LaunchedEffect(positionSec) {
     if (isSeekingState.value) return@LaunchedEffect
     seekValueState.floatValue = positionSec.secsToMs() * 1f
@@ -81,14 +86,18 @@ import me.spica27.spicamusic.viewModel.PlayBackViewModel
 
   Box(
     modifier = modifier
-      .padding(horizontal = 16.dp, vertical = 12.dp)
+      .padding(horizontal = 16.dp)
       .background(
         MaterialTheme.colorScheme.tertiaryContainer,
         shape = MaterialTheme.shapes.medium
       )
-      .padding(horizontal = 16.dp, vertical = 16.dp)
+
   ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
       Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -160,6 +169,24 @@ import me.spica27.spicamusic.viewModel.PlayBackViewModel
           )
         }
       }
+      WavySlider(
+        modifier = Modifier
+          .fillMaxWidth(),
+        value = (seekValueState.floatValue / (songState?.duration ?: 1)).coerceIn(0f, 1f),
+        onValueChange = {
+          seekValueState.floatValue = it * (songState?.duration ?: 1).toFloat()
+          isSeekingState.value = true
+        },
+        onValueChangeFinished = {
+          playBackViewModel.seekTo(seekValueState.floatValue.toLong())
+          isSeekingState.value = false
+        },
+        colors = SliderDefaults.colors(
+          thumbColor = MaterialTheme.colorScheme.tertiary,
+          activeTrackColor = MaterialTheme.colorScheme.tertiary,
+          disabledThumbColor = MaterialTheme.colorScheme.tertiaryContainer,
+        )
+      )
     }
   }
 }
