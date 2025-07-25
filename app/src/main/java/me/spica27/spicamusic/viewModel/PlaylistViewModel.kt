@@ -6,39 +6,45 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.dao.PlaylistDao
+import me.spica27.spicamusic.db.dao.SongDao
+import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.PlaylistSongCrossRef
+import me.spica27.spicamusic.db.entity.PlaylistWithSongs
+import me.spica27.spicamusic.db.entity.Song
 import javax.inject.Inject
 
 @HiltViewModel
 class PlaylistViewModel @Inject constructor(
   private val playlistDao: PlaylistDao,
+  private val songDao: SongDao
 ) : ViewModel() {
 
-  val playlistId: MutableStateFlow<Long?> = MutableStateFlow(null)
+
+  fun songInfoWithSongsFlow(playlistId: Long): Flow<PlaylistWithSongs?> {
+    return playlistDao.getPlaylistsWithSongsWithPlayListIdFlow(playlistId).flowOn(Dispatchers.IO)
+      .distinctUntilChanged()
+  }
 
 
+  fun songsFlow(playlistId: Long): Flow<List<Song>> {
+    return playlistDao.getSongsByPlaylistIdFlow(playlistId).flowOn(Dispatchers.IO)
+      .distinctUntilChanged()
+  }
 
-  val songInfoWithSongsFlow = playlistId.map { playlistId ->
-    playlistDao.getPlaylistsWithSongsWithPlayListId(playlistId ?: -1)
-  }.flowOn(Dispatchers.IO)
-    .distinctUntilChanged()
 
-
-  val songsFlow = playlistId.map { playlistId ->
-    playlistDao.getSongsByPlaylistId(playlistId ?: -1)
-  }.flowOn(Dispatchers.IO)
-    .distinctUntilChanged()
-
-  val playlistFlow = playlistId.map { playlistId ->
-    playlistDao
-      .getPlayListById(playlistId ?: -1)
-  }.flowOn(Dispatchers.IO)
-    .distinctUntilChanged()
+  fun playlistFlow(playlistId: Long): SharedFlow<Playlist> {
+    return playlistDao.getPlayListByIdFlow(playlistId)
+      .flowOn(Dispatchers.IO)
+      .shareIn(viewModelScope, SharingStarted.Lazily, 1)
+  }
 
   // 选择模式
   private val _isSelectMode = MutableStateFlow(false)
@@ -54,9 +60,6 @@ class PlaylistViewModel @Inject constructor(
   val selectedSongs: Flow<Set<Long>>
     get() = _selectedSongs
 
-  fun setPlaylistId(id: Long) {
-    playlistId.value = id
-  }
 
   // 切换选择模式
   fun toggleSelectMode() {
@@ -88,9 +91,9 @@ class PlaylistViewModel @Inject constructor(
     }
   }
 
-  fun renameCurrentPlaylist(newName: String) {
+  fun renameCurrentPlaylist(playlistId: Long?, newName: String) {
     viewModelScope.launch(Dispatchers.IO) {
-      playlistId.value.let { playlistDao.renamePlaylist(it ?: -1, newName) }
+      playlistId.let { playlistDao.renamePlaylist(it ?: -1, newName) }
     }
   }
 
@@ -101,30 +104,30 @@ class PlaylistViewModel @Inject constructor(
   }
 
   // 删除歌单
-  fun deletePlaylist() {
-    if (playlistId.value != null) {
+  fun deletePlaylist(playlistId: Long?) {
+    if (playlistId != null) {
       viewModelScope.launch(Dispatchers.IO) {
-        playlistDao.deleteById(playlistId.value ?: -1)
+        playlistDao.deleteById(playlistId)
       }
     }
   }
 
   // 添加歌曲到歌单
-  fun addSongToPlaylist(songId: Long) {
-    if (playlistId.value != null) {
+  fun addSongToPlaylist(playlistId: Long?, songId: Long) {
+    if (playlistId != null) {
       viewModelScope.launch(Dispatchers.IO) {
-        playlistDao.insertListItem(PlaylistSongCrossRef(playlistId.value ?: -1, songId))
+        playlistDao.insertListItem(PlaylistSongCrossRef(playlistId ?: -1, songId))
       }
     }
   }
 
   // 添加歌曲到歌单
-  fun addSongsToPlaylist(songIds: List<Long>) {
-    if (playlistId.value != null) {
+  fun addSongsToPlaylist(playlistId: Long?, songIds: List<Long>) {
+    if (playlistId != null) {
       viewModelScope.launch(Dispatchers.IO) {
         playlistDao.insertListItems(songIds.map {
           PlaylistSongCrossRef(
-            playlistId.value ?: -1L,
+            playlistId,
             it
           )
         })
@@ -133,21 +136,21 @@ class PlaylistViewModel @Inject constructor(
   }
 
   // 从歌单中移除歌曲
-  fun removeSongFromPlaylist(songId: Long) {
-    if (playlistId.value != null) {
+  fun removeSongFromPlaylist(playlistId: Long?, songId: Long) {
+    if (playlistId != null) {
       viewModelScope.launch(Dispatchers.IO) {
-        playlistDao.deleteListItem(PlaylistSongCrossRef(playlistId.value ?: -1, songId))
+        playlistDao.deleteListItem(PlaylistSongCrossRef(playlistId, songId))
       }
     }
   }
 
   // 从歌单中移除歌曲
-  fun removeSongsFromPlaylist(songIds: List<Long>) {
-    if (playlistId.value != null) {
+  fun removeSongsFromPlaylist(playlistId: Long?, songIds: List<Long>) {
+    if (playlistId != null) {
       viewModelScope.launch(Dispatchers.IO) {
         playlistDao.deleteListItems(songIds.map {
           PlaylistSongCrossRef(
-            playlistId.value ?: -1,
+            playlistId,
             it
           )
         })
@@ -156,14 +159,36 @@ class PlaylistViewModel @Inject constructor(
   }
 
   // 删除选中的歌曲
-  fun deleteSelectedSongs() {
-    if (playlistId.value != null) {
+  fun deleteSelectedSongs(playlistId: Long?) {
+    if (playlistId != null) {
       viewModelScope.launch(Dispatchers.IO) {
         playlistDao.deleteListItems(
-          selectSongsSet.toList().map { PlaylistSongCrossRef(playlistId.value ?: -1, it) })
+          selectSongsSet.toList().map { PlaylistSongCrossRef(playlistId, it) })
       }
     }
   }
 
+  // 删除选中的歌曲
+  fun deleteSelectedSongs(playlistId: Long?, songId: Long) {
+    if (playlistId != null) {
+      viewModelScope.launch(Dispatchers.IO) {
+        playlistDao.deleteListItem(
+          PlaylistSongCrossRef(
+            playlistId = playlistId,
+            songId = songId
+          )
+        )
+      }
+    }
+  }
+
+  fun fetchSongWithId(songId: Long): Song {
+    return songDao.getSongWithId(songId)
+  }
+
+
+  fun fetchPlaylistWithId(playlistId: Long): List<Song> {
+    return playlistDao.getSongsByPlaylistId(playlistId)
+  }
 
 }

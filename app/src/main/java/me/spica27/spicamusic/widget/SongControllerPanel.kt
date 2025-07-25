@@ -1,6 +1,8 @@
 package me.spica27.spicamusic.widget
 
+import android.R.attr.contentDescription
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -40,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import coil3.toCoilUri
 import me.spica27.spicamusic.utils.formatDurationSecs
 import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.viewModel.SongViewModel
@@ -75,7 +78,7 @@ fun SongControllerPanel(
   }
 
   val coverPainter = rememberAsyncImagePainter(
-    model = song.getSongUri(),
+    model = song.getCoverUri().toCoilUri(),
   )
   val coverState = coverPainter.state.collectAsState()
 
@@ -102,8 +105,8 @@ fun SongControllerPanel(
         ) {
 
           if (coverState.value is AsyncImagePainter.State.Success) {
-            AsyncImage(
-              model = coverPainter,
+            Image(
+              painter = coverPainter,
               contentDescription = null,
               modifier = Modifier.fillMaxSize()
             )

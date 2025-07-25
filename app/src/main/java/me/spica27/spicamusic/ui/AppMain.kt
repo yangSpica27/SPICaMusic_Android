@@ -4,7 +4,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entry
@@ -55,6 +54,15 @@ fun AppMain() {
         ) { SearchAllScreen() }
         entry<Routes.EQ> {
           EqScreen(navigator = backStack)
+        }
+        entry<Routes.PlayListItemDetail>(
+          metadata = sliderFromBottomRouteAnim()
+        ) { key ->
+          PlayListItemDetailScreen(
+            playlistId = key.playlistId,
+            songId = key.songId,
+            navigator = backStack
+          )
         }
       },
       transitionSpec = {

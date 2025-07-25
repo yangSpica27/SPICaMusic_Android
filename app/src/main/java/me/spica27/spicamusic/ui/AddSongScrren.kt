@@ -18,7 +18,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -40,7 +39,6 @@ fun AddSongScreen(
   playlistId: Long
 ) {
   val coroutineScope = rememberCoroutineScope()
-  viewModel.setPlaylistId(playlistId)
   Scaffold(topBar = {
     TopAppBar(title = {
       Text(text = "选择新增歌曲")
@@ -55,7 +53,7 @@ fun AddSongScreen(
       // 保存按钮
       TextButton(onClick = {
         coroutineScope.launch(Dispatchers.IO) {
-          viewModel.addSongToPlaylist()
+          viewModel.addSongToPlaylist(playlistId)
           withContext(Dispatchers.Main) {
             navigator.removeLastOrNull()
           }
@@ -79,7 +77,7 @@ fun AddSongScreen(
 
       val listDataState =
         combine(
-          viewModel.getAllSongsNotInPlaylist(),
+          viewModel.getAllSongsNotInPlaylist(playlistId),
           viewModel.selectedSongsIds
         ) { allSongs, selectIds ->
           allSongs.map {

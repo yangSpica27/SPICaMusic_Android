@@ -23,9 +23,10 @@ class SelectSongViewModel @Inject constructor(
   private val playlistDao: PlaylistDao,
 ) : ViewModel() {
 
-  private var playlistId: Long? = null
 
-  fun getAllSongsNotInPlaylist() = songDao.getSongsNotInPlayList(playlistId ?: -1)
+  fun getAllSongsNotInPlaylist(playlistId: Long?):  Flow<List<Song>>{
+   return songDao.getSongsNotInPlayList(playlistId ?: -1)
+  }
 
   fun getAllSongs() = songDao.getAll()
 
@@ -36,9 +37,6 @@ class SelectSongViewModel @Inject constructor(
   val selectedSongsIds: Flow<HashSet<Long>>
     get() = _selectedSongsIds
 
-  fun setPlaylistId(playlistId: Long) {
-    this.playlistId = playlistId
-  }
 
   fun clearSelectedSongs() {
     selectIdsSet.clear()
@@ -65,7 +63,7 @@ class SelectSongViewModel @Inject constructor(
   }
 
   // 添加到播放列表
-  suspend fun addSongToPlaylist() {
+  suspend fun addSongToPlaylist(playlistId: Long?) {
     playlistDao.insertListItems(
       _selectedSongsIds.value.map { songId -> PlaylistSongCrossRef(playlistId ?: 0, songId) })
   }

@@ -30,6 +30,9 @@ object Routes {
   @Serializable
   data object EQ : NavKey
 
+  @Serializable
+  data class PlayListItemDetail(val playlistId: Long, val songId: Long) : NavKey
+
 }
 
 

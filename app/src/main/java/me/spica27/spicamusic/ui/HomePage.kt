@@ -169,7 +169,7 @@ private fun SongList(modifier: Modifier = Modifier, songs: List<Song> = emptyLis
     modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.Top
   ) {
     item { Spacer(modifier = Modifier.width(12.dp)) }
-    itemsIndexed(songs, key = { _, song -> song.songId.toString() }) { _, song ->
+    itemsIndexed(songs, key = { _, song -> song.hashCode() }) { _, song ->
       SongItemWithCover(
         modifier = Modifier.animateItem(),
         song = song,
@@ -189,7 +189,7 @@ private fun SongList(modifier: Modifier = Modifier, songs: List<Song> = emptyLis
       )
     }
 
-    item { Spacer(modifier = Modifier.width(50.dp)) }
+    item { Spacer(modifier = Modifier.height(150.dp)) }
   }
 }
 
@@ -278,7 +278,7 @@ private fun TabBar(
 
 
   LaunchedEffect(selectedTabIndex, isNight.value) {
-    if (isFirst.value){
+    if (isFirst.value) {
       isFirst.value = false
       return@LaunchedEffect
     }
