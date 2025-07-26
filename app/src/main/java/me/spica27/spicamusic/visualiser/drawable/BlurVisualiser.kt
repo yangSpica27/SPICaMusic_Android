@@ -71,9 +71,6 @@ class BlurVisualiser : VisualiserDrawable() {
 
 
   override fun draw(canvas: Canvas) {
-    Timber.tag("BlurVisualiser").d("draw()")
-    Timber.tag("BlurVisualiser").d("width = ${width}")
-    Timber.tag("BlurVisualiser").d("height = ${height}")
     canvas.translate(width / 2f, height / 2f)
     if (yList.size != lastYList.size) {
       return

@@ -58,17 +58,21 @@ import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation3.runtime.NavBackStack
+import coil3.Uri
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.contentResolverSafe
 import me.spica27.spicamusic.utils.formatDurationDs
 import me.spica27.spicamusic.utils.formatDurationSecs
@@ -86,7 +90,8 @@ import timber.log.Timber
 @Composable
 fun PlayerPage(
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
-  songViewModel: SongViewModel = hiltViewModel()
+  songViewModel: SongViewModel = hiltViewModel(),
+  navigator: NavBackStack? = null,
 ) {
 
   // 当前播放的歌曲
@@ -132,7 +137,8 @@ fun PlayerPage(
           modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
-            .padding(top = 12.dp)
+            .padding(top = 12.dp),
+          navigator = navigator
         )
         ControlPanel(
           modifier = Modifier
@@ -299,7 +305,9 @@ private fun ControlPanel(
   }
 
   LaunchedEffect(song) {
-    withContext(Dispatchers.IO) {
+    withContext(Dispatchers.IO + CoroutineExceptionHandler { _, _ ->
+
+    }) {
       val amplituda = playBackViewModel.getAmplituda()
       if (song?.getSongUri() != null) {
         val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
@@ -425,8 +433,8 @@ private fun ControlPanel(
 private fun SongInfo(
   songId: Long,
   modifier: Modifier = Modifier,
-  playBackViewModel: PlayBackViewModel = hiltViewModel(),
-  songViewModel: SongViewModel = hiltViewModel()
+  songViewModel: SongViewModel = hiltViewModel(),
+  navigator: NavBackStack? = null,
 ) {
 
   val song = songViewModel.getSongFlow(songId).collectAsStateWithLifecycle(null).value
@@ -495,9 +503,22 @@ private fun SongInfo(
         Icon(
           imageVector = Icons.Default.FavoriteBorder,
           contentDescription = "More",
-          tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+          tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
         )
       }
+    }
+    Spacer(Modifier.width(10.dp))
+    IconButton(
+      onClick = {
+        navigator?.add(Routes.LyricsSearch(song))
+      }
+    ) {
+      Icon(
+        modifier = Modifier.size(24.dp),
+        painter = painterResource(R.drawable.ic_lyrics_line),
+        contentDescription = "lyrics",
+        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+      )
     }
     Spacer(Modifier.width(10.dp))
     IconButton(
@@ -508,6 +529,7 @@ private fun SongInfo(
       Icon(
         Icons.Default.MoreVert,
         contentDescription = "More",
+        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
       )
     }
   }

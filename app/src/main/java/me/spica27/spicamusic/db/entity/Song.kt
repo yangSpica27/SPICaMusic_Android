@@ -6,6 +6,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 import me.spica27.spicamusic.utils.toAudioUri
 import me.spica27.spicamusic.utils.toCoverUri
 
@@ -16,6 +17,7 @@ import me.spica27.spicamusic.utils.toCoverUri
     Index("mediaStoreId", unique = true),
   ]
 )
+@Serializable
 data class Song constructor(
   @ColumnInfo(index = true)
   @PrimaryKey(autoGenerate = true)

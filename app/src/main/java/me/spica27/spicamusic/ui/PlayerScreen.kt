@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
@@ -69,7 +70,8 @@ fun PlayerScreen(
   playBackViewModel: PlayBackViewModel = hiltViewModel(),
   sharedTransitionScope: SharedTransitionScope,
   animatedVisibilityScope: AnimatedVisibilityScope,
-  onBackClick: () -> Unit
+  onBackClick: () -> Unit,
+  navigator: NavBackStack? = null,
 ) {
 
   val nowPlayingSongs = playBackViewModel.playList.collectAsState().value
@@ -136,7 +138,9 @@ fun PlayerScreen(
           ) {
             when (it) {
               0 -> {
-                PlayerPage()
+                PlayerPage(
+                  navigator = navigator
+                )
               }
 
               1 -> {

@@ -132,6 +132,7 @@ fun MainScreen(
       ) { showPlayer ->
         if (showPlayer) {
           PlayerScreen(
+            navigator= navigator,
             animatedVisibilityScope = this@AnimatedContent,
             sharedTransitionScope = this@SharedTransitionLayout,
             onBackClick = {

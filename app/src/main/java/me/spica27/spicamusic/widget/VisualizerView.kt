@@ -31,7 +31,7 @@ class VisualizerView : View, MusicVisualiser.Listener {
 
   init {
     setOnClickListener {
-      nextVisualiserType()
+//      nextVisualiserType()
     }
   }
 

@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.widget
 
-import android.R.attr.contentDescription
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,13 +17,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.outlined.AccountBox
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,7 +38,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.toCoilUri
@@ -193,7 +191,8 @@ fun SongControllerPanel(
           icon = {
             Icon(
               imageVector = Icons.Outlined.Add,
-              contentDescription = null
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.onSurface
             )
           },
           text = "添加到当前播放列表"
@@ -224,8 +223,9 @@ fun SongControllerPanel(
           onclick = { },
           icon = {
             Icon(
-              imageVector = Icons.Outlined.PlayArrow,
-              contentDescription = null
+              imageVector = Icons.Filled.PlayArrow,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.onSurface
             )
           },
           text = "立即播放"
@@ -236,8 +236,9 @@ fun SongControllerPanel(
           onclick = { },
           icon = {
             Icon(
-              imageVector = Icons.Outlined.Info,
-              contentDescription = null
+              imageVector = Icons.Filled.Info,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.onSurface
             )
           },
           text = "信息"
@@ -254,11 +255,12 @@ fun SongControllerPanel(
           onclick = { },
           icon = {
             Icon(
-              imageVector = Icons.Outlined.AccountBox,
-              contentDescription = null
+              imageVector = Icons.Filled.Edit,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.onSurface
             )
           },
-          text = "封面"
+          text = "歌词"
         )
 
         BottomButton(
@@ -266,8 +268,9 @@ fun SongControllerPanel(
           onclick = { },
           icon = {
             Icon(
-              imageVector = Icons.Outlined.Delete,
-              contentDescription = null
+              imageVector = Icons.Filled.Delete,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.onSurface
             )
           },
           text = "删除"
@@ -289,6 +292,8 @@ private fun BottomButton(
 
   Row(
     modifier = modifier
+      .padding(vertical = .5.dp, horizontal = .5.dp)
+      .background(MaterialTheme.colorScheme.surfaceContainer)
       .clickable {
         onclick()
       }

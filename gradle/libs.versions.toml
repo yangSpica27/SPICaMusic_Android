@@ -4,6 +4,7 @@ adaptiveVersion = "1.2.0-alpha09"
 agp = "8.10.1"
 coilCompose = "3.2.0"
 datastorePreferencesVersion = "1.1.7"
+dynamicanimationKtxVersion = "1.1.0"
 hiltAndroidVersion = "2.56.2"
 hiltNavigationComposeVersion = "1.3.0-alpha01"
 kotlin = "2.1.21"
@@ -33,6 +34,7 @@ androidx-adaptive-layout = { module = "androidx.compose.material3.adaptive:adapt
 androidx-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation", version.ref = "adaptiveVersion" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferencesVersion" }
+androidx-dynamicanimation-ktx = { module = "androidx.dynamicanimation:dynamicanimation-ktx", version.ref = "dynamicanimationKtxVersion" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationComposeVersion" }
 androidx-media = { module = "androidx.media:media", version.ref = "mediaVersion" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3ExoplayerVersion" }

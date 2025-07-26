@@ -64,6 +64,13 @@ fun AppMain() {
             navigator = backStack
           )
         }
+        entry<Routes.LyricsSearch>(
+          metadata = sliderFromBottomRouteAnim()
+        ) { key ->
+          LyricsSearchScreen(
+            song = key.song
+          )
+        }
       },
       transitionSpec = {
         slideInHorizontally(initialOffsetX = { it }) togetherWith

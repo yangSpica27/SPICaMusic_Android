@@ -24,7 +24,7 @@ object PersistenceModule {
         application, AppDatabase::class.java,
         "spica_music.db"
       )
-      .fallbackToDestructiveMigration()
+      .fallbackToDestructiveMigration(false)
       .build()
   }
 
@@ -40,5 +40,8 @@ object PersistenceModule {
   @Singleton
   fun providePlaylistDao(appDatabase: AppDatabase) = appDatabase.playlistDao()
 
+  @Provides
+  @Singleton
+  fun provideLyricDao(appDatabase: AppDatabase) = appDatabase.lyricDao()
 
 }

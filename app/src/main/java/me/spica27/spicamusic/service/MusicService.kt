@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.service
 
 
+import android.app.Service.START_NOT_STICKY
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -35,6 +36,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.dsp.FadeTransitionRenderersFactory
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.service.notification.MediaSessionComponent
@@ -83,31 +85,40 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
         .setConstantBitrateSeekingAlwaysEnabled(true)
     )
 
-    val audioRenderer = RenderersFactory { handler, _, audioListener, _, _ ->
-      arrayOf(
-        MediaCodecAudioRenderer(
-          this,
-          MediaCodecSelector.DEFAULT,
-          handler,
-          audioListener,
-          AudioCapabilities.DEFAULT_AUDIO_CAPABILITIES,
-          fftAudioProcessor,
-          PlaybackStateManager.getInstance().equalizerAudioProcessor,
-          PlaybackStateManager.getInstance().replayGainAudioProcessor
-        ),
-        LibflacAudioRenderer(
-          handler, audioListener, fftAudioProcessor,
-          PlaybackStateManager.getInstance().equalizerAudioProcessor,
-          PlaybackStateManager.getInstance().replayGainAudioProcessor
-        )
-      )
-    }
+//    val audioRenderer = RenderersFactory { handler, _, audioListener, _, _ ->
+//      arrayOf(
+//        MediaCodecAudioRenderer(
+//          this,
+//          MediaCodecSelector.DEFAULT,
+//          handler,
+//          audioListener,
+//          AudioCapabilities.DEFAULT_AUDIO_CAPABILITIES,
+//          fftAudioProcessor,
+//          PlaybackStateManager.getInstance().equalizerAudioProcessor,
+//          PlaybackStateManager.getInstance().replayGainAudioProcessor
+//        ),
+//        LibflacAudioRenderer(
+//          handler, audioListener, fftAudioProcessor,
+//          PlaybackStateManager.getInstance().equalizerAudioProcessor,
+//          PlaybackStateManager.getInstance().replayGainAudioProcessor
+//        ),
+//      )
 
+    val audioRenderer = FadeTransitionRenderersFactory(
+      this,
+      coroutineScope,
+      extraAudioProcessors = listOf(
+        fftAudioProcessor,
+        PlaybackStateManager.getInstance().equalizerAudioProcessor,
+        PlaybackStateManager.getInstance().replayGainAudioProcessor
+      )
+    )
 
 
     exoPlayer = ExoPlayer.Builder(this, audioRenderer)
       .setWakeMode(C.WAKE_MODE_LOCAL)
       .setMediaSourceFactory(extractorsFactory)
+      .setMaxSeekToPreviousPositionMs(Long.MAX_VALUE)
       .setAudioAttributes(
         AudioAttributes.Builder()
           .setUsage(C.USAGE_MEDIA)
