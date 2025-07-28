@@ -6,7 +6,6 @@
 <img src="/img/Screenshot_20250728_201202.png" width="20%"/>
 <img src="/img/Screenshot_20250621_231303.png" width="20%"/>
 <img src="/img/Screenshot_20250728_201245.png" width="20%"/>
-<img src="/img/Screenshot_20250621_231331.png" width="20%"/>
 </p>
 
 ## 项目简介
