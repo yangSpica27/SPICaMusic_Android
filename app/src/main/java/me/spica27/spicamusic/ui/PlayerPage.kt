@@ -3,6 +3,7 @@ package me.spica27.spicamusic.ui
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -11,6 +12,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.Interaction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +26,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -33,6 +38,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +50,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,14 +62,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
-import coil3.Uri
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
@@ -67,7 +78,10 @@ import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
@@ -81,6 +95,7 @@ import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
+import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.SongControllerPanel
 import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
@@ -101,6 +116,14 @@ fun PlayerPage(
       .collectAsStateWithLifecycle(true)
       .value
 
+  val currentLyric = playBackViewModel.currentLyric.collectAsStateWithLifecycle().value
+
+  val currentTime = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
+
+  val coroutineScope = rememberCoroutineScope()
+
+  val pagerState = rememberPagerState { 3 }
+
   if (showEmpty) {
     return Box(
       modifier = Modifier.fillMaxSize(),
@@ -115,22 +138,86 @@ fun PlayerPage(
     Box(
       modifier = Modifier.fillMaxSize(),
     ) {
+
       Column(
         modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        //  标题
-        Title(
-          modifier = Modifier.padding(horizontal = 20.dp),
+
+        // tab
+        TabBar(
+          selectedTabIndex = pagerState.currentPage,
+          onTabSelected = {
+            coroutineScope.launch {
+              pagerState.animateScrollToPage(it)
+            }
+          },
+          tabs = listOf("封面", "歌词", "信息"),
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         // 封面
-        Cover(
+        Box(
           modifier = Modifier
             .fillMaxWidth()
-            .weight(1f),
-          songState = songViewModel.getSongFlow(currentPlayingSong?.songId ?: -1)
-            .collectAsState(null)
-        )
+            .weight(1f)
+        ) {
+          HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+            userScrollEnabled = false,
+          ) { index ->
+
+            Box(
+              modifier =
+                Modifier
+                  .fillMaxSize()
+                  .padding(
+                    horizontal = 16.dp,
+                  )
+                  .background(
+                    MaterialTheme.colorScheme.surfaceContainerLow,
+                    MaterialTheme.shapes.small
+                  )
+            ) {
+              when (index) {
+                0 -> {
+                  Cover(
+                    modifier = Modifier
+                      .matchParentSize(),
+                    songState = songViewModel.getSongFlow(currentPlayingSong?.songId ?: -1)
+                      .collectAsState(null)
+                  )
+                }
+
+                1 -> {
+                  if (currentLyric.isNotEmpty()) {
+                    LyricsView(
+                      modifier = Modifier.fillMaxSize(),
+                      currentLyric = currentLyric,
+                      currentTime = currentTime * 1000
+                    )
+                  } else {
+                    Box(
+                      modifier = Modifier.fillMaxSize(),
+                      contentAlignment = Alignment.Center
+                    ) {
+                      Text("暂无歌词")
+                    }
+                  }
+                }
+
+                2 -> {
+                  SongInfoCard(
+                    song = currentPlayingSong
+                  )
+                }
+              }
+            }
+
+          }
+
+        }
+
         // 歌名和歌手
         SongInfo(
           songId = currentPlayingSong?.songId ?: -1,
@@ -149,7 +236,7 @@ fun PlayerPage(
           modifier = Modifier
             .padding(10.dp)
             .fillMaxWidth(),
-          textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+          textAlign = TextAlign.Center,
           text = "向上滑动查看播放列表",
           style = MaterialTheme.typography.bodyMedium.copy(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -158,9 +245,8 @@ fun PlayerPage(
       }
     }
   }
-
-
 }
+
 
 @Composable
 private fun Title(
@@ -206,7 +292,6 @@ private fun Title(
 private fun Cover(
   modifier: Modifier = Modifier,
   songState: State<Song?>,
-  playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
 
   val context = LocalContext.current
@@ -225,7 +310,7 @@ private fun Cover(
   val rotateState = infiniteTransition.animateFloat(
     initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(
       animation = tween(10000, easing = LinearEasing),
-      repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+      repeatMode = RepeatMode.Restart
     ), label = ""
   )
 
@@ -317,7 +402,7 @@ private fun ControlPanel(
           ampState.value = amplitudesList
           inputStream.close()
         } else {
-          ampState.value = arrayListOf<Int>()
+          ampState.value = arrayListOf()
         }
       }
     }
@@ -531,6 +616,267 @@ private fun SongInfo(
         contentDescription = "More",
         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
       )
+    }
+  }
+}
+
+
+@Composable
+private fun TabBar(
+  selectedTabIndex: Int,
+  onTabSelected: (Int) -> Unit,
+  tabs: List<String>,
+) {
+
+  Box(
+    modifier = Modifier
+      .height(48.dp)
+      .padding(horizontal = 16.dp)
+  ) {
+
+    TabRow(
+      selectedTabIndex = selectedTabIndex,
+      containerColor = Color.Transparent,
+      contentColor = Color.Transparent,
+      divider = {},
+      indicator = { tabPositions ->
+        SecondaryIndicator(
+          modifier =
+            Modifier
+              .tabIndicatorOffset(tabPositions[selectedTabIndex])
+              .padding(vertical = 5.dp, horizontal = 16.dp)
+              .clip(
+                MaterialTheme.shapes.small
+              ),
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = .05f),
+          height = 48.dp
+        )
+      }
+    ) {
+      tabs.forEachIndexed { index, tabTitle ->
+        Tab(
+          interactionSource = object : MutableInteractionSource {
+            override val interactions: Flow<Interaction> = emptyFlow()
+
+            override suspend fun emit(interaction: Interaction) {}
+
+            override fun tryEmit(interaction: Interaction) = true
+          },
+          modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
+          selected = selectedTabIndex == index,
+          selectedContentColor = Color.Transparent,
+          unselectedContentColor = Color.Transparent,
+          onClick = { onTabSelected(index) }
+        ) {
+          val isSelected = index == selectedTabIndex
+          Text(
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxSize(),
+            text = tabTitle,
+            style = MaterialTheme.typography.bodyMedium.copy(
+              color = if (isSelected) {
+                MaterialTheme.colorScheme.onBackground.copy(0.9f)
+              } else {
+                MaterialTheme.colorScheme.onBackground.copy(0.5f)
+              },
+              fontSize = 15.sp,
+              fontWeight = if (isSelected) {
+                FontWeight.W600
+              } else {
+                FontWeight.W500
+              }
+            ),
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
+  if (song == null) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+      Text("暂无播放中的歌曲")
+    }
+  } else {
+    Column(
+      modifier = modifier.padding(
+        horizontal = 16.dp,
+        vertical = 12.dp
+      )
+    ) {
+      Row(
+        modifier = Modifier.fillMaxWidth()
+      ) {
+
+        Column(
+          modifier = Modifier
+            .weight(1f)
+            .background(
+              MaterialTheme.colorScheme.surfaceContainerHigh,
+              MaterialTheme.shapes.small
+            )
+            .padding(
+              horizontal = 16.dp,
+              vertical = 12.dp
+            )
+        ) {
+          Text(
+            "上次播放的时间", style = MaterialTheme.typography.titleMedium.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+          )
+          Spacer(modifier = Modifier.height(5.dp))
+          Text(
+            "7分钟前", style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+              fontWeight = FontWeight.W700,
+              fontSize = 20.sp
+            )
+          )
+          Spacer(modifier = Modifier.height(5.dp))
+          Text("夏天的午后", style = MaterialTheme.typography.bodyLarge)
+          Spacer(modifier = Modifier.height(5.dp))
+        }
+        Spacer(
+          modifier = Modifier
+            .width(12.dp)
+        )
+        Column(
+          modifier = Modifier
+            .weight(1f)
+            .background(
+              MaterialTheme.colorScheme.surfaceContainerHigh,
+              MaterialTheme.shapes.small
+            )
+            .padding(
+              horizontal = 16.dp,
+              vertical = 12.dp
+            )
+        ) {
+          Text(
+            "播放次数", style = MaterialTheme.typography.titleMedium.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+          )
+          Spacer(modifier = Modifier.height(5.dp))
+          Text(
+            "${song.playTimes}次", style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+              fontWeight = FontWeight.W700,
+              fontSize = 20.sp
+            )
+          )
+          Spacer(modifier = Modifier.height(5.dp))
+          Text("经常喜欢听", style = MaterialTheme.typography.bodyLarge)
+          Spacer(modifier = Modifier.height(5.dp))
+        }
+      }
+      Spacer(modifier = Modifier.height(12.dp))
+      Column(
+        modifier = Modifier
+          .weight(1f)
+          .fillMaxWidth()
+          .background(
+            MaterialTheme.colorScheme.surfaceContainerHigh,
+            MaterialTheme.shapes.small
+          )
+          .padding(
+            horizontal = 16.dp,
+            vertical = 12.dp
+          )
+      ) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.Top
+        ) {
+          Text(
+            "歌名", style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+          )
+          Spacer(modifier = Modifier.width(12.dp))
+          Text(
+            song.displayName, style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface
+            )
+          )
+        }
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.Top
+        ) {
+          Text(
+            "时长", style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+          )
+          Spacer(modifier = Modifier.width(12.dp))
+          Text(
+            song.duration.msToSecs().formatDurationSecs(),
+            style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface
+            )
+          )
+        }
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.Top
+        ) {
+          Text(
+            "声道", style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+          )
+          Spacer(modifier = Modifier.width(12.dp))
+          Text(
+            "2", style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface
+            )
+          )
+        }
+
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.Top
+        ) {
+          Text(
+            "格式", style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+          )
+          Spacer(modifier = Modifier.width(12.dp))
+          Text(
+            song.mimeType, style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface
+            )
+          )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)
+            .border(
+              1.dp,
+              MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+              MaterialTheme.shapes.small
+            ),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            "夜雪初霁，荠麦弥望。", style = MaterialTheme.typography.bodyLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+              fontWeight = FontWeight.W700,
+              fontSize = 17.sp
+            )
+          )
+        }
+      }
+
     }
   }
 }

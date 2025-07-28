@@ -55,6 +55,8 @@ fun AppMain() {
         entry<Routes.EQ> {
           EqScreen(navigator = backStack)
         }
+        entry<Routes.LikeList> { LikeListScreen(navigator = backStack) }
+        entry<Routes.RecentlyList> { RecentlyListScreen(navigator = backStack) }
         entry<Routes.PlayListItemDetail>(
           metadata = sliderFromBottomRouteAnim()
         ) { key ->

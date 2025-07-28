@@ -42,20 +42,21 @@ android {
 
   buildTypes {
     release {
-      minifyEnabled false
+      minifyEnabled true
       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
       signingConfig signingConfigs.signingConfig
     }
     debug {
+      minifyEnabled false
       signingConfig signingConfigs.signingConfig
     }
   }
   compileOptions {
-    sourceCompatibility JavaVersion.VERSION_1_8
-    targetCompatibility JavaVersion.VERSION_1_8
+    sourceCompatibility JavaVersion.VERSION_11
+    targetCompatibility JavaVersion.VERSION_11
   }
   kotlinOptions {
-    jvmTarget = '1.8'
+    jvmTarget = "11"
   }
   buildFeatures {
     compose true
@@ -102,7 +103,8 @@ dependencies {
   debugImplementation libs.androidx.ui.tooling
   debugImplementation libs.androidx.ui.test.manifest
   implementation(libs.coil.compose)
-  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1")
+  implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
+  implementation(libs.androidx.lifecycle.viewmodel.compose)
 
   //  implementation 'com.github.EspoirX:StarrySky:v2.6.9'
 
@@ -134,14 +136,21 @@ dependencies {
   implementation libs.androidx.navigation3.runtime
   implementation libs.androidx.navigation3.ui
   implementation libs.material3
-  implementation("ir.mahozad.multiplatform:wavy-slider:2.1.0")
+  implementation(libs.wavy.slider)
   // 播放器
   def media3_version = "1.4.1"
   // For media playback using ExoPlayer
   implementation libs.androidx.media3.exoplayer
   //    implementation 'com.google.android.exoplayer:exoplayer-core:2.X.X'
   implementation libs.androidx.media
-  implementation 'com.github.lincollincol:amplituda:2.3.0'
+  implementation libs.amplituda
   implementation(libs.androidx.dynamicanimation.ktx)
-  // DSP 处理
+  // 网络请求
+  implementation 'com.squareup.okhttp3:okhttp:5.1.0'
+  implementation('com.squareup.okhttp3:logging-interceptor:5.1.0')
+  implementation 'com.squareup.retrofit2:retrofit:3.0.0'
+  implementation 'com.squareup.retrofit2:converter-moshi:3.0.0'
+  implementation 'com.github.skydoves:sandwich-retrofit:2.0.8'
+  implementation libs.moshi.kotlin
+  ksp libs.moshi.kotlin.codegen
 }

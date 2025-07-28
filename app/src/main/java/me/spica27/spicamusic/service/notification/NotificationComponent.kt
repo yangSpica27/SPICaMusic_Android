@@ -22,7 +22,7 @@ class NotificationComponent(private val context: Context, sessionToken: MediaSes
     get() = 0x102030
 
   init {
-    setSmallIcon(R.drawable.ic_app)
+    setSmallIcon(R.mipmap.ic_launcher)
     setCategory(NotificationCompat.CATEGORY_SERVICE)
     setShowWhen(false)
     setSilent(true)

@@ -2,6 +2,7 @@
 accompanistVersion = "0.37.3"
 adaptiveVersion = "1.2.0-alpha09"
 agp = "8.10.1"
+amplitudaVersion = "2.3.0"
 coilCompose = "3.2.0"
 datastorePreferencesVersion = "1.1.7"
 dynamicanimationKtxVersion = "1.1.0"
@@ -26,9 +27,11 @@ material3AdaptiveNav3 = "1.1.0"
 lifecycleViewmodelNav3 = "1.0.0-alpha03"
 kotlinSerialization = "2.2.0"
 kotlinxSerializationCore = "1.9.0"
-
+moshiKotlin = "1.15.2"
+wavySliderVersion = "2.1.0"
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistVersion" }
+amplituda = { module = "com.github.lincollincol:amplituda", version.ref = "amplitudaVersion" }
 androidx-adaptive = { module = "androidx.compose.material3.adaptive:adaptive", version.ref = "adaptiveVersion" }
 androidx-adaptive-layout = { module = "androidx.compose.material3.adaptive:adaptive-layout", version.ref = "adaptiveVersion" }
 androidx-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation", version.ref = "adaptiveVersion" }
@@ -36,6 +39,7 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferencesVersion" }
 androidx-dynamicanimation-ktx = { module = "androidx.dynamicanimation:dynamicanimation-ktx", version.ref = "dynamicanimationKtxVersion" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationComposeVersion" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-media = { module = "androidx.media:media", version.ref = "mediaVersion" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3ExoplayerVersion" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
@@ -66,7 +70,9 @@ androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", vers
 androidx-material3-adaptive-navigation3 = { group = "androidx.compose.material3.adaptive", name = "adaptive-navigation3", version.ref = "material3AdaptiveNav3" }
 androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerializationCore" }
-
+moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
+moshi-kotlin-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", version.ref = "moshiKotlin" }
+wavy-slider = { module = "ir.mahozad.multiplatform:wavy-slider", version.ref = "wavySliderVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

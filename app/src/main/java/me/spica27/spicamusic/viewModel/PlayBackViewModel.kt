@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -23,8 +24,11 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.App
+import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.lyric.LrcParser
+import me.spica27.spicamusic.lyric.LyricItem
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.playback.RepeatMode
 import me.spica27.spicamusic.player.Queue
@@ -38,7 +42,8 @@ import javax.inject.Inject
 class PlayBackViewModel @OptIn(UnstableApi::class)
 @Inject constructor(
   private val songDao: SongDao,
-  private val amplituda: Amplituda
+  private val amplituda: Amplituda,
+  private val lyricDao: LyricDao
 ) : ViewModel(),
   PlaybackStateManager.Listener {
 
@@ -71,6 +76,13 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
   val currentSongFlow: StateFlow<Song?>
     get() = _playingSong
 
+  /**
+   * 当前的歌词
+   */
+  private val _currentLyric = MutableStateFlow(emptyList<LyricItem>())
+
+  val currentLyric: StateFlow<List<LyricItem>>
+    get() = _currentLyric
 
   // 是否正在播放
   private val _isPlaying = MutableStateFlow(false)
@@ -147,9 +159,35 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
       ) {
       // 播放歌曲时，获取歌曲的振幅
       songCollectJob = _playingSong.collect {
-
+        _playingSong.value?.let { song ->
+          Timber.tag("MusicViewModel").e("搜索歌词 songId = ${song.mediaStoreId}")
+          val lyric = lyricDao.getLyricWithSongId(song.mediaStoreId)
+          if (lyric != null) {
+            val p: List<LyricItem> = LrcParser.parse(lyric.lyrics)
+            _currentLyric.value = (p)
+          }else{
+            Timber.tag("MusicViewModel").e("lyric is null")
+            _currentLyric.value = emptyList()
+          }
+        }
       }
     }
+    viewModelScope.launch(Dispatchers.IO) {
+      lyricDao.getLyrics().collectLatest {
+        _playingSong.value?.let { song ->
+
+          val lyric = lyricDao.getLyricWithSongId(song.mediaStoreId)
+          if (lyric != null) {
+            val p: List<LyricItem> = LrcParser.parse(lyric.lyrics)
+            _currentLyric.value = (p)
+          }else{
+            Timber.tag("MusicViewModel").e("lyric is null")
+            _currentLyric.value = emptyList()
+          }
+        }
+      }
+    }
+
   }
 
 

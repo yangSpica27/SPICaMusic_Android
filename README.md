@@ -2,9 +2,10 @@
 
 <p align="center">
 
-<img src="/img/Screenshot_20250621_231150.png" width="20%"/>
-<img src="/img/Screenshot_20250621_231231.png" width="20%"/>
+<img src="/img/Screenshot_20250728_201015.png" width="20%"/>
+<img src="/img/Screenshot_20250728_201202.png" width="20%"/>
 <img src="/img/Screenshot_20250621_231303.png" width="20%"/>
+<img src="/img/Screenshot_20250728_201245.png" width="20%"/>
 <img src="/img/Screenshot_20250621_231331.png" width="20%"/>
 </p>
 

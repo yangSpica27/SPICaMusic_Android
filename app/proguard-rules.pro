@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-keep class com.skydoves.sandwich.** { *;}
+-keep class me.spica27.spicamusic.network.** { *;}
+-keep,allowobfuscation,allowshrinking interface com.skydoves.sandwich.ApiResponse

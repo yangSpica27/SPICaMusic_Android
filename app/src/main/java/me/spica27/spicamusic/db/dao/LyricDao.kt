@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.db.entity.Lyric
 
 
@@ -13,12 +14,14 @@ interface LyricDao {
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   fun insertLyric(lyric: Lyric)
 
-  @Query("DELETE FROM Lyric WHERE songId = :songId")
+  @Query("DELETE FROM Lyric WHERE mediaId = :songId")
   fun deleteLyric(songId: Long)
 
-  @Query("SELECT * FROM Lyric WHERE songId = :songId")
-  fun  getLyricWithSongId(songId: Long): List<Lyric>
+  @Query("SELECT * FROM Lyric WHERE mediaId = :songId LIMIT 1")
+  fun getLyricWithSongId(songId: Long): Lyric?
 
+  @Query("SELECT * FROM Lyric")
+  fun getLyrics(): Flow<List<Lyric>>
 
   @Query("DELETE FROM Lyric")
   fun deleteAll()

@@ -68,6 +68,9 @@ interface SongDao {
   @Query("SELECT * FROM song WHERE `like` == 1")
   fun getAllLikeSong(): Flow<List<Song>>
 
+  @Query("SELECT * FROM song WHERE `like` == 1 LIMIT 10")
+  fun getAllLikeSong10(): Flow<List<Song>>
+
 
   @Query("DELETE FROM song")
   suspend fun deleteAll()
@@ -84,6 +87,18 @@ interface SongDao {
 
   @Delete
   suspend fun delete(song: List<Song>)
+
+
+  @Query(
+    "SELECT * FROM song ORDER BY playTimes DESC"
+  )
+  fun getOftenListenSongs(): Flow<List<Song>>
+
+  @Query(
+    "SELECT * FROM song ORDER BY playTimes DESC LIMIT 10"
+  )
+  fun getOftenListenSong10(): Flow<List<Song>>
+
 
   @Transaction
   suspend fun updateSongs(songs: List<Song>) {

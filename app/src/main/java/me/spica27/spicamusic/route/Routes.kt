@@ -24,9 +24,23 @@ object Routes {
   @Serializable
   data object Player : NavKey
 
+  /**
+   * 搜索
+   */
   @Serializable
   data object SearchAll : NavKey
 
+  /**
+   * 收藏列表
+   */
+  @Serializable
+  data object LikeList : NavKey
+
+  /**
+   * 最近播放列表
+   */
+  @Serializable
+  data object RecentlyList : NavKey
 
   @Serializable
   data object EQ : NavKey
@@ -34,8 +48,13 @@ object Routes {
   @Serializable
   data class PlayListItemDetail(val playlistId: Long, val songId: Long) : NavKey
 
+  /**
+   * 歌词搜索
+   */
   @Serializable
   data class LyricsSearch(val song: Song) : NavKey
+
+
 
 }
 

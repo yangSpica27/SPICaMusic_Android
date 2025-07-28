@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class Lyric(
   @PrimaryKey(autoGenerate = true)
   var id: Long = 0,
-  var songId: Long = 0,
+  var mediaId: Long = 0,
   var lyrics: String = "",
-  var cover: Long = 0
+  var cover: String= ""
 )

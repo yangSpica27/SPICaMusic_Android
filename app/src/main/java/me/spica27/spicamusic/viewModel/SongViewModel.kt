@@ -24,16 +24,19 @@ class SongViewModel
 
   fun getSongFlow(id: Long) = songDao.getSongFlowWithId(id)
 
-  // 所有歌曲
-  val allSongs: StateFlow<List<Song>> = songDao.getAll()
-    .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
   // 所有收藏的歌曲
-  val allLikeSongs: StateFlow<List<Song>> = songDao.getAllLikeSong()
+  val allLikeSong: StateFlow<List<Song>> = songDao.getAllLikeSong()
     .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
   // 所有歌单
   val allPlayList: StateFlow<List<Playlist>> = playlistDao.getAllPlaylist()
+    .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+  val oftenListenSongs10: StateFlow<List<Song>> = songDao.getOftenListenSong10()
+    .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+  val oftenListenSongs: StateFlow<List<Song>> = songDao.getOftenListenSongs()
     .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
 

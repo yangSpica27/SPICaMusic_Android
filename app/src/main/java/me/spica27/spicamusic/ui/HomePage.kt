@@ -2,6 +2,7 @@
 
 package me.spica27.spicamusic.ui
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -15,62 +16,63 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
+import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
+import coil3.compose.rememberAsyncImagePainter
+import coil3.toCoilUri
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.DataStoreUtil
+import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
-import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.PlaylistItem
-import me.spica27.spicamusic.widget.SongControllerPanel
-import me.spica27.spicamusic.widget.SongItemWithCover
+import java.util.*
 
 // 主页
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,158 +83,483 @@ fun HomePage(
   navigator: NavBackStack? = null
 ) {
 
-  val likeSong = songViewModel.allLikeSongs.collectAsState().value
 
-  val allSong = songViewModel.allSongs.collectAsState().value
+  val listState = rememberScrollState()
 
+  val oftenListenSongs = songViewModel.oftenListenSongs10.collectAsStateWithLifecycle()
+
+  val playlist = songViewModel.allPlayList.collectAsStateWithLifecycle().value
+
+
+  val showCreatePlaylistDialog = remember { mutableStateOf(false) }
+
+  if (showCreatePlaylistDialog.value) {
+    Dialog(
+      onDismissRequest = {
+        showCreatePlaylistDialog.value = false
+      }
+    ) {
+      InputDialog(
+        title = "歌单名称",
+        confirmButtonText = "创建",
+        onConfirmClick = {
+          showCreatePlaylistDialog.value = false
+          songViewModel.addPlayList(it)
+        },
+      )
+    }
+  }
 
   Box(
     modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart
   ) {
 
-    val coroutineScope = rememberCoroutineScope()
 
-    val tabs = remember { mutableStateListOf("收藏", "最近常听", "最近添加") }
-
-    val pagerState = rememberPagerState(pageCount = {
-      tabs.size
-    })
-
-    Column {
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .verticalScroll(
+          state = listState
+        ),
+      verticalArrangement = Arrangement.Top
+    ) {
       // 标题
       Spacer(modifier = Modifier.height(10.dp))
       SearchButton(navigator)
       Spacer(modifier = Modifier.height(10.dp))
-      // 分类tab
-      TabBar(
-        selectedTabIndex = pagerState.currentPage, onTabSelected = {
-          coroutineScope.launch {
-            pagerState.animateScrollToPage(it)
-          }
-        }, tabs = listOf("收藏", "歌单", "最近添加")
-      )
-      // 歌曲列表
-      HorizontalPager(
-        state = pagerState,
-        modifier = Modifier.weight(1f),
-        userScrollEnabled = false,
-        beyondViewportPageCount = 3
-      ) {
-        when (it) {
-          0 -> if (likeSong.isEmpty()) {
-            Box(
-              modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-            ) {
-              Text(text = "暂无收藏", modifier = Modifier.offset(y = (-50).dp))
-            }
-          } else {
-            SongList(songs = likeSong)
-          }
-
-          1 -> PLayListItems(
-            navigator = navigator
+      Title(
+        "最近常听",
+        right = {
+          Text(
+            "查看更多",
+            modifier = Modifier.noRippleClickable {
+              ToastUtils.showToast("敬请期待！")
+            },
+            style = MaterialTheme.typography.bodyMedium.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
+              fontWeight = FontWeight.W600,
+              fontSize = 15.sp
+            )
           )
-
-          2 -> SongList(songs = allSong)
+        }
+      )
+      Spacer(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(8.dp)
+      )
+      AnimatedContent(
+        targetState = oftenListenSongs.value,
+        modifier = Modifier.fillMaxWidth(),
+        contentKey = {
+          if (it.isEmpty()) {
+            0
+          } else {
+            1
+          }
+        }
+      ) { songs ->
+        if (songs.isEmpty()) {
+          Box(
+            modifier = Modifier
+              .padding(
+                horizontal = 16.dp,
+              )
+              .width(120.dp)
+              .height(180.dp)
+              .background(
+                MaterialTheme.colorScheme.surfaceContainer,
+                MaterialTheme.shapes.small
+              )
+              .padding(
+                horizontal = 16.dp,
+                vertical = 12.dp
+              )
+              .clip(MaterialTheme.shapes.small),
+            contentAlignment = Alignment.Center
+          ) {
+            Column(
+              modifier = Modifier.fillMaxSize(),
+              horizontalAlignment = Alignment.Start,
+              verticalArrangement = Arrangement.Center
+            ) {
+              Text("空空如也",
+                style = MaterialTheme.typography.titleLarge.copy(
+                  color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                  fontWeight = FontWeight.Black
+                )
+              )
+              Spacer(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .weight(1f)
+                  .height(4.dp)
+              )
+              TextButton(
+                onClick = {
+                  ToastUtils.showToast("待实现,先去设置那边扫描")
+                }
+              ) {
+                Text("扫描本地音乐")
+              }
+            }
+          }
+        } else {
+          OftenListenSongList(songs = songs)
         }
       }
+      Spacer(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(12.dp)
+      )
+      HorizontalDivider(
+        color = MaterialTheme.colorScheme.onSurface.copy(
+          alpha = 0.05f
+        ),
+        thickness = 2.dp
+      )
+      Spacer(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(12.dp)
+      )
+      Title("歌单", {
+        Text(
+          "新建歌单",
+          modifier = Modifier.noRippleClickable {
+            showCreatePlaylistDialog.value = true
+          },
+          style = MaterialTheme.typography.bodyMedium.copy(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
+            fontWeight = FontWeight.W600,
+            fontSize = 15.sp
+          )
+        )
+      })
+      Spacer(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(12.dp)
+      )
+
+      Column {
+
+        PlaylistItem(
+          playlist = Playlist(
+            playlistId = 0,
+            playlistName = "最近常听",
+            cover = null
+          ),
+          onClick = {
+            navigator?.add(
+              Routes.RecentlyList
+            )
+          },
+          showMenu = false
+        )
+
+        PlaylistItem(
+          playlist = Playlist(
+            playlistId = 0,
+            playlistName = "我的收藏",
+            cover = null
+          ),
+          onClick = {
+            navigator?.add(
+              Routes.LikeList
+            )
+          },
+          showMenu = false
+        )
+
+        playlist.forEach {
+          PlaylistItem(
+            playlist = it,
+            onClick = {
+              navigator?.add(
+                Routes.PlaylistDetail(
+                  it.playlistId ?: 0,
+                )
+              )
+            },
+            showMenu = false
+          )
+        }
+      }
+
+      Spacer(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(12.dp)
+      )
+      HorizontalDivider(
+        color = MaterialTheme.colorScheme.onSurface.copy(
+          alpha = 0.05f
+        ),
+        thickness = 2.dp
+      )
+      Spacer(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(12.dp)
+      )
+      Spacer(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(200.dp)
+      )
     }
   }
 }
 
 
-// 歌曲列表
 @Composable
-private fun SongList(modifier: Modifier = Modifier, songs: List<Song> = emptyList()) {
-  val playBackViewModel = hiltViewModel<PlayBackViewModel>()
+private fun InputDialog(
+  title: String,
+  confirmButtonText: String,
+  onConfirmClick: (String) -> Unit = { /* Handle confirm */ },
+) {
+  val keyboardController = LocalSoftwareKeyboardController.current
+  val inputTxt = remember { mutableStateOf("") }
 
-  val isShowDialogState = remember { mutableStateOf(false) }
-
-  val isShowDialog = isShowDialogState.value
-
-  val selectedSongState = remember { mutableStateOf<Song?>(null) }
-
-  val selectedSong = selectedSongState.value
-
-  val menuOffset = remember { mutableStateOf(Offset.Zero) }
-
-  if (isShowDialog && selectedSong != null) {
-    Dialog(onDismissRequest = { isShowDialogState.value = false }) {
-      SongControllerPanel(
-        songId = selectedSong.songId ?: 0,
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .background(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = MaterialTheme.shapes.small
       )
-    }
-  }
-
-
-  LazyColumn(
-    modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.Top
+      .padding(
+        horizontal = 16.dp,
+        vertical = 12.dp
+      ),
   ) {
-    item { Spacer(modifier = Modifier.width(12.dp)) }
-    itemsIndexed(songs, key = { _, song -> song.hashCode() }) { _, song ->
-      SongItemWithCover(
-        modifier = Modifier.animateItem(),
-        song = song,
-        coverSize = 56.dp,
-        onClick = {
-          playBackViewModel.play(song, songs)
-        },
-        onMenuClick = {
-          selectedSongState.value = song
-          menuOffset.value = it
-          isShowDialogState.value = true
-        },
-        onLikeClick = {
-          playBackViewModel.toggleLike(song)
-        },
-        showLike = true,
+    Text(
+      text = title,
+      style = MaterialTheme.typography.bodyLarge.copy(
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.W600,
+        fontSize = 18.sp
       )
-    }
-
-    item { Spacer(modifier = Modifier.height(150.dp)) }
+    )
+    Spacer(
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(12.dp)
+    )
+    TextField(
+      value = inputTxt.value,
+      onValueChange = {
+        inputTxt.value = it
+      },
+      textStyle = MaterialTheme.typography.bodyMedium,
+      placeholder = { Text("请输入...") },
+      singleLine = true,
+      modifier = Modifier.fillMaxWidth(),
+      maxLines = 2,
+      shape = MaterialTheme.shapes.small,
+      colors = TextFieldDefaults.colors().copy(
+        disabledIndicatorColor = Color.Transparent,
+        errorIndicatorColor = Color.Transparent,
+        focusedIndicatorColor = Color.Transparent,
+        unfocusedIndicatorColor = Color.Transparent
+      )
+    )
+    Spacer(
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(30.dp)
+    )
+    Text(
+      text = confirmButtonText,
+      modifier = Modifier
+        .fillMaxWidth()
+        .background(MaterialTheme.colorScheme.onSurface, MaterialTheme.shapes.small)
+        .clip(
+          MaterialTheme.shapes.small
+        )
+        .clickable {
+          keyboardController?.hide()
+          onConfirmClick(inputTxt.value)
+        }
+        .padding(
+          horizontal = 16.dp,
+          vertical = 8.dp
+        ),
+      style = MaterialTheme.typography.bodyMedium.copy(
+        color = MaterialTheme.colorScheme.surface,
+        fontWeight = FontWeight.W500,
+        fontSize = 17.sp
+      ),
+      textAlign = TextAlign.Center
+    )
   }
+
 }
 
 @Composable
-fun convertIntOffsetToDpOffset(intOffset: IntOffset): DpOffset {
-  val density = LocalDensity.current
-  return with(density) {
-    DpOffset(intOffset.x.toDp(), intOffset.y.toDp())
+private fun OftenListenSongList(
+  songs: List<Song> = emptyList(),
+  playBackViewModel: PlayBackViewModel = hiltViewModel()
+) {
+  LazyRow(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(12.dp)
+  ) {
+    item {
+      Spacer(
+        modifier = Modifier
+          .width(4.dp)
+      )
+    }
+    items(songs, key = {
+      it.songId?.toString()?: UUID.randomUUID().toString()
+    }) {
+      val coverPainter = rememberAsyncImagePainter(
+        model = it.getCoverUri().toCoilUri()
+      )
+      val coverState = coverPainter.state.collectAsState().value
+
+      Column(
+        modifier = Modifier
+          .width(150.dp)
+          .animateItem()
+          .clip(
+            MaterialTheme.shapes.small
+          )
+          .clickable {
+            playBackViewModel.play(it, songs)
+          }
+      ) {
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .background(
+              MaterialTheme.colorScheme.surfaceContainer,
+              MaterialTheme.shapes.small
+            )
+            .clip(MaterialTheme.shapes.small)
+
+        ) {
+          if (coverState is AsyncImagePainter.State.Success) {
+            AsyncImage(
+              model = it.getCoverUri().toCoilUri(),
+              contentDescription = null,
+              modifier = Modifier.fillMaxSize(),
+              contentScale = ContentScale.Crop
+            )
+          } else {
+            Text(
+              modifier = Modifier.rotate(45f),
+              text = it.displayName,
+              style = MaterialTheme.typography.headlineLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                fontWeight = FontWeight.W900
+              )
+            )
+          }
+        }
+        Spacer(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+        )
+        Text(
+          text = it.displayName,
+          modifier = Modifier.fillMaxWidth(),
+          maxLines = 1,
+          style = MaterialTheme.typography.titleMedium.copy(
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+          )
+        )
+        Spacer(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(6.dp)
+        )
+        Text(
+          text = it.artist,
+          modifier = Modifier.fillMaxWidth(),
+          maxLines = 1,
+          style = MaterialTheme.typography.titleSmall.copy(
+            fontWeight = FontWeight.Normal,
+            color = MaterialTheme.colorScheme.onSurface.copy(
+              alpha = 0.6f
+            )
+          )
+        )
+      }
+    }
+    item {
+      Spacer(
+        modifier = Modifier
+          .width(16.dp)
+      )
+    }
+  }
+}
+
+
+@Composable
+private fun Title(
+  title: String,
+  right: @Composable () -> Unit = {},
+) {
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(horizontal = 16.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Text(
+      text = title,
+      style = MaterialTheme.typography.bodyLarge.copy(
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.W600,
+        fontSize = 20.sp
+      )
+    )
+    Spacer(modifier = Modifier.weight(1f))
+    right()
   }
 }
 
 
 @Composable
 private fun SearchButton(navigator: NavBackStack? = null) {
-  Row(
+  Box(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(horizontal = 16.dp)
-      .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium)
-      .clip(MaterialTheme.shapes.medium)
-      .clickable {
-        navigator?.add(Routes.SearchAll)
-      }
-      .padding(horizontal = 16.dp, vertical = 8.dp),
-    verticalAlignment = Alignment.CenterVertically,
+      .padding(horizontal = 16.dp),
   ) {
-    Box(
-      modifier = Modifier.padding(8.dp),
+
+    Text(
+      text = "主页",
+      style = MaterialTheme.typography.bodyMedium.copy(
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.Black,
+        fontSize = 22.sp
+      ),
+      modifier = Modifier
+        .align(Alignment.Center)
+    )
+
+    IconButton(
+      onClick = {
+        navigator?.add(Routes.SearchAll)
+      },
+      modifier = Modifier.align(Alignment.CenterEnd)
     ) {
       Icon(
         imageVector = Icons.Default.Search,
         contentDescription = "搜索",
-        tint = MaterialTheme.colorScheme.onPrimaryContainer
+        tint = MaterialTheme.colorScheme.onSurface
       )
     }
-    Text(
-      modifier = Modifier.weight(1f),
-      text = "从本地乐库中进行搜索",
-      style = MaterialTheme.typography.bodyLarge.copy(
-        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.5f),
-        fontWeight = FontWeight.W500,
-      )
-    )
+
   }
 }
 
@@ -378,195 +705,10 @@ private fun TabBar(
           )
         }
       }
-
     }
   }
-
-
 }
 
-
-@Composable
-private fun PLayListItems(
-  songViewModel: SongViewModel = hiltViewModel(),
-  navigator: NavBackStack? = null,
-  playlistViewModel: PlaylistViewModel = hiltViewModel()
-) {
-
-  val showAddPlaylistDialogState = rememberSaveable { mutableStateOf(false) }
-
-  val showMenu = rememberSaveable { mutableStateOf(false) }
-
-  val selectedPlayListId = rememberSaveable { mutableLongStateOf(-1L) }
-
-  val playlists = songViewModel.allPlayList.collectAsState()
-
-  val showRenameDialog = rememberSaveable { mutableStateOf(false) }
-
-
-  if (showRenameDialog.value) {
-    val playlistNameState = remember { mutableStateOf("") }
-    AlertDialog(onDismissRequest = {
-      showRenameDialog.value = false
-    }, title = { Text("重命名歌单") }, text = {
-      TextField(
-        value = playlistNameState.value,
-        onValueChange = { playlistNameState.value = it },
-        placeholder = { Text("请输入新的歌单名称") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth()
-      )
-    }, confirmButton = {
-      IconButton(onClick = {
-        playlistViewModel.renamePlaylist(selectedPlayListId.longValue, playlistNameState.value)
-        showRenameDialog.value = false
-      }) {
-        Text(
-          "确定",
-          color = MaterialTheme.colorScheme.primary,
-          style = MaterialTheme.typography.bodyMedium
-        )
-      }
-    }, dismissButton = {
-      IconButton(onClick = { showRenameDialog.value = false }) {
-        Text(
-          "取消",
-          color = MaterialTheme.colorScheme.onSurface,
-          style = MaterialTheme.typography.bodyMedium
-        )
-      }
-    })
-  }
-
-
-  // 歌单操作菜单
-  if (showMenu.value && selectedPlayListId.longValue != -1L) {
-    Dialog(
-      onDismissRequest = {
-        showMenu.value = false
-      },
-    ) {
-      Column(
-        modifier = Modifier
-          .clip(MaterialTheme.shapes.medium)
-          .background(MaterialTheme.colorScheme.surfaceContainer)
-      ) {
-        ListItem(
-          modifier = Modifier.clickable {
-            showMenu.value = false
-            showRenameDialog.value = true
-          },
-          headlineContent = { Text("重命名") },
-        )
-        ListItem(
-          modifier = Modifier.clickable {
-            playlistViewModel.deletePlaylist(selectedPlayListId.longValue)
-            showMenu.value = false
-          },
-          headlineContent = { Text("删除") },
-        )
-      }
-    }
-
-  }
-
-  if (showAddPlaylistDialogState.value) {
-    val playlistNameState = remember { mutableStateOf("") }
-    AlertDialog(
-      onDismissRequest = { showAddPlaylistDialogState.value = false },
-      title = { Text("创建歌单") },
-      text = {
-        TextField(
-          value = playlistNameState.value,
-          onValueChange = { playlistNameState.value = it },
-          placeholder = { Text("请输入歌单名称") },
-          singleLine = true,
-          modifier = Modifier.fillMaxWidth()
-        )
-      },
-      confirmButton = {
-        IconButton(onClick = {
-          songViewModel.addPlayList(playlistNameState.value)
-          showAddPlaylistDialogState.value = false
-        }) {
-          Text(
-            "确定",
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.bodyMedium
-          )
-        }
-      },
-      dismissButton = {
-        IconButton(onClick = { showAddPlaylistDialogState.value = false }) {
-          Text(
-            "取消",
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.bodyMedium
-          )
-        }
-      })
-  }
-
-  LazyColumn(
-    modifier = Modifier.fillMaxSize()
-  ) { // 歌单列表
-    item {
-      AddPlayListItem(onClick = {
-        showAddPlaylistDialogState.value = true
-      })
-    }
-    itemsIndexed(
-      playlists.value,
-      key = { _, item -> item.playlistId ?: 0 }) { _, playList ->
-      PlaylistItem(
-        modifier = Modifier.animateItem(),
-        playlist = playList,
-        showMenu = true,
-        onClickMenu = {
-          selectedPlayListId.longValue = playList.playlistId ?: -1
-          showMenu.value = true
-        },
-        onClick = {
-          navigator?.add(Routes.PlaylistDetail(playlistId = playList.playlistId ?: -1))
-        })
-    }
-  }
-
-
-}
-
-@Composable
-private fun AddPlayListItem(onClick: () -> Unit = {}) {
-  Row(
-    modifier = Modifier
-      .clickable {
-        onClick()
-      }
-      .padding(vertical = 6.dp, horizontal = 16.dp)
-      .fillMaxWidth(),
-    verticalAlignment = Alignment.CenterVertically) {
-    Box(
-      Modifier
-        .width(50.dp)
-        .height(50.dp)
-        .background(
-          MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium
-        ), contentAlignment = Alignment.Center
-    ) {
-      Icon(
-        imageVector = Icons.Default.Add,
-        contentDescription = "添加",
-        tint = MaterialTheme.colorScheme.onSurface
-      )
-    }
-    Spacer(modifier = Modifier.width(16.dp))
-    Text(
-      text = "创建歌单", style = MaterialTheme.typography.bodyMedium.copy(
-        color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.W600
-      )
-    )
-  }
-}
 
 
 

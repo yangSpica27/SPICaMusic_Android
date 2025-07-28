@@ -53,6 +53,7 @@ import me.spica27.spicamusic.dsp.NyquistBand
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.widget.EqSettingView
+import me.spica27.spicamusic.widget.SimpleTopBar
 import kotlin.math.roundToInt
 
 
@@ -72,13 +73,12 @@ fun EqScreen(
 
   Scaffold(
     topBar = {
-      TopAppBar(navigationIcon = {
-        IconButton(onClick = { navigator?.removeLastOrNull() }) {
-          Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-        }
-      }, title = {
-        Text(text = "音效")
-      })
+      SimpleTopBar(
+        onBack = {
+          navigator?.removeLastOrNull()
+        },
+        title = "音效"
+      )
     }) { it ->
     Box(
       modifier = Modifier

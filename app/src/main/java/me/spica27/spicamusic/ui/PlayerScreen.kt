@@ -62,6 +62,8 @@ import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.widget.FadingEdges
+import me.spica27.spicamusic.widget.fadingEdges
 
 
 @kotlin.OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -118,11 +120,11 @@ fun PlayerScreen(
           }
         )
       },
-    ) {
+    ) { paddingValues ->
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .padding(it)
+          .padding(paddingValues)
       ) {
         if (nowPlayingSongs.isEmpty()) {
           // 播放列表为空
@@ -228,8 +230,7 @@ private fun Cover(
 
 
   val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
-  val backgroundColor = MaterialTheme.colorScheme.surface
-  val onSurfaceColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+
 
   val infiniteTransition = rememberInfiniteTransition(label = "infinite")
   val rotateState = infiniteTransition.animateFloat(
@@ -243,20 +244,6 @@ private fun Cover(
     contentAlignment = Alignment.Center, modifier = modifier
   ) {
 
-
-//    AndroidView(
-//      factory = { context ->
-//        VisualizerSurfaceView(context).apply {
-//          setBgColor(backgroundColor.toArgb())
-//          setThemeColor(onSurfaceColor.toArgb())
-//        }
-//      }, update = { view ->
-//        view.setBgColor(backgroundColor.toArgb())
-//        view.setThemeColor(onSurfaceColor.toArgb())
-//      }, modifier = Modifier
-//        .fillMaxWidth()
-//        .aspectRatio(1f)
-//    )
     Box(
       modifier = Modifier
         .fillMaxWidth()
