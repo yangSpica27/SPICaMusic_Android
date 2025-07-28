@@ -3,9 +3,6 @@
 package me.spica27.spicamusic.ui
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,30 +28,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
@@ -62,15 +47,14 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.toCoilUri
-import kotlinx.coroutines.delay
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
-import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
+import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlaylistItem
 import java.util.*
 
@@ -94,20 +78,16 @@ fun HomePage(
   val showCreatePlaylistDialog = remember { mutableStateOf(false) }
 
   if (showCreatePlaylistDialog.value) {
-    Dialog(
+    InputTextDialog(
       onDismissRequest = {
         showCreatePlaylistDialog.value = false
+      },
+      title = "新建歌单",
+      onConfirm = {
+        songViewModel.addPlayList(it)
+        showCreatePlaylistDialog.value = false
       }
-    ) {
-      InputDialog(
-        title = "歌单名称",
-        confirmButtonText = "创建",
-        onConfirmClick = {
-          showCreatePlaylistDialog.value = false
-          songViewModel.addPlayList(it)
-        },
-      )
-    }
+    )
   }
 
   Box(
@@ -183,7 +163,8 @@ fun HomePage(
               horizontalAlignment = Alignment.Start,
               verticalArrangement = Arrangement.Center
             ) {
-              Text("空空如也",
+              Text(
+                "空空如也",
                 style = MaterialTheme.typography.titleLarge.copy(
                   color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                   fontWeight = FontWeight.Black
@@ -315,90 +296,6 @@ fun HomePage(
 
 
 @Composable
-private fun InputDialog(
-  title: String,
-  confirmButtonText: String,
-  onConfirmClick: (String) -> Unit = { /* Handle confirm */ },
-) {
-  val keyboardController = LocalSoftwareKeyboardController.current
-  val inputTxt = remember { mutableStateOf("") }
-
-  Column(
-    modifier = Modifier
-      .fillMaxWidth()
-      .background(
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = MaterialTheme.shapes.small
-      )
-      .padding(
-        horizontal = 16.dp,
-        vertical = 12.dp
-      ),
-  ) {
-    Text(
-      text = title,
-      style = MaterialTheme.typography.bodyLarge.copy(
-        color = MaterialTheme.colorScheme.onSurface,
-        fontWeight = FontWeight.W600,
-        fontSize = 18.sp
-      )
-    )
-    Spacer(
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(12.dp)
-    )
-    TextField(
-      value = inputTxt.value,
-      onValueChange = {
-        inputTxt.value = it
-      },
-      textStyle = MaterialTheme.typography.bodyMedium,
-      placeholder = { Text("请输入...") },
-      singleLine = true,
-      modifier = Modifier.fillMaxWidth(),
-      maxLines = 2,
-      shape = MaterialTheme.shapes.small,
-      colors = TextFieldDefaults.colors().copy(
-        disabledIndicatorColor = Color.Transparent,
-        errorIndicatorColor = Color.Transparent,
-        focusedIndicatorColor = Color.Transparent,
-        unfocusedIndicatorColor = Color.Transparent
-      )
-    )
-    Spacer(
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(30.dp)
-    )
-    Text(
-      text = confirmButtonText,
-      modifier = Modifier
-        .fillMaxWidth()
-        .background(MaterialTheme.colorScheme.onSurface, MaterialTheme.shapes.small)
-        .clip(
-          MaterialTheme.shapes.small
-        )
-        .clickable {
-          keyboardController?.hide()
-          onConfirmClick(inputTxt.value)
-        }
-        .padding(
-          horizontal = 16.dp,
-          vertical = 8.dp
-        ),
-      style = MaterialTheme.typography.bodyMedium.copy(
-        color = MaterialTheme.colorScheme.surface,
-        fontWeight = FontWeight.W500,
-        fontSize = 17.sp
-      ),
-      textAlign = TextAlign.Center
-    )
-  }
-
-}
-
-@Composable
 private fun OftenListenSongList(
   songs: List<Song> = emptyList(),
   playBackViewModel: PlayBackViewModel = hiltViewModel()
@@ -414,7 +311,7 @@ private fun OftenListenSongList(
       )
     }
     items(songs, key = {
-      it.songId?.toString()?: UUID.randomUUID().toString()
+      it.songId?.toString() ?: UUID.randomUUID().toString()
     }) {
       val coverPainter = rememberAsyncImagePainter(
         model = it.getCoverUri().toCoilUri()
@@ -560,152 +457,6 @@ private fun SearchButton(navigator: NavBackStack? = null) {
       )
     }
 
-  }
-}
-
-
-@Composable
-private fun TabBar(
-  selectedTabIndex: Int,
-  onTabSelected: (Int) -> Unit,
-  tabs: List<String>,
-) {
-
-  val paddingFlag = remember { mutableFloatStateOf(0f) }
-
-  val pauseColor = MaterialTheme.colorScheme.surfaceContainer
-
-  val playColor = MaterialTheme.colorScheme.surfaceContainerHigh
-
-  val radius = remember { mutableFloatStateOf(100000f) }
-
-  val isNight = DataStoreUtil().getForceDarkTheme.collectAsState(false)
-
-  val isFirst = remember { mutableStateOf(true) }
-
-  val currentPadding = animateFloatAsState(
-    paddingFlag.floatValue,
-    tween(475)
-  )
-
-  val indicatorColor = remember {
-    mutableStateOf(pauseColor)
-  }
-
-  val currentColor = animateColorAsState(
-    indicatorColor.value,
-    tween(575)
-  )
-
-  val indicationIndex = animateFloatAsState(
-    selectedTabIndex * 1f,
-    tween(425),
-    label = ""
-  )
-
-
-  LaunchedEffect(selectedTabIndex, isNight.value) {
-    if (isFirst.value) {
-      isFirst.value = false
-      return@LaunchedEffect
-    }
-    paddingFlag.floatValue = 1f
-    indicatorColor.value = playColor
-    delay(450)
-    paddingFlag.floatValue = 0f
-    indicatorColor.value = pauseColor
-  }
-
-  Box(
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(60.dp)
-  ) {
-
-
-    Row(
-      modifier = Modifier
-        .fillMaxSize()
-        .align(Alignment.Center)
-        .drawWithCache {
-
-          val left = 16.dp.toPx()
-
-          val right = size.width - 16.dp.toPx()
-
-          val itemWidth = size.width / tabs.size
-
-          val itemHeight = size.height
-
-          val centerX = itemWidth * indicationIndex.value + itemWidth / 2f
-
-          val paddingWidth = 16.dp.toPx()
-
-          val paddingHeight = 8.dp.toPx()
-
-          val topY = paddingHeight - paddingHeight * currentPadding.value
-
-          val bottomY = size.height - paddingHeight + paddingHeight * currentPadding.value
-
-          val leftX = left + (
-              (centerX - itemWidth / 2f + paddingWidth) -
-                  left
-              ) * currentPadding.value
-
-          val rightX = right - (
-              right - (
-                  centerX - paddingWidth + itemWidth / 2f
-                  )
-              ) * currentPadding.value
-
-          onDrawBehind {
-            drawRoundRect(
-              color = currentColor.value,
-              topLeft = Offset(
-                leftX, topY
-              ),
-              size = Size(
-                width = rightX - leftX,
-                height = bottomY - topY
-              ),
-              cornerRadius = CornerRadius(radius.floatValue)
-            )
-          }
-        },
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-
-      tabs.forEachIndexed { index, _ ->
-        val isSelected = index == selectedTabIndex
-        Box(
-          modifier = Modifier
-            .weight(1f)
-            .fillMaxSize()
-            .noRippleClickable {
-              onTabSelected(index)
-            },
-          contentAlignment = Alignment.Center
-        ) {
-          Text(
-            text = tabs[index],
-            style = MaterialTheme.typography.bodyMedium.copy(
-              color = if (isSelected) {
-                MaterialTheme.colorScheme.onBackground.copy(0.9f)
-              } else {
-                MaterialTheme.colorScheme.onBackground.copy(0.5f)
-              },
-              fontSize = 18.sp,
-              fontWeight = if (isSelected) {
-                FontWeight.W600
-              } else {
-                FontWeight.W500
-              }
-            ),
-          )
-        }
-      }
-    }
   }
 }
 

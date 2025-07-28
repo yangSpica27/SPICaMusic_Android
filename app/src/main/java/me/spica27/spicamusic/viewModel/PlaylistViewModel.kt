@@ -40,7 +40,7 @@ class PlaylistViewModel @Inject constructor(
   }
 
 
-  fun playlistFlow(playlistId: Long): SharedFlow<Playlist> {
+  fun playlistFlow(playlistId: Long): SharedFlow<Playlist?> {
     return playlistDao.getPlayListByIdFlow(playlistId)
       .flowOn(Dispatchers.IO)
       .shareIn(viewModelScope, SharingStarted.Lazily, 1)
@@ -97,7 +97,8 @@ class PlaylistViewModel @Inject constructor(
     }
   }
 
-  fun renamePlaylist(id: Long, newName: String) {
+  fun renamePlaylist(id: Long?, newName: String) {
+    if (id == null) return
     viewModelScope.launch(Dispatchers.IO) {
       playlistDao.renamePlaylist(id, newName)
     }

@@ -1,40 +1,31 @@
 package me.spica27.spicamusic.ui
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Image
+
+import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.Divider
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.AddCircle
-import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,42 +33,35 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
-import coil3.compose.AsyncImagePainter
-import coil3.compose.rememberAsyncImagePainter
-import coil3.toCoilUri
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.R
+import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.route.Routes
-import me.spica27.spicamusic.utils.formatDurationSecs
-import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
+import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.SongItemWithCover
 
 /// 歌单详情页面
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistDetailScreen(
@@ -87,179 +71,321 @@ fun PlaylistDetailScreen(
 ) {
 
 
-  val playlistState = playlistViewModel.playlistFlow(playlistId).collectAsStateWithLifecycle(null)
+  val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-  val listState = playlistViewModel.songInfoWithSongsFlow(playlistId)
-    .collectAsStateWithLifecycle(null).value?.songs
 
-  val menuSong = remember { mutableStateOf<Song?>(null) }
+  val songs =
+    playlistViewModel.songsFlow(playlistId).collectAsStateWithLifecycle(emptyList()).value
 
-  val showDeleteSureDialog = rememberSaveable { mutableStateOf(false) }
-
-  val showRenameDialog = rememberSaveable { mutableStateOf(false) }
-
-  val showMenuDialog = rememberSaveable { mutableStateOf(false) }
+  val playlist = playlistViewModel.playlistFlow(playlistId).collectAsStateWithLifecycle(null).value
 
   val coroutineScope = rememberCoroutineScope()
 
-  if (showDeleteSureDialog.value) {
-    // 删除确认对话框
-    DeleteSureDialog(
-      playlistId,
+  Scaffold(
+    modifier = Modifier
+      .nestedScroll(scrollBehavior.nestedScrollConnection)
+      .fillMaxSize()
+      .background(MaterialTheme.colorScheme.surfaceContainer),
+    topBar = {
+      TopAppBar(
+        title = {
+          Header(
+            playlist = playlist ?: return@TopAppBar,
+            navigator = navigator
+          )
+        },
+        expandedHeight = 170.dp,
+        scrollBehavior = scrollBehavior,
+        colors = TopAppBarDefaults.topAppBarColors(
+          containerColor = MaterialTheme.colorScheme.surfaceContainer,
+          scrolledContainerColor = MaterialTheme.colorScheme.background
+        )
+      )
+    }
+  ) { paddingValues ->
+    if (songs.isEmpty()) {
+      Column(
+        modifier = Modifier
+          .fillMaxSize()
+          .padding(paddingValues),
+        horizontalAlignment = Alignment.CenterHorizontally,
+      ) {
+        Spacer(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp)
+        )
+        AsyncImage(
+          modifier = Modifier.height(130.dp),
+          model = R.drawable.load_error,
+          contentDescription = null
+        )
+        Spacer(
+          modifier = Modifier.height(10.dp)
+        )
+        Text(
+          "空空如也",
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+      }
+    } else {
+      Column(
+        modifier = Modifier
+          .padding(paddingValues)
+          .fillMaxSize()
+          .background(
+            color = MaterialTheme.colorScheme.background,
+            shape = RoundedCornerShape(
+              topStart = 12.dp,
+              topEnd = 12.dp
+            )
+          ),
+      ) {
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+              coroutineScope.launch {
+                if (songs.isNotEmpty()) {
+                  PlaybackStateManager.getInstance()
+                    .playAsync(
+                      songs.first(),
+                      songs
+                    )
+                }
+              }
+            }
+            .padding(
+              horizontal = 16.dp,
+              vertical = 12.dp
+            )
+        ) {
+          Box(
+            modifier = Modifier
+              .size(60.dp)
+              .background(
+                MaterialTheme.colorScheme.surfaceContainer,
+                MaterialTheme.shapes.small
+              ),
+            contentAlignment = Alignment.Center
+          ) {
+            AsyncImage(
+              model = R.drawable.ic_play,
+              contentDescription = "",
+              modifier = Modifier.width(48.dp),
+              colorFilter = ColorFilter.tint(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+              )
+            )
+          }
+          Column(
+            modifier = Modifier
+              .weight(1f)
+              .height(60.dp)
+              .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.Center
+          ) {
+            Text("播放全部", style = MaterialTheme.typography.bodyLarge)
+            Text(
+              "已经播放xx次数", style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+              )
+            )
+          }
+
+          IconButton(
+            onClick = {
+
+            }
+          ) {
+            Icon(
+              imageVector = Icons.AutoMirrored.Default.List,
+              contentDescription = null
+            )
+          }
+
+        }
+        LazyColumn(
+          modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth(),
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          items(songs, key = {
+            it.songId ?: -1
+          }) {
+            SongItemWithCover(
+              modifier = Modifier
+                .fillMaxWidth()
+                .animateItem(),
+              song = it,
+              onClick = {
+                coroutineScope.launch {
+                  PlaybackStateManager.getInstance().playAsync(it, songs)
+                }
+              },
+              coverSize = 66.dp
+            )
+          }
+        }
+      }
+    }
+  }
+}
+
+
+@Composable
+fun Header(
+  modifier: Modifier = Modifier,
+  playlist: Playlist,
+  playlistViewModel: PlaylistViewModel = hiltViewModel(),
+  navigator: NavBackStack? = null,
+) {
+
+  val showRenameDialog = remember { mutableStateOf(false) }
+
+  if (showRenameDialog.value) {
+    InputTextDialog(
       onDismissRequest = {
-        showDeleteSureDialog.value = false
-      }, playlistViewModel = playlistViewModel, navigator = navigator
+        showRenameDialog.value = false
+      },
+      title = "重命名歌单",
+      onConfirm = {
+        playlistViewModel.renamePlaylist(playlist.playlistId, it)
+        showRenameDialog.value = false
+      },
+      defaultText = playlist.playlistName,
+      placeholder = "请输入歌单名称"
     )
   }
 
-  if (showRenameDialog.value) {
-    // 重命名对话框
-    val playlistNameState = remember { mutableStateOf("") }
-    AlertDialog(onDismissRequest = {
-      showRenameDialog.value = false
-    }, title = { Text("重命名歌单") }, text = {
-      TextField(
-        value = playlistNameState.value,
-        onValueChange = { playlistNameState.value = it },
-        placeholder = { Text("请输入新的歌单名称") },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth()
-      )
-    }, confirmButton = {
-      IconButton(onClick = {
-        playlistViewModel.renameCurrentPlaylist(playlistId, playlistNameState.value)
-        showRenameDialog.value = false
-      }) {
-        Text(
-          "确定",
-          color = MaterialTheme.colorScheme.primary,
-          style = MaterialTheme.typography.bodyMedium
-        )
-      }
-    }, dismissButton = {
-      IconButton(onClick = { showRenameDialog.value = false }) {
-        Text(
-          "取消",
-          color = MaterialTheme.colorScheme.onSurface,
-          style = MaterialTheme.typography.bodyMedium
-        )
-      }
-    })
-  }
+  val showDeleteDialog = remember { mutableStateOf(false) }
 
-
-  if (showMenuDialog.value) {
-    Dialog(
+  if (showDeleteDialog.value) {
+    DeleteSureDialog(
+      playlistId = playlist.playlistId ?: -1,
       onDismissRequest = {
-        showMenuDialog.value = false
-      }
-    ) {
-      SongMenuPanel(
-        playlistId = playlistId,
-        song = menuSong.value!!,
-        list = listState ?: emptyList(),
-        onDismissRequest = {
-          showMenuDialog.value = false
-        }
-      )
-    }
+        showDeleteDialog.value = false
+      },
+      navigator = navigator
+    )
   }
 
-
-  Scaffold(
-    topBar = {
-      // 顶部栏
-      TopAppBar(
-        navigationIcon = {
-          IconButton(
-            onClick = {
-              navigator?.removeLastOrNull()
-            }
-          ) {
-            Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
-          }
-        },
-        title = {
-          // 标题
-          playlistState.value?.let { Text(it.playlistName) }
-        }, actions = {
-          // 右侧操作按钮
-
-          // 删除歌单
-          IconButton(onClick = {
-            // 删除歌单
-            showDeleteSureDialog.value = true
-          }) {
-            Icon(
-              Icons.Default.Delete, contentDescription = "删除"
-            )
-          }
-
-          // 重命名歌单
-          IconButton(onClick = {
-            showRenameDialog.value = true
-          }) {
-            Icon(
-              Icons.Default.Edit, contentDescription = "重命名"
-            )
-          }
-
-
-          // 新增歌曲
-          IconButton(onClick = {
-            navigator?.add(Routes.AddSong(playlistId))
-          }) {
-            Icon(
-              Icons.Outlined.AddCircle, contentDescription = "新增"
-            )
-          }
-        })
-    },
-    content = { paddingValues ->
-
-      Box(modifier = Modifier.padding(paddingValues)) {
-        // 歌单详情
-        Column(
-          modifier = Modifier.fillMaxSize()
-        ) { // 歌单详情
-          Toolbar(
-            playlistViewModel = playlistViewModel,
-            modifier = Modifier.fillMaxWidth(),
-            playlistId = playlistId
+  Column(
+    modifier = modifier.fillMaxSize()
+  ) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .weight(1f),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Box(
+        modifier = Modifier
+          .width(80.dp)
+          .height(80.dp)
+          .border(
+            width = 2.dp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+            shape = MaterialTheme.shapes.small
           )
-          // 歌单列表
-          Box(
-            modifier = Modifier
-              .weight(1f)
-              .fillMaxWidth()
-          ) {
-            PlaylistDetailList(
-              playlistId,
-              navigator = navigator,
-              onMenuClick = {
-                menuSong.value = it
-                showMenuDialog.value = true
-              }
+          .background(
+            MaterialTheme.colorScheme.surfaceContainer,
+            MaterialTheme.shapes.small
+          ),
+      ) {
+        Text(
+          modifier = Modifier.align(Alignment.Center),
+          text = "歌单封面",
+          style = MaterialTheme.typography.titleMedium
+        )
+      }
+      Spacer(
+        modifier = Modifier
+          .width(12.dp)
+      )
+      Text(
+        text = playlist.playlistName,
+        style = MaterialTheme.typography.titleLarge.copy(
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+          fontWeight = FontWeight.ExtraBold
+        ),
+        modifier = Modifier
+      )
+
+    }
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(),
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      ElevatedButton(
+        shape = MaterialTheme.shapes.small,
+        onClick = {
+          showRenameDialog.value = true
+        },
+        colors = ButtonDefaults.elevatedButtonColors().copy(
+          containerColor = MaterialTheme.colorScheme.secondaryContainer,
+          contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+      ) {
+        Text("重命名歌单")
+      }
+      ElevatedButton(
+        shape = MaterialTheme.shapes.small,
+        onClick = {
+          navigator?.add(
+            Routes.AddSong(
+              playlistId = playlist.playlistId ?: -1
             )
-          }
-        }
+          )
+        },
+        colors = ButtonDefaults.elevatedButtonColors().copy(
+          containerColor = MaterialTheme.colorScheme.secondaryContainer,
+          contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+      ) {
+        Text("新增")
+      }
+      ElevatedButton(
+        shape = MaterialTheme.shapes.small,
+        onClick = {
+          showDeleteDialog.value = true
+        },
+        colors = ButtonDefaults.elevatedButtonColors().copy(
+          containerColor = MaterialTheme.colorScheme.secondaryContainer,
+          contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+      ) {
+        Text("删除")
       }
     }
-  )
+    Spacer(
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(12.dp)
+    )
+  }
 }
+
 
 /**
  * 确认删除歌单的弹框
  */
 @Composable
-fun DeleteSureDialog(
+private fun DeleteSureDialog(
   playlistId: Long,
   onDismissRequest: () -> Unit = { },
   playlistViewModel: PlaylistViewModel = hiltViewModel(),
   navigator: NavBackStack? = null
 ) {
   val coroutineScope = rememberCoroutineScope()
-  AlertDialog(onDismissRequest = { onDismissRequest() }, title = {
+  AlertDialog(
+    shape = MaterialTheme.shapes.small,
+    onDismissRequest = { onDismissRequest() }, title = {
     Text("删除歌单")
   }, text = {
     Text("确定要删除这个歌单吗?")
@@ -284,431 +410,18 @@ fun DeleteSureDialog(
   })
 }
 
-@Composable
-private fun PlaylistDetailList(
-  playlistId: Long,
-  playlistViewModel: PlaylistViewModel = hiltViewModel(),
-  navigator: NavBackStack? = null,
-  onMenuClick: (Song) -> Unit = {}
-) {
 
-
-  val list =
-    playlistViewModel.songInfoWithSongsFlow(playlistId).map { it?.songs }
-      .collectAsState(emptyList()).value
-
-  val isSelectedMode = playlistViewModel.isSelectMode.collectAsState(false).value
-
-  BackHandler(enabled = isSelectedMode) {
-    playlistViewModel.toggleSelectMode()
-  }
-
-  val selectedModePlaylist = combine(
-    playlistViewModel.songsFlow(playlistId), playlistViewModel.selectedSongs
-  ) { songs, selectedSongs ->
-    songs.map {
-      Pair(it, selectedSongs.contains(it.songId))
-    }
-  }.collectAsState(emptyList())
-
-
-  if (list == null) {
-    // 加载中
-    Box(
-      modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-    ) {
-      CircularProgressIndicator()
-    }
-  } else if (list.isEmpty()) {
-    // 空内容
-    EmptyContent(
-      modifier = Modifier.fillMaxSize(), navigator = navigator, playlistId
-    )
-  } else {
-    // 歌单列表
-    Box(modifier = Modifier.fillMaxSize()) {
-      if (isSelectedMode) {
-        SelectedList(playlistViewModel = playlistViewModel, songs = selectedModePlaylist)
-      } else {
-        NormalList(songList = list, onMenuClick = {
-          onMenuClick.invoke(it)
-        })
-      }
-    }
-  }
-}
-
-@Composable
-private fun SelectedList(
-  playlistViewModel: PlaylistViewModel = hiltViewModel(),
-  songs: State<List<Pair<Song, Boolean>>>
-) {
-  LazyColumn(modifier = Modifier.fillMaxSize()) {
-    itemsIndexed(songs.value, key = { _, item ->
-      item.first.songId ?: -1
-    }) { _, item ->
-      SelectedSongItem(item.first, item.second, onClick = {
-        playlistViewModel.toggleSelectSong(item.first.songId)
-      })
-    }
-  }
-}
-
-@Composable
-private fun SelectedSongItem(
-  song: Song,
-  selected: Boolean,
-  onClick: () -> Unit = {}
-) {
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(vertical = 6.dp, horizontal = 16.dp)
-      .background(
-        MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium
-      )
-      .clickable(
-        indication = null,
-        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-      ) {
-        onClick()
-      }
-      .padding(vertical = 12.dp, horizontal = 16.dp),
-    verticalAlignment = Alignment.CenterVertically) {
-
-    AnimatedVisibility(
-      visible = selected,
-    ) {
-      Box(
-        modifier = Modifier
-          .padding(end = 12.dp)
-          .size(24.dp)
-          .background(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small)
-          .padding(4.dp)
-      ) {
-        // 选中图标
-        Icon(
-          Icons.Default.Check,
-          contentDescription = "Selected",
-          tint = MaterialTheme.colorScheme.onSurface
-        )
-      }
-    }
-
-    Column(
-      modifier = Modifier.weight(1f)
-    ) {
-      Text(
-        text = song.displayName, style = MaterialTheme.typography.titleMedium.copy(
-          fontWeight = FontWeight.W600,
-          color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-        ), maxLines = 1
-      )
-      Text(
-        text = song.artist, style = MaterialTheme.typography.bodyMedium.copy(
-          color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-        ), maxLines = 1
-      )
-    }
-  }
+@OptIn(ExperimentalMaterial3Api::class)
+suspend fun TopAppBarScrollBehavior.expandAnimating() {
+  AnimationState(
+    initialValue = this.state.heightOffset
+  )
+    .animateTo(
+      targetValue = 0f,
+      animationSpec = tween(durationMillis = 500)
+    ) { this@expandAnimating.state.heightOffset = value }
 }
 
 
-/// 歌单列表
-@androidx.annotation.OptIn(UnstableApi::class)
-@Composable
-private fun NormalList(
-  modifier: Modifier = Modifier,
-  songList: List<Song>,
-  onMenuClick: (Song) -> Unit = {}
-) {
 
-  val coroutineScope = rememberCoroutineScope()
-
-  LazyColumn(
-    modifier = modifier.fillMaxSize()
-  ) {
-    itemsIndexed(songList, key = { _, song ->
-      song.songId ?: -1
-    }) { _, song ->
-      SongItemWithCover(
-        modifier = Modifier.animateItem(),
-        showMenu = true,
-        showPlus = false,
-        song = song,
-        onClick = {
-          coroutineScope.launch {
-            PlaybackStateManager.getInstance().playAsync(song, songList)
-          }
-        },
-        onMenuClick = {
-          onMenuClick(song)
-        }
-      )
-    }
-  }
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-private fun EmptyContent(
-  modifier: Modifier = Modifier,
-  navigator: NavBackStack? = null,
-  playlistId: Long
-) {
-  Box(
-    modifier = modifier, contentAlignment = Alignment.Center
-  ) {
-    TextButton(onClick = {
-      navigator?.add(Routes.AddSong(playlistId))
-    }) {
-      Text("暂无歌曲,前往添加")
-    }
-  }
-}
-
-/**
- * 顶栏
- */
-@Composable
-private fun Toolbar(
-  modifier: Modifier = Modifier, playlistViewModel: PlaylistViewModel,
-  playlistId: Long
-) {
-
-  val isSelectModeState = playlistViewModel.isSelectMode.collectAsState(false)
-
-  Row(modifier = modifier) {
-    // 清楚所有选中按钮
-
-    AnimatedVisibility(
-      visible = isSelectModeState.value, enter = fadeIn(), exit = fadeOut()
-    ) {
-      TextButton(onClick = {
-        playlistViewModel.clearSelectedSongs()
-      }) {
-        Text("取消所有选中", fontStyle = MaterialTheme.typography.bodyMedium.fontStyle)
-      }
-    }
-    Spacer(modifier = Modifier.weight(1f))
-    // 多选模式开关
-    IconButton(onClick = {
-      playlistViewModel.toggleSelectMode()
-    }) {
-      Icon(
-        Icons.AutoMirrored.Outlined.List, tint = isSelectModeState.value.let {
-          if (it) MaterialTheme.colorScheme.primary
-          else MaterialTheme.colorScheme.onSurface
-        }, contentDescription = "多选模式开关"
-      )
-    }
-    AnimatedVisibility(
-      isSelectModeState.value
-    ) {
-      // 多选模式下的额外按钮
-      Row {
-        // 删除按钮
-        TextButton(onClick = {
-          /* 删除歌曲 */
-          playlistViewModel.deleteSelectedSongs(playlistId)
-        }) {
-          Text("删除")
-        }
-        // 添加到歌单
-        TextButton(onClick = {
-
-        }) {
-          Text("添加到播放列表")
-        }
-      }
-    }
-  }
-}
-
-
-/**
- * 歌曲的详情面板
- */
-@androidx.annotation.OptIn(UnstableApi::class)
-@Composable
-fun SongMenuPanel(
-  song: Song,
-  playlistId: Long,
-  list: List<Song>,
-  onDismissRequest: () -> Unit,
-  playlistViewModel: PlaylistViewModel = hiltViewModel()
-) {
-
-  val coverPainter = rememberAsyncImagePainter(model = song.getCoverUri().toCoilUri())
-  val coverState = coverPainter.state.collectAsState()
-
-  val scope = rememberCoroutineScope()
-
-  Box(
-    modifier = Modifier
-      .fillMaxWidth()
-      .background(
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        shape = MaterialTheme.shapes.medium
-      )
-      .padding(vertical = 10.dp)
-  ) {
-    Column {
-      Row(
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(16.dp),
-      ) {
-        // 封面
-        Box(
-          modifier = Modifier
-            .background(
-              color = MaterialTheme.colorScheme.surfaceContainer,
-              shape = MaterialTheme.shapes.medium
-            )
-            .weight(1f)
-            .aspectRatio(1f)
-            .clip(MaterialTheme.shapes.medium)
-        ) {
-          if (coverState.value is AsyncImagePainter.State.Success) {
-            Image(
-              painter = coverPainter,
-              contentDescription = null,
-              modifier = Modifier.fillMaxSize(),
-              contentScale = ContentScale.Crop
-            )
-          } else {
-            Box(
-              modifier = Modifier
-                .fillMaxSize(),
-              contentAlignment = Alignment.Center
-            ) {
-              Text(
-                text = song.displayName.first().toString(),
-                style = MaterialTheme.typography.displayLarge.copy(
-                  color = MaterialTheme.colorScheme.onPrimaryContainer,
-                  fontWeight = FontWeight.W600
-                )
-              )
-            }
-          }
-        }
-        // 歌曲信息
-        Column(
-          modifier = Modifier
-            .weight(2f)
-            .padding(start = 16.dp)
-            .wrapContentHeight(
-              Alignment.CenterVertically
-            ),
-        ) {
-          Text(
-            text = song.displayName,
-            style = MaterialTheme.typography.titleMedium.copy(
-              color = MaterialTheme.colorScheme.onSurface,
-              fontWeight = FontWeight.W600
-            ),
-            maxLines = 1,
-            modifier = Modifier
-              .fillMaxWidth()
-              .basicMarquee()
-          )
-          Text(
-            text = song.artist,
-            style = MaterialTheme.typography.bodyMedium.copy(
-              color = MaterialTheme.colorScheme.onSurface,
-              fontWeight = FontWeight.W500
-            ),
-            maxLines = 1
-          )
-          Text(
-            text = song.duration.msToSecs().formatDurationSecs(),
-            style = MaterialTheme.typography.bodyMedium.copy(
-              color = MaterialTheme.colorScheme.onSurface.copy(
-                alpha = 0.6f
-              ),
-              fontWeight = FontWeight.W600
-            ),
-            maxLines = 1,
-            modifier = Modifier
-              .fillMaxWidth()
-              .basicMarquee()
-          )
-          Text(
-            "播放次数:${song.playTimes}",
-            maxLines = 1,
-            style = MaterialTheme.typography.bodyMedium.copy(
-              color = MaterialTheme.colorScheme.onSurface.copy(
-                alpha = 0.6f
-              ),
-              fontWeight = FontWeight.W600
-            ),
-          )
-        }
-      }
-      Divider(
-        Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = .2f)
-      )
-      MenuItem(
-        icon = Icons.Filled.KeyboardArrowDown,
-        title = "下一首播放",
-        modifier = Modifier.clickable {
-          onDismissRequest.invoke()
-          scope.launch {
-            PlaybackStateManager.getInstance().playAsync(song)
-          }
-        }
-      )
-      MenuItem(
-        icon = Icons.Outlined.PlayArrow,
-        title = "添加到当前播放列表",
-        modifier = Modifier.clickable {
-          scope.launch {
-            PlaybackStateManager.getInstance().playAsync(song, list)
-          }
-          onDismissRequest.invoke()
-        }
-      )
-      MenuItem(
-        icon = Icons.Filled.Clear,
-        title = "移出当前歌单",
-        modifier = Modifier.clickable {
-          playlistViewModel.deleteSelectedSongs(
-            playlistId = playlistId,
-            songId = song.songId ?: -1
-          )
-          onDismissRequest.invoke()
-        }
-      )
-    }
-  }
-}
-
-/**
- * 菜单item
- */
-@Composable
-private fun MenuItem(
-  modifier: Modifier = Modifier,
-  icon: ImageVector,
-  title: String
-) {
-  Row(
-    modifier
-      .padding(horizontal = 16.dp, vertical = 6.dp)
-  ) {
-    Icon(
-      icon,
-      contentDescription = title,
-      tint = MaterialTheme.colorScheme.onSurface
-    )
-    Spacer(modifier = Modifier.width(12.dp))
-    Text(
-      title, style = MaterialTheme.typography.titleMedium.copy(
-        color = MaterialTheme.colorScheme.onSurface
-      )
-    )
-  }
-}
 

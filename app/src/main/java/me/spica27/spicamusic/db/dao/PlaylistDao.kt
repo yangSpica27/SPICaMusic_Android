@@ -26,7 +26,7 @@ interface PlaylistDao {
 
 
   @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
-  fun getPlayListByIdFlow(playlistId: Long): Flow<Playlist>
+  fun getPlayListByIdFlow(playlistId: Long): Flow<Playlist?>
 
   @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
   fun getPlayListById(playlistId: Long): Playlist
