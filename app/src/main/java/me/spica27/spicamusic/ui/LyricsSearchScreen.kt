@@ -24,7 +24,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -121,7 +120,8 @@ private fun TopPanel(song: Song, lyricViewModel: LyricViewModel = hiltViewModel(
       leftLabel = "歌手", rightLabel = "请输入歌手名称", text = artists.value, onValueChange = {
         artists.value = it
       })
-    OutlinedButton(
+    ElevatedButton(
+      shape = MaterialTheme.shapes.small,
       onClick = {
         keyboardController?.hide()
         if (songName.value.isEmpty()) {
@@ -131,7 +131,11 @@ private fun TopPanel(song: Song, lyricViewModel: LyricViewModel = hiltViewModel(
         }
       }, modifier = Modifier
         .padding(16.dp)
-        .fillMaxWidth()
+        .fillMaxWidth(),
+      colors = ButtonDefaults.elevatedButtonColors().copy(
+        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+      )
     ) {
       Text("搜索")
     }
@@ -229,8 +233,8 @@ private fun LyricItem(
       AsyncImage(
         model = lyric.cover,
         modifier = Modifier
-          .width(60.dp)
-          .height(60.dp)
+          .width(80.dp)
+          .height(80.dp)
           .clip(MaterialTheme.shapes.small),
         contentDescription = "background",
         contentScale = ContentScale.Crop,
@@ -243,7 +247,7 @@ private fun LyricItem(
       Spacer(modifier = Modifier.width(12.dp))
       Column(
         modifier = Modifier
-          .height(60.dp)
+          .height(80.dp)
           .weight(1f), verticalArrangement = Arrangement.SpaceBetween
       ) {
         Text(
@@ -259,11 +263,6 @@ private fun LyricItem(
           style = MaterialTheme.typography.titleMedium
         )
       }
-      Text(
-        "《${lyric.album}》",
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-        style = MaterialTheme.typography.titleMedium
-      )
     }
     AnimatedVisibility(
       visible = showDetailState.value, modifier = Modifier.fillMaxWidth()

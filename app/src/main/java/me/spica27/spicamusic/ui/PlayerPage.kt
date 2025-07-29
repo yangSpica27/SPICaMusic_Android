@@ -2,9 +2,11 @@ package me.spica27.spicamusic.ui
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,20 +47,27 @@ import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -65,7 +75,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,6 +85,7 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
+import coil3.util.Logger
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -92,12 +102,14 @@ import me.spica27.spicamusic.utils.formatDurationDs
 import me.spica27.spicamusic.utils.formatDurationSecs
 import me.spica27.spicamusic.utils.msToDs
 import me.spica27.spicamusic.utils.msToSecs
+import me.spica27.spicamusic.utils.rememberVibrator
 import me.spica27.spicamusic.utils.secsToMs
+import me.spica27.spicamusic.utils.tick
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
+import me.spica27.spicamusic.visualiser.MusicVisualiser
 import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.SongControllerPanel
-import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
 import timber.log.Timber
 
@@ -111,10 +123,7 @@ fun PlayerPage(
 
   // 当前播放的歌曲
   val showEmpty =
-    playBackViewModel.currentSongFlow
-      .map { it == null }
-      .collectAsStateWithLifecycle(true)
-      .value
+    playBackViewModel.currentSongFlow.map { it == null }.collectAsStateWithLifecycle(true).value
 
   val currentLyric = playBackViewModel.currentLyric.collectAsStateWithLifecycle().value
 
@@ -123,6 +132,19 @@ fun PlayerPage(
   val coroutineScope = rememberCoroutineScope()
 
   val pagerState = rememberPagerState { 3 }
+
+  val vibrator = rememberVibrator()
+
+  val isFirst = remember { mutableStateOf(true) }
+
+  LaunchedEffect(pagerState.currentPage) {
+    if (isFirst.value) {
+      isFirst.value = false
+      return@LaunchedEffect
+    }
+    vibrator.tick()
+  }
+
 
   if (showEmpty) {
     return Box(
@@ -140,8 +162,7 @@ fun PlayerPage(
     ) {
 
       Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally
       ) {
 
         // tab
@@ -164,28 +185,31 @@ fun PlayerPage(
           HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
-            userScrollEnabled = false,
+            userScrollEnabled = true,
           ) { index ->
 
             Box(
-              modifier =
-                Modifier
-                  .fillMaxSize()
-                  .padding(
-                    horizontal = 16.dp,
+              modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                  horizontal = 16.dp,
+                )
+                .background(
+                  MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.small
+                )
+                .innerShadow(
+                  shape = MaterialTheme.shapes.medium, shadow = Shadow(
+                    radius = 10.dp, color = MaterialTheme.colorScheme.onSurface, alpha = .11f
                   )
-                  .background(
-                    MaterialTheme.colorScheme.surfaceContainerLow,
-                    MaterialTheme.shapes.small
-                  )
+                )
             ) {
               when (index) {
                 0 -> {
                   Cover(
-                    modifier = Modifier
-                      .matchParentSize(),
+                    modifier = Modifier.fillMaxSize(),
                     songState = songViewModel.getSongFlow(currentPlayingSong?.songId ?: -1)
-                      .collectAsState(null)
+                      .collectAsState(null),
+                    playBackViewModel = playBackViewModel
                   )
                 }
 
@@ -198,8 +222,7 @@ fun PlayerPage(
                     )
                   } else {
                     Box(
-                      modifier = Modifier.fillMaxSize(),
-                      contentAlignment = Alignment.Center
+                      modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
                     ) {
                       Text("暂无歌词")
                     }
@@ -228,8 +251,7 @@ fun PlayerPage(
           navigator = navigator
         )
         ControlPanel(
-          modifier = Modifier
-            .padding(vertical = 15.dp, horizontal = 20.dp),
+          modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp),
           playBackViewModel = playBackViewModel
         )
         Text(
@@ -287,11 +309,13 @@ private fun Title(
 }
 
 /// 封面
+
 @OptIn(UnstableApi::class)
 @Composable
 private fun Cover(
   modifier: Modifier = Modifier,
   songState: State<Song?>,
+  playBackViewModel: PlayBackViewModel = hiltViewModel(),
 ) {
 
   val context = LocalContext.current
@@ -302,66 +326,145 @@ private fun Cover(
     ).build(),
   )
 
+  val lineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+
+  val shadowLineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
 
   val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
-  val onSurfaceColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-
   val infiniteTransition = rememberInfiniteTransition(label = "infinite")
   val rotateState = infiniteTransition.animateFloat(
     initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(
-      animation = tween(10000, easing = LinearEasing),
-      repeatMode = RepeatMode.Restart
+      animation = tween(10000, easing = LinearEasing), repeatMode = RepeatMode.Restart
     ), label = ""
   )
 
-  Box(
-    contentAlignment = Alignment.Center,
-    modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)
-  ) {
-    AndroidView(
-      factory = { context ->
-        VisualizerView(context)
-      }, update = { view ->
-        view.setThemeColor(onSurfaceColor.toArgb())
-      }, modifier = Modifier
-        .fillMaxWidth()
-    )
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .aspectRatio(1f)
-        .padding(60.dp + 12.dp)
-        .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
-        .clip(CircleShape)
-        .border(
-          12.dp,
-          MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.6f),
-          CircleShape
-        )
-        .rotate(rotateState.value), contentAlignment = Alignment.Center
-    ) {
-      if (coverPainterState.value is AsyncImagePainter.State.Success) {
-        Image(
-          painter = coverPainter,
-          contentDescription = "Cover",
-          modifier = Modifier.fillMaxSize(),
-          contentScale = ContentScale.Crop
-        )
-      } else {
-        Text(
-          modifier = Modifier.rotate(45f),
-          text = songState.value?.displayName ?: "Unknown",
-          style = MaterialTheme.typography.headlineLarge.copy(
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            fontWeight = FontWeight.W900
-          )
-        )
-      }
 
+  val pn = remember {
+    mutableStateListOf<Float>()
+  }
+
+  val grayLineYs = remember { FloatArray(MusicVisualiser.FREQUENCY_BAND_LIMITS.size * 2) }
+
+  val blackLineData = remember(pn) {
+    pn
+  }.map {
+    animateFloatAsState(
+      it, label = "black_line", animationSpec = tween(
+        durationMillis = 135, easing = EaseOut
+      )
+    )
+  }
+
+
+  DisposableEffect(Unit) {
+    (0 until MusicVisualiser.FREQUENCY_BAND_LIMITS.size).forEach { i ->
+      pn.add(0f)
+      pn.add(0f)
+    }
+    val musicVisualiser = MusicVisualiser()
+    musicVisualiser.setListener(object : MusicVisualiser.Listener {
+      override fun getDrawData(list: List<Float>) {
+        for ((index, f) in list.withIndex()) {
+          pn[index] = f
+        }
+      }
+    })
+    musicVisualiser.ready()
+    onDispose {
+      musicVisualiser.dispose()
+    }
+  }
+
+
+
+  Spacer(
+    modifier = Modifier
+      .fillMaxSize()
+      .drawWithCache {
+
+
+        val centerX = size.width / 2
+
+        val startY = size.width - 30.dp.toPx() - 12.dp.toPx()
+
+        val changeY = 40.dp.toPx()
+
+        onDrawWithContent {
+          for ((index, state) in blackLineData.withIndex()) {
+            this.rotate(
+              index * 360f / pn.size,
+            ) {
+
+              val blackLineY = startY + changeY * state.value
+
+              val shadowY = Math.max(blackLineY, grayLineYs[index])
+
+              drawLine(
+                color = shadowLineColor,
+                start = Offset(
+                  centerX, startY
+                ),
+                end = Offset(
+                  centerX,
+                  shadowY
+                ),
+                strokeWidth = 8.dp.toPx(),
+                cap = StrokeCap.Round,
+              )
+
+              grayLineYs[index] = shadowY - 1.dp.toPx() / 10f
+
+              drawLine(
+                color = lineColor,
+                start = Offset(centerX, startY),
+                end = Offset(
+                  centerX,
+                  blackLineY
+                ),
+                strokeWidth = 8.dp.toPx(),
+                cap = StrokeCap.Round,
+              )
+            }
+          }
+        }
+
+      }
+  )
+  Box(
+    modifier = Modifier
+      .fillMaxHeight()
+      .aspectRatio(1f)
+      .padding(60.dp + 12.dp)
+      .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
+      .clip(CircleShape)
+      .border(
+        12.dp, MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.6f), CircleShape
+      )
+      .rotate(rotateState.value), contentAlignment = Alignment.Center
+  ) {
+
+    if (coverPainterState.value is AsyncImagePainter.State.Success) {
+      Image(
+        painter = coverPainter,
+        contentDescription = "Cover",
+        modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.Crop
+      )
+    } else {
+      Text(
+        modifier = Modifier.rotate(45f),
+        text = songState.value?.displayName ?: "Unknown",
+        style = MaterialTheme.typography.headlineLarge.copy(
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+          fontWeight = FontWeight.W900
+        )
+      )
     }
 
   }
+
 }
+
 
 /// 控制面板
 @Composable
@@ -432,8 +535,7 @@ private fun ControlPanel(
           Timber.d("Seeking to $it")
           seekValueState.floatValue = it * (songState?.duration ?: 1).toFloat()
           isSeekingState.value = true
-        }
-      )
+        })
     }
 
     Row(
@@ -549,8 +651,7 @@ private fun SongInfo(
     modifier = modifier
   ) {
     Column(
-      modifier = Modifier
-        .weight(2f),
+      modifier = Modifier.weight(2f),
       verticalArrangement = Arrangement.Center,
     ) {
       Text(
@@ -596,8 +697,7 @@ private fun SongInfo(
     IconButton(
       onClick = {
         navigator?.add(Routes.LyricsSearch(song))
-      }
-    ) {
+      }) {
       Icon(
         modifier = Modifier.size(24.dp),
         painter = painterResource(R.drawable.ic_lyrics_line),
@@ -644,15 +744,13 @@ private fun TabBar(
           modifier =
             Modifier
               .tabIndicatorOffset(tabPositions[selectedTabIndex])
-              .padding(vertical = 5.dp, horizontal = 16.dp)
               .clip(
                 MaterialTheme.shapes.small
               ),
           color = MaterialTheme.colorScheme.onSurface.copy(alpha = .05f),
           height = 48.dp
         )
-      }
-    ) {
+      }) {
       tabs.forEachIndexed { index, tabTitle ->
         Tab(
           interactionSource = object : MutableInteractionSource {
@@ -666,8 +764,7 @@ private fun TabBar(
           selected = selectedTabIndex == index,
           selectedContentColor = Color.Transparent,
           unselectedContentColor = Color.Transparent,
-          onClick = { onTabSelected(index) }
-        ) {
+          onClick = { onTabSelected(index) }) {
           val isSelected = index == selectedTabIndex
           Text(
             textAlign = TextAlign.Center,
@@ -678,9 +775,7 @@ private fun TabBar(
                 MaterialTheme.colorScheme.onBackground.copy(0.9f)
               } else {
                 MaterialTheme.colorScheme.onBackground.copy(0.5f)
-              },
-              fontSize = 15.sp,
-              fontWeight = if (isSelected) {
+              }, fontSize = 15.sp, fontWeight = if (isSelected) {
                 FontWeight.W600
               } else {
                 FontWeight.W500
@@ -702,8 +797,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
   } else {
     Column(
       modifier = modifier.padding(
-        horizontal = 16.dp,
-        vertical = 12.dp
+        horizontal = 16.dp, vertical = 12.dp
       )
     ) {
       Row(
@@ -714,12 +808,10 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           modifier = Modifier
             .weight(1f)
             .background(
-              MaterialTheme.colorScheme.surfaceContainerHigh,
-              MaterialTheme.shapes.small
+              MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.shapes.small
             )
             .padding(
-              horizontal = 16.dp,
-              vertical = 12.dp
+              horizontal = 16.dp, vertical = 12.dp
             )
         ) {
           Text(
@@ -740,19 +832,16 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           Spacer(modifier = Modifier.height(5.dp))
         }
         Spacer(
-          modifier = Modifier
-            .width(12.dp)
+          modifier = Modifier.width(12.dp)
         )
         Column(
           modifier = Modifier
             .weight(1f)
             .background(
-              MaterialTheme.colorScheme.surfaceContainerHigh,
-              MaterialTheme.shapes.small
+              MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.shapes.small
             )
             .padding(
-              horizontal = 16.dp,
-              vertical = 12.dp
+              horizontal = 16.dp, vertical = 12.dp
             )
         ) {
           Text(
@@ -779,17 +868,14 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           .weight(1f)
           .fillMaxWidth()
           .background(
-            MaterialTheme.colorScheme.surfaceContainerHigh,
-            MaterialTheme.shapes.small
+            MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.shapes.small
           )
           .padding(
-            horizontal = 16.dp,
-            vertical = 12.dp
+            horizontal = 16.dp, vertical = 12.dp
           )
       ) {
         Row(
-          modifier = Modifier.fillMaxWidth(),
-          verticalAlignment = Alignment.Top
+          modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
         ) {
           Text(
             "歌名", style = MaterialTheme.typography.bodyLarge.copy(
@@ -805,8 +891,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
         }
 
         Row(
-          modifier = Modifier.fillMaxWidth(),
-          verticalAlignment = Alignment.Top
+          modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
         ) {
           Text(
             "时长", style = MaterialTheme.typography.bodyLarge.copy(
@@ -823,8 +908,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
         }
 
         Row(
-          modifier = Modifier.fillMaxWidth(),
-          verticalAlignment = Alignment.Top
+          modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
         ) {
           Text(
             "声道", style = MaterialTheme.typography.bodyLarge.copy(
@@ -840,8 +924,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
         }
 
         Row(
-          modifier = Modifier.fillMaxWidth(),
-          verticalAlignment = Alignment.Top
+          modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top
         ) {
           Text(
             "格式", style = MaterialTheme.typography.bodyLarge.copy(
@@ -864,8 +947,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
               1.dp,
               MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
               MaterialTheme.shapes.small
-            ),
-          contentAlignment = Alignment.Center
+            ), contentAlignment = Alignment.Center
         ) {
           Text(
             "夜雪初霁，荠麦弥望。", style = MaterialTheme.typography.bodyLarge.copy(

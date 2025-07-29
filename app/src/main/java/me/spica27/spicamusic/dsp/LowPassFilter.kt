@@ -48,8 +48,8 @@ class LowPassFilter(
 
   fun reset() {
     for (i in 0 until channelCount) {
-      xHist[i] = FloatArray(2) { 0f }
-      yHist[i] = FloatArray(2) { 0f }
+      xHist[i] = FloatArray(2)
+      yHist[i] = FloatArray(2)
     }
   }
 }

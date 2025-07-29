@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.db.entity.Playlist
+import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
 
 
 /// 歌单条目
@@ -35,7 +36,7 @@ fun PlaylistItem(
   showMenu: Boolean = false
 ) {
   Row(modifier = modifier
-    .clickable {
+    .clickableNoRippleClickableWithVibration{
       onClick()
     }
     .padding(horizontal = 16.dp, vertical = 6.dp)
@@ -75,15 +76,11 @@ fun PlaylistItem(
         )
       }
     }else{
-      IconButton(
-        onClick = onClickMenu,
-      ) {
-        Icon(
-          imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-          contentDescription = "More",
-          tint = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f)
-        )
-      }
+      Icon(
+        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        contentDescription = "More",
+        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f)
+      )
     }
   }
 }

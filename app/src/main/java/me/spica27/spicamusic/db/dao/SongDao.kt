@@ -27,8 +27,8 @@ interface SongDao {
   @Insert(onConflict = OnConflictStrategy.IGNORE)
   fun insertSync(songs: List<Song>)
 
-  @Query("UPDATE song SET playTimes = (playTimes + 1) WHERE songId == :id")
-  suspend fun addPlayTime(id: Long)
+  @Query("UPDATE song SET playTimes = (playTimes + 1) , lastPlayTime = :lastPlayTime  WHERE songId == :id")
+  suspend fun addPlayTime(id: Long, lastPlayTime: Long)
 
 
   @Query("DELETE FROM song WHERE mediaStoreId NOT IN (:mediaIds)")

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -31,6 +32,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.playback.PlaybackStateManager
+import me.spica27.spicamusic.utils.ScrollHaptics
+import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.viewModel.MusicSearchViewModel
 import me.spica27.spicamusic.widget.SongItemWithCover
 
@@ -96,8 +99,20 @@ private fun SongList(
       Text(text = "没有找到相关歌曲")
     }
   } else {
+
+    val listState = rememberLazyListState()
+
+    ScrollHaptics(
+      listState = listState,
+      vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
+      enabled = true,
+    )
+
     // 歌曲列表
-    LazyColumn(modifier = modifier) {
+    LazyColumn(
+      modifier = modifier,
+      state = listState
+    ) {
       itemsIndexed(
         dataState.value,
         key = { _, song -> song.songId ?: -1 }

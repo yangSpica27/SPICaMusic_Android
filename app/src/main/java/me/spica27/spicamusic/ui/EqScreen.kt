@@ -1,5 +1,7 @@
 package me.spica27.spicamusic.ui
 
+import android.os.Build
+import android.os.VibrationEffect
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -28,6 +30,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -51,7 +54,10 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.NyquistBand
 import me.spica27.spicamusic.utils.DataStoreUtil
+import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
 import me.spica27.spicamusic.utils.noRippleClickable
+import me.spica27.spicamusic.utils.rememberVibrator
+import me.spica27.spicamusic.utils.tick
 import me.spica27.spicamusic.widget.EqSettingView
 import me.spica27.spicamusic.widget.SimpleTopBar
 import kotlin.math.roundToInt
@@ -70,6 +76,12 @@ fun EqScreen(
   val eq = dataStoreUtil.getEqualizerBand().collectAsState(Equalizer.Presets.flat.bands)
 
   val scope = rememberCoroutineScope()
+
+  val vibrator = rememberVibrator()
+
+  LaunchedEffect(replayGain.value) {
+    vibrator.tick()
+  }
 
   Scaffold(
     topBar = {
@@ -334,7 +346,7 @@ private fun EqItem(isSelected: Boolean, onClick: () -> Unit, name: String) {
         color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
         shape = MaterialTheme.shapes.medium
       )
-      .noRippleClickable(onClick = {
+      .clickableNoRippleClickableWithVibration(onClick = {
         onClick.invoke()
       })
       .padding(vertical = 8.dp),

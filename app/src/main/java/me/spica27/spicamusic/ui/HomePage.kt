@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -50,12 +51,17 @@ import coil3.toCoilUri
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.utils.ScrollHaptics
+import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.utils.ToastUtils
+import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
+import me.spica27.spicamusic.widget.FadingEdges
 import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlaylistItem
+import me.spica27.spicamusic.widget.fadingEdges
 import java.util.*
 
 // 主页
@@ -93,204 +99,199 @@ fun HomePage(
   Box(
     modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart
   ) {
-
-
     Column(
-      modifier = Modifier
-        .fillMaxSize()
-        .verticalScroll(
-          state = listState
-        ),
+      modifier = Modifier.fillMaxSize(),
       verticalArrangement = Arrangement.Top
     ) {
       // 标题
       Spacer(modifier = Modifier.height(10.dp))
       SearchButton(navigator)
       Spacer(modifier = Modifier.height(10.dp))
-      Title(
-        "最近常听",
-        right = {
+      Column(
+        modifier = Modifier
+          .weight(1f)
+          .verticalScroll(
+            state = listState
+          )
+          .fadingEdges(FadingEdges.None),
+        verticalArrangement = Arrangement.Top
+      ) {
+
+        Title(
+          "最近常听",
+          right = {
+            Text(
+              "查看更多",
+              modifier = Modifier.clickableNoRippleClickableWithVibration {
+                navigator?.add(
+                  Routes.RecentlyList
+                )
+              },
+              style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
+                fontWeight = FontWeight.W600,
+                fontSize = 15.sp
+              )
+            )
+          }
+        )
+        Spacer(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(8.dp)
+        )
+        AnimatedContent(
+          targetState = oftenListenSongs.value,
+          modifier = Modifier.fillMaxWidth(),
+          contentKey = {
+            if (it.isEmpty()) {
+              0
+            } else {
+              1
+            }
+          }
+        ) { songs ->
+          if (songs.isEmpty()) {
+            Box(
+              modifier = Modifier
+                .padding(
+                  horizontal = 16.dp,
+                )
+                .width(120.dp)
+                .height(180.dp)
+                .background(
+                  MaterialTheme.colorScheme.surfaceContainer,
+                  MaterialTheme.shapes.small
+                )
+                .padding(
+                  horizontal = 16.dp,
+                  vertical = 12.dp
+                )
+                .clip(MaterialTheme.shapes.small),
+              contentAlignment = Alignment.Center
+            ) {
+              Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.Center
+              ) {
+                Text(
+                  "空空如也",
+                  style = MaterialTheme.typography.titleLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.Black
+                  )
+                )
+                Spacer(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .height(4.dp)
+                )
+                TextButton(
+                  onClick = {
+                    ToastUtils.showToast("待实现,先去设置那边扫描")
+                  }
+                ) {
+                  Text("扫描本地音乐")
+                }
+              }
+            }
+          } else {
+            OftenListenSongList(songs = songs)
+          }
+        }
+        Spacer(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+        )
+        HorizontalDivider(
+          color = MaterialTheme.colorScheme.onSurface.copy(
+            alpha = 0.05f
+          ),
+          thickness = 2.dp
+        )
+        Spacer(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+        )
+        Title("歌单", {
           Text(
-            "查看更多",
-            modifier = Modifier.noRippleClickable {
-              ToastUtils.showToast("敬请期待！")
+            "新建歌单",
+            modifier = Modifier.clickableNoRippleClickableWithVibration {
+              showCreatePlaylistDialog.value = true
             },
             style = MaterialTheme.typography.bodyMedium.copy(
-              color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
+              color = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
               fontWeight = FontWeight.W600,
               fontSize = 15.sp
             )
           )
-        }
-      )
-      Spacer(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(8.dp)
-      )
-      AnimatedContent(
-        targetState = oftenListenSongs.value,
-        modifier = Modifier.fillMaxWidth(),
-        contentKey = {
-          if (it.isEmpty()) {
-            0
-          } else {
-            1
-          }
-        }
-      ) { songs ->
-        if (songs.isEmpty()) {
-          Box(
-            modifier = Modifier
-              .padding(
-                horizontal = 16.dp,
-              )
-              .width(120.dp)
-              .height(180.dp)
-              .background(
-                MaterialTheme.colorScheme.surfaceContainer,
-                MaterialTheme.shapes.small
-              )
-              .padding(
-                horizontal = 16.dp,
-                vertical = 12.dp
-              )
-              .clip(MaterialTheme.shapes.small),
-            contentAlignment = Alignment.Center
-          ) {
-            Column(
-              modifier = Modifier.fillMaxSize(),
-              horizontalAlignment = Alignment.Start,
-              verticalArrangement = Arrangement.Center
-            ) {
-              Text(
-                "空空如也",
-                style = MaterialTheme.typography.titleLarge.copy(
-                  color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                  fontWeight = FontWeight.Black
-                )
-              )
-              Spacer(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .weight(1f)
-                  .height(4.dp)
-              )
-              TextButton(
-                onClick = {
-                  ToastUtils.showToast("待实现,先去设置那边扫描")
-                }
-              ) {
-                Text("扫描本地音乐")
-              }
-            }
-          }
-        } else {
-          OftenListenSongList(songs = songs)
-        }
-      }
-      Spacer(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(12.dp)
-      )
-      HorizontalDivider(
-        color = MaterialTheme.colorScheme.onSurface.copy(
-          alpha = 0.05f
-        ),
-        thickness = 2.dp
-      )
-      Spacer(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(12.dp)
-      )
-      Title("歌单", {
-        Text(
-          "新建歌单",
-          modifier = Modifier.noRippleClickable {
-            showCreatePlaylistDialog.value = true
-          },
-          style = MaterialTheme.typography.bodyMedium.copy(
-            color = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
-            fontWeight = FontWeight.W600,
-            fontSize = 15.sp
-          )
-        )
-      })
-      Spacer(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(12.dp)
-      )
-
-      Column {
-
-        PlaylistItem(
-          playlist = Playlist(
-            playlistId = 0,
-            playlistName = "最近常听",
-            cover = null
-          ),
-          onClick = {
-            navigator?.add(
-              Routes.RecentlyList
-            )
-          },
-          showMenu = false
+        })
+        Spacer(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
         )
 
-        PlaylistItem(
-          playlist = Playlist(
-            playlistId = 0,
-            playlistName = "我的收藏",
-            cover = null
-          ),
-          onClick = {
-            navigator?.add(
-              Routes.LikeList
-            )
-          },
-          showMenu = false
-        )
-
-        playlist.forEach {
+        Column(
+          modifier = Modifier.fillMaxWidth(),
+        ) {
           PlaylistItem(
-            playlist = it,
+            playlist = Playlist(
+              playlistId = 0,
+              playlistName = "我的收藏",
+              cover = null
+            ),
             onClick = {
               navigator?.add(
-                Routes.PlaylistDetail(
-                  it.playlistId ?: 0,
-                )
+                Routes.LikeList
               )
             },
             showMenu = false
           )
-        }
-      }
 
-      Spacer(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(12.dp)
-      )
-      HorizontalDivider(
-        color = MaterialTheme.colorScheme.onSurface.copy(
-          alpha = 0.05f
-        ),
-        thickness = 2.dp
-      )
-      Spacer(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(12.dp)
-      )
-      Spacer(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(200.dp)
-      )
+          playlist.forEach {
+            PlaylistItem(
+              playlist = it,
+              onClick = {
+                navigator?.add(
+                  Routes.PlaylistDetail(
+                    it.playlistId ?: 0,
+                  )
+                )
+              },
+              showMenu = false
+            )
+          }
+        }
+
+        Spacer(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+        )
+        HorizontalDivider(
+          color = MaterialTheme.colorScheme.onSurface.copy(
+            alpha = 0.05f
+          ),
+          thickness = 2.dp
+        )
+        Spacer(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+        )
+        Spacer(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+        )
+      }
     }
+
   }
 }
 
@@ -300,9 +301,18 @@ private fun OftenListenSongList(
   songs: List<Song> = emptyList(),
   playBackViewModel: PlayBackViewModel = hiltViewModel()
 ) {
+  val listState = rememberLazyListState()
+
+  ScrollHaptics(
+    listState = listState,
+    vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
+    enabled = true,
+  )
+
   LazyRow(
     modifier = Modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.spacedBy(12.dp)
+    horizontalArrangement = Arrangement.spacedBy(12.dp),
+    state = listState
   ) {
     item {
       Spacer(

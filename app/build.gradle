@@ -16,7 +16,7 @@ android {
   defaultConfig {
     applicationId "me.spica27.spicamusic"
     minSdk 24
-    targetSdk 35
+    targetSdk 36
     versionCode 2
     versionName "1.1.1"
 
@@ -103,7 +103,7 @@ dependencies {
   debugImplementation libs.androidx.ui.tooling
   debugImplementation libs.androidx.ui.test.manifest
   implementation(libs.coil.compose)
-  implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
+  implementation(libs.coil.network.okhttp)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
 
   //  implementation 'com.github.EspoirX:StarrySky:v2.6.9'
@@ -138,7 +138,6 @@ dependencies {
   implementation libs.material3
   implementation(libs.wavy.slider)
   // 播放器
-  def media3_version = "1.4.1"
   // For media playback using ExoPlayer
   implementation libs.androidx.media3.exoplayer
   //    implementation 'com.google.android.exoplayer:exoplayer-core:2.X.X'

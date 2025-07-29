@@ -1,5 +1,7 @@
 package me.spica27.spicamusic.ui
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -18,6 +20,7 @@ import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.sliderFromBottomRouteAnim
 
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppMain() {
   val systemIsDark = DataStoreUtil().isForceDarkTheme
@@ -29,63 +32,69 @@ fun AppMain() {
     darkTheme = darkTheme,
     dynamicColor = false
   ) {
-    NavDisplay(
-      entryDecorators = listOf(
-        rememberSceneSetupNavEntryDecorator(),
-        rememberSavedStateNavEntryDecorator(),
-        rememberViewModelStoreNavEntryDecorator()
-      ),
-      backStack = backStack,
-      onBack = { backStack.removeLastOrNull() },
-      entryProvider = entryProvider {
-        entry<Routes.AddSong> { key ->
-          AddSongScreen(navigator = backStack, playlistId = key.playlistId)
-        }
-        entry<Routes.PlaylistDetail> {
-          PlaylistDetailScreen(
+    SharedTransitionLayout {
+      NavDisplay(
+        entryDecorators = listOf(
+          rememberSceneSetupNavEntryDecorator(),
+          rememberSavedStateNavEntryDecorator(),
+          rememberViewModelStoreNavEntryDecorator()
+        ),
+        backStack = backStack,
+        onBack = { backStack.removeLastOrNull() },
+        entryProvider = entryProvider {
+          entry<Routes.AddSong> { key ->
+            AddSongScreen(navigator = backStack, playlistId = key.playlistId)
+          }
+          entry<Routes.PlaylistDetail> {
+            PlaylistDetailScreen(
+              navigator = backStack,
+              playlistId = it.playlistId
+            )
+          }
+          entry<Routes.Main> { key->
+            MainScreen(
             navigator = backStack,
-            playlistId = it.playlistId
-          )
+            sharedTransitionScope = this@SharedTransitionLayout,
+          )}
+          entry<Routes.Splash> { SplashScreen(navigator = backStack) }
+          entry<Routes.SearchAll>(
+            metadata = sliderFromBottomRouteAnim()
+          ) { SearchAllScreen() }
+          entry<Routes.EQ> {
+            EqScreen(navigator = backStack)
+          }
+          entry<Routes.LikeList> { LikeListScreen(navigator = backStack) }
+          entry<Routes.RecentlyList> { RecentlyListScreen(navigator = backStack) }
+          entry<Routes.PlayListItemDetail>(
+            metadata = sliderFromBottomRouteAnim()
+          ) { key ->
+            PlayListItemDetailScreen(
+              playlistId = key.playlistId,
+              songId = key.songId,
+              navigator = backStack
+            )
+          }
+          entry<Routes.LyricsSearch>(
+            metadata = sliderFromBottomRouteAnim()
+          ) { key ->
+            LyricsSearchScreen(
+              song = key.song
+            )
+          }
+        },
+        transitionSpec = {
+          slideInHorizontally(initialOffsetX = { it }) togetherWith
+              slideOutHorizontally(targetOffsetX = { -it })
+        },
+        popTransitionSpec = {
+          slideInHorizontally(initialOffsetX = { -it }) togetherWith
+              slideOutHorizontally(targetOffsetX = { it })
+        },
+        predictivePopTransitionSpec = {
+          slideInHorizontally(initialOffsetX = { -it }) togetherWith
+              slideOutHorizontally(targetOffsetX = { it })
         }
-        entry<Routes.Main> { MainScreen(navigator = backStack) }
-        entry<Routes.Splash> { SplashScreen(navigator = backStack) }
-        entry<Routes.SearchAll>(
-          metadata = sliderFromBottomRouteAnim()
-        ) { SearchAllScreen() }
-        entry<Routes.EQ> {
-          EqScreen(navigator = backStack)
-        }
-        entry<Routes.LikeList> { LikeListScreen(navigator = backStack) }
-        entry<Routes.RecentlyList> { RecentlyListScreen(navigator = backStack) }
-        entry<Routes.PlayListItemDetail>(
-          metadata = sliderFromBottomRouteAnim()
-        ) { key ->
-          PlayListItemDetailScreen(
-            playlistId = key.playlistId,
-            songId = key.songId,
-            navigator = backStack
-          )
-        }
-        entry<Routes.LyricsSearch>(
-          metadata = sliderFromBottomRouteAnim()
-        ) { key ->
-          LyricsSearchScreen(
-            song = key.song
-          )
-        }
-      },
-      transitionSpec = {
-        slideInHorizontally(initialOffsetX = { it }) togetherWith
-            slideOutHorizontally(targetOffsetX = { -it })
-      },
-      popTransitionSpec = {
-        slideInHorizontally(initialOffsetX = { -it }) togetherWith
-            slideOutHorizontally(targetOffsetX = { it })
-      },
-      predictivePopTransitionSpec = {
-        slideInHorizontally(initialOffsetX = { -it }) togetherWith
-            slideOutHorizontally(targetOffsetX = { it })
-      }
-    )
+      )
+    }
   }
 }

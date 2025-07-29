@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +27,8 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.playback.PlaybackStateManager
+import me.spica27.spicamusic.utils.ScrollHaptics
+import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
 import me.spica27.spicamusic.widget.SongItemWithCover
@@ -81,8 +84,18 @@ fun RecentlyListScreen(
             Text(text = "没有歌曲")
           }
         } else {
+
+          val listState = rememberLazyListState()
+
+          ScrollHaptics(
+            listState = listState,
+            vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
+            enabled = true,
+          )
+
           LazyColumn(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            state = listState
           ) {
             itemsIndexed(
               it,

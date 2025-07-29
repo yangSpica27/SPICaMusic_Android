@@ -34,7 +34,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -85,6 +87,7 @@ fun SongControllerPanel(
       .background(MaterialTheme.colorScheme.surface, MaterialTheme.shapes.medium)
       .fillMaxWidth()
       .clip(MaterialTheme.shapes.medium)
+
   ) {
     Column {
       // 歌曲信息和封面

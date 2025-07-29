@@ -5,6 +5,7 @@ import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import java.util.concurrent.locks.ReentrantLock
@@ -43,7 +44,7 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
 
 
   fun ready() {
-    job = Job()
+    job = SupervisorJob()
     coroutineScope = CoroutineScope(job + Dispatchers.Default)
     PlaybackStateManager.getInstance().fftAudioProcessor.listeners.add(this)
   }
@@ -67,7 +68,18 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
 
 
   private val writeLock = ReentrantLock()
+
+  private var lastFFTTime = System.currentTimeMillis()
+
   override fun onFFTReady(sampleRateHz: Int, channelCount: Int, fft: FloatArray) {
+
+    val currentTime = System.currentTimeMillis()
+
+    if (currentTime - lastFFTTime < 125) {
+      return
+    }
+    lastFFTTime = currentTime
+
     if (listener == null) return
     if (writeLock.isLocked) return
     coroutineScope.launch {

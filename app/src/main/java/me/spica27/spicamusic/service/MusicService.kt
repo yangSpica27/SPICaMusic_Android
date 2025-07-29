@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.service
 
 
-import android.app.Service.START_NOT_STICKY
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -21,20 +20,18 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.decoder.flac.LibflacAudioRenderer
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.RenderersFactory
-import androidx.media3.exoplayer.audio.AudioCapabilities
-import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
-import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.dsp.FadeTransitionRenderersFactory
 import me.spica27.spicamusic.playback.PlaybackStateManager
@@ -42,6 +39,7 @@ import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.service.notification.MediaSessionComponent
 import me.spica27.spicamusic.service.notification.NotificationComponent
 import me.spica27.spicamusic.utils.DataStoreUtil
+import javax.inject.Inject
 
 private const val MY_MEDIA_ROOT_ID = "media_root_id"
 private const val MY_EMPTY_MEDIA_ROOT_ID = "empty_root_id"
@@ -50,12 +48,15 @@ private const val MY_EMPTY_MEDIA_ROOT_ID = "empty_root_id"
 /**
  * 音乐播放服务
  */
+@AndroidEntryPoint
 @OptIn(UnstableApi::class)
 class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   MediaSessionComponent.Listener {
 
   private var mediaSession: MediaSessionCompat? = null
 
+  @Inject
+  lateinit var songDao: SongDao
 
   private val fftAudioProcessor = PlaybackStateManager.getInstance().fftAudioProcessor
 
@@ -67,7 +68,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
 
   private lateinit var mediaSessionComponent: MediaSessionComponent
 
-  private val serviceJob = Job()
+  private val serviceJob = SupervisorJob()
   private val coroutineScope = CoroutineScope(serviceJob + Dispatchers.Main)
 
   private val systemReceiver = PlaybackReceiver()
@@ -275,6 +276,9 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     exoPlayer.setMediaItem(MediaItem.fromUri(song.getSongUri()))
     exoPlayer.prepare()
     exoPlayer.playWhenReady = play
+    coroutineScope.launch(Dispatchers.IO) {
+      songDao.addPlayTime(song.songId ?: -1, System.currentTimeMillis())
+    }
   }
 
   override fun getState(durationMs: Long): IPlayer.State {

@@ -13,10 +13,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -33,6 +36,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import me.spica27.spicamusic.utils.rememberVibrator
+import me.spica27.spicamusic.utils.tick
 import timber.log.Timber
 
 
@@ -93,6 +100,12 @@ fun AudioWaveSlider(
   }
     .map { animateFloatAsState(it, spikeAnimationSpec, label = "").value }
 
+  val vibrator = rememberVibrator()
+
+  val lastTickTime = remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+  val coroutineScope = rememberCoroutineScope()
+
   Slider(
     modifier = modifier,
     value = progress,
@@ -140,6 +153,13 @@ fun AudioWaveSlider(
     valueRange = MinProgress..MaxProgress,
     onValueChange = {
       onProgressChange(it)
+      coroutineScope.launch(Dispatchers.IO) {
+        val currentTime = System.currentTimeMillis()
+        val i = currentTime - lastTickTime.longValue
+        if (i < 20) return@launch
+        lastTickTime.longValue = currentTime
+        vibrator.tick()
+      }
     },
     onValueChangeFinished = {
       onProgressChangeFinished?.invoke()

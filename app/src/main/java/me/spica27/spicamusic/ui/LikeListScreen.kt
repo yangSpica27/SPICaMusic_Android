@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,9 +27,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.playback.PlaybackStateManager
+import me.spica27.spicamusic.utils.ScrollHaptics
+import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
 import me.spica27.spicamusic.widget.SongItemWithCover
@@ -43,6 +48,10 @@ fun LikeListScreen(
 ) {
 
   val songs = songViewModel.allLikeSong.collectAsStateWithLifecycle().value
+
+  val isEmpty =
+    songViewModel.allLikeSong.map { it.isEmpty() }
+      .collectAsStateWithLifecycle(true).value
 
   val coroutineScope = rememberCoroutineScope()
 
@@ -60,12 +69,12 @@ fun LikeListScreen(
       modifier = Modifier.padding(paddingValues)
     ) {
       AnimatedContent(
-        targetState = songs,
+        targetState = isEmpty,
         modifier = Modifier.fillMaxSize(),
         label = "LikeListScreen"
       ) {
-        if (it.isEmpty()) {
-          Column (
+        if (it) {
+          Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
@@ -84,11 +93,20 @@ fun LikeListScreen(
             Text(text = "没有收藏歌曲")
           }
         } else {
+          val listState = rememberLazyListState()
+
+          ScrollHaptics(
+            listState = listState,
+            vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
+            enabled = true,
+          )
+
           LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize()
           ) {
             items(
-              it,
+              songs,
               key = { song ->
                 song.songId ?: UUID.randomUUID().toString()
               }

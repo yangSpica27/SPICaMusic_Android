@@ -4,11 +4,13 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -53,14 +55,13 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.theme.AppTheme
 import me.spica27.spicamusic.utils.DataStoreUtil
+import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.PlayerBar
@@ -72,7 +73,8 @@ import me.spica27.spicamusic.widget.PlayerBar
 fun MainScreen(
   modifier: Modifier = Modifier,
   navigator: NavBackStack? = null,
-  playBackViewModel: PlayBackViewModel = hiltViewModel()
+  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  sharedTransitionScope: SharedTransitionScope,
 ) {
 
 
@@ -125,58 +127,58 @@ fun MainScreen(
       .fillMaxSize()
       .background(MaterialTheme.colorScheme.surface)
   ) {
-    SharedTransitionLayout {
-      AnimatedContent(
-        showPlayerState,
-        label = "main_screen_player_transition"
-      ) { showPlayer ->
-        if (showPlayer) {
-          PlayerScreen(
-            navigator= navigator,
-            animatedVisibilityScope = this@AnimatedContent,
-            sharedTransitionScope = this@SharedTransitionLayout,
-            onBackClick = {
-              showPlayerState = false
-            }
-          )
-        } else {
-          Scaffold(
-            bottomBar = {
-              BottomNav(pagerState)
-            }
-          ) { innerPadding ->
-            Box(
-              modifier = modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-            ) {
-              // 水平滚动的页面
-              HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = false,
-                key = { it },
-                beyondViewportPageCount = 2
-              ) { page ->
-                when (page) {
-                  0 -> HomePage(navigator = navigator)
-                  1 -> SettingPage(navigator = navigator)
-                }
+    AnimatedContent(
+      showPlayerState,
+      label = "main_screen_player_transition"
+    ) { showPlayer ->
+      if (showPlayer) {
+        PlayerScreen(
+          navigator= navigator,
+          animatedVisibilityScope = this@AnimatedContent,
+          sharedTransitionScope = sharedTransitionScope,
+          onBackClick = {
+            showPlayerState = false
+          }
+        )
+      } else {
+        Scaffold(
+          bottomBar = {
+            BottomNav(pagerState)
+          }
+        ) { innerPadding ->
+          Box(
+            modifier = modifier
+              .fillMaxSize()
+              .padding(innerPadding)
+          ) {
+            // 水平滚动的页面
+            HorizontalPager(
+              state = pagerState,
+              modifier = Modifier.fillMaxSize(),
+              userScrollEnabled = false,
+              key = { it },
+              beyondViewportPageCount = 2
+            ) { page ->
+              when (page) {
+                0 -> HomePage(navigator = navigator)
+                1 -> SettingPage(navigator = navigator)
               }
-              AnimatedVisibility(
-                visible = playBackViewModel.currentSongFlow.collectAsState().value != null,
-                modifier = Modifier
-                  .align(alignment = Alignment.BottomCenter)
-                  .fillMaxWidth(),
-                enter = slideInVertically(
-                  initialOffsetY = { it },
-                  animationSpec = tween(450)
-                ) + fadeIn(),
-                exit = slideOutVertically(
-                  targetOffsetY = { it },
-                  animationSpec = tween(450)
-                ) + fadeOut()
-              ) {
+            }
+            AnimatedVisibility(
+              visible = playBackViewModel.currentSongFlow.collectAsState().value != null,
+              modifier = Modifier
+                .align(alignment = Alignment.BottomCenter)
+                .fillMaxWidth(),
+              enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(450)
+              ) + fadeIn(),
+              exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(450)
+              ) + fadeOut()
+            ) {
+              with(sharedTransitionScope){
                 PlayerBar(
                   modifier = Modifier
                     .fillMaxWidth()
@@ -227,7 +229,11 @@ private fun BottomNav(pagerState: PagerState) {
   val indicationPadding = remember { mutableFloatStateOf(1f) }
 
   val indicationPaddingAnim =
-    animateFloatAsState(indicationPadding.floatValue, tween(800), label = "")
+    animateFloatAsState(indicationPadding.floatValue,
+      spring(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessLow,
+      ), label = "")
 
   val pauseColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
@@ -247,7 +253,7 @@ private fun BottomNav(pagerState: PagerState) {
 
   val isNight = DataStoreUtil().getForceDarkTheme.collectAsState(false)
 
-  LaunchedEffect(currentIndex.intValue, isNight.value) {
+  LaunchedEffect(currentIndex.intValue) {
     if (isFirst.value) {
       isFirst.value = false
       return@LaunchedEffect
@@ -259,8 +265,9 @@ private fun BottomNav(pagerState: PagerState) {
     indicationPadding.floatValue = 1f
   }
 
-
-
+  LaunchedEffect(isNight.value) {
+    indicationColor.value = pauseColor
+  }
 
 
   Box(
@@ -307,7 +314,7 @@ private fun BottomNav(pagerState: PagerState) {
           modifier = Modifier
             .weight(1f)
             .fillMaxSize()
-            .noRippleClickable {
+            .clickableNoRippleClickableWithVibration {
               coroutineScope.launch {
                 pagerState.animateScrollToPage(index)
               }
@@ -345,10 +352,3 @@ private sealed class BackPress {
   object InitialTouch : BackPress()
 }
 
-@Preview
-@Composable
-fun MainScreenPreview() {
-  AppTheme {
-    MainScreen()
-  }
-}

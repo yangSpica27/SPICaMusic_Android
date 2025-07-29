@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 //noinspection UsingMaterialAndMaterial3Libraries
 import androidx.compose.material.SliderDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -87,17 +89,20 @@ fun PlayerBar(
 
   Box(
     modifier = modifier
-      .padding(horizontal = 16.dp)
       .background(
-        MaterialTheme.colorScheme.tertiaryContainer,
-        shape = MaterialTheme.shapes.medium
+        MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(
+          topStart = 8.dp,
+          topEnd = 8.dp
+        )
       )
 
   ) {
     Column(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 12.dp)
+        .padding(horizontal = 16.dp, vertical = 12.dp),
+      verticalArrangement = Arrangement.Center
     ) {
       Row(
         modifier = Modifier.fillMaxWidth(),
@@ -170,24 +175,6 @@ fun PlayerBar(
           )
         }
       }
-      WavySlider(
-        modifier = Modifier
-          .fillMaxWidth(),
-        value = (seekValueState.floatValue / (songState?.duration ?: 1)).coerceIn(0f, 1f),
-        onValueChange = {
-          seekValueState.floatValue = it * (songState?.duration ?: 1).toFloat()
-          isSeekingState.value = true
-        },
-        onValueChangeFinished = {
-          playBackViewModel.seekTo(seekValueState.floatValue.toLong())
-          isSeekingState.value = false
-        },
-        colors = SliderDefaults.colors(
-          thumbColor = MaterialTheme.colorScheme.tertiary,
-          activeTrackColor = MaterialTheme.colorScheme.tertiary,
-          disabledThumbColor = MaterialTheme.colorScheme.tertiaryContainer,
-        )
-      )
     }
   }
 }

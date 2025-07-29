@@ -226,7 +226,6 @@ class PlayBackViewModel @OptIn(UnstableApi::class)
   fun play(song: Song, list: List<Song>) {
     viewModelScope.launch(Dispatchers.Default) {
       PlaybackStateManager.getInstance().playAsync(song, list)
-      songDao.addPlayTime(song.songId ?: -1)
       _playingSong.emit(song)
       _nowPlayingList.emit(list)
     }
