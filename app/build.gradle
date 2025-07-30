@@ -140,7 +140,6 @@ dependencies {
   implementation libs.androidx.navigation3.runtime
   implementation libs.androidx.navigation3.ui
   implementation libs.material3
-  implementation(libs.wavy.slider)
   // 播放器
   // For media playback using ExoPlayer
   implementation libs.androidx.media3.exoplayer

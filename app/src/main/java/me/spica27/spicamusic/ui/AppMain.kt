@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -42,6 +43,7 @@ fun AppMain() {
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
         entryProvider = entryProvider {
+          
           entry<Routes.AddSong> { key ->
             AddSongScreen(navigator = backStack, playlistId = key.playlistId)
           }
@@ -93,7 +95,10 @@ fun AppMain() {
         predictivePopTransitionSpec = {
           slideInHorizontally(initialOffsetX = { -it }) togetherWith
               slideOutHorizontally(targetOffsetX = { it })
-        }
+        },
+        sizeTransform = SizeTransform(
+          clip = true
+        )
       )
     }
   }
