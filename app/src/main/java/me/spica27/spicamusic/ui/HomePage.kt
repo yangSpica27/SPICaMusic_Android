@@ -55,12 +55,12 @@ import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
-import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.FadingEdges
 import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlaylistItem
+import me.spica27.spicamusic.widget.SongItemWithCover
 import me.spica27.spicamusic.widget.fadingEdges
 import java.util.*
 
@@ -284,6 +284,40 @@ fun HomePage(
             .fillMaxWidth()
             .height(12.dp)
         )
+
+        Title(
+          "推荐",
+        )
+
+        if (oftenListenSongs.value.isEmpty()){
+          Box(
+            modifier = Modifier
+              .padding(
+                horizontal = 16.dp,
+              )
+          ) {
+            Text(
+              "暂无推荐"
+            )
+          }
+        }else{
+          Column {
+            oftenListenSongs.value.forEach {
+              SongItemWithCover(
+                song = it,
+                onClick = {
+
+                },
+                showMenu = false,
+                showPlus = false,
+                showLike = false
+              )
+            }
+          }
+        }
+
+
+
         Spacer(
           modifier = Modifier
             .fillMaxWidth()

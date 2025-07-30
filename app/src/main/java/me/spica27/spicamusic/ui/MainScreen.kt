@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
@@ -29,6 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -133,7 +133,7 @@ fun MainScreen(
     ) { showPlayer ->
       if (showPlayer) {
         PlayerScreen(
-          navigator= navigator,
+          navigator = navigator,
           animatedVisibilityScope = this@AnimatedContent,
           sharedTransitionScope = sharedTransitionScope,
           onBackClick = {
@@ -171,29 +171,42 @@ fun MainScreen(
                 .fillMaxWidth(),
               enter = slideInVertically(
                 initialOffsetY = { it },
-                animationSpec = tween(450)
+                animationSpec = tween(250)
               ) + fadeIn(),
               exit = slideOutVertically(
                 targetOffsetY = { it },
-                animationSpec = tween(450)
+                animationSpec = tween(250)
               ) + fadeOut()
             ) {
-              with(sharedTransitionScope){
-                PlayerBar(
+              with(sharedTransitionScope) {
+
+                Box(
                   modifier = Modifier
                     .fillMaxWidth()
-                    .sharedBounds(
-                      rememberSharedContentState(key = "player_bound"),
-                      animatedVisibilityScope = this@AnimatedContent,
-                      enter = scaleIn() + fadeIn(),
-                      exit = scaleOut() + fadeOut(),
-                      resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
-                      placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
-                    )
-                    .noRippleClickable {
-                      showPlayerState = true
-                    }
-                )
+                ) {
+                  PlayerBar(
+                    modifier = Modifier
+                      .fillMaxWidth()
+                      .sharedBounds(
+                        rememberSharedContentState(key = "player_bound"),
+                        animatedVisibilityScope = this@AnimatedContent,
+                        enter = scaleIn() + fadeIn(),
+                        exit = scaleOut() + fadeOut(),
+                        resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
+                        placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
+                      )
+                      .background(
+                        MaterialTheme.colorScheme.surfaceContainerLow,
+                        shape = RoundedCornerShape(
+                          topStart = 16.dp,
+                          topEnd = 16.dp
+                        )
+                      )
+                      .noRippleClickable {
+                        showPlayerState = true
+                      }
+                  )
+                }
               }
             }
           }
@@ -229,11 +242,13 @@ private fun BottomNav(pagerState: PagerState) {
   val indicationPadding = remember { mutableFloatStateOf(1f) }
 
   val indicationPaddingAnim =
-    animateFloatAsState(indicationPadding.floatValue,
+    animateFloatAsState(
+      indicationPadding.floatValue,
       spring(
         dampingRatio = Spring.DampingRatioLowBouncy,
         stiffness = Spring.StiffnessLow,
-      ), label = "")
+      ), label = ""
+    )
 
   val pauseColor = MaterialTheme.colorScheme.surfaceContainerHigh
 

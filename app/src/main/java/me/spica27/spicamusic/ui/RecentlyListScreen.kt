@@ -46,6 +46,8 @@ fun RecentlyListScreen(
 
   val coroutineScope = rememberCoroutineScope()
 
+  val listState = rememberLazyListState()
+
   Scaffold(
     topBar = {
       SimpleTopBar(
@@ -60,11 +62,12 @@ fun RecentlyListScreen(
       modifier = Modifier.padding(paddingValues)
     ) {
       AnimatedContent(
-        targetState = songs,
+        targetState = songs.isEmpty(),
         modifier = Modifier.fillMaxSize(),
         label = "LikeListScreen"
       ) {
-        if (it.isEmpty()) {
+        isEmpty->
+        if (isEmpty) {
           Column (
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -85,7 +88,7 @@ fun RecentlyListScreen(
           }
         } else {
 
-          val listState = rememberLazyListState()
+
 
           ScrollHaptics(
             listState = listState,
@@ -95,10 +98,10 @@ fun RecentlyListScreen(
 
           LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            state = listState
+            state = listState,
           ) {
             itemsIndexed(
-              it,
+              songs,
               key = { _, song ->
                 song.songId ?: UUID.randomUUID().toString()
               }

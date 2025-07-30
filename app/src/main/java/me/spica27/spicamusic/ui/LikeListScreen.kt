@@ -1,10 +1,7 @@
 package me.spica27.spicamusic.ui
 
-import android.R.attr.onClick
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +24,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
@@ -37,7 +33,7 @@ import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
 import me.spica27.spicamusic.widget.SongItemWithCover
-import java.util.UUID
+import java.util.*
 
 
 @OptIn(UnstableApi::class)
@@ -54,6 +50,9 @@ fun LikeListScreen(
       .collectAsStateWithLifecycle(true).value
 
   val coroutineScope = rememberCoroutineScope()
+
+
+  val listState = rememberLazyListState()
 
   Scaffold(
     topBar = {
@@ -93,7 +92,7 @@ fun LikeListScreen(
             Text(text = "没有收藏歌曲")
           }
         } else {
-          val listState = rememberLazyListState()
+
 
           ScrollHaptics(
             listState = listState,

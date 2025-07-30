@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastCoerceAtMost
 import com.kyant.liquidglass.GlassStyle
+import com.kyant.liquidglass.highlight.GlassHighlight
 import com.kyant.liquidglass.liquidGlass
 import com.kyant.liquidglass.liquidGlassProvider
 import com.kyant.liquidglass.material.GlassMaterial
@@ -99,9 +101,6 @@ fun LyricsView(
     backgroundColor = Color.Transparent
   )
 
-
-
-
   Box(
     modifier = modifier
       .fillMaxSize()
@@ -150,8 +149,10 @@ fun LyricsView(
               height = RefractionHeight(24.dp),
               amount = RefractionAmount((-24).dp)
             ),
-            material = GlassMaterial.None
-          )
+            material = GlassMaterial.None,
+            highlight = GlassHighlight.None,
+          ),
+          compositingStrategy = CompositingStrategy.Auto
         )
     )
 

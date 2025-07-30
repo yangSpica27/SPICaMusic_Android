@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -87,14 +86,6 @@ fun PlayerBar(
 
   Box(
     modifier = modifier
-      .background(
-        MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(
-          topStart = 8.dp,
-          topEnd = 8.dp
-        )
-      )
-
   ) {
     Column(
       modifier = Modifier
@@ -168,7 +159,7 @@ fun PlayerBar(
                 CircleShape
               )
               .clip(CircleShape)
-              .clickable{
+              .clickable {
                 playBackViewModel.togglePlaying()
               }
               .innerShadow(
@@ -177,8 +168,7 @@ fun PlayerBar(
                   color = MaterialTheme.colorScheme.primary,
                   alpha = .11f
                 )
-              )
-          ,
+              ),
           contentAlignment = Alignment.Center
         ) {
           Icon(

@@ -1,15 +1,16 @@
 package me.spica27.spicamusic.ui
 
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +24,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
@@ -81,11 +85,18 @@ fun PlaylistDetailScreen(
 
   val coroutineScope = rememberCoroutineScope()
 
+  val topBarColor = animateColorAsState(
+    if (scrollBehavior.state.collapsedFraction == 0f ){
+      MaterialTheme.colorScheme.primaryContainer
+    }else{
+      MaterialTheme.colorScheme.background
+    },
+  )
+
   Scaffold(
     modifier = Modifier
       .nestedScroll(scrollBehavior.nestedScrollConnection)
-      .fillMaxSize()
-      .background(MaterialTheme.colorScheme.surfaceContainer),
+      .fillMaxSize(),
     topBar = {
       TopAppBar(
         title = {
@@ -94,11 +105,10 @@ fun PlaylistDetailScreen(
             navigator = navigator
           )
         },
-        expandedHeight = 170.dp,
+        expandedHeight = 250.dp,
         scrollBehavior = scrollBehavior,
         colors = TopAppBarDefaults.topAppBarColors(
-          containerColor = MaterialTheme.colorScheme.surfaceContainer,
-          scrolledContainerColor = MaterialTheme.colorScheme.background
+          containerColor = topBarColor.value
         )
       )
     }
@@ -281,58 +291,59 @@ fun Header(
         .weight(1f),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      Box(
-        modifier = Modifier
-          .width(80.dp)
-          .height(80.dp)
-          .border(
-            width = 2.dp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-            shape = MaterialTheme.shapes.small
-          )
-          .background(
-            MaterialTheme.colorScheme.surfaceContainer,
-            MaterialTheme.shapes.small
-          ),
-      ) {
+      Column {
         Text(
-          modifier = Modifier.align(Alignment.Center),
-          text = "歌单封面",
-          style = MaterialTheme.typography.titleMedium
+          text = playlist.playlistName,
+          style = MaterialTheme.typography.titleLarge.copy(
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            fontWeight = FontWeight.W700
+          ),
+          modifier = Modifier
+        )
+        Spacer(
+          modifier = Modifier
+            .width(8.dp)
+        )
+        Text(
+          text = "创建于某年某月某日",
+          style = MaterialTheme.typography.titleMedium.copy(
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
+            fontWeight = FontWeight.Normal
+          ),
+          modifier = Modifier
         )
       }
-      Spacer(
-        modifier = Modifier
-          .width(12.dp)
-      )
-      Text(
-        text = playlist.playlistName,
-        style = MaterialTheme.typography.titleLarge.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-          fontWeight = FontWeight.ExtraBold
-        ),
-        modifier = Modifier
-      )
 
     }
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(),
+        .padding(end = 16.dp),
       horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       ElevatedButton(
+        contentPadding = PaddingValues(
+          horizontal = 4.dp,
+          vertical = 8.dp
+        ),
         shape = MaterialTheme.shapes.small,
         onClick = {
           showRenameDialog.value = true
         },
         colors = ButtonDefaults.elevatedButtonColors().copy(
-          containerColor = MaterialTheme.colorScheme.secondaryContainer,
+          containerColor = MaterialTheme.colorScheme.background,
           contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+        ),
+        modifier = Modifier.weight(1f)
       ) {
-        Text("重命名歌单")
+        Icon(
+          Icons.Filled.Edit,
+          contentDescription = "Favorite",
+          modifier = Modifier.size(ButtonDefaults.IconSize)
+        )
+        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+        Text("重命名")
       }
       ElevatedButton(
         shape = MaterialTheme.shapes.small,
@@ -344,10 +355,17 @@ fun Header(
           )
         },
         colors = ButtonDefaults.elevatedButtonColors().copy(
-          containerColor = MaterialTheme.colorScheme.secondaryContainer,
+          containerColor = MaterialTheme.colorScheme.background,
           contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+        ),
+        modifier = Modifier.weight(1f)
       ) {
+        Icon(
+          Icons.Filled.Add,
+          contentDescription = "Favorite",
+          modifier = Modifier.size(ButtonDefaults.IconSize)
+        )
+        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
         Text("新增")
       }
       ElevatedButton(
@@ -356,10 +374,17 @@ fun Header(
           showDeleteDialog.value = true
         },
         colors = ButtonDefaults.elevatedButtonColors().copy(
-          containerColor = MaterialTheme.colorScheme.secondaryContainer,
+          containerColor = MaterialTheme.colorScheme.background,
           contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        )
+        ),
+        modifier = Modifier.weight(1f)
       ) {
+        Icon(
+          Icons.Filled.Delete,
+          contentDescription = "Favorite",
+          modifier = Modifier.size(ButtonDefaults.IconSize)
+        )
+        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
         Text("删除")
       }
     }
@@ -386,28 +411,28 @@ private fun DeleteSureDialog(
   AlertDialog(
     shape = MaterialTheme.shapes.small,
     onDismissRequest = { onDismissRequest() }, title = {
-    Text("删除歌单")
-  }, text = {
-    Text("确定要删除这个歌单吗?")
-  }, confirmButton = {
-    TextButton(onClick = {
-      // 确认删除
-      coroutineScope.launch {
-        playlistViewModel.deletePlaylist(playlistId)
-        onDismissRequest()
-        navigator?.removeLastOrNull()
+      Text("删除歌单")
+    }, text = {
+      Text("确定要删除这个歌单吗?")
+    }, confirmButton = {
+      TextButton(onClick = {
+        // 确认删除
+        coroutineScope.launch {
+          playlistViewModel.deletePlaylist(playlistId)
+          onDismissRequest()
+          navigator?.removeLastOrNull()
+        }
+      }) {
+        Text("确定")
       }
-    }) {
-      Text("确定")
-    }
-  }, dismissButton = {
-    TextButton(onClick = {
-      // 取消删除
-      onDismissRequest()
-    }) {
-      Text("取消")
-    }
-  })
+    }, dismissButton = {
+      TextButton(onClick = {
+        // 取消删除
+        onDismissRequest()
+      }) {
+        Text("取消")
+      }
+    })
 }
 
 

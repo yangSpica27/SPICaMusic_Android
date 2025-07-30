@@ -30,7 +30,7 @@ fun AppMain() {
   val backStack = rememberNavBackStack(Routes.Splash)
   AppTheme(
     darkTheme = darkTheme,
-    dynamicColor = false
+    dynamicColor = true
   ) {
     SharedTransitionLayout {
       NavDisplay(

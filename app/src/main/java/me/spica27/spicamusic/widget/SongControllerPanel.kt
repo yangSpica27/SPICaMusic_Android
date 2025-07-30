@@ -34,15 +34,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.toCoilUri
+import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.formatDurationSecs
 import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.viewModel.SongViewModel
@@ -58,7 +58,9 @@ fun SongControllerPanel(
   // 歌曲ViewModel
   songViewModel: SongViewModel = hiltViewModel<SongViewModel>(),
   // 是否显示添加到播放列表
-  showAddToPlaylist: Boolean = false
+  showAddToPlaylist: Boolean = false,
+  navigator: NavBackStack? = null,
+  onDismiss: () -> Unit = {},
 ) {
 
 
@@ -206,6 +208,7 @@ fun SongControllerPanel(
         modifier = Modifier.fillMaxWidth(),
         onclick = {
           songViewModel.toggleFavorite(songId)
+          onDismiss.invoke()
         },
         icon = {
           Icon(
@@ -255,7 +258,14 @@ fun SongControllerPanel(
       ) {
         BottomButton(
           modifier = Modifier.weight(1f),
-          onclick = { },
+          onclick = {
+            navigator?.add(
+              Routes.LyricsSearch(
+                song
+              )
+            )
+            onDismiss.invoke()
+          },
           icon = {
             Icon(
               imageVector = Icons.Filled.Edit,

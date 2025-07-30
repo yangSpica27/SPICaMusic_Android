@@ -183,6 +183,10 @@ fun PlayerPage(
             state = horizontalPagerState,
             modifier = Modifier.fillMaxSize(),
             userScrollEnabled = true,
+            beyondViewportPageCount = 1,
+            key = {
+              it
+            }
           ) { index ->
 
             Box(
@@ -219,7 +223,21 @@ fun PlayerPage(
                     )
                   } else {
                     Box(
-                      modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+                      modifier = Modifier
+                        .fillMaxSize()
+                        .clip(
+                          MaterialTheme.shapes.medium
+                        )
+                        .clickable {
+                          currentPlayingSong?.let {
+                            navigator?.add(
+                              Routes.LyricsSearch(
+                                currentPlayingSong
+                              )
+                            )
+                          }
+                        },
+                      contentAlignment = Alignment.Center
                     ) {
                       Text("暂无歌词")
                     }
@@ -645,7 +663,7 @@ private fun SongInfo(
 
   val song = songViewModel.getSongFlow(songId).collectAsStateWithLifecycle(null).value
 
-  val showDialogState = remember { mutableStateOf(false) }
+  val showMenuState = remember { mutableStateOf(false) }
 
 
 
@@ -655,13 +673,17 @@ private fun SongInfo(
     return
   }
 
-  if (showDialogState.value) {
+  if (showMenuState.value) {
     Dialog(
       onDismissRequest = {
-        showDialogState.value = false
+        showMenuState.value = false
       }) {
       SongControllerPanel(
-        songId = songId
+        songId = songId,
+        onDismiss = {
+          showMenuState.value = false
+        },
+        navigator = navigator
       )
     }
   }
@@ -715,7 +737,8 @@ private fun SongInfo(
     Spacer(Modifier.width(10.dp))
     IconButton(
       onClick = {
-        navigator?.add(Routes.LyricsSearch(song))
+
+
       }) {
       Icon(
         modifier = Modifier.size(24.dp),
@@ -727,7 +750,7 @@ private fun SongInfo(
     Spacer(Modifier.width(10.dp))
     IconButton(
       onClick = {
-        showDialogState.value = true
+        showMenuState.value = true
       },
     ) {
       Icon(

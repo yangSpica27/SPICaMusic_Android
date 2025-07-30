@@ -104,9 +104,9 @@ fun SettingPage(
       item {
         CategoryItem (
           title = if (forceDarkThemeSettingState.value) {
-            "亮色模式"
-          } else {
             "暗色模式"
+          } else {
+            "亮色模式"
           },
           icon = if (forceDarkThemeSettingState.value) {
             ImageVector.vectorResource(R.drawable.ic_dark_mode)
