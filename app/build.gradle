@@ -157,4 +157,5 @@ dependencies {
   ksp libs.moshi.kotlin.codegen
 
   implementation("com.github.Kyant0:AndroidLiquidGlass:1.0.0-alpha03")
+  implementation "androidx.constraintlayout:constraintlayout-compose:1.1.1"
 }

@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.widget
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -44,6 +45,7 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 
@@ -180,4 +182,84 @@ fun PlayerBar(
       }
     }
   }
+}
+
+
+@Composable
+fun MiniPlayBar(
+  modifier: Modifier = Modifier,
+  song: Song?,
+  isPlaying: Boolean,
+  togglePlayState: () -> Unit
+) {
+
+  Box(
+    modifier = modifier,
+  ) {
+    AnimatedContent(
+      song,
+    ) { song ->
+      if (song == null) {
+        Row(
+          modifier = Modifier.fillMaxSize(),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.Center
+        ) {
+          Text(
+            "未在播放", maxLines = 1,
+            style = MaterialTheme.typography.titleMedium.copy(
+              fontWeight = FontWeight.ExtraBold
+            ),
+          )
+        }
+      } else {
+        Row(
+          modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          Text(
+            song.displayName,
+            modifier = Modifier
+              .weight(1f)
+              .basicMarquee(),
+            maxLines = 1,
+            style = MaterialTheme.typography.titleMedium.copy(
+              fontWeight = FontWeight.ExtraBold
+            ),
+          )
+          Box(
+            modifier =
+              Modifier
+                .size(48.dp)
+                .background(
+                  MaterialTheme.colorScheme.primaryContainer,
+                  CircleShape
+                )
+                .clip(CircleShape)
+                .clickable {
+                  togglePlayState.invoke()
+                }
+                .innerShadow(
+                  shape = CircleShape, shadow = Shadow(
+                    radius = 10.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    alpha = .11f
+                  )
+                ),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+              contentDescription = "Play/Pause",
+              tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+          }
+        }
+      }
+    }
+  }
+
 }

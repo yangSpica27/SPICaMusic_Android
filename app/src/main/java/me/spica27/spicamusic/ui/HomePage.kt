@@ -3,6 +3,7 @@
 package me.spica27.spicamusic.ui
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -70,11 +73,11 @@ import java.util.*
 fun HomePage(
   modifier: Modifier = Modifier,
   songViewModel: SongViewModel = hiltViewModel(),
-  navigator: NavBackStack? = null
+  navigator: NavBackStack? = null,
+  listState: ScrollState = rememberScrollState(),
+  connection: NestedScrollConnection
 ) {
 
-
-  val listState = rememberScrollState()
 
   val oftenListenSongs = songViewModel.oftenListenSongs10.collectAsStateWithLifecycle()
 
@@ -110,6 +113,7 @@ fun HomePage(
       Column(
         modifier = Modifier
           .weight(1f)
+          .nestedScroll(connection)
           .verticalScroll(
             state = listState
           )

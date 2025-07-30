@@ -6,10 +6,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -18,53 +14,53 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.innerShadow
+import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import me.spica27.spicamusic.utils.DataStoreUtil
-import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.widget.FloatingTabBar
+import me.spica27.spicamusic.widget.MiniPlayBar
 import me.spica27.spicamusic.widget.PlayerBar
+import me.spica27.spicamusic.widget.rememberFloatingTabBarScrollConnection
 
 
 /// 主页
@@ -94,6 +90,16 @@ fun MainScreen(
     Toast.makeText(context, "再次点按返回按键退出", Toast.LENGTH_SHORT).show()
     showToast = false
   }
+
+
+  val homeScrollState = rememberScrollState()
+
+  val scrollConnection = rememberFloatingTabBarScrollConnection()
+
+  val nowPlayingSong = playBackViewModel.currentSongFlow.collectAsState().value
+
+
+  val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
 
 
   LaunchedEffect(key1 = backPressState) {
@@ -143,13 +149,15 @@ fun MainScreen(
       } else {
         Scaffold(
           bottomBar = {
-            BottomNav(pagerState)
+//            BottomNav(pagerState)
           }
         ) { innerPadding ->
           Box(
             modifier = modifier
               .fillMaxSize()
-              .padding(innerPadding)
+              .padding(
+                innerPadding
+              )
           ) {
             // 水平滚动的页面
             HorizontalPager(
@@ -160,54 +168,157 @@ fun MainScreen(
               beyondViewportPageCount = 2
             ) { page ->
               when (page) {
-                0 -> HomePage(navigator = navigator)
+                0 -> HomePage(
+                  navigator = navigator,
+                  listState = homeScrollState,
+                  connection = scrollConnection
+                )
+
                 1 -> SettingPage(navigator = navigator)
               }
             }
-            AnimatedVisibility(
-              visible = playBackViewModel.currentSongFlow.collectAsState().value != null,
+            Column(
               modifier = Modifier
-                .align(alignment = Alignment.BottomCenter)
-                .fillMaxWidth(),
-              enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = tween(250)
-              ) + fadeIn(),
-              exit = slideOutVertically(
-                targetOffsetY = { it },
-                animationSpec = tween(250)
-              ) + fadeOut()
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 20.dp),
+              verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-              with(sharedTransitionScope) {
-
-                Box(
-                  modifier = Modifier
-                    .fillMaxWidth()
-                ) {
-                  PlayerBar(
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .sharedBounds(
-                        rememberSharedContentState(key = "player_bound"),
-                        animatedVisibilityScope = this@AnimatedContent,
-                        enter = scaleIn() + fadeIn(),
-                        exit = scaleOut() + fadeOut(),
-                        resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
-                        placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
-                      )
-                      .background(
-                        MaterialTheme.colorScheme.surfaceContainerLow,
-                        shape = RoundedCornerShape(
-                          topStart = 16.dp,
-                          topEnd = 16.dp
+              FloatingTabBar(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                scrollConnection = scrollConnection,
+                inlineAccessory = { modifier, scope ->
+                  with(sharedTransitionScope) {
+                    Box(
+                      modifier = modifier
+                        .fillMaxWidth()
+                        .background(
+                          MaterialTheme.colorScheme.surfaceContainerLow,
+                          CircleShape
                         )
+                        .sharedBounds(
+                          rememberSharedContentState(key = "player_bound"),
+                          animatedVisibilityScope = this@AnimatedContent,
+                          enter = scaleIn() + fadeIn(),
+                          exit = scaleOut() + fadeOut(),
+                          placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
+                        )
+                        .innerShadow(
+                          shape = CircleShape,
+                          Shadow(
+                            radius = 6.dp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            alpha = .11f
+                          )
+                        )
+                    ) {
+                      MiniPlayBar(
+                        modifier = modifier
+                          .clickable {
+                            if (nowPlayingSong != null) {
+                              showPlayerState = true
+                            }
+                          },
+                        song = playBackViewModel.currentSongFlow.collectAsState().value,
+                        isPlaying = isPlaying,
+                        togglePlayState = {
+                          playBackViewModel.togglePlaying()
+                        }
                       )
-                      .noRippleClickable {
-                        showPlayerState = true
+                    }
+                  }
+                },
+                expandedAccessory = { modifier, scope ->
+                  AnimatedVisibility(
+                    visible = nowPlayingSong != null,
+                    modifier = Modifier
+                      .fillMaxWidth(),
+                    enter = slideInVertically(
+                      initialOffsetY = { it },
+                      animationSpec = tween(250)
+                    ) + fadeIn(),
+                    exit = slideOutVertically(
+                      targetOffsetY = { it },
+                      animationSpec = tween(250)
+                    ) + fadeOut()
+                  ) {
+                    with(sharedTransitionScope) {
+                      Box(
+                        modifier = modifier
+                          .fillMaxWidth()
+                          .background(
+                            MaterialTheme.colorScheme.surfaceContainerLow,
+                            CircleShape
+                          )
+                          .innerShadow(
+                            shape = CircleShape,
+                            Shadow(
+                              radius = 6.dp,
+                              color = MaterialTheme.colorScheme.onSurface,
+                              alpha = .11f
+                            )
+                          )
+                          .sharedBounds(
+                            rememberSharedContentState(key = "player_bound"),
+                            animatedVisibilityScope = this@AnimatedContent,
+                            enter = scaleIn() + fadeIn(),
+                            exit = scaleOut() + fadeOut(),
+                            resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
+                            placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
+                          )
+                      ) {
+                        PlayerBar(
+                          modifier = Modifier
+                            .fillMaxWidth()
+                            .noRippleClickable {
+                              showPlayerState = true
+                            }
+                        )
                       }
+                    }
+                  }
+                },
+                content = {
+                  tab(
+                    key = "home",
+                    title = {
+                      Text("主页")
+                    },
+                    icon = {
+                      BottomNavIcon(
+                        imageVector = Icons.Default.Home,
+                        onClick = {}
+                      )
+                    },
+                    onClick = {},
                   )
-                }
-              }
+                  tab(
+                    key = "设置",
+                    title = {
+                      Text("设置")
+                    },
+                    icon = {
+                      BottomNavIcon(
+                        imageVector = Icons.Default.Settings,
+                        onClick = {}
+                      )
+                    },
+                    onClick = {},
+                  )
+                  standaloneTab(
+                    key = "Search",
+                    icon = {
+                      BottomNavIcon(
+                        imageVector = Icons.Default.Search,
+                        onClick = {}
+                      )
+                    },
+                    onClick = {
+
+                    },
+                  )
+                },
+                selectedTabKey = {}
+              )
             }
           }
         }
@@ -219,151 +330,32 @@ fun MainScreen(
 }
 
 
-// 底部导航栏
-@Composable
-private fun BottomNav(pagerState: PagerState) {
-  val coroutineScope = rememberCoroutineScope()
-
-  val items = listOf("主页", "设置")
-  val selectedIcons =
-    listOf(Icons.Filled.Home, Icons.Filled.Settings)
-  val unselectedIcons =
-    listOf(Icons.Outlined.Home, Icons.Outlined.Settings)
-
-  val currentIndex = remember { mutableIntStateOf(pagerState.currentPage) }
-
-  val indicationIndex = animateFloatAsState(
-    currentIndex.intValue * 1f,
-    tween(500),
-    label = ""
-  )
-
-
-  val indicationPadding = remember { mutableFloatStateOf(1f) }
-
-  val indicationPaddingAnim =
-    animateFloatAsState(
-      indicationPadding.floatValue,
-      spring(
-        dampingRatio = Spring.DampingRatioLowBouncy,
-        stiffness = Spring.StiffnessLow,
-      ), label = ""
-    )
-
-  val pauseColor = MaterialTheme.colorScheme.surfaceContainerHigh
-
-  val playColor = MaterialTheme.colorScheme.surfaceContainerHighest
-
-  val indicationColor = remember {
-    mutableStateOf(pauseColor)
-  }
-
-  val indicationColorAnim = animateColorAsState(
-    indicationColor.value,
-    tween(550),
-    label = ""
-  )
-
-  val isFirst = remember { mutableStateOf(true) }
-
-  val isNight = DataStoreUtil().getForceDarkTheme.collectAsState(false)
-
-  LaunchedEffect(currentIndex.intValue) {
-    if (isFirst.value) {
-      isFirst.value = false
-      return@LaunchedEffect
-    }
-    indicationColor.value = playColor
-    indicationPadding.floatValue = 0.5f
-    delay(300)
-    indicationColor.value = pauseColor
-    indicationPadding.floatValue = 1f
-  }
-
-  LaunchedEffect(isNight.value) {
-    indicationColor.value = pauseColor
-  }
-
-
-  Box(
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(80.dp)
-      .background(MaterialTheme.colorScheme.surfaceContainerLow)
-  ) {
-
-    Row(
-      modifier = Modifier
-        .fillMaxSize()
-        .align(Alignment.Center)
-        .drawBehind {
-          val itemWidth = size.width / items.size
-
-          val centerX = itemWidth * indicationIndex.value + itemWidth / 2
-
-          val paddingWidth = itemWidth / 3 * indicationPaddingAnim.value
-
-          val paddingHeight = size.height / 5 * indicationPaddingAnim.value
-
-          drawRoundRect(
-            color = indicationColorAnim.value,
-            topLeft = Offset(
-              x = centerX - itemWidth / 2 + paddingWidth,
-              y = paddingHeight
-            ),
-            size = Size(
-              width = itemWidth - paddingWidth * 2,
-              height = size.height - paddingHeight * 2
-            ),
-            cornerRadius = CornerRadius(40.dp.value)
-          )
-
-        },
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.SpaceEvenly
-    ) {
-
-      selectedIcons.forEachIndexed { index, _ ->
-        val isSelected = currentIndex.intValue == index
-        Box(
-          modifier = Modifier
-            .weight(1f)
-            .fillMaxSize()
-            .clickableNoRippleClickableWithVibration {
-              coroutineScope.launch {
-                pagerState.animateScrollToPage(index)
-              }
-              currentIndex.intValue = index
-            },
-          contentAlignment = Alignment.Center
-        ) {
-          Icon(
-            imageVector = if (
-              isSelected
-            ) {
-              selectedIcons[index]
-            } else {
-              unselectedIcons[index]
-            },
-            contentDescription = items[index],
-            tint = if (isSelected) {
-              MaterialTheme.colorScheme.inversePrimary
-            } else {
-              MaterialTheme.colorScheme.onBackground
-            }
-          )
-        }
-      }
-
-    }
-
-  }
-
-}
-
 // 返回键状态
 private sealed class BackPress {
   object Idle : BackPress()
   object InitialTouch : BackPress()
 }
 
+
+@Composable
+fun BottomNavIcon(
+  imageVector: ImageVector,
+  onClick: () -> Unit
+) {
+  Box(
+    modifier = Modifier
+      .width(48.dp)
+      .height(48.dp)
+      .clip(CircleShape)
+      .clickable(onClick = onClick)
+      .padding(12.dp),
+    contentAlignment = Alignment.Center
+  ) {
+    Icon(
+      modifier = Modifier.fillMaxSize(),
+      imageVector = imageVector,
+      contentDescription = null,
+      tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+    )
+  }
+}
