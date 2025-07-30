@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.widget
 
-import android.R.attr.onClick
 import android.annotation.SuppressLint
 import androidx.compose.animation.core.EaseInCubic
 import androidx.compose.animation.core.EaseInOut
@@ -15,12 +14,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,8 +45,16 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastCoerceAtMost
+import com.kyant.liquidglass.GlassStyle
+import com.kyant.liquidglass.liquidGlass
+import com.kyant.liquidglass.liquidGlassProvider
+import com.kyant.liquidglass.material.GlassMaterial
+import com.kyant.liquidglass.refraction.InnerRefraction
+import com.kyant.liquidglass.refraction.RefractionAmount
+import com.kyant.liquidglass.refraction.RefractionHeight
+import com.kyant.liquidglass.rememberLiquidGlassProviderState
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.NonCancellable.isActive
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
@@ -55,14 +64,13 @@ import me.spica27.spicamusic.lyric.LyricItem
 import me.spica27.spicamusic.lyric.toNormal
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LyricsView(
   modifier: Modifier = Modifier,
   currentLyric: List<LyricItem>,
   currentTime: Long
 ) {
-
-
 
   val listState = rememberLazyListState()
 
@@ -87,34 +95,66 @@ fun LyricsView(
     }
   }
 
-  LazyColumn(
-    modifier = modifier.onSizeChanged {
-      layoutHeight.intValue = it.height
-    },
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.Center,
-    state = listState,
-    userScrollEnabled = false
+  val providerState = rememberLiquidGlassProviderState(
+    backgroundColor = Color.Transparent
+  )
+
+
+
+
+  Box(
+    modifier = modifier
+      .fillMaxSize()
+      .onSizeChanged {
+        layoutHeight.intValue = it.height
+      },
   ) {
-    itemsIndexed(
-      currentLyric.map { it.toNormal() },
-      key = { index, _ ->
-        index
-      }
-    ) { index, it ->
-      it?.toNormal()?.let { item ->
 
 
-        LyricsViewLine(
-          contentColor = MaterialTheme.colorScheme.onSurface,
-          isActive = index == activeIndex.intValue,
-          content = item.content,
-          inactiveBlur = (index.coerceAtLeast(activeIndex.intValue) -
-              index.coerceAtMost(activeIndex.intValue)) * 0.5f,
-          onClick = { },
-        )
+    LazyColumn(
+      modifier = Modifier
+        .fillMaxSize()
+        .liquidGlassProvider(providerState),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center,
+      state = listState,
+      userScrollEnabled = false
+    ) {
+      itemsIndexed(
+        currentLyric.map { it.toNormal() },
+        key = { index, _ ->
+          index
+        }
+      ) { index, it ->
+        it?.toNormal()?.let { item ->
+          LyricsViewLine(
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            isActive = index == activeIndex.intValue,
+            content = item.content,
+            inactiveBlur = ((index.coerceAtLeast(activeIndex.intValue) -
+                index.coerceAtMost(activeIndex.intValue)) * 0.5f).fastCoerceAtMost(4f),
+            onClick = { },
+          )
+        }
       }
     }
+
+    Box(
+      Modifier
+        .fillMaxSize()
+        .liquidGlass(
+          providerState,
+          GlassStyle(
+            shape = MaterialTheme.shapes.medium,
+            innerRefraction = InnerRefraction(
+              height = RefractionHeight(24.dp),
+              amount = RefractionAmount((-24).dp)
+            ),
+            material = GlassMaterial.None
+          )
+        )
+    )
+
   }
 
 }
@@ -207,6 +247,7 @@ fun LyricsViewLine(
   Box(
     modifier = modifier
       .fillMaxWidth()
+      .padding(horizontal = 12.dp)
       .clip(MaterialTheme.shapes.medium)
       .indication(interactionSource, indication = null)
       .graphicsLayer {

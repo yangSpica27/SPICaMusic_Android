@@ -3,43 +3,52 @@ package me.spica27.spicamusic.ui
 import android.content.Intent
 import android.os.Build
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.service.RefreshMusicListService
 import me.spica27.spicamusic.viewModel.SettingViewModel
 
 
 // 设置页面
-@OptIn(ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SettingPage(
   navigator: NavBackStack? = null,
@@ -80,173 +89,202 @@ fun SettingPage(
   val forceDarkThemeSettingState =
     settingViewModel.forceDarkTheme.collectAsStateWithLifecycle(false)
 
-  Box(modifier = Modifier.fillMaxSize()) {
-    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+  val listState = rememberLazyListState()
+
+
+  Column(
+    modifier = Modifier.fillMaxSize(),
+    verticalArrangement = Arrangement.Top
+  ) {
+    TopBar()
+    LazyColumn(
+      modifier = Modifier.weight(1f),
+      state = listState
+    ) {
       item {
-        Text(
-          text = "设置", style = MaterialTheme.typography.headlineMedium.copy(
-            fontWeight = FontWeight.W600,
-            color = MaterialTheme.colorScheme.tertiary
-          ), modifier = Modifier.padding(vertical = 20.dp)
+        CategoryItem (
+          title = if (forceDarkThemeSettingState.value) {
+            "亮色模式"
+          } else {
+            "暗色模式"
+          },
+          icon = if (forceDarkThemeSettingState.value) {
+            ImageVector.vectorResource(R.drawable.ic_dark_mode)
+          } else {
+            ImageVector.vectorResource(R.drawable.ic_outlined_sunny)
+          },
+          onClick = {
+            settingViewModel.saveForceDarkTheme(!forceDarkThemeSettingState.value)
+          }
         )
       }
-
       item {
-        Card {
-          Column {
-            AnimatedVisibility(
-              visible = permissionState.shouldShowRationale,
-              modifier = Modifier.padding(16.dp)
-            ) {
-              TextSettingItem(
-                title = "申请权限", desc = "申请应用正常运行所需要的必要权限",
-                onClick = {
-                  permissionState.launchMultiplePermissionRequest()
-                }
-              )
+        CategoryItem(
+          title = "歌词",
+          icon = Icons.Default.Menu,
+          onClick = { })
+      }
+      item {
+        CategoryItem(
+          title = "扫描",
+          icon = Icons.Outlined.Refresh,
+          onClick = {
+            if (permissionState.allPermissionsGranted) {
+              // 扫描本地音乐
+              Toast.makeText(context, "开始扫描本地音乐", Toast.LENGTH_SHORT).show()
+              context.startService(Intent(context, RefreshMusicListService::class.java))
+            } else {
+              permissionState.launchMultiplePermissionRequest()
+              Toast.makeText(context, "请授予权限", Toast.LENGTH_SHORT).show()
             }
-            TextSettingItem(
-              title = "扫描", desc = "使用MediaStore扫描本地音乐",
-              onClick = {
-                if (permissionState.allPermissionsGranted) {
-                  // 扫描本地音乐
-                  Toast.makeText(context, "开始扫描本地音乐", Toast.LENGTH_SHORT).show()
-                  context.startService(Intent(context, RefreshMusicListService::class.java))
-                } else {
-                  permissionState.launchMultiplePermissionRequest()
-                  Toast.makeText(context, "请授予权限", Toast.LENGTH_SHORT).show()
-                }
-              }
-            )
-            TextSettingItem(
-              title = "音效", desc = "调节EQ和增益效果",
-              onClick = {
-                navigator?.add(Routes.EQ)
-              }
-            )
-            TextSettingItem(
-              title = "隐私政策", desc = "查看我们的隐私政策"
-            )
-          }
-        }
+          })
       }
+      item { HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp)) }
+      item {
+        CategoryItem(
+          title = "FAQ",
+          icon = Icons.Outlined.Email,
+          onClick = {
 
-      item {
-        Spacer(modifier = Modifier.height(20.dp))
+          })
       }
+      item {
+        CategoryItem(
+          title = "关于",
+          icon = Icons.Outlined.Info,
+          onClick = {
 
-      item {
-        Card {
-          Column {
-//            SwitchSettingItem(
-//              title = "自动播放", desc = "自动播放下一首", value = autoPlaySettingState.value,
-//              onClick = {
-//                settingViewModel.saveAutoPlay(!autoPlaySettingState.value)
-//              }
-//            )
-//            SwitchSettingItem(
-//              title = "自动扫描",
-//              desc = "定时更新/扫描本地音乐",
-//              value = autoScannerSettingState.value,
-//              onClick = {
-//                settingViewModel.saveAutoScanner(!autoScannerSettingState.value)
-//              }
-//            )
-            SwitchSettingItem(
-              title = "暗色模式",
-              desc = "是否启用暗色模式",
-              value = forceDarkThemeSettingState.value,
-              onClick = {
-                settingViewModel.saveForceDarkTheme(!forceDarkThemeSettingState.value)
-              }
-            )
-          }
-        }
+          })
       }
+      item {
+        AppVersion(
+          versionText = "Version ALPHA-3",
+          copyrights = "© 2024 SPICa27",
+          onClick = {
 
-      item {
-        Spacer(modifier = Modifier.height(20.dp))
-      }
-      item {
-        Card {
-          Column {
-            TextSettingItem(
-              title = "主页", desc = "www.spica27.me"
-            )
-          }
-        }
-      }
-      item {
-        Spacer(modifier = Modifier.height(60.dp))
+          })
       }
     }
   }
 }
 
+
 @Composable
-private fun SwitchSettingItem(
-  title: String = "设置项",
-  desc: String = "设置项描述",
-  value: Boolean = false,
-  onClick: () -> Unit = {}
+private fun CategoryItem(title: String, icon: ImageVector, onClick: () -> Unit) {
+  Surface(
+    onClick = onClick,
+    shape = MaterialTheme.shapes.medium,
+  ) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 16.dp),
+      horizontalArrangement = Arrangement.spacedBy(30.dp)
+    ) {
+      Icon(
+        icon,
+        contentDescription = null,
+        modifier = Modifier.size(28.dp),
+        tint = MaterialTheme.colorScheme.onSurface
+      )
+      Text(title, style = MaterialTheme.typography.bodyLarge)
+    }
+  }
+}
+
+
+@Composable
+private fun SwitchItem(
+  title: String, icon: ImageVector,
+  onClick: (Boolean) -> Unit,
+  checked: Boolean
 ) {
+  Surface(
+    onClick = {
+      onClick(!checked)
+    },
+    shape = MaterialTheme.shapes.medium,
+  ) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 16.dp),
+      horizontalArrangement = Arrangement.spacedBy(30.dp)
+    ) {
+      Icon(
+        imageVector = icon,
+        contentDescription = null,
+        modifier = Modifier.size(28.dp),
+        tint = MaterialTheme.colorScheme.onSurface
+      )
+      Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+      Switch(
+        checked = checked, onCheckedChange = {
+          onClick(!checked)
+        },
+        thumbContent = {
+          Icon(
+            imageVector = Icons.Filled.Check,
+            contentDescription = null,
+            modifier = Modifier.size(SwitchDefaults.IconSize),
+          )
+        }
+      )
+    }
+  }
+}
 
-  Row(
-    Modifier
-      .clickable {
-        onClick()
+
+@Composable
+private fun AppVersion(versionText: String, copyrights: String, onClick: () -> Unit) {
+  Surface(onClick = onClick) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 12.dp),
+      horizontalArrangement = Arrangement.spacedBy(30.dp)
+    ) {
+      Box(
+        modifier = Modifier.size(30.dp),
+      )
+      Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+          versionText,
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurface.copy(0.44f)
+        )
+        Text(
+          copyrights,
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurface.copy(0.44f)
+        )
       }
-      .fillMaxWidth()
-      .padding(16.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-    Column(modifier = Modifier.weight(1f)) {
-      Text(
-        text = title, style = MaterialTheme.typography.bodyLarge.copy(
-          fontWeight = FontWeight.W600
-        )
-      )
-      Text(
-        text = desc, style = MaterialTheme.typography.bodyMedium.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-      )
     }
-    Switch(checked = value, onCheckedChange = {
-      onClick()
-    })
   }
-
 }
 
-/// 文字设置项
+
 @Composable
-private fun TextSettingItem(
-  title: String = "设置项",
-  desc: String = "设置项描述",
-  onClick: () -> Unit = {}
+private fun TopBar(
+  navigator: NavBackStack? = null,
 ) {
-  Row(
-    Modifier
-      .clickable { onClick() }
+  Box(
+    modifier = Modifier
       .fillMaxWidth()
-      .padding(16.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-    Column(modifier = Modifier.weight(1f)) {
-      Text(
-        text = title, style = MaterialTheme.typography.bodyLarge.copy(
-          fontWeight = FontWeight.W600
-        )
-      )
-      Text(
-        text = desc, style = MaterialTheme.typography.bodyMedium.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-      )
-    }
-    Icon(imageVector = Icons.AutoMirrored.Default.KeyboardArrowRight, contentDescription = "设置项")
+      .height(64.dp)
+  ) {
+    Text(
+      text = "设置",
+      style = MaterialTheme.typography.bodyMedium.copy(
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.Black,
+        fontSize = 22.sp
+      ),
+      modifier = Modifier
+        .align(Alignment.Center)
+    )
   }
-}
-
-@Preview
-@Composable
-fun SettingPagePreview() {
-  SettingPage()
 }

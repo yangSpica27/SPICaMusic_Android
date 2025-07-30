@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,13 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-//noinspection UsingMaterialAndMaterial3Libraries
-import androidx.compose.material.SliderDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -44,8 +44,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
-import ir.mahozad.multiplatform.wavyslider.WaveDirection
-import ir.mahozad.multiplatform.wavyslider.material.WavySlider
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
@@ -161,17 +159,32 @@ fun PlayerBar(
           )
         }
         Spacer(modifier = Modifier.width(12.dp))
-        IconButton(
-          modifier = Modifier.size(60.dp), onClick = {
-            playBackViewModel.togglePlaying()
-          }, colors = IconButtonDefaults.iconButtonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-          )
+        Box(
+          modifier =
+            Modifier
+              .size(48.dp)
+              .background(
+                MaterialTheme.colorScheme.primaryContainer,
+                CircleShape
+              )
+              .clip(CircleShape)
+              .clickable{
+                playBackViewModel.togglePlaying()
+              }
+              .innerShadow(
+                shape = CircleShape, shadow = Shadow(
+                  radius = 10.dp,
+                  color = MaterialTheme.colorScheme.primary,
+                  alpha = .11f
+                )
+              )
+          ,
+          contentAlignment = Alignment.Center
         ) {
           Icon(
             painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
             contentDescription = "Play/Pause",
-            tint = MaterialTheme.colorScheme.onSecondaryContainer
+            tint = MaterialTheme.colorScheme.onPrimaryContainer
           )
         }
       }

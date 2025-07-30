@@ -14,6 +14,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.Interaction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -39,7 +40,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -47,7 +47,6 @@ import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -59,15 +58,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -75,6 +71,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -85,7 +82,6 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
-import coil3.util.Logger
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -110,6 +106,7 @@ import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.visualiser.MusicVisualiser
 import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.SongControllerPanel
+import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
 import timber.log.Timber
 
@@ -131,13 +128,13 @@ fun PlayerPage(
 
   val coroutineScope = rememberCoroutineScope()
 
-  val pagerState = rememberPagerState { 3 }
+  val horizontalPagerState = rememberPagerState { 3 }
 
   val vibrator = rememberVibrator()
 
   val isFirst = remember { mutableStateOf(true) }
 
-  LaunchedEffect(pagerState.currentPage) {
+  LaunchedEffect(horizontalPagerState.currentPage) {
     if (isFirst.value) {
       isFirst.value = false
       return@LaunchedEffect
@@ -167,10 +164,10 @@ fun PlayerPage(
 
         // tab
         TabBar(
-          selectedTabIndex = pagerState.currentPage,
+          selectedTabIndex = horizontalPagerState.currentPage,
           onTabSelected = {
             coroutineScope.launch {
-              pagerState.animateScrollToPage(it)
+              horizontalPagerState.animateScrollToPage(it)
             }
           },
           tabs = listOf("封面", "歌词", "信息"),
@@ -183,7 +180,7 @@ fun PlayerPage(
             .weight(1f)
         ) {
           HorizontalPager(
-            state = pagerState,
+            state = horizontalPagerState,
             modifier = Modifier.fillMaxSize(),
             userScrollEnabled = true,
           ) { index ->
@@ -236,9 +233,7 @@ fun PlayerPage(
                 }
               }
             }
-
           }
-
         }
 
         // 歌名和歌手
@@ -356,80 +351,90 @@ private fun Cover(
   }
 
 
-  DisposableEffect(Unit) {
-    (0 until MusicVisualiser.FREQUENCY_BAND_LIMITS.size).forEach { i ->
-      pn.add(0f)
-      pn.add(0f)
-    }
-    val musicVisualiser = MusicVisualiser()
-    musicVisualiser.setListener(object : MusicVisualiser.Listener {
-      override fun getDrawData(list: List<Float>) {
-        for ((index, f) in list.withIndex()) {
-          pn[index] = f
-        }
-      }
-    })
-    musicVisualiser.ready()
-    onDispose {
-      musicVisualiser.dispose()
-    }
-  }
+//  DisposableEffect(Unit) {
+//    (0 until MusicVisualiser.FREQUENCY_BAND_LIMITS.size).forEach { i ->
+//      pn.add(0f)
+//      pn.add(0f)
+//    }
+//    val musicVisualiser = MusicVisualiser()
+//    musicVisualiser.setListener(object : MusicVisualiser.Listener {
+//      override fun getDrawData(list: List<Float>) {
+//        for ((index, f) in list.withIndex()) {
+//          pn[index] = f
+//        }
+//      }
+//    })
+//    musicVisualiser.ready()
+//    onDispose {
+//      musicVisualiser.dispose()
+//    }
+//  }
 
 
-
-  Spacer(
-    modifier = Modifier
-      .fillMaxSize()
-      .drawWithCache {
-
-
-        val centerX = size.width / 2
-
-        val startY = size.width - 30.dp.toPx() - 12.dp.toPx()
-
-        val changeY = 40.dp.toPx()
-
-        onDrawWithContent {
-          for ((index, state) in blackLineData.withIndex()) {
-            this.rotate(
-              index * 360f / pn.size,
-            ) {
-
-              val blackLineY = startY + changeY * state.value
-
-              val shadowY = Math.max(blackLineY, grayLineYs[index])
-
-              drawLine(
-                color = shadowLineColor,
-                start = Offset(
-                  centerX, startY
-                ),
-                end = Offset(
-                  centerX,
-                  shadowY
-                ),
-                strokeWidth = 8.dp.toPx(),
-                cap = StrokeCap.Round,
-              )
-
-              grayLineYs[index] = shadowY - 1.dp.toPx() / 10f
-
-              drawLine(
-                color = lineColor,
-                start = Offset(centerX, startY),
-                end = Offset(
-                  centerX,
-                  blackLineY
-                ),
-                strokeWidth = 8.dp.toPx(),
-                cap = StrokeCap.Round,
-              )
-            }
-          }
-        }
-
-      }
+  AndroidView(
+    factory = { context ->
+      VisualizerView(context)
+    }, update = { view ->
+      view.setThemeColor(lineColor.toArgb())
+    }, modifier = Modifier
+      .fillMaxWidth()
   )
+
+
+  //  Compose 版本的频谱动效开销多占 25%的性能 暂时屏蔽
+//  Spacer(
+//    modifier = Modifier
+//      .fillMaxSize()
+//      .drawWithCache {
+//
+//
+//        val centerX = size.width / 2
+//
+//        val startY = size.width - 30.dp.toPx() - 12.dp.toPx()
+//
+//        val changeY = 40.dp.toPx()
+//
+//        onDrawWithContent {
+//          for ((index, state) in blackLineData.withIndex()) {
+//            this.rotate(
+//              index * 360f / pn.size,
+//            ) {
+//
+//              val blackLineY = startY + changeY * state.value
+//
+//              val shadowY = Math.max(blackLineY, grayLineYs[index])
+//
+//              drawLine(
+//                color = shadowLineColor,
+//                start = Offset(
+//                  centerX, startY
+//                ),
+//                end = Offset(
+//                  centerX,
+//                  shadowY
+//                ),
+//                strokeWidth = 8.dp.toPx(),
+//                cap = StrokeCap.Round,
+//              )
+//
+//              grayLineYs[index] = shadowY - 1.dp.toPx() / 10f
+//
+//              drawLine(
+//                color = lineColor,
+//                start = Offset(centerX, startY),
+//                end = Offset(
+//                  centerX,
+//                  blackLineY
+//                ),
+//                strokeWidth = 8.dp.toPx(),
+//                cap = StrokeCap.Round,
+//              )
+//            }
+//          }
+//        }
+//
+//      }
+//  )
   Box(
     modifier = Modifier
       .fillMaxHeight()
@@ -587,17 +592,31 @@ private fun ControlPanel(
       }
       Spacer(modifier = Modifier.weight(1f))
       // Play/Pause
-      IconButton(
-        modifier = Modifier.size(60.dp), onClick = {
-          playBackViewModel.togglePlaying()
-        }, colors = IconButtonDefaults.iconButtonColors(
-          containerColor = MaterialTheme.colorScheme.secondaryContainer
-        )
+      Box(
+        modifier =
+          Modifier
+            .size(48.dp)
+            .background(
+              MaterialTheme.colorScheme.primaryContainer,
+              CircleShape
+            )
+            .clip(CircleShape)
+            .clickable {
+              playBackViewModel.togglePlaying()
+            }
+            .innerShadow(
+              shape = CircleShape, shadow = Shadow(
+                radius = 10.dp,
+                color = MaterialTheme.colorScheme.primary,
+                alpha = .11f
+              )
+            ),
+        contentAlignment = Alignment.Center
       ) {
         Icon(
           painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
           contentDescription = "Play/Pause",
-          tint = MaterialTheme.colorScheme.onSecondaryContainer
+          tint = MaterialTheme.colorScheme.onPrimaryContainer
         )
       }
       Spacer(modifier = Modifier.weight(1f))

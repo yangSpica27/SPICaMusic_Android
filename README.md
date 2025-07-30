@@ -3,7 +3,7 @@
 <p align="center">
 
 <img src="/img/Screenshot_20250728_201015.png" width="20%"/>
-<img src="/img/Screenshot_20250728_201202.png" width="20%"/>
+<img src="/img/Screenshot_20250730_174948.png" width="20%"/>
 <img src="/img/Screenshot_20250621_231303.png" width="20%"/>
 <img src="/img/Screenshot_20250728_201245.png" width="20%"/>
 </p>
