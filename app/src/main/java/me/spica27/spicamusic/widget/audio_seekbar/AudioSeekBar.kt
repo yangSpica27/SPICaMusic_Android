@@ -2,7 +2,6 @@
 
 package me.spica27.spicamusic.widget.audio_seekbar
 
-import android.util.Log
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -13,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -40,7 +39,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.utils.rememberVibrator
 import me.spica27.spicamusic.utils.tick
-import timber.log.Timber
 
 
 private val MinSpikeWidthDp: Dp = 1.dp
@@ -86,7 +84,11 @@ fun AudioWaveSlider(
     remember(spikePadding) { spikePadding.coerceIn(MinSpikePaddingDp, MaxSpikePaddingDp) }
   val spikeRadius =
     remember(spikeRadius) { spikeRadius.coerceIn(MinSpikeRadiusDp, MaxSpikeRadiusDp) }
-  val spikeTotalWidth = remember(spikeWidth, spikePadding) { spikeWidth + spikePadding }
+  val spikeTotalWidth = remember(spikeWidth, spikePadding) {
+    derivedStateOf {
+      spikeWidth + spikePadding
+    }
+  }.value
   var canvasSize by remember { mutableStateOf(Size(0f, 0f)) }
   var spikes by remember { mutableFloatStateOf(0F) }
 
