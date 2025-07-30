@@ -73,8 +73,6 @@ fun PlayerScreen(
           animatedVisibilityScope = animatedVisibilityScope,
           enter = fadeIn() + scaleIn(),
           exit = fadeOut() + scaleOut(),
-          resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
-          placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
         ),
       topBar = {
         TopAppBar(

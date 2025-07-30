@@ -87,7 +87,7 @@ fun SettingPage(
   val autoPlaySettingState = settingViewModel.autoPlay.collectAsStateWithLifecycle(false)
   val autoScannerSettingState = settingViewModel.autoScanner.collectAsStateWithLifecycle(false)
   val forceDarkThemeSettingState =
-    settingViewModel.forceDarkTheme.collectAsStateWithLifecycle(false)
+    settingViewModel.forceDarkTheme.collectAsStateWithLifecycle(false).value
 
   val listState = rememberLazyListState()
 
@@ -103,18 +103,18 @@ fun SettingPage(
     ) {
       item {
         CategoryItem (
-          title = if (forceDarkThemeSettingState.value) {
+          title = if (forceDarkThemeSettingState) {
             "暗色模式"
           } else {
             "亮色模式"
           },
-          icon = if (forceDarkThemeSettingState.value) {
+          icon = if (forceDarkThemeSettingState) {
             ImageVector.vectorResource(R.drawable.ic_dark_mode)
           } else {
             ImageVector.vectorResource(R.drawable.ic_outlined_sunny)
           },
           onClick = {
-            settingViewModel.saveForceDarkTheme(!forceDarkThemeSettingState.value)
+            settingViewModel.saveForceDarkTheme(!forceDarkThemeSettingState)
           }
         )
       }

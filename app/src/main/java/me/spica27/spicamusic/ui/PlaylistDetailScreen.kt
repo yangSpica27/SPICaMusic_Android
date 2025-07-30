@@ -41,9 +41,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -86,9 +88,9 @@ fun PlaylistDetailScreen(
   val coroutineScope = rememberCoroutineScope()
 
   val topBarColor = animateColorAsState(
-    if (scrollBehavior.state.collapsedFraction == 0f ){
+    if (scrollBehavior.state.collapsedFraction == 0f) {
       MaterialTheme.colorScheme.primaryContainer
-    }else{
+    } else {
       MaterialTheme.colorScheme.background
     },
   )
@@ -253,30 +255,30 @@ fun Header(
   navigator: NavBackStack? = null,
 ) {
 
-  val showRenameDialog = remember { mutableStateOf(false) }
+  var showRenameDialog by remember { mutableStateOf(false) }
 
-  if (showRenameDialog.value) {
+  if (showRenameDialog) {
     InputTextDialog(
       onDismissRequest = {
-        showRenameDialog.value = false
+        showRenameDialog = false
       },
       title = "重命名歌单",
       onConfirm = {
         playlistViewModel.renamePlaylist(playlist.playlistId, it)
-        showRenameDialog.value = false
+        showRenameDialog = false
       },
       defaultText = playlist.playlistName,
       placeholder = "请输入歌单名称"
     )
   }
 
-  val showDeleteDialog = remember { mutableStateOf(false) }
+  var showDeleteDialog by remember { mutableStateOf(false) }
 
-  if (showDeleteDialog.value) {
+  if (showDeleteDialog) {
     DeleteSureDialog(
       playlistId = playlist.playlistId ?: -1,
       onDismissRequest = {
-        showDeleteDialog.value = false
+        showDeleteDialog = false
       },
       navigator = navigator
     )
@@ -329,7 +331,7 @@ fun Header(
         ),
         shape = MaterialTheme.shapes.small,
         onClick = {
-          showRenameDialog.value = true
+          showRenameDialog = true
         },
         colors = ButtonDefaults.elevatedButtonColors().copy(
           containerColor = MaterialTheme.colorScheme.background,
@@ -371,7 +373,7 @@ fun Header(
       ElevatedButton(
         shape = MaterialTheme.shapes.small,
         onClick = {
-          showDeleteDialog.value = true
+          showDeleteDialog = true
         },
         colors = ButtonDefaults.elevatedButtonColors().copy(
           containerColor = MaterialTheme.colorScheme.background,

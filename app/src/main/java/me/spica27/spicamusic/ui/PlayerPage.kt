@@ -50,11 +50,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -132,11 +134,11 @@ fun PlayerPage(
 
   val vibrator = rememberVibrator()
 
-  val isFirst = remember { mutableStateOf(true) }
+  var isFirst by remember { mutableStateOf(true) }
 
   LaunchedEffect(horizontalPagerState.currentPage) {
-    if (isFirst.value) {
-      isFirst.value = false
+    if (isFirst) {
+      isFirst = false
       return@LaunchedEffect
     }
     vibrator.tick()
@@ -506,13 +508,13 @@ private fun ControlPanel(
 
   val positionSec = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
 
-  val isSeekingState = remember { mutableStateOf(false) }
+  var isSeekingState by remember { mutableStateOf(false) }
 
-  val seekValueState = remember { mutableFloatStateOf(0f) }
+  var seekValueState by remember { mutableFloatStateOf(0f) }
 
   LaunchedEffect(positionSec) {
-    if (isSeekingState.value) return@LaunchedEffect
-    seekValueState.floatValue = positionSec.secsToMs() * 1f
+    if (isSeekingState) return@LaunchedEffect
+    seekValueState = positionSec.secsToMs() * 1f
   }
 
   LaunchedEffect(song) {
@@ -549,15 +551,15 @@ private fun ControlPanel(
         waveformBrush = SolidColor(MaterialTheme.colorScheme.surfaceVariant),
         progressBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant),
         modifier = Modifier.fillMaxWidth(),
-        progress = (seekValueState.floatValue / (songState?.duration ?: 1)).coerceIn(0f, 1f),
+        progress = (seekValueState / (songState?.duration ?: 1)).coerceIn(0f, 1f),
         onProgressChangeFinished = {
-          playBackViewModel.seekTo(seekValueState.floatValue.toLong())
-          isSeekingState.value = false
+          playBackViewModel.seekTo(seekValueState.toLong())
+          isSeekingState= false
         },
         onProgressChange = {
           Timber.d("Seeking to $it")
-          seekValueState.floatValue = it * (songState?.duration ?: 1).toFloat()
-          isSeekingState.value = true
+          seekValueState = it * (songState?.duration ?: 1).toFloat()
+          isSeekingState = true
         })
     }
 
@@ -575,7 +577,7 @@ private fun ControlPanel(
 
       // 滑动到的地方
       AnimatedVisibility(
-        visible = isSeekingState.value,
+        visible = isSeekingState,
       ) {
         Text(
           modifier = Modifier
@@ -583,7 +585,7 @@ private fun ControlPanel(
               MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small
             )
             .padding(vertical = 4.dp, horizontal = 8.dp),
-          text = seekValueState.floatValue.toLong().msToSecs().formatDurationSecs(),
+          text = seekValueState.toLong().msToSecs().formatDurationSecs(),
           style = MaterialTheme.typography.bodyMedium,
           color = MaterialTheme.colorScheme.onSecondaryContainer
         )

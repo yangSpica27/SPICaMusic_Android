@@ -62,7 +62,7 @@ import androidx.constraintlayout.compose.Dimension
 
 
 /**
- * 来源:https://github.com/elyesmansour/compose-floating-tab-bar
+ * 原始版本来源:https://github.com/elyesmansour/compose-floating-tab-bar
  */
 @Composable
 fun FloatingTabBar(

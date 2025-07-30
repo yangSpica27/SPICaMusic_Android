@@ -20,7 +20,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.navigation3.ui.NavDisplay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -125,7 +124,8 @@ fun ScrollHaptics(
     if (!vibrator.hasVibrator()) return@LaunchedEffect
     when (vibrationType) {
       ScrollVibrationType.ON_ITEM_CHANGED -> {
-        snapshotFlow { listState.firstVisibleItemIndex }
+        snapshotFlow {
+          listState.firstVisibleItemIndex }
           .distinctUntilChanged()
           .filter { index ->
             listState.isScrollInProgress || (index != 0 && listState.layoutInfo.visibleItemsInfo.isNotEmpty() && listState.layoutInfo.visibleItemsInfo.first().index == index)

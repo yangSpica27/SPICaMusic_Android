@@ -6,13 +6,10 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -198,8 +195,8 @@ fun MainScreen(
                         .sharedBounds(
                           rememberSharedContentState(key = "player_bound"),
                           animatedVisibilityScope = this@AnimatedContent,
-                          enter = scaleIn() + fadeIn(),
-                          exit = scaleOut() + fadeOut(),
+                          enter = fadeIn(),
+                          exit = fadeOut(),
                           placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
                         )
                         .innerShadow(
@@ -232,14 +229,6 @@ fun MainScreen(
                     visible = nowPlayingSong != null,
                     modifier = Modifier
                       .fillMaxWidth(),
-                    enter = slideInVertically(
-                      initialOffsetY = { it },
-                      animationSpec = tween(250)
-                    ) + fadeIn(),
-                    exit = slideOutVertically(
-                      targetOffsetY = { it },
-                      animationSpec = tween(250)
-                    ) + fadeOut()
                   ) {
                     with(sharedTransitionScope) {
                       Box(
@@ -249,14 +238,6 @@ fun MainScreen(
                             MaterialTheme.colorScheme.surfaceContainerLow,
                             CircleShape
                           )
-                          .innerShadow(
-                            shape = CircleShape,
-                            Shadow(
-                              radius = 6.dp,
-                              color = MaterialTheme.colorScheme.onSurface,
-                              alpha = .11f
-                            )
-                          )
                           .sharedBounds(
                             rememberSharedContentState(key = "player_bound"),
                             animatedVisibilityScope = this@AnimatedContent,
@@ -264,6 +245,14 @@ fun MainScreen(
                             exit = scaleOut() + fadeOut(),
                             resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
                             placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
+                          )
+                          .innerShadow(
+                            shape = CircleShape,
+                            Shadow(
+                              radius = 6.dp,
+                              color = MaterialTheme.colorScheme.onSurface,
+                              alpha = .11f
+                            )
                           )
                       ) {
                         PlayerBar(
