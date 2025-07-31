@@ -51,6 +51,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -96,6 +97,7 @@ import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.utils.TimeUtils.prettyTime
 import me.spica27.spicamusic.utils.contentResolverSafe
 import me.spica27.spicamusic.utils.formatDurationDs
 import me.spica27.spicamusic.utils.formatDurationSecs
@@ -107,12 +109,14 @@ import me.spica27.spicamusic.utils.tick
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.visualiser.MusicVisualiser
+import me.spica27.spicamusic.widget.LyricSettingDialog
 import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.SongControllerPanel
 import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.wrapper.Taglib
 import timber.log.Timber
+import java.util.*
 
 
 @Composable
@@ -526,13 +530,14 @@ private fun ControlPanel(
       val amplituda = playBackViewModel.getAmplituda()
       if (song?.getSongUri() != null) {
         val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
-        if (inputStream != null) {
-          val amplitudes = amplituda.processAudio(inputStream)
-          val amplitudesList = amplitudes.get().amplitudesAsList()
-          ampState.value = amplitudesList
-          inputStream.close()
-        } else {
-          ampState.value = arrayListOf()
+        inputStream.use { inputStream ->
+          if (inputStream != null) {
+            val amplitudes = amplituda.processAudio(inputStream)
+            val amplitudesList = amplitudes.get().amplitudesAsList()
+            ampState.value = amplitudesList
+          } else {
+            ampState.value = arrayListOf()
+          }
         }
       }
     }
@@ -541,7 +546,6 @@ private fun ControlPanel(
   Column(
     modifier = modifier,
   ) {
-
     // 振幅 进度条
     Box(
       modifier = Modifier
@@ -667,8 +671,18 @@ private fun SongInfo(
 
   val song = songViewModel.getSongFlow(songId).collectAsStateWithLifecycle(null).value
 
-  val showMenuState = remember { mutableStateOf(false) }
+  var showMenuState by remember { mutableStateOf(false) }
 
+
+  var showLyricsSetting by remember { mutableStateOf(false) }
+
+  if (showLyricsSetting) {
+    LyricSettingDialog(
+      onDismissRequest = {
+        showLyricsSetting = false
+      }
+    )
+  }
 
 
   if (song == null) {
@@ -677,15 +691,15 @@ private fun SongInfo(
     return
   }
 
-  if (showMenuState.value) {
+  if (showMenuState) {
     Dialog(
       onDismissRequest = {
-        showMenuState.value = false
+        showMenuState = false
       }) {
       SongControllerPanel(
         songId = songId,
         onDismiss = {
-          showMenuState.value = false
+          showMenuState = false
         },
         navigator = navigator
       )
@@ -741,8 +755,7 @@ private fun SongInfo(
     Spacer(Modifier.width(10.dp))
     IconButton(
       onClick = {
-
-
+        showLyricsSetting = true
       }) {
       Icon(
         modifier = Modifier.size(24.dp),
@@ -754,7 +767,7 @@ private fun SongInfo(
     Spacer(Modifier.width(10.dp))
     IconButton(
       onClick = {
-        showMenuState.value = true
+        showMenuState = false
       },
     ) {
       Icon(
@@ -836,11 +849,13 @@ private fun TabBar(
 
 @Composable
 fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
+
   if (song == null) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
       Text("暂无播放中的歌曲")
     }
   } else {
+
 
     LaunchedEffect(song) {
 
@@ -851,17 +866,17 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
         fd?.use { fd ->
           val metadata = Taglib.retrieveMetadataWithFD(fd.detachFd())
           Timber.tag("歌曲信息").d("metadata: $metadata")
-//          val metadata = TagLib.getMetadata(fd.detachFd())
-//          if (metadata != null) {
-//            for (picture in metadata.pictures) {
-//              Timber.d("Picture: ${picture.description}")
-//            }
-//            metadata.propertyMap.forEach {
-//              Timber.d("Property: ${it.key} = ${it.value}")
-//            }
         }
       }
 
+    }
+
+
+    val lastPlayTimeText: State<String> = remember(song.lastPlayTime) {
+      derivedStateOf {
+        if (song.lastPlayTime == 0L) return@derivedStateOf "现在"
+        return@derivedStateOf prettyTime.format(Date(song.lastPlayTime * 1L))
+      }
     }
 
     Column(
@@ -890,7 +905,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           )
           Spacer(modifier = Modifier.height(5.dp))
           Text(
-            "7分钟前", style = MaterialTheme.typography.bodyLarge.copy(
+            lastPlayTimeText.value, style = MaterialTheme.typography.bodyLarge.copy(
               color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
               fontWeight = FontWeight.W700,
               fontSize = 20.sp

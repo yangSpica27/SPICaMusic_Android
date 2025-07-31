@@ -26,7 +26,6 @@ import androidx.media3.extractor.DefaultExtractorsFactory
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -268,6 +267,9 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     unregisterReceiver(systemReceiver)
   }
 
+
+  private var lastPlaySong: Song? = null
+
   override fun loadSong(song: Song?, play: Boolean) {
     if (song == null) {
       exoPlayer.stop()
@@ -277,7 +279,10 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     exoPlayer.prepare()
     exoPlayer.playWhenReady = play
     coroutineScope.launch(Dispatchers.IO) {
-      songDao.addPlayTime(song.songId ?: -1, System.currentTimeMillis())
+      if (lastPlaySong != null) {
+        songDao.addPlayTime(lastPlaySong?.mediaStoreId ?: -1, System.currentTimeMillis())
+      }
+      lastPlaySong = song
     }
   }
 

@@ -18,7 +18,7 @@ import me.spica27.spicamusic.utils.toCoverUri
   ]
 )
 @Serializable
-data class Song constructor(
+data class Song(
   @ColumnInfo(index = true)
   @PrimaryKey(autoGenerate = true)
   var songId: Long? = null,
@@ -31,7 +31,7 @@ data class Song constructor(
   val duration: Long,
   var sort: Int,
   var playTimes: Int,
-  var lastPlayTime: Int,
+  var lastPlayTime: Long,
   var mimeType: String,
   var albumId: Long,
   var sampleRate: Int, // 采样率
@@ -87,7 +87,7 @@ data class Song constructor(
     result = 31 * result + duration.hashCode()
     result = 31 * result + sort
     result = 31 * result + playTimes
-    result = 31 * result + lastPlayTime
+    result = 31 * result + lastPlayTime.hashCode()
     return result
   }
 
