@@ -2,7 +2,6 @@ package me.spica27.spicamusic
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
-import me.spica27.spicamusic.utils.ToastUtils
 import timber.log.Timber
 
 @HiltAndroidApp
@@ -29,6 +28,11 @@ class App : Application() {
     fun getInstance(): App {
       return instance
     }
+  }
+
+
+  init {
+    System.loadLibrary("taglib")
   }
 
 }

@@ -6,7 +6,9 @@ import android.os.IBinder
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.utils.AudioTool
 
@@ -21,6 +23,10 @@ class RefreshMusicListService : Service() {
   lateinit var songDao: SongDao
 
 
+  @Inject
+  lateinit var lyricDao: LyricDao
+
+
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     doWork()
     return START_STICKY
@@ -29,9 +35,9 @@ class RefreshMusicListService : Service() {
   private fun doWork() {
 
 
-    CoroutineScope(Dispatchers.IO).launch {
+    CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
       try {
-        val songs = AudioTool.getSongsFromPhone(applicationContext)
+        val songs = AudioTool.getSongsFromPhone(applicationContext,lyricDao)
         Timber.tag("更新曲目成功").e("共${songs.size}首")
         songDao.updateSongs(songs)
         stopSelf()

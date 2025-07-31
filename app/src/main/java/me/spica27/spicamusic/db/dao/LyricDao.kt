@@ -26,4 +26,7 @@ interface LyricDao {
   @Query("DELETE FROM Lyric")
   fun deleteAll()
 
+  @Query("SELECT delay FROM lyric WHERE mediaId == :mediaId LIMIT 1")
+  fun getDelayFlow(mediaId: Long): Flow<Long?>
+
 }

@@ -3,14 +3,17 @@ package me.spica27.spicamusic.utils
 import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
-import android.media.MediaExtractor
-import android.media.MediaFormat
+import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import androidx.core.database.getIntOrNull
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import androidx.media3.common.MimeTypes
+import me.spica27.spicamusic.App
+import me.spica27.spicamusic.db.dao.LyricDao
+import me.spica27.spicamusic.db.entity.Lyric
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.wrapper.Taglib
 import timber.log.Timber
 
 
@@ -40,7 +43,7 @@ private val LocalAudioColumns = arrayOf(
 object AudioTool {
 
 
-  fun getSongsFromPhone(context: Context): List<Song> {
+  suspend fun getSongsFromPhone(context: Context, lyricDao: LyricDao): List<Song> {
 
     val cursor = context.contentResolverSafe.safeQuery(
       MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, LocalAudioColumns, null, null
@@ -85,7 +88,7 @@ object AudioTool {
         lastPlayTime = 0,
         duration = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
           ?: 1,
-        mimeType = mimeType ?: "",
+        mimeType = mimeType,
         albumId = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM_ID))
           ?: 0,
         sampleRate = 0,
@@ -93,6 +96,26 @@ object AudioTool {
         channels = 0,
         digit = 0
       )
+
+      val fd: ParcelFileDescriptor? =
+        App.getInstance().contentResolverSafe.openFileDescriptor(song.getSongUri(), "r")
+
+      fd?.use {
+        val metadata = Taglib.retrieveMetadataWithFD(fd.detachFd())
+        if (metadata != null) {
+          song.displayName = metadata.title
+          song.artist = metadata.artist
+          if (metadata.lyricist.isNotEmpty()) {
+            lyricDao.deleteLyric(song.mediaStoreId)
+            lyricDao.insertLyric(
+              lyric = Lyric(
+                mediaId = song.mediaStoreId,
+                lyrics = metadata.lyricist
+              )
+            )
+          }
+        }
+      }
 
 //      // 获取音频文件的采样率、比特率、声道数、位深度
 //      if (mimeType != "audio/flac"){

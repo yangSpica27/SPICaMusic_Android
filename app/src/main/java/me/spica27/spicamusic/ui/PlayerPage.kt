@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui
 
+import android.os.ParcelFileDescriptor
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseOut
@@ -110,6 +111,7 @@ import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.SongControllerPanel
 import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
+import me.spica27.spicamusic.wrapper.Taglib
 import timber.log.Timber
 
 
@@ -554,7 +556,7 @@ private fun ControlPanel(
         progress = (seekValueState / (songState?.duration ?: 1)).coerceIn(0f, 1f),
         onProgressChangeFinished = {
           playBackViewModel.seekTo(seekValueState.toLong())
-          isSeekingState= false
+          isSeekingState = false
         },
         onProgressChange = {
           Timber.d("Seeking to $it")
@@ -839,6 +841,29 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
       Text("暂无播放中的歌曲")
     }
   } else {
+
+    LaunchedEffect(song) {
+
+
+      launch(Dispatchers.IO) {
+        val fd: ParcelFileDescriptor? =
+          App.getInstance().contentResolverSafe.openFileDescriptor(song.getSongUri(), "r")
+        fd?.use { fd ->
+          val metadata = Taglib.retrieveMetadataWithFD(fd.detachFd())
+          Timber.tag("歌曲信息").d("metadata: $metadata")
+//          val metadata = TagLib.getMetadata(fd.detachFd())
+//          if (metadata != null) {
+//            for (picture in metadata.pictures) {
+//              Timber.d("Picture: ${picture.description}")
+//            }
+//            metadata.propertyMap.forEach {
+//              Timber.d("Property: ${it.key} = ${it.value}")
+//            }
+        }
+      }
+
+    }
+
     Column(
       modifier = modifier.padding(
         horizontal = 16.dp, vertical = 12.dp
@@ -1002,7 +1027,8 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           )
         }
       }
-
     }
   }
 }
+
+

@@ -16,7 +16,7 @@ import me.spica27.spicamusic.db.entity.Song
  */
 @Database(
   entities = [Song::class, Playlist::class, PlaylistSongCrossRef::class, Lyric::class],
-  version = 9,
+  version = 10,
   exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
