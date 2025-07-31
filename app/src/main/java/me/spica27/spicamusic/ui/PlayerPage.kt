@@ -241,7 +241,7 @@ fun PlayerPage(
                         },
                       contentAlignment = Alignment.Center
                     ) {
-                      Text("暂无歌词")
+                      Text("暂无歌词,点击搜索")
                     }
                   }
                 }

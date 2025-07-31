@@ -30,6 +30,9 @@ import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.PlayingSongItem
 
 
+/**
+ * 当前播放列表
+ */
 @Composable
 fun CurrentListPage(
   playBackViewModel: PlayBackViewModel = hiltViewModel()) {

@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
@@ -15,9 +16,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,9 +55,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.FloatingTabBar
+import me.spica27.spicamusic.widget.FloatingTabBarScrollConnection
 import me.spica27.spicamusic.widget.MiniPlayBar
 import me.spica27.spicamusic.widget.PlayerBar
 import me.spica27.spicamusic.widget.rememberFloatingTabBarScrollConnection
@@ -86,9 +90,12 @@ fun MainScreen(
   // 获取当前的context
   val context = LocalContext.current
 
-  if (showToast) {
-    Toast.makeText(context, "再次点按返回按键退出", Toast.LENGTH_SHORT).show()
-    showToast = false
+
+  LaunchedEffect(showToast) {
+    if (showToast) {
+      Toast.makeText(context, "再按一次退出", Toast.LENGTH_SHORT).show()
+      showToast = false
+    }
   }
 
 
@@ -98,9 +105,7 @@ fun MainScreen(
 
   val nowPlayingSong = playBackViewModel.currentSongFlow.collectAsState().value
 
-
   val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
-
 
   LaunchedEffect(key1 = backPressState) {
     if (backPressState == BackPress.InitialTouch) {
@@ -138,6 +143,7 @@ fun MainScreen(
       label = "main_screen_player_transition"
     ) { showPlayer ->
       if (showPlayer) {
+        /// 播放器页面
         PlayerScreen(
           navigator = navigator,
           animatedVisibilityScope = this@AnimatedContent,
@@ -147,11 +153,8 @@ fun MainScreen(
           }
         )
       } else {
-        Scaffold(
-          bottomBar = {
-//            BottomNav(pagerState)
-          }
-        ) { innerPadding ->
+        // 主页
+        Scaffold { innerPadding ->
           Box(
             modifier = modifier
               .fillMaxSize()
@@ -177,148 +180,20 @@ fun MainScreen(
                 1 -> SettingPage(navigator = navigator)
               }
             }
-            Column(
+            // 悬浮底栏
+            FloatBottomBar(
+              navigator = navigator,
+              scrollConnection = scrollConnection,
+              sharedTransitionScope = sharedTransitionScope,
+              nowPlayingSong = nowPlayingSong,
+              isPlaying = isPlaying,
+              animatedVisibilityScope = this@AnimatedContent,
+              pagerState = pagerState,
               modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 20.dp),
-              verticalArrangement = Arrangement.spacedBy(12.dp)
+                .align(alignment = Alignment.BottomCenter)
+                .padding(bottom = 22.dp)
             ) {
-              FloatingTabBar(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                scrollConnection = scrollConnection,
-                inlineAccessory = { modifier, scope ->
-                  with(sharedTransitionScope) {
-                    Box(
-                      modifier = modifier
-                        .fillMaxWidth()
-                        .background(
-                          MaterialTheme.colorScheme.surfaceContainerLow,
-                          CircleShape
-                        )
-                        .sharedBounds(
-                          rememberSharedContentState(key = "player_bound"),
-                          animatedVisibilityScope = this@AnimatedContent,
-                          enter = fadeIn(),
-                          exit = fadeOut(),
-                          placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
-                        )
-                        .innerShadow(
-                          shape = CircleShape,
-                          Shadow(
-                            radius = 6.dp,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            alpha = .11f
-                          )
-                        )
-                    ) {
-                      MiniPlayBar(
-                        modifier = modifier
-                          .clickable {
-                            if (nowPlayingSong != null) {
-                              showPlayerState = true
-                            }
-                          },
-                        song = playBackViewModel.currentSongFlow.collectAsState().value,
-                        isPlaying = isPlaying,
-                        togglePlayState = {
-                          playBackViewModel.togglePlaying()
-                        }
-                      )
-                    }
-                  }
-                },
-                expandedAccessory = { modifier, scope ->
-                  AnimatedVisibility(
-                    visible = nowPlayingSong != null,
-                    modifier = Modifier
-                      .fillMaxWidth(),
-                    enter = slideInVertically(
-                      initialOffsetY = { it },
-                      animationSpec = tween(250)
-                    ) + fadeIn(),
-                    exit = slideOutVertically(
-                      targetOffsetY = { it },
-                      animationSpec = tween(250)
-                    ) + fadeOut()
-                  ) {
-                    with(sharedTransitionScope) {
-                      Box(
-                        modifier = modifier
-                          .fillMaxWidth()
-                          .background(
-                            MaterialTheme.colorScheme.surfaceContainerLow,
-                            CircleShape
-                          )
-                          .sharedBounds(
-                            rememberSharedContentState(key = "player_bound"),
-                            animatedVisibilityScope = this@AnimatedContent,
-                            enter = scaleIn() + fadeIn(),
-                            exit = scaleOut() + fadeOut(),
-                            resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
-                            placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
-                          )
-                          .innerShadow(
-                            shape = CircleShape,
-                            Shadow(
-                              radius = 6.dp,
-                              color = MaterialTheme.colorScheme.onSurface,
-                              alpha = .11f
-                            )
-                          )
-                      ) {
-                        PlayerBar(
-                          modifier = Modifier
-                            .fillMaxWidth()
-                            .noRippleClickable {
-                              showPlayerState = true
-                            }
-                        )
-                      }
-                    }
-                  }
-                },
-                content = {
-                  tab(
-                    key = "home",
-                    title = {
-                      Text("主页")
-                    },
-                    icon = {
-                      BottomNavIcon(
-                        imageVector = Icons.Default.Home,
-                        onClick = {}
-                      )
-                    },
-                    onClick = {},
-                  )
-                  tab(
-                    key = "设置",
-                    title = {
-                      Text("设置")
-                    },
-                    icon = {
-                      BottomNavIcon(
-                        imageVector = Icons.Default.Settings,
-                        onClick = {}
-                      )
-                    },
-                    onClick = {},
-                  )
-                  standaloneTab(
-                    key = "Search",
-                    icon = {
-                      BottomNavIcon(
-                        imageVector = Icons.Default.Search,
-                        onClick = {}
-                      )
-                    },
-                    onClick = {
-
-                    },
-                  )
-                },
-                selectedTabKey = {}
-              )
+              showPlayerState = true
             }
           }
         }
@@ -337,17 +212,178 @@ private sealed class BackPress {
 }
 
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun BottomNavIcon(
+private fun FloatBottomBar(
+  navigator: NavBackStack?,
+  modifier: Modifier = Modifier,
+  scrollConnection: FloatingTabBarScrollConnection,
+  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  sharedTransitionScope: SharedTransitionScope,
+  nowPlayingSong: Song?,
+  isPlaying: Boolean,
+  animatedVisibilityScope: AnimatedVisibilityScope,
+  pagerState: androidx.compose.foundation.pager.PagerState,
+  showPlayer: () -> Unit
+) {
+
+  val coroutineScope = rememberCoroutineScope()
+
+  FloatingTabBar(
+    modifier = Modifier
+      .padding(horizontal = 16.dp)
+      .then(modifier),
+    scrollConnection = scrollConnection,
+    inlineAccessory = { modifier, scope ->
+      with(sharedTransitionScope) {
+        Box(
+          modifier = modifier
+            .fillMaxWidth()
+            .background(
+              MaterialTheme.colorScheme.surfaceContainerLow,
+              CircleShape
+            )
+            .sharedBounds(
+              rememberSharedContentState(key = "player_bound"),
+              animatedVisibilityScope = animatedVisibilityScope,
+              enter = fadeIn(),
+              exit = fadeOut(),
+              placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
+            )
+            .innerShadow(
+              shape = CircleShape,
+              Shadow(
+                radius = 6.dp,
+                color = MaterialTheme.colorScheme.onSurface,
+                alpha = .11f
+              )
+            )
+        ) {
+          MiniPlayBar(
+            modifier = modifier
+              .clickable {
+                if (nowPlayingSong != null) {
+                  showPlayer.invoke()
+                }
+              },
+            song = playBackViewModel.currentSongFlow.collectAsState().value,
+            isPlaying = isPlaying,
+            togglePlayState = {
+              playBackViewModel.togglePlaying()
+            }
+          )
+        }
+      }
+    },
+    expandedAccessory = { modifier, scope ->
+      AnimatedVisibility(
+        visible = nowPlayingSong != null,
+        modifier = Modifier
+          .fillMaxWidth(),
+        enter = slideInVertically(
+          initialOffsetY = { it },
+          animationSpec = tween(250)
+        ) + fadeIn(),
+        exit = slideOutVertically(
+          targetOffsetY = { it },
+          animationSpec = tween(250)
+        ) + fadeOut()
+      ) {
+        with(sharedTransitionScope) {
+          Box(
+            modifier = modifier
+              .fillMaxWidth()
+              .background(
+                MaterialTheme.colorScheme.surfaceContainerLow,
+                CircleShape
+              )
+              .sharedBounds(
+                rememberSharedContentState(key = "player_bound"),
+                animatedVisibilityScope = animatedVisibilityScope,
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut(),
+                resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
+                placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
+              )
+              .innerShadow(
+                shape = CircleShape,
+                Shadow(
+                  radius = 6.dp,
+                  color = MaterialTheme.colorScheme.onSurface,
+                  alpha = .11f
+                )
+              )
+          ) {
+            PlayerBar(
+              modifier = Modifier
+                .fillMaxWidth()
+                .noRippleClickable {
+                  showPlayer.invoke()
+                }
+            )
+          }
+        }
+      }
+    },
+    content = {
+      tab(
+        key = "home",
+        title = {
+          Text("主页")
+        },
+        icon = {
+          BottomNavIcon(
+            imageVector = Icons.Default.Home,
+          )
+        },
+        onClick = {
+          coroutineScope.launch {
+            pagerState.animateScrollToPage(0)
+          }
+        },
+      )
+      tab(
+        key = "设置",
+        title = {
+          Text("设置")
+        },
+        icon = {
+          BottomNavIcon(
+            imageVector = Icons.Default.Settings,
+          )
+        },
+        onClick = {
+          coroutineScope.launch {
+            pagerState.animateScrollToPage(1)
+          }
+        },
+      )
+      standaloneTab(
+        key = "Search",
+        icon = {
+          BottomNavIcon(
+            imageVector = Icons.Default.Search,
+          )
+        },
+        onClick = {
+          navigator?.add(Routes.SearchAll)
+        },
+      )
+    },
+    selectedTabKey = {}
+  )
+}
+
+
+@Composable
+private fun BottomNavIcon(
   imageVector: ImageVector,
-  onClick: () -> Unit
 ) {
   Box(
     modifier = Modifier
       .width(48.dp)
       .height(48.dp)
       .clip(CircleShape)
-      .clickable(onClick = onClick)
       .padding(12.dp),
     contentAlignment = Alignment.Center
   ) {

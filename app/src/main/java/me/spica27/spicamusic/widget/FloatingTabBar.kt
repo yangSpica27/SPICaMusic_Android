@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -121,7 +120,7 @@ fun FloatingTabBar(
  */
 @Composable
 fun FloatingTabBar(
-  selectedTabKey: Any?,
+  selectedTabKey: Any? = null,
   scrollConnection: FloatingTabBarScrollConnection,
   modifier: Modifier = Modifier,
   tabBarContentModifier: Modifier = Modifier,
@@ -473,7 +472,8 @@ private fun SharedTransitionScope.InlineTab(
             sharedContentState = rememberSharedContentState("tab#${inlineTab.key}-icon"),
             animatedVisibilityScope = animatedVisibilityScope,
             zIndexInOverlay = 1f,
-            renderInOverlayDuringTransition = true
+            renderInOverlayDuringTransition = true,
+            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
           )
         ) {
           inlineTab.icon()
@@ -728,7 +728,8 @@ private fun SharedTransitionScope.ExpandedTabs(
       .sharedBounds(
         sharedContentState = rememberSharedContentState("tabGroup"),
         animatedVisibilityScope = animatedVisibilityScope,
-        zIndexInOverlay = 1f
+        zIndexInOverlay = 1f,
+        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
       )
       .background(
         color = colors.backgroundColor,
@@ -1072,10 +1073,10 @@ object FloatingTabBarDefaults {
    */
   @Composable
   fun shapes(
-    tabBarShape: Shape = RoundedCornerShape(100),
-    tabShape: Shape = RoundedCornerShape(100),
+    tabBarShape: Shape = CircleShape,
+    tabShape: Shape = CircleShape,
     standaloneTabShape: Shape = CircleShape,
-    accessoryShape: Shape = RoundedCornerShape(100),
+    accessoryShape: Shape = CircleShape,
   ): FloatingTabBarShapes = FloatingTabBarShapes(
     tabBarShape = tabBarShape,
     tabShape = tabShape,

@@ -6,6 +6,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
@@ -67,6 +70,7 @@ import me.spica27.spicamusic.widget.SongItemWithCover
 import me.spica27.spicamusic.widget.fadingEdges
 import java.util.*
 
+
 // 主页
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,9 +111,7 @@ fun HomePage(
       verticalArrangement = Arrangement.Top
     ) {
       // 标题
-      Spacer(modifier = Modifier.height(10.dp))
-      SearchButton(navigator)
-      Spacer(modifier = Modifier.height(10.dp))
+      SearchTopBar(navigator)
       Column(
         modifier = Modifier
           .weight(1f)
@@ -117,9 +119,12 @@ fun HomePage(
           .verticalScroll(
             state = listState
           )
-          .fadingEdges(FadingEdges.None),
-        verticalArrangement = Arrangement.Top
-      ) {
+          .fadingEdges(FadingEdges.None)
+          .padding(bottom = 200.dp)
+          .navigationBarsPadding(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+
+        ) {
 
         Title(
           "最近常听",
@@ -139,11 +144,6 @@ fun HomePage(
             )
           }
         )
-        Spacer(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(8.dp)
-        )
         AnimatedContent(
           targetState = oftenListenSongs.value,
           modifier = Modifier.fillMaxWidth(),
@@ -156,70 +156,17 @@ fun HomePage(
           }
         ) { songs ->
           if (songs.isEmpty()) {
-            Box(
-              modifier = Modifier
-                .padding(
-                  horizontal = 16.dp,
-                )
-                .width(120.dp)
-                .height(180.dp)
-                .background(
-                  MaterialTheme.colorScheme.surfaceContainer,
-                  MaterialTheme.shapes.small
-                )
-                .padding(
-                  horizontal = 16.dp,
-                  vertical = 12.dp
-                )
-                .clip(MaterialTheme.shapes.small),
-              contentAlignment = Alignment.Center
-            ) {
-              Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.Center
-              ) {
-                Text(
-                  "空空如也",
-                  style = MaterialTheme.typography.titleLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontWeight = FontWeight.Black
-                  )
-                )
-                Spacer(
-                  modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .height(4.dp)
-                )
-                TextButton(
-                  onClick = {
-                    ToastUtils.showToast("待实现,先去设置那边扫描")
-                  }
-                ) {
-                  Text("扫描本地音乐")
-                }
-              }
-            }
+            OftenListenEmptyContent()
           } else {
             OftenListenSongList(songs = songs)
           }
         }
-        Spacer(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(12.dp)
-        )
         HorizontalDivider(
           color = MaterialTheme.colorScheme.onSurface.copy(
             alpha = 0.05f
           ),
-          thickness = 2.dp
-        )
-        Spacer(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(12.dp)
+          thickness = 2.dp,
+          modifier = Modifier.padding(vertical = 6.dp)
         )
         Title("歌单", {
           Text(
@@ -234,12 +181,6 @@ fun HomePage(
             )
           )
         })
-        Spacer(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(12.dp)
-        )
-
         Column(
           modifier = Modifier.fillMaxWidth(),
         ) {
@@ -271,29 +212,18 @@ fun HomePage(
             )
           }
         }
-
-        Spacer(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(12.dp)
-        )
         HorizontalDivider(
           color = MaterialTheme.colorScheme.onSurface.copy(
             alpha = 0.05f
           ),
-          thickness = 2.dp
+          thickness = 2.dp,
+          modifier = Modifier.padding(vertical = 6.dp)
         )
-        Spacer(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(12.dp)
-        )
-
         Title(
           "推荐",
         )
 
-        if (oftenListenSongs.value.isEmpty()){
+        if (oftenListenSongs.value.isEmpty()) {
           Box(
             modifier = Modifier
               .padding(
@@ -304,7 +234,7 @@ fun HomePage(
               "暂无推荐"
             )
           }
-        }else{
+        } else {
           Column {
             oftenListenSongs.value.forEach {
               SongItemWithCover(
@@ -319,21 +249,68 @@ fun HomePage(
             }
           }
         }
-
-
-
-        Spacer(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(200.dp)
-        )
       }
     }
 
   }
 }
 
+/**
+ * 最近常听占位空
+ */
+@Composable
+private fun OftenListenEmptyContent(modifier: Modifier = Modifier) {
+  Box(
+    modifier = Modifier
+      .then(modifier)
+      .padding(
+        horizontal = 16.dp,
+      )
+      .width(120.dp)
+      .height(180.dp)
+      .background(
+        MaterialTheme.colorScheme.surfaceContainer,
+        MaterialTheme.shapes.small
+      )
+      .padding(
+        horizontal = 16.dp,
+        vertical = 12.dp
+      )
+      .clip(MaterialTheme.shapes.small),
+    contentAlignment = Alignment.Center
+  ) {
+    Column(
+      modifier = Modifier.fillMaxSize(),
+      horizontalAlignment = Alignment.Start,
+      verticalArrangement = Arrangement.Center
+    ) {
+      Text(
+        "空空如也",
+        style = MaterialTheme.typography.titleLarge.copy(
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+          fontWeight = FontWeight.Black
+        )
+      )
+      Spacer(
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1f)
+          .height(4.dp)
+      )
+      TextButton(
+        onClick = {
+          ToastUtils.showToast("待实现,先去设置那边扫描")
+        }
+      ) {
+        Text("扫描本地音乐")
+      }
+    }
+  }
+}
 
+/**
+ * 最近常听列表
+ */
 @Composable
 private fun OftenListenSongList(
   songs: List<Song> = emptyList(),
@@ -350,7 +327,11 @@ private fun OftenListenSongList(
   LazyRow(
     modifier = Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.spacedBy(12.dp),
-    state = listState
+    state = listState,
+    flingBehavior = rememberSnapFlingBehavior(
+      lazyListState = listState,
+      snapPosition = SnapPosition.Center
+    )
   ) {
     item {
       Spacer(
@@ -447,7 +428,7 @@ private fun OftenListenSongList(
   }
 }
 
-
+// 标题
 @Composable
 private fun Title(
   title: String,
@@ -473,12 +454,15 @@ private fun Title(
 }
 
 
+/**
+ * 顶部标题栏
+ */
 @Composable
-private fun SearchButton(navigator: NavBackStack? = null) {
+private fun SearchTopBar(navigator: NavBackStack? = null) {
   Box(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(horizontal = 16.dp),
+      .padding(horizontal = 16.dp, vertical = 10.dp),
   ) {
 
     Text(

@@ -2,6 +2,8 @@ package me.spica27.spicamusic.ui
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.gestures.snapping.SnapPosition
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +39,7 @@ import me.spica27.spicamusic.widget.SongItemWithCover
 import java.util.*
 
 
-@OptIn(UnstableApi::class)
+@OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun LikeListScreen(
   navigator: NavBackStack? = null,
@@ -60,7 +63,8 @@ fun LikeListScreen(
         onBack = {
           navigator?.removeLastOrNull()
         },
-        title = "我的收藏"
+        title = "我的收藏",
+        lazyListState = listState
       )
     }
   ) { paddingValues ->
@@ -92,8 +96,6 @@ fun LikeListScreen(
             Text(text = "没有收藏歌曲")
           }
         } else {
-
-
           ScrollHaptics(
             listState = listState,
             vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
@@ -102,7 +104,11 @@ fun LikeListScreen(
 
           LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            flingBehavior = rememberSnapFlingBehavior(
+              lazyListState = listState,
+              snapPosition = SnapPosition.Start
+            )
           ) {
             items(
               songs,
