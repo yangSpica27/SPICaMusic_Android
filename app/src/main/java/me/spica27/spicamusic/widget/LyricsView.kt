@@ -146,8 +146,8 @@ fun LyricsView(
           GlassStyle(
             shape = MaterialTheme.shapes.medium,
             innerRefraction = InnerRefraction(
-              height = RefractionHeight(24.dp),
-              amount = RefractionAmount((-24).dp)
+              height = RefractionHeight(32.dp),
+              amount = RefractionAmount((-32).dp)
             ),
             material = GlassMaterial.None,
             highlight = GlassHighlight.None,
@@ -248,7 +248,7 @@ fun LyricsViewLine(
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .padding(horizontal = 12.dp)
+      .padding(horizontal = 35.dp, vertical = 10.dp)
       .clip(MaterialTheme.shapes.medium)
       .indication(interactionSource, indication = null)
       .graphicsLayer {
@@ -272,13 +272,7 @@ fun LyricsViewLine(
           },
           onTap = { onClick() },
         )
-      }
-      .padding(
-        start = 16.dp,
-        top = 8.dp,
-        end = 32.dp,
-        bottom = 16.dp,
-      ),
+      },
     contentAlignment = Alignment.Center
   ) {
     Text(
