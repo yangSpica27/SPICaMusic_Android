@@ -5,7 +5,14 @@
 <img src="/img/Screenshot_20250728_201015.png" width="20%"/>
 <img src="/img/Screenshot_20250730_174948.png" width="20%"/>
 <img src="/img/Screenshot_20250621_231303.png" width="20%"/>
-<img src="/img/Screenshot_20250728_201245.png" width="20%"/>
+<img src="/img/Screenshot_20250731_143921.png" width="20%"/>
+</p>
+
+<p align="center">
+<img src="/img/Screenshot_20250731_144222.png" width="20%"/>
+<img src="/img/Screenshot_20250731_144309.png" width="20%"/>
+<img src="/img/Screenshot_20250731_144457.png" width="20%"/>
+<img src="/img/Screenshot_20250731_144531.png" width="20%"/>
 </p>
 
 ## 项目简介
