@@ -63,6 +63,7 @@ object AudioTool {
       types.add(mimeType ?: "")
       val isSupportMineType =
         (mimeType == MimeTypes.AUDIO_MPEG ||
+            mimeType == MimeTypes.AUDIO_MP4||
             mimeType == MimeTypes.AUDIO_OGG ||
             mimeType == MimeTypes.AUDIO_FLAC)
       if (!isSupportMineType) continue
@@ -102,7 +103,7 @@ object AudioTool {
 
       fd?.use {
         val metadata = Taglib.retrieveMetadataWithFD(fd.detachFd())
-        if (metadata != null) {
+        if (metadata != null && metadata.title.isNotEmpty()) {
           song.displayName = metadata.title
           song.artist = metadata.artist
           if (metadata.lyricist.isNotEmpty()) {

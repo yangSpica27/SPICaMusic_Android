@@ -1,8 +1,6 @@
 package me.spica27.spicamusic.ui
 
-import android.content.Intent
 import android.os.Build
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,9 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -43,7 +40,7 @@ import androidx.navigation3.runtime.NavBackStack
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import me.spica27.spicamusic.R
-import me.spica27.spicamusic.service.RefreshMusicListService
+import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.viewModel.SettingViewModel
 
 
@@ -102,7 +99,7 @@ fun SettingPage(
       state = listState
     ) {
       item {
-        CategoryItem (
+        CategoryItem(
           title = if (forceDarkThemeSettingState) {
             "暗色模式"
           } else {
@@ -121,7 +118,7 @@ fun SettingPage(
       item {
         CategoryItem(
           title = "歌词",
-          icon = Icons.Default.Menu,
+          icon = ImageVector.vectorResource(R.drawable.ic_font_download),
           onClick = { })
       }
       item {
@@ -129,21 +126,30 @@ fun SettingPage(
           title = "扫描",
           icon = Icons.Outlined.Refresh,
           onClick = {
-            if (permissionState.allPermissionsGranted) {
-              // 扫描本地音乐
-              Toast.makeText(context, "开始扫描本地音乐", Toast.LENGTH_SHORT).show()
-              context.startService(Intent(context, RefreshMusicListService::class.java))
-            } else {
-              permissionState.launchMultiplePermissionRequest()
-              Toast.makeText(context, "请授予权限", Toast.LENGTH_SHORT).show()
-            }
+            navigator?.add(Routes.Scanner)
+//            if (permissionState.allPermissionsGranted) {
+//              // 扫描本地音乐
+//              Toast.makeText(context, "开始扫描本地音乐", Toast.LENGTH_SHORT).show()
+//              context.startService(Intent(context, RefreshMusicListService::class.java))
+//            } else {
+//              permissionState.launchMultiplePermissionRequest()
+//              Toast.makeText(context, "请授予权限", Toast.LENGTH_SHORT).show()
+//            }
+          })
+      }
+      item {
+        CategoryItem(
+          title = "音效",
+          icon = ImageVector.vectorResource(R.drawable.ic_outlined_equalizer),
+          onClick = {
+            navigator?.add(Routes.EQ)
           })
       }
       item { HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp)) }
       item {
         CategoryItem(
           title = "FAQ",
-          icon = Icons.Outlined.Email,
+          icon = Icons.Outlined.MailOutline,
           onClick = {
 
           })

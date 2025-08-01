@@ -46,6 +46,9 @@ object Routes {
   data object EQ : NavKey
 
   @Serializable
+  data object Scanner : NavKey
+
+  @Serializable
   data class PlayListItemDetail(val playlistId: Long, val songId: Long) : NavKey
 
   /**
@@ -53,7 +56,6 @@ object Routes {
    */
   @Serializable
   data class LyricsSearch(val song: Song) : NavKey
-
 
 
 }

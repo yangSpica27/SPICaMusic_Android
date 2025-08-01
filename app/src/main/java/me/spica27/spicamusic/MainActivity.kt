@@ -27,6 +27,9 @@ class MainActivity : ComponentActivity() {
   lateinit var dataStoreUtil: DataStoreUtil
 
 
+
+
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     startService(Intent(this, MusicService::class.java))

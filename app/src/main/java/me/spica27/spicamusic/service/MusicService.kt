@@ -173,7 +173,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     if (intent.action == Intent.ACTION_MEDIA_BUTTON) {
       mediaSessionComponent.handleMediaButtonIntent(intent)
     }
-    return START_NOT_STICKY
+    return START_STICKY
   }
 
 
