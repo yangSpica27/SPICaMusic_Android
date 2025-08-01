@@ -1,5 +1,8 @@
 package me.spica27.spicamusic.wrapper
 
+import androidx.annotation.Keep
+
+@Keep
 data class Metadata(
   val title: String,
   val album: String,

@@ -1,6 +1,9 @@
 package me.spica27.spicamusic.wrapper
 
+import androidx.annotation.Keep
+
 // 参考LMusic https://github.com/cy745/lmusic
+@Keep
 object Taglib {
 
     external suspend fun retrieveMetadataWithFD(fileDescriptor: Int): Metadata?
