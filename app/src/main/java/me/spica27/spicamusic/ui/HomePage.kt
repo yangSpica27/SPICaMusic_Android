@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
@@ -56,6 +57,7 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.toCoilUri
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
@@ -72,6 +74,7 @@ import java.util.*
 
 
 // 主页
+@androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePage(
@@ -86,6 +89,9 @@ fun HomePage(
   val oftenListenSongs = songViewModel.oftenListenSongs10.collectAsStateWithLifecycle()
 
   val playlist = songViewModel.allPlayList.collectAsStateWithLifecycle().value
+
+
+  val randomSong = songViewModel.randomSongs.collectAsState().value
 
 
   val showCreatePlaylistDialog = remember { mutableStateOf(false) }
@@ -223,7 +229,7 @@ fun HomePage(
           "推荐",
         )
 
-        if (oftenListenSongs.value.isEmpty()) {
+        if (randomSong.isEmpty()) {
           Box(
             modifier = Modifier
               .padding(
@@ -236,11 +242,12 @@ fun HomePage(
           }
         } else {
           Column {
-            oftenListenSongs.value.forEach {
+            randomSong.forEach {
               SongItemWithCover(
                 song = it,
                 onClick = {
-
+                  PlaybackStateManager.getInstance()
+                    .play(song = it)
                 },
                 showMenu = false,
                 showPlus = false,

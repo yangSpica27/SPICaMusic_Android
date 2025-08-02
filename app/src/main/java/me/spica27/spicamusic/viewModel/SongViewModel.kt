@@ -39,6 +39,8 @@ class SongViewModel
   val oftenListenSongs: StateFlow<List<Song>> = songDao.getOftenListenSongs()
     .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+  val randomSongs: StateFlow<List<Song>> = songDao.randomSong()
+    .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
   // 切换喜欢状态
   fun toggleFavorite(id: Long) {

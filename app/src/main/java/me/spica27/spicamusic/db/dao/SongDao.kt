@@ -108,4 +108,7 @@ interface SongDao {
   }
 
 
+  @Query("SELECT * FROM song WHERE songId IN (SELECT songId FROM song ORDER BY RANDOM() LIMIT 15)")
+  fun randomSong(): Flow<List<Song>>
+
 }
