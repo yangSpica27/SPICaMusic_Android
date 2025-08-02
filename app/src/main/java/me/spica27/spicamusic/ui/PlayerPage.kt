@@ -77,7 +77,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
@@ -115,14 +114,15 @@ import me.spica27.spicamusic.widget.SongControllerPanel
 import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.wrapper.Taglib
+import me.spica27.spicamusic.wrapper.activityViewModel
 import timber.log.Timber
 import java.util.*
 
 
 @Composable
 fun PlayerPage(
-  playBackViewModel: PlayBackViewModel = hiltViewModel(),
-  songViewModel: SongViewModel = hiltViewModel(),
+  playBackViewModel: PlayBackViewModel = activityViewModel(),
+  songViewModel: SongViewModel = activityViewModel(),
   navigator: NavBackStack? = null,
 ) {
 
@@ -293,7 +293,7 @@ fun PlayerPage(
 
 @Composable
 private fun Title(
-  modifier: Modifier = Modifier, playBackViewModel: PlayBackViewModel = hiltViewModel()
+  modifier: Modifier = Modifier, playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
 
   val indexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()
@@ -336,7 +336,7 @@ private fun Title(
 private fun Cover(
   modifier: Modifier = Modifier,
   songState: State<Song?>,
-  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  playBackViewModel: PlayBackViewModel =activityViewModel(),
 ) {
 
   val context = LocalContext.current
@@ -501,7 +501,7 @@ private fun Cover(
 @Composable
 private fun ControlPanel(
   modifier: Modifier = Modifier,
-  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
 
   val song = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
@@ -665,7 +665,7 @@ private fun ControlPanel(
 private fun SongInfo(
   songId: Long,
   modifier: Modifier = Modifier,
-  songViewModel: SongViewModel = hiltViewModel(),
+  songViewModel: SongViewModel = activityViewModel(),
   navigator: NavBackStack? = null,
 ) {
 
@@ -701,7 +701,8 @@ private fun SongInfo(
         onDismiss = {
           showMenuState = false
         },
-        navigator = navigator
+        navigator = navigator,
+        songViewModel = songViewModel
       )
     }
   }

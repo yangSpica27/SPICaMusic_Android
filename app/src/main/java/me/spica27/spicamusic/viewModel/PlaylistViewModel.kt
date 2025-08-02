@@ -2,7 +2,6 @@ package me.spica27.spicamusic.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,7 +9,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.dao.PlaylistDao
@@ -19,10 +17,9 @@ import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.PlaylistSongCrossRef
 import me.spica27.spicamusic.db.entity.PlaylistWithSongs
 import me.spica27.spicamusic.db.entity.Song
-import javax.inject.Inject
 
-@HiltViewModel
-class PlaylistViewModel @Inject constructor(
+
+class PlaylistViewModel(
   private val playlistDao: PlaylistDao,
   private val songDao: SongDao
 ) : ViewModel() {

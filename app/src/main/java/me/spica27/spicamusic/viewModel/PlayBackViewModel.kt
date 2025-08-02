@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
 import com.linc.amplituda.Amplituda
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -35,12 +34,9 @@ import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.utils.toast
 import timber.log.Timber
-import javax.inject.Inject
 
-@OptIn(UnstableApi::class)
-@HiltViewModel
-class PlayBackViewModel @OptIn(UnstableApi::class)
-@Inject constructor(
+
+class PlayBackViewModel @OptIn(UnstableApi::class) constructor(
   private val songDao: SongDao,
   private val amplituda: Amplituda,
   private val lyricDao: LyricDao

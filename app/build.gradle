@@ -1,7 +1,6 @@
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.android)
-  id 'com.google.dagger.hilt.android'
   id 'kotlin-android'
   id 'kotlin-parcelize'
   id 'com.google.devtools.ksp'
@@ -123,10 +122,7 @@ dependencies {
   ksp("androidx.room:room-compiler:$room_version")
   implementation("androidx.room:room-ktx:$room_version")
 
-  /** hilt **/
-  implementation libs.hilt.android
-  ksp libs.hilt.compiler
-  implementation libs.androidx.hilt.navigation.compose
+
 
   implementation libs.androidx.datastore.preferences
 
@@ -166,4 +162,7 @@ dependencies {
   implementation "androidx.constraintlayout:constraintlayout-compose:1.1.1"
 
   implementation 'org.ocpsoft.prettytime:prettytime:5.0.8.Final'
+  def koin_version = "4.1.0"
+  implementation "io.insert-koin:koin-androidx-compose:$koin_version"
+
 }

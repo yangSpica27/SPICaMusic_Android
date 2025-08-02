@@ -39,7 +39,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
@@ -48,6 +47,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.wrapper.activityViewModel
 
 /**
  * 底部播放条
@@ -56,7 +56,7 @@ import me.spica27.spicamusic.viewModel.PlayBackViewModel
 @Composable
 fun PlayerBar(
   modifier: Modifier = Modifier,
-  playBackViewModel: PlayBackViewModel = hiltViewModel()
+  playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
 
   val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value

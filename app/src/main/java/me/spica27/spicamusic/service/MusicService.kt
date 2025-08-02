@@ -23,7 +23,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -38,7 +37,7 @@ import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.service.notification.MediaSessionComponent
 import me.spica27.spicamusic.service.notification.NotificationComponent
 import me.spica27.spicamusic.utils.DataStoreUtil
-import javax.inject.Inject
+import org.koin.android.ext.android.get
 
 private const val MY_MEDIA_ROOT_ID = "media_root_id"
 private const val MY_EMPTY_MEDIA_ROOT_ID = "empty_root_id"
@@ -47,15 +46,15 @@ private const val MY_EMPTY_MEDIA_ROOT_ID = "empty_root_id"
 /**
  * 音乐播放服务
  */
-@AndroidEntryPoint
+
 @OptIn(UnstableApi::class)
 class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   MediaSessionComponent.Listener {
 
   private var mediaSession: MediaSessionCompat? = null
 
-  @Inject
-  lateinit var songDao: SongDao
+
+  private var songDao: SongDao = get<SongDao>()
 
   private val fftAudioProcessor = PlaybackStateManager.getInstance().fftAudioProcessor
 

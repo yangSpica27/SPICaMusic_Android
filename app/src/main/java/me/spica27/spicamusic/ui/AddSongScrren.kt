@@ -20,7 +20,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
@@ -28,13 +27,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.viewModel.SelectSongViewModel
 import me.spica27.spicamusic.widget.SelectableSongItem
+import org.koin.androidx.compose.koinViewModel
 
 
 /// 给歌单添加歌曲的页面
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSongScreen(
-  viewModel: SelectSongViewModel = hiltViewModel(),
+  viewModel: SelectSongViewModel = koinViewModel(),
   navigator: NavBackStack,
   playlistId: Long
 ) {

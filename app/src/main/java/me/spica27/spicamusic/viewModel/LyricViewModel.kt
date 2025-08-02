@@ -6,24 +6,18 @@ import com.skydoves.sandwich.message
 import com.skydoves.sandwich.onError
 import com.skydoves.sandwich.onException
 import com.skydoves.sandwich.onSuccess
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.comm.NetworkState
-import me.spica27.spicamusic.db.dao.LyricDao
-import me.spica27.spicamusic.db.entity.Lyric
 import me.spica27.spicamusic.db.entity.Song
-import me.spica27.spicamusic.network.LyricApi
 import me.spica27.spicamusic.network.bean.LyricResponse
-import javax.inject.Inject
+import me.spica27.spicamusic.repository.LyricRepository
 
 
-@HiltViewModel
-class LyricViewModel @Inject constructor(
-  val lyricApi: LyricApi,
-  val lyricDao: LyricDao
+class LyricViewModel(
+  private val lyricRepository: LyricRepository
 ) : ViewModel() {
 
 
@@ -44,7 +38,7 @@ class LyricViewModel @Inject constructor(
   fun fetchLyric(title: String, artist: String?) {
     _state.value = NetworkState.LOADING
     viewModelScope.launch(Dispatchers.IO) {
-      lyricApi.fetchLyric(title, artist)
+      lyricRepository.fetchLyric(title, artist)
         .onSuccess {
           _lyricsFlow.value = data
           _state.value = NetworkState.SUCCESS
@@ -60,16 +54,7 @@ class LyricViewModel @Inject constructor(
 
   fun applyLyric(lyric: LyricResponse, song: Song) {
     viewModelScope.launch(Dispatchers.IO) {
-      lyricDao.deleteLyric(
-        song.songId ?: -1
-      )
-      lyricDao.insertLyric(
-        Lyric(
-          mediaId = song.mediaStoreId,
-          lyrics = lyric.lyrics,
-          cover = lyric.cover ?: ""
-        )
-      )
+      lyricRepository.saveSongLyric(lyric, song)
     }
   }
 

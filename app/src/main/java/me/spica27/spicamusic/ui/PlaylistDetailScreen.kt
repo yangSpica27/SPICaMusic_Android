@@ -52,7 +52,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
@@ -65,13 +64,14 @@ import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.wrapper.activityViewModel
 
 /// 歌单详情页面
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistDetailScreen(
-  playlistViewModel: PlaylistViewModel = hiltViewModel(),
+  playlistViewModel: PlaylistViewModel = activityViewModel(),
   navigator: NavBackStack? = null,
   playlistId: Long
 ) {
@@ -104,7 +104,8 @@ fun PlaylistDetailScreen(
         title = {
           Header(
             playlist = playlist ?: return@TopAppBar,
-            navigator = navigator
+            navigator = navigator,
+            playlistViewModel = playlistViewModel
           )
         },
         expandedHeight = 250.dp,
@@ -251,7 +252,7 @@ fun PlaylistDetailScreen(
 fun Header(
   modifier: Modifier = Modifier,
   playlist: Playlist,
-  playlistViewModel: PlaylistViewModel = hiltViewModel(),
+  playlistViewModel: PlaylistViewModel,
   navigator: NavBackStack? = null,
 ) {
 
@@ -280,7 +281,8 @@ fun Header(
       onDismissRequest = {
         showDeleteDialog = false
       },
-      navigator = navigator
+      navigator = navigator,
+      playlistViewModel = playlistViewModel
     )
   }
 
@@ -406,7 +408,7 @@ fun Header(
 private fun DeleteSureDialog(
   playlistId: Long,
   onDismissRequest: () -> Unit = { },
-  playlistViewModel: PlaylistViewModel = hiltViewModel(),
+  playlistViewModel: PlaylistViewModel,
   navigator: NavBackStack? = null
 ) {
   val coroutineScope = rememberCoroutineScope()

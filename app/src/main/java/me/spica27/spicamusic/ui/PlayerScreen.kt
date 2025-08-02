@@ -35,16 +35,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.wrapper.activityViewModel
 
 
 @kotlin.OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun PlayerScreen(
-  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  playBackViewModel: PlayBackViewModel = activityViewModel(),
   sharedTransitionScope: SharedTransitionScope,
   animatedVisibilityScope: AnimatedVisibilityScope,
   onBackClick: () -> Unit,
@@ -149,7 +149,7 @@ private fun EmptyPage() {
 
 @Composable
 private fun Title(
-  modifier: Modifier = Modifier, playBackViewModel: PlayBackViewModel = hiltViewModel()
+  modifier: Modifier = Modifier, playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
 
   val indexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()

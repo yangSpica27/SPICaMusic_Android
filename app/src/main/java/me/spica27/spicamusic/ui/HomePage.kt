@@ -47,7 +47,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
@@ -70,6 +69,7 @@ import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlaylistItem
 import me.spica27.spicamusic.widget.SongItemWithCover
 import me.spica27.spicamusic.widget.fadingEdges
+import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
 
 
@@ -79,7 +79,7 @@ import java.util.*
 @Composable
 fun HomePage(
   modifier: Modifier = Modifier,
-  songViewModel: SongViewModel = hiltViewModel(),
+  songViewModel: SongViewModel = activityViewModel(),
   navigator: NavBackStack? = null,
   listState: ScrollState = rememberScrollState(),
   connection: NestedScrollConnection
@@ -321,7 +321,7 @@ private fun OftenListenEmptyContent(modifier: Modifier = Modifier) {
 @Composable
 private fun OftenListenSongList(
   songs: List<Song> = emptyList(),
-  playBackViewModel: PlayBackViewModel = hiltViewModel()
+  playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
   val listState = rememberLazyListState()
 

@@ -5,7 +5,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.rememberAsyncImagePainter
@@ -14,12 +13,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
+import me.spica27.spicamusic.wrapper.activityViewModel
 
 @Composable
 fun PlayListItemDetailScreen(
   playlistId: Long,
   songId: Long,
-  playlistViewModel: PlaylistViewModel = hiltViewModel(),
+  playlistViewModel: PlaylistViewModel = activityViewModel(),
   navigator: NavBackStack? = null
 ) {
 

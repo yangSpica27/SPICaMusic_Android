@@ -37,7 +37,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
@@ -56,7 +55,7 @@ fun SongControllerPanel(
   // 歌曲ID
   songId: Long,
   // 歌曲ViewModel
-  songViewModel: SongViewModel = hiltViewModel<SongViewModel>(),
+  songViewModel: SongViewModel,
   // 是否显示添加到播放列表
   showAddToPlaylist: Boolean = false,
   navigator: NavBackStack? = null,

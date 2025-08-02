@@ -4,7 +4,6 @@ import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.util.UnstableApi
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,11 +13,9 @@ import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.PlaylistSongCrossRef
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
-import javax.inject.Inject
 
 
-@HiltViewModel
-class SelectSongViewModel @Inject constructor(
+class SelectSongViewModel constructor(
   private val songDao: SongDao,
   private val playlistDao: PlaylistDao,
 ) : ViewModel() {

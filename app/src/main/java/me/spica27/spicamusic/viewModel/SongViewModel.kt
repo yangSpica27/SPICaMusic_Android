@@ -2,7 +2,6 @@ package me.spica27.spicamusic.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,11 +12,9 @@ import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import timber.log.Timber
-import javax.inject.Inject
 
-@HiltViewModel
-class SongViewModel
-@Inject constructor(
+
+class SongViewModel constructor(
   private val songDao: SongDao,
   private val playlistDao: PlaylistDao
 ) : ViewModel() {

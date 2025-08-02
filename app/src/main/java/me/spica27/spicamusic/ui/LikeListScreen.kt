@@ -22,7 +22,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
@@ -36,6 +35,7 @@ import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
 
 
@@ -43,7 +43,7 @@ import java.util.*
 @Composable
 fun LikeListScreen(
   navigator: NavBackStack? = null,
-  songViewModel: SongViewModel = hiltViewModel(),
+  songViewModel: SongViewModel = activityViewModel(),
 ) {
 
   val songs = songViewModel.allLikeSong.collectAsStateWithLifecycle().value

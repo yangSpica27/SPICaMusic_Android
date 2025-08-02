@@ -28,7 +28,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.playback.PlaybackStateManager
@@ -36,13 +35,14 @@ import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.viewModel.MusicSearchViewModel
 import me.spica27.spicamusic.widget.SongItemWithCover
+import org.koin.androidx.compose.koinViewModel
 
 
 /// 搜索所有歌曲的页面
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchAllScreen(
-  musicViewModel: MusicSearchViewModel = hiltViewModel()
+  musicViewModel: MusicSearchViewModel = koinViewModel()
 ) {
   Scaffold(
     topBar = {
@@ -61,9 +61,9 @@ fun SearchAllScreen(
       ) {
         Column(modifier = Modifier.fillMaxSize()) {
           // 搜索框
-          SearchBar(modifier = Modifier.padding(horizontal = 20.dp))
+          SearchBar(modifier = Modifier.padding(horizontal = 20.dp), viewModel = musicViewModel)
           // 过滤开关组
-          FiltersBar(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+          FiltersBar(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), viewModel = musicViewModel)
           HorizontalDivider(
             modifier = Modifier.fillMaxWidth(),
             thickness = 1.dp / 2,
@@ -86,7 +86,7 @@ fun SearchAllScreen(
 @Composable
 private fun SongList(
   modifier: Modifier = Modifier,
-  musicViewModel: MusicSearchViewModel = hiltViewModel()
+  musicViewModel: MusicSearchViewModel
 ) {
   val dataState = musicViewModel.songFlow.collectAsState(emptyList())
   val coroutineScope = rememberCoroutineScope()
@@ -145,7 +145,7 @@ private fun SongList(
 @Composable
 private fun SearchBar(
   modifier: Modifier = Modifier,
-  viewModel: MusicSearchViewModel = hiltViewModel()
+  viewModel: MusicSearchViewModel
 ) {
   // 搜索关键字
   val inputState = viewModel.searchKey.collectAsState("")
@@ -191,7 +191,7 @@ private fun SearchBar(
 @Composable
 private fun FiltersBar(
   modifier: Modifier = Modifier,
-  viewModel: MusicSearchViewModel = hiltViewModel()
+  viewModel: MusicSearchViewModel
 ) {
 
   val filterNoLikeState = viewModel.filterNoLike.collectAsState(false)

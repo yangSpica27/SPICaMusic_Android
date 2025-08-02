@@ -2,7 +2,6 @@ package me.spica27.spicamusic.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,10 +10,10 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Song
-import javax.inject.Inject
 
-@HiltViewModel
-class MusicSearchViewModel @Inject constructor(
+
+
+class MusicSearchViewModel(
   val songDao: SongDao
 ) : ViewModel() {
 

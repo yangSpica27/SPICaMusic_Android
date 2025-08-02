@@ -41,19 +41,19 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import me.spica27.spicamusic.comm.NetworkState
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.network.bean.LyricResponse
 import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.viewModel.LyricViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LyricsSearchScreen(
-  song: Song, lyricViewModel: LyricViewModel = hiltViewModel()
+  song: Song, lyricViewModel: LyricViewModel = koinViewModel()
 ) {
 
   val data = lyricViewModel.lyricsFlow.collectAsState(initial = emptyList()).value
@@ -88,10 +88,11 @@ fun LyricsSearchScreen(
       Column(
         modifier = Modifier.fillMaxSize()
       ) {
-        TopPanel(song)
+        TopPanel(song, lyricViewModel)
         HorizontalDivider()
         ListView(
-          song = song, state = state, modifier = Modifier.weight(1f), data = data
+          song = song, state = state, modifier = Modifier.weight(1f), data = data,
+          viewModel = lyricViewModel
         )
       }
     }
@@ -100,7 +101,7 @@ fun LyricsSearchScreen(
 
 
 @Composable
-private fun TopPanel(song: Song, lyricViewModel: LyricViewModel = hiltViewModel()) {
+private fun TopPanel(song: Song, lyricViewModel: LyricViewModel) {
 
   val songName = rememberSaveable { mutableStateOf(song.displayName) }
 
@@ -145,7 +146,8 @@ private fun TopPanel(song: Song, lyricViewModel: LyricViewModel = hiltViewModel(
 
 @Composable
 private fun ListView(
-  song: Song, state: NetworkState, modifier: Modifier, data: List<LyricResponse>
+  song: Song, state: NetworkState, modifier: Modifier, data: List<LyricResponse>,
+  viewModel: LyricViewModel
 ) {
   Box(
     modifier = modifier
@@ -192,7 +194,7 @@ private fun ListView(
                   horizontal = 12.dp, vertical = 6.dp
                 )
               ) {
-                LyricItem(lyric = data[it], song = song)
+                LyricItem(lyric = data[it], song = song, lyricViewModel = viewModel)
               }
             }
           }
@@ -205,7 +207,7 @@ private fun ListView(
 
 @Composable
 private fun LyricItem(
-  lyricViewModel: LyricViewModel = hiltViewModel(),
+  lyricViewModel: LyricViewModel,
   song: Song,
   lyric: LyricResponse,
 ) {

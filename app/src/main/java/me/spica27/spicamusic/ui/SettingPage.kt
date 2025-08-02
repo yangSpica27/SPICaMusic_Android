@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui
 
-import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,19 +28,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.viewModel.SettingViewModel
+import me.spica27.spicamusic.wrapper.activityViewModel
 
 
 // 设置页面
@@ -51,38 +48,8 @@ fun SettingPage(
   navigator: NavBackStack? = null,
 ) {
 
-  // 权限状态
-  val permissionState =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-      rememberMultiplePermissionsState(
-        listOf(
-          android.Manifest.permission.FOREGROUND_SERVICE,
-          android.Manifest.permission.READ_MEDIA_AUDIO,
-          android.Manifest.permission.POST_NOTIFICATIONS,
-          android.Manifest.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK,
-        )
-      )
-    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      rememberMultiplePermissionsState(
-        listOf(
-          android.Manifest.permission.FOREGROUND_SERVICE,
-          android.Manifest.permission.READ_MEDIA_AUDIO,
-          android.Manifest.permission.POST_NOTIFICATIONS,
-        )
-      )
-    } else {
-      rememberMultiplePermissionsState(
-        listOf(
-          android.Manifest.permission.READ_EXTERNAL_STORAGE,
-          android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        )
-      )
-    }
 
-  val context = LocalContext.current
-  val settingViewModel = hiltViewModel<SettingViewModel>()
-  val autoPlaySettingState = settingViewModel.autoPlay.collectAsStateWithLifecycle(false)
-  val autoScannerSettingState = settingViewModel.autoScanner.collectAsStateWithLifecycle(false)
+  val settingViewModel: SettingViewModel = activityViewModel()
   val forceDarkThemeSettingState =
     settingViewModel.forceDarkTheme.collectAsStateWithLifecycle(false).value
 
@@ -274,9 +241,7 @@ private fun AppVersion(versionText: String, copyrights: String, onClick: () -> U
 
 
 @Composable
-private fun TopBar(
-  navigator: NavBackStack? = null,
-) {
+private fun TopBar() {
   Box(
     modifier = Modifier
       .fillMaxWidth()

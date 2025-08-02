@@ -51,7 +51,6 @@ import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.delay
@@ -65,6 +64,7 @@ import me.spica27.spicamusic.widget.FloatingTabBarScrollConnection
 import me.spica27.spicamusic.widget.MiniPlayBar
 import me.spica27.spicamusic.widget.PlayerBar
 import me.spica27.spicamusic.widget.rememberFloatingTabBarScrollConnection
+import me.spica27.spicamusic.wrapper.activityViewModel
 
 
 /// 主页
@@ -73,7 +73,7 @@ import me.spica27.spicamusic.widget.rememberFloatingTabBarScrollConnection
 fun MainScreen(
   modifier: Modifier = Modifier,
   navigator: NavBackStack? = null,
-  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  playBackViewModel: PlayBackViewModel = activityViewModel(),
   sharedTransitionScope: SharedTransitionScope,
 ) {
 
@@ -218,7 +218,7 @@ private fun FloatBottomBar(
   navigator: NavBackStack?,
   modifier: Modifier = Modifier,
   scrollConnection: FloatingTabBarScrollConnection,
-  playBackViewModel: PlayBackViewModel = hiltViewModel(),
+  playBackViewModel: PlayBackViewModel = activityViewModel(),
   sharedTransitionScope: SharedTransitionScope,
   nowPlayingSong: Song?,
   isPlaying: Boolean,
