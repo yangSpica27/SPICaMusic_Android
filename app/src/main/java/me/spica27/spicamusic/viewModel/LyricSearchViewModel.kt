@@ -16,7 +16,7 @@ import me.spica27.spicamusic.network.bean.LyricResponse
 import me.spica27.spicamusic.repository.LyricRepository
 
 
-class LyricViewModel(
+class LyricSearchViewModel(
   private val lyricRepository: LyricRepository
 ) : ViewModel() {
 

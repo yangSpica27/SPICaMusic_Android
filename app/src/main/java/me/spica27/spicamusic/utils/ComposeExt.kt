@@ -108,6 +108,7 @@ fun Vibrator.tick() {
 }
 
 
+@Suppress("Deprecated")
 @Composable
 fun ScrollHaptics(
   listState: LazyListState,

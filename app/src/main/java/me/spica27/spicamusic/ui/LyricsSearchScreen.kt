@@ -46,19 +46,19 @@ import me.spica27.spicamusic.comm.NetworkState
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.network.bean.LyricResponse
 import me.spica27.spicamusic.utils.ToastUtils
-import me.spica27.spicamusic.viewModel.LyricViewModel
+import me.spica27.spicamusic.viewModel.LyricSearchViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LyricsSearchScreen(
-  song: Song, lyricViewModel: LyricViewModel = koinViewModel()
+  song: Song, lyricSearchViewModel: LyricSearchViewModel = koinViewModel()
 ) {
 
-  val data = lyricViewModel.lyricsFlow.collectAsState(initial = emptyList()).value
+  val data = lyricSearchViewModel.lyricsFlow.collectAsState(initial = emptyList()).value
 
-  val state = lyricViewModel.state.collectAsState(initial = NetworkState.IDLE).value
+  val state = lyricSearchViewModel.state.collectAsState(initial = NetworkState.IDLE).value
 
   Scaffold(
     topBar = {
@@ -88,11 +88,11 @@ fun LyricsSearchScreen(
       Column(
         modifier = Modifier.fillMaxSize()
       ) {
-        TopPanel(song, lyricViewModel)
+        TopPanel(song, lyricSearchViewModel)
         HorizontalDivider()
         ListView(
           song = song, state = state, modifier = Modifier.weight(1f), data = data,
-          viewModel = lyricViewModel
+          viewModel = lyricSearchViewModel
         )
       }
     }
@@ -101,7 +101,7 @@ fun LyricsSearchScreen(
 
 
 @Composable
-private fun TopPanel(song: Song, lyricViewModel: LyricViewModel) {
+private fun TopPanel(song: Song, lyricSearchViewModel: LyricSearchViewModel) {
 
   val songName = rememberSaveable { mutableStateOf(song.displayName) }
 
@@ -128,7 +128,7 @@ private fun TopPanel(song: Song, lyricViewModel: LyricViewModel) {
         if (songName.value.isEmpty()) {
           ToastUtils.showToast("请输入歌名(非必填)")
         } else {
-          lyricViewModel.fetchLyric(songName.value, artists.value)
+          lyricSearchViewModel.fetchLyric(songName.value, artists.value)
         }
       }, modifier = Modifier
         .padding(16.dp)
@@ -147,7 +147,7 @@ private fun TopPanel(song: Song, lyricViewModel: LyricViewModel) {
 @Composable
 private fun ListView(
   song: Song, state: NetworkState, modifier: Modifier, data: List<LyricResponse>,
-  viewModel: LyricViewModel
+  viewModel: LyricSearchViewModel
 ) {
   Box(
     modifier = modifier
@@ -194,7 +194,7 @@ private fun ListView(
                   horizontal = 12.dp, vertical = 6.dp
                 )
               ) {
-                LyricItem(lyric = data[it], song = song, lyricViewModel = viewModel)
+                LyricItem(lyric = data[it], song = song, lyricSearchViewModel = viewModel)
               }
             }
           }
@@ -207,7 +207,7 @@ private fun ListView(
 
 @Composable
 private fun LyricItem(
-  lyricViewModel: LyricViewModel,
+  lyricSearchViewModel: LyricSearchViewModel,
   song: Song,
   lyric: LyricResponse,
 ) {
@@ -279,7 +279,7 @@ private fun LyricItem(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
           ), shape = MaterialTheme.shapes.extraSmall, onClick = {
-            lyricViewModel.applyLyric(lyric, song)
+            lyricSearchViewModel.applyLyric(lyric, song)
             ToastUtils.showToast("歌词应用成功")
           }) {
           Text("应用歌词")

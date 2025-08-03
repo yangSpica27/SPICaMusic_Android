@@ -8,13 +8,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Song
-
+import me.spica27.spicamusic.repository.SongRepository
 
 
 class MusicSearchViewModel(
-  val songDao: SongDao
+  private val songRepository: SongRepository
 ) : ViewModel() {
 
 
@@ -37,8 +36,8 @@ class MusicSearchViewModel(
     get() = _filterShort
 
 
-  val songFlow:Flow<List<Song>> = combine(
-    songDao.getAll(),
+  val songFlow: Flow<List<Song>> = combine(
+    songRepository.allFlow(),
     _searchKey,
     _filterNoLike,
     _filterShort
@@ -59,7 +58,7 @@ class MusicSearchViewModel(
   // 收藏/不收藏歌曲
   fun toggleLike(song: Song) {
     viewModelScope.launch {
-      songDao.toggleLike(song.songId ?: -1)
+      songRepository.toggleLike(song.songId ?: -1)
     }
   }
 

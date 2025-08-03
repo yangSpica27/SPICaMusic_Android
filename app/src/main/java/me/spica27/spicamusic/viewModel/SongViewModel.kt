@@ -7,50 +7,50 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.db.dao.PlaylistDao
-import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.repository.PlaylistRepository
+import me.spica27.spicamusic.repository.SongRepository
 import timber.log.Timber
 
 
-class SongViewModel constructor(
-  private val songDao: SongDao,
-  private val playlistDao: PlaylistDao
+class SongViewModel(
+  private val songRepository: SongRepository,
+  private val playlistRepository: PlaylistRepository
 ) : ViewModel() {
 
-  fun getSongFlow(id: Long) = songDao.getSongFlowWithId(id)
+  fun getSongFlow(id: Long) = songRepository.songFlowWithId(id)
 
 
   // 所有收藏的歌曲
-  val allLikeSong: StateFlow<List<Song>> = songDao.getAllLikeSong()
+  val allLikeSong: StateFlow<List<Song>> = songRepository.allLikeSongFlow()
     .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
   // 所有歌单
-  val allPlayList: StateFlow<List<Playlist>> = playlistDao.getAllPlaylist()
+  val allPlayList: StateFlow<List<Playlist>> = playlistRepository.getAllPlaylistFlow()
     .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-  val oftenListenSongs10: StateFlow<List<Song>> = songDao.getOftenListenSong10()
+  val oftenListenSongs10: StateFlow<List<Song>> = songRepository.oftenListenSong10Flow()
     .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-  val oftenListenSongs: StateFlow<List<Song>> = songDao.getOftenListenSongs()
+  val oftenListenSongs: StateFlow<List<Song>> = songRepository.oftenListenSongFlow()
     .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-  val randomSongs: StateFlow<List<Song>> = songDao.randomSong()
+  val randomSongs: StateFlow<List<Song>> = songRepository.randomSongFlow()
     .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
   // 切换喜欢状态
   fun toggleFavorite(id: Long) {
     Timber.e("toggleFavorite: $id")
     viewModelScope.launch(Dispatchers.IO) {
-      songDao.toggleLike(id)
+      songRepository.toggleLike(id)
     }
   }
 
   // 添加歌单
   fun addPlayList(value: String) {
     viewModelScope.launch {
-      playlistDao.insertPlaylist(Playlist(playlistName = value))
+      playlistRepository.createPlaylist(value)
     }
   }
 

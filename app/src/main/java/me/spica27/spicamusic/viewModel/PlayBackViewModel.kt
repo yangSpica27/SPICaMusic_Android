@@ -35,8 +35,8 @@ import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.utils.toast
 import timber.log.Timber
 
-
-class PlayBackViewModel @OptIn(UnstableApi::class) constructor(
+@OptIn(UnstableApi::class)
+class PlayBackViewModel(
   private val songDao: SongDao,
   private val amplituda: Amplituda,
   private val lyricDao: LyricDao
@@ -161,7 +161,7 @@ class PlayBackViewModel @OptIn(UnstableApi::class) constructor(
           if (lyric != null) {
             val p: List<LyricItem> = LrcParser.parse(lyric.lyrics)
             _currentLyric.value = (p)
-          }else{
+          } else {
             Timber.tag("MusicViewModel").e("lyric is null")
             _currentLyric.value = emptyList()
           }
@@ -176,7 +176,7 @@ class PlayBackViewModel @OptIn(UnstableApi::class) constructor(
           if (lyric != null) {
             val p: List<LyricItem> = LrcParser.parse(lyric.lyrics)
             _currentLyric.value = (p)
-          }else{
+          } else {
             Timber.tag("MusicViewModel").e("lyric is null")
             _currentLyric.value = emptyList()
           }

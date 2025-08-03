@@ -10,8 +10,10 @@ import me.spica27.spicamusic.db.dao.PlaylistDao
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.network.LyricApi
 import me.spica27.spicamusic.repository.LyricRepository
+import me.spica27.spicamusic.repository.PlaylistRepository
+import me.spica27.spicamusic.repository.SongRepository
 import me.spica27.spicamusic.utils.DataStoreUtil
-import me.spica27.spicamusic.viewModel.LyricViewModel
+import me.spica27.spicamusic.viewModel.LyricSearchViewModel
 import me.spica27.spicamusic.viewModel.MusicSearchViewModel
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
@@ -39,7 +41,7 @@ object InjectModules {
         .Builder()
         .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
         .retryOnConnectionFailure(true)
-        .connectTimeout(5000L, TimeUnit.MILLISECONDS)
+        .connectTimeout(3000L, TimeUnit.MILLISECONDS)
         .readTimeout(3000L, TimeUnit.MILLISECONDS)
         .callTimeout(3000L, TimeUnit.MILLISECONDS)
         .writeTimeout(3000L, TimeUnit.MILLISECONDS)
@@ -107,6 +109,16 @@ object InjectModules {
         lyricDao = get()
       )
     }
+    single<PlaylistRepository> {
+      PlaylistRepository(
+        playlistDao = get()
+      )
+    }
+    single<SongRepository> {
+      SongRepository(
+        songDao = get()
+      )
+    }
   }
 
   /**
@@ -115,18 +127,17 @@ object InjectModules {
   val viewModelModule = module {
     viewModel {
       SongViewModel(
-        songDao = get<SongDao>(),
-        playlistDao = get<PlaylistDao>()
+        songRepository = get<SongRepository>(),
+        playlistRepository = get<PlaylistRepository>()
       )
     }
     viewModel {
       PlaylistViewModel(
-        playlistDao = get<PlaylistDao>(),
-        songDao = get<SongDao>()
+        playlistRepository = get()
       )
     }
     viewModel {
-      LyricViewModel(
+      LyricSearchViewModel(
         lyricRepository = get<LyricRepository>()
       )
     }
@@ -150,7 +161,7 @@ object InjectModules {
     }
     viewModel {
       MusicSearchViewModel(
-        songDao = get<SongDao>()
+        songRepository = get<SongRepository>()
       )
     }
   }

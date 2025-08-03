@@ -1,21 +1,15 @@
 package me.spica27.spicamusic.viewModel
 
-import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.media3.common.util.UnstableApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.dao.PlaylistDao
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.PlaylistSongCrossRef
 import me.spica27.spicamusic.db.entity.Song
-import me.spica27.spicamusic.playback.PlaybackStateManager
 
 
-class SelectSongViewModel constructor(
+class SelectSongViewModel(
   private val songDao: SongDao,
   private val playlistDao: PlaylistDao,
 ) : ViewModel() {
@@ -49,14 +43,6 @@ class SelectSongViewModel constructor(
       selectIdsSet.add(songId)
     }
     _selectedSongsIds.value = selectIdsSet.toHashSet()
-  }
-
-  // 添加到当前播放列表
-  @OptIn(UnstableApi::class)
-  fun addSongToCurrentPlaylist(song: Song) {
-    viewModelScope.launch(Dispatchers.Default) {
-      PlaybackStateManager.getInstance().play(song)
-    }
   }
 
   // 添加到播放列表

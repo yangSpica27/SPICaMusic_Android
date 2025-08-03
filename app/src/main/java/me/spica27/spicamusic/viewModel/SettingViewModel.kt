@@ -7,7 +7,7 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.utils.DataStoreUtil
 
 
-class SettingViewModel  constructor(
+class SettingViewModel(
   private val dataStoreUtil: DataStoreUtil
 ) : ViewModel() {
 
