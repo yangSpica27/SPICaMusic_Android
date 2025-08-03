@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.comm
+package me.spica27.spicamusic.common
 
 sealed class NetworkState {
   object IDLE : NetworkState()

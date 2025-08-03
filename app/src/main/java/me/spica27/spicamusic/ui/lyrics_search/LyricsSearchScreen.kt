@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.lyrics_search
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -42,7 +42,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import me.spica27.spicamusic.comm.NetworkState
+import me.spica27.spicamusic.common.NetworkState
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.network.bean.LyricResponse
 import me.spica27.spicamusic.utils.ToastUtils

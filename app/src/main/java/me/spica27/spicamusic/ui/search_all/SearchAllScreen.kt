@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.search_all
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,19 +21,22 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
+import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
+import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.viewModel.MusicSearchViewModel
+import me.spica27.spicamusic.widget.SimpleTopBar
 import me.spica27.spicamusic.widget.SongItemWithCover
 import org.koin.androidx.compose.koinViewModel
 
@@ -42,15 +45,16 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchAllScreen(
-  musicViewModel: MusicSearchViewModel = koinViewModel()
+  musicViewModel: MusicSearchViewModel = koinViewModel(),
+  navigator: NavBackStack
 ) {
   Scaffold(
     topBar = {
-      TopAppBar(
-        title = {
-          Text(text = "搜索")
+      SimpleTopBar(
+        onBack = {
+          navigator.removeLastOrNull()
         },
-        actions = { }
+        title = "搜索所有歌曲",
       )
     },
     content = { paddingValues ->
@@ -63,7 +67,10 @@ fun SearchAllScreen(
           // 搜索框
           SearchBar(modifier = Modifier.padding(horizontal = 20.dp), viewModel = musicViewModel)
           // 过滤开关组
-          FiltersBar(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp), viewModel = musicViewModel)
+          FiltersBar(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+            viewModel = musicViewModel
+          )
           HorizontalDivider(
             modifier = Modifier.fillMaxWidth(),
             thickness = 1.dp / 2,
@@ -94,7 +101,7 @@ private fun SongList(
   if (dataState.value.isEmpty()) {
     Box(
       modifier = modifier,
-      contentAlignment = androidx.compose.ui.Alignment.Center
+      contentAlignment = Alignment.Center
     ) {
       Text(text = "没有找到相关歌曲")
     }
@@ -120,12 +127,18 @@ private fun SongList(
         SongItemWithCover(
           modifier = Modifier.animateItem(),
           song = song,
-          onClick = {},
+          onClick = {
+            coroutineScope.launch {
+              PlaybackStateManager.getInstance().playAsync(song)
+            }
+          },
           coverSize = 66.dp,
           showMenu = true,
           showLike = true,
           showPlus = true,
-          onMenuClick = {},
+          onMenuClick = {
+            ToastUtils.showToast("施工中")
+          },
           onLikeClick = {
             musicViewModel.toggleLike(song)
           },
@@ -160,7 +173,7 @@ private fun SearchBar(
       modifier = Modifier
         .padding(vertical = 8.dp, horizontal = 16.dp)
         .fillMaxWidth(),
-      verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+      verticalAlignment = Alignment.CenterVertically
     ) {
       Box(
         modifier = Modifier.padding(8.dp)

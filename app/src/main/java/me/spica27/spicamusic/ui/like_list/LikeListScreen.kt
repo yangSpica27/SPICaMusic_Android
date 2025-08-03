@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.like_list
 
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent

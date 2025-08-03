@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.plady_list_detail
 
 
 import androidx.compose.animation.animateColorAsState

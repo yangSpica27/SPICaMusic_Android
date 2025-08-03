@@ -8,11 +8,13 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.EqualizerBand
@@ -38,6 +40,53 @@ class DataStoreUtil(private val context: Context = App.getInstance()) {
     val REPLAY_GAIN = intPreferencesKey("REPLAY_GAIN")
 
 
+    // 歌词字体大小
+    val LYRIC_FONT_SIZE = intPreferencesKey("LYRIC_FONT_SIZE")
+
+    // 歌词字重
+    val LYRIC_FONT_WEIGHT = intPreferencesKey("LYRIC_FONT_WEIGHT")
+
+    // 歌词播放延迟
+    val LYRIC_DELAY = intPreferencesKey("LYRIC_DELAY")
+  }
+
+
+  suspend fun setLyricDelay(value: Int) = withContext(Dispatchers.IO){
+    context.dataStore.edit {
+      it[LYRIC_DELAY] = value
+    }
+  }
+
+
+  fun getLyricDelay(): Flow<Int> {
+    return context.dataStore.data.map {
+      it[LYRIC_DELAY] ?: 0
+    }.distinctUntilChanged()
+  }
+
+
+  suspend fun setLyricFontSize(value: Int) = withContext(Dispatchers.IO) {
+    context.dataStore.edit {
+      it[LYRIC_FONT_SIZE] = value
+    }
+  }
+
+  fun getLyricFontSize(): Flow<Int> {
+    return context.dataStore.data.map {
+      it[LYRIC_FONT_SIZE] ?: 18
+    }.distinctUntilChanged()
+  }
+
+  suspend fun setLyricFontWeight(value: Int) = withContext(Dispatchers.IO) {
+    context.dataStore.edit {
+      it[LYRIC_FONT_WEIGHT] = value
+    }
+  }
+
+  fun getLyricFontWeight(): Flow<Int> {
+    return context.dataStore.data.map {
+      it[LYRIC_FONT_WEIGHT] ?: 900
+    }.distinctUntilChanged()
   }
 
 

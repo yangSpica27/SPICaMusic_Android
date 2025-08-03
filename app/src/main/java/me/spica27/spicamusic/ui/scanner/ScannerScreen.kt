@@ -1,5 +1,6 @@
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.scanner
 
+import android.Manifest
 import android.content.Intent
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
@@ -47,25 +48,25 @@ fun ScannerScreen(navigator: NavBackStack? = null) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
       rememberMultiplePermissionsState(
         listOf(
-          android.Manifest.permission.FOREGROUND_SERVICE,
-          android.Manifest.permission.READ_MEDIA_AUDIO,
-          android.Manifest.permission.POST_NOTIFICATIONS,
-          android.Manifest.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK,
+          Manifest.permission.FOREGROUND_SERVICE,
+          Manifest.permission.READ_MEDIA_AUDIO,
+          Manifest.permission.POST_NOTIFICATIONS,
+          Manifest.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK,
         )
       )
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       rememberMultiplePermissionsState(
         listOf(
-          android.Manifest.permission.FOREGROUND_SERVICE,
-          android.Manifest.permission.READ_MEDIA_AUDIO,
-          android.Manifest.permission.POST_NOTIFICATIONS,
+          Manifest.permission.FOREGROUND_SERVICE,
+          Manifest.permission.READ_MEDIA_AUDIO,
+          Manifest.permission.POST_NOTIFICATIONS,
         )
       )
     } else {
       rememberMultiplePermissionsState(
         listOf(
-          android.Manifest.permission.READ_EXTERNAL_STORAGE,
-          android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+          Manifest.permission.READ_EXTERNAL_STORAGE,
+          Manifest.permission.WRITE_EXTERNAL_STORAGE,
         )
       )
     }

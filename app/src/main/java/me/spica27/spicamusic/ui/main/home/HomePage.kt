@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.main.home
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.ScrollState

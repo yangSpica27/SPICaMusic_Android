@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.main
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -57,6 +58,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.ui.main.home.HomePage
+import me.spica27.spicamusic.ui.main.player.PlayerScreen
+import me.spica27.spicamusic.ui.setting.SettingPage
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.FloatingTabBar
@@ -223,7 +227,7 @@ private fun FloatBottomBar(
   nowPlayingSong: Song?,
   isPlaying: Boolean,
   animatedVisibilityScope: AnimatedVisibilityScope,
-  pagerState: androidx.compose.foundation.pager.PagerState,
+  pagerState: PagerState,
   showPlayer: () -> Unit
 ) {
 

@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.main.player
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,7 +42,7 @@ import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.wrapper.activityViewModel
 
 
-@kotlin.OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun PlayerScreen(
   playBackViewModel: PlayBackViewModel = activityViewModel(),
@@ -135,7 +136,7 @@ private fun EmptyPage() {
   Column(
     modifier = Modifier.fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+    verticalArrangement = Arrangement.Center,
   ) {
     Text("没有播放中的音乐", style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(16.dp))

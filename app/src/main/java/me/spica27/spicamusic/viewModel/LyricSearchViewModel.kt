@@ -10,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.comm.NetworkState
+import me.spica27.spicamusic.common.NetworkState
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.network.bean.LyricResponse
 import me.spica27.spicamusic.repository.LyricRepository

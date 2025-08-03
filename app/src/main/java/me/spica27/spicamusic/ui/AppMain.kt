@@ -17,6 +17,16 @@ import androidx.navigation3.ui.NavDisplay
 import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.theme.AppTheme
+import me.spica27.spicamusic.ui.add_song.AddSongScreen
+import me.spica27.spicamusic.ui.eq.EqScreen
+import me.spica27.spicamusic.ui.like_list.LikeListScreen
+import me.spica27.spicamusic.ui.lyrics_search.LyricsSearchScreen
+import me.spica27.spicamusic.ui.main.MainScreen
+import me.spica27.spicamusic.ui.plady_list_detail.PlaylistDetailScreen
+import me.spica27.spicamusic.ui.rencently_list.RecentlyListScreen
+import me.spica27.spicamusic.ui.scanner.ScannerScreen
+import me.spica27.spicamusic.ui.search_all.SearchAllScreen
+import me.spica27.spicamusic.ui.splash.SplashScreen
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.sliderFromBottomRouteAnim
 
@@ -43,7 +53,7 @@ fun AppMain() {
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
         entryProvider = entryProvider {
-          
+
           entry<Routes.AddSong> { key ->
             AddSongScreen(navigator = backStack, playlistId = key.playlistId)
           }
@@ -53,15 +63,16 @@ fun AppMain() {
               playlistId = it.playlistId
             )
           }
-          entry<Routes.Main> { key->
+          entry<Routes.Main> { key ->
             MainScreen(
-            navigator = backStack,
-            sharedTransitionScope = this@SharedTransitionLayout,
-          )}
+              navigator = backStack,
+              sharedTransitionScope = this@SharedTransitionLayout,
+            )
+          }
           entry<Routes.Splash> { SplashScreen(navigator = backStack) }
           entry<Routes.SearchAll>(
             metadata = sliderFromBottomRouteAnim()
-          ) { SearchAllScreen() }
+          ) { SearchAllScreen(navigator = backStack) }
           entry<Routes.EQ> {
             EqScreen(navigator = backStack)
           }
@@ -70,15 +81,6 @@ fun AppMain() {
           }
           entry<Routes.LikeList> { LikeListScreen(navigator = backStack) }
           entry<Routes.RecentlyList> { RecentlyListScreen(navigator = backStack) }
-          entry<Routes.PlayListItemDetail>(
-            metadata = sliderFromBottomRouteAnim()
-          ) { key ->
-            PlayListItemDetailScreen(
-              playlistId = key.playlistId,
-              songId = key.songId,
-              navigator = backStack
-            )
-          }
           entry<Routes.LyricsSearch>(
             metadata = sliderFromBottomRouteAnim()
           ) { key ->

@@ -26,13 +26,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Shadow
@@ -64,6 +64,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import me.spica27.spicamusic.lyric.LyricItem
 import me.spica27.spicamusic.lyric.toNormal
+import me.spica27.spicamusic.utils.DataStoreUtil
+import org.koin.compose.koinInject
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +73,8 @@ import me.spica27.spicamusic.lyric.toNormal
 fun LyricsView(
   modifier: Modifier = Modifier,
   currentLyric: List<LyricItem>,
-  currentTime: Long
+  currentTime: Long,
+  dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>()
 ) {
 
   val listState = rememberLazyListState()
@@ -80,11 +83,17 @@ fun LyricsView(
 
   val layoutHeight = remember { mutableIntStateOf(0) }
 
+  val itemFontSize = dataStoreUtil.getLyricFontSize().collectAsState(18)
+
+  val itemFontWeight = dataStoreUtil.getLyricFontWeight().collectAsState(900)
+
+  val delay = dataStoreUtil.getLyricDelay().collectAsState(0).value
+
   LaunchedEffect(currentTime) {
     launch(Dispatchers.Default + SupervisorJob()) {
       var index = 0
       for (item in currentLyric) {
-        if (item.time >= currentTime) {
+        if (item.time >= (currentTime - delay)) {
           activeIndex.intValue = index
           listState.animateScrollToItemAndCenter(
             index = index,
@@ -133,6 +142,8 @@ fun LyricsView(
             inactiveBlur = ((index.coerceAtLeast(activeIndex.intValue) -
                 index.coerceAtMost(activeIndex.intValue)) * 0.5f).fastCoerceAtMost(4f),
             onClick = { },
+            fontWeight = FontWeight(itemFontWeight.value),
+            fontSize = itemFontSize.value.sp
           )
         }
       }
@@ -249,7 +260,6 @@ fun LyricsViewLine(
     modifier = modifier
       .fillMaxWidth()
       .padding(horizontal = 35.dp, vertical = 10.dp)
-      .clip(MaterialTheme.shapes.medium)
       .indication(interactionSource, indication = null)
       .graphicsLayer {
         translationY = itemTranslationY

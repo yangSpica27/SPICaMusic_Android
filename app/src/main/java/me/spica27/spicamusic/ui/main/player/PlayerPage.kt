@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.main.player
 
 import android.os.ParcelFileDescriptor
 import androidx.annotation.OptIn
@@ -291,46 +291,8 @@ fun PlayerPage(
 }
 
 
-@Composable
-private fun Title(
-  modifier: Modifier = Modifier, playBackViewModel: PlayBackViewModel = activityViewModel(),
-) {
-
-  val indexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()
-
-  val playlistSizeState = playBackViewModel.nowPlayingListSize.collectAsStateWithLifecycle()
-
-  Row(
-    modifier = modifier,
-  ) {
-    Text(
-      modifier = Modifier
-        .background(
-          MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small
-        )
-        .padding(vertical = 4.dp, horizontal = 8.dp),
-      text = "循环播放",
-      style = MaterialTheme.typography.bodyMedium.copy(
-        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-      )
-    )
-    Spacer(modifier = Modifier.width(10.dp))
-    Text(
-      modifier = Modifier
-        .background(
-          MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.shapes.small
-        )
-        .padding(vertical = 4.dp, horizontal = 8.dp),
-      text = "第 ${indexState.value + 1} / ${playlistSizeState.value} 首",
-      style = MaterialTheme.typography.bodyMedium.copy(
-        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-      )
-    )
-  }
-}
 
 /// 封面
-
 @OptIn(UnstableApi::class)
 @Composable
 private fun Cover(

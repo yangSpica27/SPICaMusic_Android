@@ -1,7 +1,5 @@
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.eq
 
-import android.os.Build
-import android.os.VibrationEffect
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,18 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderColors
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
@@ -55,7 +49,6 @@ import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.NyquistBand
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
-import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.utils.rememberVibrator
 import me.spica27.spicamusic.utils.tick
 import me.spica27.spicamusic.widget.EqSettingView
@@ -316,7 +309,7 @@ private fun VerticalSlider(
           .fillMaxHeight()
       ) {
         drawLine(
-          cap = androidx.compose.ui.graphics.StrokeCap.Round,
+          cap = StrokeCap.Round,
           color = containerColor,
           start = Offset(0f, size.height / 2),
           end = Offset(size.width, size.height / 2),
@@ -327,7 +320,7 @@ private fun VerticalSlider(
           start = Offset(size.width / 2f, size.height / 2f),
           end = Offset(size.width * ((value + 10f) * 1f / 20f), size.height / 2f),
           strokeWidth = 12.dp.toPx(),
-          cap = androidx.compose.ui.graphics.StrokeCap.Round
+          cap = StrokeCap.Round
         )
       }
     },

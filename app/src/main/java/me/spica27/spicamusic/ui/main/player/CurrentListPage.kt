@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui
+package me.spica27.spicamusic.ui.main.player
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
