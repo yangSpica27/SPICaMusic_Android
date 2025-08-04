@@ -16,6 +16,7 @@
 package androidx.media3.decoder.flac;
 
 import android.os.Handler;
+import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 import androidx.media3.common.C;
 import androidx.media3.common.Format;
@@ -31,6 +32,7 @@ import androidx.media3.exoplayer.audio.DecoderAudioRenderer;
 import androidx.media3.extractor.FlacStreamMetadata;
 
 /** Decodes and renders audio using the native Flac decoder. */
+@Keep
 @UnstableApi
 public final class LibflacAudioRenderer extends DecoderAudioRenderer<FlacDecoder> {
 

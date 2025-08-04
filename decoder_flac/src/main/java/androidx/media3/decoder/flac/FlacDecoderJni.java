@@ -15,8 +15,7 @@
  */
 package androidx.media3.decoder.flac;
 
-import static java.lang.Math.min;
-
+import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 import androidx.media3.common.C;
 import androidx.media3.common.ParserException;
@@ -29,7 +28,10 @@ import androidx.media3.extractor.SeekPoint;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static java.lang.Math.min;
+
 /** JNI wrapper for the libflac Flac decoder. */
+@Keep
 /* package */ @UnstableApi final class FlacDecoderJni {
 
   private static final int TEMP_BUFFER_SIZE = 8192; // The same buffer size as libflac.
