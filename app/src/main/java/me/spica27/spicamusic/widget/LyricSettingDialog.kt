@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,8 +22,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.utils.DataStoreUtil
 import org.koin.compose.koinInject
@@ -44,17 +45,28 @@ fun LyricSettingDialog(
 
   val fontWeight = dataStoreUtil.getLyricFontWeight().collectAsState(null).value
 
+
   val delay = dataStoreUtil.getLyricDelay().collectAsState(null).value
 
   var isSeek by remember { mutableStateOf(false) }
 
   val dialogBackgroundColor = animateColorAsState(
     if (isSeek) {
-      MaterialTheme.colorScheme.surfaceContainerLow.copy(
-        .65f
-      )
+      MaterialTheme.colorScheme.background.copy(alpha = 0f)
     } else {
-      MaterialTheme.colorScheme.surfaceContainerLow
+      MaterialTheme.colorScheme.background
+    },
+    tween(
+      durationMillis = 200,
+      easing = EaseInOut
+    )
+  ).value
+
+  val textColor = animateColorAsState(
+    if (isSeek) {
+      MaterialTheme.colorScheme.onBackground.copy(alpha = 0f)
+    } else {
+      MaterialTheme.colorScheme.onBackground
     },
     tween(
       durationMillis = 200,
@@ -63,20 +75,22 @@ fun LyricSettingDialog(
   ).value
 
   if (fontWeight != null && fontSize != null && delay != null) {
+
     AlertDialog(
       containerColor = dialogBackgroundColor,
       shape = MaterialTheme.shapes.small,
       onDismissRequest = { onDismissRequest() },
       title = {
-        Text("歌词显示设置")
+        Text("歌词显示设置", color = textColor)
       },
       text = {
+        (LocalView.current.parent as DialogWindowProvider).window.setDimAmount(0f)
         Column(
           modifier = Modifier.fillMaxWidth(),
           horizontalAlignment = Alignment.Start,
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          TitleText("字号 ${fontSize}")
+          TitleText("字号 ${fontSize}",textColor = textColor)
           SimpleSlider(
             modifier = Modifier
               .fillMaxWidth(),
@@ -92,7 +106,7 @@ fun LyricSettingDialog(
             },
             valueRange = 12f..24f,
           )
-          TitleText("字重 ${fontWeight}")
+          TitleText("字重 ${fontWeight}",textColor = textColor)
           SimpleSlider(
             modifier = Modifier
               .fillMaxWidth(),
@@ -114,7 +128,8 @@ fun LyricSettingDialog(
               "延迟${delay}毫秒"
             } else {
               "加快${delay}毫秒"
-            }
+            },
+            textColor = textColor
           )
           SimpleSlider(
             modifier = Modifier
@@ -131,11 +146,6 @@ fun LyricSettingDialog(
             },
             valueRange = -5000f..5000f,
             steps = 1000,
-          )
-          TitleText("液态玻璃")
-          Checkbox(
-            checked = true,
-            onCheckedChange = {}
           )
         }
 
@@ -154,12 +164,13 @@ fun LyricSettingDialog(
 
 
 @Composable
-private fun TitleText(text: String) {
+private fun TitleText(text: String,textColor: Color) {
   Text(
     text,
     modifier = Modifier.fillMaxWidth(),
     style = MaterialTheme.typography.titleMedium.copy(
-      fontWeight = FontWeight.W500
+      fontWeight = FontWeight.W500,
+      color = textColor
     )
   )
 }

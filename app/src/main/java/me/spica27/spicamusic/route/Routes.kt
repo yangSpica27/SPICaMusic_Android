@@ -51,6 +51,9 @@ object Routes {
   @Serializable
   data class PlayListItemDetail(val playlistId: Long, val songId: Long) : NavKey
 
+  @Serializable
+  data object AgreePrivacy : NavKey
+
   /**
    * 歌词搜索
    */

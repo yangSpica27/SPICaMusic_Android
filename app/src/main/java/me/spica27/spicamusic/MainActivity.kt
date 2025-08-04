@@ -3,6 +3,7 @@ package me.spica27.spicamusic
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -25,6 +26,7 @@ class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     startService(Intent(this, MusicService::class.java))
+    window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
     setContent {
       AppMain()
     }

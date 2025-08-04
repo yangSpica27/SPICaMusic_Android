@@ -60,7 +60,6 @@ import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
-import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
@@ -162,7 +161,9 @@ fun HomePage(
           }
         ) { songs ->
           if (songs.isEmpty()) {
-            OftenListenEmptyContent()
+            OftenListenEmptyContent(
+              navigator = navigator
+            )
           } else {
             OftenListenSongList(songs = songs)
           }
@@ -247,7 +248,7 @@ fun HomePage(
                 song = it,
                 onClick = {
                   PlaybackStateManager.getInstance()
-                    .play(song = it)
+                    .play(song = it,randomSong)
                 },
                 showMenu = false,
                 showPlus = false,
@@ -266,7 +267,7 @@ fun HomePage(
  * 最近常听占位空
  */
 @Composable
-private fun OftenListenEmptyContent(modifier: Modifier = Modifier) {
+private fun OftenListenEmptyContent(modifier: Modifier = Modifier,navigator: NavBackStack? = null) {
   Box(
     modifier = Modifier
       .then(modifier)
@@ -306,7 +307,7 @@ private fun OftenListenEmptyContent(modifier: Modifier = Modifier) {
       )
       TextButton(
         onClick = {
-          ToastUtils.showToast("待实现,先去设置那边扫描")
+          navigator?.add(Routes.Scanner)
         }
       ) {
         Text("扫描本地音乐")

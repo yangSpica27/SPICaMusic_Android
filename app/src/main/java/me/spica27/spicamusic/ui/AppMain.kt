@@ -18,6 +18,7 @@ import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.theme.AppTheme
 import me.spica27.spicamusic.ui.add_song.AddSongScreen
+import me.spica27.spicamusic.ui.agree_privacy.AgreePrivacyScreen
 import me.spica27.spicamusic.ui.eq.EqScreen
 import me.spica27.spicamusic.ui.like_list.LikeListScreen
 import me.spica27.spicamusic.ui.lyrics_search.LyricsSearchScreen
@@ -78,6 +79,9 @@ fun AppMain() {
           }
           entry<Routes.Scanner> {
             ScannerScreen(navigator = backStack)
+          }
+          entry<Routes.AgreePrivacy> {
+            AgreePrivacyScreen(navigator = backStack)
           }
           entry<Routes.LikeList> { LikeListScreen(navigator = backStack) }
           entry<Routes.RecentlyList> { RecentlyListScreen(navigator = backStack) }

@@ -39,7 +39,6 @@ class DataStoreUtil(private val context: Context = App.getInstance()) {
     // 响度增益
     val REPLAY_GAIN = intPreferencesKey("REPLAY_GAIN")
 
-
     // 歌词字体大小
     val LYRIC_FONT_SIZE = intPreferencesKey("LYRIC_FONT_SIZE")
 
@@ -48,10 +47,24 @@ class DataStoreUtil(private val context: Context = App.getInstance()) {
 
     // 歌词播放延迟
     val LYRIC_DELAY = intPreferencesKey("LYRIC_DELAY")
+
+    // 用户是否同意隐私政策
+    val AGREE_PRIVACY = booleanPreferencesKey("agree_privacy")
   }
 
+  suspend fun setAgreePrivacy(value: Boolean) = withContext(Dispatchers.IO) {
+    context.dataStore.edit {
+      it[AGREE_PRIVACY] = value
+    }
+  }
 
-  suspend fun setLyricDelay(value: Int) = withContext(Dispatchers.IO){
+  fun getAgreePrivacy(): Flow<Boolean> {
+    return context.dataStore.data.map {
+      it[AGREE_PRIVACY] ?: false
+    }.distinctUntilChanged()
+  }
+
+  suspend fun setLyricDelay(value: Int) = withContext(Dispatchers.IO) {
     context.dataStore.edit {
       it[LYRIC_DELAY] = value
     }

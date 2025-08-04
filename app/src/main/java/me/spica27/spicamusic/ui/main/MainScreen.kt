@@ -61,6 +61,7 @@ import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.ui.main.home.HomePage
 import me.spica27.spicamusic.ui.main.player.PlayerScreen
 import me.spica27.spicamusic.ui.setting.SettingPage
+import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.FloatingTabBar
@@ -69,6 +70,7 @@ import me.spica27.spicamusic.widget.MiniPlayBar
 import me.spica27.spicamusic.widget.PlayerBar
 import me.spica27.spicamusic.widget.rememberFloatingTabBarScrollConnection
 import me.spica27.spicamusic.wrapper.activityViewModel
+import org.koin.compose.koinInject
 
 
 /// 主页
@@ -79,6 +81,7 @@ fun MainScreen(
   navigator: NavBackStack? = null,
   playBackViewModel: PlayBackViewModel = activityViewModel(),
   sharedTransitionScope: SharedTransitionScope,
+  dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>()
 ) {
 
 
@@ -136,6 +139,12 @@ fun MainScreen(
       10
     },
   )
+
+  val agreePrivacy = dataStoreUtil.getAgreePrivacy().collectAsStateWithLifecycle(null).value
+
+  if (agreePrivacy == false){
+    navigator?.add(Routes.AgreePrivacy)
+  }
 
   Box(
     modifier = Modifier

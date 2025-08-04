@@ -37,6 +37,7 @@ import androidx.navigation3.runtime.NavBackStack
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.viewModel.SettingViewModel
 import me.spica27.spicamusic.wrapper.activityViewModel
 
@@ -82,26 +83,18 @@ fun SettingPage(
           }
         )
       }
-      item {
-        CategoryItem(
-          title = "歌词",
-          icon = ImageVector.vectorResource(R.drawable.ic_font_download),
-          onClick = { })
-      }
+//      item {
+//        CategoryItem(
+//          title = "歌词",
+//          icon = ImageVector.vectorResource(R.drawable.ic_font_download),
+//          onClick = { })
+//      }
       item {
         CategoryItem(
           title = "扫描",
           icon = Icons.Outlined.Refresh,
           onClick = {
             navigator?.add(Routes.Scanner)
-//            if (permissionState.allPermissionsGranted) {
-//              // 扫描本地音乐
-//              Toast.makeText(context, "开始扫描本地音乐", Toast.LENGTH_SHORT).show()
-//              context.startService(Intent(context, RefreshMusicListService::class.java))
-//            } else {
-//              permissionState.launchMultiplePermissionRequest()
-//              Toast.makeText(context, "请授予权限", Toast.LENGTH_SHORT).show()
-//            }
           })
       }
       item {
@@ -118,7 +111,7 @@ fun SettingPage(
           title = "FAQ",
           icon = Icons.Outlined.MailOutline,
           onClick = {
-
+            ToastUtils.showToast("待施工")
           })
       }
       item {
@@ -126,7 +119,7 @@ fun SettingPage(
           title = "关于",
           icon = Icons.Outlined.Info,
           onClick = {
-
+            ToastUtils.showToast("待施工")
           })
       }
       item {

@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.ui.scanner
 
 import android.Manifest
-import android.content.Intent
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -33,8 +32,14 @@ import androidx.navigation3.runtime.NavBackStack
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import me.spica27.spicamusic.service.RefreshMusicListService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.db.dao.LyricDao
+import me.spica27.spicamusic.db.dao.SongDao
+import me.spica27.spicamusic.utils.AudioTool
 import me.spica27.spicamusic.widget.SimpleTopBar
+import org.koin.compose.koinInject
 
 /**
  * 扫描页面
@@ -77,13 +82,22 @@ fun ScannerScreen(navigator: NavBackStack? = null) {
 
   val context = LocalContext.current
 
+  val lyricDao: LyricDao = koinInject<LyricDao>()
+
+  val songDao: SongDao = koinInject<SongDao>()
+
   LaunchedEffect(
     isScanning
   ) {
     if (isScanning) {
-      context.startService(Intent(context, RefreshMusicListService::class.java))
-      isScanning = false
-      text = "扫描完成"
+      launch(Dispatchers.IO) {
+        val songs = AudioTool.getSongsFromPhone(context, lyricDao)
+        withContext(Dispatchers.Main) {
+          text = ("共${songs.size}首")
+        }
+        songDao.updateSongs(songs)
+        isScanning = false
+      }
     }
   }
 
