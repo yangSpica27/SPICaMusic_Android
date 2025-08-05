@@ -55,7 +55,6 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   private var mediaSession: MediaSessionCompat? = null
 
 
-
   private val fftAudioProcessor = PlaybackStateManager.getInstance().fftAudioProcessor
 
   private lateinit var foregroundManager: ForegroundManager
@@ -285,7 +284,8 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
           mediaId = song.mediaStoreId,
           time = System.currentTimeMillis(),
           title = song.displayName,
-          artist = song.artist,)
+          artist = song.artist,
+        )
       )
     }
   }

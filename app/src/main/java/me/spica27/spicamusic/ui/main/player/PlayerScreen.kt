@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
+import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.wrapper.activityViewModel
 
@@ -104,7 +105,7 @@ fun PlayerScreen(
       ) {
         if (nowPlayingSongs.isEmpty()) {
           // 播放列表为空
-          EmptyPage()
+          EmptyPage(navigator)
         } else {
           // 播放列表不为空
           VerticalPager(
@@ -120,6 +121,7 @@ fun PlayerScreen(
                   navigator = navigator
                 )
               }
+
               1 -> {
                 CurrentListPage()
               }
@@ -132,7 +134,9 @@ fun PlayerScreen(
 }
 
 @Composable
-private fun EmptyPage() {
+private fun EmptyPage(
+  navigator: NavBackStack? = null,
+) {
   Column(
     modifier = Modifier.fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally,
@@ -141,7 +145,9 @@ private fun EmptyPage() {
     Text("没有播放中的音乐", style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(16.dp))
     OutlinedButton(
-      onClick = { }
+      onClick = {
+        navigator?.add(Routes.SearchAll)
+      }
     ) {
       Text("选取音乐")
     }

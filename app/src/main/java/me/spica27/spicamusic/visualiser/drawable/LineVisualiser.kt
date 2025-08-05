@@ -8,7 +8,6 @@ import androidx.core.graphics.ColorUtils
 import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.utils.dp
 import me.spica27.spicamusic.visualiser.MusicVisualiser
-import timber.log.Timber
 
 
 @OptIn(UnstableApi::class)
@@ -19,7 +18,7 @@ class LineVisualiser : VisualiserDrawable() {
   private var lastSampleTime = 0L
 
   // 采样间隔 
-  private val interval = 125
+  private val interval = 60
 
 
   // 采集到的数据

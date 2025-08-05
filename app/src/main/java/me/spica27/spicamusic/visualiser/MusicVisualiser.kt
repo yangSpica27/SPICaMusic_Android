@@ -75,7 +75,7 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
 
     val currentTime = System.currentTimeMillis()
 
-    if (currentTime - lastFFTTime < 125) {
+    if (currentTime - lastFFTTime < 65) {
       return
     }
     lastFFTTime = currentTime

@@ -225,7 +225,6 @@ class PlayBackViewModel(
       _playingSong.emit(song)
       _nowPlayingList.emit(list)
     }
-
   }
 
   fun play(song: Song) {
@@ -233,6 +232,10 @@ class PlayBackViewModel(
       PlaybackStateManager.getInstance().playAsync(song)
       _playingSong.emit(song)
     }
+  }
+
+  fun clear() {
+    PlaybackStateManager.getInstance().removeAll()
   }
 
   fun seekTo(position: Long) {

@@ -76,7 +76,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
@@ -87,6 +86,7 @@ import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
@@ -112,9 +112,10 @@ import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.visualiser.MusicVisualiser
 import me.spica27.spicamusic.widget.LyricSettingDialog
 import me.spica27.spicamusic.widget.LyricsView
-import me.spica27.spicamusic.widget.SongControllerPanel
+import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
+import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.Taglib
 import me.spica27.spicamusic.wrapper.activityViewModel
 import org.koin.compose.koinInject
@@ -489,7 +490,7 @@ private fun ControlPanel(
 
   LaunchedEffect(song) {
     withContext(Dispatchers.IO + CoroutineExceptionHandler { _, _ ->
-
+      ampState.value = arrayListOf()
     }) {
       val amplituda = playBackViewModel.getAmplituda()
       if (song?.getSongUri() != null) {
@@ -635,9 +636,6 @@ private fun SongInfo(
 
   val song = songViewModel.getSongFlow(songId).collectAsStateWithLifecycle(null).value
 
-  var showMenuState by remember { mutableStateOf(false) }
-
-
   var showLyricsSetting by remember { mutableStateOf(false) }
 
   if (showLyricsSetting) {
@@ -650,26 +648,17 @@ private fun SongInfo(
 
 
   if (song == null) {
-
     Box(modifier = modifier)
     return
   }
 
-  if (showMenuState) {
-    Dialog(
-      onDismissRequest = {
-        showMenuState = false
-      }) {
-      SongControllerPanel(
-        songId = songId,
-        onDismiss = {
-          showMenuState = false
-        },
-        navigator = navigator,
-        songViewModel = songViewModel
-      )
-    }
-  }
+  val songListItemMenuDialogState = rememberSongItemMenuDialogState()
+
+
+  SongItemMenu(
+    songListItemMenuDialogState
+  )
+
 
   Row(
     modifier = modifier
@@ -732,7 +721,7 @@ private fun SongInfo(
     Spacer(Modifier.width(10.dp))
     IconButton(
       onClick = {
-        showMenuState = false
+        songListItemMenuDialogState.show(song)
       },
     ) {
       Icon(
@@ -832,7 +821,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
     var playCount by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(song) {
-      launch(Dispatchers.IO) {
+      launch(Dispatchers.IO + SupervisorJob()) {
         val fd: ParcelFileDescriptor? =
           App.getInstance().contentResolverSafe.openFileDescriptor(song.getSongUri(), "r")
         fd?.use { fd ->
@@ -840,7 +829,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           Timber.tag("歌曲信息").d("metadata: $metadata")
         }
       }
-      launch(Dispatchers.IO) {
+      launch(Dispatchers.IO + SupervisorJob()) {
         val lastPlayTime = playHistoryRepository.getLastPlayTime(song.mediaStoreId)
         if (lastPlayTime == 0L) {
           lastPlayTimeText = "现在"

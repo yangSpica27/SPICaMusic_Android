@@ -71,6 +71,15 @@ class PlaybackStateManager {
     listeners.remove(listener)
   }
 
+
+  fun removeAll() {
+    queue.clear()
+    player?.loadSong(null, false)
+    updateListenersNewList()
+    updateListenersIndexMove()
+    updateListenersState()
+  }
+
   fun removeSong(index: Int) {
     if (index == queue.getIndex()) {
       playNext()
@@ -136,6 +145,8 @@ class PlaybackStateManager {
     } else if (repeatMode == RepeatMode.ALL && queue.getPlayList().isNotEmpty()) {
       queue.reloadNewList(queue.getPlayList().first(), queue.getPlayList())
       player?.loadSong(queue.currentSong(), true)
+    } else {
+      player?.loadSong(null, false)
     }
     updateListenersIndexMove()
   }

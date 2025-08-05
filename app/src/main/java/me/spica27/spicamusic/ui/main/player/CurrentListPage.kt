@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.PlayingSongItem
 import me.spica27.spicamusic.wrapper.activityViewModel
@@ -83,6 +84,7 @@ fun CurrentListPage(
           IconButton(
             onClick = {
               // 清空播放列表
+              playBackViewModel.clear()
             }
           ) {
             Icon(
@@ -94,7 +96,7 @@ fun CurrentListPage(
           IconButton(
             onClick = {
               // 保存为新歌单
-
+              ToastUtils.showToast("保存为新歌单,开发中...")
             }
           ) {
             Icon(

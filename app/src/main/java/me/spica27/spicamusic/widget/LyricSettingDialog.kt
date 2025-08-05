@@ -2,7 +2,6 @@ package me.spica27.spicamusic.widget
 
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +21,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -29,14 +30,15 @@ import androidx.compose.ui.window.DialogWindowProvider
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.utils.DataStoreUtil
 import org.koin.compose.koinInject
+import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LyricSettingDialog(
   onDismissRequest: () -> Unit,
-  sliderBackground: Color = MaterialTheme.colorScheme.primaryContainer,
-  sliderForeground: Color = MaterialTheme.colorScheme.primary,
-  dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>()
+  dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>(),
+  dialogBackgroundColor: Color = MaterialTheme.colorScheme.background,
+  textColor: Color = MaterialTheme.colorScheme.onBackground
 ) {
 
   val coroutineScope = rememberCoroutineScope()
@@ -48,36 +50,65 @@ fun LyricSettingDialog(
 
   val delay = dataStoreUtil.getLyricDelay().collectAsState(null).value
 
-  var isSeek by remember { mutableStateOf(false) }
+  var isSeekFontSize by remember { mutableStateOf(false) }
 
-  val dialogBackgroundColor = animateColorAsState(
-    if (isSeek) {
-      MaterialTheme.colorScheme.background.copy(alpha = 0f)
-    } else {
-      MaterialTheme.colorScheme.background
-    },
-    tween(
-      durationMillis = 200,
-      easing = EaseInOut
-    )
-  ).value
+  var isSeekFontWeight by remember { mutableStateOf(false) }
 
-  val textColor = animateColorAsState(
-    if (isSeek) {
-      MaterialTheme.colorScheme.onBackground.copy(alpha = 0f)
+  var isSeekLrcSpeed by remember { mutableStateOf(false) }
+
+
+  var dialogBackgroundColor by remember { mutableStateOf(dialogBackgroundColor) }
+
+  val dialogBackgroundColorAnimValue = animateColorAsState(dialogBackgroundColor, tween(200))
+
+  var textColor by remember { mutableStateOf(textColor) }
+
+  val textColorAnimValue = animateColorAsState(textColor, tween(200))
+
+  var showFontWeightSlider by remember { mutableStateOf(false) }
+
+  var showFontSizeSlider by remember { mutableStateOf(false) }
+
+  var showSpeedSlider by remember { mutableStateOf(false) }
+
+  LaunchedEffect(isSeekFontSize) {
+    dialogBackgroundColor = if (isSeekFontSize) {
+      dialogBackgroundColor.copy(alpha = 0f)
     } else {
-      MaterialTheme.colorScheme.onBackground
-    },
-    tween(
-      durationMillis = 200,
-      easing = EaseInOut
-    )
-  ).value
+      dialogBackgroundColor.copy(alpha = 1f)
+    }
+    textColor = if (isSeekFontSize) {
+      textColor.copy(alpha = 0f)
+    } else {
+      textColor.copy(alpha = 1f)
+    }
+    showFontWeightSlider = !isSeekFontSize
+    showSpeedSlider = !isSeekFontSize
+  }
+
+  LaunchedEffect(isSeekFontWeight) {
+    dialogBackgroundColor = if (isSeekFontWeight) {
+      dialogBackgroundColor.copy(alpha = 0f)
+    } else {
+      dialogBackgroundColor.copy(alpha = 1f)
+    }
+    textColor = if (isSeekFontWeight) {
+      textColor.copy(alpha = 0f)
+    } else {
+      textColor.copy(alpha = 1f)
+    }
+    showFontSizeSlider = !isSeekFontWeight
+    showSpeedSlider = !isSeekFontWeight
+  }
+
+  LaunchedEffect(isSeekLrcSpeed) {
+
+  }
 
   if (fontWeight != null && fontSize != null && delay != null) {
 
     AlertDialog(
-      containerColor = dialogBackgroundColor,
+      containerColor = dialogBackgroundColorAnimValue.value,
       shape = MaterialTheme.shapes.small,
       onDismissRequest = { onDismissRequest() },
       title = {
@@ -90,35 +121,49 @@ fun LyricSettingDialog(
           horizontalAlignment = Alignment.Start,
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          TitleText("字号 ${fontSize}",textColor = textColor)
+          TitleText("字号 ${fontSize}", textColor = textColorAnimValue.value)
           SimpleSlider(
             modifier = Modifier
-              .fillMaxWidth(),
+              .fillMaxWidth()
+              .alpha(
+                if (showFontSizeSlider) {
+                  1f
+                } else {
+                  0f
+                }
+              ),
             value = fontSize.toFloat(),
             onValueChange = {
               coroutineScope.launch {
                 dataStoreUtil.setLyricFontSize(it.toInt())
               }
-              isSeek = true
+              isSeekFontSize = true
             },
             onValueChangeFinished = {
-              isSeek = false
+              isSeekFontSize = false
             },
             valueRange = 12f..24f,
           )
-          TitleText("字重 ${fontWeight}",textColor = textColor)
+          TitleText("字重 ${fontWeight}", textColor = textColorAnimValue.value)
           SimpleSlider(
             modifier = Modifier
-              .fillMaxWidth(),
+              .fillMaxWidth()
+              .alpha(
+                if (showFontWeightSlider) {
+                  1f
+                } else {
+                  0f
+                }
+              ),
             value = fontWeight.toFloat(),
             onValueChange = {
               coroutineScope.launch {
                 dataStoreUtil.setLyricFontWeight(it.toInt())
               }
-              isSeek = true
+              isSeekFontWeight = true
             },
             onValueChangeFinished = {
-              isSeek = false
+              isSeekFontWeight = false
             },
             valueRange = 100f..900f,
             steps = 100,
@@ -129,20 +174,45 @@ fun LyricSettingDialog(
             } else {
               "加快${delay}毫秒"
             },
-            textColor = textColor
+            textColor = textColorAnimValue.value
           )
           SimpleSlider(
             modifier = Modifier
-              .fillMaxWidth(),
+              .fillMaxWidth()
+              .alpha(
+                if (showSpeedSlider) {
+                  1f
+                } else {
+                  0f
+                }
+              ),
             value = delay.toFloat(),
             onValueChange = {
-              coroutineScope.launch {
-                dataStoreUtil.setLyricDelay(it.toInt())
+              val i = if (it > 0) {
+                1
+              } else {
+                -1
               }
-              isSeek = true
+              coroutineScope.launch {
+                if (it.absoluteValue < 250) {
+                  dataStoreUtil.setLyricDelay(0)
+                } else if (it.absoluteValue < 500 * i) {
+                  dataStoreUtil.setLyricDelay(250)
+                } else if (it.absoluteValue < 750 * i) {
+                  dataStoreUtil.setLyricDelay(500 * i)
+                } else if (it.absoluteValue < 1000) {
+                  dataStoreUtil.setLyricDelay(750 * i)
+                } else {
+                  dataStoreUtil.setLyricDelay(
+                    (it / 1000).toInt() * 1000
+                  )
+                }
+
+              }
+              isSeekLrcSpeed = true
             },
             onValueChangeFinished = {
-              isSeek = false
+              isSeekLrcSpeed = false
             },
             valueRange = -5000f..5000f,
             steps = 1000,
@@ -164,7 +234,7 @@ fun LyricSettingDialog(
 
 
 @Composable
-private fun TitleText(text: String,textColor: Color) {
+private fun TitleText(text: String, textColor: Color) {
   Text(
     text,
     modifier = Modifier.fillMaxWidth(),

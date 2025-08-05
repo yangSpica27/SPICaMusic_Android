@@ -482,7 +482,9 @@ private fun SongItemDialog(
         ) {
           Text(
             text = song.displayName,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyLarge.copy(
+              fontWeight = FontWeight.W700
+            ),
             modifier = Modifier
               .fillMaxWidth()
               .basicMarquee()
