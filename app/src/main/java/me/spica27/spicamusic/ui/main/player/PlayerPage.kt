@@ -51,9 +51,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -95,7 +95,9 @@ import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.repository.PlayHistoryRepository
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.utils.TimeUtils
 import me.spica27.spicamusic.utils.TimeUtils.prettyTime
 import me.spica27.spicamusic.utils.contentResolverSafe
 import me.spica27.spicamusic.utils.formatDurationDs
@@ -115,6 +117,7 @@ import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.wrapper.Taglib
 import me.spica27.spicamusic.wrapper.activityViewModel
+import org.koin.compose.koinInject
 import timber.log.Timber
 import java.util.*
 
@@ -291,14 +294,13 @@ fun PlayerPage(
 }
 
 
-
 /// 封面
 @OptIn(UnstableApi::class)
 @Composable
 private fun Cover(
   modifier: Modifier = Modifier,
   songState: State<Song?>,
-  playBackViewModel: PlayBackViewModel =activityViewModel(),
+  playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
 
   val context = LocalContext.current
@@ -813,16 +815,23 @@ private fun TabBar(
 @Composable
 fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
 
+
   if (song == null) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
       Text("暂无播放中的歌曲")
     }
   } else {
 
+    val playHistoryRepository = koinInject<PlayHistoryRepository>()
+
+
+    var lastPlayTimeText by remember { mutableStateOf("现在") }
+
+    var lastPlayTimeDescText by remember { mutableStateOf("--") }
+
+    var playCount by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(song) {
-
-
       launch(Dispatchers.IO) {
         val fd: ParcelFileDescriptor? =
           App.getInstance().contentResolverSafe.openFileDescriptor(song.getSongUri(), "r")
@@ -831,16 +840,18 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           Timber.tag("歌曲信息").d("metadata: $metadata")
         }
       }
-
-    }
-
-
-    val lastPlayTimeText: State<String> = remember(song.lastPlayTime) {
-      derivedStateOf {
-        if (song.lastPlayTime == 0L) return@derivedStateOf "现在"
-        return@derivedStateOf prettyTime.format(Date(song.lastPlayTime * 1L))
+      launch(Dispatchers.IO) {
+        val lastPlayTime = playHistoryRepository.getLastPlayTime(song.mediaStoreId)
+        if (lastPlayTime == 0L) {
+          lastPlayTimeText = "现在"
+        } else {
+          lastPlayTimeText = prettyTime.format(Date(lastPlayTime))
+        }
+        playCount = playHistoryRepository.getSongPlayCount(song.mediaStoreId)
+        lastPlayTimeDescText = TimeUtils.getDateDesc(Date(lastPlayTime))
       }
     }
+
 
     Column(
       modifier = modifier.padding(
@@ -868,14 +879,14 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           )
           Spacer(modifier = Modifier.height(5.dp))
           Text(
-            lastPlayTimeText.value, style = MaterialTheme.typography.bodyLarge.copy(
+            lastPlayTimeText, style = MaterialTheme.typography.bodyLarge.copy(
               color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
               fontWeight = FontWeight.W700,
               fontSize = 20.sp
             )
           )
           Spacer(modifier = Modifier.height(5.dp))
-          Text("夏天的午后", style = MaterialTheme.typography.bodyLarge)
+          Text(lastPlayTimeDescText, style = MaterialTheme.typography.bodyLarge)
           Spacer(modifier = Modifier.height(5.dp))
         }
         Spacer(
@@ -898,14 +909,20 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           )
           Spacer(modifier = Modifier.height(5.dp))
           Text(
-            "${song.playTimes}次", style = MaterialTheme.typography.bodyLarge.copy(
+            "${playCount}次", style = MaterialTheme.typography.bodyLarge.copy(
               color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
               fontWeight = FontWeight.W700,
               fontSize = 20.sp
             )
           )
           Spacer(modifier = Modifier.height(5.dp))
-          Text("经常喜欢听", style = MaterialTheme.typography.bodyLarge)
+          Text(
+            if (playCount < 10) {
+              "偶尔听"
+            } else {
+              "经常听"
+            }, style = MaterialTheme.typography.bodyLarge
+          )
           Spacer(modifier = Modifier.height(5.dp))
         }
       }

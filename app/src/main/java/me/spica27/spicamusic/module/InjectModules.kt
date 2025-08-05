@@ -6,10 +6,12 @@ import com.linc.amplituda.Amplituda
 import com.skydoves.sandwich.retrofit.adapters.ApiResponseCallAdapterFactory
 import me.spica27.spicamusic.db.AppDatabase
 import me.spica27.spicamusic.db.dao.LyricDao
+import me.spica27.spicamusic.db.dao.PlayHistoryDao
 import me.spica27.spicamusic.db.dao.PlaylistDao
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.network.LyricApi
 import me.spica27.spicamusic.repository.LyricRepository
+import me.spica27.spicamusic.repository.PlayHistoryRepository
 import me.spica27.spicamusic.repository.PlaylistRepository
 import me.spica27.spicamusic.repository.SongRepository
 import me.spica27.spicamusic.utils.DataStoreUtil
@@ -86,6 +88,9 @@ object InjectModules {
     single<PlaylistDao> {
       get<AppDatabase>().playlistDao()
     }
+    single<PlayHistoryDao> {
+      get<AppDatabase>().playHistoryDao()
+    }
   }
 
   /**
@@ -117,6 +122,11 @@ object InjectModules {
     single<SongRepository> {
       SongRepository(
         songDao = get()
+      )
+    }
+    single<PlayHistoryRepository> {
+      PlayHistoryRepository(
+        playHistoryDao = get()
       )
     }
   }

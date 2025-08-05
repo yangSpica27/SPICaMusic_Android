@@ -3,8 +3,11 @@ package me.spica27.spicamusic.ui
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -94,16 +97,39 @@ fun AppMain() {
           }
         },
         transitionSpec = {
-          slideInHorizontally(initialOffsetX = { it }) togetherWith
-              slideOutHorizontally(targetOffsetX = { -it })
+          scaleIn(
+            initialScale = 1.2f,
+          ) + fadeIn(
+            animationSpec = tween(250)
+          ) togetherWith
+              scaleOut(
+                targetScale = 1.2f,
+              ) + fadeOut(
+                animationSpec = tween(250)
+              )
         },
         popTransitionSpec = {
-          slideInHorizontally(initialOffsetX = { -it }) togetherWith
-              slideOutHorizontally(targetOffsetX = { it })
+          scaleIn(
+            initialScale = 1.2f,
+          ) + fadeIn() togetherWith
+              scaleOut(
+                targetScale = 1.2f,
+
+              ) + fadeOut(
+            animationSpec = tween(125)
+          )
         },
         predictivePopTransitionSpec = {
-          slideInHorizontally(initialOffsetX = { -it }) togetherWith
-              slideOutHorizontally(targetOffsetX = { it })
+          scaleIn(
+            initialScale = 1.2f,
+          ) + fadeIn(
+            animationSpec = tween(250)
+          ) togetherWith
+              scaleOut(
+                targetScale = 1.2f,
+              ) + fadeOut(
+            animationSpec = tween(250)
+          )
         },
         sizeTransform = SizeTransform(
           clip = true

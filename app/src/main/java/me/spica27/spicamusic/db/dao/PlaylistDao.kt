@@ -52,6 +52,12 @@ interface PlaylistDao {
   @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")
   fun getSongsByPlaylistId(playlistId: Long): List<Song>
 
+  @Query("SELECT * FROM Playlist WHERE playlistId IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)")
+  fun getPlaylistsHaveSong(songId: Long): Flow<List<Playlist>>
+
+  @Query("SELECT * FROM Playlist WHERE playlistId NOT IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)")
+  fun getPlaylistsNotHaveSong(songId: Long): Flow<List<Playlist>>
+
   @Transaction
   @Query("DELETE FROM playlist WHERE playlistId ==:playlistId")
   fun deleteList(playlistId: Long)

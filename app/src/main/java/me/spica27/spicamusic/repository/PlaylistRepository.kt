@@ -23,6 +23,11 @@ class PlaylistRepository(
 
   fun getAllPlaylistFlow() = playlistDao.getAllPlaylist()
 
+
+  fun getPlaylistsHaveSong(songId: Long) = playlistDao.getPlaylistsHaveSong(songId)
+
+  fun getPlaylistsNotHaveSong(songId: Long) = playlistDao.getPlaylistsNotHaveSong(songId)
+
   fun songInfoWithSongsFlow(playlistId: Long): Flow<PlaylistWithSongs?> {
     return playlistDao.getPlaylistsWithSongsWithPlayListIdFlow(playlistId).flowOn(Dispatchers.IO)
       .distinctUntilChanged()

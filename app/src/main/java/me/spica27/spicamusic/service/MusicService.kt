@@ -29,11 +29,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.db.dao.SongDao
+import me.spica27.spicamusic.db.entity.PlayHistory
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.dsp.FadeTransitionRenderersFactory
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.player.IPlayer
+import me.spica27.spicamusic.repository.PlayHistoryRepository
 import me.spica27.spicamusic.service.notification.MediaSessionComponent
 import me.spica27.spicamusic.service.notification.NotificationComponent
 import me.spica27.spicamusic.utils.DataStoreUtil
@@ -54,7 +55,6 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   private var mediaSession: MediaSessionCompat? = null
 
 
-  private var songDao: SongDao = get<SongDao>()
 
   private val fftAudioProcessor = PlaybackStateManager.getInstance().fftAudioProcessor
 
@@ -267,7 +267,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   }
 
 
-  private var lastPlaySong: Song? = null
+  private val playHistoryRepository = get<PlayHistoryRepository>()
 
   override fun loadSong(song: Song?, play: Boolean) {
     if (song == null) {
@@ -277,11 +277,16 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     exoPlayer.setMediaItem(MediaItem.fromUri(song.getSongUri()))
     exoPlayer.prepare()
     exoPlayer.playWhenReady = play
-    coroutineScope.launch(Dispatchers.IO) {
-      if (lastPlaySong != null) {
-        songDao.addPlayTime(lastPlaySong?.mediaStoreId ?: -1, System.currentTimeMillis())
-      }
-      lastPlaySong = song
+    coroutineScope.launch(
+      Dispatchers.IO
+    ) {
+      playHistoryRepository.insertPlayHistory(
+        PlayHistory(
+          mediaId = song.mediaStoreId,
+          time = System.currentTimeMillis(),
+          title = song.displayName,
+          artist = song.artist,)
+      )
     }
   }
 

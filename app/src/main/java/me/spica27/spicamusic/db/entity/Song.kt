@@ -30,8 +30,8 @@ data class Song(
   var like: Boolean,
   val duration: Long,
   var sort: Int,
-  var playTimes: Int,
-  var lastPlayTime: Long,
+  var playTimes: Int,// 已经废弃 使用历史记录表替代 {@link me.spica27.spicamusic.db.entity}
+  var lastPlayTime: Long,// 已经废弃 使用历史记录表替代 {@link me.spica27.spicamusic.db.entity}
   var mimeType: String,
   var albumId: Long,
   var sampleRate: Int, // 采样率
