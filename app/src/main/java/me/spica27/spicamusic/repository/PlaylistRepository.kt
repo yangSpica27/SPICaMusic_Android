@@ -52,7 +52,7 @@ class PlaylistRepository(
   // 添加歌曲到歌单
   suspend fun addSongToPlaylist(playlistId: Long?, songId: Long) = withContext(Dispatchers.IO) {
     if (playlistId != null) {
-      playlistDao.insertListItem(PlaylistSongCrossRef(playlistId ?: -1, songId))
+      playlistDao.insertListItem(PlaylistSongCrossRef(playlistId, songId))
     }
   }
 
