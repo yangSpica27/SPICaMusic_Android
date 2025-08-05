@@ -33,7 +33,9 @@ import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
+import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
 
@@ -53,6 +55,12 @@ fun RecentlyListScreen(
   val coroutineScope = rememberCoroutineScope()
 
   val listState = rememberLazyListState()
+
+  val songItemMenuDialogState = rememberSongItemMenuDialogState()
+
+  SongItemMenu(
+    songItemMenuDialogState
+  )
 
 
   Scaffold(
@@ -130,6 +138,10 @@ fun RecentlyListScreen(
                 showLike = true,
                 onLikeClick = {
                   songViewModel.toggleFavorite(song.songId ?: -1)
+                },
+                showMenu = true,
+                onMenuClick = {
+                  songItemMenuDialogState.show(song)
                 }
               )
             }

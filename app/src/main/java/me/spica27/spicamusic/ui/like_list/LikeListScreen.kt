@@ -34,7 +34,9 @@ import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
+import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
 
@@ -56,6 +58,12 @@ fun LikeListScreen(
 
 
   val listState = rememberLazyListState()
+
+  val songItemMenuDialogState = rememberSongItemMenuDialogState()
+
+  SongItemMenu(
+    songItemMenuDialogState
+  )
 
   Scaffold(
     topBar = {
@@ -129,6 +137,9 @@ fun LikeListScreen(
                 showLike = true,
                 onLikeClick = {
                   songViewModel.toggleFavorite(song.songId ?: -1)
+                },
+                onMenuClick = {
+                  songItemMenuDialogState.show(song)
                 }
               )
             }

@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -32,7 +31,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -63,7 +61,9 @@ import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.widget.InputTextDialog
+import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.activityViewModel
 
 /// 歌单详情页面
@@ -93,6 +93,12 @@ fun PlaylistDetailScreen(
     } else {
       MaterialTheme.colorScheme.background
     },
+  )
+
+  val songItemMenuDialogState = rememberSongItemMenuDialogState()
+
+  SongItemMenu(
+    songItemMenuDialogState
   )
 
   Scaffold(
@@ -177,6 +183,17 @@ fun PlaylistDetailScreen(
           Box(
             modifier = Modifier
               .size(60.dp)
+              .clickable{
+                coroutineScope.launch {
+                  if (songs.isNotEmpty()) {
+                    PlaybackStateManager.getInstance()
+                      .playAsync(
+                        songs.first(),
+                        songs
+                      )
+                  }
+                }
+              }
               .background(
                 MaterialTheme.colorScheme.surfaceContainer,
                 MaterialTheme.shapes.small
@@ -206,18 +223,6 @@ fun PlaylistDetailScreen(
               )
             )
           }
-
-          IconButton(
-            onClick = {
-
-            }
-          ) {
-            Icon(
-              imageVector = Icons.AutoMirrored.Default.List,
-              contentDescription = null
-            )
-          }
-
         }
         LazyColumn(
           modifier = Modifier
@@ -227,18 +232,22 @@ fun PlaylistDetailScreen(
         ) {
           items(songs, key = {
             it.songId ?: -1
-          }) {
+          }) { song ->
             SongItemWithCover(
               modifier = Modifier
                 .fillMaxWidth()
                 .animateItem(),
-              song = it,
+              song = song,
               onClick = {
                 coroutineScope.launch {
-                  PlaybackStateManager.getInstance().playAsync(it, songs)
+                  PlaybackStateManager.getInstance().playAsync(song, songs)
                 }
               },
-              coverSize = 66.dp
+              coverSize = 66.dp,
+              showMenu = true,
+              onMenuClick = {
+                songItemMenuDialogState.show(song)
+              }
             )
           }
         }

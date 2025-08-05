@@ -22,13 +22,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -36,18 +31,14 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
-import me.spica27.spicamusic.utils.rememberVibrator
-import me.spica27.spicamusic.utils.tick
 import me.spica27.spicamusic.viewModel.MusicSearchViewModel
-import me.spica27.spicamusic.widget.AddSongToPlayListDialog
-import me.spica27.spicamusic.widget.RemoveToPlayListDialog
 import me.spica27.spicamusic.widget.SimpleTopBar
-import me.spica27.spicamusic.widget.SongItemDialog
+import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -108,60 +99,11 @@ private fun SongList(
   val dataState = musicViewModel.songFlow.collectAsState(emptyList())
   val coroutineScope = rememberCoroutineScope()
 
-  var currentSelectedItem by remember { mutableStateOf<Song?>(null) }
-  var showItemMenu by remember { mutableStateOf(false) }
-  var showRemoveToPlaylist by remember { mutableStateOf(false) }
-  var showAddToPlaylist by remember { mutableStateOf(false) }
+  val songItemMenuDialogState = rememberSongItemMenuDialogState()
 
-  val vibrator = rememberVibrator()
-
-  LaunchedEffect(showAddToPlaylist, showRemoveToPlaylist, showItemMenu) {
-    vibrator.cancel()
-    if (showAddToPlaylist || showRemoveToPlaylist || showItemMenu) {
-      vibrator.tick()
-    }
-  }
-
-  if (showItemMenu && currentSelectedItem != null) {
-    SongItemDialog(
-      song = currentSelectedItem!!,
-      onDismiss = {
-        showItemMenu = false
-      },
-      addSongToPlaylist = {
-        showAddToPlaylist = true
-      },
-      removeToPlaylist = {
-        showRemoveToPlaylist = true
-      },
-      addToCurrentList = {
-        coroutineScope.launch {
-          currentSelectedItem?.let {
-            PlaybackStateManager.getInstance().playAsync(it)
-          }
-        }
-      }
-    )
-  }
-
-  if (showRemoveToPlaylist && currentSelectedItem != null) {
-    RemoveToPlayListDialog(
-      song = currentSelectedItem!!,
-      onDismiss = {
-        showRemoveToPlaylist = false
-      }
-    )
-  }
-
-  if (showAddToPlaylist && currentSelectedItem != null) {
-    AddSongToPlayListDialog(
-      song = currentSelectedItem!!,
-      onDismiss = {
-        showAddToPlaylist = false
-      }
-    )
-  }
-
+  SongItemMenu(
+    songItemMenuDialogState
+  )
 
   if (dataState.value.isEmpty()) {
     Box(
@@ -202,8 +144,7 @@ private fun SongList(
           showLike = true,
           showPlus = false,
           onMenuClick = {
-            currentSelectedItem = song
-            showItemMenu = true
+            songItemMenuDialogState.show(song)
           },
           onLikeClick = {
             musicViewModel.toggleLike(song)
