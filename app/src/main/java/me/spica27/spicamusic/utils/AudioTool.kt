@@ -5,10 +5,12 @@ import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
+import androidx.annotation.OptIn
 import androidx.core.database.getIntOrNull
 import androidx.core.database.getLongOrNull
 import androidx.core.database.getStringOrNull
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.entity.Lyric
@@ -43,8 +45,7 @@ private val LocalAudioColumns = arrayOf(
 object AudioTool {
 
 
-
-
+  @OptIn(UnstableApi::class)
   suspend fun getSongsFromPhone(context: Context, lyricDao: LyricDao): List<Song> {
 
     val cursor = context.contentResolverSafe.safeQuery(
@@ -64,15 +65,17 @@ object AudioTool {
         cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.MIME_TYPE))
       types.add(mimeType ?: "")
       val isSupportMineType =
-        (mimeType == MimeTypes.AUDIO_MPEG ||
-            mimeType == MimeTypes.AUDIO_MP4||
+        (MimeTypes.normalizeMimeType(mimeType?:"") == MimeTypes.AUDIO_MPEG ||
+//            mimeType == MimeTypes.AUDIO_MP4||
             mimeType == MimeTypes.AUDIO_OGG ||
+//            mimeType == MimeTypes.AUDIO_WAV ||
+//            mimeType == MimeTypes.AUDIO_ALAC ||
             mimeType == MimeTypes.AUDIO_FLAC)
       if (!isSupportMineType) continue
-      // 过滤掉时长小于1秒的音频文件
+      // 过滤掉时长小于5秒的音频文件
       val duration =
         cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
-      if (duration == null || duration < 1000) continue
+      if (duration == null || duration < 5000) continue
 
 
       val song = Song(
@@ -91,7 +94,7 @@ object AudioTool {
         lastPlayTime = 0L,
         duration = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
           ?: 1,
-        mimeType = mimeType,
+        mimeType = mimeType.toString(),
         albumId = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM_ID))
           ?: 0,
         sampleRate = 0,

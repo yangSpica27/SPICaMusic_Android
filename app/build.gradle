@@ -132,7 +132,7 @@ dependencies {
   def accompanistVersion = "0.36.0"
   implementation(libs.accompanist.permissions)
 
-  implementation project(":decoder_flac")
+//  implementation project(":decoder_flac")
 
   implementation libs.kotlinx.serialization.core
   implementation libs.androidx.adaptive

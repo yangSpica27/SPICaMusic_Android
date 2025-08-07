@@ -516,7 +516,6 @@ private fun ControlPanel(
           isSeekingState = false
         },
         onProgressChange = {
-          Timber.d("Seeking to $it")
           seekValueState = it * (songState?.duration ?: 1).toFloat()
           isSeekingState = true
         })

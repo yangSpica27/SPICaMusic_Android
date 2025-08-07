@@ -12,6 +12,8 @@ fun String.getColorFromMimeTypeString(): Int {
     MimeTypes.AUDIO_MP4 -> Color.parseColor("#95de64")
     MimeTypes.AUDIO_MPEG -> Color.parseColor("#b7eb8f")
     MimeTypes.AUDIO_FLAC -> Color.parseColor("#ffd666")
+    MimeTypes.AUDIO_WAV -> Color.parseColor("#ffe58f")
+    MimeTypes.AUDIO_ALAC -> Color.parseColor("#ff4d4f")
     else -> Color.parseColor("#d9d9d9")
   }
 }

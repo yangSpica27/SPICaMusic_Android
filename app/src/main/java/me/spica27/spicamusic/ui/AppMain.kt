@@ -106,8 +106,8 @@ fun AppMain() {
               scaleOut(
                 targetScale = 1.2f,
               ) + fadeOut(
-                animationSpec = tween(250)
-              )
+            animationSpec = tween(250)
+          )
         },
         popTransitionSpec = {
           scaleIn(
@@ -116,7 +116,7 @@ fun AppMain() {
               scaleOut(
                 targetScale = 1.2f,
 
-              ) + fadeOut(
+                ) + fadeOut(
             animationSpec = tween(125)
           )
         },
