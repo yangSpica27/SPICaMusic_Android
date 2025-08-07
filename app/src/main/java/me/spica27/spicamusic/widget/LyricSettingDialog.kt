@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,40 +28,61 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
+import androidx.navigation3.runtime.NavBackStack
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.repository.LyricRepository
+import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.DataStoreUtil
 import org.koin.compose.koinInject
 import kotlin.math.absoluteValue
 
+/**
+ * 歌词设置弹窗
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LyricSettingDialog(
   onDismissRequest: () -> Unit,
   dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>(),
   dialogBackgroundColor: Color = MaterialTheme.colorScheme.background,
-  textColor: Color = MaterialTheme.colorScheme.onBackground
+  textColor: Color = MaterialTheme.colorScheme.onBackground,
+  song: Song,
+  navBackStack: NavBackStack? = null
 ) {
 
   val coroutineScope = rememberCoroutineScope()
 
+  // 字体大小设置
   val fontSize = dataStoreUtil.getLyricFontSize().collectAsState(null).value
 
+  // 字重设置
   val fontWeight = dataStoreUtil.getLyricFontWeight().collectAsState(null).value
 
+  val lyricRepository = koinInject<LyricRepository>()
 
-  val delay = dataStoreUtil.getLyricDelay().collectAsState(null).value
+  // 这首歌用户有没有绑定歌词
+  val haveLyric =
+    lyricRepository.getLyrics(song.mediaStoreId).map { it != null }.collectAsState(false).value
+  val delay = lyricRepository.getDelay(song.mediaStoreId).collectAsState(null).value
 
+  // 有没有在调整字号
   var isSeekFontSize by remember { mutableStateOf(false) }
 
+  // 有没有在调整字重
   var isSeekFontWeight by remember { mutableStateOf(false) }
 
+  // 有没有在调整歌词速度
   var isSeekLrcSpeed by remember { mutableStateOf(false) }
 
-
+  // 弹窗背景颜色
   var dialogBackgroundColor by remember { mutableStateOf(dialogBackgroundColor) }
 
   val dialogBackgroundColorAnimValue = animateColorAsState(dialogBackgroundColor, tween(200))
 
+  // 字体颜色
   var textColor by remember { mutableStateOf(textColor) }
 
   val textColorAnimValue = animateColorAsState(textColor, tween(200))
@@ -105,7 +127,7 @@ fun LyricSettingDialog(
 
   }
 
-  if (fontWeight != null && fontSize != null && delay != null) {
+  if (fontWeight != null && fontSize != null) {
 
     AlertDialog(
       containerColor = dialogBackgroundColorAnimValue.value,
@@ -121,7 +143,7 @@ fun LyricSettingDialog(
           horizontalAlignment = Alignment.Start,
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          TitleText("字号 ${fontSize}", textColor = textColorAnimValue.value)
+          TitleText("字号 $fontSize", textColor = textColorAnimValue.value)
           SimpleSlider(
             modifier = Modifier
               .fillMaxWidth()
@@ -144,7 +166,7 @@ fun LyricSettingDialog(
             },
             valueRange = 12f..24f,
           )
-          TitleText("字重 ${fontWeight}", textColor = textColorAnimValue.value)
+          TitleText("字重 $fontWeight", textColor = textColorAnimValue.value)
           SimpleSlider(
             modifier = Modifier
               .fillMaxWidth()
@@ -168,57 +190,72 @@ fun LyricSettingDialog(
             valueRange = 100f..900f,
             steps = 100,
           )
-          TitleText(
-            if (delay > 0) {
-              "延迟${delay}毫秒"
-            } else {
-              "加快${delay}毫秒"
-            },
-            textColor = textColorAnimValue.value
-          )
-          SimpleSlider(
-            modifier = Modifier
-              .fillMaxWidth()
-              .alpha(
-                if (showSpeedSlider) {
-                  1f
-                } else {
-                  0f
-                }
-              ),
-            value = delay.toFloat(),
-            onValueChange = {
-              val i = if (it > 0) {
-                1
+
+          if (haveLyric && delay != null) {
+            TitleText(
+              if (delay > 0) {
+                "延迟${delay.absoluteValue}毫秒"
               } else {
-                -1
-              }
-              coroutineScope.launch {
-                if (it.absoluteValue < 250) {
-                  dataStoreUtil.setLyricDelay(0)
-                } else if (it.absoluteValue < 500 * i) {
-                  dataStoreUtil.setLyricDelay(250)
-                } else if (it.absoluteValue < 750 * i) {
-                  dataStoreUtil.setLyricDelay(500 * i)
-                } else if (it.absoluteValue < 1000) {
-                  dataStoreUtil.setLyricDelay(750 * i)
+                "加快${delay.absoluteValue}毫秒"
+              },
+              textColor = textColorAnimValue.value
+            )
+            SimpleSlider(
+              modifier = Modifier
+                .fillMaxWidth()
+                .alpha(
+                  if (showSpeedSlider) {
+                    1f
+                  } else {
+                    0f
+                  }
+                ),
+              value = delay.toFloat(),
+              onValueChange = {
+                val i = if (it > 0) {
+                  1
                 } else {
-                  dataStoreUtil.setLyricDelay(
-                    (it / 1000).toInt() * 1000
-                  )
+                  -1
                 }
+                coroutineScope.launch(Dispatchers.IO) {
+                  if (it.absoluteValue < 250) {
+                    lyricRepository.setDelay(song.mediaStoreId, 0)
+                  } else if (it.absoluteValue < 500 * i) {
+                    lyricRepository.setDelay(song.mediaStoreId, 250L * i)
+                  } else if (it.absoluteValue < 750 * i) {
+                    lyricRepository.setDelay(song.mediaStoreId, 500L * i)
+                  } else if (it.absoluteValue < 1000) {
+                    lyricRepository.setDelay(song.mediaStoreId, 750L * i)
+                  } else {
+                    lyricRepository.setDelay(
+                      song.mediaStoreId,
+                      (it / 1000).toInt() * 1000L
+                    )
+                  }
 
-              }
-              isSeekLrcSpeed = true
-            },
-            onValueChangeFinished = {
-              isSeekLrcSpeed = false
-            },
-            valueRange = -5000f..5000f,
-            steps = 1000,
-          )
+                }
+                isSeekLrcSpeed = true
+              },
+              onValueChangeFinished = {
+                isSeekLrcSpeed = false
+              },
+              valueRange = -8000f..8000f,
+              steps = 1000,
+            )
+          }
+          TextButton(
+            shape = MaterialTheme.shapes.small,
+            colors = ButtonDefaults.textButtonColors().copy(
+              contentColor = textColorAnimValue.value
+            ),
+            onClick = {
+              onDismissRequest.invoke()
+              navBackStack?.add(Routes.LyricsSearch(song = song))
+            }
+          ) {
+            Text("切换其他版本歌词")
+          }
         }
-
       },
       confirmButton = {
         TextButton(onClick = {

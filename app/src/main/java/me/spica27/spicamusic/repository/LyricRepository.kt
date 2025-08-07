@@ -1,7 +1,10 @@
 package me.spica27.spicamusic.repository
 
+import androidx.annotation.WorkerThread
 import com.skydoves.sandwich.ApiResponse
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.entity.Lyric
@@ -13,6 +16,7 @@ class LyricRepository(
   private val lyricApi: LyricApi,
   private val lyricDao: LyricDao
 ) {
+
 
 
   suspend fun fetchLyric(title: String, artist: String?): ApiResponse<List<LyricResponse>> =
@@ -31,5 +35,19 @@ class LyricRepository(
     )
   }
 
+
+  fun getLyrics(mediaId: Long) = lyricDao.getLyricsFlow(mediaId)
+    .distinctUntilChanged()
+
+  fun getDelay(mediaId: Long) = lyricDao.getDelayFlow(mediaId)
+    .map{
+      it ?: 0
+    }
+    .distinctUntilChanged()
+
+  @WorkerThread
+  fun setDelay(mediaId: Long, delay: Long) {
+    lyricDao.updateDelay(mediaId, delay)
+  }
 
 }

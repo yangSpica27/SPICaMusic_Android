@@ -27,9 +27,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -46,6 +49,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastCoerceAtLeast
 import androidx.compose.ui.util.fastCoerceAtMost
 import com.kyant.liquidglass.GlassStyle
 import com.kyant.liquidglass.highlight.GlassHighlight
@@ -62,8 +66,11 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.lyric.LrcParser
 import me.spica27.spicamusic.lyric.LyricItem
 import me.spica27.spicamusic.lyric.toNormal
+import me.spica27.spicamusic.repository.LyricRepository
 import me.spica27.spicamusic.utils.DataStoreUtil
 import org.koin.compose.koinInject
 
@@ -72,9 +79,10 @@ import org.koin.compose.koinInject
 @Composable
 fun LyricsView(
   modifier: Modifier = Modifier,
-  currentLyric: List<LyricItem>,
+  song: Song,
   currentTime: Long,
-  dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>()
+  dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>(),
+  placeHolder: @Composable () -> Unit = {},
 ) {
 
   val listState = rememberLazyListState()
@@ -87,16 +95,31 @@ fun LyricsView(
 
   val itemFontWeight = dataStoreUtil.getLyricFontWeight().collectAsState(900)
 
-  val delay = dataStoreUtil.getLyricDelay().collectAsState(0).value
+  val lyricRepository = koinInject<LyricRepository>()
+
+  // 延迟
+  val delay = lyricRepository.getDelay(song.mediaStoreId).collectAsState(0).value
+
+  // 歌词原始数据
+  val lyric = lyricRepository.getLyrics(song.mediaStoreId).collectAsState(null).value
+
+  // 解析后的
+  var currentLyric by remember { mutableStateOf(emptyList<LyricItem>()) }
+
+  LaunchedEffect(lyric) {
+    launch(Dispatchers.IO) {
+      currentLyric = LrcParser.parse(lyric ?: "")
+    }
+  }
 
   LaunchedEffect(currentTime) {
-    launch(Dispatchers.Default + SupervisorJob()) {
+    launch(Dispatchers.IO+ SupervisorJob()) {
       var index = 0
       for (item in currentLyric) {
         if (item.time >= (currentTime - delay)) {
-          activeIndex.intValue = index
+          activeIndex.intValue = (index-1).fastCoerceAtLeast(0)
           listState.animateScrollToItemAndCenter(
-            index = index,
+            index = (index-1).fastCoerceAtLeast(0),
             offset = -layoutHeight.intValue / 2
           )
           return@launch
@@ -106,67 +129,67 @@ fun LyricsView(
     }
   }
 
-  val providerState = rememberLiquidGlassProviderState(
-    backgroundColor = Color.Transparent
-  )
-
-  Box(
-    modifier = modifier
-      .fillMaxSize()
-      .onSizeChanged {
-        layoutHeight.intValue = it.height
-      },
-  ) {
-
-
-    LazyColumn(
-      modifier = Modifier
-        .fillMaxSize()
-        .liquidGlassProvider(providerState),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center,
-      state = listState,
-      userScrollEnabled = false
-    ) {
-      itemsIndexed(
-        currentLyric.map { it.toNormal() },
-        key = { index, _ ->
-          index
-        }
-      ) { index, it ->
-        it?.toNormal()?.let { item ->
-          LyricsViewLine(
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            isActive = index == activeIndex.intValue,
-            content = item.content,
-            inactiveBlur = ((index.coerceAtLeast(activeIndex.intValue) -
-                index.coerceAtMost(activeIndex.intValue)) * 0.5f).fastCoerceAtMost(4f),
-            onClick = { },
-            fontWeight = FontWeight(itemFontWeight.value),
-            fontSize = itemFontSize.value.sp
-          )
-        }
-      }
-    }
-
-    Box(
-      Modifier
-        .fillMaxSize()
-        .liquidGlass(
-          providerState,
-          GlassStyle(
-            shape = MaterialTheme.shapes.medium,
-            innerRefraction = InnerRefraction(
-              height = RefractionHeight(32.dp),
-              amount = RefractionAmount((-32).dp)
-            ),
-            material = GlassMaterial.None,
-            highlight = GlassHighlight.None,
-          ),
-          compositingStrategy = CompositingStrategy.Auto
-        )
+  if (currentLyric.isEmpty()) {
+    placeHolder.invoke()
+  } else {
+    val providerState = rememberLiquidGlassProviderState(
+      backgroundColor = Color.Transparent
     )
 
+    Box(
+      modifier = modifier
+        .fillMaxSize()
+        .onSizeChanged {
+          layoutHeight.intValue = it.height
+        },
+    ) {
+      LazyColumn(
+        modifier = Modifier
+          .fillMaxSize()
+          .liquidGlassProvider(providerState),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        state = listState,
+        userScrollEnabled = false
+      ) {
+        itemsIndexed(
+          currentLyric.map { it.toNormal() },
+          key = { index, _ ->
+            index
+          }
+        ) { index, it ->
+          it?.toNormal()?.let { item ->
+            LyricsViewLine(
+              contentColor = MaterialTheme.colorScheme.onSurface,
+              isActive = index == activeIndex.intValue,
+              content = item.content,
+              inactiveBlur = ((index.coerceAtLeast(activeIndex.intValue) -
+                  index.coerceAtMost(activeIndex.intValue)) * 0.5f).fastCoerceAtMost(4f),
+              onClick = { },
+              fontWeight = FontWeight(itemFontWeight.value),
+              fontSize = itemFontSize.value.sp
+            )
+          }
+        }
+      }
+      Box(
+        Modifier
+          .fillMaxSize()
+          .liquidGlass(
+            providerState,
+            GlassStyle(
+              shape = MaterialTheme.shapes.medium,
+              innerRefraction = InnerRefraction(
+                height = RefractionHeight(32.dp),
+                amount = RefractionAmount((-32).dp)
+              ),
+              material = GlassMaterial.None,
+              highlight = GlassHighlight.None,
+            ),
+            compositingStrategy = CompositingStrategy.Auto
+          )
+      )
+    }
   }
 
 }

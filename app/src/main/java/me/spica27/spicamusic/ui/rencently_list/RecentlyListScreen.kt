@@ -109,7 +109,7 @@ fun RecentlyListScreen(
           ScrollHaptics(
             listState = listState,
             vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
-            enabled = true,
+            enabled = false,
           )
 
           LazyColumn(

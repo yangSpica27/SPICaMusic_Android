@@ -166,7 +166,7 @@ object InjectModules {
       PlayBackViewModel(
         songDao = get<SongDao>(),
         amplituda = get<Amplituda>(),
-        lyricDao = get<LyricDao>()
+        playlistRepository = get<PlaylistRepository>()
       )
     }
     viewModel {

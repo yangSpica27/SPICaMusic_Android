@@ -9,6 +9,7 @@ import me.spica27.spicamusic.db.dao.PlaylistDao
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.PlaylistSongCrossRef
 import me.spica27.spicamusic.db.entity.PlaylistWithSongs
+import me.spica27.spicamusic.db.entity.Song
 
 class PlaylistRepository(
   private val playlistDao: PlaylistDao,
@@ -76,5 +77,21 @@ class PlaylistRepository(
         )
       })
     }
+  }
+
+  suspend fun createPlaylistWithSongs(name: String, list: List<Song>) = withContext(
+    Dispatchers.IO
+  ){
+    val playlistId = playlistDao.insertPlaylistAndGetId(
+      Playlist(playlistName = name)
+    )
+    playlistDao.insertListItems(
+      list.map {
+        PlaylistSongCrossRef(
+          playlistId,
+          it.songId ?: -1
+        )
+      }
+    )
   }
 }

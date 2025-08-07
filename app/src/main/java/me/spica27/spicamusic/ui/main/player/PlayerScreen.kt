@@ -123,7 +123,9 @@ fun PlayerScreen(
               }
 
               1 -> {
-                CurrentListPage()
+                CurrentListPage(
+                  navigator = navigator
+                )
               }
             }
           }

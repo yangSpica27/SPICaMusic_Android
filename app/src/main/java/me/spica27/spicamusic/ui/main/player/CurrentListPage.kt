@@ -18,15 +18,21 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.NavBackStack
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlayingSongItem
 import me.spica27.spicamusic.wrapper.activityViewModel
 
@@ -36,15 +42,39 @@ import me.spica27.spicamusic.wrapper.activityViewModel
  */
 @Composable
 fun CurrentListPage(
-  playBackViewModel: PlayBackViewModel = activityViewModel()
+  playBackViewModel: PlayBackViewModel = activityViewModel(),
+  navigator: NavBackStack? = null
 ) {
 
-  val playState = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false)
 
   val playIndexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()
 
   val playListSizeState = playBackViewModel.nowPlayingListSize.collectAsStateWithLifecycle()
 
+  var showCreateDialog by remember { mutableStateOf(false) }
+
+  if (showCreateDialog) {
+    InputTextDialog(
+      onDismissRequest = {
+        showCreateDialog = false
+      },
+      title = "创建为新歌单",
+      placeholder = "新歌单名称",
+      onConfirm = { txt ->
+        if (txt.isEmpty()) {
+          playBackViewModel.createPlaylistWithSongs("新建歌单", playBackViewModel.playList.value)
+          showCreateDialog = false
+        } else {
+          playBackViewModel.createPlaylistWithSongs(txt, playBackViewModel.playList.value)
+          showCreateDialog = false
+        }
+        ToastUtils.showToast("歌单创建完成")
+      },
+      onCancel = {
+        showCreateDialog = false
+      }
+    )
+  }
 
   Column(
     modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top
@@ -96,7 +126,7 @@ fun CurrentListPage(
           IconButton(
             onClick = {
               // 保存为新歌单
-              ToastUtils.showToast("保存为新歌单,开发中...")
+              showCreateDialog = true
             }
           ) {
             Icon(

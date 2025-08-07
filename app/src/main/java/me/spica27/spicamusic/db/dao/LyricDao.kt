@@ -29,4 +29,11 @@ interface LyricDao {
   @Query("SELECT delay FROM lyric WHERE mediaId == :mediaId LIMIT 1")
   fun getDelayFlow(mediaId: Long): Flow<Long?>
 
+  @Query("SELECT lyrics FROM lyric WHERE mediaId == :mediaId LIMIT 1")
+  fun getLyricsFlow(mediaId: Long): Flow<String?>
+
+
+  @Query("UPDATE Lyric SET delay = :delay WHERE mediaId == :mediaId")
+  fun updateDelay(mediaId: Long, delay: Long?)
+
 }

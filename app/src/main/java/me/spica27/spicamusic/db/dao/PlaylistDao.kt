@@ -74,6 +74,9 @@ interface PlaylistDao {
   @Insert
   suspend fun insertPlaylist(list: Playlist)
 
+  @Insert
+  fun insertPlaylistAndGetId(list: Playlist): Long
+
   @Query("DELETE FROM playlist WHERE playlistId == :playlistId")
   suspend fun deleteById(playlistId: Long)
 

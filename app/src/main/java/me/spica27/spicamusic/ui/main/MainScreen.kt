@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -121,6 +122,12 @@ fun MainScreen(
     }
   }
 
+  DisposableEffect(Unit) {
+    onDispose {
+      backPressState = BackPress.Idle
+    }
+  }
+
   BackHandler((backPressState == BackPress.Idle) || (showPlayerState == true)) {
     if (showPlayerState) {
       showPlayerState = false
@@ -142,7 +149,7 @@ fun MainScreen(
 
   val agreePrivacy = dataStoreUtil.getAgreePrivacy().collectAsStateWithLifecycle(null).value
 
-  if (agreePrivacy == false){
+  if (agreePrivacy == false) {
     navigator?.add(Routes.AgreePrivacy)
   }
 

@@ -45,7 +45,7 @@ fun AppMain() {
   val backStack = rememberNavBackStack(Routes.Splash)
   AppTheme(
     darkTheme = darkTheme,
-    dynamicColor = true
+    dynamicColor = false
   ) {
     SharedTransitionLayout {
       NavDisplay(
@@ -68,6 +68,7 @@ fun AppMain() {
             )
           }
           entry<Routes.Main> { key ->
+
             MainScreen(
               navigator = backStack,
               sharedTransitionScope = this@SharedTransitionLayout,

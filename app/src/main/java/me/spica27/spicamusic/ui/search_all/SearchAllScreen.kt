@@ -119,7 +119,7 @@ private fun SongList(
     ScrollHaptics(
       listState = listState,
       vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
-      enabled = true,
+      enabled = false,
     )
 
     // 歌曲列表

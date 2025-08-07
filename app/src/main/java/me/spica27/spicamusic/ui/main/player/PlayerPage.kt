@@ -3,11 +3,9 @@ package me.spica27.spicamusic.ui.main.player
 import android.os.ParcelFileDescriptor
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -54,7 +52,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -89,7 +86,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
@@ -109,7 +105,6 @@ import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.utils.tick
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
-import me.spica27.spicamusic.visualiser.MusicVisualiser
 import me.spica27.spicamusic.widget.LyricSettingDialog
 import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.SongItemMenu
@@ -131,10 +126,12 @@ fun PlayerPage(
 ) {
 
   // 当前播放的歌曲
-  val showEmpty =
-    playBackViewModel.currentSongFlow.map { it == null }.collectAsStateWithLifecycle(true).value
+  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
 
-  val currentLyric = playBackViewModel.currentLyric.collectAsStateWithLifecycle().value
+
+  val showEmpty = remember(currentPlayingSong) {
+    currentPlayingSong == null
+  }
 
   val currentTime = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
 
@@ -163,8 +160,6 @@ fun PlayerPage(
       CircularProgressIndicator()
     }
   } else {
-
-    val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
 
     Box(
       modifier = Modifier.fillMaxSize(),
@@ -219,41 +214,38 @@ fun PlayerPage(
               when (index) {
                 0 -> {
                   Cover(
-                    modifier = Modifier.fillMaxSize(),
                     songState = songViewModel.getSongFlow(currentPlayingSong?.songId ?: -1)
                       .collectAsState(null),
-                    playBackViewModel = playBackViewModel
                   )
                 }
 
                 1 -> {
-                  if (currentLyric.isNotEmpty()) {
-                    LyricsView(
-                      modifier = Modifier.fillMaxSize(),
-                      currentLyric = currentLyric,
-                      currentTime = currentTime * 1000
-                    )
-                  } else {
-                    Box(
-                      modifier = Modifier
-                        .fillMaxSize()
-                        .clip(
-                          MaterialTheme.shapes.medium
-                        )
-                        .clickable {
-                          currentPlayingSong?.let {
-                            navigator?.add(
-                              Routes.LyricsSearch(
-                                currentPlayingSong
+                  LyricsView(
+                    modifier = Modifier.fillMaxSize(),
+                    currentTime = currentTime * 1000,
+                    song = currentPlayingSong!!,
+                    placeHolder = {
+                      Box(
+                        modifier = Modifier
+                          .fillMaxSize()
+                          .clip(
+                            MaterialTheme.shapes.medium
+                          )
+                          .clickable {
+                            currentPlayingSong.let {
+                              navigator?.add(
+                                Routes.LyricsSearch(
+                                  currentPlayingSong
+                                )
                               )
-                            )
-                          }
-                        },
-                      contentAlignment = Alignment.Center
-                    ) {
-                      Text("暂无歌词,点击搜索")
+                            }
+                          },
+                        contentAlignment = Alignment.Center
+                      ) {
+                        Text("暂无歌词,点击搜索")
+                      }
                     }
-                  }
+                  )
                 }
 
                 2 -> {
@@ -268,7 +260,7 @@ fun PlayerPage(
 
         // 歌名和歌手
         SongInfo(
-          songId = currentPlayingSong?.songId ?: -1,
+          song = currentPlayingSong!!,
           modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
@@ -299,9 +291,7 @@ fun PlayerPage(
 @OptIn(UnstableApi::class)
 @Composable
 private fun Cover(
-  modifier: Modifier = Modifier,
   songState: State<Song?>,
-  playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
 
   val context = LocalContext.current
@@ -312,10 +302,10 @@ private fun Cover(
     ).build(),
   )
 
-  val lineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-
-  val shadowLineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-
+  val lineColor = MaterialTheme.colorScheme.onSurface
+//
+//  val shadowLineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+//
   val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
   val infiniteTransition = rememberInfiniteTransition(label = "infinite")
   val rotateState = infiniteTransition.animateFloat(
@@ -323,25 +313,25 @@ private fun Cover(
       animation = tween(10000, easing = LinearEasing), repeatMode = RepeatMode.Restart
     ), label = ""
   )
-
-
-  val pn = remember {
-    mutableStateListOf<Float>()
-  }
-
-  val grayLineYs = remember { FloatArray(MusicVisualiser.FREQUENCY_BAND_LIMITS.size * 2) }
-
-  val blackLineData = remember(pn) {
-    pn
-  }.map {
-    animateFloatAsState(
-      it, label = "black_line", animationSpec = tween(
-        durationMillis = 135, easing = EaseOut
-      )
-    )
-  }
-
-
+//
+//
+//  val pn = remember {
+//    mutableStateListOf<Float>()
+//  }
+//
+//  val grayLineData = remember { FloatArray(MusicVisualiser.FREQUENCY_BAND_LIMITS.size * 2) }
+//
+//  val blackLineData = remember(pn) {
+//    pn
+//  }.map {
+//    animateFloatAsState(
+//      it, label = "black_line", animationSpec = tween(
+//        durationMillis = 60, easing = EaseInOut
+//      )
+//    )
+//  }
+//
+//
 //  DisposableEffect(Unit) {
 //    (0 until MusicVisualiser.FREQUENCY_BAND_LIMITS.size).forEach { i ->
 //      pn.add(0f)
@@ -372,29 +362,25 @@ private fun Cover(
   )
 
 
-  //  Compose 版本的频谱动效开销多占 25%的性能 暂时屏蔽
+  // Compose 版本的频谱动效开销多占 25%的性能 暂时屏蔽
+
 //  Spacer(
 //    modifier = Modifier
 //      .fillMaxSize()
 //      .drawWithCache {
-//
-//
 //        val centerX = size.width / 2
-//
 //        val startY = size.width - 30.dp.toPx() - 12.dp.toPx()
-//
 //        val changeY = 40.dp.toPx()
-//
+//        val strokeWidth = 8.dp.toPx()
+//        val down = 1.dp.toPx() / 6f
 //        onDrawWithContent {
+//          Timber.e("blackLineDataSize2 = ${blackLineData.size}")
 //          for ((index, state) in blackLineData.withIndex()) {
 //            this.rotate(
 //              index * 360f / pn.size,
 //            ) {
-//
 //              val blackLineY = startY + changeY * state.value
-//
-//              val shadowY = Math.max(blackLineY, grayLineYs[index])
-//
+//              val shadowY = Math.max(blackLineY, grayLineData[index])
 //              drawLine(
 //                color = shadowLineColor,
 //                start = Offset(
@@ -404,12 +390,10 @@ private fun Cover(
 //                  centerX,
 //                  shadowY
 //                ),
-//                strokeWidth = 8.dp.toPx(),
+//                strokeWidth = strokeWidth,
 //                cap = StrokeCap.Round,
 //              )
-//
-//              grayLineYs[index] = shadowY - 1.dp.toPx() / 10f
-//
+//              grayLineData[index] = shadowY - down
 //              drawLine(
 //                color = lineColor,
 //                start = Offset(centerX, startY),
@@ -417,13 +401,12 @@ private fun Cover(
 //                  centerX,
 //                  blackLineY
 //                ),
-//                strokeWidth = 8.dp.toPx(),
+//                strokeWidth = strokeWidth,
 //                cap = StrokeCap.Round,
 //              )
 //            }
 //          }
 //        }
-//
 //      }
 //  )
   Box(
@@ -628,29 +611,28 @@ private fun ControlPanel(
 // 歌名和歌手
 @Composable
 private fun SongInfo(
-  songId: Long,
+  song: Song,
   modifier: Modifier = Modifier,
   songViewModel: SongViewModel = activityViewModel(),
   navigator: NavBackStack? = null,
 ) {
 
-  val song = songViewModel.getSongFlow(songId).collectAsStateWithLifecycle(null).value
+  //
+  val songId = remember(song) { song.songId ?: -1 }
 
+  // 是否显示歌词设置
   var showLyricsSetting by remember { mutableStateOf(false) }
 
   if (showLyricsSetting) {
     LyricSettingDialog(
       onDismissRequest = {
         showLyricsSetting = false
-      }
+      },
+      song = song,
+      navBackStack = navigator
     )
   }
 
-
-  if (song == null) {
-    Box(modifier = modifier)
-    return
-  }
 
   val songListItemMenuDialogState = rememberSongItemMenuDialogState()
 

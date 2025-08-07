@@ -45,9 +45,6 @@ class DataStoreUtil(private val context: Context = App.getInstance()) {
     // 歌词字重
     val LYRIC_FONT_WEIGHT = intPreferencesKey("LYRIC_FONT_WEIGHT")
 
-    // 歌词播放延迟
-    val LYRIC_DELAY = intPreferencesKey("LYRIC_DELAY")
-
     // 用户是否同意隐私政策
     val AGREE_PRIVACY = booleanPreferencesKey("agree_privacy")
   }
@@ -61,19 +58,6 @@ class DataStoreUtil(private val context: Context = App.getInstance()) {
   fun getAgreePrivacy(): Flow<Boolean> {
     return context.dataStore.data.map {
       it[AGREE_PRIVACY] ?: false
-    }.distinctUntilChanged()
-  }
-
-  suspend fun setLyricDelay(value: Int) = withContext(Dispatchers.IO) {
-    context.dataStore.edit {
-      it[LYRIC_DELAY] = value
-    }
-  }
-
-
-  fun getLyricDelay(): Flow<Int> {
-    return context.dataStore.data.map {
-      it[LYRIC_DELAY] ?: 0
     }.distinctUntilChanged()
   }
 
