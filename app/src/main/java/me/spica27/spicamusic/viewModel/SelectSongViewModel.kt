@@ -1,8 +1,10 @@
 package me.spica27.spicamusic.viewModel
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import me.spica27.spicamusic.db.dao.PlaylistDao
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.PlaylistSongCrossRef
@@ -15,34 +17,55 @@ class SelectSongViewModel(
 ) : ViewModel() {
 
 
-  fun getAllSongsNotInPlaylist(playlistId: Long?):  Flow<List<Song>>{
-   return songDao.getSongsNotInPlayList(playlistId ?: -1)
+  private val playlistId = MutableStateFlow(-1L)
+
+  private val _keyword = MutableStateFlow("")
+
+  fun setKeyword(keyword: String) {
+    _keyword.value = keyword
   }
 
-  fun getAllSongs() = songDao.getAll()
+  val keyword = _keyword
 
-  private val selectIdsSet = hashSetOf<Long>()
+  private val _selectedSongsIds = MutableStateFlow<List<Long>>(emptyList())
 
-  private val _selectedSongsIds = MutableStateFlow(hashSetOf<Long>())
+  val selectedSongsIds = _selectedSongsIds
 
-  val selectedSongsIds: Flow<HashSet<Long>>
-    get() = _selectedSongsIds
+  @OptIn(ExperimentalCoroutinesApi::class)
+  val allSongsFlow = combine(
+    playlistId.flatMapLatest { playlistId ->
+      songDao.getSongsNotInPlayListFlow(playlistId)
+    },
+    _keyword
+  ) { allSongs, keyword ->
+    allSongs.filter {
+      it.displayName.contains(keyword) || it.artist.contains(keyword)
+    }
+  }
 
+
+  fun setPlaylistId(id: Long) {
+    playlistId.value = id
+  }
 
   fun clearSelectedSongs() {
-    selectIdsSet.clear()
-    _selectedSongsIds.value = selectIdsSet.toHashSet()
+    _selectedSongsIds.value = emptyList()
+
   }
+
+  fun selectSongs(list: List<Song>) {
+    _selectedSongsIds.value = list.map { it.songId ?: -1 }
+  }
+
 
   // 切换歌曲选择状态
   fun toggleSongSelection(songId: Long?) {
     if (songId == null) return
-    if (selectIdsSet.contains(songId)) {
-      selectIdsSet.remove(songId)
+    if (_selectedSongsIds.value.contains(songId)) {
+      _selectedSongsIds.value = _selectedSongsIds.value.filter { it != songId }
     } else {
-      selectIdsSet.add(songId)
+      _selectedSongsIds.value = _selectedSongsIds.value + songId
     }
-    _selectedSongsIds.value = selectIdsSet.toHashSet()
   }
 
   // 添加到播放列表
@@ -50,6 +73,4 @@ class SelectSongViewModel(
     playlistDao.insertListItems(
       _selectedSongsIds.value.map { songId -> PlaylistSongCrossRef(playlistId ?: 0, songId) })
   }
-
-
 }
