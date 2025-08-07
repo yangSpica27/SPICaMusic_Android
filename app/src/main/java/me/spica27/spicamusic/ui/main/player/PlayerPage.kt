@@ -47,8 +47,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -139,11 +138,13 @@ fun PlayerPage(
 
   val horizontalPagerState = rememberPagerState { 3 }
 
+  val selectedTabIndex = remember { derivedStateOf { horizontalPagerState.currentPage } }.value
+
   val vibrator = rememberVibrator()
 
   var isFirst by remember { mutableStateOf(true) }
 
-  LaunchedEffect(horizontalPagerState.currentPage) {
+  LaunchedEffect(selectedTabIndex) {
     if (isFirst) {
       isFirst = false
       return@LaunchedEffect
@@ -171,7 +172,7 @@ fun PlayerPage(
 
         // tab
         TabBar(
-          selectedTabIndex = horizontalPagerState.currentPage,
+          selectedTabIndex = selectedTabIndex,
           onTabSelected = {
             coroutineScope.launch {
               horizontalPagerState.animateScrollToPage(it)
@@ -214,8 +215,7 @@ fun PlayerPage(
               when (index) {
                 0 -> {
                   Cover(
-                    songState = songViewModel.getSongFlow(currentPlayingSong?.songId ?: -1)
-                      .collectAsState(null),
+                    song = currentPlayingSong!!,
                   )
                 }
 
@@ -291,13 +291,13 @@ fun PlayerPage(
 @OptIn(UnstableApi::class)
 @Composable
 private fun Cover(
-  songState: State<Song?>,
+  song: Song,
 ) {
 
   val context = LocalContext.current
 
   val coverPainter = rememberAsyncImagePainter(
-    model = ImageRequest.Builder(context).data(songState.value?.getCoverUri()).transformations(
+    model = ImageRequest.Builder(context).data(song.getCoverUri()).transformations(
       CircleCropTransformation()
     ).build(),
   )
@@ -432,7 +432,7 @@ private fun Cover(
     } else {
       Text(
         modifier = Modifier.rotate(45f),
-        text = songState.value?.displayName ?: "Unknown",
+        text = song.displayName,
         style = MaterialTheme.typography.headlineLarge.copy(
           color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
           fontWeight = FontWeight.W900
@@ -617,8 +617,10 @@ private fun SongInfo(
   navigator: NavBackStack? = null,
 ) {
 
-  //
+
   val songId = remember(song) { song.songId ?: -1 }
+
+  val isLike = songViewModel.songLikeFlow(songId).collectAsStateWithLifecycle(false).value
 
   // 是否显示歌词设置
   var showLyricsSetting by remember { mutableStateOf(false) }
@@ -674,7 +676,7 @@ private fun SongInfo(
         songViewModel.toggleFavorite(songId)
       },
     ) {
-      if (song.like) {
+      if (isLike) {
         Icon(
           imageVector = Icons.Default.Favorite,
           contentDescription = "More",

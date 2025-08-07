@@ -47,6 +47,8 @@ class SongViewModel(
     }
   }
 
+  fun songLikeFlow(id: Long) = songRepository.songLikeFlowWithId(id)
+
   // 添加歌单
   fun addPlayList(value: String) {
     viewModelScope.launch {

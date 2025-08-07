@@ -113,19 +113,24 @@ fun LyricsView(
   }
 
   LaunchedEffect(currentTime) {
-    launch(Dispatchers.IO+ SupervisorJob()) {
+    launch(Dispatchers.IO + SupervisorJob()) {
       var index = 0
       for (item in currentLyric) {
-        if (item.time >= (currentTime - delay)) {
-          activeIndex.intValue = (index-1).fastCoerceAtLeast(0)
-          listState.animateScrollToItemAndCenter(
-            index = (index-1).fastCoerceAtLeast(0),
-            offset = -layoutHeight.intValue / 2
-          )
+        if (item.time >= (currentTime+125 - delay)) {
+          activeIndex.intValue = (index - 1).fastCoerceAtLeast(0)
           return@launch
         }
         index++
       }
+    }
+  }
+
+  LaunchedEffect(activeIndex.intValue) {
+    launch(Dispatchers.IO) {
+      listState.animateScrollToItemAndCenter(
+        index = activeIndex.intValue,
+        offset = -layoutHeight.intValue / 2
+      )
     }
   }
 
