@@ -122,6 +122,7 @@ fun LyricsView(
         }
         index++
       }
+      activeIndex.intValue = index
     }
   }
 
@@ -155,7 +156,7 @@ fun LyricsView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         state = listState,
-        userScrollEnabled = false
+        userScrollEnabled = false,
       ) {
         itemsIndexed(
           currentLyric.map { it.toNormal() },
@@ -186,7 +187,7 @@ fun LyricsView(
               shape = MaterialTheme.shapes.medium,
               innerRefraction = InnerRefraction(
                 height = RefractionHeight(32.dp),
-                amount = RefractionAmount((-32).dp)
+                amount = RefractionAmount((-12).dp)
               ),
               material = GlassMaterial.None,
               highlight = GlassHighlight.None,
@@ -333,9 +334,9 @@ fun LyricsViewLine(
         shadow = Shadow(
           color = contentColor.copy(alpha = .2f),
           blurRadius = if (isActive) {
-            13f
+            3f
           } else {
-            5f
+            13f
           }
         )
       )

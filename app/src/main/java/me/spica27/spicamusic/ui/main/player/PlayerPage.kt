@@ -71,6 +71,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.viewinterop.AndroidView
@@ -746,7 +747,7 @@ private fun TabBar(
   }
 
   val providerState = rememberLiquidGlassProviderState(
-    backgroundColor = MaterialTheme.colorScheme.surfaceContainerLow
+    backgroundColor = MaterialTheme.colorScheme.surfaceContainer
   )
 
 
@@ -784,7 +785,12 @@ private fun TabBar(
                 FontWeight.W600
               } else {
                 FontWeight.W500
-              }
+              },
+              letterSpacing = 0.1.em,
+              shadow = androidx.compose.ui.graphics.Shadow(
+                color = MaterialTheme.colorScheme.onBackground.copy(0.1f),
+                blurRadius = 10f
+              )
             ),
           )
         }
@@ -820,7 +826,8 @@ private fun TabBar(
             ),
           ),
           compositingStrategy = CompositingStrategy.Auto
-        ),
+        )
+      ,
     )
   }
 }

@@ -17,6 +17,7 @@ import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 // 参考LMusic https://github.com/cy745/lmusic
 @OptIn(UnstableApi::class)
@@ -28,6 +29,7 @@ class FadeTransitionAudioSink(
     set(value) {
       field = value
       super.setVolume((value / 100f).coerceIn(0f..1f))
+      Timber.tag("音量").e("$value")
     }
 
   private var onFinished: (() -> Unit)? = null
@@ -35,7 +37,7 @@ class FadeTransitionAudioSink(
     getter = { volumeOverride },
     setter = { volumeOverride = it },
   ).withSpringForceProperties {
-    stiffness = SpringForce.STIFFNESS_LOW
+    stiffness = SpringForce.STIFFNESS_HIGH
     dampingRatio = SpringForce.DAMPING_RATIO_NO_BOUNCY
   }.apply {
     setStartValue(0f)
@@ -50,7 +52,7 @@ class FadeTransitionAudioSink(
   }
 
   override fun play() {
-    scope.launch(Dispatchers.Main) { animation.animateToFinalPosition(500f) }
+    scope.launch(Dispatchers.Main) { animation.animateToFinalPosition(100f) }
     onFinished = null
     super.play()
   }
