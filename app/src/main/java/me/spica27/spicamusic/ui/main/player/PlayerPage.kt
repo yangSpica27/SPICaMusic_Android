@@ -14,8 +14,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.Interaction
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,10 +24,12 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -40,10 +40,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,17 +56,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -80,11 +82,18 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
+import com.kyant.liquidglass.GlassStyle
+import com.kyant.liquidglass.highlight.GlassHighlight
+import com.kyant.liquidglass.liquidGlass
+import com.kyant.liquidglass.liquidGlassProvider
+import com.kyant.liquidglass.material.GlassMaterial
+import com.kyant.liquidglass.refraction.InnerRefraction
+import com.kyant.liquidglass.refraction.RefractionAmount
+import com.kyant.liquidglass.refraction.RefractionHeight
+import com.kyant.liquidglass.rememberLiquidGlassProviderState
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
@@ -172,12 +181,7 @@ fun PlayerPage(
 
         // tab
         TabBar(
-          selectedTabIndex = selectedTabIndex,
-          onTabSelected = {
-            coroutineScope.launch {
-              horizontalPagerState.animateScrollToPage(it)
-            }
-          },
+          pagerState = horizontalPagerState,
           tabs = listOf("封面", "歌词", "信息"),
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -720,52 +724,56 @@ private fun SongInfo(
 
 @Composable
 private fun TabBar(
-  selectedTabIndex: Int,
-  onTabSelected: (Int) -> Unit,
+  pagerState: PagerState,
   tabs: List<String>,
 ) {
 
+  val selectedIndex = remember { derivedStateOf { pagerState.currentPage } }.value
+
+  var indicatorWidth by remember { mutableStateOf(0) }
+
+
+  val offsetX = remember(
+    indicatorWidth,
+    pagerState.currentPageOffsetFraction,
+  ) {
+    // 基础偏移量，基于当前页面
+    val baseOffset = pagerState.currentPage * indicatorWidth
+    // 额外偏移量，基于滚动进度
+    val additionalOffset = pagerState.currentPageOffsetFraction * indicatorWidth
+
+    return@remember baseOffset + additionalOffset
+  }
+
+  val providerState = rememberLiquidGlassProviderState(
+    backgroundColor = MaterialTheme.colorScheme.surfaceContainerLow
+  )
+
+
   Box(
     modifier = Modifier
+      .fillMaxWidth()
       .height(48.dp)
       .padding(horizontal = 16.dp)
   ) {
-
-    TabRow(
-      selectedTabIndex = selectedTabIndex,
-      containerColor = Color.Transparent,
-      contentColor = Color.Transparent,
-      divider = {},
-      indicator = { tabPositions ->
-        SecondaryIndicator(
-          modifier =
-            Modifier
-              .tabIndicatorOffset(tabPositions[selectedTabIndex])
-              .clip(
-                MaterialTheme.shapes.small
-              ),
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = .05f),
-          height = 48.dp
-        )
-      }) {
+    Row(
+      modifier = Modifier
+        .fillMaxSize()
+        .liquidGlassProvider(providerState)
+        .onSizeChanged {
+          indicatorWidth = it.width / 3
+        }
+    ) {
       tabs.forEachIndexed { index, tabTitle ->
-        Tab(
-          interactionSource = object : MutableInteractionSource {
-            override val interactions: Flow<Interaction> = emptyFlow()
-
-            override suspend fun emit(interaction: Interaction) {}
-
-            override fun tryEmit(interaction: Interaction) = true
-          },
-          modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
-          selected = selectedTabIndex == index,
-          selectedContentColor = Color.Transparent,
-          unselectedContentColor = Color.Transparent,
-          onClick = { onTabSelected(index) }) {
-          val isSelected = index == selectedTabIndex
+        val isSelected = selectedIndex == index
+        Box(
+          modifier = Modifier
+            .weight(1f)
+            .fillMaxHeight(),
+          contentAlignment = Alignment.Center
+        ) {
           Text(
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxSize(),
             text = tabTitle,
             style = MaterialTheme.typography.bodyMedium.copy(
               color = if (isSelected) {
@@ -782,6 +790,38 @@ private fun TabBar(
         }
       }
     }
+    Box(
+      modifier = Modifier
+        .fillMaxHeight()
+        .width(with(LocalDensity.current) { indicatorWidth.toDp() })
+        .offset {
+          IntOffset(
+            x = offsetX.fastRoundToInt(),
+            y = 0
+          )
+        }
+        .liquidGlass(
+          state = providerState,
+          GlassStyle(
+            shape = MaterialTheme.shapes.small,
+            innerRefraction = InnerRefraction(
+              height = RefractionHeight(
+                8.dp
+              ),
+              amount = RefractionAmount(
+                -12.dp
+              )
+            ),
+            material = GlassMaterial.None,
+            highlight = GlassHighlight.Default.copy(
+              color = MaterialTheme.colorScheme.surfaceContainerLow,
+              width = 1.dp,
+              blendMode = BlendMode.SrcOver
+            ),
+          ),
+          compositingStrategy = CompositingStrategy.Auto
+        ),
+    )
   }
 }
 
