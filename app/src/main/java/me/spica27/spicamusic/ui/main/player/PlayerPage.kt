@@ -97,6 +97,7 @@ import com.kyant.liquidglass.rememberLiquidGlassProviderState
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
@@ -751,6 +752,14 @@ private fun TabBar(
   val providerState = rememberLiquidGlassProviderState(
     backgroundColor = MaterialTheme.colorScheme.surfaceContainer
   )
+
+  // 不滚动 液态玻璃可能不渲染
+  LaunchedEffect(Unit) {
+    pagerState.animateScrollToPage(pagerState.currentPage,0.01f)
+    delay(200)
+    pagerState.animateScrollToPage(pagerState.currentPage,0f)
+  }
+
 
 
   Box(
