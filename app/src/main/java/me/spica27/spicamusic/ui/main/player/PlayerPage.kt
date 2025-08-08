@@ -77,7 +77,9 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImagePainter
@@ -120,6 +122,7 @@ import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.LyricSettingDialog
 import me.spica27.spicamusic.widget.LyricsView
+import me.spica27.spicamusic.widget.ObserveLifecycleEvent
 import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
@@ -360,14 +363,27 @@ private fun Cover(
 //  }
 
 
-  AndroidView(
-    factory = { context ->
-      VisualizerView(context)
-    }, update = { view ->
-      view.setThemeColor(lineColor.toArgb())
-    }, modifier = Modifier
-      .fillMaxWidth()
-  )
+  var isActive by rememberSaveable { mutableStateOf(true) }
+
+  ObserveLifecycleEvent { event ->
+    // 検出したイベントに応じた処理を実装する。
+    when (event) {
+      Lifecycle.Event.ON_RESUME -> isActive = true
+      Lifecycle.Event.ON_PAUSE -> isActive = false
+      else -> {}
+    }
+  }
+
+  if (isActive) {
+    AndroidView(
+      factory = { context ->
+        VisualizerView(context)
+      }, update = { view ->
+        view.setThemeColor(lineColor.toArgb())
+      }, modifier = Modifier
+        .fillMaxWidth()
+    )
+  }
 
 
   // Compose 版本的频谱动效开销多占 25%的性能 暂时屏蔽
@@ -484,7 +500,7 @@ private fun ControlPanel(
       ampState.value = arrayListOf()
     }) {
       val amplituda = playBackViewModel.getAmplituda()
-      if (song?.getSongUri() != null) {
+      if (song?.getSongUri() != null && song.mimeType != MimeTypes.AUDIO_ALAC && song.mimeType != MimeTypes.AUDIO_MP4) {
         val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
         inputStream.use { inputStream ->
           if (inputStream != null) {
@@ -500,6 +516,8 @@ private fun ControlPanel(
             ampState.value = arrayListOf()
           }
         }
+      } else {
+        ampState.value = arrayListOf()
       }
     }
   }

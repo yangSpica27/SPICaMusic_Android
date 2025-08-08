@@ -4,7 +4,6 @@ import android.view.animation.DecelerateInterpolator
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.playback.PlaybackStateManager
@@ -38,7 +37,7 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
 
   private val fft2: FloatArray = FloatArray(size)
 
-  private var job = Job()
+  private var job = SupervisorJob()
 
   private var coroutineScope = CoroutineScope(job + Dispatchers.Default)
 
