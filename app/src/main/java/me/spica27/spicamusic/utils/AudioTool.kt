@@ -57,20 +57,17 @@ object AudioTool {
 
     val songs = mutableListOf<Song>()
     Timber.d("开始扫描音频文件")
+
     do {
       val isMusic =
         cursor.getIntOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.IS_MUSIC))
       if (isMusic != 1) continue
-      val mimeType =
-        cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.MIME_TYPE))
-      types.add(mimeType ?: "")
-      val isSupportMineType =
-        (MimeTypes.normalizeMimeType(mimeType?:"") == MimeTypes.AUDIO_MPEG ||
-//            mimeType == MimeTypes.AUDIO_MP4||
-            mimeType == MimeTypes.AUDIO_OGG ||
-//            mimeType == MimeTypes.AUDIO_WAV ||
-//            mimeType == MimeTypes.AUDIO_ALAC ||
-            mimeType == MimeTypes.AUDIO_FLAC)
+      val mimeType = MimeTypes.normalizeMimeType(
+        cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.MIME_TYPE))?:""
+      )
+
+      types.add(mimeType)
+      val isSupportMineType = true
       if (!isSupportMineType) continue
       // 过滤掉时长小于5秒的音频文件
       val duration =

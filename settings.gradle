@@ -19,6 +19,7 @@ pluginManagement {
 dependencyResolutionManagement {
   repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
   repositories {
+    maven { url 	"https://repo1.maven.org/maven2/"}
     maven { url "https://jitpack.io" }
     maven { url 'https://maven.aliyun.com/repository/central' }
     maven { url 'https://maven.aliyun.com/repository/google' }
@@ -31,5 +32,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "SPICaMusic"
 include ':app'
-include(':decoder_flac')
+//include(':decoder_flac')
 //include(":starrysky")

@@ -20,9 +20,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.extractor.DefaultExtractorsFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -75,16 +74,21 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     super.onCreate()
     mediaSession = MediaSessionCompat(this, "spica_music")
 
-    // 避免降采样 采取最近似的采样
-    val extractorsFactory = DefaultMediaSourceFactory(
-      this,
-      DefaultExtractorsFactory()
-        .setConstantBitrateSeekingEnabled(true)
-        .setConstantBitrateSeekingAlwaysEnabled(true)
-    )
+//    // 避免降采样 采取最近似的采样
+//    val extractorsFactory = DefaultMediaSourceFactory(
+//      this,
+//      DefaultExtractorsFactory()
+//        .setConstantBitrateSeekingEnabled(true)
+//        .setConstantBitrateSeekingAlwaysEnabled(true)
+//    )
 
-//    val audioRenderer = RenderersFactory { handler, _, audioListener, _, _ ->
+//    val audioRender = RenderersFactory { handler, _, audioListener, _, _ ->
 //      arrayOf(
+//        FfmpegAudioRenderer(
+//          handler, audioListener, fftAudioProcessor,
+//          PlaybackStateManager.getInstance().equalizerAudioProcessor,
+//          PlaybackStateManager.getInstance().replayGainAudioProcessor
+//        ),
 //        MediaCodecAudioRenderer(
 //          this,
 //          MediaCodecSelector.DEFAULT,
@@ -95,16 +99,11 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
 //          PlaybackStateManager.getInstance().equalizerAudioProcessor,
 //          PlaybackStateManager.getInstance().replayGainAudioProcessor
 //        ),
-//        LibflacAudioRenderer(
-//          handler, audioListener, fftAudioProcessor,
-//          PlaybackStateManager.getInstance().equalizerAudioProcessor,
-//          PlaybackStateManager.getInstance().replayGainAudioProcessor
-//        ),
 //      )
+//    }
 
 
-
-    val audioRenderer = FadeTransitionRenderersFactory(
+    val audioRenderersFactory = FadeTransitionRenderersFactory(
       this,
       coroutineScope,
       extraAudioProcessors = listOf(
@@ -112,12 +111,17 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
         PlaybackStateManager.getInstance().equalizerAudioProcessor,
         PlaybackStateManager.getInstance().replayGainAudioProcessor
       )
+    ).apply {
+      this.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+    }
+
+
+    exoPlayer = ExoPlayer.Builder(
+      this,
+      audioRenderersFactory
     )
-
-
-    exoPlayer = ExoPlayer.Builder(this, audioRenderer)
       .setWakeMode(C.WAKE_MODE_LOCAL)
-      .setMediaSourceFactory(extractorsFactory)
+//        .setMediaSourceFactory(extractorsFactory)
       .setMaxSeekToPreviousPositionMs(Long.MAX_VALUE)
       .setAudioAttributes(
         AudioAttributes.Builder()

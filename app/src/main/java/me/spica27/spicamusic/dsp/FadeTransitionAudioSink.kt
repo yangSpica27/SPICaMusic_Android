@@ -17,7 +17,6 @@ import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import timber.log.Timber
 
 // 参考LMusic https://github.com/cy745/lmusic
 @OptIn(UnstableApi::class)
@@ -29,7 +28,6 @@ class FadeTransitionAudioSink(
     set(value) {
       field = value
       super.setVolume((value / 100f).coerceIn(0f..1f))
-      Timber.tag("音量").e("$value")
     }
 
   private var onFinished: (() -> Unit)? = null
@@ -70,6 +68,8 @@ class FadeTransitionRenderersFactory(
   teeBufferListener: TeeAudioProcessor.AudioBufferSink? = null,
   val extraAudioProcessors: List<AudioProcessor> = emptyList()
 ) : DefaultRenderersFactory(context), AudioProcessorChain {
+
+
 
   private val teeAudioProcessor = teeBufferListener
     ?.let { TeeAudioProcessor(it) }

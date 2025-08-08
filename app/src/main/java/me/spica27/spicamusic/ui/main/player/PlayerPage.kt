@@ -50,6 +50,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -109,6 +110,7 @@ import me.spica27.spicamusic.utils.formatDurationDs
 import me.spica27.spicamusic.utils.formatDurationSecs
 import me.spica27.spicamusic.utils.msToDs
 import me.spica27.spicamusic.utils.msToSecs
+import me.spica27.spicamusic.utils.noRippleClickable
 import me.spica27.spicamusic.utils.rememberVibrator
 import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.utils.tick
@@ -144,7 +146,6 @@ fun PlayerPage(
 
   val currentTime = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
 
-  val coroutineScope = rememberCoroutineScope()
 
   val horizontalPagerState = rememberPagerState { 3 }
 
@@ -730,8 +731,9 @@ private fun TabBar(
 
   val selectedIndex = remember { derivedStateOf { pagerState.currentPage } }.value
 
-  var indicatorWidth by remember { mutableStateOf(0) }
+  var indicatorWidth by rememberSaveable { mutableStateOf(0) }
 
+  val coroutineScope = rememberCoroutineScope()
 
   val offsetX = remember(
     indicatorWidth,
@@ -769,7 +771,12 @@ private fun TabBar(
         Box(
           modifier = Modifier
             .weight(1f)
-            .fillMaxHeight(),
+            .fillMaxHeight()
+            .noRippleClickable {
+              coroutineScope.launch {
+                pagerState.animateScrollToPage(index)
+              }
+            },
           contentAlignment = Alignment.Center
         ) {
           Text(
@@ -825,8 +832,7 @@ private fun TabBar(
             ),
           ),
           compositingStrategy = CompositingStrategy.Auto
-        )
-      ,
+        ),
     )
   }
 }

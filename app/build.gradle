@@ -94,7 +94,6 @@ android {
 
 dependencies {
   implementation fileTree(dir: "libs", include: ["*.jar","*.aar"])
-  //  implementation project(":extension-flac2120")
   implementation libs.androidx.core.ktx
   implementation libs.androidx.lifecycle.runtime.ktx
   implementation libs.androidx.activity.compose
@@ -158,11 +157,10 @@ dependencies {
   implementation libs.moshi.kotlin
   ksp libs.moshi.kotlin.codegen
 
-  implementation("com.github.Kyant0:AndroidLiquidGlass:1.0.0-alpha03")
+  implementation(libs.androidliquidglass)
   implementation "androidx.constraintlayout:constraintlayout-compose:1.1.1"
 
-  implementation 'org.ocpsoft.prettytime:prettytime:5.0.8.Final'
+  implementation libs.prettytime
   def koin_version = "4.1.0"
   implementation "io.insert-koin:koin-androidx-compose:$koin_version"
-
 }
