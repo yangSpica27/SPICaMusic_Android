@@ -104,7 +104,6 @@ class VisualizerView : View, MusicVisualiser.Listener {
   private val fft = arrayListOf<Float>()
 
   override fun getDrawData(list: List<Float>) {
-    Timber.tag("VisualizerSurfaceView").d("getDrawData()")
     lock.lock()
     fft.clear()
     fft.addAll(list)

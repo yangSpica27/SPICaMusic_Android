@@ -79,6 +79,7 @@ import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImagePainter
@@ -373,7 +374,7 @@ private fun Cover(
     }
   }
 
-  if (isActive){
+  if (isActive) {
     AndroidView(
       factory = { context ->
         VisualizerView(context)
@@ -499,7 +500,7 @@ private fun ControlPanel(
       ampState.value = arrayListOf()
     }) {
       val amplituda = playBackViewModel.getAmplituda()
-      if (song?.getSongUri() != null) {
+      if (song?.getSongUri() != null && song.mimeType != MimeTypes.AUDIO_ALAC && song.mimeType != MimeTypes.AUDIO_MP4) {
         val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
         inputStream.use { inputStream ->
           if (inputStream != null) {
@@ -515,6 +516,8 @@ private fun ControlPanel(
             ampState.value = arrayListOf()
           }
         }
+      } else {
+        ampState.value = arrayListOf()
       }
     }
   }
