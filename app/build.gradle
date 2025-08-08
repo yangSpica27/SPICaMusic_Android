@@ -16,8 +16,8 @@ android {
     applicationId "me.spica27.spicamusic"
     minSdk 24
     targetSdk 36
-    versionCode 3
-    versionName "beta3"
+    versionCode 4
+    versionName "beta4"
 
     testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     vectorDrawables {
