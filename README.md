@@ -34,6 +34,7 @@ EXOPlayer+Compose实现的音乐播放器
 ## 开发环境
 
 系统:Windows 10 IoT 企业版 LTSC
+
 Android Studio版本:Android Studio Narwhal | 2025.1.1
 
 ## 库
