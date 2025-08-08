@@ -14,6 +14,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,7 +40,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -116,13 +116,13 @@ fun LyricsView(
     launch(Dispatchers.IO + SupervisorJob()) {
       var index = 0
       for (item in currentLyric) {
-        if (item.time >= (currentTime+125 - delay)) {
+        if (item.time >= (currentTime + 125 - delay)) {
           activeIndex.intValue = (index - 1).fastCoerceAtLeast(0)
           return@launch
         }
         index++
       }
-      activeIndex.intValue = index
+      activeIndex.intValue = (currentLyric.size - 1).coerceAtLeast(0)
     }
   }
 
@@ -157,6 +157,7 @@ fun LyricsView(
         verticalArrangement = Arrangement.Center,
         state = listState,
         userScrollEnabled = false,
+        contentPadding = PaddingValues(vertical = 100.dp)
       ) {
         itemsIndexed(
           currentLyric.map { it.toNormal() },
@@ -170,7 +171,7 @@ fun LyricsView(
               isActive = index == activeIndex.intValue,
               content = item.content,
               inactiveBlur = ((index.coerceAtLeast(activeIndex.intValue) -
-                  index.coerceAtMost(activeIndex.intValue)) * 0.5f).fastCoerceAtMost(4f),
+                  index.coerceAtMost(activeIndex.intValue)) * 0.8f).fastCoerceAtMost(4f),
               onClick = { },
               fontWeight = FontWeight(itemFontWeight.value),
               fontSize = itemFontSize.value.sp
@@ -187,7 +188,7 @@ fun LyricsView(
               shape = MaterialTheme.shapes.medium,
               innerRefraction = InnerRefraction(
                 height = RefractionHeight(32.dp),
-                amount = RefractionAmount((-12).dp)
+                amount = RefractionAmount((-24).dp)
               ),
               material = GlassMaterial.None,
               highlight = GlassHighlight.None,
@@ -211,7 +212,7 @@ fun LyricsViewLine(
   lineHeight: TextUnit = 1.2.em,
   onClick: () -> Unit,
   @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
-  activeScale: Float = 1.1f,
+  activeScale: Float = 1.15f,
   inactiveScale: Float = 1f,
   activeAlpha: Float = 1f,
   inactiveAlpha: Float = 0.35f,
@@ -288,11 +289,16 @@ fun LyricsViewLine(
   Box(
     modifier = modifier
       .fillMaxWidth()
-      .padding(horizontal = 35.dp, vertical = 10.dp)
-      .indication(interactionSource, indication = null)
       .graphicsLayer {
+        scaleX = scale.floatValue
+        scaleY = scale.floatValue
         translationY = itemTranslationY
       }
+      .padding(horizontal = 40.dp, vertical = 10.dp)
+      .indication(interactionSource, indication = null)
+      .blur(
+        radius = blur.floatValue.dp,
+      )
       .pointerInput(interactionSource) {
         detectTapGestures(
           onPress = {
@@ -318,14 +324,8 @@ fun LyricsViewLine(
       text = content,
       modifier = Modifier
         .graphicsLayer {
-          transformOrigin = TransformOrigin(0f, 1f)
-          scaleX = scale.floatValue
-          scaleY = scale.floatValue
           this.alpha = alpha.floatValue
-        }
-        .blur(
-          radius = blur.floatValue.dp,
-        ),
+        },
       style = TextStyle(
         color = contentColor,
         fontSize = fontSize,
@@ -359,7 +359,7 @@ suspend fun LazyListState.animateScrollToItemAndCenter(
   if (itemInfo != null) {
     val viewportCenter = layoutInfo.viewportEndOffset / 2f // Use float for precision
     val itemCenter = itemInfo.offset + itemInfo.size / 2f
-    val scrollAmount = itemCenter - viewportCenter
+    val scrollAmount = itemCenter - viewportCenter + layoutInfo.afterContentPadding
     this.animateScrollBy(
       scrollAmount, animationSpec = tween(
         durationMillis = 500,
