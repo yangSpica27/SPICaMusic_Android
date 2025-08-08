@@ -489,8 +489,13 @@ private fun ControlPanel(
         inputStream.use { inputStream ->
           if (inputStream != null) {
             val amplitudes = amplituda.processAudio(inputStream)
-            val amplitudesList = amplitudes.get().amplitudesAsList()
-            ampState.value = amplitudesList
+            amplitudes.get(
+              {
+                ampState.value = it.amplitudesAsList()
+              }, {
+                ampState.value = arrayListOf()
+              }
+            )
           } else {
             ampState.value = arrayListOf()
           }
@@ -755,9 +760,9 @@ private fun TabBar(
 
   // 不滚动 液态玻璃可能不渲染
   LaunchedEffect(Unit) {
-    pagerState.animateScrollToPage(pagerState.currentPage,0.01f)
+    pagerState.animateScrollToPage(pagerState.currentPage, 0.01f)
     delay(200)
-    pagerState.animateScrollToPage(pagerState.currentPage,0f)
+    pagerState.animateScrollToPage(pagerState.currentPage, 0f)
   }
 
 
