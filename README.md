@@ -39,8 +39,8 @@ Android Studio版本:Android Studio Narwhal | 2025.1.1
 
 ## 库
 
-- Retrofit(https://github.com/square/retrofit)
-- OkHTTP(https://github.com/square/okhttp)
+- [Retrofit](https://github.com/square/retrofit)
+- [OkHTTP](https://github.com/square/okhttp)
 - [Jetpack Compose](https://developer.android.com/compose): Jetpack Compose 是一个现代化的工具包，用于构建原生
   Android 应用的用户界面。它简化了 UI 开发，使您能够更快地构建应用。
 - [Media3](https://github.com/androidx/media): Media3 是一个用于播放音频和视频的库，它提供了一个用于播放媒体的
