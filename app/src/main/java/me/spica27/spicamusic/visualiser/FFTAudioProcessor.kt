@@ -26,18 +26,15 @@ SOFTWARE.
 
 package me.spica27.spicamusic.visualiser
 
-import android.icu.util.Calendar
 import android.media.AudioTrack
 import android.media.AudioTrack.ERROR_BAD_VALUE
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.Assertions
-import androidx.media3.common.util.SystemClock
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
 import com.paramsen.noise.Noise
-import timber.log.Timber
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.max
@@ -75,7 +72,7 @@ class FFTAudioProcessor : AudioProcessor {
   private var fftBuffer: ByteBuffer
   private var outputBuffer: ByteBuffer
 
-  val listeners: MutableList<FFTListener> = mutableListOf()
+  var listeners: MutableList<FFTListener> = mutableListOf()
   private var inputEnded: Boolean = false
 
   private lateinit var srcBuffer: ByteBuffer
@@ -132,12 +129,11 @@ class FFTAudioProcessor : AudioProcessor {
     return durationUs * inputAudioFormat.sampleRate / C.MICROS_PER_SECOND
   }
 
-
   override fun isActive(): Boolean {
     return isActive
   }
 
-  private lateinit var inputAudioFormat: AudioProcessor.AudioFormat
+  private lateinit var inputAudioFormat :AudioProcessor.AudioFormat
 
   override fun configure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
     if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
@@ -149,7 +145,6 @@ class FFTAudioProcessor : AudioProcessor {
     isActive = true
 
     noise = Noise.real(SAMPLE_SIZE)
-
 
     audioTrackBufferSize = getDefaultBufferSizeInBytes(inputAudioFormat)
 
@@ -166,17 +161,18 @@ class FFTAudioProcessor : AudioProcessor {
     val outputSize = frameCount * inputAudioFormat.channelCount * 2
 
 
-
     if (processBuffer.capacity() < outputSize) {
       processBuffer = ByteBuffer.allocateDirect(outputSize).order(ByteOrder.nativeOrder())
-    } else {
+    }
+    else {
       processBuffer.clear()
     }
 
     if (fftBuffer.capacity() < singleChannelOutputSize) {
       fftBuffer =
         ByteBuffer.allocateDirect(singleChannelOutputSize).order(ByteOrder.nativeOrder())
-    } else {
+    }
+    else {
       fftBuffer.clear()
     }
 
@@ -200,12 +196,10 @@ class FFTAudioProcessor : AudioProcessor {
     outputBuffer = this.processBuffer
   }
 
-
   private fun processFFT(buffer: ByteBuffer) {
     if (listeners.isEmpty()) {
       return
     }
-
     srcBuffer.put(buffer.array())
     srcBufferPosition += buffer.array().size
     // Since this is PCM 16 bit, each sample will be 2 bytes.
@@ -216,38 +210,26 @@ class FFTAudioProcessor : AudioProcessor {
       srcBuffer.position(0)
       srcBuffer.get(tempByteArray, 0, bytesToProcess)
 
+      tempByteArray.forEachIndexed { index, byte ->
+        if (currentByte == null) {
+          currentByte = byte
+        }
+        else {
+          src[index / 2] =
+            (currentByte.toFloat() * Byte.MAX_VALUE + byte) / (Byte.MAX_VALUE * Byte.MAX_VALUE)
+          dst[index / 2] = 0f
+          currentByte = null
+        }
 
-//      tempByteArray.forEachIndexed { index, byte ->
-//        if (currentByte == null) {
-//          currentByte = byte
-//        } else {
-//          src[index / 2] =
-//            (currentByte!!.toFloat() * Byte.MAX_VALUE + byte) / (Byte.MAX_VALUE * Byte.MAX_VALUE)
-//          dst[index / 2] = 0f
-//          currentByte = null
-//        }
-//      }
-
-
-      for (i in 0 until bytesToProcess step 2) {
-        val sample =
-          (tempByteArray[i].toFloat() * Byte.MAX_VALUE + tempByteArray[i + 1]) / (Byte.MAX_VALUE * Byte.MAX_VALUE)
-        src[i / 2] = sample
-        dst[i / 2] = 0f
       }
-
       srcBuffer.position(bytesToProcess)
       srcBuffer.compact()
       srcBufferPosition -= bytesToProcess
       srcBuffer.position(srcBufferPosition)
 
       val fft = noise?.fft(src, dst)!!
-      listeners.forEach {
-        it.onFFTReady(
-          inputAudioFormat.sampleRate,
-          inputAudioFormat.channelCount,
-          fft
-        )
+      for (listener in listeners) {
+        listener.onFFTReady(inputAudioFormat.sampleRate, inputAudioFormat.channelCount, fft)
       }
     }
   }
@@ -276,6 +258,6 @@ class FFTAudioProcessor : AudioProcessor {
   override fun reset() {
     flush()
     processBuffer = AudioProcessor.EMPTY_BUFFER
-    inputAudioFormat = AudioProcessor.AudioFormat(Format.NO_VALUE, Format.NO_VALUE, Format.NO_VALUE)
+    inputAudioFormat = AudioProcessor.AudioFormat(Format.NO_VALUE,Format.NO_VALUE,Format.NO_VALUE)
   }
 }
