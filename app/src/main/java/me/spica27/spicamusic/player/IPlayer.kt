@@ -8,7 +8,7 @@ interface IPlayer {
 
   fun loadSong(song: Song?, play: Boolean)
 
-  fun getState(durationMs: Long): State
+  fun getState(durationMs: Long,callback:(State)-> Unit)
 
   fun seekTo(positionMs: Long)
 

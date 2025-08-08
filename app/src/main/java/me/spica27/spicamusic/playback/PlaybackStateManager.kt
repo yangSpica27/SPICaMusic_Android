@@ -3,11 +3,13 @@ package me.spica27.spicamusic.playback
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.dsp.EqualizerAudioProcessor
 import me.spica27.spicamusic.dsp.ReplayGainAudioProcessor
 import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.player.Queue
+import me.spica27.spicamusic.service.Media3Player
 import me.spica27.spicamusic.visualiser.FFTAudioProcessor
 
 
@@ -15,7 +17,7 @@ import me.spica27.spicamusic.visualiser.FFTAudioProcessor
 @Suppress("unused")
 class PlaybackStateManager {
 
-  private var player: IPlayer? = null
+  private val player: IPlayer = Media3Player(App.getInstance())
 
   // 播放状态
   var playerState = IPlayer.State.from(isPlaying = false, 0)
@@ -74,7 +76,7 @@ class PlaybackStateManager {
 
   fun removeAll() {
     queue.clear()
-    player?.loadSong(null, false)
+    player.loadSong(null, false)
     updateListenersNewList()
     updateListenersIndexMove()
     updateListenersState()
@@ -92,19 +94,19 @@ class PlaybackStateManager {
 
   @Synchronized
   fun registerPlayer(player: IPlayer) {
-    if (this.player != null) return
-    this.player = player
+//    if (this.player != null) return
+//    this.player = player
   }
 
   @Synchronized
   fun unRegisterPlayer() {
-    player = null
+//    player = null
   }
 
   @Synchronized
   fun play(song: Song, list: List<Song>) {
     queue.reloadNewList(song, list)
-    player?.loadSong(song, true)
+    player.loadSong(song, true)
     updateListenersNewList()
     updateListenersIndexMove()
   }
@@ -114,7 +116,7 @@ class PlaybackStateManager {
     withContext(Dispatchers.IO) {
       queue.reloadNewList(song, list)
       withContext(Dispatchers.Main) {
-        player?.loadSong(song, true)
+        player.loadSong(song, true)
         updateListenersNewList()
         updateListenersIndexMove()
       }
@@ -124,7 +126,7 @@ class PlaybackStateManager {
   suspend fun playAsync(song: Song) = withContext(Dispatchers.IO) {
     queue.reloadNewList(song, queue.getPlayList())
     withContext(Dispatchers.Main) {
-      player?.loadSong(song, true)
+      player.loadSong(song, true)
       updateListenersNewList()
     }
   }
@@ -132,7 +134,7 @@ class PlaybackStateManager {
   @Synchronized
   fun play(song: Song) {
     queue.reloadNewList(song, queue.getPlayList())
-    player?.loadSong(song, true)
+    player.loadSong(song, true)
     updateListenersNewList()
     updateListenersIndexMove()
   }
@@ -141,12 +143,12 @@ class PlaybackStateManager {
   // 下一曲
   fun playNext() {
     if (queue.playNextSong()) {
-      player?.loadSong(queue.currentSong(), true)
+      player.loadSong(queue.currentSong(), true)
     } else if (repeatMode == RepeatMode.ALL && queue.getPlayList().isNotEmpty()) {
       queue.reloadNewList(queue.getPlayList().first(), queue.getPlayList())
-      player?.loadSong(queue.currentSong(), true)
+      player.loadSong(queue.currentSong(), true)
     } else {
-      player?.loadSong(null, false)
+      player.loadSong(null, false)
     }
     updateListenersIndexMove()
   }
@@ -155,10 +157,10 @@ class PlaybackStateManager {
   // 上一曲
   fun playPre() {
     if (queue.playPreSong()) {
-      player?.loadSong(queue.currentSong(), true)
+      player.loadSong(queue.currentSong(), true)
     } else if (repeatMode == RepeatMode.ALL && queue.getPlayList().isNotEmpty()) {
       queue.reloadNewList(queue.getPlayList().last(), queue.getPlayList())
-      player?.loadSong(queue.currentSong(), true)
+      player.loadSong(queue.currentSong(), true)
     }
     updateListenersIndexMove()
   }
@@ -167,7 +169,7 @@ class PlaybackStateManager {
   //
   fun seekTo(positionMs: Long) {
     synchronized(this) {
-      player?.seekTo(positionMs)
+      player.seekTo(positionMs)
       playerState = IPlayer.State(playerState.isPlaying, positionMs)
       updatePositionChanged()
     }
@@ -176,7 +178,7 @@ class PlaybackStateManager {
 
   fun setPlaying(isPlaying: Boolean) {
     synchronized(this) {
-      player?.setPlaying(isPlaying)
+      player.setPlaying(isPlaying)
     }
   }
 
@@ -193,12 +195,13 @@ class PlaybackStateManager {
 
   @Synchronized
   fun synchronizeState() {
-    player?.let {
-      val newState = player?.getState(queue.currentSong()?.duration ?: 0)
-      if (newState != null && newState != playerState) {
-        playerState = newState
-      }
-      updateListenersState()
+    player.let {
+      player.getState(queue.currentSong()?.duration ?: 0, { newState ->
+        if (newState != playerState) {
+          playerState = newState
+        }
+        updateListenersState()
+      })
     }
 
   }

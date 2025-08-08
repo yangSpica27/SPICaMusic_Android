@@ -12,7 +12,9 @@ class App : Application() {
   override fun onCreate() {
     super.onCreate()
     instance = this
-    Timber.plant(Timber.DebugTree())
+    if (BuildConfig.DEBUG){
+      Timber.plant(Timber.DebugTree())
+    }
     startKoin {
       androidLogger()
       androidContext(this@App)

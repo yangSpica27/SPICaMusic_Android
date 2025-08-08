@@ -11,7 +11,6 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.collection.LruCache
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.net.toFile
 import androidx.media.session.MediaButtonReceiver
 import androidx.media3.common.util.UnstableApi
 import coil3.ImageLoader
@@ -22,7 +21,6 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.player.Queue
-import me.spica27.spicamusic.service.MusicService
 
 @UnstableApi
 class MediaSessionComponent(
@@ -120,7 +118,7 @@ class MediaSessionComponent(
 
 
   override fun onStop() {
-    context.sendBroadcast(Intent(MusicService.ACTION_EXIT))
+//    context.sendBroadcast(Intent(MusicService.ACTION_EXIT))
   }
 
 

@@ -31,7 +31,9 @@ kotlinSerialization = "2.2.0"
 kotlinxSerializationCore = "1.9.0"
 moshiKotlin = "1.15.2"
 wavySliderVersion = "2.1.0"
+media3SessionVersion = "1.8.0"
 [libraries]
+kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version = "1.10.2" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistVersion" }
 amplituda = { module = "com.github.lincollincol:amplituda", version.ref = "amplitudaVersion" }
 androidliquidglass = { module = "com.github.Kyant0:AndroidLiquidGlass", version.ref = "androidliquidglassVersion" }
@@ -78,6 +80,7 @@ kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
 moshi-kotlin-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", version.ref = "moshiKotlin" }
 wavy-slider = { module = "ir.mahozad.multiplatform:wavy-slider", version.ref = "wavySliderVersion" }
+androidx-media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3SessionVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

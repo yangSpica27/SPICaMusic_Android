@@ -296,11 +296,17 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     }
   }
 
-  override fun getState(durationMs: Long): IPlayer.State {
-    return IPlayer.State(
-      exoPlayer.isPlaying, exoPlayer.currentPosition.coerceAtLeast(0).coerceAtMost(durationMs)
+  override fun getState(
+    durationMs: Long,
+    callback: (IPlayer.State) -> Unit
+  ) {
+    callback.invoke(
+    IPlayer.State(
+        exoPlayer.isPlaying, exoPlayer.currentPosition.coerceAtLeast(0).coerceAtMost(durationMs)
+      )
     )
   }
+
 
   private fun stopAndSave() {
     hasPlayed = false

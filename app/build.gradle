@@ -103,6 +103,7 @@ dependencies {
   implementation libs.androidx.ui.tooling.preview
   implementation libs.androidx.material3
   implementation libs.androidx.constraintlayout
+  implementation libs.androidx.media3.session
   testImplementation libs.junit
   androidTestImplementation libs.androidx.junit
   androidTestImplementation libs.androidx.espresso.core
@@ -154,6 +155,7 @@ dependencies {
   implementation 'com.squareup.retrofit2:retrofit:3.0.0'
   implementation 'com.squareup.retrofit2:converter-moshi:3.0.0'
   implementation 'com.github.skydoves:sandwich-retrofit:2.0.8'
+  implementation libs.kotlinx.coroutines.guava
   implementation libs.moshi.kotlin
   ksp libs.moshi.kotlin.codegen
 

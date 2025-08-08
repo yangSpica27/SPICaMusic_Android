@@ -1,6 +1,5 @@
 package me.spica27.spicamusic
 
-import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.WindowManager
@@ -11,7 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.service.MusicService
 import me.spica27.spicamusic.ui.AppMain
 import me.spica27.spicamusic.utils.DataStoreUtil
 import org.koin.android.ext.android.inject
@@ -25,7 +23,7 @@ class MainActivity : ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    startService(Intent(this, MusicService::class.java))
+//    startService(Intent(this, MusicService::class.java))
     window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
     setContent {
       AppMain()
