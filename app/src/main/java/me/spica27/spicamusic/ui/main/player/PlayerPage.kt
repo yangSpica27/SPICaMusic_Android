@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui.main.player
 
 import android.os.ParcelFileDescriptor
 import androidx.annotation.OptIn
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -9,6 +10,11 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -309,23 +315,13 @@ private fun Cover(
 
   val context = LocalContext.current
 
-  val coverPainter = rememberAsyncImagePainter(
-    model = ImageRequest.Builder(context).data(song.getCoverUri()).transformations(
-      CircleCropTransformation()
-    ).build(),
-  )
-
   val lineColor = MaterialTheme.colorScheme.onSurface
+
+
 //
 //  val shadowLineColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
 //
-  val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
-  val infiniteTransition = rememberInfiniteTransition(label = "infinite")
-  val rotateState = infiniteTransition.animateFloat(
-    initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(
-      animation = tween(10000, easing = LinearEasing), repeatMode = RepeatMode.Restart
-    ), label = ""
-  )
+
 //
 //
 //  val pn = remember {
@@ -435,39 +431,74 @@ private fun Cover(
 //        }
 //      }
 //  )
+
   Box(
     modifier = Modifier
       .fillMaxWidth()
       .aspectRatio(1f)
       .padding(60.dp + 12.dp)
-      .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
       .clip(CircleShape)
-      .border(
-        12.dp, MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f), CircleShape
-      )
-      .rotate(rotateState.value),
-    contentAlignment = Alignment.Center
   ) {
-
-    if (coverPainterState.value is AsyncImagePainter.State.Success) {
-      Image(
-        painter = coverPainter,
-        contentDescription = "Cover",
-        modifier = Modifier.fillMaxSize(),
-        contentScale = ContentScale.Crop
+    AnimatedContent(
+      targetState = song,
+      label = "cover_transition",
+      transitionSpec = {
+        scaleIn() + slideInHorizontally(
+          animationSpec = tween(350)
+        ) {
+          it
+        } togetherWith scaleOut() + slideOutHorizontally(
+          animationSpec = tween(350)
+        ) {
+          -it
+        }
+      }
+    ) { song ->
+      val coverPainter = rememberAsyncImagePainter(
+        model = ImageRequest.Builder(context).data(song.getCoverUri()).transformations(
+          CircleCropTransformation()
+        ).build(),
       )
-    } else {
-      Text(
-        modifier = Modifier.rotate(45f),
-        text = song.displayName,
-        style = MaterialTheme.typography.headlineLarge.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-          fontWeight = FontWeight.W900
-        )
+      val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
+      val infiniteTransition = rememberInfiniteTransition(label = "infinite")
+      val rotateState = infiniteTransition.animateFloat(
+        initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(
+          animation = tween(10000, easing = LinearEasing), repeatMode = RepeatMode.Restart
+        ), label = ""
       )
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .fillMaxHeight()
+          .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
+          .clip(CircleShape)
+          .border(
+            12.dp, MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f), CircleShape
+          )
+          .rotate(rotateState.value),
+        contentAlignment = Alignment.Center
+      ) {
+        if (coverPainterState.value is AsyncImagePainter.State.Success) {
+          Image(
+            painter = coverPainter,
+            contentDescription = "Cover",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+          )
+        } else {
+          Text(
+            modifier = Modifier.rotate(45f),
+            text = song.displayName,
+            style = MaterialTheme.typography.headlineLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+              fontWeight = FontWeight.W900
+            )
+          )
+        }
+      }
     }
-
   }
+
 
 }
 
@@ -688,7 +719,7 @@ private fun SongInfo(
         maxLines = 1,
         text = song.displayName,
         style = MaterialTheme.typography.titleLarge.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
           fontWeight = FontWeight.ExtraBold
         ),
         modifier = Modifier.basicMarquee(),
@@ -934,9 +965,10 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
             )
         ) {
           Text(
-            "上次播放的时间", style = MaterialTheme.typography.titleMedium.copy(
+            "上次播放", style = MaterialTheme.typography.titleMedium.copy(
               color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            ),
+            maxLines = 1
           )
           Spacer(modifier = Modifier.height(5.dp))
           Text(

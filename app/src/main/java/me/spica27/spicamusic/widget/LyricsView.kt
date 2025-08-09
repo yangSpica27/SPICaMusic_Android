@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
@@ -130,7 +131,7 @@ fun LyricsView(
     launch(Dispatchers.IO) {
       listState.animateScrollToItemAndCenter(
         index = activeIndex.intValue,
-        offset = -layoutHeight.intValue / 2
+        offset = - layoutHeight.intValue / 6
       )
     }
   }
@@ -141,6 +142,8 @@ fun LyricsView(
     val providerState = rememberLiquidGlassProviderState(
       backgroundColor = Color.Transparent
     )
+
+    val density = LocalDensity.current
 
     Box(
       modifier = modifier
@@ -157,7 +160,9 @@ fun LyricsView(
         verticalArrangement = Arrangement.Center,
         state = listState,
         userScrollEnabled = false,
-        contentPadding = PaddingValues(vertical = 100.dp)
+        contentPadding = PaddingValues(vertical = with(density) {
+          (layoutHeight.intValue / 3f).toDp()
+        })
       ) {
         itemsIndexed(
           currentLyric.map { it.toNormal() },

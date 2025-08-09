@@ -15,6 +15,8 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.LocalIndication
@@ -435,7 +437,7 @@ private fun SharedTransitionScope.InlineTab(
 ) {
   Box(
     modifier = modifier
-      .sharedBounds(
+      .sharedElement(
         sharedContentState = rememberSharedContentState("tabGroup"),
         animatedVisibilityScope = animatedVisibilityScope,
         zIndexInOverlay = 1f,
@@ -501,10 +503,9 @@ private fun SharedTransitionScope.InlineStandaloneTab(
     isInline = true,
     isStandalone = true,
     modifier = modifier
-      .sharedBounds(
+      .sharedElement(
         sharedContentState = rememberSharedContentState("standaloneTab"),
         animatedVisibilityScope = animatedVisibilityScope,
-        zIndexInOverlay = 1f
       )
       .background(
         color = colors.backgroundColor,
@@ -547,7 +548,8 @@ private fun SharedTransitionScope.InlineAccessory(
               sharedContentState = rememberSharedContentState("accessory"),
               animatedVisibilityScope = animatedVisibilityScope,
               renderInOverlayDuringTransition = true,
-              zIndexInOverlay = 1f
+              enter = fadeIn()+ scaleIn(),
+              exit = fadeOut() + scaleOut()
             )
           } else {
             Modifier.animateEnterExitAccessory(
@@ -680,8 +682,9 @@ private fun SharedTransitionScope.ExpandedAccessory(
           Modifier.sharedBounds(
             sharedContentState = rememberSharedContentState("accessory"),
             animatedVisibilityScope = animatedVisibilityScope,
-            renderInOverlayDuringTransition = true,
-            zIndexInOverlay = 1f
+            renderInOverlayDuringTransition = false,
+            enter = fadeIn()+ scaleIn(),
+            exit = fadeOut() + scaleOut()
           )
         } else {
           Modifier.animateEnterExitAccessory(
@@ -725,11 +728,10 @@ private fun SharedTransitionScope.ExpandedTabs(
   Row(
     horizontalArrangement = Arrangement.spacedBy(sizes.tabSpacing),
     modifier = modifier
-      .sharedBounds(
+      .sharedElement(
         sharedContentState = rememberSharedContentState("tabGroup"),
         animatedVisibilityScope = animatedVisibilityScope,
-        zIndexInOverlay = 1f,
-        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds
+        zIndexInOverlay = 1f
       )
       .background(
         color = colors.backgroundColor,
@@ -810,10 +812,9 @@ private fun SharedTransitionScope.ExpandedStandaloneTab(
     isInline = false,
     isStandalone = true,
     modifier = modifier
-      .sharedBounds(
+      .sharedElement(
         sharedContentState = rememberSharedContentState("standaloneTab"),
         animatedVisibilityScope = animatedVisibilityScope,
-        zIndexInOverlay = 1f
       )
       .background(
         color = colors.backgroundColor,

@@ -253,6 +253,13 @@ private fun FloatBottomBar(
     modifier = Modifier
       .padding(horizontal = 16.dp)
       .then(modifier),
+    selectedTabKey = {
+      when (pagerState.currentPage) {
+        0 -> "home"
+        1 -> "setting"
+        else -> "home"
+      }
+    },
     scrollConnection = scrollConnection,
     inlineAccessory = { modifier, scope ->
       with(sharedTransitionScope) {
@@ -266,9 +273,12 @@ private fun FloatBottomBar(
             .sharedBounds(
               rememberSharedContentState(key = "player_bound"),
               animatedVisibilityScope = animatedVisibilityScope,
-              enter = fadeIn(),
-              exit = fadeOut(),
-              placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
+              enter = slideInVertically()+scaleIn(),
+              exit = fadeOut(
+                animationSpec = tween(delayMillis = 65)
+              )+scaleOut(),
+              placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
+              renderInOverlayDuringTransition = false
             )
             .innerShadow(
               shape = CircleShape,
@@ -313,17 +323,17 @@ private fun FloatBottomBar(
           Box(
             modifier = modifier
               .fillMaxWidth()
-              .background(
-                MaterialTheme.colorScheme.surfaceContainerLow,
-                CircleShape
-              )
               .sharedBounds(
                 rememberSharedContentState(key = "player_bound"),
                 animatedVisibilityScope = animatedVisibilityScope,
                 enter = scaleIn() + fadeIn(),
-                exit = scaleOut() + fadeOut(),
-                resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds(),
-                placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize
+                exit = scaleOut() + fadeOut(
+                  animationSpec = tween(delayMillis = 65)
+                ),
+                placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
+              )              .background(
+                MaterialTheme.colorScheme.surfaceContainerLow,
+                CircleShape
               )
               .innerShadow(
                 shape = CircleShape,
@@ -363,7 +373,7 @@ private fun FloatBottomBar(
         },
       )
       tab(
-        key = "设置",
+        key = "setting",
         title = {
           Text("设置")
         },
@@ -379,7 +389,7 @@ private fun FloatBottomBar(
         },
       )
       standaloneTab(
-        key = "Search",
+        key = "search",
         icon = {
           BottomNavIcon(
             imageVector = Icons.Default.Search,
@@ -390,7 +400,6 @@ private fun FloatBottomBar(
         },
       )
     },
-    selectedTabKey = {}
   )
 }
 

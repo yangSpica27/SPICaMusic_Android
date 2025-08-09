@@ -98,6 +98,7 @@ fun PlayerScreen(
         )
       },
     ) { paddingValues ->
+
       Box(
         modifier = Modifier
           .fillMaxSize()
