@@ -61,6 +61,7 @@ import com.kyant.liquidglass.refraction.InnerRefraction
 import com.kyant.liquidglass.refraction.RefractionAmount
 import com.kyant.liquidglass.refraction.RefractionHeight
 import com.kyant.liquidglass.rememberLiquidGlassProviderState
+import com.kyant.liquidglass.shadow.GlassShadow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
@@ -197,8 +198,9 @@ fun LyricsView(
               ),
               material = GlassMaterial.None,
               highlight = GlassHighlight.None,
+              shadow = GlassShadow.None
             ),
-            compositingStrategy = CompositingStrategy.Auto
+            compositingStrategy = CompositingStrategy.Auto,
           )
       )
     }

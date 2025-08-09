@@ -102,10 +102,10 @@ import com.kyant.liquidglass.refraction.InnerRefraction
 import com.kyant.liquidglass.refraction.RefractionAmount
 import com.kyant.liquidglass.refraction.RefractionHeight
 import com.kyant.liquidglass.rememberLiquidGlassProviderState
+import com.kyant.liquidglass.shadow.GlassShadow
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
@@ -810,12 +810,12 @@ private fun TabBar(
     backgroundColor = MaterialTheme.colorScheme.surfaceContainer
   )
 
-  // 不滚动 液态玻璃可能不渲染
-  LaunchedEffect(Unit) {
-    pagerState.animateScrollToPage(pagerState.currentPage, 0.01f)
-    delay(200)
-    pagerState.animateScrollToPage(pagerState.currentPage, 0f)
-  }
+//  // 不滚动 液态玻璃可能不渲染
+//  LaunchedEffect(Unit) {
+//    pagerState.animateScrollToPage(pagerState.currentPage, 0.01f)
+//    delay(200)
+//    pagerState.animateScrollToPage(pagerState.currentPage, 0f)
+//  }
 
 
 
@@ -882,13 +882,14 @@ private fun TabBar(
         .liquidGlass(
           state = providerState,
           GlassStyle(
+            shadow = GlassShadow.None,
             shape = MaterialTheme.shapes.small,
             innerRefraction = InnerRefraction(
               height = RefractionHeight(
                 8.dp
               ),
               amount = RefractionAmount(
-                -12.dp
+                (-12).dp
               )
             ),
             material = GlassMaterial.None,
