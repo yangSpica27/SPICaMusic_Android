@@ -217,11 +217,13 @@ fun PlayerPage(
                 .background(
                   MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.small
                 )
+                .clip(MaterialTheme.shapes.small)
                 .innerShadow(
                   shape = MaterialTheme.shapes.medium, shadow = Shadow(
-                    radius = 10.dp, color = MaterialTheme.colorScheme.onSurface, alpha = .11f
+                    radius = 12.dp, color = MaterialTheme.colorScheme.onSurface, alpha = .11f
                   )
-                )
+                ),
+              contentAlignment = Alignment.Center,
             ) {
               when (index) {
                 0 -> {
@@ -435,15 +437,16 @@ private fun Cover(
 //  )
   Box(
     modifier = Modifier
-      .fillMaxHeight()
+      .fillMaxWidth()
       .aspectRatio(1f)
       .padding(60.dp + 12.dp)
       .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
       .clip(CircleShape)
       .border(
-        12.dp, MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.6f), CircleShape
+        12.dp, MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f), CircleShape
       )
-      .rotate(rotateState.value), contentAlignment = Alignment.Center
+      .rotate(rotateState.value),
+    contentAlignment = Alignment.Center
   ) {
 
     if (coverPainterState.value is AsyncImagePainter.State.Success) {

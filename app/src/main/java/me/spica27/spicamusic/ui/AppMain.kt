@@ -93,7 +93,8 @@ fun AppMain() {
             metadata = sliderFromBottomRouteAnim()
           ) { key ->
             LyricsSearchScreen(
-              song = key.song
+              song = key.song,
+              navigator = backStack
             )
           }
         },

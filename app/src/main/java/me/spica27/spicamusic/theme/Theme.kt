@@ -1,4 +1,5 @@
 package me.spica27.spicamusic.theme
+
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -10,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import me.spica27.spicamusic.utils.dp
+import me.spica27.spicamusic.widget.capsule.G2RoundedCornerShape
 
 private val lightScheme = lightColorScheme(
   primary = primaryLight,
@@ -269,6 +272,13 @@ fun AppTheme(
   }
 
   MaterialTheme(
+    shapes = MaterialTheme.shapes.copy(
+      extraSmall = G2RoundedCornerShape(4.dp),
+      small = G2RoundedCornerShape(8.dp),
+      medium = G2RoundedCornerShape(12.dp),
+      large = G2RoundedCornerShape(16.dp),
+      extraLarge = G2RoundedCornerShape(28.dp)
+    ),
     colorScheme = colorScheme,
     typography = AppTypography,
     content = content

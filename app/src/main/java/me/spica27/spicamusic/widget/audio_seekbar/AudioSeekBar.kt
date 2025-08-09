@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastCoerceAtLeast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.utils.rememberVibrator
@@ -51,8 +52,8 @@ private val MaxSpikeRadiusDp: Dp = 12.dp
 private const val MinProgress: Float = 0F
 private const val MaxProgress: Float = 1F
 
-private const val MinSpikeHeight: Float = 12F
-private const val DefaultGraphicsLayerAlpha: Float = 0.99F
+private val MinSpikeHeight: Float = 1f
+private const val DefaultGraphicsLayerAlpha: Float = .99F
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -179,7 +180,7 @@ private fun List<Int>.toDrawableAmplitudes(
 ): List<Float> {
   val amplitudes = map { it * 1f }
   if (amplitudes.isEmpty() || spikes == 0) {
-    return List(spikes) { minHeight }
+    return List(spikes) { minHeight.fastCoerceAtLeast(20f) }
   }
   val transform = { data: List<Float> ->
     when (amplitudeType) {
