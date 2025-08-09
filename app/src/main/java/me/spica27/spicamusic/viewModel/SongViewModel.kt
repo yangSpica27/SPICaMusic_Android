@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Playlist
@@ -47,7 +48,7 @@ class SongViewModel(
     }
   }
 
-  fun songLikeFlow(id: Long) = songRepository.songLikeFlowWithId(id)
+  fun songLikeFlow(id: Long) = songRepository.songLikeFlowWithId(id).distinctUntilChanged()
 
   // 添加歌单
   fun addPlayList(value: String) {

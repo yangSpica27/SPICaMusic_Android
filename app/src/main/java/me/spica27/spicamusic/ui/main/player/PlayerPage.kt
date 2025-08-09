@@ -208,7 +208,6 @@ fun PlayerPage(
             state = horizontalPagerState,
             modifier = Modifier.fillMaxSize(),
             userScrollEnabled = true,
-            beyondViewportPageCount = 1,
             key = {
               it
             }
@@ -685,6 +684,10 @@ private fun SongInfo(
   val songId = remember(song) { song.songId ?: -1 }
 
   val isLike = songViewModel.songLikeFlow(songId).collectAsStateWithLifecycle(false).value
+
+  LaunchedEffect(Unit) {
+    Timber.e("重组")
+  }
 
   // 是否显示歌词设置
   var showLyricsSetting by remember { mutableStateOf(false) }

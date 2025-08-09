@@ -73,7 +73,9 @@ object InjectModules {
           get<Application>(), AppDatabase::class.java,
           "spica_music.db"
         )
-        .fallbackToDestructiveMigration(false)
+        .addMigrations(
+          AppDatabase.MIGRATION_12_13
+        )
         .build()
     }
 

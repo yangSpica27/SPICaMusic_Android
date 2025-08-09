@@ -9,7 +9,9 @@ data class Playlist(
   @PrimaryKey(autoGenerate = true)
   var playlistId: Long? = null,
   var playlistName: String = "自定义播放列表${Date().time}",
-  var cover: String? = null
+  var cover: String? = null,
+  var createTimestamp: Long = Date().time,
+  var playTimes: Int = 0,
 ) {
 
 //    @Ignore

@@ -39,6 +39,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,12 +60,14 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.utils.TimeUtils
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
 import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.activityViewModel
+import java.util.*
 
 /// 歌单详情页面
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -81,7 +84,9 @@ fun PlaylistDetailScreen(
 
 
   val songs =
-    playlistViewModel.songsFlow(playlistId).collectAsStateWithLifecycle(emptyList()).value
+    playlistViewModel.songsFlow(playlistId)
+      .collectAsStateWithLifecycle(emptyList())
+      .value
 
   val playlist = playlistViewModel.playlistFlow(playlistId).collectAsStateWithLifecycle(null).value
 
@@ -167,6 +172,7 @@ fun PlaylistDetailScreen(
             .clickable {
               coroutineScope.launch {
                 if (songs.isNotEmpty()) {
+                  playlistViewModel.addPlayCount(playlistId)
                   PlaybackStateManager.getInstance()
                     .playAsync(
                       songs.first(),
@@ -183,9 +189,10 @@ fun PlaylistDetailScreen(
           Box(
             modifier = Modifier
               .size(60.dp)
-              .clickable{
+              .clickable {
                 coroutineScope.launch {
                   if (songs.isNotEmpty()) {
+                    playlistViewModel.addPlayCount(playlistId)
                     PlaybackStateManager.getInstance()
                       .playAsync(
                         songs.first(),
@@ -218,7 +225,7 @@ fun PlaylistDetailScreen(
           ) {
             Text("播放全部", style = MaterialTheme.typography.bodyLarge)
             Text(
-              "已经播放xx次数", style = MaterialTheme.typography.bodyMedium.copy(
+              "总共${songs.size}首", style = MaterialTheme.typography.bodyMedium.copy(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
               )
             )
@@ -240,6 +247,7 @@ fun PlaylistDetailScreen(
               song = song,
               onClick = {
                 coroutineScope.launch {
+                  playlistViewModel.addPlayCount(playlistId)
                   PlaybackStateManager.getInstance().playAsync(song, songs)
                 }
               },
@@ -282,6 +290,19 @@ fun Header(
     )
   }
 
+
+  val playlistName = remember(playlist) {
+    derivedStateOf {
+      playlist.playlistName
+    }
+  }.value
+
+  val createTimeTxt = remember(playlist) {
+    derivedStateOf {
+      return@derivedStateOf TimeUtils.prettyTime.format(Date(playlist.createTimestamp))
+    }
+  }.value
+
   var showDeleteDialog by remember { mutableStateOf(false) }
 
   if (showDeleteDialog) {
@@ -306,7 +327,7 @@ fun Header(
     ) {
       Column {
         Text(
-          text = playlist.playlistName,
+          text = playlistName,
           style = MaterialTheme.typography.titleLarge.copy(
             color = MaterialTheme.colorScheme.onPrimaryContainer,
             fontWeight = FontWeight.W700
@@ -318,7 +339,7 @@ fun Header(
             .width(8.dp)
         )
         Text(
-          text = "创建于某年某月某日",
+          text = "创建于${createTimeTxt}",
           style = MaterialTheme.typography.titleMedium.copy(
             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
             fontWeight = FontWeight.Normal

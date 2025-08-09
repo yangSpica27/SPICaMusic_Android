@@ -34,6 +34,11 @@ class PlaylistRepository(
       .distinctUntilChanged()
   }
 
+  suspend fun addPlaylistPlayTime(
+    playlistId: Long
+  ) = withContext(Dispatchers.IO) {
+    playlistDao.addPlayTimes(playlistId)
+  }
 
   suspend fun createPlaylist(name: String) = withContext(Dispatchers.IO) {
     playlistDao.insertPlaylist(Playlist(playlistName = name))
@@ -44,8 +49,7 @@ class PlaylistRepository(
   }
 
   suspend fun renamePlaylist(
-    newName: String,
-    playlistId: Long?
+    newName: String, playlistId: Long?
   ) = withContext(Dispatchers.IO) {
     playlistId.let { playlistDao.renamePlaylist(it ?: -1, newName) }
   }
@@ -72,8 +76,7 @@ class PlaylistRepository(
     if (playlistId != null) {
       playlistDao.deleteListItems(songIds.map {
         PlaylistSongCrossRef(
-          playlistId,
-          it
+          playlistId, it
         )
       })
     }
@@ -81,17 +84,15 @@ class PlaylistRepository(
 
   suspend fun createPlaylistWithSongs(name: String, list: List<Song>) = withContext(
     Dispatchers.IO
-  ){
+  ) {
     val playlistId = playlistDao.insertPlaylistAndGetId(
       Playlist(playlistName = name)
     )
     playlistDao.insertListItems(
       list.map {
         PlaylistSongCrossRef(
-          playlistId,
-          it.songId ?: -1
+          playlistId, it.songId ?: -1
         )
-      }
-    )
+      })
   }
 }

@@ -35,6 +35,9 @@ interface PlaylistDao {
   suspend fun renamePlaylist(playlistId: Long, newName: String)
 
 
+  @Query("update Playlist set playTimes = playTimes + 1 where playlistId = :playlistId")
+  fun addPlayTimes(playlistId: Long)
+
   @Transaction
   @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
   fun getPlaylistsWithSongsWithPlayListId(playlistId: Long): PlaylistWithSongs?

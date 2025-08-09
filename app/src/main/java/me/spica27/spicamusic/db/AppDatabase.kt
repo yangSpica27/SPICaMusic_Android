@@ -2,6 +2,8 @@ package me.spica27.spicamusic.db
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.dao.PlayHistoryDao
 import me.spica27.spicamusic.db.dao.PlaylistDao
@@ -18,8 +20,9 @@ import me.spica27.spicamusic.db.entity.Song
  */
 @Database(
   entities = [Song::class, Playlist::class, PlaylistSongCrossRef::class, Lyric::class, PlayHistory::class],
-  version = 12,
-  exportSchema = false
+  version = 13,
+  exportSchema = false,
+  autoMigrations = [],
 )
 abstract class AppDatabase : RoomDatabase() {
 
@@ -30,5 +33,15 @@ abstract class AppDatabase : RoomDatabase() {
   abstract fun lyricDao(): LyricDao
 
   abstract fun playHistoryDao(): PlayHistoryDao
+
+  companion object {
+    val MIGRATION_12_13 = object : Migration(12, 13) {
+      override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE Playlist ADD COLUMN playTimes INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE Playlist ADD COLUMN createTimestamp INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("UPDATE Playlist SET createTimestamp = ${System.currentTimeMillis()}")
+      }
+    }
+  }
 
 }

@@ -39,6 +39,11 @@ class PlaylistViewModel(
     }
   }
 
+  fun addPlayCount(playlistId: Long) {
+    viewModelScope.launch(Dispatchers.IO) {
+      playlistRepository.addPlaylistPlayTime(playlistId)
+    }
+  }
 
   fun renamePlaylist(id: Long?, newName: String) {
     if (id == null) return
