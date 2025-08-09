@@ -11,6 +11,8 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.pow
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 // https://github.com/dzolnai/ExoVisualizer
 
@@ -29,10 +31,10 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
 
   private val max_const = 14_000 // Reference max value for accum magnitude
   private val bands = FREQUENCY_BAND_LIMITS.size
-  private val size = FFTAudioProcessor.SAMPLE_SIZE / 2
+  private val size = FFTAudioProcessor.SAMPLE_SIZE
 
   // We average out the values over 3 occurences (plus the current one), so big jumps are smoothed out
-  private val smoothing_factor = 3
+  private val smoothing_factor = 2
   private val previous_values = FloatArray(bands * smoothing_factor)
 
   private val fft2: FloatArray = FloatArray(size)
@@ -68,23 +70,20 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
 
   private val writeLock = ReentrantLock()
 
-  private var lastFFTTime = System.currentTimeMillis()
+  private var lastTime = System.currentTimeMillis()
 
   override fun onFFTReady(sampleRateHz: Int, channelCount: Int, fft: FloatArray) {
-
     val currentTime = System.currentTimeMillis()
-
-    if (currentTime - lastFFTTime < 65) {
+    if (currentTime - lastTime < 65) {
       return
     }
-    lastFFTTime = currentTime
-
+    lastTime = currentTime
     if (listener == null) return
     if (writeLock.isLocked) return
+    fft.copyInto(fft2)
     coroutineScope.launch {
       writeLock.lock()
       synchronized(fft2) {
-        System.arraycopy(fft, 2, fft2, 0, size)
         // Set up counters and widgets
         res.clear()
         var currentFftPosition = 0
@@ -149,6 +148,62 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
       }
       writeLock.unlock()
     }
+  }
+
+
+  private fun getLoudnessAtFrequency(
+    fftResult: FloatArray, // 已执行 realForward(src) 后的 src 数组
+    targetFrequency: Float,
+    N: Int, // FFT size, 即 SAMPLE_SIZE
+    sampleRate: Float
+  ): Float {
+    // 1. 确定目标频率对应的频率区间索引 (Bin Index)
+    val kExact = targetFrequency * N / sampleRate
+    val k = kExact.roundToInt()
+
+    // 检查 k 是否在有效范围内 (0 到 N/2)
+    if (k < 0 || k > N / 2) {
+      return 0.0f // 或抛出异常
+    }
+
+    val actualFrequency = k * (sampleRate / N)
+
+    // 2. 从 realForward 的输出中提取该频率区间的实部和虚部
+    //    采用 JTransforms 的这种打包方式:
+    //    a[0] is Re[0]
+    //    If n is even, a[n/2] is Re[n/2]
+    //    For 0 < i < n/2, a[i] is Re[i] and a[n-i] is Im[i].
+    val real: Float
+    val imag: Float
+
+    when (k) {
+      0 -> { // DC component
+        real = fftResult[0]
+        imag = 0.0f
+      }
+
+      N / 2 -> { // Nyquist frequency (assuming N is even)
+        if (N % 2 == 0) {
+          real = fftResult[N / 2]
+          imag = 0.0f
+        } else {
+          return 0.0f
+        }
+      }
+
+      else -> { // Other frequencies (0 < k < N/2)
+        if (k >= fftResult.size || (N - k) >= fftResult.size) {
+          return 0.0f
+        }
+        real = fftResult[k]
+        imag = fftResult[N - k]
+      }
+    }
+
+    // 3. 计算幅度 (Amplitude)
+    val amplitude = sqrt(real.pow(2) + imag.pow(2))
+
+    return amplitude
   }
 
   private val decelerateInterpolator = DecelerateInterpolator(3f)
