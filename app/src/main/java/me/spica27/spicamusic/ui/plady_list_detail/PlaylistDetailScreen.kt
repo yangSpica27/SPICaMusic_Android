@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,11 +34,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -47,7 +51,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -240,23 +246,61 @@ fun PlaylistDetailScreen(
           items(songs, key = {
             it.songId ?: -1
           }) { song ->
-            SongItemWithCover(
-              modifier = Modifier
-                .fillMaxWidth()
-                .animateItem(),
-              song = song,
-              onClick = {
-                coroutineScope.launch {
-                  playlistViewModel.addPlayCount(playlistId)
-                  PlaybackStateManager.getInstance().playAsync(song, songs)
+
+            val swipeToDismissBoxState = rememberSwipeToDismissBoxState(
+              confirmValueChange = {
+                if (it == SwipeToDismissBoxValue.EndToStart) {
+                  playlistViewModel.deletePlaylistItem(playlistId, song.songId ?: -1)
+                  return@rememberSwipeToDismissBoxState true
                 }
+                return@rememberSwipeToDismissBoxState false
               },
-              coverSize = 66.dp,
-              showMenu = true,
-              onMenuClick = {
-                songItemMenuDialogState.show(song)
-              }
+              positionalThreshold = { distance: Float -> distance * 0.5f },
             )
+            SwipeToDismissBox(
+              modifier = Modifier.fillMaxWidth().animateItem(),
+              state = swipeToDismissBoxState,
+              enableDismissFromStartToEnd = false,
+              backgroundContent = {
+                if (swipeToDismissBoxState.currentValue == SwipeToDismissBoxValue.Settled) {
+                  Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Remove item",
+                    modifier = Modifier
+                      .fillMaxSize()
+                      .background(
+                        lerp(
+                          Color(0xffff7875),
+                          Color(0xffff4d4f),
+                          swipeToDismissBoxState.progress
+                        )
+                      )
+                      .wrapContentSize(Alignment.CenterEnd)
+                      .padding(12.dp),
+                    tint = Color.White
+                  )
+                }
+              }
+            ) {
+              SongItemWithCover(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .background(MaterialTheme.colorScheme.background),
+                song = song,
+                onClick = {
+                  coroutineScope.launch {
+                    playlistViewModel.addPlayCount(playlistId)
+                    PlaybackStateManager.getInstance().playAsync(song, songs)
+                  }
+                },
+                coverSize = 66.dp,
+                showMenu = true,
+                onMenuClick = {
+                  songItemMenuDialogState.show(song)
+                }
+              )
+            }
+
           }
         }
       }

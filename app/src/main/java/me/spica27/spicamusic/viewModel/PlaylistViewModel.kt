@@ -33,6 +33,12 @@ class PlaylistViewModel(
   }
 
 
+  fun deletePlaylistItem(playlistId: Long, songId: Long) {
+    viewModelScope.launch(Dispatchers.IO) {
+      playlistRepository.removeSongFromPlaylist(playlistId, songId)
+    }
+  }
+
   fun deletePlaylist(id: Long) {
     viewModelScope.launch(Dispatchers.IO) {
       playlistRepository.deletePlaylist(id)
