@@ -13,6 +13,7 @@ import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
+import androidx.core.net.toUri
 import java.io.File
 import java.util.*
 
@@ -44,7 +45,7 @@ inline fun <reified R> ContentResolver.useQuery(
 ) = safeQuery(uri, projection, selector, args).use(block)
 
 /** 自定义的 [MediaStore] 数据库 */
-private val EXTERNAL_COVERS_URI = Uri.parse("content://media/external/audio/albumart")
+private val EXTERNAL_COVERS_URI = "content://media/external/audio/albumart".toUri()
 
 /**
  * 将[MediaStore]歌曲ID转换为其音频文件的[Uri]

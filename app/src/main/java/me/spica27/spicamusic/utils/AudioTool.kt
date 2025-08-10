@@ -16,6 +16,9 @@ import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.entity.Lyric
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.wrapper.Taglib
+import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType
+import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat
+import net.sourceforge.pinyin4j.format.HanyuPinyinToneType
 import timber.log.Timber
 
 
@@ -58,12 +61,18 @@ object AudioTool {
     val songs = mutableListOf<Song>()
     Timber.d("开始扫描音频文件")
 
+    val hanyuPinyinOutputFormat = HanyuPinyinOutputFormat().apply {
+      caseType = HanyuPinyinCaseType.LOWERCASE
+      toneType = HanyuPinyinToneType.WITHOUT_TONE
+    }
+
     do {
       val isMusic =
         cursor.getIntOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.IS_MUSIC))
       if (isMusic != 1) continue
       val mimeType = MimeTypes.normalizeMimeType(
-        cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.MIME_TYPE))?:""
+        cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.MIME_TYPE))
+          ?: ""
       )
 
       types.add(mimeType)
@@ -99,6 +108,14 @@ object AudioTool {
         channels = 0,
         digit = 0
       )
+
+//      val pinying = PinyinHelper.toHanYuPinyinString(
+//        song.displayName,
+//        hanyuPinyinOutputFormat,
+//        "", false
+//      )
+//
+//      Timber.tag("PinYin").d("PinYin: $pinying")
 
       val fd: ParcelFileDescriptor? =
         App.getInstance().contentResolverSafe.openFileDescriptor(song.getSongUri(), "r")

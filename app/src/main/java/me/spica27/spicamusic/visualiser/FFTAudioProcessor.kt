@@ -34,7 +34,7 @@ import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.Assertions
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.util.Util
-import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D
+import be.tarsos.dsp.util.fft.FFT
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.max
@@ -66,7 +66,7 @@ class FFTAudioProcessor : AudioProcessor {
 
 
 
-  private var FFT: FloatFFT_1D? = null
+  private var FFT: FFT? = null
 
   private var isActive: Boolean = false
 
@@ -149,7 +149,7 @@ class FFTAudioProcessor : AudioProcessor {
     }
     this.inputAudioFormat = inputAudioFormat
     isActive = true
-    FFT = FloatFFT_1D(SAMPLE_SIZE)
+    FFT = FFT(SAMPLE_SIZE)
     audioTrackBufferSize = getDefaultBufferSizeInBytes(inputAudioFormat)
 
     // 分配一个字节缓冲区 (srcBuffer)，用于累积足够的数据进行 FFT 处理。
@@ -259,7 +259,7 @@ class FFTAudioProcessor : AudioProcessor {
       // 将 srcBuffer 的写入位置设置到有效数据的末尾。
       srcBuffer.position(srcBufferPosition)
 
-      FFT?.realForward(src)
+      FFT?.forwardTransform(src)
       for (listener in listeners) {
         listener.onFFTReady(inputAudioFormat.sampleRate, inputAudioFormat.channelCount, src)
       }

@@ -162,5 +162,5 @@ dependencies {
   implementation libs.prettytime
   def koin_version = "4.1.0"
   implementation "io.insert-koin:koin-androidx-compose:$koin_version"
-  implementation("org.openimaj:JTransforms:1.3.10")
+  implementation("com.belerweb:pinyin4j:2.5.1")
 }

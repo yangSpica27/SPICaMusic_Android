@@ -34,7 +34,6 @@ class ReplayGainAudioProcessor(var preAmpGain: Double = 0.0) : BaseAudioProcesso
 
   override fun queueInput(inputBuffer: ByteBuffer) {
 
-
     if (gain != 0.0) {
       val size = inputBuffer.remaining()
       val buffer = replaceOutputBuffer(size)
@@ -43,7 +42,8 @@ class ReplayGainAudioProcessor(var preAmpGain: Double = 0.0) : BaseAudioProcesso
         C.ENCODING_PCM_16BIT -> {
           while (inputBuffer.hasRemaining()) {
             val sample = inputBuffer.short
-            val targetSample = MathUtils.clamp((sample * delta), Short.MIN_VALUE.toDouble(), Short.MAX_VALUE.toDouble()).toInt().toShort()
+            val targetSample = MathUtils.clamp((sample * delta), Short.MIN_VALUE.toDouble(),
+              Short.MAX_VALUE.toDouble()).toInt().toShort()
             buffer.putShort(targetSample)
           }
         }
