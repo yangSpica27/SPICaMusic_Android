@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.widget
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,7 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.db.entity.Playlist
-import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
+import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
 
 
 /// 歌单条目
@@ -36,7 +34,7 @@ fun PlaylistItem(
   showMenu: Boolean = false
 ) {
   Row(modifier = modifier
-    .clickableNoRippleClickableWithVibration{
+    .clickableNoRippleWithVibration{
       onClick()
     }
     .padding(horizontal = 16.dp, vertical = 6.dp)

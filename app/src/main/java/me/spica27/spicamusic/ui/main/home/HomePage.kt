@@ -60,7 +60,7 @@ import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
-import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
+import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.FadingEdges
@@ -136,7 +136,7 @@ fun HomePage(
           right = {
             Text(
               "查看更多",
-              modifier = Modifier.clickableNoRippleClickableWithVibration {
+              modifier = Modifier.clickableNoRippleWithVibration {
                 navigator?.add(
                   Routes.RecentlyList
                 )
@@ -178,7 +178,7 @@ fun HomePage(
         Title("歌单", {
           Text(
             "新建歌单",
-            modifier = Modifier.clickableNoRippleClickableWithVibration {
+            modifier = Modifier.clickableNoRippleWithVibration {
               showCreatePlaylistDialog.value = true
             },
             style = MaterialTheme.typography.bodyMedium.copy(

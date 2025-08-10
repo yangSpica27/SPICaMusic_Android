@@ -6,7 +6,6 @@ import androidx.compose.animation.core.AnimationState
 import androidx.compose.animation.core.animateTo
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,6 +66,8 @@ import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.TimeUtils
+import me.spica27.spicamusic.utils.clickableWithVibration
+import me.spica27.spicamusic.utils.dip
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.SongItemMenu
@@ -175,7 +176,7 @@ fun PlaylistDetailScreen(
         Row(
           modifier = Modifier
             .fillMaxWidth()
-            .clickable {
+            .clickableWithVibration(){
               coroutineScope.launch {
                 if (songs.isNotEmpty()) {
                   playlistViewModel.addPlayCount(playlistId)
@@ -195,18 +196,6 @@ fun PlaylistDetailScreen(
           Box(
             modifier = Modifier
               .size(60.dp)
-              .clickable {
-                coroutineScope.launch {
-                  if (songs.isNotEmpty()) {
-                    playlistViewModel.addPlayCount(playlistId)
-                    PlaybackStateManager.getInstance()
-                      .playAsync(
-                        songs.first(),
-                        songs
-                      )
-                  }
-                }
-              }
               .background(
                 MaterialTheme.colorScheme.surfaceContainer,
                 MaterialTheme.shapes.small
@@ -255,10 +244,12 @@ fun PlaylistDetailScreen(
                 }
                 return@rememberSwipeToDismissBoxState false
               },
-              positionalThreshold = { distance: Float -> distance * 0.5f },
+              positionalThreshold = { distance: Float -> 140.dip },
             )
             SwipeToDismissBox(
-              modifier = Modifier.fillMaxWidth().animateItem(),
+              modifier = Modifier
+                .fillMaxWidth()
+                .animateItem(),
               state = swipeToDismissBoxState,
               enableDismissFromStartToEnd = false,
               backgroundContent = {

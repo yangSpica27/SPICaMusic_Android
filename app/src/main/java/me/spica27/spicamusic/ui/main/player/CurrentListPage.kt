@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.main.player
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -7,30 +8,40 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
+import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.ToastUtils
+import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlayingSongItem
@@ -52,6 +63,8 @@ fun CurrentListPage(
   val playListSizeState = playBackViewModel.nowPlayingListSize.collectAsStateWithLifecycle()
 
   var showCreateDialog by remember { mutableStateOf(false) }
+
+  val coroutineScope = rememberCoroutineScope()
 
   if (showCreateDialog) {
     InputTextDialog(
@@ -146,7 +159,53 @@ fun CurrentListPage(
         .weight(1f)
         .fillMaxWidth()
     ) {
-      CurrentList(playBackViewModel)
+      val listState = rememberLazyListState()
+
+
+      val showScrollToCurrent = remember {
+        derivedStateOf {
+          !listState.layoutInfo.visibleItemsInfo.any {
+            it.index == playIndexState.value
+          }
+        }
+      }
+
+      CurrentList(playBackViewModel, listState)
+
+
+      if (showScrollToCurrent.value) {
+        Box(
+          modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .offset(
+              x = (-64).dp,
+              y = (-64).dp
+            )
+            .width(40.dp)
+            .height(40.dp)
+            .background(
+              color = MaterialTheme.colorScheme.primaryContainer,
+              shape = CircleShape
+            )
+            .clip(CircleShape)
+            .clickableNoRippleWithVibration {
+              coroutineScope.launch {
+                listState.animateScrollToItem(playIndexState.value)
+              }
+            }
+            .padding(8.dp)
+          ,
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            modifier = Modifier.fillMaxSize(),
+            painter = painterResource(R.drawable.ic_radar),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer
+          )
+        }
+      }
+
     }
   }
 
@@ -155,6 +214,7 @@ fun CurrentListPage(
 @Composable
 private fun CurrentList(
   viewModel: PlayBackViewModel,
+  listState: LazyListState
 ) {
 
   val playingSongState = viewModel.currentSongFlow.collectAsStateWithLifecycle()
@@ -162,8 +222,6 @@ private fun CurrentList(
   val listDataState = viewModel
     .playList
     .collectAsStateWithLifecycle()
-
-  val listState = rememberLazyListState()
 
   LazyColumn(
     modifier = Modifier

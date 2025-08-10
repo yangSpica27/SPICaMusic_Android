@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.NyquistBand
 import me.spica27.spicamusic.utils.DataStoreUtil
-import me.spica27.spicamusic.utils.clickableNoRippleClickableWithVibration
+import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
 import me.spica27.spicamusic.utils.rememberVibrator
 import me.spica27.spicamusic.utils.tick
 import me.spica27.spicamusic.widget.EqSettingView
@@ -339,7 +339,7 @@ private fun EqItem(isSelected: Boolean, onClick: () -> Unit, name: String) {
         color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
         shape = MaterialTheme.shapes.medium
       )
-      .clickableNoRippleClickableWithVibration(onClick = {
+      .clickableNoRippleWithVibration(onClick = {
         onClick.invoke()
       })
       .padding(vertical = 8.dp),

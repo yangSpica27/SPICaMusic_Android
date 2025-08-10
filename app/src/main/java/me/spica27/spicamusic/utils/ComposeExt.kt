@@ -25,7 +25,28 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
 
-fun Modifier.clickableNoRippleClickableWithVibration(
+fun Modifier.clickableWithVibration(
+  onClick: () -> Unit
+) = composed {
+  val vibrator = rememberVibrator()
+  clickable {
+    vibrator.cancel()
+    onClick()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
+      vibrator.vibrate(effect)
+    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val effect = VibrationEffect.createOneShot(10, 1)
+      vibrator.vibrate(effect)
+    } else {
+      vibrator.vibrate(10)
+    }
+  }
+}
+
+
+
+fun Modifier.clickableNoRippleWithVibration(
   onClick: () -> Unit
 ) = composed {
   val vibrator = rememberVibrator()
@@ -36,13 +57,13 @@ fun Modifier.clickableNoRippleClickableWithVibration(
     vibrator.cancel()
     onClick()
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+      val effect = VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)
       vibrator.vibrate(effect)
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      val effect = VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE)
+      val effect = VibrationEffect.createOneShot(10, 1)
       vibrator.vibrate(effect)
     } else {
-      vibrator.vibrate(20)
+      vibrator.vibrate(10)
     }
   }
 }
