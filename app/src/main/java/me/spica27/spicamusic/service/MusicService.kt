@@ -38,6 +38,7 @@ import me.spica27.spicamusic.service.notification.MediaSessionComponent
 import me.spica27.spicamusic.service.notification.NotificationComponent
 import me.spica27.spicamusic.utils.DataStoreUtil
 import org.koin.android.ext.android.get
+import timber.log.Timber
 
 private const val MY_MEDIA_ROOT_ID = "media_root_id"
 private const val MY_EMPTY_MEDIA_ROOT_ID = "empty_root_id"
@@ -223,7 +224,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   override fun onGetRoot(
     clientPackageName: String, clientUid: Int, rootHints: Bundle?
   ): BrowserRoot {
-
+    Timber.tag("onGetRoot").e("clientPackageName = $clientPackageName")
     return if (false) {
       // 允许连接
       BrowserRoot(MY_MEDIA_ROOT_ID, null)
@@ -267,6 +268,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     PlaybackStateManager.getInstance().unRegisterPlayer()
     exoPlayer.release()
     foregroundManager.release()
+    mediaSession?.release()
     mediaSessionComponent.release()
     unregisterReceiver(systemReceiver)
   }

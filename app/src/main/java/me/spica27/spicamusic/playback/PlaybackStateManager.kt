@@ -9,11 +9,16 @@ import me.spica27.spicamusic.dsp.ReplayGainAudioProcessor
 import me.spica27.spicamusic.player.IPlayer
 import me.spica27.spicamusic.player.Queue
 import me.spica27.spicamusic.visualiser.FFTAudioProcessor
+import org.koin.core.component.KoinScopeComponent
+import org.koin.core.component.createScope
+import org.koin.core.scope.Scope
 
 
 @UnstableApi
 @Suppress("unused")
-class PlaybackStateManager {
+class PlaybackStateManager : KoinScopeComponent {
+
+  override val scope: Scope by lazy { createScope(this) }
 
   private var player: IPlayer? = null
 
@@ -92,7 +97,6 @@ class PlaybackStateManager {
 
   @Synchronized
   fun registerPlayer(player: IPlayer) {
-    if (this.player != null) return
     this.player = player
   }
 

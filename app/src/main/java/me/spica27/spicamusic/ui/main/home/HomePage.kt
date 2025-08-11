@@ -3,6 +3,7 @@
 package me.spica27.spicamusic.ui.main.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,6 +40,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -95,6 +98,14 @@ fun HomePage(
 
   val showCreatePlaylistDialog = remember { mutableStateOf(false) }
 
+  val surfaceBlur = animateFloatAsState(
+    targetValue = if (showCreatePlaylistDialog.value) {
+      12f
+    } else {
+      0f
+    }
+  )
+
   if (showCreatePlaylistDialog.value) {
     InputTextDialog(
       onDismissRequest = {
@@ -109,7 +120,14 @@ fun HomePage(
   }
 
   Box(
-    modifier = modifier.fillMaxSize(), contentAlignment = Alignment.TopStart
+    modifier = modifier
+      .fillMaxSize()
+      .blur(
+        surfaceBlur.value.dp,
+        BlurredEdgeTreatment.Unbounded
+      )
+    ,
+    contentAlignment = Alignment.TopStart
   ) {
     Column(
       modifier = Modifier.fillMaxSize(),
@@ -248,7 +266,7 @@ fun HomePage(
                 song = it,
                 onClick = {
                   PlaybackStateManager.getInstance()
-                    .play(song = it,randomSong)
+                    .play(song = it, randomSong)
                 },
                 showMenu = false,
                 showPlus = false,
@@ -267,7 +285,10 @@ fun HomePage(
  * 最近常听占位空
  */
 @Composable
-private fun OftenListenEmptyContent(modifier: Modifier = Modifier,navigator: NavBackStack? = null) {
+private fun OftenListenEmptyContent(
+  modifier: Modifier = Modifier,
+  navigator: NavBackStack? = null
+) {
   Box(
     modifier = Modifier
       .then(modifier)
