@@ -81,10 +81,9 @@ fun RecentlyListScreen(
         targetState = songs.isEmpty(),
         modifier = Modifier.fillMaxSize(),
         label = "LikeListScreen"
-      ) {
-        isEmpty->
+      ) { isEmpty ->
         if (isEmpty) {
-          Column (
+          Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
@@ -103,7 +102,6 @@ fun RecentlyListScreen(
             Text(text = "没有歌曲")
           }
         } else {
-
 
 
           ScrollHaptics(

@@ -24,6 +24,9 @@ object Routes {
   @Serializable
   data object Player : NavKey
 
+  @Serializable
+  data class Translate(val pointX: Float, val pointY: Float,val fromLight: Boolean) : NavKey
+
   /**
    * 搜索
    */

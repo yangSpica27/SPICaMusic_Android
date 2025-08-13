@@ -143,7 +143,6 @@ import java.util.*
 @Composable
 fun PlayerPage(
   playBackViewModel: PlayBackViewModel = activityViewModel(),
-  songViewModel: SongViewModel = activityViewModel(),
   navigator: NavBackStack? = null,
 ) {
 
@@ -166,6 +165,7 @@ fun PlayerPage(
 
   var isFirst by remember { mutableStateOf(true) }
 
+
   LaunchedEffect(selectedTabIndex) {
     if (isFirst) {
       isFirst = false
@@ -185,7 +185,8 @@ fun PlayerPage(
   } else {
 
     Box(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier
+        .fillMaxSize()
     ) {
 
       Column(
@@ -283,7 +284,7 @@ fun PlayerPage(
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
             .padding(top = 12.dp),
-          navigator = navigator
+          navigator = navigator,
         )
         ControlPanel(
           modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp),
@@ -315,6 +316,102 @@ private fun Cover(
   val context = LocalContext.current
 
   val lineColor = MaterialTheme.colorScheme.onSurface
+
+  var isActive by rememberSaveable { mutableStateOf(true) }
+
+  ObserveLifecycleEvent { event ->
+    when (event) {
+      Lifecycle.Event.ON_RESUME -> isActive = true
+      Lifecycle.Event.ON_PAUSE -> isActive = false
+      else -> {}
+    }
+  }
+
+
+  Box(
+    modifier = Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
+  ){
+
+    if (isActive) {
+      AndroidView(
+        factory = { context ->
+          VisualizerView(context)
+        }, update = { view ->
+          view.setThemeColor(lineColor.toArgb())
+        }, modifier = Modifier
+          .fillMaxWidth()
+      )
+    }
+
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .aspectRatio(1f)
+        .padding(60.dp + 12.dp)
+        .clip(CircleShape)
+    ) {
+      AnimatedContent(
+        targetState = song,
+        label = "cover_transition",
+        transitionSpec = {
+          scaleIn() + slideInHorizontally(
+            animationSpec = tween(350)
+          ) {
+            it
+          } togetherWith scaleOut() + slideOutHorizontally(
+            animationSpec = tween(350)
+          ) {
+            -it
+          }
+        }
+      ) { song ->
+        val coverPainter = rememberAsyncImagePainter(
+          model = ImageRequest.Builder(context).data(song.getCoverUri()).transformations(
+            CircleCropTransformation()
+          ).build(),
+        )
+        val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
+        val infiniteTransition = rememberInfiniteTransition(label = "infinite")
+        val rotateState = infiniteTransition.animateFloat(
+          initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(
+            animation = tween(10000, easing = LinearEasing), repeatMode = RepeatMode.Restart
+          ), label = ""
+        )
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight()
+            .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
+            .clip(CircleShape)
+            .border(
+              12.dp, MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f), CircleShape
+            )
+            .rotate(rotateState.value),
+          contentAlignment = Alignment.Center
+        ) {
+          if (coverPainterState.value is AsyncImagePainter.State.Success) {
+            Image(
+              painter = coverPainter,
+              contentDescription = "Cover",
+              modifier = Modifier.fillMaxSize(),
+              contentScale = ContentScale.Crop
+            )
+          } else {
+            Text(
+              modifier = Modifier.rotate(45f),
+              text = song.displayName,
+              style = MaterialTheme.typography.headlineLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                fontWeight = FontWeight.W900
+              )
+            )
+          }
+        }
+      }
+    }
+
+  }
 
 
 //
@@ -360,27 +457,11 @@ private fun Cover(
 //  }
 
 
-  var isActive by rememberSaveable { mutableStateOf(true) }
 
-  ObserveLifecycleEvent { event ->
-    // 検出したイベントに応じた処理を実装する。
-    when (event) {
-      Lifecycle.Event.ON_RESUME -> isActive = true
-      Lifecycle.Event.ON_PAUSE -> isActive = false
-      else -> {}
-    }
-  }
 
-  if (isActive) {
-    AndroidView(
-      factory = { context ->
-        VisualizerView(context)
-      }, update = { view ->
-        view.setThemeColor(lineColor.toArgb())
-      }, modifier = Modifier
-        .fillMaxWidth()
-    )
-  }
+
+
+
 
 
   // Compose 版本的频谱动效开销多占 25%的性能 暂时屏蔽
@@ -431,72 +512,7 @@ private fun Cover(
 //      }
 //  )
 
-  Box(
-    modifier = Modifier
-      .fillMaxWidth()
-      .aspectRatio(1f)
-      .padding(60.dp + 12.dp)
-      .clip(CircleShape)
-  ) {
-    AnimatedContent(
-      targetState = song,
-      label = "cover_transition",
-      transitionSpec = {
-        scaleIn() + slideInHorizontally(
-          animationSpec = tween(350)
-        ) {
-          it
-        } togetherWith scaleOut() + slideOutHorizontally(
-          animationSpec = tween(350)
-        ) {
-          -it
-        }
-      }
-    ) { song ->
-      val coverPainter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(context).data(song.getCoverUri()).transformations(
-          CircleCropTransformation()
-        ).build(),
-      )
-      val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
-      val infiniteTransition = rememberInfiniteTransition(label = "infinite")
-      val rotateState = infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(
-          animation = tween(10000, easing = LinearEasing), repeatMode = RepeatMode.Restart
-        ), label = ""
-      )
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .fillMaxHeight()
-          .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
-          .clip(CircleShape)
-          .border(
-            12.dp, MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f), CircleShape
-          )
-          .rotate(rotateState.value),
-        contentAlignment = Alignment.Center
-      ) {
-        if (coverPainterState.value is AsyncImagePainter.State.Success) {
-          Image(
-            painter = coverPainter,
-            contentDescription = "Cover",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-          )
-        } else {
-          Text(
-            modifier = Modifier.rotate(45f),
-            text = song.displayName,
-            style = MaterialTheme.typography.headlineLarge.copy(
-              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-              fontWeight = FontWeight.W900
-            )
-          )
-        }
-      }
-    }
-  }
+
 
 
 }
@@ -677,7 +693,7 @@ private fun SongInfo(
   song: Song,
   modifier: Modifier = Modifier,
   songViewModel: SongViewModel = activityViewModel(),
-  navigator: NavBackStack? = null,
+  navigator: NavBackStack? = null
 ) {
 
 
@@ -698,7 +714,8 @@ private fun SongInfo(
         showLyricsSetting = false
       },
       song = song,
-      navBackStack = navigator
+      navBackStack = navigator,
+      dialogBackgroundIsTranslate = {}
     )
   }
 
@@ -812,15 +829,6 @@ private fun TabBar(
   val providerState = rememberLiquidGlassProviderState(
     backgroundColor = MaterialTheme.colorScheme.surfaceContainer
   )
-
-//  // 不滚动 液态玻璃可能不渲染
-//  LaunchedEffect(Unit) {
-//    pagerState.animateScrollToPage(pagerState.currentPage, 0.01f)
-//    delay(200)
-//    pagerState.animateScrollToPage(pagerState.currentPage, 0f)
-//  }
-
-
 
   Box(
     modifier = Modifier

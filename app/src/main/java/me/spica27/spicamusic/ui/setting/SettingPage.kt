@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.setting
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,21 +26,32 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.ToastUtils
-import me.spica27.spicamusic.viewModel.SettingViewModel
-import me.spica27.spicamusic.wrapper.activityViewModel
+import org.koin.compose.koinInject
+import timber.log.Timber
 
 
 // 设置页面
@@ -49,13 +61,13 @@ fun SettingPage(
   navigator: NavBackStack? = null,
 ) {
 
+  val coroutineScope = rememberCoroutineScope()
 
-  val settingViewModel: SettingViewModel = activityViewModel()
-  val forceDarkThemeSettingState =
-    settingViewModel.forceDarkTheme.collectAsStateWithLifecycle(false).value
+  val forceDarkThemeSettingState = MaterialTheme.colorScheme.background.luminance() < 0.5
 
   val listState = rememberLazyListState()
 
+  val dataStoreUtil = koinInject<DataStoreUtil>()
 
   Column(
     modifier = Modifier.fillMaxSize(),
@@ -67,7 +79,7 @@ fun SettingPage(
       state = listState
     ) {
       item {
-        CategoryItem(
+        CategoryItem2(
           title = if (forceDarkThemeSettingState) {
             "暗色模式"
           } else {
@@ -78,8 +90,12 @@ fun SettingPage(
           } else {
             ImageVector.vectorResource(R.drawable.ic_outlined_sunny)
           },
-          onClick = {
-            settingViewModel.saveForceDarkTheme(!forceDarkThemeSettingState)
+          onPoint = {
+            Timber.e("x = ${it.x},y = ${it.y}")
+            navigator?.add(Routes.Translate(it.x, it.y, fromLight = !forceDarkThemeSettingState))
+            coroutineScope.launch {
+              dataStoreUtil.saveForceDarkTheme(!forceDarkThemeSettingState)
+            }
           }
         )
       }
@@ -136,9 +152,58 @@ fun SettingPage(
 
 
 @Composable
-private fun CategoryItem(title: String, icon: ImageVector, onClick: () -> Unit) {
+private fun CategoryItem(
+  title: String, icon: ImageVector,
+  onClick: () -> Unit = {}
+) {
   Surface(
     onClick = onClick,
+    shape = MaterialTheme.shapes.medium,
+  ) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 16.dp),
+      horizontalArrangement = Arrangement.spacedBy(30.dp)
+    ) {
+      Icon(
+        icon,
+        contentDescription = null,
+        modifier = Modifier.size(28.dp),
+        tint = MaterialTheme.colorScheme.onSurface
+      )
+      Text(title, style = MaterialTheme.typography.bodyLarge)
+    }
+  }
+}
+
+@Composable
+private fun CategoryItem2(
+  title: String, icon: ImageVector,
+  onPoint: (Offset) -> Unit = {}
+) {
+
+
+  var xOnScreen by remember { mutableIntStateOf(0) }
+
+  var yOnScreen by remember { mutableIntStateOf(0) }
+
+  Surface(
+    modifier = Modifier
+      .fillMaxWidth()
+      .onGloballyPositioned { coordinates ->
+        xOnScreen = coordinates.positionInWindow().x.toInt()
+        yOnScreen = coordinates.positionInWindow().y.toInt()
+      }
+      .pointerInput(Unit) {
+        detectTapGestures { offsetInSurface ->
+          // 计算相对于屏幕的坐标
+          val screenX = xOnScreen + offsetInSurface.x
+          val screenY = yOnScreen + offsetInSurface.y
+          onPoint(Offset(screenX, screenY)) // 将屏幕坐标传递给回调
+        }
+      },
     shape = MaterialTheme.shapes.medium,
   ) {
     Row(

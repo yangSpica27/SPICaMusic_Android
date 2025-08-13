@@ -50,7 +50,9 @@ fun LyricSettingDialog(
   dialogBackgroundColor: Color = MaterialTheme.colorScheme.background,
   textColor: Color = MaterialTheme.colorScheme.onBackground,
   song: Song,
-  navBackStack: NavBackStack? = null
+  navBackStack: NavBackStack? = null,
+  // 窗口是否透明
+  dialogBackgroundIsTranslate: (Boolean) -> Unit = {},
 ) {
 
   val coroutineScope = rememberCoroutineScope()
@@ -79,6 +81,10 @@ fun LyricSettingDialog(
 
   // 弹窗背景颜色
   var dialogBackgroundColor by remember { mutableStateOf(dialogBackgroundColor) }
+
+  LaunchedEffect(dialogBackgroundColor) {
+    dialogBackgroundIsTranslate.invoke(dialogBackgroundColor.alpha == 1f)
+  }
 
   val dialogBackgroundColorAnimValue = animateColorAsState(dialogBackgroundColor, tween(200))
 

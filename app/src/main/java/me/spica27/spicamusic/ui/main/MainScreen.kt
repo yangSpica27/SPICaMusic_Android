@@ -115,6 +115,16 @@ fun MainScreen(
 
   val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
 
+  val pagerState = rememberPagerState(
+    pageCount = {
+      10
+    },
+  )
+
+  val coroutineScope = rememberCoroutineScope()
+
+
+
   LaunchedEffect(key1 = backPressState) {
     if (backPressState == BackPress.InitialTouch) {
       delay(2000)
@@ -141,11 +151,15 @@ fun MainScreen(
     Runtime.getRuntime().exit(0)
   }
 
-  val pagerState = rememberPagerState(
-    pageCount = {
-      10
-    },
-  )
+  BackHandler(
+    pagerState.currentPage!=0
+  ) {
+    coroutineScope.launch {
+      pagerState.animateScrollToPage(0)
+    }
+  }
+
+
 
   val agreePrivacy = dataStoreUtil.getAgreePrivacy().collectAsStateWithLifecycle(null).value
 
@@ -201,19 +215,25 @@ fun MainScreen(
               }
             }
             // 悬浮底栏
-            FloatBottomBar(
-              navigator = navigator,
-              scrollConnection = scrollConnection,
-              sharedTransitionScope = sharedTransitionScope,
-              nowPlayingSong = nowPlayingSong,
-              isPlaying = isPlaying,
-              animatedVisibilityScope = this@AnimatedContent,
-              pagerState = pagerState,
+            AnimatedVisibility(
               modifier = Modifier
-                .align(alignment = Alignment.BottomCenter)
-                .padding(bottom = 22.dp)
+                .align(alignment = Alignment.BottomCenter),
+              visible = pagerState.currentPage == 0,
             ) {
-              showPlayerState = true
+              FloatBottomBar(
+                navigator = navigator,
+                scrollConnection = scrollConnection,
+                sharedTransitionScope = sharedTransitionScope,
+                nowPlayingSong = nowPlayingSong,
+                isPlaying = isPlaying,
+                animatedVisibilityScope = this@AnimatedContent,
+                pagerState = pagerState,
+                modifier = Modifier
+                  .align(alignment = Alignment.BottomCenter)
+                  .padding(bottom = 22.dp)
+              ) {
+                showPlayerState = true
+              }
             }
           }
         }
@@ -273,10 +293,10 @@ private fun FloatBottomBar(
             .sharedBounds(
               rememberSharedContentState(key = "player_bound"),
               animatedVisibilityScope = animatedVisibilityScope,
-              enter = slideInVertically()+scaleIn(),
+              enter = slideInVertically() + scaleIn(),
               exit = fadeOut(
                 animationSpec = tween(delayMillis = 65)
-              )+scaleOut(),
+              ) + scaleOut(),
               placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
               renderInOverlayDuringTransition = false
             )
@@ -331,7 +351,8 @@ private fun FloatBottomBar(
                   animationSpec = tween(delayMillis = 65)
                 ),
                 placeHolderSize = SharedTransitionScope.PlaceHolderSize.animatedSize,
-              )              .background(
+              )
+              .background(
                 MaterialTheme.colorScheme.surfaceContainerLow,
                 CircleShape
               )

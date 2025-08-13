@@ -1,5 +1,7 @@
 package me.spica27.spicamusic.ui
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SizeTransform
@@ -31,6 +33,7 @@ import me.spica27.spicamusic.ui.rencently_list.RecentlyListScreen
 import me.spica27.spicamusic.ui.scanner.ScannerScreen
 import me.spica27.spicamusic.ui.search_all.SearchAllScreen
 import me.spica27.spicamusic.ui.splash.SplashScreen
+import me.spica27.spicamusic.ui.translate.TranslateScreen
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.sliderFromBottomRouteAnim
 
@@ -86,6 +89,21 @@ fun AppMain() {
           }
           entry<Routes.AgreePrivacy> {
             AgreePrivacyScreen(navigator = backStack)
+          }
+          entry<Routes.Translate>(
+            metadata = NavDisplay.transitionSpec {
+              EnterTransition.None togetherWith  ExitTransition.None
+            } + NavDisplay.popTransitionSpec {
+              EnterTransition.None togetherWith  ExitTransition.None
+            }
+          ) {
+            key->
+            TranslateScreen(
+              navigator = backStack,
+              pointX = key.pointX,
+              pointY = key.pointY,
+              fromLight = key.fromLight
+            )
           }
           entry<Routes.LikeList> { LikeListScreen(navigator = backStack) }
           entry<Routes.RecentlyList> { RecentlyListScreen(navigator = backStack) }

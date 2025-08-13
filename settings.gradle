@@ -34,3 +34,4 @@ rootProject.name = "SPICaMusic"
 include ':app'
 //include(':decoder_flac')
 //include(":starrysky")
+include ':media'
