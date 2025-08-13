@@ -13,6 +13,7 @@ import android.support.v4.media.session.MediaSessionCompat
 import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import androidx.media.MediaBrowserServiceCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -138,7 +139,9 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     PlaybackStateManager.getInstance().registerPlayer(this)
     foregroundManager = ForegroundManager(this)
     mediaSessionComponent = MediaSessionComponent(this, this)
-    registerReceiver(
+
+    ContextCompat.registerReceiver(
+      this,
       systemReceiver, IntentFilter().apply {
         addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         addAction(AudioManager.ACTION_HEADSET_PLUG)
@@ -148,7 +151,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
         addAction(ACTION_PLAY_PAUSE)
         addAction(ACTION_SKIP_NEXT)
         addAction(ACTION_EXIT)
-      }, RECEIVER_NOT_EXPORTED
+      }, ContextCompat.RECEIVER_NOT_EXPORTED
     )
 
     coroutineScope.launch {

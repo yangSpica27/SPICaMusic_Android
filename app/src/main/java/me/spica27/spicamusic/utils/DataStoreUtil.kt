@@ -167,7 +167,8 @@ class DataStoreUtil(private val context: Context = App.getInstance()) {
   val getForceDarkTheme: Flow<Boolean> = context.dataStore.data
     .map { preferences ->
       preferences[FORCE_DARK_THEME] ?: false
-    }.distinctUntilChanged()
+    }
+    .distinctUntilChanged()
 
   suspend fun saveForceDarkTheme(value: Boolean) {
     context.dataStore.edit { preferences ->

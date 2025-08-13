@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.setting
 
+import android.os.Build
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -43,6 +43,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavBackStack
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.launch
@@ -51,7 +52,6 @@ import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.ToastUtils
 import org.koin.compose.koinInject
-import timber.log.Timber
 
 
 // 设置页面
@@ -63,11 +63,14 @@ fun SettingPage(
 
   val coroutineScope = rememberCoroutineScope()
 
-  val forceDarkThemeSettingState = MaterialTheme.colorScheme.background.luminance() < 0.5
 
   val listState = rememberLazyListState()
 
   val dataStoreUtil = koinInject<DataStoreUtil>()
+
+  val forceDarkThemeSettingState =
+    dataStoreUtil.getForceDarkTheme.collectAsStateWithLifecycle(false)
+
 
   Column(
     modifier = Modifier.fillMaxSize(),
@@ -80,21 +83,30 @@ fun SettingPage(
     ) {
       item {
         CategoryItem2(
-          title = if (forceDarkThemeSettingState) {
+          title = if (forceDarkThemeSettingState.value) {
             "暗色模式"
           } else {
             "亮色模式"
           },
-          icon = if (forceDarkThemeSettingState) {
+          icon = if (forceDarkThemeSettingState.value) {
             ImageVector.vectorResource(R.drawable.ic_dark_mode)
           } else {
             ImageVector.vectorResource(R.drawable.ic_outlined_sunny)
           },
           onPoint = {
-            Timber.e("x = ${it.x},y = ${it.y}")
-            navigator?.add(Routes.Translate(it.x, it.y, fromLight = !forceDarkThemeSettingState))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+              navigator?.add(
+                Routes.Translate(
+                  it.x,
+                  it.y,
+                  fromLight = !forceDarkThemeSettingState.value
+                )
+              )
+            }
             coroutineScope.launch {
-              dataStoreUtil.saveForceDarkTheme(!forceDarkThemeSettingState)
+              if (navigator != null) {
+                dataStoreUtil.saveForceDarkTheme(!forceDarkThemeSettingState.value)
+              }
             }
           }
         )
