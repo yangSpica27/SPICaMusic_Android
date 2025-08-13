@@ -1,0 +1,31 @@
+//necessary for the shader to work:
+uniform float2 resolution;
+uniform shader image;
+uniform float time;
+
+//custom uniforms:
+
+//end of custom uniforms
+
+//helper functions:
+vec2 normalizeUv(float2 fragCoord) {
+    vec2 uv = fragCoord/resolution.xy - .5;
+    return vec2(uv.x * resolution.x/resolution.y, uv.y);
+}
+
+half4 mergeImageAndShader(float2 fragCoord, vec4 col, vec4 background) {
+    return half4(mix(background.rgb, col.rgb, col.a),col.a);
+}
+//end of helper functions
+
+//beginning your of shader code:
+
+//shader entry point:
+half4 main(float2 fragCoord) {
+    vec2 uv = normalizeUv(fragCoord); // get normalized uv coordinates
+
+    float scaledTime = time * 0.01;
+    vec4 col = vec4(0.,0.,0.,0.); // initialize the color to black with alpha 0
+
+    return mergeImageAndShader(fragCoord, col, vec4(image.eval(fragCoord))); // return the final color
+}

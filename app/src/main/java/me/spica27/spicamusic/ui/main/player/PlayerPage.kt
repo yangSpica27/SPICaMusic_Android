@@ -10,10 +10,14 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -75,6 +79,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -331,7 +336,7 @@ private fun Cover(
   Box(
     modifier = Modifier.fillMaxSize(),
     contentAlignment = Alignment.Center
-  ){
+  ) {
 
     if (isActive) {
       AndroidView(
@@ -385,7 +390,9 @@ private fun Cover(
             .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
             .clip(CircleShape)
             .border(
-              12.dp, MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f), CircleShape
+              12.dp,
+              MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
+              CircleShape
             )
             .rotate(rotateState.value),
           contentAlignment = Alignment.Center
@@ -457,13 +464,6 @@ private fun Cover(
 //  }
 
 
-
-
-
-
-
-
-
   // Compose 版本的频谱动效开销多占 25%的性能 暂时屏蔽
 
 //  Spacer(
@@ -511,8 +511,6 @@ private fun Cover(
 //        }
 //      }
 //  )
-
-
 
 
 }
@@ -731,28 +729,53 @@ private fun SongInfo(
   Row(
     modifier = modifier
   ) {
-    Column(
+    AnimatedContent(
       modifier = Modifier.weight(2f),
-      verticalArrangement = Arrangement.Center,
-    ) {
-      Text(
-        maxLines = 1,
-        text = song.displayName,
-        style = MaterialTheme.typography.titleLarge.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-          fontWeight = FontWeight.ExtraBold
-        ),
-        modifier = Modifier.basicMarquee(),
-      )
-      Spacer(modifier = Modifier.height(5.dp))
-      Text(
-        modifier = Modifier.basicMarquee(),
-        maxLines = 1,
-        text = song.artist,
-        style = MaterialTheme.typography.titleMedium.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        ),
-      )
+      targetState = song,
+      label = "song_info_transition",
+      transitionSpec = {
+        fadeIn() + slideInVertically(
+          animationSpec = tween(150, delayMillis = 90),
+          initialOffsetY = {
+            it
+          }
+        ) togetherWith slideOutVertically(
+          animationSpec = tween(150),
+          targetOffsetY = {
+            -it
+          },
+        ) + fadeOut()
+      }
+    ) { song ->
+      Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.Center,
+      ) {
+        Text(
+          maxLines = 1,
+          text = song.displayName,
+          style = MaterialTheme.typography.titleLarge.copy(
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+            fontWeight = FontWeight.ExtraBold,
+            platformStyle = PlatformTextStyle(
+              includeFontPadding = false
+            )
+          ),
+          modifier = Modifier.basicMarquee(),
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        Text(
+          modifier = Modifier.basicMarquee(),
+          maxLines = 1,
+          text = song.artist,
+          style = MaterialTheme.typography.titleMedium.copy(
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            platformStyle = PlatformTextStyle(
+              includeFontPadding = false
+            )
+          ),
+        )
+      }
     }
     Spacer(modifier = Modifier.weight(1f))
     IconButton(
