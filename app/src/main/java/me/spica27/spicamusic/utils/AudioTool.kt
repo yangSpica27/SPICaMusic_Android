@@ -15,7 +15,7 @@ import me.spica27.spicamusic.App
 import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.entity.Lyric
 import me.spica27.spicamusic.db.entity.Song
-import me.spica27.spicamusic.wrapper.Taglib
+import me.spica27.spicamusic.wrapper.TaglibUtils
 import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType
 import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType
@@ -121,8 +121,8 @@ object AudioTool {
         App.getInstance().contentResolverSafe.openFileDescriptor(song.getSongUri(), "r")
 
       fd?.use {
-        val metadata = Taglib.retrieveMetadataWithFD(fd.detachFd())
-        if (metadata != null && metadata.title.isNotEmpty()) {
+        val metadata = TaglibUtils.retrieveMetadataWithFD(fd.detachFd())
+        if (metadata.title.isNotEmpty()) {
           song.displayName = metadata.title
           song.artist = metadata.artist
           if (metadata.lyricist.isNotEmpty()) {

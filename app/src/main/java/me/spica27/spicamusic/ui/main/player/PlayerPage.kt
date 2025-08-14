@@ -138,7 +138,7 @@ import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
-import me.spica27.spicamusic.wrapper.Taglib
+import me.spica27.spicamusic.wrapper.TaglibUtils
 import me.spica27.spicamusic.wrapper.activityViewModel
 import org.koin.compose.koinInject
 import timber.log.Timber
@@ -963,7 +963,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
         val fd: ParcelFileDescriptor? =
           App.getInstance().contentResolverSafe.openFileDescriptor(song.getSongUri(), "r")
         fd?.use { fd ->
-          val metadata = Taglib.retrieveMetadataWithFD(fd.detachFd())
+          val metadata = TaglibUtils.retrieveMetadataWithFD(fd.detachFd())
           Timber.tag("歌曲信息").d("metadata: $metadata")
         }
       }

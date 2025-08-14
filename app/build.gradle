@@ -84,12 +84,6 @@ android {
       it.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
   }
-  externalNativeBuild {
-    cmake {
-      path = new File("src/main/cpp/CMakeLists.txt")
-      version = "4.0.2"
-    }
-  }
 }
 
 dependencies {

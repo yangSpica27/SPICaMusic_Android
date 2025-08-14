@@ -48,8 +48,5 @@ class App : Application() {
   }
 
 
-  init {
-    System.loadLibrary("taglib")
-  }
 
 }
