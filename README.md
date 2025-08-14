@@ -17,7 +17,29 @@
 
 ## 项目简介
 
-EXOPlayer+Compose实现的音乐播放器
+EXOPlayer+Jetpack Compose实现的音乐播放器
+
+&#10004; 支持 vorbis opus flac alac pcm_mulaw pcm_alaw mp3 aac ac3 eac3 dca mlp truehd 等常见格式
+
+&#10004; 支持 16kb
+
+&#10004; 支持 新增/编辑/删除歌单
+
+&#10004; 支持 亮色/暗色模式切换
+
+&#10004; 支持 歌词搜索/显示
+
+&#10004; 支持 16kb
+
+&#10004; 支持 EQ调节
+
+## 计划修复&未完成功能
+
+- [ ] 歌词组件无法滑动调整播放位置
+- [ ] 歌词搜索服务可能超时
+- [ ] 目前仅使用MediaStore搜索歌曲，无手动指定目录/全局扫描功能
+- [ ] ALAC格式不能被正确识别
+- [ ] 歌单内批量编辑功能
 
 ## 项目指南
 
@@ -33,9 +55,12 @@ EXOPlayer+Compose实现的音乐播放器
 
 ## 开发环境
 
-系统:Windows 10 IoT 企业版 LTSC
 
-Android Studio版本:Android Studio Narwhal | 2025.1.1
+| 类型     | 描述 |
+| ----------- | ----------- |
+| 操作系统      | Windows 10 IoT 企业版 LTSC       |
+| Android Studio   | Android Studio Narwhal | 2025.1.1 |
+| JDK | JBR 21.0.6 | 
 
 ## 库
 
