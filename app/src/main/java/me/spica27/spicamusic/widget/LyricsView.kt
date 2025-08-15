@@ -341,7 +341,7 @@ fun LyricsViewLine(
         shadow = Shadow(
           color = contentColor.copy(alpha = .2f),
           blurRadius = if (isActive) {
-            3f
+            5f
           } else {
             13f
           }

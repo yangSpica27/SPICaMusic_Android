@@ -9,6 +9,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
@@ -75,7 +76,11 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   override fun onCreate() {
     super.onCreate()
     mediaSession = MediaSessionCompat(this, "spica_music")
-
+    mediaSession?.setFlags(
+      (MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
+          MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS or
+          MediaSessionCompat.FLAG_HANDLES_QUEUE_COMMANDS)
+    )
 //    // 避免降采样 采取最近似的采样
 //    val extractorsFactory = DefaultMediaSourceFactory(
 //      this,
@@ -139,7 +144,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     PlaybackStateManager.getInstance().registerPlayer(this)
     foregroundManager = ForegroundManager(this)
     mediaSessionComponent = MediaSessionComponent(this, this)
-
+    sessionToken = mediaSession?.sessionToken
     ContextCompat.registerReceiver(
       this,
       systemReceiver, IntentFilter().apply {
@@ -228,7 +233,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     clientPackageName: String, clientUid: Int, rootHints: Bundle?
   ): BrowserRoot {
     Timber.tag("onGetRoot").e("clientPackageName = $clientPackageName")
-    return if (false) {
+    return if (clientPackageName == packageName) {
       // 允许连接
       BrowserRoot(MY_MEDIA_ROOT_ID, null)
     } else {
@@ -259,6 +264,17 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     }
     // 其他情况返回真正的播放列表
     val mediaItems = mutableListOf<MediaBrowserCompat.MediaItem>()
+    val allSongs: List<Song> = PlaybackStateManager.getInstance().getList() // Hypothetical method
+    allSongs.forEach { song ->
+      val description = MediaDescriptionCompat.Builder()
+        .setMediaId(song.mediaStoreId.toString()) // Must be unique
+        .setTitle(song.displayName)
+        .setSubtitle(song.artist)
+        .setIconUri(song.getCoverUri()) // Optional: Album art URI
+        .setMediaUri(song.getSongUri()) // URI to play the song
+        .build()
+      mediaItems.add(MediaBrowserCompat.MediaItem(description, MediaBrowserCompat.MediaItem.FLAG_PLAYABLE))
+    }
     result.sendResult(mediaItems)
   }
 
@@ -266,7 +282,6 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
   override fun onDestroy() {
     super.onDestroy()
     // 解除绑定
-    serviceJob.cancel()
     ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
     PlaybackStateManager.getInstance().unRegisterPlayer()
     exoPlayer.release()
@@ -274,6 +289,7 @@ class MusicService : MediaBrowserServiceCompat(), Player.Listener, IPlayer,
     mediaSession?.release()
     mediaSessionComponent.release()
     unregisterReceiver(systemReceiver)
+    serviceJob.cancel()
   }
 
 

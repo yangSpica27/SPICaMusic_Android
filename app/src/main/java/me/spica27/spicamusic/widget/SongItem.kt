@@ -144,7 +144,7 @@ fun SongItemWithCover(
               shape = RoundedCornerShape(4.dp)
             )
             .padding(horizontal = 4.dp, vertical = 2.dp),
-          text = song.getFormatMimeType().uppercase(),
+          text = song.getFormatMimeType().uppercase().replace("AUDIO/", ""),
           style = MaterialTheme.typography.bodyMedium.copy(
             color = Color.Black,
             fontWeight = FontWeight.W500,

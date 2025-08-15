@@ -3,6 +3,8 @@ package me.spica27.spicamusic.utils
 import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.media.MediaExtractor
+import android.media.MediaFormat
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import androidx.annotation.OptIn
@@ -49,7 +51,11 @@ object AudioTool {
 
 
   @OptIn(UnstableApi::class)
-  suspend fun getSongsFromPhone(context: Context, lyricDao: LyricDao): List<Song> {
+  fun getSongsFromPhone(
+    context: Context,
+    lyricDao: LyricDao,
+    itemListener: (Song) -> Unit = {}
+  ): List<Song> {
 
     val cursor = context.contentResolverSafe.safeQuery(
       MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, LocalAudioColumns, null, null
@@ -75,7 +81,6 @@ object AudioTool {
           ?: ""
       )
 
-      types.add(mimeType)
       val isSupportMineType = true
       if (!isSupportMineType) continue
       // 过滤掉时长小于5秒的音频文件
@@ -100,7 +105,7 @@ object AudioTool {
         lastPlayTime = 0L,
         duration = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
           ?: 1,
-        mimeType = mimeType.toString(),
+        mimeType = mimeType,
         albumId = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.ALBUM_ID))
           ?: 0,
         sampleRate = 0,
@@ -137,26 +142,29 @@ object AudioTool {
         }
       }
 
-//      // 获取音频文件的采样率、比特率、声道数、位深度
-//      if (mimeType != "audio/flac"){
-//        try {
-//          val extractor = MediaExtractor()
-//          extractor.setDataSource(song.path)
-//          val mf: MediaFormat = extractor.getTrackFormat(0)
-//          val sampleRate = mf.getInteger(MediaFormat.KEY_SAMPLE_RATE)
-//          val bitRate = mf.getInteger(MediaFormat.KEY_BIT_RATE)
-//          val channelCount = mf.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
-//          val digit = bitRate * 8 / (sampleRate * channelCount)
-//          song.sampleRate = sampleRate
-//          song.bitRate = bitRate
-//          song.channels = channelCount
-//          song.digit = digit
-//          extractor.release()
-//        } catch (e: Exception) {
-//          e.printStackTrace()
-//        }
-//      }
-//
+      // ALAC使用的mp4容器 需要进一步分析
+      if (true) {
+        try {
+          val extractor = MediaExtractor()
+          extractor.setDataSource(song.path)
+          val mf: MediaFormat = extractor.getTrackFormat(0)
+          val sampleRate = mf.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+          val channelCount = mf.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+          song.sampleRate = sampleRate
+          song.channels = channelCount
+          if (extractor.trackCount != 0) {
+            val format = extractor.getTrackFormat(0)
+            val mine = format.getString(MediaFormat.KEY_MIME) ?: mimeType
+            song.mimeType = MimeTypes.normalizeMimeType(mine)
+            Timber.d("音频类型：${song.mimeType}")
+            types.add(song.mimeType)
+          }
+          extractor.release()
+        } catch (e: Exception) {
+          e.printStackTrace()
+        }
+      }
+      itemListener.invoke(song)
       songs.add(song)
     } while (cursor.moveToNext())
     Timber.d("扫描音频文件完成，共扫描到${songs.size}个音频文件");
@@ -226,7 +234,7 @@ object AudioTool {
   }
 
   fun isSpeaker(context: Context): Boolean {
-    val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager ?: return false
+    val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     val devices = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
     for (device in devices) {
       if (device.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {

@@ -37,6 +37,8 @@ class PlaybackStateManager : KoinScopeComponent {
 
   private val queue: Queue = Queue()
 
+  fun getList() = queue.getPlayList()
+
   companion object {
     @Volatile
     private var INSTANCE: PlaybackStateManager? = null

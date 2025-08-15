@@ -91,7 +91,9 @@ fun ScannerScreen(navigator: NavBackStack? = null) {
   ) {
     if (isScanning) {
       launch(Dispatchers.IO) {
-        val songs = AudioTool.getSongsFromPhone(context, lyricDao)
+        val songs = AudioTool.getSongsFromPhone(context, lyricDao, {
+          text = "扫描到${it.displayName}"
+        })
         withContext(Dispatchers.Main) {
           text = ("共${songs.size}首")
         }
