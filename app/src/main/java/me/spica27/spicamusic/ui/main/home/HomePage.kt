@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -27,8 +28,8 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -137,7 +138,7 @@ fun HomePage(
       verticalArrangement = Arrangement.Top
     ) {
       // 标题
-      SearchTopBar(navigator, pagerState = pagerState)
+      TitleBar(navigator, pagerState = pagerState)
       Column(
         modifier = Modifier
           .weight(1f)
@@ -155,6 +156,37 @@ fun HomePage(
         verticalArrangement = Arrangement.spacedBy(12.dp),
 
         ) {
+
+
+        Row(
+          modifier = Modifier
+            .padding(
+              horizontal = 16.dp,
+            )
+            .fillMaxWidth()
+            .border(
+              width = 1.dp,
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+              shape = MaterialTheme.shapes.small
+            )
+            .clip(MaterialTheme.shapes.small)
+            .clickable {
+              navigator?.add(Routes.SearchAll)
+            }
+            .padding(
+              horizontal = 16.dp,
+              vertical = 10.dp
+            ),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = "更多",
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+          )
+          Text("搜索本地歌曲", style = MaterialTheme.typography.bodyLarge.copy())
+        }
 
         Title(
           "最近常听",
@@ -494,7 +526,7 @@ private fun Title(
  * 顶部标题栏
  */
 @Composable
-private fun SearchTopBar(navigator: NavBackStack? = null, pagerState: PagerState) {
+private fun TitleBar(navigator: NavBackStack? = null, pagerState: PagerState) {
   val coroutineScope = rememberCoroutineScope()
   Box(
     modifier = Modifier
@@ -502,18 +534,6 @@ private fun SearchTopBar(navigator: NavBackStack? = null, pagerState: PagerState
       .padding(horizontal = 16.dp, vertical = 10.dp),
   ) {
 
-    IconButton(
-      onClick = {
-        navigator?.add(Routes.SearchAll)
-      },
-      modifier = Modifier.align(Alignment.CenterStart)
-    ) {
-      Icon(
-        imageVector = Icons.Default.Search,
-        contentDescription = "搜索",
-        tint = MaterialTheme.colorScheme.onSurface
-      )
-    }
 
     Text(
       text = "主页",
@@ -535,7 +555,7 @@ private fun SearchTopBar(navigator: NavBackStack? = null, pagerState: PagerState
       modifier = Modifier.align(Alignment.CenterEnd)
     ) {
       Icon(
-        imageVector = Icons.Default.Settings,
+        imageVector = Icons.Default.MoreVert,
         contentDescription = "设置",
         tint = MaterialTheme.colorScheme.onSurface
       )

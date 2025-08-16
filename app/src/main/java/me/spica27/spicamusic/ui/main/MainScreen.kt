@@ -91,7 +91,8 @@ fun MainScreen(
               listState = homeScrollState,
               pagerState = pagerState
             )
-            1 -> SettingPage(navigator = navigator)
+
+            1 -> SettingPage(navigator = navigator, pagerState = pagerState)
           }
         }
       }

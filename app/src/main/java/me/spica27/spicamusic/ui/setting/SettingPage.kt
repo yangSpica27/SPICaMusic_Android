@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.MailOutline
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -59,6 +62,7 @@ import org.koin.compose.koinInject
 @Composable
 fun SettingPage(
   navigator: NavBackStack? = null,
+  pagerState: PagerState? = null
 ) {
 
   val coroutineScope = rememberCoroutineScope()
@@ -76,7 +80,13 @@ fun SettingPage(
     modifier = Modifier.fillMaxSize(),
     verticalArrangement = Arrangement.Top
   ) {
-    TopBar()
+    TopBar(
+      onBackClick = {
+        coroutineScope.launch {
+          pagerState?.animateScrollToPage(0)
+        }
+      }
+    )
     LazyColumn(
       modifier = Modifier.weight(1f),
       state = listState
@@ -311,12 +321,26 @@ private fun AppVersion(versionText: String, copyrights: String, onClick: () -> U
 
 
 @Composable
-private fun TopBar() {
+private fun TopBar(
+  onBackClick: () -> Unit
+) {
   Box(
     modifier = Modifier
       .fillMaxWidth()
       .height(64.dp)
   ) {
+    IconButton(
+      onClick = {
+        onBackClick()
+      },
+      modifier = Modifier.align(Alignment.CenterStart)
+    ) {
+      Icon(
+        imageVector = Icons.AutoMirrored.Default.KeyboardArrowLeft,
+        contentDescription = "设置",
+        tint = MaterialTheme.colorScheme.onSurface
+      )
+    }
     Text(
       text = "设置",
       style = MaterialTheme.typography.bodyMedium.copy(
