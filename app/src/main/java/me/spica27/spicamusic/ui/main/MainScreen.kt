@@ -22,7 +22,6 @@ import me.spica27.spicamusic.ui.main.home.HomePage
 import me.spica27.spicamusic.ui.setting.SettingPage
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
-import me.spica27.spicamusic.widget.rememberFloatingTabBarScrollConnection
 import me.spica27.spicamusic.wrapper.activityViewModel
 import org.koin.compose.koinInject
 
@@ -40,7 +39,6 @@ fun MainScreen(
 
   val homeScrollState = rememberScrollState()
 
-  val scrollConnection = rememberFloatingTabBarScrollConnection()
 
   val pagerState = rememberPagerState(
     pageCount = {
@@ -91,7 +89,6 @@ fun MainScreen(
             0 -> HomePage(
               navigator = navigator,
               listState = homeScrollState,
-              connection = scrollConnection,
               pagerState = pagerState
             )
             1 -> SettingPage(navigator = navigator)

@@ -26,6 +26,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
@@ -38,6 +39,7 @@ import me.spica27.spicamusic.viewModel.MusicSearchViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
 import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.widget.rememberBindPlayerOverlyConnect
 import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import org.koin.androidx.compose.koinViewModel
 
@@ -124,7 +126,7 @@ private fun SongList(
 
     // 歌曲列表
     LazyColumn(
-      modifier = modifier,
+      modifier = modifier.nestedScroll(rememberBindPlayerOverlyConnect()),
       state = listState
     ) {
       itemsIndexed(

@@ -47,7 +47,6 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -75,6 +74,7 @@ import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlaylistItem
 import me.spica27.spicamusic.widget.SongItemWithCover
 import me.spica27.spicamusic.widget.fadingEdges
+import me.spica27.spicamusic.widget.rememberBindPlayerOverlyConnect
 import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
 
@@ -88,7 +88,6 @@ fun HomePage(
   songViewModel: SongViewModel = activityViewModel(),
   navigator: NavBackStack? = null,
   listState: ScrollState = rememberScrollState(),
-  connection: NestedScrollConnection,
   pagerState: PagerState
 ) {
 
@@ -142,11 +141,15 @@ fun HomePage(
       Column(
         modifier = Modifier
           .weight(1f)
-          .nestedScroll(connection)
+          .nestedScroll(rememberBindPlayerOverlyConnect())
           .verticalScroll(
             state = listState
           )
-          .fadingEdges(FadingEdges.None)
+          .fadingEdges(
+            FadingEdges(
+              bottom = 12.dp
+            )
+          )
           .padding(bottom = 200.dp)
           .navigationBarsPadding(),
         verticalArrangement = Arrangement.spacedBy(12.dp),

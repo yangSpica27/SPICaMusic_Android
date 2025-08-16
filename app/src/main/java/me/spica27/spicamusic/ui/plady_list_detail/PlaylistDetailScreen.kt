@@ -72,6 +72,7 @@ import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.widget.rememberBindPlayerOverlyConnect
 import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
@@ -229,7 +230,9 @@ fun PlaylistDetailScreen(
         LazyColumn(
           modifier = Modifier
             .weight(1f)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .nestedScroll(rememberBindPlayerOverlyConnect())
+          ,
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           items(songs, key = {

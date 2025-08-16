@@ -26,11 +26,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,36 +62,37 @@ fun PlayerOverly(
 
   val currentSong = playbackViewModel.currentSongFlow.collectAsStateWithLifecycle(null).value
 
-  var overlyState by remember { mutableStateOf(PlayerOverlyState.HIDE) }
+
+  val overlyState = LocalPlayerWidgetState.current
 
 
-  BackHandler(overlyState == PlayerOverlyState.DETAIL) {
-    overlyState = PlayerOverlyState.BOTTOM
+  BackHandler(overlyState.value == PlayerOverlyState.DETAIL) {
+    overlyState.value = PlayerOverlyState.BOTTOM
   }
 
-  BackHandler(overlyState == PlayerOverlyState.BOTTOM) {
-    overlyState = PlayerOverlyState.MINI
+  BackHandler(overlyState.value == PlayerOverlyState.BOTTOM) {
+    overlyState.value = PlayerOverlyState.MINI
   }
 
   LaunchedEffect(isPlaying) {
-    if (isPlaying && overlyState == PlayerOverlyState.HIDE) {
-      overlyState = PlayerOverlyState.MINI
-    } else if (!isPlaying && overlyState == PlayerOverlyState.MINI) {
-      overlyState = PlayerOverlyState.HIDE
-    } else if (!isPlaying && overlyState == PlayerOverlyState.BOTTOM) {
-      overlyState = PlayerOverlyState.MINI
+    if (isPlaying && overlyState.value == PlayerOverlyState.HIDE) {
+      overlyState.value = PlayerOverlyState.MINI
+    } else if (!isPlaying && overlyState.value == PlayerOverlyState.MINI) {
+      overlyState.value = PlayerOverlyState.HIDE
+    } else if (!isPlaying && overlyState.value == PlayerOverlyState.BOTTOM) {
+      overlyState.value = PlayerOverlyState.MINI
     } else {
       Timber.tag("PlayerOverly").d("都不符合 isPlay =${isPlaying} overlyState = $overlyState")
     }
   }
 
 
-  LaunchedEffect(overlyState) {
+  LaunchedEffect(overlyState.value) {
     Timber.tag("PlayerOverly").d("overlyState: $overlyState")
-    if (overlyState == PlayerOverlyState.BOTTOM) {
+    if (overlyState.value == PlayerOverlyState.BOTTOM) {
       delay(5000)
       if (isPlaying) {
-        overlyState = PlayerOverlyState.MINI
+        overlyState.value = PlayerOverlyState.MINI
       }
     }
   }
@@ -108,7 +110,7 @@ fun PlayerOverly(
       val sharedContentState = rememberSharedContentState("player_widget")
       AnimatedContent(
         modifier = Modifier.fillMaxSize(),
-        targetState = overlyState,
+        targetState = overlyState.value,
         label = "player_overly_state"
       ) { state ->
         when (state) {
@@ -137,7 +139,7 @@ fun PlayerOverly(
                     )
                   )
                   .clickable {
-                    overlyState = PlayerOverlyState.BOTTOM
+                    overlyState.value = PlayerOverlyState.BOTTOM
                   }
                   .align(Alignment.CenterEnd)
               ) {
@@ -178,11 +180,11 @@ fun PlayerOverly(
                     MaterialTheme.shapes.medium
                   )
                   .clickable {
-                    overlyState = PlayerOverlyState.DETAIL
+                    overlyState.value = PlayerOverlyState.DETAIL
                   }
               ) {
                 currentSong?.let {
-                  Bottom(currentSong)
+                  Bottom()
                 }
               }
             }
@@ -202,7 +204,7 @@ fun PlayerOverly(
               PlayerScreen(
                 navigator = navigator,
                 onBackClick = {
-                  overlyState = PlayerOverlyState.HIDE
+                  overlyState.value = PlayerOverlyState.HIDE
                 },
               )
             }
@@ -214,7 +216,7 @@ fun PlayerOverly(
 }
 
 @Composable
-private fun Bottom(song: Song) {
+private fun Bottom() {
   PlayerBar()
 }
 
@@ -236,6 +238,20 @@ private fun Mimi(song: Song) {
   )
 }
 
+@Composable
+fun PlayerOverlyContent(
+  content: @Composable () -> Unit
+) {
+  val overlyState = remember { mutableStateOf(PlayerOverlyState.HIDE) }
+  CompositionLocalProvider(LocalPlayerWidgetState provides overlyState) {
+    content.invoke()
+  }
+}
+
+
+internal val LocalPlayerWidgetState = staticCompositionLocalOf<MutableState<PlayerOverlyState>> {
+  error("CompositionLocal LocalPlayerWidgetState not present")
+}
 
 enum class PlayerOverlyState {
   MINI,

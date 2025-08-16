@@ -29,6 +29,7 @@ import me.spica27.spicamusic.ui.lyrics_search.LyricsSearchScreen
 import me.spica27.spicamusic.ui.main.MainScreen
 import me.spica27.spicamusic.ui.plady_list_detail.PlaylistDetailScreen
 import me.spica27.spicamusic.ui.player.PlayerOverly
+import me.spica27.spicamusic.ui.player.PlayerOverlyContent
 import me.spica27.spicamusic.ui.rencently_list.RecentlyListScreen
 import me.spica27.spicamusic.ui.scanner.ScannerScreen
 import me.spica27.spicamusic.ui.search_all.SearchAllScreen
@@ -55,107 +56,111 @@ fun AppMain() {
     darkTheme = darkTheme,
     dynamicColor = false
   ) {
-    NavDisplay(
-      entryDecorators = listOf(
-        rememberSceneSetupNavEntryDecorator(),
-        rememberSavedStateNavEntryDecorator(),
-        rememberViewModelStoreNavEntryDecorator()
-      ),
-      backStack = backStack,
-      entryProvider = entryProvider {
 
-        entry<Routes.AddSong> { key ->
-          AddSongScreen(navigator = backStack, playlistId = key.playlistId)
-        }
-        entry<Routes.PlaylistDetail> {
-          PlaylistDetailScreen(
-            navigator = backStack,
-            playlistId = it.playlistId
-          )
-        }
-        entry<Routes.Main> { key ->
-          MainScreen(navigator = backStack)
-        }
-        entry<Routes.Splash> { SplashScreen(navigator = backStack) }
-        entry<Routes.SearchAll>(
-          metadata = sliderFromBottomRouteAnim()
-        ) { SearchAllScreen(navigator = backStack) }
-        entry<Routes.EQ> {
-          EqScreen(navigator = backStack)
-        }
-        entry<Routes.Scanner> {
-          ScannerScreen(navigator = backStack)
-        }
-        entry<Routes.AgreePrivacy> {
-          AgreePrivacyScreen(navigator = backStack)
-        }
-        entry<Routes.Translate>(
-          metadata = NavDisplay.transitionSpec {
-            EnterTransition.None togetherWith ExitTransition.None
-          } + NavDisplay.popTransitionSpec {
-            EnterTransition.None togetherWith ExitTransition.None
+    PlayerOverlyContent {
+      NavDisplay(
+        entryDecorators = listOf(
+          rememberSceneSetupNavEntryDecorator(),
+          rememberSavedStateNavEntryDecorator(),
+          rememberViewModelStoreNavEntryDecorator()
+        ),
+        backStack = backStack,
+        entryProvider = entryProvider {
+
+          entry<Routes.AddSong> { key ->
+            AddSongScreen(navigator = backStack, playlistId = key.playlistId)
           }
-        ) { key ->
-          TranslateScreen(
-            navigator = backStack,
-            pointX = key.pointX,
-            pointY = key.pointY,
-            fromLight = key.fromLight
-          )
-        }
-        entry<Routes.LikeList> { LikeListScreen(navigator = backStack) }
-        entry<Routes.RecentlyList> { RecentlyListScreen(navigator = backStack) }
-        entry<Routes.LyricsSearch>(
-          metadata = sliderFromBottomRouteAnim()
-        ) { key ->
-          LyricsSearchScreen(
-            song = key.song,
-            navigator = backStack
-          )
-        }
-      },
-      transitionSpec = {
-        scaleIn(
-          initialScale = 1.2f,
-        ) + fadeIn(
-          animationSpec = tween(250)
-        ) togetherWith
-            scaleOut(
-              targetScale = 1.2f,
-            ) + fadeOut(
-          animationSpec = tween(250)
-        )
-      },
-      popTransitionSpec = {
-        scaleIn(
-          initialScale = 1.2f,
-        ) + fadeIn() togetherWith
-            scaleOut(
-              targetScale = 1.2f,
-
+          entry<Routes.PlaylistDetail> {
+            PlaylistDetailScreen(
+              navigator = backStack,
+              playlistId = it.playlistId
+            )
+          }
+          entry<Routes.Main> { key ->
+            MainScreen(navigator = backStack)
+          }
+          entry<Routes.Splash> { SplashScreen(navigator = backStack) }
+          entry<Routes.SearchAll>(
+            metadata = sliderFromBottomRouteAnim()
+          ) { SearchAllScreen(navigator = backStack) }
+          entry<Routes.EQ> {
+            EqScreen(navigator = backStack)
+          }
+          entry<Routes.Scanner> {
+            ScannerScreen(navigator = backStack)
+          }
+          entry<Routes.AgreePrivacy> {
+            AgreePrivacyScreen(navigator = backStack)
+          }
+          entry<Routes.Translate>(
+            metadata = NavDisplay.transitionSpec {
+              EnterTransition.None togetherWith ExitTransition.None
+            } + NavDisplay.popTransitionSpec {
+              EnterTransition.None togetherWith ExitTransition.None
+            }
+          ) { key ->
+            TranslateScreen(
+              navigator = backStack,
+              pointX = key.pointX,
+              pointY = key.pointY,
+              fromLight = key.fromLight
+            )
+          }
+          entry<Routes.LikeList> { LikeListScreen(navigator = backStack) }
+          entry<Routes.RecentlyList> { RecentlyListScreen(navigator = backStack) }
+          entry<Routes.LyricsSearch>(
+            metadata = sliderFromBottomRouteAnim()
+          ) { key ->
+            LyricsSearchScreen(
+              song = key.song,
+              navigator = backStack
+            )
+          }
+        },
+        transitionSpec = {
+          scaleIn(
+            initialScale = 1.2f,
+          ) + fadeIn(
+            animationSpec = tween(250)
+          ) togetherWith
+              scaleOut(
+                targetScale = 1.2f,
               ) + fadeOut(
-          animationSpec = tween(125)
+            animationSpec = tween(250)
+          )
+        },
+        popTransitionSpec = {
+          scaleIn(
+            initialScale = 1.2f,
+          ) + fadeIn() togetherWith
+              scaleOut(
+                targetScale = 1.2f,
+
+                ) + fadeOut(
+            animationSpec = tween(125)
+          )
+        },
+        predictivePopTransitionSpec = {
+          scaleIn(
+            initialScale = 1.2f,
+          ) + fadeIn(
+            animationSpec = tween(250)
+          ) togetherWith
+              scaleOut(
+                targetScale = 1.2f,
+              ) + fadeOut(
+            animationSpec = tween(250)
+          )
+        },
+        sizeTransform = SizeTransform(
+          clip = true
         )
-      },
-      predictivePopTransitionSpec = {
-        scaleIn(
-          initialScale = 1.2f,
-        ) + fadeIn(
-          animationSpec = tween(250)
-        ) togetherWith
-            scaleOut(
-              targetScale = 1.2f,
-            ) + fadeOut(
-          animationSpec = tween(250)
-        )
-      },
-      sizeTransform = SizeTransform(
-        clip = true
       )
-    )
-    PlayerOverly(
-      navigator = backStack
-    )
+      PlayerOverly(
+        navigator = backStack
+      )
+    }
+
   }
 }
 

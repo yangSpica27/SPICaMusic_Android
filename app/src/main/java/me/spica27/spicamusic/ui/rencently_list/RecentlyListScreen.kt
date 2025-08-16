@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -35,6 +36,7 @@ import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
 import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.widget.rememberBindPlayerOverlyConnect
 import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
@@ -111,7 +113,9 @@ fun RecentlyListScreen(
           )
 
           LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+              .fillMaxSize()
+              .nestedScroll(rememberBindPlayerOverlyConnect()),
             state = listState,
             flingBehavior = rememberSnapFlingBehavior(
               lazyListState = listState,
