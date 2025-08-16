@@ -176,6 +176,13 @@ fun PlayerOverly(
                     MaterialTheme.colorScheme.surfaceContainer,
                     MaterialTheme.shapes.medium
                   )
+                  .innerShadow(
+                    shape = MaterialTheme.shapes.medium, shadow = Shadow(
+                      radius = 2.dp,
+                      color = MaterialTheme.colorScheme.onSurface,
+                      alpha = .11f
+                    )
+                  )
                   .clip(
                     MaterialTheme.shapes.medium
                   )
