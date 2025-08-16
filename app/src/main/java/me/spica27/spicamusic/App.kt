@@ -3,19 +3,27 @@ package me.spica27.spicamusic
 import android.app.Application
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
+import cat.ereza.customactivityoncrash.config.CaocConfig
 import me.spica27.spicamusic.module.InjectModules
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.GlobalContext.startKoin
 import timber.log.Timber
 
+
 @OptIn(UnstableApi::class)
 class App : Application() {
+
 
   override fun onCreate() {
     super.onCreate()
     instance = this
     Timber.plant(Timber.DebugTree())
+    CaocConfig.Builder.create()
+      .enabled(true)
+      .showRestartButton(false)
+      .showErrorDetails(true)
+      .apply()
     startKoin {
       androidLogger()
       androidContext(this@App)
@@ -46,7 +54,6 @@ class App : Application() {
       return instance
     }
   }
-
 
 
 }

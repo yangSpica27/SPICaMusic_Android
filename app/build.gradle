@@ -87,7 +87,7 @@ android {
 }
 
 dependencies {
-  implementation fileTree(dir: "libs", include: ["*.jar","*.aar"])
+  implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
   implementation libs.androidx.core.ktx
   implementation libs.androidx.lifecycle.runtime.ktx
   implementation libs.androidx.activity.compose
@@ -115,7 +115,6 @@ dependencies {
   ksp("androidx.room:room-compiler:$room_version")
   implementation("androidx.room:room-ktx:$room_version")
 
-
   implementation project(":media")
 
   implementation libs.androidx.datastore.preferences
@@ -125,7 +124,7 @@ dependencies {
   def accompanistVersion = "0.36.0"
   implementation(libs.accompanist.permissions)
 
-//  implementation project(":decoder_flac")
+  //  implementation project(":decoder_flac")
 
   implementation libs.kotlinx.serialization.core
   implementation libs.androidx.adaptive
@@ -156,6 +155,8 @@ dependencies {
 
   implementation libs.prettytime
   def koin_version = "4.1.0"
-  implementation "io.insert-koin:koin-androidx-compose:$koin_version"
-  implementation("com.belerweb:pinyin4j:2.5.1")
+  implementation libs.koin.androidx.compose
+  implementation(libs.pinyin4j)
+
+  implementation 'cat.ereza:customactivityoncrash:2.4.0'
 }

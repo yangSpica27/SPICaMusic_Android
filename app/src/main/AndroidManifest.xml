@@ -69,6 +69,10 @@
       </intent-filter>
     </activity>
 
+    <activity
+      android:name="cat.ereza.customactivityoncrash.activity.DefaultErrorActivity"
+      android:process=":error_activity" />
+
     <service
       android:name=".service.MusicService"
       android:exported="false"

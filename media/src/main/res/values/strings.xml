@@ -10,4 +10,9 @@
     <string name="label_play">Play</string>
     <string name="label_previous">Previous</string>
     <string name="label_next">Next</string>
+
+    <string name="crash_report_title">崩溃日志</string>
+    <string name="crash_report_body">发生意料之外的错误..</string>
+    <string name="crash_notification_channel">崩溃日志通知</string>
+    <string name="crash_notification_channel_desc">用于弹出崩溃日志通知</string>
 </resources>

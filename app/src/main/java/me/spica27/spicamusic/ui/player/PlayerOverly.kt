@@ -204,7 +204,7 @@ fun PlayerOverly(
               PlayerScreen(
                 navigator = navigator,
                 onBackClick = {
-                  overlyState.value = PlayerOverlyState.HIDE
+                  overlyState.value = PlayerOverlyState.MINI
                 },
               )
             }
