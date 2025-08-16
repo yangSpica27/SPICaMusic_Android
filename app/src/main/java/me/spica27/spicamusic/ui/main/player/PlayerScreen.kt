@@ -1,12 +1,6 @@
 package me.spica27.spicamusic.ui.main.player
 
-import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,8 +41,6 @@ import me.spica27.spicamusic.wrapper.activityViewModel
 @Composable
 fun PlayerScreen(
   playBackViewModel: PlayBackViewModel = activityViewModel(),
-  sharedTransitionScope: SharedTransitionScope,
-  animatedVisibilityScope: AnimatedVisibilityScope,
   onBackClick: () -> Unit,
   navigator: NavBackStack? = null,
 ) {
@@ -59,75 +51,65 @@ fun PlayerScreen(
 
   val pageState = rememberPagerState(pageCount = { 2 })
 
+  Scaffold(
+    modifier = Modifier
+      .fillMaxSize(),
+    topBar = {
+      TopAppBar(
+        navigationIcon = {
+          IconButton(
+            onClick = {
+              onBackClick.invoke()
+            }
+          ) {
+            Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
+          }
+        },
+        title = {
+          Text(
+            if (isPlaying) {
+              "Now Playing"
+            } else {
+              "Now Pause"
+            },
+            style = MaterialTheme.typography.titleLarge.copy(
+              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+              fontWeight = FontWeight.ExtraBold
+            ),
+          )
+        }
+      )
+    },
+  ) { paddingValues ->
 
-
-  with(sharedTransitionScope) {
-    Scaffold(
+    Box(
       modifier = Modifier
         .fillMaxSize()
-        .sharedBounds(
-          rememberSharedContentState(key = "player_bound"),
-          animatedVisibilityScope = animatedVisibilityScope,
-          enter = fadeIn() + scaleIn(),
-          exit = fadeOut() + scaleOut(),
-        ),
-      topBar = {
-        TopAppBar(
-          navigationIcon = {
-            IconButton(
-              onClick = {
-                onBackClick.invoke()
-              }
-            ) {
-              Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
+        .padding(paddingValues)
+    ) {
+      if (nowPlayingSongs.isEmpty()) {
+        // 播放列表为空
+        EmptyPage(navigator)
+      } else {
+        // 播放列表不为空
+        VerticalPager(
+          modifier = Modifier.fillMaxSize(),
+          state = pageState,
+          key = { it },
+          flingBehavior =
+            PagerDefaults.flingBehavior(state = pageState, snapPositionalThreshold = .2f)
+        ) {
+          when (it) {
+            0 -> {
+              PlayerPage(
+                navigator = navigator
+              )
             }
-          },
-          title = {
-            Text(
-              if (isPlaying) {
-                "Now Playing"
-              } else {
-                "Now Pause"
-              },
-              style = MaterialTheme.typography.titleLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                fontWeight = FontWeight.ExtraBold
-              ),
-            )
-          }
-        )
-      },
-    ) { paddingValues ->
 
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .padding(paddingValues)
-      ) {
-        if (nowPlayingSongs.isEmpty()) {
-          // 播放列表为空
-          EmptyPage(navigator)
-        } else {
-          // 播放列表不为空
-          VerticalPager(
-            modifier = Modifier.fillMaxSize(),
-            state = pageState,
-            key = { it },
-            flingBehavior =
-              PagerDefaults.flingBehavior(state = pageState, snapPositionalThreshold = .2f)
-          ) {
-            when (it) {
-              0 -> {
-                PlayerPage(
-                  navigator = navigator
-                )
-              }
-
-              1 -> {
-                CurrentListPage(
-                  navigator = navigator
-                )
-              }
+            1 -> {
+              CurrentListPage(
+                navigator = navigator
+              )
             }
           }
         }

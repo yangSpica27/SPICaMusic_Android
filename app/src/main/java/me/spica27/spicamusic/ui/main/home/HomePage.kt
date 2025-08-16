@@ -23,10 +23,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -38,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -57,6 +60,7 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.toCoilUri
+import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.playback.PlaybackStateManager
@@ -84,7 +88,8 @@ fun HomePage(
   songViewModel: SongViewModel = activityViewModel(),
   navigator: NavBackStack? = null,
   listState: ScrollState = rememberScrollState(),
-  connection: NestedScrollConnection
+  connection: NestedScrollConnection,
+  pagerState: PagerState
 ) {
 
 
@@ -125,8 +130,7 @@ fun HomePage(
       .blur(
         surfaceBlur.value.dp,
         BlurredEdgeTreatment.Unbounded
-      )
-    ,
+      ),
     contentAlignment = Alignment.TopStart
   ) {
     Column(
@@ -134,7 +138,7 @@ fun HomePage(
       verticalArrangement = Arrangement.Top
     ) {
       // 标题
-      SearchTopBar(navigator)
+      SearchTopBar(navigator, pagerState = pagerState)
       Column(
         modifier = Modifier
           .weight(1f)
@@ -487,12 +491,26 @@ private fun Title(
  * 顶部标题栏
  */
 @Composable
-private fun SearchTopBar(navigator: NavBackStack? = null) {
+private fun SearchTopBar(navigator: NavBackStack? = null, pagerState: PagerState) {
+  val coroutineScope = rememberCoroutineScope()
   Box(
     modifier = Modifier
       .fillMaxWidth()
       .padding(horizontal = 16.dp, vertical = 10.dp),
   ) {
+
+    IconButton(
+      onClick = {
+        navigator?.add(Routes.SearchAll)
+      },
+      modifier = Modifier.align(Alignment.CenterStart)
+    ) {
+      Icon(
+        imageVector = Icons.Default.Search,
+        contentDescription = "搜索",
+        tint = MaterialTheme.colorScheme.onSurface
+      )
+    }
 
     Text(
       text = "主页",
@@ -507,13 +525,15 @@ private fun SearchTopBar(navigator: NavBackStack? = null) {
 
     IconButton(
       onClick = {
-        navigator?.add(Routes.SearchAll)
+        coroutineScope.launch {
+          pagerState.animateScrollToPage(1)
+        }
       },
       modifier = Modifier.align(Alignment.CenterEnd)
     ) {
       Icon(
-        imageVector = Icons.Default.Search,
-        contentDescription = "搜索",
+        imageVector = Icons.Default.Settings,
+        contentDescription = "设置",
         tint = MaterialTheme.colorScheme.onSurface
       )
     }
