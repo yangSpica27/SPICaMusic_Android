@@ -53,6 +53,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -152,11 +153,12 @@ fun PlayerPage(
 ) {
 
   // 当前播放的歌曲
-  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
+  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState()
+    .value
 
 
   val showEmpty = remember(currentPlayingSong) {
-    currentPlayingSong == null
+    derivedStateOf { currentPlayingSong == null }
   }
 
   val currentTime = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
@@ -180,7 +182,9 @@ fun PlayerPage(
   }
 
 
-  if (showEmpty) {
+
+
+  if (showEmpty.value) {
     return Box(
       modifier = Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center,
@@ -691,7 +695,8 @@ private fun SongInfo(
   song: Song,
   modifier: Modifier = Modifier,
   songViewModel: SongViewModel = activityViewModel(),
-  navigator: NavBackStack? = null
+  navigator: NavBackStack? = null,
+  playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
 
 
@@ -722,7 +727,8 @@ private fun SongInfo(
 
 
   SongItemMenu(
-    songListItemMenuDialogState
+    songListItemMenuDialogState,
+    playBackViewModel = playBackViewModel
   )
 
 

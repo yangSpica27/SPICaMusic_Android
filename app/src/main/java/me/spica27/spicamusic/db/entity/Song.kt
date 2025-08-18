@@ -2,6 +2,8 @@ package me.spica27.spicamusic.db.entity
 
 import android.net.Uri
 import android.os.Parcelable
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
@@ -97,5 +99,30 @@ data class Song(
     return "Song(songId=$songId, mediaStoreId=$mediaStoreId, path='$path', displayName='$displayName', artist='$artist', size=$size, like=$like, duration=$duration, sort=$sort, playTimes=$playTimes, lastPlayTime=$lastPlayTime)"
   }
 
+
+  fun  toMediaItem(): MediaItem {
+    return MediaItem.Builder()
+      .setMediaId(mediaStoreId.toString())
+      .setUri(getSongUri())
+      .setMimeType(mimeType)
+      .setRequestMetadata(
+        MediaItem.RequestMetadata.Builder()
+          .setMediaUri(getSongUri())
+          .build()
+      )
+      .setMediaMetadata(
+        MediaMetadata.Builder()
+          .setTitle(displayName)
+          .setDisplayTitle(displayName)
+          .setArtist(artist)
+          .setSubtitle(artist)
+          .setDurationMs(duration)
+          .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+          .setIsPlayable(true)
+          .setIsBrowsable(true)
+          .build()
+      )
+      .build()
+  }
 
 }

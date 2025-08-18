@@ -63,7 +63,6 @@ import coil3.toCoilUri
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
-import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
@@ -89,7 +88,8 @@ fun HomePage(
   songViewModel: SongViewModel = activityViewModel(),
   navigator: NavBackStack? = null,
   listState: ScrollState = rememberScrollState(),
-  pagerState: PagerState
+  pagerState: PagerState,
+  playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
 
 
@@ -304,8 +304,7 @@ fun HomePage(
               SongItemWithCover(
                 song = it,
                 onClick = {
-                  PlaybackStateManager.getInstance()
-                    .play(song = it, randomSong)
+                  playBackViewModel.play(it, randomSong)
                 },
                 showMenu = false,
                 showPlus = false,

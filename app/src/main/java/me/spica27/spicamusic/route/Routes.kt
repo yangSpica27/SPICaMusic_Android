@@ -21,8 +21,6 @@ object Routes {
   @Serializable
   data class PlaylistDetail(val playlistId: Long) : NavKey
 
-  @Serializable
-  data object Player : NavKey
 
   @Serializable
   data class Translate(val pointX: Float, val pointY: Float,val fromLight: Boolean) : NavKey

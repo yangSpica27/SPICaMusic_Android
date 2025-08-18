@@ -27,11 +27,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
-import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
+import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
 import me.spica27.spicamusic.widget.SongItemMenu
@@ -50,6 +49,7 @@ import java.util.*
 fun RecentlyListScreen(
   navigator: NavBackStack? = null,
   songViewModel: SongViewModel = activityViewModel(),
+  playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
 
   val songs = songViewModel.oftenListenSongs.collectAsStateWithLifecycle().value
@@ -61,7 +61,8 @@ fun RecentlyListScreen(
   val songItemMenuDialogState = rememberSongItemMenuDialogState()
 
   SongItemMenu(
-    songItemMenuDialogState
+    songItemMenuDialogState,
+    playBackViewModel
   )
 
 
@@ -132,9 +133,7 @@ fun RecentlyListScreen(
                 modifier = Modifier.animateItem(),
                 song = song,
                 onClick = {
-                  coroutineScope.launch {
-                    PlaybackStateManager.getInstance().playAsync(song, songs)
-                  }
+                  playBackViewModel.play(song,songs)
                 },
                 coverSize = 66.dp,
                 showLike = true,

@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.module
 
 import android.app.Application
-import android.content.ComponentName
 import androidx.room.Room
 import com.linc.amplituda.Amplituda
 import com.skydoves.sandwich.retrofit.adapters.ApiResponseCallAdapterFactory
@@ -10,14 +9,12 @@ import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.dao.PlayHistoryDao
 import me.spica27.spicamusic.db.dao.PlaylistDao
 import me.spica27.spicamusic.db.dao.SongDao
+import me.spica27.spicamusic.media.SpicaPlayer
 import me.spica27.spicamusic.network.LyricApi
-import me.spica27.spicamusic.player.SPicaPlayer
 import me.spica27.spicamusic.repository.LyricRepository
 import me.spica27.spicamusic.repository.PlayHistoryRepository
 import me.spica27.spicamusic.repository.PlaylistRepository
 import me.spica27.spicamusic.repository.SongRepository
-import me.spica27.spicamusic.service.MusicService
-import me.spica27.spicamusic.service.MusicServiceConnection
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.viewModel.LyricSearchViewModel
 import me.spica27.spicamusic.viewModel.MusicSearchViewModel
@@ -28,7 +25,6 @@ import me.spica27.spicamusic.viewModel.SettingViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import org.koin.dsl.onClose
@@ -37,6 +33,9 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
 object InjectModules {
+
+
+
 
 
   /**
@@ -112,20 +111,6 @@ object InjectModules {
     single<DataStoreUtil> {
       DataStoreUtil(get<Application>())
     }
-    single<MusicServiceConnection>(
-      createdAtStart = true
-    ) {
-      MusicServiceConnection(
-        androidContext(),
-        ComponentName(androidContext(), MusicService::class.java)
-      )
-    }
-    single<SPicaPlayer> {
-      SPicaPlayer(
-        musicServiceConnection = get<MusicServiceConnection>(),
-        playHistoryRepository = get<PlayHistoryRepository>()
-      )
-    }
   }
 
   val repositoryModule = module {
@@ -187,7 +172,8 @@ object InjectModules {
       PlayBackViewModel(
         songDao = get<SongDao>(),
         amplituda = get<Amplituda>(),
-        playlistRepository = get<PlaylistRepository>()
+        playlistRepository = get<PlaylistRepository>(),
+        player = get<SpicaPlayer>()
       )
     }
     viewModel {

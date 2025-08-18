@@ -52,11 +52,11 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
-import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.repository.PlaylistRepository
 import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.utils.rememberVibrator
 import me.spica27.spicamusic.utils.tick
+import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import org.koin.compose.koinInject
 
 /**
@@ -110,10 +110,9 @@ data class SongListItemMenuDialogState(
 
 @OptIn(UnstableApi::class)
 @Composable
-fun SongItemMenu(state: SongListItemMenuDialogState) {
+fun SongItemMenu(state: SongListItemMenuDialogState,playBackViewModel: PlayBackViewModel) {
 
   val coroutineScope = rememberCoroutineScope()
-
   val currentSelectedItem = state.currentSong
   val showItemMenu = state.showItemMenu
   val showRemoveToPlaylist = state.showRemoveToPlaylist
@@ -143,7 +142,7 @@ fun SongItemMenu(state: SongListItemMenuDialogState) {
       addToCurrentList = {
         coroutineScope.launch {
           currentSelectedItem.let {
-            PlaybackStateManager.getInstance().playAsync(it)
+            playBackViewModel.play(it)
           }
         }
       }

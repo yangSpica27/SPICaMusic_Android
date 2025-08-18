@@ -32,15 +32,16 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import androidx.navigation3.runtime.NavBackStack
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.viewModel.MusicSearchViewModel
+import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
 import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
 import me.spica27.spicamusic.widget.rememberBindPlayerOverlyConnect
 import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
+import me.spica27.spicamusic.wrapper.activityViewModel
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -49,7 +50,8 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SearchAllScreen(
   musicViewModel: MusicSearchViewModel = koinViewModel(),
-  navigator: NavBackStack
+  navigator: NavBackStack,
+  playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
   Scaffold(
     topBar = {
@@ -84,7 +86,8 @@ fun SearchAllScreen(
             modifier = Modifier
               .fillMaxWidth()
               .weight(1f),
-            musicViewModel = musicViewModel
+            musicViewModel = musicViewModel,
+            playBackViewModel
           )
         }
       }
@@ -96,7 +99,8 @@ fun SearchAllScreen(
 @Composable
 private fun SongList(
   modifier: Modifier = Modifier,
-  musicViewModel: MusicSearchViewModel
+  musicViewModel: MusicSearchViewModel,
+  playBackViewModel: PlayBackViewModel
 ) {
   val dataState = musicViewModel.songFlow.collectAsState(emptyList())
   val coroutineScope = rememberCoroutineScope()
@@ -104,7 +108,8 @@ private fun SongList(
   val songItemMenuDialogState = rememberSongItemMenuDialogState()
 
   SongItemMenu(
-    songItemMenuDialogState
+    songItemMenuDialogState,
+    playBackViewModel
   )
 
   if (dataState.value.isEmpty()) {
@@ -138,7 +143,7 @@ private fun SongList(
           song = song,
           onClick = {
             coroutineScope.launch {
-              PlaybackStateManager.getInstance().playAsync(song, dataState.value)
+              playBackViewModel.play(song,dataState.value)
             }
           },
           coverSize = 66.dp,
@@ -153,7 +158,7 @@ private fun SongList(
           },
           onPlusClick = {
             coroutineScope.launch {
-              PlaybackStateManager.getInstance().playAsync(song)
+              playBackViewModel.play(song)
             }
           }
         )

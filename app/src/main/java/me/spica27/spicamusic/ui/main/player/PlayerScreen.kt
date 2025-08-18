@@ -25,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,7 @@ import androidx.navigation3.runtime.NavBackStack
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.wrapper.activityViewModel
+import timber.log.Timber
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -45,11 +47,19 @@ fun PlayerScreen(
   navigator: NavBackStack? = null,
 ) {
 
-  val nowPlayingSongs = playBackViewModel.playList.collectAsState().value
+  val nowPlayingSongs = playBackViewModel.player.currentTimelineItems.collectAsState().value
 
   val isPlaying = playBackViewModel.isPlaying.collectAsState(false).value
 
   val pageState = rememberPagerState(pageCount = { 2 })
+
+  LaunchedEffect(nowPlayingSongs) {
+    Timber.e("nowPlayingSongs: $nowPlayingSongs")
+  }
+
+  LaunchedEffect(isPlaying) {
+    Timber.e("isPlaying: $isPlaying")
+  }
 
   Scaffold(
     modifier = Modifier

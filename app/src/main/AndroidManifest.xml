@@ -78,6 +78,26 @@
       android:exported="false"
       android:foregroundServiceType="mediaPlayback" />
 
+    <service
+      android:name=".media.service.PlaybackService"
+      android:exported="true"
+      android:foregroundServiceType="mediaPlayback"
+      tools:ignore="ExportedService">
+      <intent-filter>
+        <action android:name="androidx.media3.session.MediaSessionService" />
+        <action android:name="android.media.browse.MediaBrowserService" />
+      </intent-filter>
+    </service>
+
+    <receiver
+      android:name="androidx.media3.session.MediaButtonReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MEDIA_BUTTON" />
+      </intent-filter>
+    </receiver>
+
+
   </application>
 
 </manifest>

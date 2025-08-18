@@ -17,8 +17,9 @@ interface LyricDao {
   @Query("DELETE FROM Lyric WHERE mediaId = :songId")
   fun deleteLyric(songId: Long)
 
+
   @Query("SELECT * FROM Lyric WHERE mediaId = :songId LIMIT 1")
-  fun getLyricWithSongId(songId: Long): Lyric?
+  fun getLyricWithMediaId(songId: Long): Lyric?
 
   @Query("SELECT * FROM Lyric")
   fun getLyrics(): Flow<List<Lyric>>

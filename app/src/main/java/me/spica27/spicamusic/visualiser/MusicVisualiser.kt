@@ -6,7 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.playback.PlaybackStateManager
+import org.koin.java.KoinJavaComponent.getKoin
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.cos
 import kotlin.math.floor
@@ -43,15 +43,16 @@ class MusicVisualiser() : FFTAudioProcessor.FFTListener {
 
   private var coroutineScope = CoroutineScope(job + Dispatchers.Default)
 
+  private val fftAudioProcessor = getKoin().get<FFTAudioProcessor>()
 
   fun ready() {
     job = SupervisorJob()
     coroutineScope = CoroutineScope(job + Dispatchers.Default)
-    PlaybackStateManager.getInstance().fftAudioProcessor.listeners.add(this)
+    fftAudioProcessor.listeners.add(this)
   }
 
   fun dispose() {
-    PlaybackStateManager.getInstance().fftAudioProcessor.listeners.remove(this)
+    fftAudioProcessor.listeners.remove(this)
     job.cancel()
   }
 

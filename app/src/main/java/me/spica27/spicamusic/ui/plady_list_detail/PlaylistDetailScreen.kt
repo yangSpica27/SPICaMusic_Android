@@ -63,11 +63,11 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Playlist
-import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.TimeUtils
 import me.spica27.spicamusic.utils.clickableWithVibration
 import me.spica27.spicamusic.utils.dip
+import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.SongItemMenu
@@ -84,7 +84,8 @@ import java.util.*
 fun PlaylistDetailScreen(
   playlistViewModel: PlaylistViewModel = activityViewModel(),
   navigator: NavBackStack? = null,
-  playlistId: Long
+  playlistId: Long,
+  playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
 
 
@@ -111,7 +112,8 @@ fun PlaylistDetailScreen(
   val songItemMenuDialogState = rememberSongItemMenuDialogState()
 
   SongItemMenu(
-    songItemMenuDialogState
+    songItemMenuDialogState,
+    playBackViewModel
   )
 
   Scaffold(
@@ -177,15 +179,11 @@ fun PlaylistDetailScreen(
         Row(
           modifier = Modifier
             .fillMaxWidth()
-            .clickableWithVibration(){
+            .clickableWithVibration {
               coroutineScope.launch {
                 if (songs.isNotEmpty()) {
                   playlistViewModel.addPlayCount(playlistId)
-                  PlaybackStateManager.getInstance()
-                    .playAsync(
-                      songs.first(),
-                      songs
-                    )
+                  playBackViewModel.play(songs.first(), songs)
                 }
               }
             }
@@ -231,8 +229,7 @@ fun PlaylistDetailScreen(
           modifier = Modifier
             .weight(1f)
             .fillMaxWidth()
-            .nestedScroll(rememberBindPlayerOverlyConnect())
-          ,
+            .nestedScroll(rememberBindPlayerOverlyConnect()),
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           items(songs, key = {
@@ -284,7 +281,7 @@ fun PlaylistDetailScreen(
                 onClick = {
                   coroutineScope.launch {
                     playlistViewModel.addPlayCount(playlistId)
-                    PlaybackStateManager.getInstance().playAsync(song, songs)
+                    playBackViewModel.play(song, songs)
                   }
                 },
                 coverSize = 66.dp,

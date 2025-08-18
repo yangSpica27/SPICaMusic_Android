@@ -24,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +61,8 @@ fun CurrentListPage(
 
   val playIndexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()
 
-  val playListSizeState = playBackViewModel.nowPlayingListSize.collectAsStateWithLifecycle()
+  val playListSizeState =
+    playBackViewModel.nowPlayingListSize.collectAsState()
 
   var showCreateDialog by remember { mutableStateOf(false) }
 
@@ -193,8 +195,7 @@ fun CurrentListPage(
                 listState.animateScrollToItem(playIndexState.value)
               }
             }
-            .padding(8.dp)
-          ,
+            .padding(8.dp),
           contentAlignment = Alignment.Center
         ) {
           Icon(
@@ -221,7 +222,7 @@ private fun CurrentList(
 
   val listDataState = viewModel
     .playList
-    .collectAsStateWithLifecycle()
+    .collectAsStateWithLifecycle(emptyList())
 
   LazyColumn(
     modifier = Modifier
@@ -233,14 +234,14 @@ private fun CurrentList(
       PlayingSongItem(
         showRemove = true,
         onRemoveClick = {
-          viewModel.removeSong(index)
+          viewModel.removeSong(song)
         },
         modifier = Modifier
           .fillMaxWidth()
           .animateItem(),
         isPlaying = playingSongState.value?.songId == song.songId,
         song = song, onClick = {
-          viewModel.play(listDataState.value[index], listDataState.value)
+          viewModel.play(listDataState.value[index])
         })
     }
 

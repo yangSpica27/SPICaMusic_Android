@@ -29,9 +29,9 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
-import me.spica27.spicamusic.playback.PlaybackStateManager
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
+import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
 import me.spica27.spicamusic.widget.SongItemMenu
@@ -46,6 +46,7 @@ import java.util.*
 fun LikeListScreen(
   navigator: NavBackStack? = null,
   songViewModel: SongViewModel = activityViewModel(),
+  playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
 
   val songs = songViewModel.allLikeSong.collectAsStateWithLifecycle().value
@@ -62,7 +63,8 @@ fun LikeListScreen(
   val songItemMenuDialogState = rememberSongItemMenuDialogState()
 
   SongItemMenu(
-    songItemMenuDialogState
+    songItemMenuDialogState,
+    playBackViewModel
   )
 
   Scaffold(
@@ -130,7 +132,7 @@ fun LikeListScreen(
                 song = song,
                 onClick = {
                   coroutineScope.launch {
-                    PlaybackStateManager.getInstance().playAsync(song, songs)
+                    playBackViewModel.play(song)
                   }
                 },
                 coverSize = 66.dp,

@@ -8,7 +8,7 @@ coilCompose = "3.3.0"
 datastorePreferencesVersion = "1.1.7"
 dynamicanimationKtxVersion = "1.1.0"
 hiltAndroidVersion = "2.56.2"
-hiltNavigationComposeVersion = "1.3.0-alpha01"
+hiltNavigationComposeVersion = "1.3.0-beta01"
 koinAndroidxComposeVersion = "4.1.0"
 kotlin = "2.1.21"
 coreKtx = "1.16.0"
@@ -53,6 +53,7 @@ androidx-media = { module = "androidx.media:media", version.ref = "mediaVersion"
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3ExoplayerVersion" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtxVersion" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
+kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version = "1.10.2" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroidVersion" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hiltAndroidVersion" }

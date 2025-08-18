@@ -48,10 +48,14 @@ interface SongDao {
   fun getsSongsFromNameSync(name: String): List<Song>
 
   @Query("SELECT * FROM song WHERE songId == :id")
-  fun getSongWithId(id: Long): Song
+  fun getSongWithId(id: Long): Song?
+
 
   @Query("SELECT * FROM song WHERE mediaStoreId == :id")
   fun getSongWithMediaStoreId(id: Long): Song?
+
+  @Query("SELECT * FROM song WHERE mediaStoreId == :id")
+  fun getSongFlowWithMediaStoreId(id: Long): Flow<Song?>
 
   @Query("SELECT * FROM song WHERE songId == :id")
   fun getSongFlowWithId(id: Long): Flow<Song?>

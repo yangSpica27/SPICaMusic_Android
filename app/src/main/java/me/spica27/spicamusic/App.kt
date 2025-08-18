@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import cat.ereza.customactivityoncrash.config.CaocConfig
+import me.spica27.spicamusic.media.SpicaPlayer
 import me.spica27.spicamusic.module.InjectModules
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -32,7 +33,8 @@ class App : Application() {
         InjectModules.persistenceModule,
         InjectModules.utilsModule,
         InjectModules.repositoryModule,
-        InjectModules.viewModelModule
+        InjectModules.viewModelModule,
+        SpicaPlayer.module
       )
     }
 //    SingletonImageLoader.setSafe(factory = {
