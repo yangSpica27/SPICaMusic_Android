@@ -30,6 +30,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -46,6 +47,8 @@ import coil3.compose.AsyncImage
 import me.spica27.spicamusic.common.NetworkState
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.network.bean.LyricResponse
+import me.spica27.spicamusic.ui.player.LocalPlayerWidgetState
+import me.spica27.spicamusic.ui.player.PlayerOverlyState
 import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.viewModel.LyricSearchViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -62,7 +65,18 @@ fun LyricsSearchScreen(
 
   val state = lyricSearchViewModel.state.collectAsState(initial = NetworkState.IDLE).value
 
+  val overlyState = LocalPlayerWidgetState.current
+
+  DisposableEffect(Unit) {
+    overlyState.value = PlayerOverlyState.MINI
+    onDispose {
+      overlyState.value = PlayerOverlyState.DETAIL
+    }
+  }
+
   Scaffold(
+    modifier = Modifier
+      .fillMaxSize(),
     topBar = {
       TopAppBar(navigationIcon = {
         IconButton(
