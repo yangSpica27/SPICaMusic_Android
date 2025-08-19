@@ -1,5 +1,7 @@
 package me.spica27.spicamusic.media.service
 
+import android.app.PendingIntent
+import android.content.Intent
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -15,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.MainActivity
 import me.spica27.spicamusic.dsp.EqualizerAudioProcessor
 import me.spica27.spicamusic.dsp.FadeTransitionRenderersFactory
 import me.spica27.spicamusic.dsp.ReplayGainAudioProcessor
@@ -78,9 +81,18 @@ class PlaybackService : MediaLibraryService(), MediaSession.Callback {
 
     exoPlayer?.addListener(PlayerListener(exoPlayer!!))
 
+    val pendingIntent = PendingIntent.getActivity(
+      this@PlaybackService,
+      0,
+      Intent(this@PlaybackService, MainActivity::class.java),
+      PendingIntent.FLAG_IMMUTABLE
+    )
 
     mediaSession = MediaLibrarySession
       .Builder(this, exoPlayer!!, ServiceCallback(exoPlayer!!))
+      .setSessionActivity(
+        pendingIntent
+      )
       .build()
 
     coroutineScope.launch {

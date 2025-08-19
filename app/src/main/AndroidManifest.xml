@@ -12,7 +12,6 @@
     android:name="android.permission.READ_EXTERNAL_STORAGE"
     android:maxSdkVersion="32" />
   <uses-permission android:name="android.permission.VIBRATE" />
-  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -60,8 +59,7 @@
       android:launchMode="singleTask"
       android:theme="@style/Theme.SPICaMusic"
       android:exported="true"
-      android:screenOrientation="portrait"
-      android:label="@string/app_name">
+      android:screenOrientation="portrait">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
 
@@ -73,10 +71,7 @@
       android:name="cat.ereza.customactivityoncrash.activity.DefaultErrorActivity"
       android:process=":error_activity" />
 
-    <service
-      android:name=".service.MusicService"
-      android:exported="false"
-      android:foregroundServiceType="mediaPlayback" />
+
 
     <service
       android:name=".media.service.PlaybackService"
