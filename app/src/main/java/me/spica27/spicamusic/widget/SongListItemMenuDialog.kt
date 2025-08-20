@@ -57,6 +57,8 @@ import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.utils.rememberVibrator
 import me.spica27.spicamusic.utils.tick
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.viewModel.SongViewModel
+import me.spica27.spicamusic.wrapper.activityViewModel
 import org.koin.compose.koinInject
 
 /**
@@ -110,15 +112,15 @@ data class SongListItemMenuDialogState(
 
 @OptIn(UnstableApi::class)
 @Composable
-fun SongItemMenu(state: SongListItemMenuDialogState,playBackViewModel: PlayBackViewModel) {
+fun SongItemMenu(state: SongListItemMenuDialogState, playBackViewModel: PlayBackViewModel) {
 
   val coroutineScope = rememberCoroutineScope()
   val currentSelectedItem = state.currentSong
   val showItemMenu = state.showItemMenu
   val showRemoveToPlaylist = state.showRemoveToPlaylist
   val showAddToPlaylist = state.showAddToPlaylist
-
   val vibrator = rememberVibrator()
+  val songViewModel = activityViewModel<SongViewModel>()
 
   LaunchedEffect(showAddToPlaylist, showRemoveToPlaylist, showItemMenu) {
     vibrator.cancel()
@@ -138,6 +140,9 @@ fun SongItemMenu(state: SongListItemMenuDialogState,playBackViewModel: PlayBackV
       },
       removeToPlaylist = {
         state.showRemoveToPlaylist = true
+      },
+      changeToIgnore = {
+        songViewModel.ignore(currentSelectedItem.songId?:-1, true)
       },
       addToCurrentList = {
         coroutineScope.launch {
@@ -421,7 +426,8 @@ private fun SongItemDialog(
   onDismiss: () -> Unit,
   addSongToPlaylist: () -> Unit,
   removeToPlaylist: () -> Unit,
-  addToCurrentList: () -> Unit
+  addToCurrentList: () -> Unit,
+  changeToIgnore: () -> Unit
 ) {
 
   val clipboardManager = LocalClipboard.current
@@ -539,6 +545,13 @@ private fun SongItemDialog(
           .fillMaxWidth()
           .clickable {
             removeToPlaylist()
+            onDismiss()
+          })
+      ItemMenu(
+        "添加到忽略名单(将不会在列表中显示)", modifier = Modifier
+          .fillMaxWidth()
+          .clickable {
+            changeToIgnore()
             onDismiss()
           })
     }

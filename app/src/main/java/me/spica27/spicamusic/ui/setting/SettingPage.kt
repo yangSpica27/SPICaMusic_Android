@@ -137,6 +137,14 @@ fun SettingPage(
       }
       item {
         CategoryItem(
+          title = "忽略的歌曲",
+          icon = ImageVector.vectorResource(R.drawable.ic_block),
+          onClick = {
+            navigator?.add(Routes.IgnoreList)
+          })
+      }
+      item {
+        CategoryItem(
           title = "音效",
           icon = ImageVector.vectorResource(R.drawable.ic_outlined_equalizer),
           onClick = {
@@ -162,7 +170,7 @@ fun SettingPage(
       }
       item {
         AppVersion(
-          versionText = "Version ALPHA-3",
+          versionText = "Version 测试版本",
           copyrights = "© 2024 SPICa27",
           onClick = {
 
@@ -175,7 +183,8 @@ fun SettingPage(
 
 @Composable
 private fun CategoryItem(
-  title: String, icon: ImageVector,
+  title: String,
+  icon: ImageVector,
   onClick: () -> Unit = {}
 ) {
   Surface(

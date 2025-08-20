@@ -111,7 +111,8 @@ object AudioTool {
         sampleRate = 0,
         bitRate = 0,
         channels = 0,
-        digit = 0
+        digit = 0,
+        isIgnore = false
       )
 
 //      val pinying = PinyinHelper.toHanYuPinyinString(

@@ -20,7 +20,7 @@ import me.spica27.spicamusic.db.entity.Song
  */
 @Database(
   entities = [Song::class, Playlist::class, PlaylistSongCrossRef::class, Lyric::class, PlayHistory::class],
-  version = 13,
+  version = 14,
   exportSchema = false,
   autoMigrations = [],
 )
@@ -40,6 +40,11 @@ abstract class AppDatabase : RoomDatabase() {
         db.execSQL("ALTER TABLE Playlist ADD COLUMN playTimes INTEGER NOT NULL DEFAULT 0")
         db.execSQL("ALTER TABLE Playlist ADD COLUMN createTimestamp INTEGER NOT NULL DEFAULT 0")
         db.execSQL("UPDATE Playlist SET createTimestamp = ${System.currentTimeMillis()}")
+      }
+    }
+    val MIGRATION_13_14 = object : Migration(13, 14) {
+      override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE Song ADD COLUMN isIgnore INTEGER NOT NULL DEFAULT 0")
       }
     }
   }

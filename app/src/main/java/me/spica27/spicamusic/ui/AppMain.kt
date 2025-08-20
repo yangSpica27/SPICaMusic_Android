@@ -24,6 +24,7 @@ import me.spica27.spicamusic.theme.AppTheme
 import me.spica27.spicamusic.ui.add_song.AddSongScreen
 import me.spica27.spicamusic.ui.agree_privacy.AgreePrivacyScreen
 import me.spica27.spicamusic.ui.eq.EqScreen
+import me.spica27.spicamusic.ui.ignore_list.IgnoreListScreen
 import me.spica27.spicamusic.ui.like_list.LikeListScreen
 import me.spica27.spicamusic.ui.lyrics_search.LyricsSearchScreen
 import me.spica27.spicamusic.ui.main.MainScreen
@@ -108,6 +109,9 @@ fun AppMain() {
           }
           entry<Routes.LikeList> { LikeListScreen(navigator = backStack) }
           entry<Routes.RecentlyList> { RecentlyListScreen(navigator = backStack) }
+          entry<Routes.IgnoreList>{
+            IgnoreListScreen(navigator = backStack)
+          }
           entry<Routes.LyricsSearch>(
             metadata = sliderFromBottomRouteAnim()
           ) { key ->

@@ -39,7 +39,8 @@ data class Song(
   var sampleRate: Int, // 采样率
   var bitRate: Int, // 比特率
   var channels: Int, // 声道数
-  var digit: Int // 位深度
+  var digit: Int, // 位深度
+  var isIgnore: Boolean
 ) : Parcelable {
 
   fun getFormatMimeType(): String {

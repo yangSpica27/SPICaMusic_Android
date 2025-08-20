@@ -40,6 +40,12 @@ class SongViewModel(
   val randomSongs: StateFlow<List<Song>> = songRepository.randomSongFlow()
     .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+  val ignoreSongs: StateFlow<List<Song>> = songRepository.ignoreSongFlow().stateIn(
+    viewModelScope,
+    SharingStarted.Lazily,
+    emptyList()
+  )
+
   // 切换喜欢状态
   fun toggleFavorite(id: Long) {
     Timber.e("toggleFavorite: $id")
@@ -49,6 +55,13 @@ class SongViewModel(
   }
 
   fun songLikeFlow(id: Long) = songRepository.songLikeFlowWithId(id).distinctUntilChanged()
+
+  // 忽略歌曲
+  fun ignore(id: Long, isIgnore: Boolean) {
+    viewModelScope.launch {
+      songRepository.ignore(id, isIgnore)
+    }
+  }
 
   // 添加歌单
   fun addPlayList(value: String) {

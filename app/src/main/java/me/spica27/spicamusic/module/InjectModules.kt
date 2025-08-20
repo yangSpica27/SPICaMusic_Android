@@ -35,32 +35,21 @@ import java.util.concurrent.TimeUnit
 object InjectModules {
 
 
-
-
-
   /**
    * 网络的注入
    */
   val networkModule = module {
     single<OkHttpClient> {
-      OkHttpClient
-        .Builder()
+      OkHttpClient.Builder()
         .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
-        .retryOnConnectionFailure(true)
-        .connectTimeout(3000L, TimeUnit.MILLISECONDS)
-        .readTimeout(3000L, TimeUnit.MILLISECONDS)
-        .callTimeout(3000L, TimeUnit.MILLISECONDS)
-        .writeTimeout(3000L, TimeUnit.MILLISECONDS)
-        .build()
+        .retryOnConnectionFailure(true).connectTimeout(3000L, TimeUnit.MILLISECONDS)
+        .readTimeout(3000L, TimeUnit.MILLISECONDS).callTimeout(3000L, TimeUnit.MILLISECONDS)
+        .writeTimeout(3000L, TimeUnit.MILLISECONDS).build()
     }
     single<Retrofit> {
-      Retrofit
-        .Builder()
-        .client(get())
-        .baseUrl("http://api.spica27.site/api/v1/lyrics/")
+      Retrofit.Builder().client(get()).baseUrl("http://api.spica27.site/api/v1/lyrics/")
         .addConverterFactory(MoshiConverterFactory.create().withNullSerialization())
-        .addCallAdapterFactory(ApiResponseCallAdapterFactory.create())
-        .build()
+        .addCallAdapterFactory(ApiResponseCallAdapterFactory.create()).build()
     }
     single<LyricApi> {
       get<Retrofit>().create(LyricApi::class.java)
@@ -72,15 +61,11 @@ object InjectModules {
    */
   val persistenceModule = module {
     single<AppDatabase> {
-      Room
-        .databaseBuilder(
-          get<Application>(), AppDatabase::class.java,
-          "spica_music.db"
-        )
-        .addMigrations(
-          AppDatabase.MIGRATION_12_13
-        )
-        .build()
+      Room.databaseBuilder(
+          get<Application>(), AppDatabase::class.java, "spica_music.db"
+        ).addMigrations(
+          AppDatabase.MIGRATION_12_13, AppDatabase.MIGRATION_13_14
+        ).build()
     }
 
     single<LyricDao> {
@@ -116,8 +101,7 @@ object InjectModules {
   val repositoryModule = module {
     single<LyricRepository> {
       LyricRepository(
-        lyricApi = get(),
-        lyricDao = get()
+        lyricApi = get(), lyricDao = get()
       )
     }
     single<PlaylistRepository> {
@@ -143,8 +127,7 @@ object InjectModules {
   val viewModelModule = module {
     viewModel {
       SongViewModel(
-        songRepository = get<SongRepository>(),
-        playlistRepository = get<PlaylistRepository>()
+        songRepository = get<SongRepository>(), playlistRepository = get<PlaylistRepository>()
       )
     }
     viewModel {
@@ -164,8 +147,7 @@ object InjectModules {
     }
     viewModel {
       SelectSongViewModel(
-        songDao = get<SongDao>(),
-        playlistDao = get<PlaylistDao>()
+        songDao = get<SongDao>(), playlistDao = get<PlaylistDao>()
       )
     }
     viewModel {

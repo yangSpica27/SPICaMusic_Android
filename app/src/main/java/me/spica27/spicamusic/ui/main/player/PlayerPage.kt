@@ -1115,7 +1115,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           )
           Spacer(modifier = Modifier.width(12.dp))
           Text(
-            "2", style = MaterialTheme.typography.bodyLarge.copy(
+            "${song.channels}", style = MaterialTheme.typography.bodyLarge.copy(
               color = MaterialTheme.colorScheme.onSurface
             )
           )

@@ -55,6 +55,9 @@ object Routes {
   @Serializable
   data object AgreePrivacy : NavKey
 
+  @Serializable
+  data object IgnoreList: NavKey
+
   /**
    * 歌词搜索
    */
