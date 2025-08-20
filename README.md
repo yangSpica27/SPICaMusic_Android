@@ -5,14 +5,14 @@
 <img src="/img/Screenshot_20250728_201015.png" width="20%"/>
 <img src="/img/Screenshot_20250730_174948.png" width="20%"/>
 <img src="/img/Screenshot_20250621_231303.png" width="20%"/>
-<img src="/img/Screenshot_20250731_143921.png" width="20%"/>
+<img src="/img/Screenshot_20250820_145443.png" width="20%"/>
 </p>
 
 <p align="center">
-<img src="/img/Screenshot_20250731_144222.png" width="20%"/>
+<img src="/img/Screenshot_20250820_145709.png" width="20%"/>
 <img src="/img/Screenshot_20250731_144309.png" width="20%"/>
 <img src="/img/Screenshot_20250731_144457.png" width="20%"/>
-<img src="/img/Screenshot_20250731_144531.png" width="20%"/>
+<img src="/img/Screenshot_20250820_145606.png" width="20%">
 </p>
 
 ## 项目简介
@@ -64,18 +64,19 @@ EXOPlayer+Jetpack Compose实现的音乐播放器
 
 ## 库
 
-- [Retrofit](https://github.com/square/retrofit)
-- [OkHTTP](https://github.com/square/okhttp)
+- [Retrofit](https://github.com/square/retrofit): Android/Java平台类型安全的HTTP请求库
+- [OkHTTP](https://github.com/square/okhttp): 一个高效的HTTP和HTTP/2客户端
 - [Jetpack Compose](https://developer.android.com/compose): Jetpack Compose 是一个现代化的工具包，用于构建原生
   Android 应用的用户界面。它简化了 UI 开发，使您能够更快地构建应用。
 - [Media3](https://github.com/androidx/media): Media3 是一个用于播放音频和视频的库，它提供了一个用于播放媒体的
-  API。
-  和一组用于管理媒体会话的类。
+  API，和一组用于管理媒体会话的类。
 - [Amplituda](https://github.com/lincollincol/Amplituda): 一个用于分析音频的库，它提供了一种简单的方法来获取音频的振幅。
-- [Noise](https://github.com/paramsen/noise): 一个通用的FFT计算库，用于计算音频的频谱。
+- [TarsosDSP](https://github.com/paramsen/noise): TarsosDSP旨在通过提供一套简易接口，让开发者能够轻松访问和运用音乐处理算法。
 - [FFMPEG](https://github.com/FFmpeg/FFmpeg):FFmpeg 是用于处理音频、视频、字幕和相关元数据等多媒体内容的库和工具的集合。
 - [Koin](https://github.com/InsertKoinIO/koin):Koin 是一个面向 Kotlin 开发人员的实用、轻量级依赖注入框架。
 - [AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass):Jetpack Compose液态玻璃效果实现。
+- [Coil3](https://github.com/coil-kt/coil): 适用于 Android 和 Compose Multiplatform 的图像加载库。
+- [Moshi](https://github.com/square/moshi): 一个开源的JSON解析库。
 
 最近要开始找工作了，更新随缘🌈
 
