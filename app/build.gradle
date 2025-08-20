@@ -158,7 +158,4 @@ dependencies {
 
   implementation libs.kotlinx.coroutines.guava
   implementation libs.androidx.media3.session
-
-
-  implementation 'cat.ereza:customactivityoncrash:2.4.0'
 }

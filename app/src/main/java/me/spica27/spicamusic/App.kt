@@ -3,7 +3,7 @@ package me.spica27.spicamusic
 import android.app.Application
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
-import cat.ereza.customactivityoncrash.config.CaocConfig
+import me.spica27.spicamusic.crash.CrashHandler
 import me.spica27.spicamusic.media.SpicaPlayer
 import me.spica27.spicamusic.module.InjectModules
 import org.koin.android.ext.koin.androidContext
@@ -20,11 +20,7 @@ class App : Application() {
     super.onCreate()
     instance = this
     Timber.plant(Timber.DebugTree())
-    CaocConfig.Builder.create()
-      .enabled(true)
-      .showRestartButton(false)
-      .showErrorDetails(true)
-      .apply()
+    CrashHandler.init(this)
     startKoin {
       androidLogger()
       androidContext(this@App)

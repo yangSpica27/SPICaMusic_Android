@@ -17,12 +17,18 @@
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-permission android:name="android.permission.INTERNET" />
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
-  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
-  <uses-permission android:name="android.permission.SEND_SMS" tools:node="remove"/>
-  <uses-permission android:name="android.permission.READ_SMS" tools:node="remove"/>
-  <uses-permission android:name="android.permission.RECEIVE_SMS" tools:node="remove"/>
+  <uses-permission
+    android:name="android.permission.SEND_SMS"
+    tools:node="remove" />
+  <uses-permission
+    android:name="android.permission.READ_SMS"
+    tools:node="remove" />
+  <uses-permission
+    android:name="android.permission.RECEIVE_SMS"
+    tools:node="remove" />
 
   <uses-permission
     android:name="android.permission.ACCESS_NETWORK_STATE"
@@ -47,18 +53,30 @@
     android:theme="@style/Theme.SPICaMusic"
     android:allowBackup="true"
     android:dataExtractionRules="@xml/data_extraction_rules"
+    android:extractNativeLibs="true"
     android:fullBackupContent="@xml/backup_rules"
     android:icon="@mipmap/ic_launcher"
     android:label="@string/app_name"
-    android:extractNativeLibs="true"
     android:supportsRtl="true"
     android:usesCleartextTraffic="true"
     tools:targetApi="33">
+
+    <provider
+      android:name="androidx.core.content.FileProvider"
+      android:authorities="${applicationId}.fileprovider"
+      android:exported="false"
+      android:grantUriPermissions="true">
+
+      <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/provider_paths" />
+    </provider>
+
     <activity
       android:name=".MainActivity"
-      android:launchMode="singleTask"
       android:theme="@style/Theme.SPICaMusic"
       android:exported="true"
+      android:launchMode="singleTask"
       android:screenOrientation="portrait">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
@@ -68,10 +86,8 @@
     </activity>
 
     <activity
-      android:name="cat.ereza.customactivityoncrash.activity.DefaultErrorActivity"
-      android:process=":error_activity" />
-
-
+      android:name="me.spica27.spicamusic.ui.crash.CrashActivity"
+      android:screenOrientation="portrait" />
 
     <service
       android:name=".media.service.PlaybackService"
@@ -91,7 +107,6 @@
         <action android:name="android.intent.action.MEDIA_BUTTON" />
       </intent-filter>
     </receiver>
-
 
   </application>
 

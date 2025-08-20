@@ -77,5 +77,6 @@
             感谢您的理解与支持！希望 SPICaMusic 能为您带来愉悦的音乐时光。
         </p>
   </string>
-  
+  <string name="crash_log">崩溃日志</string>
+
 </resources>
