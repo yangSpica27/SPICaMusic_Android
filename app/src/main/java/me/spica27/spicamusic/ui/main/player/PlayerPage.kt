@@ -119,6 +119,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.repository.PlayHistoryRepository
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.ui.player.LocalPlayerWidgetState
 import me.spica27.spicamusic.utils.TimeUtils
 import me.spica27.spicamusic.utils.TimeUtils.prettyTime
 import me.spica27.spicamusic.utils.contentResolverSafe
@@ -182,7 +183,7 @@ fun PlayerPage(
   }
 
 
-
+  val overlyState = LocalPlayerWidgetState.current
 
   if (showEmpty.value) {
     return Box(
@@ -252,6 +253,9 @@ fun PlayerPage(
                     modifier = Modifier.fillMaxSize(),
                     currentTime = currentTime * 1000,
                     song = currentPlayingSong!!,
+                    onScroll = {
+                      playBackViewModel.seekTo(it.toLong())
+                    },
                     placeHolder = {
                       Box(
                         modifier = Modifier

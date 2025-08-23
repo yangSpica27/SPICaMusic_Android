@@ -70,7 +70,7 @@ fun LyricsSearchScreen(
   DisposableEffect(Unit) {
     overlyState.value = PlayerOverlyState.MINI
     onDispose {
-      overlyState.value = PlayerOverlyState.DETAIL
+      overlyState.value = PlayerOverlyState.PLAYER
     }
   }
 

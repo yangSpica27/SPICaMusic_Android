@@ -7,9 +7,11 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +19,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -28,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -53,6 +56,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastCoerceAtLeast
 import androidx.compose.ui.util.fastCoerceAtMost
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kyant.liquidglass.GlassStyle
 import com.kyant.liquidglass.highlight.GlassHighlight
 import com.kyant.liquidglass.liquidGlass
@@ -66,6 +70,8 @@ import com.kyant.liquidglass.shadow.GlassShadow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -86,15 +92,17 @@ fun LyricsView(
   currentTime: Long,
   dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>(),
   placeHolder: @Composable () -> Unit = {},
+  onScroll: (Float) -> Unit = {}
 ) {
 
   val listState = rememberLazyListState()
 
-  val isUserScrolling by remember {
-    derivedStateOf {
-      listState.isScrollInProgress
+  val isUserScrolling by listState.interactionSource.interactions
+    .filterIsInstance<DragInteraction>()
+    .map { dragInteraction ->
+      dragInteraction is DragInteraction.Start
     }
-  }
+    .collectAsStateWithLifecycle(null)
 
   val activeIndex = remember { mutableIntStateOf(0) }
 
@@ -122,7 +130,7 @@ fun LyricsView(
   }
 
   LaunchedEffect(currentTime) {
-    if (isUserScrolling) return@LaunchedEffect
+    if (isUserScrolling == true) return@LaunchedEffect
     launch(Dispatchers.IO + SupervisorJob()) {
       var index = 0
       for (item in currentLyric) {
@@ -145,6 +153,40 @@ fun LyricsView(
     }
   }
 
+
+
+
+  LaunchedEffect(isUserScrolling) {
+    if (isUserScrolling == false && currentLyric.isNotEmpty()) {
+      val layoutInfo = listState.layoutInfo
+      if (layoutInfo.visibleItemsInfo.isEmpty()) {
+        return@LaunchedEffect
+      }
+
+      val viewportCenterY: Int = layoutInfo.viewportSize.height/2 - layoutInfo.viewportSize.height/3
+
+      var closestItemIndex = -1
+
+
+      layoutInfo.visibleItemsInfo.forEach { itemInfo ->
+        val itemCenterInViewport: Int = itemInfo.offset + (itemInfo.size / 2)
+        val distance: Int = Math.max(itemCenterInViewport, viewportCenterY) - Math.min(
+          itemCenterInViewport, viewportCenterY
+        )
+
+        if (distance < itemInfo.size / 2) {
+          closestItemIndex = itemInfo.index
+        }
+      }
+
+      if (closestItemIndex != -1 && closestItemIndex < currentLyric.size) {
+        val targetLyricItem = currentLyric[closestItemIndex]
+        onScroll(targetLyricItem.time.toFloat())
+      }
+    }
+  }
+
+
   if (currentLyric.isEmpty()) {
     placeHolder.invoke()
   } else {
@@ -161,6 +203,7 @@ fun LyricsView(
           layoutHeight.intValue = it.height
         },
     ) {
+
       LazyColumn(
         modifier = Modifier
           .fillMaxSize()
@@ -211,6 +254,26 @@ fun LyricsView(
             compositingStrategy = CompositingStrategy.Auto,
           )
       )
+      if (isUserScrolling == true) {
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(
+              2.dp
+            )
+            .offset(
+              y = with(density) {
+                (layoutHeight.intValue / 3f ).toDp()
+              }
+            )
+            .background(
+              MaterialTheme.colorScheme.surfaceVariant.copy(
+                alpha = 0.5f
+              )
+            )
+            .align(Alignment.TopCenter)
+        )
+      }
     }
   }
 

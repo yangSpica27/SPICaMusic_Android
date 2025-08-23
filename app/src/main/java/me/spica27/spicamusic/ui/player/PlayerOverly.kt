@@ -25,10 +25,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -46,6 +48,7 @@ import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.ui.main.player.PlayerScreen
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.CoverWidget
+import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.PlayerBar
 import me.spica27.spicamusic.wrapper.activityViewModel
 import timber.log.Timber
@@ -66,12 +69,18 @@ fun PlayerOverly(
   val overlyState = LocalPlayerWidgetState.current
 
 
-  BackHandler(overlyState.value == PlayerOverlyState.DETAIL) {
+  BackHandler(overlyState.value == PlayerOverlyState.PLAYER) {
     overlyState.value = PlayerOverlyState.BOTTOM
   }
 
   BackHandler(overlyState.value == PlayerOverlyState.BOTTOM) {
     overlyState.value = PlayerOverlyState.MINI
+  }
+
+  BackHandler(
+    overlyState.value == PlayerOverlyState.FULLSCREEN_LRC
+  ) {
+    overlyState.value = PlayerOverlyState.PLAYER
   }
 
   LaunchedEffect(isPlaying) {
@@ -187,7 +196,7 @@ fun PlayerOverly(
                     MaterialTheme.shapes.medium
                   )
                   .clickable {
-                    overlyState.value = PlayerOverlyState.DETAIL
+                    overlyState.value = PlayerOverlyState.PLAYER
                   }
               ) {
                 currentSong?.let {
@@ -197,7 +206,7 @@ fun PlayerOverly(
             }
           }
 
-          PlayerOverlyState.DETAIL -> {
+          PlayerOverlyState.PLAYER -> {
             Box(
               modifier = Modifier
                 .fillMaxSize()
@@ -216,6 +225,19 @@ fun PlayerOverly(
               )
             }
           }
+
+          PlayerOverlyState.FULLSCREEN_LRC -> {
+            Box(
+              modifier = Modifier
+                .fillMaxSize()
+                .sharedBounds(
+                  animatedVisibilityScope = this@AnimatedContent,
+                  sharedContentState = sharedContentState,
+                )
+            ) {
+              FullScreenLrc()
+            }
+          }
         }
       }
     }
@@ -225,6 +247,63 @@ fun PlayerOverly(
 @Composable
 private fun Bottom() {
   PlayerBar()
+}
+
+@Composable
+private fun FullScreenLrc() {
+  val playBackViewModel = activityViewModel<PlayBackViewModel>()
+  // 当前播放的歌曲
+  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState()
+    .value
+
+  val currentTime = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
+
+
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+      .background(
+        MaterialTheme.colorScheme.surfaceContainer
+      )
+  ) {
+    if (currentPlayingSong == null) {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .clip(
+            MaterialTheme.shapes.medium
+          ),
+        contentAlignment = Alignment.Center
+      ) {
+        Text("未在播放")
+      }
+    } else {
+      Box {
+        LyricsView(
+          modifier = Modifier.fillMaxSize(),
+          currentTime = currentTime * 1000,
+          song = currentPlayingSong,
+          onScroll = {
+            playBackViewModel.seekTo(it.toLong())
+          },
+          placeHolder = {
+            Box(
+              modifier = Modifier
+                .fillMaxSize()
+                .clip(
+                  MaterialTheme.shapes.medium
+                ),
+              contentAlignment = Alignment.Center
+            ) {
+              Text("暂无歌词")
+            }
+          }
+        )
+      }
+    }
+  }
+
+
 }
 
 @Composable
@@ -261,8 +340,9 @@ internal val LocalPlayerWidgetState = staticCompositionLocalOf<MutableState<Play
 }
 
 enum class PlayerOverlyState {
-  MINI,
-  HIDE,
-  BOTTOM,
-  DETAIL
+  MINI, // 右边悬浮模式
+  HIDE, // 隐藏模式
+  BOTTOM, // 底栏模式
+  PLAYER, // 播放器模式
+  FULLSCREEN_LRC // 全屏歌词模式
 }

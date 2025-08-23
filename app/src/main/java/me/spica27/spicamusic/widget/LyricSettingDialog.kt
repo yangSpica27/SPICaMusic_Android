@@ -35,6 +35,8 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.repository.LyricRepository
 import me.spica27.spicamusic.route.Routes
+import me.spica27.spicamusic.ui.player.LocalPlayerWidgetState
+import me.spica27.spicamusic.ui.player.PlayerOverlyState
 import me.spica27.spicamusic.utils.DataStoreUtil
 import org.koin.compose.koinInject
 import kotlin.math.absoluteValue
@@ -132,6 +134,8 @@ fun LyricSettingDialog(
   LaunchedEffect(isSeekLrcSpeed) {
 
   }
+
+  val overlyState = LocalPlayerWidgetState.current
 
   if (fontWeight != null && fontSize != null) {
 
@@ -260,6 +264,18 @@ fun LyricSettingDialog(
             }
           ) {
             Text("切换其他版本歌词")
+          }
+          TextButton(
+            shape = MaterialTheme.shapes.small,
+            colors = ButtonDefaults.textButtonColors().copy(
+              contentColor = textColorAnimValue.value
+            ),
+            onClick = {
+              onDismissRequest.invoke()
+              overlyState.value = PlayerOverlyState.FULLSCREEN_LRC
+            }
+          ) {
+            Text("全屏歌词")
           }
         }
       },
