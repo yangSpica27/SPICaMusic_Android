@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -89,6 +90,12 @@ fun LyricsView(
 
   val listState = rememberLazyListState()
 
+  val isUserScrolling by remember {
+    derivedStateOf {
+      listState.isScrollInProgress
+    }
+  }
+
   val activeIndex = remember { mutableIntStateOf(0) }
 
   val layoutHeight = remember { mutableIntStateOf(0) }
@@ -115,6 +122,7 @@ fun LyricsView(
   }
 
   LaunchedEffect(currentTime) {
+    if (isUserScrolling) return@LaunchedEffect
     launch(Dispatchers.IO + SupervisorJob()) {
       var index = 0
       for (item in currentLyric) {
@@ -132,7 +140,7 @@ fun LyricsView(
     launch(Dispatchers.IO) {
       listState.animateScrollToItemAndCenter(
         index = activeIndex.intValue,
-        offset = - layoutHeight.intValue / 6
+        offset = -layoutHeight.intValue / 6
       )
     }
   }
