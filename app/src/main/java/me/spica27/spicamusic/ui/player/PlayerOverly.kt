@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.player
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -49,6 +50,7 @@ import me.spica27.spicamusic.ui.main.player.PlayerScreen
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.CoverWidget
 import me.spica27.spicamusic.widget.LyricsView
+import me.spica27.spicamusic.widget.MusicEffectBackground
 import me.spica27.spicamusic.widget.PlayerBar
 import me.spica27.spicamusic.wrapper.activityViewModel
 import timber.log.Timber
@@ -266,6 +268,11 @@ private fun FullScreenLrc() {
         MaterialTheme.colorScheme.surfaceContainer
       )
   ) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      MusicEffectBackground(
+        modifier = Modifier.fillMaxSize()
+      )
+    }
     if (currentPlayingSong == null) {
       Box(
         modifier = Modifier
@@ -275,7 +282,11 @@ private fun FullScreenLrc() {
           ),
         contentAlignment = Alignment.Center
       ) {
-        Text("未在播放")
+        Text("未在播放", style = MaterialTheme.typography.titleLarge.copy(
+          color = MaterialTheme.colorScheme.onSurface.copy(
+            alpha = 0.5f
+          )
+        ))
       }
     } else {
       Box {
@@ -295,7 +306,11 @@ private fun FullScreenLrc() {
                 ),
               contentAlignment = Alignment.Center
             ) {
-              Text("暂无歌词")
+              Text("暂无歌词",style = MaterialTheme.typography.titleLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface.copy(
+                  alpha = 0.5f
+                )
+              ))
             }
           }
         )

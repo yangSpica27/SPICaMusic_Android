@@ -25,6 +25,7 @@ import androidx.annotation.BoolRes
 import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.IntegerRes
+import androidx.annotation.RawRes
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import androidx.core.app.ActivityOptionsCompat
@@ -32,6 +33,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.Insets
 import androidx.fragment.app.Fragment
 import me.spica27.spicamusic.MainActivity
+import java.util.*
 import kotlin.reflect.KClass
 
 /**
@@ -45,6 +47,17 @@ fun Context.getVersion(): String {
     e.printStackTrace()
     "-1"
   }
+}
+
+fun readRawResource(context: Context, @RawRes id: Int): String{
+  val resources = context.resources
+  val scanner: Scanner = Scanner(resources.openRawResource(id))
+  val sb = StringBuilder()
+  while (scanner.hasNextLine()) {
+    sb.append(scanner.nextLine())
+    sb.append("\n")
+  }
+  return sb.toString()
 }
 
 // 隐藏软键盘
