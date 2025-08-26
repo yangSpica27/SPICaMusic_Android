@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.wrapper
 
+import android.graphics.Bitmap
 import androidx.annotation.Keep
 
 @Keep
@@ -17,5 +18,6 @@ data class Metadata(
   val date: String,
   val duration: Long,
   val dateAdded: Long,
-  val dateModified: Long
+  val dateModified: Long,
+  val cover: Bitmap? = null
 )

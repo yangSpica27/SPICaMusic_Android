@@ -108,7 +108,6 @@ import com.kyant.liquidglass.refraction.InnerRefraction
 import com.kyant.liquidglass.refraction.RefractionAmount
 import com.kyant.liquidglass.refraction.RefractionHeight
 import com.kyant.liquidglass.rememberLiquidGlassProviderState
-import com.kyant.liquidglass.shadow.GlassShadow
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -926,7 +925,7 @@ private fun TabBar(
         .liquidGlass(
           state = providerState,
           GlassStyle(
-            shadow = GlassShadow.None,
+            shadow = null,
             shape = MaterialTheme.shapes.small,
             innerRefraction = InnerRefraction(
               height = RefractionHeight(
@@ -943,7 +942,10 @@ private fun TabBar(
               blendMode = BlendMode.SrcOver
             ),
           ),
-          compositingStrategy = CompositingStrategy.Auto
+          compositingStrategy = CompositingStrategy.Auto,
+          transformBlock = {
+            scale(1.1f, 1.1f, this.center)
+          }
         ),
     )
   }

@@ -272,6 +272,9 @@ private fun FullScreenLrc() {
       MusicEffectBackground(
         modifier = Modifier.fillMaxSize()
       )
+//      TunEffectBackground(
+//        modifier = Modifier.fillMaxSize()
+//      )
     }
     if (currentPlayingSong == null) {
       Box(

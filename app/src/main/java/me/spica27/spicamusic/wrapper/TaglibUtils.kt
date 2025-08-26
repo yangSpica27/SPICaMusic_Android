@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.wrapper
 
+import android.graphics.BitmapFactory
 import com.kyant.taglib.TagLib
 
 
@@ -23,6 +24,9 @@ object TaglibUtils {
       duration = 0,
       dateAdded = 0,
       dateModified = 0,
+      cover = metadata?.pictures?.firstOrNull()?.let {
+        BitmapFactory.decodeByteArray(it.data, 0, it.data.size)
+      }
     )
   }
 }
