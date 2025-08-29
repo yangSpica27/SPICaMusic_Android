@@ -1,8 +1,11 @@
 package me.spica27.spicamusic.db.entity
 
+import androidx.compose.runtime.Stable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+
+@Stable
 @Entity
 data class Lyric(
   @PrimaryKey(autoGenerate = true)

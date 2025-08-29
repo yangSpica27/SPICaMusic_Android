@@ -7,14 +7,18 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -136,7 +140,13 @@ fun PlayerOverly(
                   .sharedBounds(
                     animatedVisibilityScope = this@AnimatedContent,
                     sharedContentState = sharedContentState,
-                    enter = scaleIn() + fadeIn(),
+                    renderInOverlayDuringTransition = false,
+                    enter = scaleIn(
+                      animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow,
+                      )
+                    ) + fadeIn(),
                     exit = scaleOut() + fadeOut(),
                   )
                   .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
@@ -179,7 +189,12 @@ fun PlayerOverly(
                   .sharedBounds(
                     animatedVisibilityScope = this@AnimatedContent,
                     sharedContentState = sharedContentState,
-                    enter = scaleIn() + fadeIn(),
+                    enter = scaleIn(
+                      animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow,
+                      )
+                    ) + fadeIn(),
                     exit = scaleOut() + fadeOut(),
                   )
                   .align(Alignment.BottomCenter)
@@ -213,9 +228,15 @@ fun PlayerOverly(
               modifier = Modifier
                 .fillMaxSize()
                 .sharedBounds(
+                  renderInOverlayDuringTransition = false,
                   animatedVisibilityScope = this@AnimatedContent,
                   sharedContentState = sharedContentState,
-                  enter = scaleIn() + fadeIn(),
+                  enter = scaleIn(
+                    animationSpec = spring(
+                      dampingRatio = Spring.DampingRatioLowBouncy,
+                      stiffness = Spring.StiffnessLow,
+                    )
+                  ) + fadeIn(),
                   exit = scaleOut() + fadeOut(),
                 )
             ) {
@@ -235,6 +256,17 @@ fun PlayerOverly(
                 .sharedBounds(
                   animatedVisibilityScope = this@AnimatedContent,
                   sharedContentState = sharedContentState,
+                  enter = scaleIn(
+                    animationSpec = spring(
+                      dampingRatio = Spring.DampingRatioLowBouncy,
+                      stiffness = Spring.StiffnessLow,
+                    )
+                  ) + slideInVertically {
+                    it
+                  },
+                  exit = slideOutVertically {
+                    it
+                  },
                 )
             ) {
               FullScreenLrc()
@@ -285,11 +317,13 @@ private fun FullScreenLrc() {
           ),
         contentAlignment = Alignment.Center
       ) {
-        Text("未在播放", style = MaterialTheme.typography.titleLarge.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(
-            alpha = 0.5f
+        Text(
+          "未在播放", style = MaterialTheme.typography.titleLarge.copy(
+            color = MaterialTheme.colorScheme.onSurface.copy(
+              alpha = 0.5f
+            )
           )
-        ))
+        )
       }
     } else {
       Box {
@@ -309,11 +343,13 @@ private fun FullScreenLrc() {
                 ),
               contentAlignment = Alignment.Center
             ) {
-              Text("暂无歌词",style = MaterialTheme.typography.titleLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(
-                  alpha = 0.5f
+              Text(
+                "暂无歌词", style = MaterialTheme.typography.titleLarge.copy(
+                  color = MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = 0.5f
+                  )
                 )
-              ))
+              )
             }
           }
         )

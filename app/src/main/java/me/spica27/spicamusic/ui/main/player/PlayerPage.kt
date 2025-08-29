@@ -69,7 +69,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
@@ -846,6 +845,8 @@ private fun TabBar(
 
   val coroutineScope = rememberCoroutineScope()
 
+  val density = LocalDensity.current
+
   val offsetX = remember(
     indicatorWidth,
     pagerState.currentPageOffsetFraction,
@@ -915,7 +916,7 @@ private fun TabBar(
     Box(
       modifier = Modifier
         .fillMaxHeight()
-        .width(with(LocalDensity.current) { indicatorWidth.toDp() })
+        .width(with(density) { indicatorWidth.toDp() })
         .offset {
           IntOffset(
             x = offsetX.fastRoundToInt(),
@@ -936,11 +937,7 @@ private fun TabBar(
               )
             ),
             material = GlassMaterial.None,
-            highlight = GlassHighlight.Default.copy(
-              color = MaterialTheme.colorScheme.surfaceContainerLow,
-              width = 1.dp,
-              blendMode = BlendMode.SrcOver
-            ),
+            highlight = GlassHighlight.None
           ),
           compositingStrategy = CompositingStrategy.Auto,
           transformBlock = {

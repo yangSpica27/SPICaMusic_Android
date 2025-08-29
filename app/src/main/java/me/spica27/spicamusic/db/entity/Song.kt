@@ -2,6 +2,7 @@ package me.spica27.spicamusic.db.entity
 
 import android.net.Uri
 import android.os.Parcelable
+import androidx.compose.runtime.Stable
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.room.ColumnInfo
@@ -19,6 +20,7 @@ import me.spica27.spicamusic.utils.toCoverUri
     Index("mediaStoreId", unique = true),
   ]
 )
+@Stable
 @Serializable
 data class Song(
   @ColumnInfo(index = true)
