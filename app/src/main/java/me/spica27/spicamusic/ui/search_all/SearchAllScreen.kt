@@ -185,7 +185,7 @@ private fun SearchBar(
   ) {
     Row(
       modifier = Modifier
-        .padding(vertical = 8.dp, horizontal = 16.dp)
+        .padding(vertical = 5.dp, horizontal = 16.dp)
         .fillMaxWidth(),
       verticalAlignment = Alignment.CenterVertically
     ) {
