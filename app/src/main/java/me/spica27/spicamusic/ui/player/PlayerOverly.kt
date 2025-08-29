@@ -17,8 +17,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -368,14 +371,21 @@ private fun Mimi(song: Song) {
       animation = tween(10000, easing = LinearEasing), repeatMode = RepeatMode.Restart
     ), label = ""
   )
-  CoverWidget(
-    modifier = Modifier
-      .fillMaxSize()
-      .padding(4.dp)
-      .clip(CircleShape)
-      .rotate(rotateState.value),
-    song = song
-  )
+  AnimatedContent(
+    song,
+    transitionSpec = {
+      slideInHorizontally { it } + fadeIn() togetherWith slideOutHorizontally { -it } + fadeOut()
+    }
+  ) { song ->
+    CoverWidget(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(4.dp)
+        .clip(CircleShape)
+        .rotate(rotateState.value),
+      song = song
+    )
+  }
 }
 
 @Composable
