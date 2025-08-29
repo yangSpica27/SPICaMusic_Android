@@ -91,12 +91,16 @@ fun PlayerBar(
       ) {
         AnimatedContent(
           songState,
+          label = "cover",
+          contentKey = {
+            it?.songId ?: -1L
+          },
           transitionSpec =
             {
               scaleIn(
                 animationSpec = spring()
               )+ fadeIn() togetherWith scaleOut()+ fadeOut()
-            }
+            },
         ) { songState ->
           songState?.let {
             CoverWidget(
@@ -115,6 +119,9 @@ fun PlayerBar(
           AnimatedContent(
             songState,
             label = "songName",
+            contentKey = {
+              "${it?.displayName}"
+            },
             transitionSpec =
               {
                 slideInVertically(
@@ -138,6 +145,9 @@ fun PlayerBar(
           AnimatedContent(
             songState,
             label = "artist",
+            contentKey = {
+              it?.artist ?: "<unknown>"
+            },
             transitionSpec =
               {
                 slideInVertically { -it } togetherWith slideOutVertically { it }

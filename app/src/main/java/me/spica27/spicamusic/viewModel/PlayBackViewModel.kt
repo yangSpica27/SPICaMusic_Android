@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
@@ -103,7 +104,16 @@ class PlayBackViewModel(
         initialValue = 0
       )
 
-  private val _playlistCurrentIndex = MutableStateFlow(0)
+  private val _playlistCurrentIndex = combine(
+    playList,
+    currentSongFlow
+  ) { list, song ->
+    list.indexOf(song)
+  }.stateIn(
+    viewModelScope,
+    SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+    initialValue = 0
+  )
 
   val playlistCurrentIndex: StateFlow<Int>
     get() = _playlistCurrentIndex

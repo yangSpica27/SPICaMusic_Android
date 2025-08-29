@@ -375,7 +375,8 @@ private fun Mimi(song: Song) {
     song,
     transitionSpec = {
       slideInHorizontally { it } + fadeIn() togetherWith slideOutHorizontally { -it } + fadeOut()
-    }
+    },
+    contentKey = { "${it.songId}" }
   ) { song ->
     CoverWidget(
       modifier = Modifier
