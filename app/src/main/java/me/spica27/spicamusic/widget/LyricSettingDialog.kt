@@ -141,7 +141,7 @@ fun LyricSettingDialog(
 
     AlertDialog(
       containerColor = dialogBackgroundColorAnimValue.value,
-      shape = MaterialTheme.shapes.small,
+      shape = MaterialTheme.shapes.large,
       onDismissRequest = { onDismissRequest() },
       title = {
         Text("歌词显示设置", color = textColor)

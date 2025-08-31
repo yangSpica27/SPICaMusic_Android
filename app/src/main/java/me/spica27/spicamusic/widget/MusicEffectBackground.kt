@@ -131,22 +131,10 @@ fun MusicEffectBackground(
       shader.setFloatUniform(
         "uColors",
         floatArrayOf(
-          0.0f,
-          0.31f,
-          0.58f,
-          1.0f,
-          0.53f,
-          0.29f,
-          0.15f,
-          1.0f,
-          0.46f,
-          0.06f,
-          0.27f,
-          1.0f,
-          0.16f,
-          0.12f,
-          0.45f,
-          1.0f
+          1.00f, 1.00f, 1.00f, 0.50f,
+          0.35f, 0.35f, 0.35f, 0.10f,
+          0.25f, 0.25f, 0.25f, 0.10f,
+          0.55f, 0.55f, 0.55f, 0.10f,
         )
       )
     } else {
@@ -156,9 +144,7 @@ fun MusicEffectBackground(
       shader.setFloatUniform(
         "uPoints",
         floatArrayOf(
-          0.67f,
-          0.42f,
-          1.0f,
+          0.67f, 0.42f, 1.0f,
           0.69f,
           0.75f,
           1.0f,
@@ -171,24 +157,12 @@ fun MusicEffectBackground(
         )
       )
       shader.setFloatUniform(
-        "uColors",
-        floatArrayOf(
-          0.57f,
-          0.76f,
-          0.98f,
-          1.0f,
-          0.98f,
-          0.85f,
-          0.68f,
-          1.0f,
-          0.98f,
-          0.75f,
-          0.93f,
-          1.0f,
-          0.73f,
-          0.7f,
-          0.98f,
-          1.0f
+        /* uniformName = */ "uColors",
+        /* values = */ floatArrayOf(
+          0.35f, 0.35f, 0.35f, 0.10f,
+          0.35f, 0.35f, 0.35f, 0.10f,
+          0.25f, 0.25f, 0.25f, 0.10f,
+          0.55f, 0.55f, 0.55f, 0.20f,
         )
       )
     }
@@ -199,7 +173,7 @@ fun MusicEffectBackground(
     musicVisualiser.setListener(object : MusicVisualiser.Listener {
       override fun getDrawData(list: List<Float>) {
         shader.setFloatUniform("uMusicLevel", 1f)
-        shader.setFloatUniform("uBeat", list.average().toFloat())
+        shader.setFloatUniform("uBeat", list.max())
       }
     })
     musicVisualiser.ready()

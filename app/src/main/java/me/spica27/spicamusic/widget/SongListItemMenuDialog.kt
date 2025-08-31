@@ -440,7 +440,7 @@ private fun SongItemDialog(
     Column(
       modifier = Modifier
         .background(
-          MaterialTheme.colorScheme.background, MaterialTheme.shapes.medium
+          MaterialTheme.colorScheme.background, MaterialTheme.shapes.large
         )
         .fillMaxWidth()
     ) {

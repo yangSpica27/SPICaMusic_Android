@@ -10,10 +10,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -149,8 +146,7 @@ fun PlayerPage(
 ) {
 
   // 当前播放的歌曲
-  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState()
-    .value
+  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState().value
 
 
   val showEmpty = remember(currentPlayingSong) {
@@ -187,8 +183,7 @@ fun PlayerPage(
   } else {
 
     Box(
-      modifier = Modifier
-        .fillMaxSize()
+      modifier = Modifier.fillMaxSize()
     ) {
 
       Column(
@@ -213,8 +208,7 @@ fun PlayerPage(
             userScrollEnabled = true,
             key = {
               it
-            }
-          ) { index ->
+            }) { index ->
 
             Box(
               modifier = Modifier
@@ -263,13 +257,11 @@ fun PlayerPage(
                                 )
                               )
                             }
-                          },
-                        contentAlignment = Alignment.Center
+                          }, contentAlignment = Alignment.Center
                       ) {
                         Text("暂无歌词,点击搜索")
                       }
-                    }
-                  )
+                    })
                 }
 
                 2 -> {
@@ -334,8 +326,7 @@ private fun Cover(
 
 
   Box(
-    modifier = Modifier.fillMaxSize(),
-    contentAlignment = Alignment.Center
+    modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
   ) {
 
     if (isActive) {
@@ -344,8 +335,7 @@ private fun Cover(
           VisualizerView(context)
         }, update = { view ->
           view.setThemeColor(lineColor.toArgb())
-        }, modifier = Modifier
-          .fillMaxWidth()
+        }, modifier = Modifier.fillMaxWidth()
       )
     }
 
@@ -357,20 +347,13 @@ private fun Cover(
         .clip(CircleShape)
     ) {
       AnimatedContent(
-        targetState = song,
-        label = "cover_transition",
-        transitionSpec = {
-          scaleIn() + slideInHorizontally(
-            animationSpec = tween(350)
-          ) {
-            it
-          } togetherWith scaleOut() + slideOutHorizontally(
-            animationSpec = tween(350)
-          ) {
-            -it
-          }
-        }
-      ) { song ->
+        contentKey = { it.songId },
+        targetState = song, label = "cover_transition", transitionSpec = {
+          materialSharedAxisYIn(
+            true,
+            durationMillis = 450
+          ) togetherWith scaleOut() + materialSharedAxisYOut(true, durationMillis = 450)
+        }) { song ->
         val coverPainter = rememberAsyncImagePainter(
           model = ImageRequest.Builder(context).data(song.getCoverUri()).transformations(
             CircleCropTransformation()
@@ -394,8 +377,7 @@ private fun Cover(
               MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
               CircleShape
             )
-            .rotate(rotateState.value),
-          contentAlignment = Alignment.Center
+            .rotate(rotateState.value), contentAlignment = Alignment.Center
         ) {
           if (coverPainterState.value is AsyncImagePainter.State.Success) {
             Image(
@@ -552,13 +534,11 @@ private fun ControlPanel(
         inputStream.use { inputStream ->
           if (inputStream != null) {
             val amplitudes = amplituda.processAudio(inputStream)
-            amplitudes.get(
-              {
-                ampState.value = it.amplitudesAsList()
-              }, {
-                ampState.value = arrayListOf()
-              }
-            )
+            amplitudes.get({
+              ampState.value = it.amplitudesAsList()
+            }, {
+              ampState.value = arrayListOf()
+            })
           } else {
             ampState.value = arrayListOf()
           }
@@ -644,26 +624,20 @@ private fun ControlPanel(
       Spacer(modifier = Modifier.weight(1f))
       // Play/Pause
       Box(
-        modifier =
-          Modifier
-            .size(48.dp)
-            .background(
-              MaterialTheme.colorScheme.primaryContainer,
-              CircleShape
+        modifier = Modifier
+          .size(48.dp)
+          .background(
+            MaterialTheme.colorScheme.primaryContainer, CircleShape
+          )
+          .clip(CircleShape)
+          .clickable {
+            playBackViewModel.togglePlaying()
+          }
+          .innerShadow(
+            shape = CircleShape, shadow = Shadow(
+              radius = 10.dp, color = MaterialTheme.colorScheme.primary, alpha = .11f
             )
-            .clip(CircleShape)
-            .clickable {
-              playBackViewModel.togglePlaying()
-            }
-            .innerShadow(
-              shape = CircleShape, shadow = Shadow(
-                radius = 10.dp,
-                color = MaterialTheme.colorScheme.primary,
-                alpha = .11f
-              )
-            ),
-        contentAlignment = Alignment.Center
-      ) {
+          ), contentAlignment = Alignment.Center) {
         Icon(
           painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
           contentDescription = "Play/Pause",
@@ -708,21 +682,15 @@ private fun SongInfo(
   var showLyricsSetting by remember { mutableStateOf(false) }
 
   if (showLyricsSetting) {
-    LyricSettingDialog(
-      onDismissRequest = {
-        showLyricsSetting = false
-      },
-      song = song,
-      navBackStack = navigator,
-      dialogBackgroundIsTranslate = {}
-    )
+    LyricSettingDialog(onDismissRequest = {
+      showLyricsSetting = false
+    }, song = song, navBackStack = navigator, dialogBackgroundIsTranslate = {})
   }
 
   val songListItemMenuDialogState = rememberSongItemMenuDialogState()
 
   SongItemMenu(
-    songListItemMenuDialogState,
-    playBackViewModel = playBackViewModel
+    songListItemMenuDialogState, playBackViewModel = playBackViewModel
   )
 
 
@@ -735,8 +703,7 @@ private fun SongInfo(
       label = "song_info_transition",
       transitionSpec = {
         materialSharedAxisYIn(forward = true) togetherWith materialSharedAxisYOut(forward = false)
-      }
-    ) { song ->
+      }) { song ->
       Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.Center,
@@ -857,8 +824,7 @@ private fun TabBar(
         .liquidGlassProvider(providerState)
         .onSizeChanged {
           indicatorWidth = it.width / 3
-        }
-    ) {
+        }) {
       tabs.forEachIndexed { index, tabTitle ->
         val isSelected = selectedIndex == index
         Box(
@@ -869,8 +835,7 @@ private fun TabBar(
               coroutineScope.launch {
                 pagerState.animateScrollToPage(index)
               }
-            },
-          contentAlignment = Alignment.Center
+            }, contentAlignment = Alignment.Center
         ) {
           Text(
             textAlign = TextAlign.Center,
@@ -884,11 +849,8 @@ private fun TabBar(
                 FontWeight.W600
               } else {
                 FontWeight.W500
-              },
-              letterSpacing = 0.1.em,
-              shadow = androidx.compose.ui.graphics.Shadow(
-                color = MaterialTheme.colorScheme.onBackground.copy(0.1f),
-                blurRadius = 10f
+              }, letterSpacing = 0.1.em, shadow = androidx.compose.ui.graphics.Shadow(
+                color = MaterialTheme.colorScheme.onBackground.copy(0.1f), blurRadius = 10f
               )
             ),
           )
@@ -901,31 +863,21 @@ private fun TabBar(
         .width(with(density) { indicatorWidth.toDp() })
         .offset {
           IntOffset(
-            x = offsetX.fastRoundToInt(),
-            y = 0
+            x = offsetX.fastRoundToInt(), y = 0
           )
         }
         .liquidGlass(
-          state = providerState,
-          GlassStyle(
-            shadow = null,
-            shape = MaterialTheme.shapes.small,
-            innerRefraction = InnerRefraction(
+          state = providerState, GlassStyle(
+            shadow = null, shape = MaterialTheme.shapes.small, innerRefraction = InnerRefraction(
               height = RefractionHeight(
                 8.dp
-              ),
-              amount = RefractionAmount(
+              ), amount = RefractionAmount(
                 (-12).dp
               )
-            ),
-            material = GlassMaterial.None,
-            highlight = GlassHighlight.None
-          ),
-          compositingStrategy = CompositingStrategy.Auto,
-          transformBlock = {
+            ), material = GlassMaterial.None, highlight = GlassHighlight.None
+          ), compositingStrategy = CompositingStrategy.Auto, transformBlock = {
             scale(1.1f, 1.1f, this.center)
-          }
-        ),
+          }),
     )
   }
 }
@@ -993,8 +945,7 @@ fun SongInfoCard(modifier: Modifier = Modifier, song: Song?) {
           Text(
             "上次播放", style = MaterialTheme.typography.titleMedium.copy(
               color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            ),
-            maxLines = 1
+            ), maxLines = 1
           )
           Spacer(modifier = Modifier.height(5.dp))
           Text(

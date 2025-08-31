@@ -135,7 +135,11 @@ fun PlayerOverly(
       AnimatedContent(
         modifier = Modifier.fillMaxSize(),
         targetState = overlyState.value,
-        label = "player_overly_state"
+        label = "player_overly_state",
+        contentKey = { it.name },
+        transitionSpec = {
+          materialSharedAxisZIn(forward = true) togetherWith materialSharedAxisZOut(forward = true)
+        }
       ) { state ->
         when (state) {
           PlayerOverlyState.MINI -> {
@@ -230,7 +234,7 @@ fun PlayerOverly(
                   animatedVisibilityScope = this@AnimatedContent,
                   sharedContentState = sharedContentState,
                   enter = materialSharedAxisZIn(true),
-                  exit = materialSharedAxisYOut(true),
+                  exit = materialSharedAxisZOut(true),
                 )
             ) {
               PlayerScreen(
@@ -246,14 +250,6 @@ fun PlayerOverly(
             Box(
               modifier = Modifier
                 .fillMaxSize()
-                .sharedBounds(
-                  renderInOverlayDuringTransition = false,
-                  animatedVisibilityScope = this@AnimatedContent,
-                  sharedContentState = sharedContentState,
-                  enter = materialSharedAxisZIn(true),
-                  exit = materialSharedAxisZOut(true),
-                  resizeMode = ScaleToBounds(ContentScale.Fit, Center)
-                )
             ) {
               FullScreenLrc()
             }

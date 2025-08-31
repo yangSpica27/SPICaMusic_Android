@@ -4,6 +4,7 @@ package me.spica27.spicamusic.ui.main.home
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -74,6 +75,8 @@ import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlaylistItem
 import me.spica27.spicamusic.widget.SongItemWithCover
 import me.spica27.spicamusic.widget.fadingEdges
+import me.spica27.spicamusic.widget.materialSharedAxisXIn
+import me.spica27.spicamusic.widget.materialSharedAxisXOut
 import me.spica27.spicamusic.widget.rememberBindPlayerOverlyConnect
 import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
@@ -207,12 +210,11 @@ fun HomePage(
         AnimatedContent(
           targetState = oftenListenSongs.value,
           modifier = Modifier.fillMaxWidth(),
+          transitionSpec = {
+            materialSharedAxisXIn(true) togetherWith materialSharedAxisXOut(true)
+          },
           contentKey = {
-            if (it.isEmpty()) {
-              0
-            } else {
-              1
-            }
+            it.isEmpty()
           }
         ) { songs ->
           if (songs.isEmpty()) {
