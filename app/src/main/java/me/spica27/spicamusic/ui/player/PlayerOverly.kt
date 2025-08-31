@@ -230,7 +230,6 @@ fun PlayerOverly(
               modifier = Modifier
                 .fillMaxSize()
                 .sharedBounds(
-                  renderInOverlayDuringTransition = false,
                   animatedVisibilityScope = this@AnimatedContent,
                   sharedContentState = sharedContentState,
                   enter = materialSharedAxisZIn(true),
