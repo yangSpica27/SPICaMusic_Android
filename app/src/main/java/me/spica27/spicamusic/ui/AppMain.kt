@@ -35,8 +35,6 @@ import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.widget.BackPress
 import me.spica27.spicamusic.widget.materialSharedAxisXIn
 import me.spica27.spicamusic.widget.materialSharedAxisXOut
-import me.spica27.spicamusic.widget.materialSharedAxisZIn
-import me.spica27.spicamusic.widget.materialSharedAxisZOut
 import me.spica27.spicamusic.widget.rememberSlideDistance
 import kotlin.reflect.typeOf
 
@@ -70,10 +68,10 @@ fun AppMain() {
           materialSharedAxisXOut(forward = true, slideDistance = slideDistance)
         },
         popEnterTransition = {
-          materialSharedAxisZIn(forward = false)
+          materialSharedAxisXIn(forward = true, slideDistance = slideDistance)
         },
         popExitTransition = {
-          materialSharedAxisZOut(forward = false)
+          materialSharedAxisXOut(forward = true, slideDistance = slideDistance)
         },
       ) {
         composable<Routes.Main> {
