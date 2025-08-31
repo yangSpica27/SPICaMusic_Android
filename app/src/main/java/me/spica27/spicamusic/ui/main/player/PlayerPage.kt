@@ -10,14 +10,10 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -136,6 +132,8 @@ import me.spica27.spicamusic.widget.ObserveLifecycleEvent
 import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
+import me.spica27.spicamusic.widget.materialSharedAxisYIn
+import me.spica27.spicamusic.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.TaglibUtils
 import me.spica27.spicamusic.wrapper.activityViewModel
@@ -720,9 +718,7 @@ private fun SongInfo(
     )
   }
 
-
   val songListItemMenuDialogState = rememberSongItemMenuDialogState()
-
 
   SongItemMenu(
     songListItemMenuDialogState,
@@ -738,17 +734,7 @@ private fun SongInfo(
       targetState = song,
       label = "song_info_transition",
       transitionSpec = {
-        fadeIn() + slideInVertically(
-          animationSpec = tween(150, delayMillis = 90),
-          initialOffsetY = {
-            it
-          }
-        ) togetherWith slideOutVertically(
-          animationSpec = tween(150),
-          targetOffsetY = {
-            -it
-          },
-        ) + fadeOut()
+        materialSharedAxisYIn(forward = true) togetherWith materialSharedAxisYOut(forward = false)
       }
     ) { song ->
       Column(

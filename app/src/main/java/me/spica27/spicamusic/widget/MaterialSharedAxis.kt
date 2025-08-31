@@ -36,6 +36,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastRoundToInt
+import me.spica27.spicamusic.utils.dip
 
 
 /**
@@ -45,21 +47,21 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun rememberSlideDistance(
-    slideDistance: Dp = 30.dp,
+  slideDistance: Dp = 30.dp,
 ): Int {
-    val density = LocalDensity.current
-    return remember(density, slideDistance) {
-        with(density) { slideDistance.roundToPx() }
-    }
+  val density = LocalDensity.current
+  return remember(density, slideDistance) {
+    with(density) { slideDistance.roundToPx() }
+  }
 }
 
 private const val ProgressThreshold = 0.35f
 
 private val Int.ForOutgoing: Int
-    get() = (this * ProgressThreshold).toInt()
+  get() = (this * ProgressThreshold).toInt()
 
 private val Int.ForIncoming: Int
-    get() = this - this.ForOutgoing
+  get() = this - this.ForOutgoing
 
 /**
  * [materialSharedAxisX] allows to switch a layout with shared X-axis transition.
@@ -69,17 +71,17 @@ private val Int.ForIncoming: Int
  * @param durationMillis the duration of transition.
  */
 public fun materialSharedAxisX(
-    forward: Boolean,
-    slideDistance: Int,
-    durationMillis: Int = 325,
+  forward: Boolean,
+  slideDistance: Int,
+  durationMillis: Int = 325,
 ): ContentTransform = materialSharedAxisXIn(
-    forward = forward,
-    slideDistance = slideDistance,
-    durationMillis = durationMillis,
+  forward = forward,
+  slideDistance = slideDistance,
+  durationMillis = durationMillis,
 ) togetherWith materialSharedAxisXOut(
-    forward = forward,
-    slideDistance = slideDistance,
-    durationMillis = durationMillis,
+  forward = forward,
+  slideDistance = slideDistance,
+  durationMillis = durationMillis,
 )
 
 /**
@@ -90,23 +92,23 @@ public fun materialSharedAxisX(
  * @param durationMillis the duration of the enter transition.
  */
 public fun materialSharedAxisXIn(
-    forward: Boolean,
-    slideDistance: Int,
-    durationMillis: Int = 325,
+  forward: Boolean,
+  slideDistance: Int = 30.dip.toInt(),
+  durationMillis: Int = 325,
 ): EnterTransition = slideInHorizontally(
-    animationSpec = tween(
-        durationMillis = durationMillis,
-        easing = FastOutSlowInEasing,
-    ),
-    initialOffsetX = {
-        if (forward) slideDistance else -slideDistance
-    },
+  animationSpec = tween(
+    durationMillis = durationMillis,
+    easing = FastOutSlowInEasing,
+  ),
+  initialOffsetX = {
+    if (forward) slideDistance else -slideDistance
+  },
 ) + fadeIn(
-    animationSpec = tween(
-        durationMillis = durationMillis.ForIncoming,
-        delayMillis = durationMillis.ForOutgoing,
-        easing = LinearOutSlowInEasing,
-    ),
+  animationSpec = tween(
+    durationMillis = durationMillis.ForIncoming,
+    delayMillis = durationMillis.ForOutgoing,
+    easing = LinearOutSlowInEasing,
+  ),
 )
 
 /**
@@ -117,23 +119,23 @@ public fun materialSharedAxisXIn(
  * @param durationMillis the duration of the exit transition.
  */
 public fun materialSharedAxisXOut(
-    forward: Boolean,
-    slideDistance: Int,
-    durationMillis: Int = 325,
+  forward: Boolean,
+  slideDistance: Int = 30.dip.fastRoundToInt(),
+  durationMillis: Int = 325,
 ): ExitTransition = slideOutHorizontally(
-    animationSpec = tween(
-        durationMillis = durationMillis,
-        easing = FastOutSlowInEasing,
-    ),
-    targetOffsetX = {
-        if (forward) -slideDistance else slideDistance
-    },
+  animationSpec = tween(
+    durationMillis = durationMillis,
+    easing = FastOutSlowInEasing,
+  ),
+  targetOffsetX = {
+    if (forward) -slideDistance else slideDistance
+  },
 ) + fadeOut(
-    animationSpec = tween(
-        durationMillis = durationMillis.ForOutgoing,
-        delayMillis = 0,
-        easing = FastOutLinearInEasing,
-    ),
+  animationSpec = tween(
+    durationMillis = durationMillis.ForOutgoing,
+    delayMillis = 0,
+    easing = FastOutLinearInEasing,
+  ),
 )
 
 /**
@@ -144,17 +146,17 @@ public fun materialSharedAxisXOut(
  * @param durationMillis the duration of transition.
  */
 public fun materialSharedAxisY(
-    forward: Boolean,
-    slideDistance: Int,
-    durationMillis: Int = 325,
+  forward: Boolean,
+  slideDistance: Int,
+  durationMillis: Int = 325,
 ): ContentTransform = materialSharedAxisYIn(
-    forward = forward,
-    slideDistance = slideDistance,
-    durationMillis = durationMillis,
+  forward = forward,
+  slideDistance = slideDistance,
+  durationMillis = durationMillis,
 ) togetherWith materialSharedAxisYOut(
-    forward = forward,
-    slideDistance = slideDistance,
-    durationMillis = durationMillis,
+  forward = forward,
+  slideDistance = slideDistance,
+  durationMillis = durationMillis,
 )
 
 /**
@@ -165,23 +167,23 @@ public fun materialSharedAxisY(
  * @param durationMillis the duration of the enter transition.
  */
 public fun materialSharedAxisYIn(
-    forward: Boolean,
-    slideDistance: Int,
-    durationMillis: Int = 325,
+  forward: Boolean,
+  slideDistance: Int = 30.dip.fastRoundToInt(),
+  durationMillis: Int = 325,
 ): EnterTransition = slideInVertically(
-    animationSpec = tween(
-        durationMillis = durationMillis,
-        easing = FastOutSlowInEasing,
-    ),
-    initialOffsetY = {
-        if (forward) slideDistance else -slideDistance
-    },
+  animationSpec = tween(
+    durationMillis = durationMillis,
+    easing = FastOutSlowInEasing,
+  ),
+  initialOffsetY = {
+    if (forward) slideDistance else -slideDistance
+  },
 ) + fadeIn(
-    animationSpec = tween(
-        durationMillis = durationMillis.ForIncoming,
-        delayMillis = durationMillis.ForOutgoing,
-        easing = LinearOutSlowInEasing,
-    ),
+  animationSpec = tween(
+    durationMillis = durationMillis.ForIncoming,
+    delayMillis = durationMillis.ForOutgoing,
+    easing = LinearOutSlowInEasing,
+  ),
 )
 
 /**
@@ -192,23 +194,23 @@ public fun materialSharedAxisYIn(
  * @param durationMillis the duration of the exit transition.
  */
 public fun materialSharedAxisYOut(
-    forward: Boolean,
-    slideDistance: Int,
-    durationMillis: Int = 325,
+  forward: Boolean,
+  slideDistance: Int = 30.dip.fastRoundToInt(),
+  durationMillis: Int = 325,
 ): ExitTransition = slideOutVertically(
-    animationSpec = tween(
-        durationMillis = durationMillis,
-        easing = FastOutSlowInEasing,
-    ),
-    targetOffsetY = {
-        if (forward) -slideDistance else slideDistance
-    },
+  animationSpec = tween(
+    durationMillis = durationMillis,
+    easing = FastOutSlowInEasing,
+  ),
+  targetOffsetY = {
+    if (forward) -slideDistance else slideDistance
+  },
 ) + fadeOut(
-    animationSpec = tween(
-        durationMillis = durationMillis.ForOutgoing,
-        delayMillis = 0,
-        easing = FastOutLinearInEasing,
-    ),
+  animationSpec = tween(
+    durationMillis = durationMillis.ForOutgoing,
+    delayMillis = 0,
+    easing = FastOutLinearInEasing,
+  ),
 )
 
 /**
@@ -218,14 +220,14 @@ public fun materialSharedAxisYOut(
  * @param durationMillis the duration of transition.
  */
 public fun materialSharedAxisZ(
-    forward: Boolean,
-    durationMillis: Int = 325,
+  forward: Boolean,
+  durationMillis: Int = 325,
 ): ContentTransform = materialSharedAxisZIn(
-    forward = forward,
-    durationMillis = durationMillis,
+  forward = forward,
+  durationMillis = durationMillis,
 ) togetherWith materialSharedAxisZOut(
-    forward = forward,
-    durationMillis = durationMillis,
+  forward = forward,
+  durationMillis = durationMillis,
 )
 
 /**
@@ -235,20 +237,20 @@ public fun materialSharedAxisZ(
  * @param durationMillis the duration of the enter transition.
  */
 public fun materialSharedAxisZIn(
-    forward: Boolean,
-    durationMillis: Int = 325,
+  forward: Boolean,
+  durationMillis: Int = 325,
 ): EnterTransition = fadeIn(
-    animationSpec = tween(
-        durationMillis = durationMillis.ForIncoming,
-        delayMillis = durationMillis.ForOutgoing,
-        easing = LinearOutSlowInEasing,
-    ),
+  animationSpec = tween(
+    durationMillis = durationMillis.ForIncoming,
+    delayMillis = durationMillis.ForOutgoing,
+    easing = LinearOutSlowInEasing,
+  ),
 ) + scaleIn(
-    animationSpec = tween(
-        durationMillis = durationMillis,
-        easing = FastOutSlowInEasing,
-    ),
-    initialScale = if (forward) 0.8f else 1.1f,
+  animationSpec = tween(
+    durationMillis = durationMillis,
+    easing = FastOutSlowInEasing,
+  ),
+  initialScale = if (forward) 0.8f else 1.1f,
 )
 
 /**
@@ -258,18 +260,18 @@ public fun materialSharedAxisZIn(
  * @param durationMillis the duration of the exit transition.
  */
 public fun materialSharedAxisZOut(
-    forward: Boolean,
-    durationMillis: Int = 325,
+  forward: Boolean,
+  durationMillis: Int = 325,
 ): ExitTransition = fadeOut(
-    animationSpec = tween(
-        durationMillis = durationMillis.ForOutgoing,
-        delayMillis = 0,
-        easing = FastOutLinearInEasing,
-    ),
+  animationSpec = tween(
+    durationMillis = durationMillis.ForOutgoing,
+    delayMillis = 0,
+    easing = FastOutLinearInEasing,
+  ),
 ) + scaleOut(
-    animationSpec = tween(
-        durationMillis = durationMillis,
-        easing = FastOutSlowInEasing,
-    ),
-    targetScale = if (forward) 1.1f else 0.8f,
+  animationSpec = tween(
+    durationMillis = durationMillis,
+    easing = FastOutSlowInEasing,
+  ),
+  targetScale = if (forward) 1.1f else 0.8f,
 )

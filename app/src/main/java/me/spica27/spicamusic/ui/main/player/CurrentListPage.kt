@@ -38,7 +38,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.ToastUtils
@@ -55,7 +54,6 @@ import me.spica27.spicamusic.wrapper.activityViewModel
 @Composable
 fun CurrentListPage(
   playBackViewModel: PlayBackViewModel = activityViewModel(),
-  navigator: NavController? = null
 ) {
 
 

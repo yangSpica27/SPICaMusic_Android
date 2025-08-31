@@ -112,7 +112,7 @@ class PlayBackViewModel(
     playList,
     currentSongFlow
   ) { list, song ->
-    list.indexOf(song)
+    list.indexOfFirst { it.mediaStoreId == song?.mediaStoreId  }
   }.stateIn(
     viewModelScope,
     SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),

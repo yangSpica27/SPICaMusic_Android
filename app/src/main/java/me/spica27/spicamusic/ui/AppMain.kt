@@ -35,7 +35,8 @@ import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.widget.BackPress
 import me.spica27.spicamusic.widget.materialSharedAxisXIn
 import me.spica27.spicamusic.widget.materialSharedAxisXOut
-import me.spica27.spicamusic.widget.rememberSlideDistance
+import me.spica27.spicamusic.widget.materialSharedAxisYIn
+import me.spica27.spicamusic.widget.materialSharedAxisYOut
 import kotlin.reflect.typeOf
 
 
@@ -55,23 +56,22 @@ fun AppMain() {
     darkTheme = darkTheme,
     dynamicColor = false
   ) {
-    val slideDistance = rememberSlideDistance()
     PlayerOverlyContent {
       NavHost(
         startDestination = Routes.Main,
         navController = navHostController,
         modifier = Modifier.fillMaxSize(),
         enterTransition = {
-          materialSharedAxisXIn(forward = true, slideDistance = slideDistance)
+          materialSharedAxisXIn(forward = true)
         },
         exitTransition = {
-          materialSharedAxisXOut(forward = true, slideDistance = slideDistance)
+          materialSharedAxisXOut(forward = true)
         },
         popEnterTransition = {
-          materialSharedAxisXIn(forward = true, slideDistance = slideDistance)
+          materialSharedAxisXIn(forward = true)
         },
         popExitTransition = {
-          materialSharedAxisXOut(forward = true, slideDistance = slideDistance)
+          materialSharedAxisXOut(forward = true)
         },
       ) {
         composable<Routes.Main> {
@@ -94,7 +94,12 @@ fun AppMain() {
             playlistId = playlistId
           )
         }
-        composable<Routes.SearchAll> {
+        composable<Routes.SearchAll>(
+          enterTransition = { materialSharedAxisYIn(true) },
+          exitTransition = { materialSharedAxisYOut(true) },
+          popEnterTransition = { materialSharedAxisYIn(true) },
+          popExitTransition = { materialSharedAxisYOut(true) },
+        ) {
           SearchAllScreen(navigator = navHostController)
         }
         composable<Routes.EQ> {

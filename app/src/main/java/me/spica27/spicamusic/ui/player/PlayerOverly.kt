@@ -323,7 +323,7 @@ private fun FullScreenLrc() {
         Text(
           "未在播放", style = MaterialTheme.typography.titleLarge.copy(
             color = MaterialTheme.colorScheme.onSurface.copy(
-              alpha = 0.5f
+              alpha = 0.8f
             )
           )
         )
@@ -349,7 +349,7 @@ private fun FullScreenLrc() {
               Text(
                 "暂无歌词", style = MaterialTheme.typography.titleLarge.copy(
                   color = MaterialTheme.colorScheme.onSurface.copy(
-                    alpha = 0.5f
+                    alpha = 0.8f
                   )
                 )
               )
