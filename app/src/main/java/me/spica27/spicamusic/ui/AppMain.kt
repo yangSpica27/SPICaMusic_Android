@@ -12,7 +12,6 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -38,7 +37,6 @@ import me.spica27.spicamusic.ui.splash.SplashScreen
 import me.spica27.spicamusic.ui.translate.TranslateScreen
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.sliderFromBottomRouteAnim
-import me.spica27.spicamusic.widget.BackPress
 
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -51,7 +49,9 @@ fun AppMain() {
 
   val backStack = rememberNavBackStack(Routes.Main)
 
-  BackPress(navigator = backStack)
+
+
+//  BackPress(navigator = backStack)
 
   AppTheme(
     darkTheme = darkTheme,
@@ -63,9 +63,11 @@ fun AppMain() {
         entryDecorators = listOf(
           rememberSceneSetupNavEntryDecorator(),
           rememberSavedStateNavEntryDecorator(),
-          rememberViewModelStoreNavEntryDecorator()
         ),
         backStack = backStack,
+        onBack = {
+          backStack.removeLastOrNull()
+        },
         entryProvider = entryProvider {
 
           entry<Routes.AddSong> { key ->

@@ -54,6 +54,13 @@ fun BackPress(
       showToast = true
     }
   )
+
+  BackHandler(
+    enabled = backPress == BackPressState.InitialTouch && navigator?.size == 1,
+    onBack = {
+      System.exit(0)
+    }
+  )
 }
 
 private sealed class BackPressState {
