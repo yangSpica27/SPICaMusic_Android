@@ -28,7 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -46,7 +46,7 @@ import org.koin.compose.koinInject
  */
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun ScannerScreen(navigator: NavBackStack? = null) {
+fun ScannerScreen(navigator: NavController? = null) {
 
   // 权限状态
   val permissionState =
@@ -107,7 +107,7 @@ fun ScannerScreen(navigator: NavBackStack? = null) {
     topBar = {
       SimpleTopBar(
         title = "扫描",
-        onBack = { navigator?.removeLastOrNull() }
+        onBack = { navigator?.popBackStack()}
       )
     }
   ) { paddingValues ->

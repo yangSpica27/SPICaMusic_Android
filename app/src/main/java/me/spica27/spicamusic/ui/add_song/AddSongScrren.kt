@@ -30,7 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -45,7 +45,7 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSongScreen(
-  navigator: NavBackStack,
+  navigator: NavController,
   playlistId: Long
 ) {
   val viewModel: SelectSongViewModel = koinViewModel()
@@ -67,7 +67,7 @@ fun AddSongScreen(
     }, navigationIcon = {
       // 返回按钮
       IconButton(onClick = {
-        navigator.removeLastOrNull()
+        navigator.popBackStack()
       }) {
         Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
       }
@@ -104,7 +104,7 @@ fun AddSongScreen(
         coroutineScope.launch(Dispatchers.IO) {
           viewModel.addSongToPlaylist(playlistId)
           withContext(Dispatchers.Main) {
-            navigator.removeLastOrNull()
+            navigator.popBackStack()
           }
         }
       }

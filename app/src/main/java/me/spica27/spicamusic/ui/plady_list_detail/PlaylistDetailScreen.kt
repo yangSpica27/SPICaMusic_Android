@@ -58,7 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
@@ -83,7 +83,7 @@ import java.util.*
 @Composable
 fun PlaylistDetailScreen(
   playlistViewModel: PlaylistViewModel = activityViewModel(),
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
   playlistId: Long,
   playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
@@ -305,7 +305,7 @@ fun Header(
   modifier: Modifier = Modifier,
   playlist: Playlist,
   playlistViewModel: PlaylistViewModel,
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
 ) {
 
   var showRenameDialog by remember { mutableStateOf(false) }
@@ -417,9 +417,9 @@ fun Header(
       ElevatedButton(
         shape = MaterialTheme.shapes.small,
         onClick = {
-          navigator?.add(
+          navigator?.navigate(
             Routes.AddSong(
-              playlistId = playlist.playlistId ?: -1
+              playlist.playlistId?:-1
             )
           )
         },
@@ -474,7 +474,7 @@ private fun DeleteSureDialog(
   playlistId: Long,
   onDismissRequest: () -> Unit = { },
   playlistViewModel: PlaylistViewModel,
-  navigator: NavBackStack? = null
+  navigator: NavController? = null
 ) {
   val coroutineScope = rememberCoroutineScope()
   AlertDialog(
@@ -489,7 +489,7 @@ private fun DeleteSureDialog(
         coroutineScope.launch {
           playlistViewModel.deletePlaylist(playlistId)
           onDismissRequest()
-          navigator?.removeLastOrNull()
+          navigator?.popBackStack()
         }
       }) {
         Text("确定")

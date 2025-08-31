@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.NyquistBand
@@ -59,7 +59,7 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EqScreen(
-  navigator: NavBackStack? = null
+  navigator: NavController? = null
 ) {
 
   val dataStoreUtil = DataStoreUtil()
@@ -80,7 +80,7 @@ fun EqScreen(
     topBar = {
       SimpleTopBar(
         onBack = {
-          navigator?.removeLastOrNull()
+          navigator?.popBackStack()
         },
         title = "音效"
       )

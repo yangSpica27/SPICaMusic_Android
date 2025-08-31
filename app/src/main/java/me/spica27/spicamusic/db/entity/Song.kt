@@ -34,8 +34,6 @@ data class Song(
   var like: Boolean,
   val duration: Long,
   var sort: Int,
-  var playTimes: Int,// 已经废弃 使用历史记录表替代 {@link me.spica27.spicamusic.db.entity}
-  var lastPlayTime: Long,// 已经废弃 使用历史记录表替代 {@link me.spica27.spicamusic.db.entity}
   var mimeType: String,
   var albumId: Long,
   var sampleRate: Int, // 采样率
@@ -77,8 +75,6 @@ data class Song(
     if (like != other.like) return false
     if (duration != other.duration) return false
     if (sort != other.sort) return false
-    if (playTimes != other.playTimes) return false
-    if (lastPlayTime != other.lastPlayTime) return false
 
     return true
   }
@@ -93,13 +89,11 @@ data class Song(
     result = 31 * result + like.hashCode()
     result = 31 * result + duration.hashCode()
     result = 31 * result + sort
-    result = 31 * result + playTimes
-    result = 31 * result + lastPlayTime.hashCode()
     return result
   }
 
   override fun toString(): String {
-    return "Song(songId=$songId, mediaStoreId=$mediaStoreId, path='$path', displayName='$displayName', artist='$artist', size=$size, like=$like, duration=$duration, sort=$sort, playTimes=$playTimes, lastPlayTime=$lastPlayTime)"
+    return "Song(songId=$songId, mediaStoreId=$mediaStoreId, path='$path', displayName='$displayName', artist='$artist', size=$size, like=$like, duration=$duration, sort=$sort)"
   }
 
 

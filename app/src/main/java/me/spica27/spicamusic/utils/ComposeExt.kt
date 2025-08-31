@@ -4,12 +4,6 @@ import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.lazy.LazyListState
@@ -20,7 +14,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation3.ui.NavDisplay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 
@@ -76,24 +69,6 @@ fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
   }
 }
 
-fun sliderFromBottomRouteAnim() = NavDisplay.transitionSpec {
-  slideInVertically(
-    initialOffsetY = { it },
-    animationSpec = tween(450)
-  ) togetherWith ExitTransition.KeepUntilTransitionsFinished
-} + NavDisplay.popTransitionSpec {
-  EnterTransition.None togetherWith
-      slideOutVertically(
-        targetOffsetY = { it },
-        animationSpec = tween(450)
-      )
-} + NavDisplay.predictivePopTransitionSpec {
-  EnterTransition.None togetherWith
-      slideOutVertically(
-        targetOffsetY = { it },
-        animationSpec = tween(450)
-      )
-}
 
 
 // Enum to define vibration type for more clarity

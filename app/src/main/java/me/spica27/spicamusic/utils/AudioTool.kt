@@ -101,8 +101,6 @@ object AudioTool {
           ?: "",
         like = false,
         sort = 0,
-        playTimes = 0,
-        lastPlayTime = 0L,
         duration = cursor.getLongOrNull(cursor.getColumnIndexOrThrow(MediaStore.Audio.AudioColumns.DURATION))
           ?: 1,
         mimeType = mimeType,

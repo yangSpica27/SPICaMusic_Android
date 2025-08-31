@@ -128,9 +128,12 @@ dependencies {
   implementation libs.androidx.adaptive
   implementation libs.androidx.adaptive.layout
   implementation libs.androidx.adaptive.navigation
-  implementation libs.androidx.lifecycle.viewmodel.navigation3
-  implementation libs.androidx.navigation3.runtime
-  implementation libs.androidx.navigation3.ui
+  def nav_version = "2.9.3"
+  // Jetpack Compose integration
+  implementation("androidx.navigation:navigation-compose:$nav_version")
+//  implementation libs.androidx.lifecycle.viewmodel.navigation3
+//  implementation libs.androidx.navigation3.runtime
+//  implementation libs.androidx.navigation3.ui
   implementation libs.material3
   // 播放器
   // For media playback using ExoPlayer

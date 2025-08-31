@@ -33,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
@@ -44,7 +44,7 @@ import me.spica27.spicamusic.wrapper.activityViewModel
 
 
 @Composable
-fun IgnoreListScreen(navigator: NavBackStack) {
+fun IgnoreListScreen(navigator: NavController) {
 
   val listState = rememberLazyListState()
 
@@ -57,7 +57,7 @@ fun IgnoreListScreen(navigator: NavBackStack) {
       SimpleTopBar(
         title = "忽略的歌曲",
         onBack = {
-          navigator.removeLastOrNull()
+          navigator.popBackStack()
         },
         lazyListState = listState
       )

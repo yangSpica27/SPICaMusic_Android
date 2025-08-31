@@ -28,7 +28,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -52,7 +52,7 @@ fun LyricSettingDialog(
   dialogBackgroundColor: Color = MaterialTheme.colorScheme.background,
   textColor: Color = MaterialTheme.colorScheme.onBackground,
   song: Song,
-  navBackStack: NavBackStack? = null,
+  navBackStack: NavController? = null,
   // 窗口是否透明
   dialogBackgroundIsTranslate: (Boolean) -> Unit = {},
 ) {
@@ -260,7 +260,11 @@ fun LyricSettingDialog(
             ),
             onClick = {
               onDismissRequest.invoke()
-              navBackStack?.add(Routes.LyricsSearch(song = song))
+              navBackStack?.navigate(
+                Routes.LyricsSearch(
+                  song = song
+                )
+              )
             }
           ) {
             Text("切换其他版本歌词")

@@ -30,7 +30,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
@@ -50,14 +50,14 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SearchAllScreen(
   musicViewModel: MusicSearchViewModel = koinViewModel(),
-  navigator: NavBackStack,
+  navigator: NavController,
   playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
   Scaffold(
     topBar = {
       SimpleTopBar(
         onBack = {
-          navigator.removeLastOrNull()
+          navigator.popBackStack()
         },
         title = "搜索所有歌曲",
       )

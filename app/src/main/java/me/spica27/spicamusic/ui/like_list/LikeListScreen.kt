@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -44,7 +44,7 @@ import java.util.*
 @OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun LikeListScreen(
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
   songViewModel: SongViewModel = activityViewModel(),
   playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
@@ -71,7 +71,7 @@ fun LikeListScreen(
     topBar = {
       SimpleTopBar(
         onBack = {
-          navigator?.removeLastOrNull()
+          navigator?.popBackStack()
         },
         title = "我的收藏",
         lazyListState = listState

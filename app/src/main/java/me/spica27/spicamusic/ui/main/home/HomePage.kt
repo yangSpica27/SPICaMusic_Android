@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
@@ -86,7 +86,7 @@ import java.util.*
 fun HomePage(
   modifier: Modifier = Modifier,
   songViewModel: SongViewModel = activityViewModel(),
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
   listState: ScrollState = rememberScrollState(),
   pagerState: PagerState,
   playBackViewModel: PlayBackViewModel = activityViewModel()
@@ -171,7 +171,7 @@ fun HomePage(
             )
             .clip(MaterialTheme.shapes.small)
             .clickable {
-              navigator?.add(Routes.SearchAll)
+              navigator?.navigate(Routes.SearchAll)
             }
             .padding(
               horizontal = 16.dp,
@@ -194,9 +194,7 @@ fun HomePage(
             Text(
               "查看更多",
               modifier = Modifier.clickableNoRippleWithVibration {
-                navigator?.add(
-                  Routes.RecentlyList
-                )
+                navigator?.navigate(Routes.RecentlyList)
               },
               style = MaterialTheme.typography.bodyMedium.copy(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
@@ -255,9 +253,7 @@ fun HomePage(
               cover = null
             ),
             onClick = {
-              navigator?.add(
-                Routes.LikeList
-              )
+              navigator?.navigate(Routes.LikeList)
             },
             showMenu = false
           )
@@ -266,9 +262,9 @@ fun HomePage(
             PlaylistItem(
               playlist = it,
               onClick = {
-                navigator?.add(
+                navigator?.navigate(
                   Routes.PlaylistDetail(
-                    it.playlistId ?: 0,
+                    it.playlistId ?: -1
                   )
                 )
               },
@@ -325,7 +321,7 @@ fun HomePage(
 @Composable
 private fun OftenListenEmptyContent(
   modifier: Modifier = Modifier,
-  navigator: NavBackStack? = null
+  navigator: NavController? = null
 ) {
   Box(
     modifier = Modifier
@@ -366,7 +362,7 @@ private fun OftenListenEmptyContent(
       )
       TextButton(
         onClick = {
-          navigator?.add(Routes.Scanner)
+          navigator?.navigate(Routes.Scanner)
         }
       ) {
         Text("扫描本地音乐")
@@ -525,7 +521,7 @@ private fun Title(
  * 顶部标题栏
  */
 @Composable
-private fun TitleBar(navigator: NavBackStack? = null, pagerState: PagerState) {
+private fun TitleBar(navigator: NavController? = null, pagerState: PagerState) {
   val coroutineScope = rememberCoroutineScope()
   Box(
     modifier = Modifier

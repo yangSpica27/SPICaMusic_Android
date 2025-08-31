@@ -32,7 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.wrapper.activityViewModel
@@ -44,7 +44,7 @@ import timber.log.Timber
 fun PlayerScreen(
   playBackViewModel: PlayBackViewModel = activityViewModel(),
   onBackClick: () -> Unit,
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
 ) {
 
   val nowPlayingSongs = playBackViewModel.player.currentTimelineItems.collectAsState().value
@@ -130,7 +130,7 @@ fun PlayerScreen(
 
 @Composable
 private fun EmptyPage(
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
 ) {
   Column(
     modifier = Modifier.fillMaxSize(),
@@ -141,7 +141,7 @@ private fun EmptyPage(
     Spacer(modifier = Modifier.height(16.dp))
     OutlinedButton(
       onClick = {
-        navigator?.add(Routes.SearchAll)
+        navigator?.navigate(Routes.SearchAll)
       }
     ) {
       Text("选取音乐")

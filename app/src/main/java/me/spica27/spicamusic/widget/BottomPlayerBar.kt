@@ -106,6 +106,10 @@ fun PlayerBar(
             CoverWidget(
               modifier = Modifier
                 .size(48.dp)
+                .background(
+                  MaterialTheme.colorScheme.surfaceContainerHigh,
+                  MaterialTheme.shapes.medium
+                )
                 .clip(MaterialTheme.shapes.medium),
               song = songState
             )

@@ -25,7 +25,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.ScrollHaptics
@@ -47,7 +47,7 @@ import java.util.*
 @OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RecentlyListScreen(
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
   songViewModel: SongViewModel = activityViewModel(),
   playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
@@ -70,7 +70,7 @@ fun RecentlyListScreen(
     topBar = {
       SimpleTopBar(
         onBack = {
-          navigator?.removeLastOrNull()
+          navigator?.popBackStack()
         },
         title = "最近播放",
         lazyListState = listState

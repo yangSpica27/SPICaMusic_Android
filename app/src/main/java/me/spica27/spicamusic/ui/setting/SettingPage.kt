@@ -47,7 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
@@ -61,7 +61,7 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SettingPage(
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
   pagerState: PagerState? = null
 ) {
 
@@ -105,11 +105,11 @@ fun SettingPage(
           },
           onPoint = {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-              navigator?.add(
+              navigator?.navigate(
                 Routes.Translate(
                   it.x,
                   it.y,
-                  fromLight = !forceDarkThemeSettingState.value
+                  !forceDarkThemeSettingState.value
                 )
               )
             }
@@ -132,7 +132,7 @@ fun SettingPage(
           title = "扫描",
           icon = Icons.Outlined.Refresh,
           onClick = {
-            navigator?.add(Routes.Scanner)
+            navigator?.navigate(Routes.Scanner)
           })
       }
       item {
@@ -140,7 +140,7 @@ fun SettingPage(
           title = "忽略的歌曲",
           icon = ImageVector.vectorResource(R.drawable.ic_block),
           onClick = {
-            navigator?.add(Routes.IgnoreList)
+            navigator?.navigate(Routes.IgnoreList)
           })
       }
       item {
@@ -148,7 +148,7 @@ fun SettingPage(
           title = "音效",
           icon = ImageVector.vectorResource(R.drawable.ic_outlined_equalizer),
           onClick = {
-            navigator?.add(Routes.EQ)
+            navigator?.navigate(Routes.EQ)
           })
       }
       item { HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp)) }

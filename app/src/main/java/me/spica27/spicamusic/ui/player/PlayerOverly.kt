@@ -50,7 +50,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.ui.main.player.PlayerScreen
@@ -65,7 +65,7 @@ import timber.log.Timber
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun PlayerOverly(
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
 ) {
 
   val playbackViewModel: PlayBackViewModel = activityViewModel()

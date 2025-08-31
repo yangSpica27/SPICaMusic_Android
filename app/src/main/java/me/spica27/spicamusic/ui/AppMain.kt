@@ -3,21 +3,18 @@ package me.spica27.spicamusic.ui
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.runtime.entry
-import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
-import androidx.navigation3.ui.NavDisplay
-import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.theme.AppTheme
 import me.spica27.spicamusic.ui.add_song.AddSongScreen
@@ -33,10 +30,15 @@ import me.spica27.spicamusic.ui.player.PlayerOverlyContent
 import me.spica27.spicamusic.ui.rencently_list.RecentlyListScreen
 import me.spica27.spicamusic.ui.scanner.ScannerScreen
 import me.spica27.spicamusic.ui.search_all.SearchAllScreen
-import me.spica27.spicamusic.ui.splash.SplashScreen
 import me.spica27.spicamusic.ui.translate.TranslateScreen
 import me.spica27.spicamusic.utils.DataStoreUtil
-import me.spica27.spicamusic.utils.sliderFromBottomRouteAnim
+import me.spica27.spicamusic.widget.BackPress
+import me.spica27.spicamusic.widget.materialSharedAxisXIn
+import me.spica27.spicamusic.widget.materialSharedAxisXOut
+import me.spica27.spicamusic.widget.materialSharedAxisZIn
+import me.spica27.spicamusic.widget.materialSharedAxisZOut
+import me.spica27.spicamusic.widget.rememberSlideDistance
+import kotlin.reflect.typeOf
 
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -47,123 +49,108 @@ fun AppMain() {
     .getForceDarkTheme.collectAsStateWithLifecycle(systemIsDark)
     .value
 
-  val backStack = rememberNavBackStack(Routes.Main)
+  val navHostController = rememberNavController()
 
-
-
-//  BackPress(navigator = backStack)
+  BackPress(navigator = navHostController)
 
   AppTheme(
     darkTheme = darkTheme,
     dynamicColor = false
   ) {
-
+    val slideDistance = rememberSlideDistance()
     PlayerOverlyContent {
-      NavDisplay(
-        entryDecorators = listOf(
-          rememberSceneSetupNavEntryDecorator(),
-          rememberSavedStateNavEntryDecorator(),
-        ),
-        backStack = backStack,
-        onBack = {
-          backStack.removeLastOrNull()
+      NavHost(
+        startDestination = Routes.Main,
+        navController = navHostController,
+        modifier = Modifier.fillMaxSize(),
+        enterTransition = {
+          materialSharedAxisXIn(forward = true, slideDistance = slideDistance)
         },
-        entryProvider = entryProvider {
+        exitTransition = {
+          materialSharedAxisXOut(forward = true, slideDistance = slideDistance)
+        },
+        popEnterTransition = {
+          materialSharedAxisZIn(forward = false)
+        },
+        popExitTransition = {
+          materialSharedAxisZOut(forward = false)
+        },
+      ) {
+        composable<Routes.Main> {
+          MainScreen(
+            navigator = navHostController
+          )
+        }
 
-          entry<Routes.AddSong> { key ->
-            AddSongScreen(navigator = backStack, playlistId = key.playlistId)
-          }
-          entry<Routes.PlaylistDetail> {
-            PlaylistDetailScreen(
-              navigator = backStack,
-              playlistId = it.playlistId
-            )
-          }
-          entry<Routes.Main> { key ->
-            MainScreen(navigator = backStack)
-          }
-          entry<Routes.Splash> { SplashScreen(navigator = backStack) }
-          entry<Routes.SearchAll>(
-            metadata = sliderFromBottomRouteAnim()
-          ) { SearchAllScreen(navigator = backStack) }
-          entry<Routes.EQ> {
-            EqScreen(navigator = backStack)
-          }
-          entry<Routes.Scanner> {
-            ScannerScreen(navigator = backStack)
-          }
-          entry<Routes.AgreePrivacy> {
-            AgreePrivacyScreen(navigator = backStack)
-          }
-          entry<Routes.Translate>(
-            metadata = NavDisplay.transitionSpec {
-              EnterTransition.None togetherWith ExitTransition.None
-            } + NavDisplay.popTransitionSpec {
-              EnterTransition.None togetherWith ExitTransition.None
-            }
-          ) { key ->
-            TranslateScreen(
-              navigator = backStack,
-              pointX = key.pointX,
-              pointY = key.pointY,
-              fromLight = key.fromLight
-            )
-          }
-          entry<Routes.LikeList> { LikeListScreen(navigator = backStack) }
-          entry<Routes.RecentlyList> { RecentlyListScreen(navigator = backStack) }
-          entry<Routes.IgnoreList>{
-            IgnoreListScreen(navigator = backStack)
-          }
-          entry<Routes.LyricsSearch>(
-            metadata = sliderFromBottomRouteAnim()
-          ) { key ->
-            LyricsSearchScreen(
-              song = key.song,
-              navigator = backStack
-            )
-          }
-        },
-        transitionSpec = {
-          scaleIn(
-            initialScale = 1.2f,
-          ) + fadeIn(
-            animationSpec = tween(250)
-          ) togetherWith
-              scaleOut(
-                targetScale = 1.2f,
-              ) + fadeOut(
-            animationSpec = tween(250)
+        composable<Routes.AddSong> { key ->
+          val playlistId = key.toRoute<Routes.AddSong>().playlistId
+          AddSongScreen(
+            navigator = navHostController,
+            playlistId = playlistId
           )
-        },
-        popTransitionSpec = {
-          scaleIn(
-            initialScale = 1.2f,
-          ) + fadeIn() togetherWith
-              scaleOut(
-                targetScale = 1.2f,
+        }
+        composable<Routes.PlaylistDetail> { key ->
+          val playlistId = key.toRoute<Routes.PlaylistDetail>().playlistId
+          PlaylistDetailScreen(
+            navigator = navHostController,
+            playlistId = playlistId
+          )
+        }
+        composable<Routes.SearchAll> {
+          SearchAllScreen(navigator = navHostController)
+        }
+        composable<Routes.EQ> {
+          EqScreen(navigator = navHostController)
+        }
+        composable<Routes.Scanner> {
+          ScannerScreen(navigator = navHostController)
+        }
+        composable<Routes.AgreePrivacy> {
+          AgreePrivacyScreen(navigator = navHostController)
+        }
 
-                ) + fadeOut(
-            animationSpec = tween(125)
+        composable<Routes.Translate>(
+          enterTransition = { EnterTransition.None },
+          exitTransition = { ExitTransition.None },
+          popEnterTransition = { EnterTransition.None },
+          popExitTransition = { ExitTransition.None },
+        ) { key ->
+          val route = key.toRoute<Routes.Translate>()
+          TranslateScreen(
+            navigator = navHostController,
+            pointX = route.pointX,
+            pointY = route.pointY,
+            fromLight = route.fromLight
           )
-        },
-        predictivePopTransitionSpec = {
-          scaleIn(
-            initialScale = 1.2f,
-          ) + fadeIn(
-            animationSpec = tween(250)
-          ) togetherWith
-              scaleOut(
-                targetScale = 1.2f,
-              ) + fadeOut(
-            animationSpec = tween(250)
+        }
+        composable<Routes.LikeList> { LikeListScreen(navigator = navHostController) }
+        composable<Routes.RecentlyList> { RecentlyListScreen(navigator = navHostController) }
+        composable<Routes.IgnoreList> {
+          IgnoreListScreen(navigator = navHostController)
+        }
+        composable<Routes.LyricsSearch>(
+          typeMap = mapOf(
+            typeOf<Song>() to Routes.parcelableType<Song>()
+          ),
+          enterTransition = {
+            slideInVertically { it }
+          },
+          exitTransition = {
+            slideOutVertically(
+              targetOffsetY = { it },
+              animationSpec = tween(350)
+            )
+          },
+        ) { key ->
+          val song = key.toRoute<Routes.LyricsSearch>().song
+          LyricsSearchScreen(
+            navigator = navHostController,
+            song = song
           )
-        },
-        sizeTransform = SizeTransform(
-          clip = true
-        )
-      )
+        }
+      }
       PlayerOverly(
-        navigator = backStack
+        navigator = navHostController
       )
     }
 

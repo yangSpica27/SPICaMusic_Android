@@ -27,10 +27,6 @@ interface SongDao {
   @Insert(onConflict = OnConflictStrategy.IGNORE)
   fun insertSync(songs: List<Song>)
 
-  @Query("UPDATE song SET playTimes = (playTimes + 1) , lastPlayTime = :lastPlayTime  WHERE songId == :id")
-  suspend fun addPlayTime(id: Long, lastPlayTime: Long)
-
-
   @Query("DELETE FROM song WHERE mediaStoreId NOT IN (:mediaIds)")
   suspend fun deleteSongsNotInList(mediaIds: List<Long>)
 
@@ -96,14 +92,25 @@ interface SongDao {
   suspend fun delete(song: List<Song>)
 
 
-  @Query(
-    "SELECT * FROM song WHERE (isIgnore == 0) ORDER BY playTimes DESC "
-  )
+  @Query("""
+        SELECT s.*, COUNT(ph.mediaId) as play_count 
+        FROM song s
+        LEFT JOIN PlayHistory ph ON s.mediaStoreId = ph.mediaId
+        WHERE s.isIgnore == 0
+        GROUP BY s.songId
+        ORDER BY play_count DESC
+    """)
   fun getOftenListenSongs(): Flow<List<Song>>
 
-  @Query(
-    "SELECT * FROM song WHERE (isIgnore == 0) ORDER BY playTimes DESC LIMIT 10"
-  )
+  @Query("""
+        SELECT s.*, COUNT(ph.mediaId) as play_count 
+        FROM song s
+        LEFT JOIN PlayHistory ph ON s.mediaStoreId = ph.mediaId
+        WHERE s.isIgnore == 0
+        GROUP BY s.songId
+        ORDER BY play_count DESC
+        LIMIT 10
+    """)
   fun getOftenListenSong10(): Flow<List<Song>>
 
 

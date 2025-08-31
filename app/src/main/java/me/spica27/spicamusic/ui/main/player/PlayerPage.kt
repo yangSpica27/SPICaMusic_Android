@@ -92,7 +92,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
@@ -117,7 +117,6 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.repository.PlayHistoryRepository
 import me.spica27.spicamusic.route.Routes
-import me.spica27.spicamusic.ui.player.LocalPlayerWidgetState
 import me.spica27.spicamusic.utils.TimeUtils
 import me.spica27.spicamusic.utils.TimeUtils.prettyTime
 import me.spica27.spicamusic.utils.contentResolverSafe
@@ -148,7 +147,7 @@ import java.util.*
 @Composable
 fun PlayerPage(
   playBackViewModel: PlayBackViewModel = activityViewModel(),
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
 ) {
 
   // 当前播放的歌曲
@@ -179,9 +178,6 @@ fun PlayerPage(
     }
     vibrator.tick()
   }
-
-
-  val overlyState = LocalPlayerWidgetState.current
 
   if (showEmpty.value) {
     return Box(
@@ -263,9 +259,9 @@ fun PlayerPage(
                           )
                           .clickable {
                             currentPlayingSong.let {
-                              navigator?.add(
+                              navigator?.navigate(
                                 Routes.LyricsSearch(
-                                  currentPlayingSong
+                                  song = it
                                 )
                               )
                             }
@@ -697,7 +693,7 @@ private fun SongInfo(
   song: Song,
   modifier: Modifier = Modifier,
   songViewModel: SongViewModel = activityViewModel(),
-  navigator: NavBackStack? = null,
+  navigator: NavController? = null,
   playBackViewModel: PlayBackViewModel = activityViewModel()
 ) {
 

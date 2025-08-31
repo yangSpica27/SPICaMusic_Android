@@ -34,7 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.utils.DataStoreUtil
@@ -43,7 +43,7 @@ import org.koin.compose.koinInject
 
 @Composable
 fun AgreePrivacyScreen(
-  navigator: NavBackStack,
+  navigator: NavController,
   dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>()
 ) {
 
@@ -90,7 +90,7 @@ fun AgreePrivacyScreen(
           ElevatedButton(
             modifier = Modifier.weight(1f),
             onClick = {
-              navigator.clear()
+              System.exit(0)
             },
             shape = MaterialTheme.shapes.small,
             colors = ButtonDefaults.elevatedButtonColors().copy(
@@ -107,7 +107,7 @@ fun AgreePrivacyScreen(
             onClick = {
               coroutineScope.launch {
                 dataStoreUtil.setAgreePrivacy(true)
-                navigator.removeLastOrNull()
+                navigator.popBackStack()
               }
             },
             shape = MaterialTheme.shapes.small,

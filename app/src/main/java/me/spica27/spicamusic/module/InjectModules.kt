@@ -62,10 +62,12 @@ object InjectModules {
   val persistenceModule = module {
     single<AppDatabase> {
       Room.databaseBuilder(
-          get<Application>(), AppDatabase::class.java, "spica_music.db"
-        ).addMigrations(
-          AppDatabase.MIGRATION_12_13, AppDatabase.MIGRATION_13_14
-        ).build()
+        get<Application>(), AppDatabase::class.java, "spica_music.db"
+      ).addMigrations(
+        AppDatabase.MIGRATION_12_13, AppDatabase.MIGRATION_13_14
+      )
+        .fallbackToDestructiveMigration(false)
+        .build()
     }
 
     single<LyricDao> {
@@ -155,7 +157,8 @@ object InjectModules {
         songDao = get<SongDao>(),
         amplituda = get<Amplituda>(),
         playlistRepository = get<PlaylistRepository>(),
-        player = get<SpicaPlayer>()
+        player = get<SpicaPlayer>(),
+        playHistoryRepository = get<PlayHistoryRepository>()
       )
     }
     viewModel {

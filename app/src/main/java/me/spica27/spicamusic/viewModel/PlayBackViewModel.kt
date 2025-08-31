@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -26,10 +27,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.dao.SongDao
+import me.spica27.spicamusic.db.entity.PlayHistory
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.media.SpicaPlayer
 import me.spica27.spicamusic.media.action.MediaControl
 import me.spica27.spicamusic.media.action.PlayerAction
+import me.spica27.spicamusic.repository.PlayHistoryRepository
 import me.spica27.spicamusic.repository.PlaylistRepository
 import timber.log.Timber
 
@@ -38,7 +41,8 @@ class PlayBackViewModel(
   private val songDao: SongDao,
   private val amplituda: Amplituda,
   private val playlistRepository: PlaylistRepository,
-  val player: SpicaPlayer
+  val player: SpicaPlayer,
+  private val playHistoryRepository: PlayHistoryRepository
 ) : ViewModel() {
 
 
@@ -53,7 +57,7 @@ class PlayBackViewModel(
           songDao.getSongWithMediaStoreId(item.mediaId.toLongOrNull() ?: -1)
         }
       }.flowOn(Dispatchers.IO)
-      .stateIn(viewModelScope, SharingStarted.Eagerly,emptyList())
+      .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
   // 当前歌单大小大小
   val nowPlayingListSize: StateFlow<Int> = playList.map {
@@ -127,6 +131,17 @@ class PlayBackViewModel(
 
   init {
     Timber.tag("MusicViewModel").d("init")
+    viewModelScope.launch(Dispatchers.IO) {
+      currentSongFlow.collectLatest {
+        playHistoryRepository.insertPlayHistory(
+          PlayHistory(
+            mediaId = it?.songId ?: -1,
+            title = it?.displayName ?: "",
+            artist = it?.artist ?: "",
+          )
+        )
+      }
+    }
   }
 
 
