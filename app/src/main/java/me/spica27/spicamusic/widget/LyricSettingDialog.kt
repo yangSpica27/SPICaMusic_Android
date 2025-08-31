@@ -275,8 +275,8 @@ fun LyricSettingDialog(
               contentColor = textColorAnimValue.value
             ),
             onClick = {
-              onDismissRequest.invoke()
               overlyState.value = PlayerOverlyState.FULLSCREEN_LRC
+              onDismissRequest.invoke()
             }
           ) {
             Text("全屏歌词")

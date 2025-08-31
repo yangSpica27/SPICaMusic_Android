@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.ScaleToBounds
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -18,9 +19,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,11 +42,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -59,6 +61,10 @@ import me.spica27.spicamusic.widget.CoverWidget
 import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.MusicEffectBackground
 import me.spica27.spicamusic.widget.PlayerBar
+import me.spica27.spicamusic.widget.materialSharedAxisYIn
+import me.spica27.spicamusic.widget.materialSharedAxisYOut
+import me.spica27.spicamusic.widget.materialSharedAxisZIn
+import me.spica27.spicamusic.widget.materialSharedAxisZOut
 import me.spica27.spicamusic.wrapper.activityViewModel
 import timber.log.Timber
 
@@ -181,10 +187,6 @@ fun PlayerOverly(
             Box(
               modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                  16.dp
-                )
-                .navigationBarsPadding()
             ) {
               Box(
                 modifier = Modifier
@@ -192,32 +194,25 @@ fun PlayerOverly(
                   .sharedBounds(
                     animatedVisibilityScope = this@AnimatedContent,
                     sharedContentState = sharedContentState,
-                    enter = scaleIn(
-                      animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessLow,
-                      )
-                    ) + fadeIn(),
-                    exit = scaleOut() + fadeOut(),
+                    enter = materialSharedAxisYIn(false),
+                    exit = materialSharedAxisYOut(false),
+                    resizeMode = ScaleToBounds(ContentScale.Fit, Center)
                   )
                   .align(Alignment.BottomCenter)
                   .background(
                     MaterialTheme.colorScheme.surfaceContainer,
-                    MaterialTheme.shapes.medium
                   )
                   .innerShadow(
-                    shape = MaterialTheme.shapes.medium, shadow = Shadow(
+                    shape = RectangleShape, shadow = Shadow(
                       radius = 2.dp,
                       color = MaterialTheme.colorScheme.onSurface,
                       alpha = .11f
                     )
                   )
-                  .clip(
-                    MaterialTheme.shapes.medium
-                  )
                   .clickable {
                     overlyState.value = PlayerOverlyState.PLAYER
                   }
+                  .navigationBarsPadding()
               ) {
                 currentSong?.let {
                   Bottom()
@@ -234,13 +229,8 @@ fun PlayerOverly(
                   renderInOverlayDuringTransition = false,
                   animatedVisibilityScope = this@AnimatedContent,
                   sharedContentState = sharedContentState,
-                  enter = scaleIn(
-                    animationSpec = spring(
-                      dampingRatio = Spring.DampingRatioLowBouncy,
-                      stiffness = Spring.StiffnessLow,
-                    )
-                  ) + fadeIn(),
-                  exit = scaleOut() + fadeOut(),
+                  enter = materialSharedAxisZIn(true),
+                  exit = materialSharedAxisYOut(true),
                 )
             ) {
               PlayerScreen(
@@ -257,19 +247,12 @@ fun PlayerOverly(
               modifier = Modifier
                 .fillMaxSize()
                 .sharedBounds(
+                  renderInOverlayDuringTransition = false,
                   animatedVisibilityScope = this@AnimatedContent,
                   sharedContentState = sharedContentState,
-                  enter = scaleIn(
-                    animationSpec = spring(
-                      dampingRatio = Spring.DampingRatioLowBouncy,
-                      stiffness = Spring.StiffnessLow,
-                    )
-                  ) + slideInVertically {
-                    it
-                  },
-                  exit = slideOutVertically {
-                    it
-                  },
+                  enter = materialSharedAxisZIn(true),
+                  exit = materialSharedAxisZOut(true),
+                  resizeMode = ScaleToBounds(ContentScale.Fit, Center)
                 )
             ) {
               FullScreenLrc()
