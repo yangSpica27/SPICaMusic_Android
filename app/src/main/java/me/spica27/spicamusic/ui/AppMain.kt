@@ -54,7 +54,7 @@ fun AppMain() {
 
   BackPress(navigator = navHostController)
 
-  val glassProviderState = rememberLiquidGlassProviderState(null)
+
 
   AppTheme(
     darkTheme = darkTheme,
@@ -66,7 +66,6 @@ fun AppMain() {
         navController = navHostController,
         modifier = Modifier
           .fillMaxSize()
-          .liquidGlassProvider(glassProviderState)
         ,
         enterTransition = {
           materialSharedAxisXIn(forward = true)
@@ -160,8 +159,7 @@ fun AppMain() {
         }
       }
       PlayerOverly(
-        navigator = navHostController,
-        glassProviderState = glassProviderState
+        navigator = navHostController
       )
     }
 

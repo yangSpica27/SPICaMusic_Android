@@ -3,6 +3,7 @@ package me.spica27.spicamusic.db.dao
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
@@ -52,6 +53,7 @@ interface PlaylistDao {
   fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<Song>>
 
 
+
   @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")
   fun getSongsByPlaylistId(playlistId: Long): List<Song>
 
@@ -74,7 +76,7 @@ interface PlaylistDao {
   suspend fun insertListItem(songs: PlaylistSongCrossRef)
 
   @Transaction
-  @Insert
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insertPlaylist(list: Playlist)
 
   @Insert

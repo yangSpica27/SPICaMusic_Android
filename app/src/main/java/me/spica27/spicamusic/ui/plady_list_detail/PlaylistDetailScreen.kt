@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -50,10 +51,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -70,12 +73,14 @@ import me.spica27.spicamusic.utils.dip
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.widget.InputTextDialog
+import me.spica27.spicamusic.widget.PlaylistCover
 import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
 import me.spica27.spicamusic.widget.rememberBindPlayerOverlyConnect
 import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
+import kotlin.math.roundToInt
 
 /// 歌单详情页面
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -133,7 +138,8 @@ fun PlaylistDetailScreen(
         scrollBehavior = scrollBehavior,
         colors = TopAppBarDefaults.topAppBarColors(
           containerColor = topBarColor.value
-        )
+        ),
+        windowInsets = WindowInsets()
       )
     }
   ) { paddingValues ->
@@ -351,117 +357,150 @@ fun Header(
     )
   }
 
-  Column(
-    modifier = modifier.fillMaxSize()
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+      .layout { measurable, constraints ->
+        val paddingCompensation = 16.dp.toPx().roundToInt()
+        val adjustedConstraints = constraints.copy(
+          maxWidth = constraints.maxWidth + paddingCompensation
+        )
+        val placeable = measurable.measure(adjustedConstraints)
+        layout(placeable.width, placeable.height) {
+          placeable.place(-paddingCompensation / 2, 0)
+        }
+      }
   ) {
-    Row(
+    PlaylistCover(
+      playlist = playlist,
       modifier = Modifier
-        .fillMaxWidth()
-        .weight(1f),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      Column {
-        Text(
-          text = playlistName,
-          style = MaterialTheme.typography.titleLarge.copy(
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            fontWeight = FontWeight.W700
-          ),
-          modifier = Modifier
-        )
-        Spacer(
-          modifier = Modifier
-            .width(8.dp)
-        )
-        Text(
-          text = "创建于${createTimeTxt}",
-          style = MaterialTheme.typography.titleMedium.copy(
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
-            fontWeight = FontWeight.Normal
-          ),
-          modifier = Modifier
-        )
-      }
-
-    }
-    Row(
+        .fillMaxSize()
+    )
+    Box(
       modifier = Modifier
-        .fillMaxWidth()
-        .padding(end = 16.dp),
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      ElevatedButton(
-        contentPadding = PaddingValues(
-          horizontal = 4.dp,
-          vertical = 8.dp
-        ),
-        shape = MaterialTheme.shapes.small,
-        onClick = {
-          showRenameDialog = true
-        },
-        colors = ButtonDefaults.elevatedButtonColors().copy(
-          containerColor = MaterialTheme.colorScheme.background,
-          contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ),
-        modifier = Modifier.weight(1f)
-      ) {
-        Icon(
-          Icons.Filled.Edit,
-          contentDescription = "Favorite",
-          modifier = Modifier.size(ButtonDefaults.IconSize)
-        )
-        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-        Text("重命名")
-      }
-      ElevatedButton(
-        shape = MaterialTheme.shapes.small,
-        onClick = {
-          navigator?.navigate(
-            Routes.AddSong(
-              playlist.playlistId?:-1
+        .fillMaxSize()
+        .background(
+          brush = Brush.verticalGradient(
+            colors = listOf(
+              Color.Transparent,
+              MaterialTheme.colorScheme.primaryContainer
             )
           )
-        },
-        colors = ButtonDefaults.elevatedButtonColors().copy(
-          containerColor = MaterialTheme.colorScheme.background,
-          contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ),
-        modifier = Modifier.weight(1f)
-      ) {
-        Icon(
-          Icons.Filled.Add,
-          contentDescription = "Favorite",
-          modifier = Modifier.size(ButtonDefaults.IconSize)
         )
-        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-        Text("新增")
-      }
-      ElevatedButton(
-        shape = MaterialTheme.shapes.small,
-        onClick = {
-          showDeleteDialog = true
-        },
-        colors = ButtonDefaults.elevatedButtonColors().copy(
-          containerColor = MaterialTheme.colorScheme.background,
-          contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ),
-        modifier = Modifier.weight(1f)
-      ) {
-        Icon(
-          Icons.Filled.Delete,
-          contentDescription = "Favorite",
-          modifier = Modifier.size(ButtonDefaults.IconSize)
-        )
-        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-        Text("删除")
-      }
-    }
-    Spacer(
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(12.dp)
     )
+    Column(
+      modifier = modifier
+        .fillMaxSize()
+        .padding(start = 16.dp, end = 16.dp),
+    ) {
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1f),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Column {
+          Text(
+            text = playlistName,
+            style = MaterialTheme.typography.titleLarge.copy(
+              color = MaterialTheme.colorScheme.onPrimaryContainer,
+              fontWeight = FontWeight.W700
+            ),
+            modifier = Modifier
+          )
+          Spacer(
+            modifier = Modifier
+              .width(8.dp)
+          )
+          Text(
+            text = "创建于${createTimeTxt}",
+            style = MaterialTheme.typography.titleMedium.copy(
+              color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
+              fontWeight = FontWeight.Normal
+            ),
+            modifier = Modifier
+          )
+        }
+
+      }
+      Row(
+        modifier = Modifier
+          .fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        ElevatedButton(
+          contentPadding = PaddingValues(
+            horizontal = 4.dp,
+            vertical = 8.dp
+          ),
+          shape = MaterialTheme.shapes.small,
+          onClick = {
+            showRenameDialog = true
+          },
+          colors = ButtonDefaults.elevatedButtonColors().copy(
+            containerColor = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+          ),
+          modifier = Modifier.weight(1f)
+        ) {
+          Icon(
+            Icons.Filled.Edit,
+            contentDescription = "Favorite",
+            modifier = Modifier.size(ButtonDefaults.IconSize)
+          )
+          Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+          Text("重命名")
+        }
+        ElevatedButton(
+          shape = MaterialTheme.shapes.small,
+          onClick = {
+            navigator?.navigate(
+              Routes.AddSong(
+                playlist.playlistId ?: -1
+              )
+            )
+          },
+          colors = ButtonDefaults.elevatedButtonColors().copy(
+            containerColor = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+          ),
+          modifier = Modifier.weight(1f)
+        ) {
+          Icon(
+            Icons.Filled.Add,
+            contentDescription = "Favorite",
+            modifier = Modifier.size(ButtonDefaults.IconSize)
+          )
+          Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+          Text("新增")
+        }
+        ElevatedButton(
+          shape = MaterialTheme.shapes.small,
+          onClick = {
+            showDeleteDialog = true
+          },
+          colors = ButtonDefaults.elevatedButtonColors().copy(
+            containerColor = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+          ),
+          modifier = Modifier.weight(1f)
+        ) {
+          Icon(
+            Icons.Filled.Delete,
+            contentDescription = "Favorite",
+            modifier = Modifier.size(ButtonDefaults.IconSize)
+          )
+          Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+          Text("删除")
+        }
+      }
+      Spacer(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(12.dp)
+      )
+    }
   }
 }
 

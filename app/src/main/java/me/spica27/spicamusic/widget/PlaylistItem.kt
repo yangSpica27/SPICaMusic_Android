@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.widget
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,7 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
@@ -33,28 +32,27 @@ fun PlaylistItem(
   onClickMenu: () -> Unit = {},
   showMenu: Boolean = false
 ) {
-  Row(modifier = modifier
-    .clickableNoRippleWithVibration{
-      onClick()
-    }
-    .padding(horizontal = 16.dp, vertical = 6.dp)
-    .fillMaxWidth(),
+  Row(
+    modifier = modifier
+      .clickableNoRippleWithVibration {
+        onClick()
+      }
+      .padding(horizontal = 16.dp, vertical = 6.dp)
+      .fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically) {
-    Box(
+    PlaylistCover(
+      playlist = playlist,
       modifier = Modifier
         .width(50.dp)
         .height(50.dp)
-        .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium),
-      contentAlignment = Alignment.Center
-    ) {
-      Text(
-        text = (playlist.playlistName.firstOrNull() ?: "A").toString(),
-        style = MaterialTheme.typography.titleLarge.copy(
-          fontWeight = FontWeight.Normal
-        ),
-        color = MaterialTheme.colorScheme.onSurface
-      )
-    }
+        .clip(
+          MaterialTheme.shapes.medium
+        )
+        .background(
+          MaterialTheme.colorScheme.surfaceContainer,
+          MaterialTheme.shapes.medium
+        )
+    )
     Spacer(modifier = Modifier.width(16.dp))
     Text(
       modifier = Modifier.weight(1f),
@@ -73,7 +71,7 @@ fun PlaylistItem(
           tint = MaterialTheme.colorScheme.onSurface
         )
       }
-    }else{
+    } else {
       Icon(
         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
         contentDescription = "More",

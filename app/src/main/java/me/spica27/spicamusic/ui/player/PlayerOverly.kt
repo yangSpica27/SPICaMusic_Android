@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,14 +44,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.kyant.liquidglass.GlassStyle
-import com.kyant.liquidglass.LiquidGlassProviderState
-import com.kyant.liquidglass.highlight.GlassHighlight
-import com.kyant.liquidglass.liquidGlass
-import com.kyant.liquidglass.material.GlassMaterial
-import com.kyant.liquidglass.refraction.InnerRefraction
-import com.kyant.liquidglass.refraction.RefractionAmount
-import com.kyant.liquidglass.refraction.RefractionHeight
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.ui.main.player.PlayerScreen
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
@@ -71,7 +62,6 @@ import timber.log.Timber
 @Composable
 fun PlayerOverly(
   navigator: NavController? = null,
-  glassProviderState: LiquidGlassProviderState
 ) {
 
   val playbackViewModel: PlayBackViewModel = activityViewModel()
@@ -188,26 +178,6 @@ fun PlayerOverly(
               Box(
                 modifier = Modifier
                   .fillMaxWidth()
-                  .liquidGlass(
-                    state = glassProviderState,
-                    style = GlassStyle(
-                      shadow = null,
-                      shape =
-                        RoundedCornerShape(0),
-                      innerRefraction = InnerRefraction(
-                        height = RefractionHeight(
-                          8.dp
-                        ), amount = RefractionAmount(
-                          (-12).dp
-                        ),
-                        depthEffect = 1f
-                      ),
-                      material = GlassMaterial.Default.copy(
-                        blurRadius = 20.dp
-                      ),
-                      highlight = GlassHighlight.None,
-                    ),
-                  )
                   .sharedBounds(
                     animatedVisibilityScope = this@AnimatedContent,
                     sharedContentState = sharedContentState,
