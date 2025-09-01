@@ -2,9 +2,9 @@ package me.spica27.spicamusic.widget
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -12,6 +12,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import me.spica27.spicamusic.App
+import me.spica27.spicamusic.R
 
 
 /**
@@ -21,7 +24,7 @@ import androidx.compose.ui.graphics.Color
 fun InputTextDialog(
   onDismissRequest: () -> Unit,
   title: String,
-  placeholder: String = "请输入内容",
+  placeholder: String = App.getInstance().getString(R.string.default_edittext_hint),
   onConfirm: (String) -> Unit = { onDismissRequest.invoke() },
   onCancel: () -> Unit = { onDismissRequest.invoke() },
   defaultText: String = "",
@@ -48,21 +51,21 @@ fun InputTextDialog(
         )
       )
     }, confirmButton = {
-      IconButton(onClick = {
+      TextButton(onClick = {
         onConfirm.invoke(inputText.value)
       }) {
         Text(
-          "确定",
+          stringResource(android.R.string.ok),
           color = MaterialTheme.colorScheme.primary,
           style = MaterialTheme.typography.bodyMedium
         )
       }
     }, dismissButton = {
-      IconButton(onClick = {
+      TextButton (onClick = {
         onCancel.invoke()
       }) {
         Text(
-          "取消",
+          stringResource(android.R.string.cancel),
           color = MaterialTheme.colorScheme.onSurface,
           style = MaterialTheme.typography.bodyMedium
         )

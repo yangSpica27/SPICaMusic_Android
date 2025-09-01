@@ -72,6 +72,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -193,7 +194,11 @@ fun PlayerPage(
         // tab
         TabBar(
           pagerState = horizontalPagerState,
-          tabs = listOf("封面", "歌词", "信息"),
+          tabs = listOf(
+            stringResource(R.string.tab_cover),
+            stringResource(R.string.tab_lrc),
+            stringResource(R.string.tab_info)
+          ),
         )
         Spacer(modifier = Modifier.height(8.dp))
         // 封面

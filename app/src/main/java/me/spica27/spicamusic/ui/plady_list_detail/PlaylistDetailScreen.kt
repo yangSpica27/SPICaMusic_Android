@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -365,7 +366,7 @@ fun Header(
               .width(8.dp)
           )
           Text(
-            text = "创建于${createTimeTxt}",
+            text = stringResource(R.string.create_in, createTimeTxt),
             style = MaterialTheme.typography.titleMedium.copy(
               color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f),
               fontWeight = FontWeight.Normal
@@ -402,7 +403,7 @@ fun Header(
             modifier = Modifier.size(ButtonDefaults.IconSize)
           )
           Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-          Text("重命名")
+          Text(stringResource(R.string.rename))
         }
         ElevatedButton(
           shape = MaterialTheme.shapes.small,
@@ -425,7 +426,7 @@ fun Header(
             modifier = Modifier.size(ButtonDefaults.IconSize)
           )
           Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-          Text("新增")
+          Text(stringResource(R.string.add))
         }
         ElevatedButton(
           shape = MaterialTheme.shapes.small,
@@ -436,6 +437,7 @@ fun Header(
             containerColor = MaterialTheme.colorScheme.background,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
           ),
+          contentPadding = PaddingValues.Zero,
           modifier = Modifier.weight(1f)
         ) {
           Icon(
@@ -444,7 +446,7 @@ fun Header(
             modifier = Modifier.size(ButtonDefaults.IconSize)
           )
           Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-          Text("删除")
+          Text(stringResource(R.string.delete))
         }
       }
       Spacer(

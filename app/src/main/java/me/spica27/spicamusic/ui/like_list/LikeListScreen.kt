@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -73,7 +74,7 @@ fun LikeListScreen(
         onBack = {
           navigator?.popBackStack()
         },
-        title = "我的收藏",
+        title = stringResource(R.string.my_favorites),
         lazyListState = listState
       )
     }
@@ -103,7 +104,7 @@ fun LikeListScreen(
             Spacer(
               modifier = Modifier.height(10.dp)
             )
-            Text(text = "没有收藏歌曲")
+            Text(text = stringResource(R.string.empty))
           }
         } else {
           ScrollHaptics(

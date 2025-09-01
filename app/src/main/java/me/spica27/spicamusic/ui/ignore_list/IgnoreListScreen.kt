@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -100,23 +101,23 @@ fun List(
       onDismissRequest = {
         showRemoveDialog = false
       }, title = {
-        Text("移出忽略清单")
+        Text(stringResource(R.string.title_remove_from_ignore_list))
       }, text = {
-        Text("确定从忽略清单中移除吗?")
+        Text(stringResource(R.string.sure_remove_from_ignore_list))
       }, confirmButton = {
         TextButton(onClick = {
           // 确认删除
           songViewModel.ignore(currentSong?.songId ?: -1, false)
           showRemoveDialog = false
         }) {
-          Text("确定")
+          Text(stringResource(android.R.string.ok))
         }
       }, dismissButton = {
         TextButton(onClick = {
           // 取消删除
           showRemoveDialog = false
         }) {
-          Text("取消")
+          Text(stringResource(android.R.string.cancel))
         }
       })
   }
@@ -196,7 +197,7 @@ private fun Empty() {
       modifier = Modifier.height(10.dp)
     )
     Text(
-      "空空如也",
+      stringResource(R.string.empty),
       style = MaterialTheme.typography.bodyMedium,
       color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
     )

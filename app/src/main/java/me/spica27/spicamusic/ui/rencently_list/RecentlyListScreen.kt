@@ -22,6 +22,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
@@ -72,7 +73,7 @@ fun RecentlyListScreen(
         onBack = {
           navigator?.popBackStack()
         },
-        title = "最近播放",
+        title =  stringResource(R.string.recently_listen),
         lazyListState = listState
       )
     }

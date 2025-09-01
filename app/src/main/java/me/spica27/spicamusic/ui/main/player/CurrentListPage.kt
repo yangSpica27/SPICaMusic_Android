@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -111,7 +112,7 @@ fun CurrentListPage(
       Box {
         Column {
           Text(
-            text = "当前播放列表",
+            text = stringResource(R.string.now_playinglist),
             style = MaterialTheme.typography.bodyMedium.copy(
               color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             ),

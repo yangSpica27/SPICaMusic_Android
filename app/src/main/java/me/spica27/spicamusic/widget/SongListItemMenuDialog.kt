@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -49,6 +50,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
@@ -230,6 +232,7 @@ private fun AddSongToPlayListDialog(song: Song, onDismiss: () -> Unit) {
         placeholder = {
           Text(text = "请输入歌单名称关键词")
         },
+        shape = MaterialTheme.shapes.large,
         colors = TextFieldDefaults.colors().copy(
           disabledIndicatorColor = Color.Transparent,
           errorIndicatorColor = Color.Transparent,
@@ -356,10 +359,12 @@ private fun RemoveToPlayListDialog(
         modifier = Modifier.fillMaxWidth()
       )
       Text(
-        text = "从歌单中移除", style = MaterialTheme.typography.titleLarge.copy(
+        text = stringResource(R.string.remove_from_playlist),
+        style = MaterialTheme.typography.titleLarge.copy(
           fontWeight = FontWeight.W500,
           color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-        ), modifier = Modifier.padding(horizontal = 16.dp)
+        ),
+        modifier = Modifier.padding(horizontal = 16.dp)
       )
       TextField(
         value = keyword,
@@ -468,13 +473,13 @@ private fun SongItemDialog(
             Icon(
               modifier = Modifier.fillMaxWidth(),
               painter = painterResource(id = R.drawable.ic_dvd),
-              contentDescription = "封面",
+              contentDescription = stringResource(R.string.tab_cover),
               tint = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             )
           }
           AsyncImage(
             model = song.getCoverUri(),
-            contentDescription = "封面",
+            contentDescription = stringResource(R.string.tab_cover),
             modifier = Modifier.fillMaxSize()
           )
         }
@@ -509,14 +514,14 @@ private fun SongItemDialog(
             coroutineScope.launch {
               clipboardManager.setClipEntry(clipEntry)
             }
-            ToastUtils.showToast("已复制歌名到剪切板")
+            ToastUtils.showToast(App.getInstance().getString(R.string.copy_success))
           }, modifier = Modifier
             .width(40.dp)
             .height(40.dp)
         ) {
           Icon(
             painter = painterResource(id = R.drawable.ic_copy),
-            contentDescription = "复制",
+            contentDescription = stringResource(android.R.string.copy),
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
           )
         }
@@ -527,28 +532,28 @@ private fun SongItemDialog(
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
       )
       ItemMenu(
-        "添加到当前播放列表", modifier = Modifier
+        stringResource(R.string.add_to_now_playing_list), modifier = Modifier
           .fillMaxWidth()
           .clickable {
             addToCurrentList()
             onDismiss()
           })
       ItemMenu(
-        "添加到歌单", modifier = Modifier
+        stringResource(R.string.add_to_playlist), modifier = Modifier
           .fillMaxWidth()
           .clickable {
             addSongToPlaylist()
             onDismiss()
           })
       ItemMenu(
-        "从歌单中移除", modifier = Modifier
+        stringResource(R.string.remove_from_playlist), modifier = Modifier
           .fillMaxWidth()
           .clickable {
             removeToPlaylist()
             onDismiss()
           })
       ItemMenu(
-        "添加到忽略名单(将不会在列表中显示)", modifier = Modifier
+        stringResource(R.string.add_to_ignore_list), modifier = Modifier
           .fillMaxWidth()
           .clickable {
             changeToIgnore()

@@ -51,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,6 +63,8 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import coil3.toCoilUri
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.App
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
@@ -119,7 +122,7 @@ fun HomePage(
       onDismissRequest = {
         showCreatePlaylistDialog.value = false
       },
-      title = "新建歌单",
+      title = stringResource(R.string.create_playlist),
       onConfirm = {
         songViewModel.addPlayList(it)
         showCreatePlaylistDialog.value = false
@@ -185,17 +188,17 @@ fun HomePage(
         ) {
           Icon(
             imageVector = Icons.Default.Search,
-            contentDescription = "更多",
+            contentDescription = stringResource(R.string.more),
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
           )
-          Text("搜索本地歌曲", style = MaterialTheme.typography.bodyLarge.copy())
+          Text(stringResource(R.string.search_all_music), style = MaterialTheme.typography.bodyLarge.copy())
         }
 
         Title(
-          "最近常听",
+          stringResource(R.string.recently_listen),
           right = {
             Text(
-              "查看更多",
+              stringResource(R.string.see_more),
               modifier = Modifier.clickableNoRippleWithVibration {
                 navigator?.navigate(Routes.RecentlyList)
               },
@@ -232,26 +235,28 @@ fun HomePage(
           thickness = 2.dp,
           modifier = Modifier.padding(vertical = 6.dp)
         )
-        Title("歌单", {
-          Text(
-            "新建歌单",
-            modifier = Modifier.clickableNoRippleWithVibration {
-              showCreatePlaylistDialog.value = true
-            },
-            style = MaterialTheme.typography.bodyMedium.copy(
-              color = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
-              fontWeight = FontWeight.W600,
-              fontSize = 15.sp
+        Title(
+          stringResource(R.string.title_playlist),
+          {
+            Text(
+              stringResource(R.string.create_playlist),
+              modifier = Modifier.clickableNoRippleWithVibration {
+                showCreatePlaylistDialog.value = true
+              },
+              style = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
+                fontWeight = FontWeight.W600,
+                fontSize = 15.sp
+              )
             )
-          )
-        })
+          })
         Column(
           modifier = Modifier.fillMaxWidth(),
         ) {
           PlaylistItem(
             playlist = Playlist(
               playlistId = 0,
-              playlistName = "我的收藏",
+              playlistName = App.getInstance().getString(R.string.my_favorites),
               cover = null,
               needUpdate = false
             ),
@@ -283,7 +288,7 @@ fun HomePage(
           modifier = Modifier.padding(vertical = 6.dp)
         )
         Title(
-          "推荐",
+          stringResource(R.string.title_recommended),
         )
 
         if (randomSong.isEmpty()) {
@@ -294,7 +299,12 @@ fun HomePage(
               )
           ) {
             Text(
-              "暂无推荐"
+              stringResource(R.string.no_recommendations),
+              style = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
+                fontWeight = FontWeight.W600,
+                fontSize = 20.sp
+              )
             )
           }
         } else {
@@ -351,7 +361,7 @@ private fun OftenListenEmptyContent(
       verticalArrangement = Arrangement.Center
     ) {
       Text(
-        "空空如也",
+        text = stringResource(R.string.empty),
         style = MaterialTheme.typography.titleLarge.copy(
           color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
           fontWeight = FontWeight.Black
@@ -368,7 +378,7 @@ private fun OftenListenEmptyContent(
           navigator?.navigate(Routes.Scanner)
         }
       ) {
-        Text("扫描本地音乐")
+        Text(stringResource(R.string.scan_local_music))
       }
     }
   }
@@ -537,7 +547,7 @@ private fun TitleBar(navigator: NavController? = null, pagerState: PagerState) {
 
 
     Text(
-      text = "主页",
+      text = stringResource(R.string.home_page_title),
       style = MaterialTheme.typography.bodyMedium.copy(
         color = MaterialTheme.colorScheme.onSurface,
         fontWeight = FontWeight.Black,

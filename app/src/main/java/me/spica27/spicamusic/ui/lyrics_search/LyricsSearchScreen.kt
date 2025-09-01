@@ -40,10 +40,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil3.compose.AsyncImage
+import me.spica27.spicamusic.App
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.NetworkState
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.network.bean.LyricResponse
@@ -84,7 +87,7 @@ fun LyricsSearchScreen(
         }
       }, title = {
         Text(
-          "搜索歌词",
+          stringResource(R.string.title_lyrics_search),
           style = MaterialTheme.typography.titleLarge.copy(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
             fontWeight = FontWeight.ExtraBold
@@ -124,14 +127,17 @@ private fun TopPanel(song: Song, lyricSearchViewModel: LyricSearchViewModel) {
     modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally
   ) {
     EditText(
-      leftLabel = "歌名",
-      rightLabel = "请输入歌名(不可为空)",
+      leftLabel = stringResource(R.string.song_displayname),
+      rightLabel =stringResource(R.string.hint_edit_song_name),
       text = songName.value,
       onValueChange = {
         songName.value = it
       })
     EditText(
-      leftLabel = "歌手", rightLabel = "请输入歌手名称", text = artists.value, onValueChange = {
+      leftLabel = stringResource(R.string.song_artist),
+      rightLabel = stringResource(R.string.hint_edit_song_artist),
+      text = artists.value,
+      onValueChange = {
         artists.value = it
       })
     ElevatedButton(
@@ -139,7 +145,7 @@ private fun TopPanel(song: Song, lyricSearchViewModel: LyricSearchViewModel) {
       onClick = {
         keyboardController?.hide()
         if (songName.value.isEmpty()) {
-          ToastUtils.showToast("请输入歌名(非必填)")
+          ToastUtils.showToast(App.getInstance().getString(R.string.hint_edit_song_name))
         } else {
           lyricSearchViewModel.fetchLyric(songName.value, artists.value)
         }
@@ -151,7 +157,7 @@ private fun TopPanel(song: Song, lyricSearchViewModel: LyricSearchViewModel) {
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
       )
     ) {
-      Text("搜索")
+      Text(stringResource(R.string.search))
     }
   }
 }
@@ -170,7 +176,7 @@ private fun ListView(
         Box(
           modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
         ) {
-          Text("空空如也")
+          Text(stringResource(R.string.empty), style = MaterialTheme.typography.titleMedium)
         }
       }
 
@@ -186,7 +192,7 @@ private fun ListView(
         Box(
           modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
         ) {
-          Text(state.message)
+          Text(state.message, style = MaterialTheme.typography.titleMedium)
         }
       }
 
@@ -195,7 +201,7 @@ private fun ListView(
           Box(
             modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
           ) {
-            Text("没有找到歌词")
+            Text(stringResource(R.string.empty), style = MaterialTheme.typography.titleMedium)
           }
         } else {
           LazyColumn(
@@ -293,9 +299,9 @@ private fun LyricItem(
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
           ), shape = MaterialTheme.shapes.extraSmall, onClick = {
             lyricSearchViewModel.applyLyric(lyric, song)
-            ToastUtils.showToast("歌词应用成功")
+            ToastUtils.showToast(App.getInstance().getString(R.string.lrc_apply_success))
           }) {
-          Text("应用歌词")
+          Text(stringResource(R.string.apply_lrc))
         }
         Spacer(modifier = Modifier.height(6.dp))
         Text(
@@ -318,7 +324,7 @@ private fun EditText(
     verticalAlignment = Alignment.CenterVertically
   ) {
     Text(
-      leftLabel, modifier = Modifier.width(40.dp), style = MaterialTheme.typography.bodyMedium.copy(
+      leftLabel, modifier = Modifier.width(60.dp), style = MaterialTheme.typography.bodyMedium.copy(
         fontWeight = FontWeight.W500
       )
     )

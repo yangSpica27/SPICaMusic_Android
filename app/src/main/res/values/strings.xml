@@ -1,5 +1,5 @@
 <resources>
-  <string name="app_name">柠檬音乐</string>
+  <string name="app_name">SPICaMusic</string>
   <string name="action_settings">Settings</string>
 
   <string name="first_fragment_label">First Fragment</string>
@@ -7,76 +7,130 @@
   <string name="next">Next</string>
   <string name="previous">Previous</string>
 
-  <string name="play_list_header">由此向下轻扫回到详情</string>
-  <string name="playing">正在播放</string>
-  <string name="queue">播放列表</string>
-  <string name="select_all">选择全部</string>
-  <string name="select_none">全不选</string>
-  <string name="eq_preset_flat">原始</string>
-  <string name="eq_preset_custom">作者自用</string>
-  <string name="eq_preset_bass_boost">低音增强</string>
-  <string name="eq_preset_bass_reduce">低音减弱</string>
-  <string name="eq_preset_vocal_boost">人声增强</string>
-  <string name="eq_preset_vocal_Reduce">人声减弱</string>
-  <string name="dsp_replay_gain_title">回放增益</string>
-  <string name="dsp_replay_gain_track">曲目增益</string>
-  <string name="dsp_replay_gain_album">专辑增益</string>
-  <string name="dsp_replay_gain_off">关</string>
-  <string name="dsp_dialog_frequency_response_title">频率响应</string>
-  <string name="dsp_replay_gain_hint_mode">模式</string>
-  <string name="dsp_preamp">前级</string>
-  <string name="dsp_equalizer_title">均衡器</string>
-  <string name="dsp_equalizer_hint_preset">预设</string>
-  <string name="dsp_frequency_response_curve_title">频响曲线</string>
-  <string name="key_words">关键字...</string>
-  <string name="add">新增</string>
-  <string name="delete">删除</string>
-  <string name="add_to_list">添加到播放列表</string>
-  <string name="info">信息</string>
-  
+  <string name="play_list_header">Swipe down to go back to details</string>
+  <string name="playing">Now Playing</string>
+  <string name="queue">Playlist</string>
+  <string name="select_all">Select All</string>
+  <string name="select_none">Select None</string>
+  <string name="eq_preset_flat">Flat</string>
+  <string name="eq_preset_custom">Custom</string>
+  <string name="eq_preset_bass_boost">Bass Boost</string>
+  <string name="eq_preset_bass_reduce">Bass Reducer</string>
+  <string name="eq_preset_vocal_boost">Vocal Boost</string>
+  <string name="eq_preset_vocal_Reduce">Vocal Reducer</string>
+  <string name="dsp_replay_gain_title">ReplayGain</string>
+  <string name="dsp_replay_gain_track">Track Gain</string>
+  <string name="dsp_replay_gain_album">Album Gain</string>
+  <string name="dsp_replay_gain_off">Off</string>
+  <string name="dsp_dialog_frequency_response_title">Frequency Response</string>
+  <string name="dsp_replay_gain_hint_mode">Mode</string>
+  <string name="dsp_preamp">Preamp</string>
+  <string name="dsp_equalizer_title">Equalizer</string>
+  <string name="dsp_equalizer_hint_preset">Preset</string>
+  <string name="dsp_frequency_response_curve_title">Frequency Response Curve</string>
+  <string name="key_words">Key Words…</string>
+  <string name="add">Add</string>
+  <string name="delete">Delete</string>
+  <string name="add_to_list">add to playlist</string>
+  <string name="info">info</string>
+
   <string name="permission_declaration">
-           <h1>SPICaMusic 权限使用声明</h1>
+           <h1>SPICaMusic Permissions Usage Statement</h1>
 
-        <p>欢迎使用 SPICaMusic！为了给您提供完整的音乐体验，我们需要您授予以下权限：</p>
+        <p>Welcome to SPICaMusic! To provide you with a complete music experience, we need you to grant the following permissions:</p>
 
-        <h2>所需权限说明</h2>
+        <h2>Required Permissions Explained</h2>
 
-        <h3>1. 存储空间/媒体文件访问权限 (必需)</h3>
+        <h3>1. Storage Space/Media File Access Permission (Required)</h3>
         <ul>
-            <li><strong>用途：</strong> 此权限用于扫描您设备上的本地音频文件，以便发现并添加到您的音乐库中，让您可以随时播放您喜爱的歌曲。</li>
-            <li><strong>我们承诺：</strong> SPICaMusic 仅会访问您设备上的音频文件 (如 MP3, FLAC, WAV 等格式)。我们不会访问、修改或上传您的私人照片、视频、文档或其他非音乐文件。</li>
+            <li><strong>Purpose:</strong> This permission is used to scan local audio files on your device to discover and add them to your music library, allowing you to play your favorite songs at any time.</li>
+            <li><strong>Our Commitment:</strong> SPICaMusic will only access audio files on your device (such as MP3, FLAC, WAV, etc.). We will not access, modify, or upload your private photos, videos, documents, or other non-music files.</li>
         </ul>
 
-        <h3>2. 通知权限 (推荐)</h3>
+        <h3>2. Notification Permission (Recommended)</h3>
         <ul>
-            <li><strong>用途：</strong> 当您在后台播放音乐时，我们需要此权限来向您显示一个持续的通知。这个通知不仅能让您快速查看当前播放的歌曲信息，还能提供便捷的播放控制（如播放/暂停、上一曲/下一曲）。</li>
-            <li><strong>您可以选择：</strong> 如果您不授予此权限，后台播放控制可能会受到限制或无法在通知栏显示。</li>
+            <li><strong>Purpose:</strong> When you play music in the background, we need this permission to show you a persistent notification. This notification not only allows you to quickly view the currently playing song information but also provides convenient playback controls (such as play/pause, previous/next track).</li>
+            <li><strong>Your Choice:</strong> If you do not grant this permission, background playback control may be limited or may not be displayed in the notification bar.</li>
         </ul>
 
-        <h3>3. 网络访问权限 (必需)</h3>
+        <h3>3. Network Access Permission (Required)</h3>
         <ul>
-            <li><strong>用途：</strong> 为了丰富您的听歌体验，SPICaMusic 会使用网络连接来获取歌曲的歌词信息，并在播放时同步显示。</li>
-            <li><strong>我们承诺：</strong> 我们仅在您需要获取歌词时使用网络，不会在后台进行不必要的网络活动或上传您的个人数据。</li>
+            <li><strong>Purpose:</strong> To enrich your listening experience, SPICaMusic uses a network connection to fetch lyric information for songs and display them synchronously during playback.</li>
+            <li><strong>Our Commitment:</strong> We only use the network when you need to fetch lyrics and will not engage in unnecessary background network activity or upload your personal data.</li>
         </ul>
 
         <div class="privacy-commitment">
-            <h2>隐私保护承诺</h2>
-            <p>SPICaMusic 尊重并保护您的个人隐私。我们郑重承诺：</p>
+            <h2>Privacy Protection Commitment</h2>
+            <p>SPICaMusic respects and protects your personal privacy. We solemnly promise:</p>
             <ul>
-                <li>我们仅会在上述声明的功能范围内使用您授予的权限。</li>
-                <li>我们不会收集、存储或分享任何与您个人身份相关的敏感信息。</li>
-                <li>我们不会将您的个人数据用于任何商业广告或第三方共享。</li>
+                <li>We will only use the permissions you grant within the scope of the functions declared above.</li>
+                <li>We will not collect, store, or share any sensitive information related to your personal identity.</li>
+                <li>We will not use your personal data for any commercial advertising or third-party sharing.</li>
             </ul>
         </div>
 
         <p class="contact-info">
-            您可以随时在系统设置中管理这些权限。如果您对我们的权限使用或隐私政策有任何疑问，请通过 [您的联系方式，例如应用内的“关于”页面或反馈邮箱] 与我们联系。
+            You can manage these permissions at any time in the system settings. If you have any questions about our permission usage or privacy policy, please contact us via [Your contact method, e.g., the "About" page in the app or a feedback email].
         </p>
 
         <p class="footer-text">
-            感谢您的理解与支持！希望 SPICaMusic 能为您带来愉悦的音乐时光。
+            Thank you for your understanding and support! We hope SPICaMusic brings you an enjoyable music experience.
         </p>
   </string>
-  <string name="crash_log">崩溃日志</string>
-
+  <string name="crash_log">Crash Log</string>
+  <string name="see_more">see more</string>
+  <string name="title_home">HOME</string>
+  <string name="create_playlist">create playlist</string>
+  <string name="more">More</string>
+  <string name="search_local_songs">Search Local Songs</string>
+  <string name="recently_played">Recently Played</string>
+  <string name="title_playlist">Playlist</string>
+  <string name="my_favorites">My Favorites</string>
+  <string name="recommendations">Recommendations</string>
+  <string name="no_recommendations">No Recommendations</string>
+  <string name="empty">Empty</string>
+  <string name="scan_local_music">Scan Local Music</string>
+  <string name="home_page_title">Home</string>
+  <string name="settings">Settings</string>
+  <string name="lrc_not_found">Lyrics Not Found</string>
+  <string name="lrc_apply_success">Lyrics Apply Success</string>
+  <string name="apply_lrc">Apply Lyrics</string>
+  <string name="rename">Rename</string>
+  <string name="create_in">Create at %s</string>
+  <string name="title_recommended">Recommendations</string>
+  <string name="recently_listen">Recently Listen</string>
+  <string name="search_all_music">search all music</string>
+  <string name="title_settings">Settings</string>
+  <string name="setting_about">About</string>
+  <string name="setting_faq">FAQ</string>
+  <string name="setting_eq">Sound Effects</string>
+  <string name="setting_ignore_music">Ignore Music</string>
+  <string name="setting_scanner">Scanner</string>
+  <string name="setting_light_mode">Light Mode</string>
+  <string name="setting_dark_mode">Dark Mode</string>
+  <string name="default_edittext_hint">Please input here …</string>
+  <string name="btn_sure">sure</string>
+  <string name="title_remove_from_ignore_list">Remove from ignore list</string>
+  <string name="sure_remove_from_ignore_list">Sure remove from ignore list？</string>
+  <string name="title_add_to_ignore_list">Move to ignore list</string>
+  <string name="start_scanner">Start Scanner</string>
+  <string name="stop_scanner">Stop Scanner</string>
+  <string name="is_scanner">Scanning</string>
+  <string name="tab_cover">Cover</string>
+  <string name="tab_lrc">Lyrics</string>
+  <string name="tab_info">Info</string>
+  <string name="title_lyrics_search">Lyrics Search</string>
+  <string name="song_displayname">Song Name</string>
+  <string name="song_artist">Artist</string>
+  <string name="song_album">Album</string>
+  <string name="song_duration">Duration</string>
+  <string name="search">Search</string>
+  <string name="hint_edit_song_name">please input song name</string>
+  <string name="hint_edit_song_artist">please input artist name</string>
+  <string name="now_playinglist">Now Playing List</string>
+  <string name="add_to_now_playing_list">Add To Now Playing List</string>
+  <string name="add_to_playlist">Add To Playlist</string>
+  <string name="remove_from_playlist">Remove From Playlist</string>
+  <string name="add_to_ignore_list">Add To Ignore List</string>
+  <string name="copy_success">Copy Success</string>
 </resources>

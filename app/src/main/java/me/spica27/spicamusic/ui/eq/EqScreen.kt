@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.NyquistBand
 import me.spica27.spicamusic.utils.DataStoreUtil
@@ -82,7 +83,7 @@ fun EqScreen(
         onBack = {
           navigator?.popBackStack()
         },
-        title = "音效"
+        title =  stringResource(R.string.setting_eq)
       )
     }) { it ->
     Box(

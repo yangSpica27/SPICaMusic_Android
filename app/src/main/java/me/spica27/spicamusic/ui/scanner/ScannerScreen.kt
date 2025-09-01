@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -35,6 +36,7 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.utils.AudioTool
@@ -106,7 +108,7 @@ fun ScannerScreen(navigator: NavController? = null) {
   Scaffold(
     topBar = {
       SimpleTopBar(
-        title = "扫描",
+        title = stringResource(R.string.setting_scanner),
         onBack = { navigator?.popBackStack() }
       )
     }
@@ -147,9 +149,9 @@ fun ScannerScreen(navigator: NavController? = null) {
             ),
           ) {
             if (isScanning) {
-              Text("正在扫描")
+              Text(stringResource(R.string.is_scanner))
             } else {
-              Text("开始扫描")
+              Text(stringResource(R.string.start_scanner))
             }
           }
         }

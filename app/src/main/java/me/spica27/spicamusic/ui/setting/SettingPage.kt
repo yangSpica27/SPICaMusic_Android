@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.BuildConfig
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.DataStoreUtil
@@ -94,9 +96,9 @@ fun SettingPage(
       item {
         CategoryItem2(
           title = if (forceDarkThemeSettingState.value) {
-            "暗色模式"
+            stringResource(R.string.setting_dark_mode)
           } else {
-            "亮色模式"
+            stringResource(R.string.setting_light_mode)
           },
           icon = if (forceDarkThemeSettingState.value) {
             ImageVector.vectorResource(R.drawable.ic_dark_mode)
@@ -129,7 +131,7 @@ fun SettingPage(
 //      }
       item {
         CategoryItem(
-          title = "扫描",
+          title = stringResource(R.string.setting_scanner),
           icon = Icons.Outlined.Refresh,
           onClick = {
             navigator?.navigate(Routes.Scanner)
@@ -137,7 +139,7 @@ fun SettingPage(
       }
       item {
         CategoryItem(
-          title = "忽略的歌曲",
+          title = stringResource(R.string.setting_ignore_music),
           icon = ImageVector.vectorResource(R.drawable.ic_block),
           onClick = {
             navigator?.navigate(Routes.IgnoreList)
@@ -145,7 +147,7 @@ fun SettingPage(
       }
       item {
         CategoryItem(
-          title = "音效",
+          title = stringResource(R.string.setting_eq),
           icon = ImageVector.vectorResource(R.drawable.ic_outlined_equalizer),
           onClick = {
             navigator?.navigate(Routes.EQ)
@@ -154,7 +156,7 @@ fun SettingPage(
       item { HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp)) }
       item {
         CategoryItem(
-          title = "FAQ",
+          title = stringResource(R.string.setting_faq),
           icon = Icons.Outlined.MailOutline,
           onClick = {
             ToastUtils.showToast("待施工")
@@ -162,7 +164,7 @@ fun SettingPage(
       }
       item {
         CategoryItem(
-          title = "关于",
+          title = stringResource(R.string.setting_about),
           icon = Icons.Outlined.Info,
           onClick = {
             ToastUtils.showToast("待施工")
@@ -170,7 +172,7 @@ fun SettingPage(
       }
       item {
         AppVersion(
-          versionText = "Version 测试版本",
+          versionText = "Version ${BuildConfig.VERSION_NAME}",
           copyrights = "© 2024 SPICa27",
           onClick = {
 
@@ -346,12 +348,12 @@ private fun TopBar(
     ) {
       Icon(
         imageVector = Icons.AutoMirrored.Default.KeyboardArrowLeft,
-        contentDescription = "设置",
+        contentDescription = stringResource(R.string.settings),
         tint = MaterialTheme.colorScheme.onSurface
       )
     }
     Text(
-      text = "设置",
+      text = stringResource(R.string.title_settings),
       style = MaterialTheme.typography.bodyMedium.copy(
         color = MaterialTheme.colorScheme.onSurface,
         fontWeight = FontWeight.Black,
