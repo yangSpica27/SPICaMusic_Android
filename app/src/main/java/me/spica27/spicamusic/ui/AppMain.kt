@@ -83,7 +83,12 @@ fun AppMain() {
             navigator = navHostController
           )
         }
-        composable<Routes.FullScreenLrc> {
+        composable<Routes.FullScreenLrc>(
+          enterTransition = { materialSharedAxisYIn(true) },
+          exitTransition = { materialSharedAxisYOut(true) },
+          popEnterTransition = { materialSharedAxisYIn(true) },
+          popExitTransition = { materialSharedAxisYOut(true) },
+        ) {
           FullScreenLrcScreen()
         }
         composable<Routes.AddSong> { key ->
