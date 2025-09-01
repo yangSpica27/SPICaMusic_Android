@@ -29,7 +29,7 @@ fun InputTextDialog(
   // 重命名对话框
   val inputText = remember { mutableStateOf(defaultText) }
   AlertDialog(
-    shape = MaterialTheme.shapes.small,
+    shape = MaterialTheme.shapes.large,
     onDismissRequest = {
       onDismissRequest.invoke()
     }, title = { Text(title) }, text = {

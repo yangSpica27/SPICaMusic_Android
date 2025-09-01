@@ -14,6 +14,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.kyant.liquidglass.liquidGlassProvider
+import com.kyant.liquidglass.rememberLiquidGlassProviderState
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.theme.AppTheme
@@ -52,6 +54,8 @@ fun AppMain() {
 
   BackPress(navigator = navHostController)
 
+  val glassProviderState = rememberLiquidGlassProviderState(null)
+
   AppTheme(
     darkTheme = darkTheme,
     dynamicColor = false
@@ -60,7 +64,10 @@ fun AppMain() {
       NavHost(
         startDestination = Routes.Main,
         navController = navHostController,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+          .fillMaxSize()
+          .liquidGlassProvider(glassProviderState)
+        ,
         enterTransition = {
           materialSharedAxisXIn(forward = true)
         },
@@ -153,7 +160,8 @@ fun AppMain() {
         }
       }
       PlayerOverly(
-        navigator = navHostController
+        navigator = navHostController,
+        glassProviderState = glassProviderState
       )
     }
 

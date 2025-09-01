@@ -8,7 +8,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.ui.player.LocalPlayerWidgetState
-import me.spica27.spicamusic.ui.player.PlayerOverlyState
 import kotlin.math.absoluteValue
 
 
@@ -20,9 +19,9 @@ fun rememberBindPlayerOverlyConnect(): BindPlayerPageConnect {
     BindPlayerPageConnect(
       scrollThresholdPx = with(density) { 120.dp.toPx() },
       listener = {
-        if (overlyState.value == PlayerOverlyState.BOTTOM) {
-          overlyState.value = PlayerOverlyState.MINI
-        }
+//        if (overlyState.value == PlayerOverlyState.BOTTOM) {
+////          overlyState.value = PlayerOverlyState.MINI
+//        }
       }
     )
   }

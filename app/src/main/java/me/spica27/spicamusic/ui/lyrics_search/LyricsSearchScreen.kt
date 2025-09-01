@@ -68,7 +68,7 @@ fun LyricsSearchScreen(
   val overlyState = LocalPlayerWidgetState.current
 
   DisposableEffect(Unit) {
-    overlyState.value = PlayerOverlyState.MINI
+    overlyState.value = PlayerOverlyState.BOTTOM
     onDispose {
       overlyState.value = PlayerOverlyState.PLAYER
     }

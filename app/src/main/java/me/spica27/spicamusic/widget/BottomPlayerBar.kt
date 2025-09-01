@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.widget
 
-import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -80,11 +79,6 @@ fun PlayerBar(
   Box(
     modifier = modifier
   ) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      MusicEffectBackground(
-        modifier = Modifier.matchParentSize()
-      )
-    }
     Column(
       modifier = Modifier
         .fillMaxWidth()

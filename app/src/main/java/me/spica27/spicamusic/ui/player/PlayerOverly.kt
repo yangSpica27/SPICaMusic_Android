@@ -8,29 +8,24 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.ScaleToBounds
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,15 +40,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import kotlinx.coroutines.delay
+import com.kyant.liquidglass.GlassStyle
+import com.kyant.liquidglass.LiquidGlassProviderState
+import com.kyant.liquidglass.highlight.GlassHighlight
+import com.kyant.liquidglass.liquidGlass
+import com.kyant.liquidglass.material.GlassMaterial
+import com.kyant.liquidglass.refraction.InnerRefraction
+import com.kyant.liquidglass.refraction.RefractionAmount
+import com.kyant.liquidglass.refraction.RefractionHeight
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.ui.main.player.PlayerScreen
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
@@ -72,6 +71,7 @@ import timber.log.Timber
 @Composable
 fun PlayerOverly(
   navigator: NavController? = null,
+  glassProviderState: LiquidGlassProviderState
 ) {
 
   val playbackViewModel: PlayBackViewModel = activityViewModel()
@@ -88,9 +88,6 @@ fun PlayerOverly(
     overlyState.value = PlayerOverlyState.BOTTOM
   }
 
-  BackHandler(overlyState.value == PlayerOverlyState.BOTTOM) {
-    overlyState.value = PlayerOverlyState.MINI
-  }
 
   BackHandler(
     overlyState.value == PlayerOverlyState.FULLSCREEN_LRC
@@ -100,28 +97,24 @@ fun PlayerOverly(
 
   LaunchedEffect(isPlaying) {
     if (isPlaying && overlyState.value == PlayerOverlyState.HIDE) {
-      overlyState.value = PlayerOverlyState.MINI
-    } else if (!isPlaying && overlyState.value == PlayerOverlyState.MINI) {
-      overlyState.value = PlayerOverlyState.HIDE
+      overlyState.value = PlayerOverlyState.BOTTOM
     } else if (!isPlaying && overlyState.value == PlayerOverlyState.BOTTOM) {
-      overlyState.value = PlayerOverlyState.MINI
+      overlyState.value = PlayerOverlyState.HIDE
     } else {
       Timber.tag("PlayerOverly").d("都不符合 isPlay =${isPlaying} overlyState = $overlyState")
     }
   }
 
 
-  LaunchedEffect(overlyState.value) {
-    Timber.tag("PlayerOverly").d("overlyState: $overlyState")
-    if (overlyState.value == PlayerOverlyState.BOTTOM) {
-      delay(5000)
-      if (isPlaying) {
-        overlyState.value = PlayerOverlyState.MINI
-      }
-    }
-  }
-
-
+//  LaunchedEffect(overlyState.value) {
+//    Timber.tag("PlayerOverly").d("overlyState: $overlyState")
+//    if (overlyState.value == PlayerOverlyState.BOTTOM) {
+//      delay(5000)
+//      if (isPlaying) {
+//        overlyState.value = PlayerOverlyState.BOTTOM
+//      }
+//    }
+//  }
 
 
   Box(
@@ -142,49 +135,49 @@ fun PlayerOverly(
         }
       ) { state ->
         when (state) {
-          PlayerOverlyState.MINI -> {
-            Box(
-              modifier = Modifier.fillMaxSize()
-            ) {
-              Box(
-                modifier = Modifier
-                  .size(width = 64.dp, height = 64.dp)
-                  .absoluteOffset(x = (32).dp)
-                  .sharedBounds(
-                    animatedVisibilityScope = this@AnimatedContent,
-                    sharedContentState = sharedContentState,
-                    renderInOverlayDuringTransition = false,
-                    enter = scaleIn(
-                      animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = Spring.StiffnessLow,
-                      )
-                    ) + fadeIn(),
-                    exit = scaleOut() + fadeOut(),
-                  )
-                  .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
-                  .clip(CircleShape)
-                  .innerShadow(
-                    shape = CircleShape,
-                    Shadow(
-                      radius = 6.dp,
-                      color = MaterialTheme.colorScheme.onSurface,
-                      alpha = .11f
-                    )
-                  )
-                  .clickable {
-                    overlyState.value = PlayerOverlyState.BOTTOM
-                  }
-                  .align(Alignment.CenterEnd)
-              ) {
-                currentSong?.let {
-                  Mimi(
-                    currentSong,
-                  )
-                }
-              }
-            }
-          }
+//          PlayerOverlyState.MINI -> {
+//            Box(
+//              modifier = Modifier.fillMaxSize()
+//            ) {
+//              Box(
+//                modifier = Modifier
+//                  .size(width = 64.dp, height = 64.dp)
+//                  .absoluteOffset(x = (32).dp)
+//                  .sharedBounds(
+//                    animatedVisibilityScope = this@AnimatedContent,
+//                    sharedContentState = sharedContentState,
+//                    renderInOverlayDuringTransition = false,
+//                    enter = scaleIn(
+//                      animationSpec = spring(
+//                        dampingRatio = Spring.DampingRatioLowBouncy,
+//                        stiffness = Spring.StiffnessLow,
+//                      )
+//                    ) + fadeIn(),
+//                    exit = scaleOut() + fadeOut(),
+//                  )
+//                  .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
+//                  .clip(CircleShape)
+//                  .innerShadow(
+//                    shape = CircleShape,
+//                    Shadow(
+//                      radius = 6.dp,
+//                      color = MaterialTheme.colorScheme.onSurface,
+//                      alpha = .11f
+//                    )
+//                  )
+//                  .clickable {
+//                    overlyState.value = PlayerOverlyState.BOTTOM
+//                  }
+//                  .align(Alignment.CenterEnd)
+//              ) {
+//                currentSong?.let {
+//                  Mimi(
+//                    currentSong,
+//                  )
+//                }
+//              }
+//            }
+//          }
 
           PlayerOverlyState.HIDE -> {}
           PlayerOverlyState.BOTTOM -> {
@@ -195,6 +188,26 @@ fun PlayerOverly(
               Box(
                 modifier = Modifier
                   .fillMaxWidth()
+                  .liquidGlass(
+                    state = glassProviderState,
+                    style = GlassStyle(
+                      shadow = null,
+                      shape =
+                        RoundedCornerShape(0),
+                      innerRefraction = InnerRefraction(
+                        height = RefractionHeight(
+                          8.dp
+                        ), amount = RefractionAmount(
+                          (-12).dp
+                        ),
+                        depthEffect = 1f
+                      ),
+                      material = GlassMaterial.Default.copy(
+                        blurRadius = 20.dp
+                      ),
+                      highlight = GlassHighlight.None,
+                    ),
+                  )
                   .sharedBounds(
                     animatedVisibilityScope = this@AnimatedContent,
                     sharedContentState = sharedContentState,
@@ -203,16 +216,6 @@ fun PlayerOverly(
                     resizeMode = ScaleToBounds(ContentScale.Fit, Center)
                   )
                   .align(Alignment.BottomCenter)
-                  .background(
-                    MaterialTheme.colorScheme.surfaceContainer,
-                  )
-                  .innerShadow(
-                    shape = RectangleShape, shadow = Shadow(
-                      radius = 2.dp,
-                      color = MaterialTheme.colorScheme.onSurface,
-                      alpha = .11f
-                    )
-                  )
                   .clickable {
                     overlyState.value = PlayerOverlyState.PLAYER
                   }
@@ -239,7 +242,7 @@ fun PlayerOverly(
               PlayerScreen(
                 navigator = navigator,
                 onBackClick = {
-                  overlyState.value = PlayerOverlyState.MINI
+                  overlyState.value = PlayerOverlyState.BOTTOM
                 },
               )
             }
@@ -296,7 +299,7 @@ private fun FullScreenLrc() {
           .clip(
             MaterialTheme.shapes.medium
           ),
-        contentAlignment = Alignment.Center
+        contentAlignment = Center
       ) {
         Text(
           "未在播放", style = MaterialTheme.typography.titleLarge.copy(
@@ -322,7 +325,7 @@ private fun FullScreenLrc() {
                 .clip(
                   MaterialTheme.shapes.medium
                 ),
-              contentAlignment = Alignment.Center
+              contentAlignment = Center
             ) {
               Text(
                 "暂无歌词", style = MaterialTheme.typography.titleLarge.copy(
@@ -383,7 +386,7 @@ internal val LocalPlayerWidgetState = staticCompositionLocalOf<MutableState<Play
 }
 
 enum class PlayerOverlyState {
-  MINI, // 右边悬浮模式
+  //  MINI, // 右边悬浮模式
   HIDE, // 隐藏模式
   BOTTOM, // 底栏模式
   PLAYER, // 播放器模式
