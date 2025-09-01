@@ -5,9 +5,10 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,6 +38,7 @@ import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.repository.LyricRepository
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.DataStoreUtil
+import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
 import org.koin.compose.koinInject
 import kotlin.math.absoluteValue
 
@@ -148,9 +150,10 @@ fun LyricSettingDialog(
         Column(
           modifier = Modifier.fillMaxWidth(),
           horizontalAlignment = Alignment.Start,
-          verticalArrangement = Arrangement.spacedBy(8.dp)
+          verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
           TitleText("字号 $fontSize", textColor = textColorAnimValue.value)
+          Spacer(Modifier.height(8.dp))
           SimpleSlider(
             modifier = Modifier
               .fillMaxWidth()
@@ -173,7 +176,9 @@ fun LyricSettingDialog(
             },
             valueRange = 12f..24f,
           )
+          Spacer(Modifier.height(8.dp))
           TitleText("字重 $fontWeight", textColor = textColorAnimValue.value)
+          Spacer(Modifier.height(8.dp))
           SimpleSlider(
             modifier = Modifier
               .fillMaxWidth()
@@ -250,12 +255,11 @@ fun LyricSettingDialog(
               steps = 1000,
             )
           }
-          TextButton(
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.textButtonColors().copy(
-              contentColor = textColorAnimValue.value
-            ),
-            onClick = {
+          Spacer(modifier = Modifier.height(8.dp))
+          Text(
+            "切换其他版本歌词",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.clickableNoRippleWithVibration {
               onDismissRequest.invoke()
               navController?.clearBackStack(Routes.Main)
               navController?.navigate(
@@ -267,19 +271,13 @@ fun LyricSettingDialog(
                   .build()
               )
             }
-          ) {
-            Text("切换其他版本歌词")
-          }
-          TextButton(
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.textButtonColors().copy(
-              contentColor = textColorAnimValue.value
-            ),
-            onClick = {
+          )
+          Text(
+            "全屏歌词",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.clickableNoRippleWithVibration {
               onDismissRequest.invoke()
-
               navController?.clearBackStack(Routes.Main)
-
               navController?.navigate(
                 Routes.FullScreenLrc,
                 navOptions = NavOptions.Builder()
@@ -287,9 +285,7 @@ fun LyricSettingDialog(
                   .build()
               )
             }
-          ) {
-            Text("全屏歌词")
-          }
+          )
         }
       },
       confirmButton = {

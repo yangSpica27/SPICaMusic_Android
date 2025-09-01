@@ -416,11 +416,14 @@ private fun OftenListenSongList(
       Column(
         modifier = Modifier
           .width(150.dp)
+          .background(
+            MaterialTheme.colorScheme.surface
+          )
           .animateItem()
           .clip(
             MaterialTheme.shapes.small
           )
-          .clickable {
+          .clickableNoRippleWithVibration {
             playBackViewModel.play(it, songs)
           }
       ) {

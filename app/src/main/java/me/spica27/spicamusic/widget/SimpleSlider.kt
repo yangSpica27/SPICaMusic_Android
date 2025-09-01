@@ -49,7 +49,7 @@ fun SimpleSlider(
 
   Slider(
     modifier = modifier
-      .height((35).dp)
+      .height((25).dp)
       .background(
         color = sliderBackgroundColor,
         shape = MaterialTheme.shapes.small

@@ -53,7 +53,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
@@ -68,7 +67,6 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.TimeUtils
-import me.spica27.spicamusic.utils.clickableWithVibration
 import me.spica27.spicamusic.utils.dip
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
@@ -94,7 +92,7 @@ fun PlaylistDetailScreen(
 ) {
 
 
-  val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+  val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
 
   val songs =
@@ -182,55 +180,7 @@ fun PlaylistDetailScreen(
             )
           ),
       ) {
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickableWithVibration {
-              coroutineScope.launch {
-                if (songs.isNotEmpty()) {
-                  playlistViewModel.addPlayCount(playlistId)
-                  playBackViewModel.play(songs.first(), songs)
-                }
-              }
-            }
-            .padding(
-              horizontal = 16.dp,
-              vertical = 12.dp
-            )
-        ) {
-          Box(
-            modifier = Modifier
-              .size(60.dp)
-              .background(
-                MaterialTheme.colorScheme.surfaceContainer,
-                MaterialTheme.shapes.small
-              ),
-            contentAlignment = Alignment.Center
-          ) {
-            AsyncImage(
-              model = R.drawable.ic_play,
-              contentDescription = "",
-              modifier = Modifier.width(48.dp),
-              colorFilter = ColorFilter.tint(
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-              )
-            )
-          }
-          Column(
-            modifier = Modifier
-              .weight(1f)
-              .height(60.dp)
-              .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.Center
-          ) {
-            Text("播放全部", style = MaterialTheme.typography.bodyLarge)
-            Text(
-              "总共${songs.size}首", style = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-              )
-            )
-          }
-        }
+
         LazyColumn(
           modifier = Modifier
             .weight(1f)

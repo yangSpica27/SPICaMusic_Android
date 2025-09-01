@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -132,12 +133,12 @@ class PlayBackViewModel(
   init {
     Timber.tag("MusicViewModel").d("init")
     viewModelScope.launch(Dispatchers.IO) {
-      currentSongFlow.collectLatest {
+      currentSongFlow.filterNotNull().collectLatest {
         playHistoryRepository.insertPlayHistory(
           PlayHistory(
-            mediaId = it?.songId ?: -1,
-            title = it?.displayName ?: "",
-            artist = it?.artist ?: "",
+            mediaId = it.mediaStoreId,
+            title = it.displayName ,
+            artist = it.artist,
           )
         )
       }
