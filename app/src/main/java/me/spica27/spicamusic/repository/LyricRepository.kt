@@ -18,7 +18,6 @@ class LyricRepository(
 ) {
 
 
-
   suspend fun fetchLyric(title: String, artist: String?): ApiResponse<List<LyricResponse>> =
     lyricApi.fetchLyric(title, artist)
 
@@ -40,7 +39,7 @@ class LyricRepository(
     .distinctUntilChanged()
 
   fun getDelay(mediaId: Long) = lyricDao.getDelayFlow(mediaId)
-    .map{
+    .map {
       it ?: 0
     }
     .distinctUntilChanged()

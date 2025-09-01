@@ -30,9 +30,10 @@ class SongRepository(
     songDao.ignore(id, isIgnore)
   }
 
-  fun songLikeFlowWithId(id: Long) = songDao.getSongIsLikeFlowWithId(id).distinctUntilChanged().map {
-    it == 1
-  }
+  fun songLikeFlowWithId(id: Long) =
+    songDao.getSongIsLikeFlowWithId(id).distinctUntilChanged().map {
+      it == 1
+    }
 
   fun ignoreSongFlow() = songDao.getIgnoreSongsFlow().distinctUntilChanged()
 

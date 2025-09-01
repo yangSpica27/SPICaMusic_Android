@@ -4,7 +4,6 @@ package me.spica27.spicamusic.widget.particles
 import kotlin.random.Random
 
 
-
 /**
  * @author Adib Faramarzi (adibfara@gmail.com)
  */
@@ -13,7 +12,7 @@ fun randomInt(start: Int, end: Int, random: Random): Int {
   return start + (random.nextFloat() * (end - start)).toInt()
 }
 
-fun randomFloat(start: Float, end: Float, random: Random  = Random.Default): Float {
+fun randomFloat(start: Float, end: Float, random: Random = Random.Default): Float {
   return start + random.nextFloat() * (end.toInt() - start.toInt())
 }
 

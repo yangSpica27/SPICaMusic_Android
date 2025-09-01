@@ -29,14 +29,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.navigation.NavController
+import androidx.navigation.NavOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.repository.LyricRepository
 import me.spica27.spicamusic.route.Routes
-import me.spica27.spicamusic.ui.player.LocalPlayerWidgetState
-import me.spica27.spicamusic.ui.player.PlayerOverlyState
 import me.spica27.spicamusic.utils.DataStoreUtil
 import org.koin.compose.koinInject
 import kotlin.math.absoluteValue
@@ -52,7 +51,7 @@ fun LyricSettingDialog(
   dialogBackgroundColor: Color = MaterialTheme.colorScheme.background,
   textColor: Color = MaterialTheme.colorScheme.onBackground,
   song: Song,
-  navBackStack: NavController? = null,
+  navController: NavController? = null,
   // 窗口是否透明
   dialogBackgroundIsTranslate: (Boolean) -> Unit = {},
 ) {
@@ -134,8 +133,6 @@ fun LyricSettingDialog(
   LaunchedEffect(isSeekLrcSpeed) {
 
   }
-
-  val overlyState = LocalPlayerWidgetState.current
 
   if (fontWeight != null && fontSize != null) {
 
@@ -260,10 +257,14 @@ fun LyricSettingDialog(
             ),
             onClick = {
               onDismissRequest.invoke()
-              navBackStack?.navigate(
+              navController?.clearBackStack(Routes.Main)
+              navController?.navigate(
                 Routes.LyricsSearch(
-                  song = song
-                )
+                  song = song,
+                ),
+                navOptions = NavOptions.Builder()
+                  .setLaunchSingleTop(true)
+                  .build()
               )
             }
           ) {
@@ -275,8 +276,16 @@ fun LyricSettingDialog(
               contentColor = textColorAnimValue.value
             ),
             onClick = {
-              overlyState.value = PlayerOverlyState.FULLSCREEN_LRC
               onDismissRequest.invoke()
+
+              navController?.clearBackStack(Routes.Main)
+
+              navController?.navigate(
+                Routes.FullScreenLrc,
+                navOptions = NavOptions.Builder()
+                  .setLaunchSingleTop(true)
+                  .build()
+              )
             }
           ) {
             Text("全屏歌词")

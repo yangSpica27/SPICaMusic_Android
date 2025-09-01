@@ -17,6 +17,9 @@ import me.spica27.spicamusic.db.entity.Song
 interface PlaylistDao {
 
 
+  @Query("update Playlist set needUpdate = 1 where playlistId = :playlistId")
+  fun setNeedUpdate(playlistId: Long)
+
   @Transaction
   @Query("SELECT * FROM Playlist")
   fun getPlaylistsWithSongs(): List<PlaylistWithSongs>
@@ -51,7 +54,6 @@ interface PlaylistDao {
 
   @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")
   fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<Song>>
-
 
 
   @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")

@@ -26,7 +26,6 @@ interface PlayHistoryDao {
   fun getLasePlayHistory(mediaId: Long): PlayHistory?
 
 
-
   @Query("DELETE FROM PlayHistory")
   fun deleteAll()
 

@@ -14,14 +14,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.kyant.liquidglass.liquidGlassProvider
-import com.kyant.liquidglass.rememberLiquidGlassProviderState
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.theme.AppTheme
 import me.spica27.spicamusic.ui.add_song.AddSongScreen
 import me.spica27.spicamusic.ui.agree_privacy.AgreePrivacyScreen
 import me.spica27.spicamusic.ui.eq.EqScreen
+import me.spica27.spicamusic.ui.full_screen_lrc.FullScreenLrcScreen
 import me.spica27.spicamusic.ui.ignore_list.IgnoreListScreen
 import me.spica27.spicamusic.ui.like_list.LikeListScreen
 import me.spica27.spicamusic.ui.lyrics_search.LyricsSearchScreen
@@ -65,8 +64,7 @@ fun AppMain() {
         startDestination = Routes.Main,
         navController = navHostController,
         modifier = Modifier
-          .fillMaxSize()
-        ,
+          .fillMaxSize(),
         enterTransition = {
           materialSharedAxisXIn(forward = true)
         },
@@ -85,7 +83,9 @@ fun AppMain() {
             navigator = navHostController
           )
         }
-
+        composable<Routes.FullScreenLrc> {
+          FullScreenLrcScreen()
+        }
         composable<Routes.AddSong> { key ->
           val playlistId = key.toRoute<Routes.AddSong>().playlistId
           AddSongScreen(

@@ -53,8 +53,7 @@ fun SimpleSlider(
       .background(
         color = sliderBackgroundColor,
         shape = MaterialTheme.shapes.small
-      )
-    ,
+      ),
     value = value,
     onValueChange = {
       isPlaying = true

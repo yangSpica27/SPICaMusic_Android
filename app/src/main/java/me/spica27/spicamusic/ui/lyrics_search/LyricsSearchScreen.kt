@@ -30,7 +30,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -67,11 +67,8 @@ fun LyricsSearchScreen(
 
   val overlyState = LocalPlayerWidgetState.current
 
-  DisposableEffect(Unit) {
+  LaunchedEffect(Unit) {
     overlyState.value = PlayerOverlyState.BOTTOM
-    onDispose {
-      overlyState.value = PlayerOverlyState.PLAYER
-    }
   }
 
   Scaffold(

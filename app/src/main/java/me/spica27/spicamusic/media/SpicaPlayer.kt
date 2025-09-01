@@ -136,7 +136,7 @@ class SpicaPlayer(
         val index = browser.currentTimeline.indexOf(action.mediaId)
         if (index == -1) {
           val currentIndex = browser.currentMediaItemIndex
-          if (browser.isPlaying){
+          if (browser.isPlaying) {
             browser.pause()
           }
           val item = browser.getItem(action.mediaId)
@@ -219,7 +219,7 @@ class SpicaPlayer(
     _currentPlaylistMetadata.value = mediaMetadata
   }
 
-  override fun onTimelineChanged(timeline: Timeline,@Player.TimelineChangeReason reason: Int) {
+  override fun onTimelineChanged(timeline: Timeline, @Player.TimelineChangeReason reason: Int) {
     updateItems(timeline)
     Timber.e("onTimelineChanged 切换原因 ${reason}")
   }

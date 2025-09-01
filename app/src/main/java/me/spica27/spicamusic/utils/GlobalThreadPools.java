@@ -22,9 +22,11 @@ public class GlobalThreadPools {
   private static final int CORE_POOL_SIZE = CPU_COUNT;//核心线程数
   private static final int MAXIMUM_POOL_SIZE = CPU_COUNT * 2;//最大线程数
   private static final int KEEP_ALIVE_SECONDS = 60;//线程闲置后的存活时间
-  private static final BlockingQueue<Runnable> sPoolWorkQueue = new LinkedBlockingQueue<>(CPU_COUNT);//任务队列
+  private static final BlockingQueue<Runnable> sPoolWorkQueue = new LinkedBlockingQueue<>(
+      CPU_COUNT);//任务队列
   private static final ThreadFactory sThreadFactory = new ThreadFactory() {//线程工厂
     private final AtomicInteger mCount = new AtomicInteger(1);
+
     public Thread newThread(Runnable r) {
       return new Thread(r, "MangoTask #" + mCount.getAndIncrement());
     }
@@ -42,7 +44,7 @@ public class GlobalThreadPools {
   private void initThreadPool() {
     THREAD_POOL_EXECUTOR = new ThreadPoolExecutor(
         CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_SECONDS, TimeUnit.SECONDS,
-        sPoolWorkQueue, sThreadFactory, new RejectedHandler()){
+        sPoolWorkQueue, sThreadFactory, new RejectedHandler()) {
       @Override
       public void execute(Runnable command) {
         super.execute(command);
@@ -59,17 +61,19 @@ public class GlobalThreadPools {
   }
 
   private static GlobalThreadPools instance;
-  private GlobalThreadPools(){
+
+  private GlobalThreadPools() {
     initThreadPool();
   }
-  public static GlobalThreadPools getInstance(){
+
+  public static GlobalThreadPools getInstance() {
     if (instance == null) {
       instance = new GlobalThreadPools();
     }
     return instance;
   }
 
-  public void execute(Runnable command){
+  public void execute(Runnable command) {
     THREAD_POOL_EXECUTOR.execute(command);
   }
 

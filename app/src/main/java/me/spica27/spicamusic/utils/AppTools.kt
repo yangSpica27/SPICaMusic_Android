@@ -42,14 +42,14 @@ import kotlin.reflect.KClass
 fun Context.getVersion(): String {
   return try {
     val packageInfo = packageManager.getPackageInfo(packageName, 0)
-    packageInfo?.versionName?: "-1"
+    packageInfo?.versionName ?: "-1"
   } catch (e: Exception) {
     e.printStackTrace()
     "-1"
   }
 }
 
-fun readRawResource(context: Context, @RawRes id: Int): String{
+fun readRawResource(context: Context, @RawRes id: Int): String {
   val resources = context.resources
   val scanner: Scanner = Scanner(resources.openRawResource(id))
   val sb = StringBuilder()

@@ -252,7 +252,8 @@ fun HomePage(
             playlist = Playlist(
               playlistId = 0,
               playlistName = "我的收藏",
-              cover = null
+              cover = null,
+              needUpdate = false
             ),
             onClick = {
               navigator?.navigate(Routes.LikeList)

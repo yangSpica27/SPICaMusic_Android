@@ -4,7 +4,13 @@ import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -25,23 +31,23 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun ComplexWaveEffect(
-    modifier: Modifier = Modifier,
-    speed: Float = 0.5f,
-    strength: Float = 18f,
-    frequency: Float = 10f,
-    timeMultiplier: Float = 1f,
-    waveShaderCode: String? = null,
-    content: @Composable () -> Unit
+  modifier: Modifier = Modifier,
+  speed: Float = 0.5f,
+  strength: Float = 18f,
+  frequency: Float = 10f,
+  timeMultiplier: Float = 1f,
+  waveShaderCode: String? = null,
+  content: @Composable () -> Unit
 ) {
-    var elapsedTime by remember { mutableFloatStateOf(0f) }
-    val startTime = remember { System.nanoTime() }
+  var elapsedTime by remember { mutableFloatStateOf(0f) }
+  val startTime = remember { System.nanoTime() }
 
-    val configuration = LocalConfiguration.current
-    val density = LocalDensity.current
-    val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
-    val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
+  val configuration = LocalConfiguration.current
+  val density = LocalDensity.current
+  val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
+  val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
 
-    val defaultShaderCode = """
+  val defaultShaderCode = """
         uniform shader inputShader;
         uniform float uTime;
         uniform float2 uSize;
@@ -61,32 +67,32 @@ fun ComplexWaveEffect(
         }
     """.trimIndent()
 
-    val shaderCode = waveShaderCode ?: defaultShaderCode
-    val waveShader = remember { RuntimeShader(shaderCode) }
+  val shaderCode = waveShaderCode ?: defaultShaderCode
+  val waveShader = remember { RuntimeShader(shaderCode) }
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            withFrameNanos { frameTimeNanos ->
-                elapsedTime = (frameTimeNanos - startTime) / 1_000_000_000f * timeMultiplier
-            }
-        }
+  LaunchedEffect(Unit) {
+    while (true) {
+      withFrameNanos { frameTimeNanos ->
+        elapsedTime = (frameTimeNanos - startTime) / 1_000_000_000f * timeMultiplier
+      }
     }
+  }
 
-    waveShader.setFloatUniform("uTime", elapsedTime)
-    waveShader.setFloatUniform("uSize", floatArrayOf(screenWidth, screenHeight))
-    waveShader.setFloatUniform("uSpeed", speed)
-    waveShader.setFloatUniform("uStrength", strength)
-    waveShader.setFloatUniform("uFrequency", frequency)
+  waveShader.setFloatUniform("uTime", elapsedTime)
+  waveShader.setFloatUniform("uSize", floatArrayOf(screenWidth, screenHeight))
+  waveShader.setFloatUniform("uSpeed", speed)
+  waveShader.setFloatUniform("uStrength", strength)
+  waveShader.setFloatUniform("uFrequency", frequency)
 
-    val renderEffect = RenderEffect
-        .createRuntimeShaderEffect(waveShader, "inputShader")
-        .asComposeRenderEffect()
+  val renderEffect = RenderEffect
+    .createRuntimeShaderEffect(waveShader, "inputShader")
+    .asComposeRenderEffect()
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .graphicsLayer { this.renderEffect = renderEffect }
-    ) {
-        content()
-    }
+  Box(
+    modifier = modifier
+      .fillMaxSize()
+      .graphicsLayer { this.renderEffect = renderEffect }
+  ) {
+    content()
+  }
 }

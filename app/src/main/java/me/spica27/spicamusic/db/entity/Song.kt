@@ -59,7 +59,6 @@ data class Song(
   }
 
 
-
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
@@ -97,7 +96,7 @@ data class Song(
   }
 
 
-  fun  toMediaItem(): MediaItem {
+  fun toMediaItem(): MediaItem {
     return MediaItem.Builder()
       .setMediaId(mediaStoreId.toString())
       .setUri(getSongUri())

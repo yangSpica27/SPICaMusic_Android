@@ -3,9 +3,9 @@ package me.spica27.spicamusic.widget.particles
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 
-class ParticleObject (
+class ParticleObject(
   var animationParams: AnimationParams = AnimationParams()
-){
+) {
 
   data class AnimationParams(
     var locationX: Dp = Dp(-1f),

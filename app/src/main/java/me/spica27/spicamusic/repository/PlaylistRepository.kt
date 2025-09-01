@@ -58,6 +58,7 @@ class PlaylistRepository(
   suspend fun addSongToPlaylist(playlistId: Long?, songId: Long) = withContext(Dispatchers.IO) {
     if (playlistId != null) {
       playlistDao.insertListItem(PlaylistSongCrossRef(playlistId, songId))
+      playlistDao.setNeedUpdate(playlistId)
     }
   }
 
@@ -66,6 +67,7 @@ class PlaylistRepository(
     withContext(Dispatchers.IO) {
       if (playlistId != null) {
         playlistDao.deleteListItem(PlaylistSongCrossRef(playlistId, songId))
+        playlistDao.setNeedUpdate(playlistId)
       }
     }
 
@@ -94,5 +96,6 @@ class PlaylistRepository(
           playlistId, it.songId ?: -1
         )
       })
+    playlistDao.setNeedUpdate(playlistId)
   }
 }

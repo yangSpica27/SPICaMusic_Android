@@ -10,10 +10,10 @@ import com.squareup.moshi.JsonClass
 @Immutable
 @JsonClass(generateAdapter = true)
 data class LyricResponse(
-    val album: String?,
-    val artist: String?,
-    val cover: String?,
-    val id: String,
-    val lyrics: String,
-    val title: String?
+  val album: String?,
+  val artist: String?,
+  val cover: String?,
+  val id: String,
+  val lyrics: String,
+  val title: String?
 )

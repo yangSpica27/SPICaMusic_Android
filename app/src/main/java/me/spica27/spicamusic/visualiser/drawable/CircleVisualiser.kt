@@ -140,7 +140,7 @@ class CircleVisualiser : VisualiserDrawable() {
 
     canvas.drawPath(path1, paint)
 
-    canvas.withScale(1.1f,1.1f,0f,0f){
+    canvas.withScale(1.1f, 1.1f, 0f, 0f) {
       canvas.drawPath(path1, paint2)
     }
 

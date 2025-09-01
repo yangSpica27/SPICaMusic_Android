@@ -94,7 +94,7 @@ fun List(
 
   var currentSong by remember { mutableStateOf<Song?>(null) }
 
-  if (showRemoveDialog){
+  if (showRemoveDialog) {
     AlertDialog(
       shape = MaterialTheme.shapes.small,
       onDismissRequest = {
@@ -106,7 +106,7 @@ fun List(
       }, confirmButton = {
         TextButton(onClick = {
           // 确认删除
-          songViewModel.ignore(currentSong?.songId?:-1,false)
+          songViewModel.ignore(currentSong?.songId ?: -1, false)
           showRemoveDialog = false
         }) {
           Text("确定")

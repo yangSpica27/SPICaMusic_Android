@@ -72,5 +72,6 @@ class SelectSongViewModel(
   suspend fun addSongToPlaylist(playlistId: Long?) {
     playlistDao.insertListItems(
       _selectedSongsIds.value.map { songId -> PlaylistSongCrossRef(playlistId ?: 0, songId) })
+    playlistDao.setNeedUpdate(playlistId ?: -1)
   }
 }

@@ -15,6 +15,7 @@ data class Playlist(
   var cover: String? = null,
   var createTimestamp: Long = Date().time,
   var playTimes: Int = 0,
+  var needUpdate: Boolean = true // 标记用于是否需要更新封面
 ) {
 
 //    @Ignore

@@ -133,7 +133,7 @@ fun RecentlyListScreen(
                 modifier = Modifier.animateItem(),
                 song = song,
                 onClick = {
-                  playBackViewModel.play(song,songs)
+                  playBackViewModel.play(song, songs)
                 },
                 coverSize = 66.dp,
                 showLike = true,

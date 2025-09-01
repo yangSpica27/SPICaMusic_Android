@@ -303,7 +303,7 @@ internal class SpicaNotificationProvider(
     builder: NotificationCompat.Builder,
     onNotificationChangedCallback: Callback
   ) {
-     ImageRequest.Builder(context)
+    ImageRequest.Builder(context)
       .data(metadata.artworkUri)
       .size(100)
       .target(

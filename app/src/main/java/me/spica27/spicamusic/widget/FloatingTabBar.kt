@@ -548,7 +548,7 @@ private fun SharedTransitionScope.InlineAccessory(
               sharedContentState = rememberSharedContentState("accessory"),
               animatedVisibilityScope = animatedVisibilityScope,
               renderInOverlayDuringTransition = true,
-              enter = fadeIn()+ scaleIn(),
+              enter = fadeIn() + scaleIn(),
               exit = fadeOut() + scaleOut()
             )
           } else {
@@ -683,7 +683,7 @@ private fun SharedTransitionScope.ExpandedAccessory(
             sharedContentState = rememberSharedContentState("accessory"),
             animatedVisibilityScope = animatedVisibilityScope,
             renderInOverlayDuringTransition = false,
-            enter = fadeIn()+ scaleIn(),
+            enter = fadeIn() + scaleIn(),
             exit = fadeOut() + scaleOut()
           )
         } else {

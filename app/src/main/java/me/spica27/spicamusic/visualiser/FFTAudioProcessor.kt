@@ -65,7 +65,6 @@ class FFTAudioProcessor : AudioProcessor {
   }
 
 
-
   private var FFT: FFT? = null
 
   private var isActive: Boolean = false

@@ -382,7 +382,9 @@ fun Header(
         .background(
           brush = Brush.verticalGradient(
             colors = listOf(
-              Color.Transparent,
+              MaterialTheme.colorScheme.primaryContainer.copy(
+                alpha = 0.5f
+              ),
               MaterialTheme.colorScheme.primaryContainer
             )
           )

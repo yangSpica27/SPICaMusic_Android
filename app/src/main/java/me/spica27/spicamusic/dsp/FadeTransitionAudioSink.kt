@@ -70,7 +70,6 @@ class FadeTransitionRenderersFactory(
 ) : DefaultRenderersFactory(context), AudioProcessorChain {
 
 
-
   private val teeAudioProcessor = teeBufferListener
     ?.let { TeeAudioProcessor(it) }
 

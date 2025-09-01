@@ -2,7 +2,7 @@ package me.spica27.spicamusic.network.bean
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
-import java.util.UUID
+import java.util.*
 
 
 @JsonClass(generateAdapter = true)
@@ -34,7 +34,7 @@ data class LrcLibLyric(
       album = albumName,
       artist = artistName,
       cover = "",
-      lyrics = syncedLyrics?:"",
+      lyrics = syncedLyrics ?: "",
       title = name,
     )
   }

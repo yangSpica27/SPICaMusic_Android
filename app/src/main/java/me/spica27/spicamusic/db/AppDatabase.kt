@@ -20,7 +20,7 @@ import me.spica27.spicamusic.db.entity.Song
  */
 @Database(
   entities = [Song::class, Playlist::class, PlaylistSongCrossRef::class, Lyric::class, PlayHistory::class],
-  version = 15,
+  version = 16,
   exportSchema = false,
   autoMigrations = [],
 )

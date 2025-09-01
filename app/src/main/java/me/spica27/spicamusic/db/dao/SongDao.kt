@@ -92,17 +92,20 @@ interface SongDao {
   suspend fun delete(song: List<Song>)
 
 
-  @Query("""
+  @Query(
+    """
         SELECT s.*, COUNT(ph.mediaId) as play_count 
         FROM song s
         LEFT JOIN PlayHistory ph ON s.mediaStoreId = ph.mediaId
         WHERE s.isIgnore == 0
         GROUP BY s.songId
         ORDER BY play_count DESC
-    """)
+    """
+  )
   fun getOftenListenSongs(): Flow<List<Song>>
 
-  @Query("""
+  @Query(
+    """
         SELECT s.*, COUNT(ph.mediaId) as play_count 
         FROM song s
         LEFT JOIN PlayHistory ph ON s.mediaStoreId = ph.mediaId
@@ -110,7 +113,8 @@ interface SongDao {
         GROUP BY s.songId
         ORDER BY play_count DESC
         LIMIT 10
-    """)
+    """
+  )
   fun getOftenListenSong10(): Flow<List<Song>>
 
 

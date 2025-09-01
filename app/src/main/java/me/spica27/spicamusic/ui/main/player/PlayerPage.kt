@@ -684,7 +684,7 @@ private fun SongInfo(
   if (showLyricsSetting) {
     LyricSettingDialog(onDismissRequest = {
       showLyricsSetting = false
-    }, song = song, navBackStack = navigator, dialogBackgroundIsTranslate = {})
+    }, song = song, navController = navigator, dialogBackgroundIsTranslate = {})
   }
 
   val songListItemMenuDialogState = rememberSongItemMenuDialogState()

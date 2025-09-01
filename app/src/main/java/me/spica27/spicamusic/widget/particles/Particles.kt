@@ -46,7 +46,7 @@ private fun ParticleObject.randomize(
   val centerY = (pxSize.height / 2) + randomFloat(-10f, 10f, random)
   val radius = kotlin.math.min(centerX, centerY)
   val randomLength =
-    randomFloat(60.dp * radius, 60.dp  * radius, random)
+    randomFloat(60.dp * radius, 60.dp * radius, random)
   val x = randomLength * cos(randomizedAngle)
   val y = randomLength * sin(randomizedAngle)
   val color = Color.DarkGray

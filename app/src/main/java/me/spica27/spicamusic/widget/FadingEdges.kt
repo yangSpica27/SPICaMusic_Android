@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.widget
 
 
-
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed

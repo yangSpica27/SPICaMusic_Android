@@ -38,7 +38,6 @@ fun Modifier.clickableWithVibration(
 }
 
 
-
 fun Modifier.clickableNoRippleWithVibration(
   onClick: () -> Unit
 ) = composed {
@@ -68,7 +67,6 @@ fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
     onClick()
   }
 }
-
 
 
 // Enum to define vibration type for more clarity
@@ -122,7 +120,8 @@ fun ScrollHaptics(
     when (vibrationType) {
       ScrollVibrationType.ON_ITEM_CHANGED -> {
         snapshotFlow {
-          listState.firstVisibleItemIndex }
+          listState.firstVisibleItemIndex
+        }
           .distinctUntilChanged()
           .filter { index ->
             listState.isScrollInProgress || (index != 0 && listState.layoutInfo.visibleItemsInfo.isNotEmpty() && listState.layoutInfo.visibleItemsInfo.first().index == index)

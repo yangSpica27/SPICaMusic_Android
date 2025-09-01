@@ -18,8 +18,7 @@ data class Crash(
   val stackTrace: String = "",
   val deviceInfo: String = "",
   val buildVersion: String = ""
-): Parcelable{
-
+) : Parcelable {
 
 
   override fun toString(): String {

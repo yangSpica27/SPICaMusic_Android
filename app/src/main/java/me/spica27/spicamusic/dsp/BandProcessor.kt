@@ -9,7 +9,12 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 import kotlin.math.tan
 
-class BandProcessor(val band: NyquistBand, val sampleRate: Int, val channelCount: Int, val referenceGain: Double) {
+class BandProcessor(
+  val band: NyquistBand,
+  val sampleRate: Int,
+  val channelCount: Int,
+  val referenceGain: Double
+) {
 
   private val G0 = referenceGain.fromDb()
   private val GB = band.bandwidthGain.fromDb()
@@ -18,7 +23,10 @@ class BandProcessor(val band: NyquistBand, val sampleRate: Int, val channelCount
   private val xHist = Array(channelCount) { FloatArray(2) { 0f } }
   private val yHist = Array(channelCount) { FloatArray(2) { 0f } }
 
-  private val beta = tan((band.bandwidth / 2.0) * PI / (sampleRate / 2.0)) * (sqrt(abs((GB.pow(2)) - (G0.pow(2)))) / sqrt(abs((G1.pow(2)) - (GB.pow(2)))))
+  private val beta =
+    tan((band.bandwidth / 2.0) * PI / (sampleRate / 2.0)) * (sqrt(abs((GB.pow(2)) - (G0.pow(2)))) / sqrt(
+      abs((G1.pow(2)) - (GB.pow(2)))
+    ))
 
   private val a1 = -2.0 * cos(band.centerFrequency * PI / (sampleRate / 2.0)) / (1.0 + beta)
   private val a2 = (1.0 - beta) / (1.0 + beta)

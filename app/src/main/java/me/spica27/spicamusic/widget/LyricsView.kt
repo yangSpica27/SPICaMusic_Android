@@ -162,7 +162,8 @@ fun LyricsView(
         return@LaunchedEffect
       }
 
-      val viewportCenterY: Int = layoutInfo.viewportSize.height/2 - layoutInfo.viewportSize.height/3
+      val viewportCenterY: Int =
+        layoutInfo.viewportSize.height / 2 - layoutInfo.viewportSize.height / 3
 
       var closestItemIndex = -1
 
@@ -262,7 +263,7 @@ fun LyricsView(
             )
             .offset(
               y = with(density) {
-                (layoutHeight.intValue / 3f ).toDp()
+                (layoutHeight.intValue / 3f).toDp()
               }
             )
             .background(

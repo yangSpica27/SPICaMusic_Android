@@ -143,7 +143,7 @@ private fun SongList(
           song = song,
           onClick = {
             coroutineScope.launch {
-              playBackViewModel.play(song,dataState.value)
+              playBackViewModel.play(song, dataState.value)
             }
           },
           coverSize = 66.dp,

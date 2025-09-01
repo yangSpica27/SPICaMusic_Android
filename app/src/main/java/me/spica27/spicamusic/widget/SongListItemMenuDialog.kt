@@ -142,7 +142,7 @@ fun SongItemMenu(state: SongListItemMenuDialogState, playBackViewModel: PlayBack
         state.showRemoveToPlaylist = true
       },
       changeToIgnore = {
-        songViewModel.ignore(currentSelectedItem.songId?:-1, true)
+        songViewModel.ignore(currentSelectedItem.songId ?: -1, true)
       },
       addToCurrentList = {
         coroutineScope.launch {

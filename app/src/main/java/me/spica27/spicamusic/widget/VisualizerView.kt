@@ -35,7 +35,7 @@ class VisualizerView : View, MusicVisualiser.Listener {
     }
   }
 
-  private val infiniteAnim = ValueAnimator.ofFloat(0f,1f).apply {
+  private val infiniteAnim = ValueAnimator.ofFloat(0f, 1f).apply {
     repeatCount = ValueAnimator.INFINITE
     duration = 1000
     addUpdateListener {

@@ -62,6 +62,9 @@ object Routes {
   @Serializable
   data object IgnoreList
 
+  @Serializable
+  data object FullScreenLrc
+
   /**
    * 歌词搜索
    */

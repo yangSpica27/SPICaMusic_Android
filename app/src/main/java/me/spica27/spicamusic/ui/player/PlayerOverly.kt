@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui.player
 
-import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -17,7 +16,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,13 +23,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -48,8 +43,6 @@ import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.ui.main.player.PlayerScreen
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.CoverWidget
-import me.spica27.spicamusic.widget.LyricsView
-import me.spica27.spicamusic.widget.MusicEffectBackground
 import me.spica27.spicamusic.widget.PlayerBar
 import me.spica27.spicamusic.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.widget.materialSharedAxisYOut
@@ -78,12 +71,6 @@ fun PlayerOverly(
     overlyState.value = PlayerOverlyState.BOTTOM
   }
 
-
-  BackHandler(
-    overlyState.value == PlayerOverlyState.FULLSCREEN_LRC
-  ) {
-    overlyState.value = PlayerOverlyState.PLAYER
-  }
 
   LaunchedEffect(isPlaying) {
     if (isPlaying && overlyState.value == PlayerOverlyState.HIDE) {
@@ -217,15 +204,6 @@ fun PlayerOverly(
               )
             }
           }
-
-          PlayerOverlyState.FULLSCREEN_LRC -> {
-            Box(
-              modifier = Modifier
-                .fillMaxSize()
-            ) {
-              FullScreenLrc()
-            }
-          }
         }
       }
     }
@@ -237,82 +215,6 @@ private fun Bottom() {
   PlayerBar()
 }
 
-@Composable
-private fun FullScreenLrc() {
-  val playBackViewModel = activityViewModel<PlayBackViewModel>()
-  // 当前播放的歌曲
-  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState()
-    .value
-
-  val currentTime = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
-
-
-  Box(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(
-        MaterialTheme.colorScheme.surfaceContainer
-      )
-  ) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      MusicEffectBackground(
-        modifier = Modifier.fillMaxSize()
-      )
-//      TunEffectBackground(
-//        modifier = Modifier.fillMaxSize()
-//      )
-    }
-    if (currentPlayingSong == null) {
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .clip(
-            MaterialTheme.shapes.medium
-          ),
-        contentAlignment = Center
-      ) {
-        Text(
-          "未在播放", style = MaterialTheme.typography.titleLarge.copy(
-            color = MaterialTheme.colorScheme.onSurface.copy(
-              alpha = 0.8f
-            )
-          )
-        )
-      }
-    } else {
-      Box {
-        LyricsView(
-          modifier = Modifier.fillMaxSize(),
-          currentTime = currentTime * 1000,
-          song = currentPlayingSong,
-          onScroll = {
-            playBackViewModel.seekTo(it.toLong())
-          },
-          placeHolder = {
-            Box(
-              modifier = Modifier
-                .fillMaxSize()
-                .clip(
-                  MaterialTheme.shapes.medium
-                ),
-              contentAlignment = Center
-            ) {
-              Text(
-                "暂无歌词", style = MaterialTheme.typography.titleLarge.copy(
-                  color = MaterialTheme.colorScheme.onSurface.copy(
-                    alpha = 0.8f
-                  )
-                )
-              )
-            }
-          }
-        )
-      }
-    }
-  }
-
-
-}
 
 @Composable
 private fun Mimi(song: Song) {
@@ -360,5 +262,4 @@ enum class PlayerOverlyState {
   HIDE, // 隐藏模式
   BOTTOM, // 底栏模式
   PLAYER, // 播放器模式
-  FULLSCREEN_LRC // 全屏歌词模式
 }

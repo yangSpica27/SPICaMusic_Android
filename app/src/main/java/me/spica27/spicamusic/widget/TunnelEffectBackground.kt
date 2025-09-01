@@ -54,7 +54,7 @@ fun TunEffectBackground(modifier: Modifier = Modifier) {
   }
 
 
-  val shader = remember(glsl,bitmapShader) {
+  val shader = remember(glsl, bitmapShader) {
     RuntimeShader(glsl).also {
       it.setFloatUniform("u_time", 0f)
       it.setFloatUniform("u_speed", 1.5f)

@@ -82,6 +82,9 @@ fun PlayerBar(
     Column(
       modifier = Modifier
         .fillMaxWidth()
+        .background(
+          color = MaterialTheme.colorScheme.surfaceContainer
+        )
         .padding(horizontal = 16.dp, vertical = 12.dp),
       verticalArrangement = Arrangement.Center
     ) {

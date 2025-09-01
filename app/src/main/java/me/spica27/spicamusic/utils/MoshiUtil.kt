@@ -8,7 +8,7 @@ import java.lang.reflect.ParameterizedType
 
 object MoshiUtil {
 
- val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+  val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
 
   fun <T> toJson(adapter: JsonAdapter<T>, src: T, indent: String = ""): String {
     try {
@@ -39,7 +39,11 @@ object MoshiUtil {
    * @param indent String
    * @return String
    */
-  inline fun <reified T> toJson(src: T, parameterizedType: ParameterizedType, indent: String = ""): String {
+  inline fun <reified T> toJson(
+    src: T,
+    parameterizedType: ParameterizedType,
+    indent: String = ""
+  ): String {
     val adapter = moshi.adapter<T>(parameterizedType)
     return this.toJson(adapter = adapter, src = src, indent = indent)
   }

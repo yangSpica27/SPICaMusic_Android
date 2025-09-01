@@ -42,8 +42,10 @@ class ReplayGainAudioProcessor(var preAmpGain: Double = 0.0) : BaseAudioProcesso
         C.ENCODING_PCM_16BIT -> {
           while (inputBuffer.hasRemaining()) {
             val sample = inputBuffer.short
-            val targetSample = MathUtils.clamp((sample * delta), Short.MIN_VALUE.toDouble(),
-              Short.MAX_VALUE.toDouble()).toInt().toShort()
+            val targetSample = MathUtils.clamp(
+              (sample * delta), Short.MIN_VALUE.toDouble(),
+              Short.MAX_VALUE.toDouble()
+            ).toInt().toShort()
             buffer.putShort(targetSample)
           }
         }
@@ -51,7 +53,11 @@ class ReplayGainAudioProcessor(var preAmpGain: Double = 0.0) : BaseAudioProcesso
         C.ENCODING_PCM_24BIT -> {
           while (inputBuffer.hasRemaining()) {
             val sample = inputBuffer.getInt24()
-            val targetSample = MathUtils.clamp(sample * delta, Int24_MIN_VALUE.toDouble(), Int24_MAX_VALUE.toDouble()).toInt()
+            val targetSample = MathUtils.clamp(
+              sample * delta,
+              Int24_MIN_VALUE.toDouble(),
+              Int24_MAX_VALUE.toDouble()
+            ).toInt()
             buffer.putInt24(targetSample)
           }
         }

@@ -5,13 +5,12 @@ import android.graphics.CornerPathEffect
 import android.graphics.Paint
 import android.graphics.Path
 import androidx.annotation.OptIn
+import androidx.core.graphics.withSave
 import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.utils.dp
 import me.spica27.spicamusic.visualiser.MusicVisualiser
 import kotlin.math.cos
 import kotlin.math.sin
-import androidx.core.graphics.withSave
-import timber.log.Timber
 
 @OptIn(UnstableApi::class)
 class BlurVisualiser : VisualiserDrawable() {

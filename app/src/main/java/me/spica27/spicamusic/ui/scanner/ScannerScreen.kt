@@ -107,7 +107,7 @@ fun ScannerScreen(navigator: NavController? = null) {
     topBar = {
       SimpleTopBar(
         title = "扫描",
-        onBack = { navigator?.popBackStack()}
+        onBack = { navigator?.popBackStack() }
       )
     }
   ) { paddingValues ->
