@@ -83,7 +83,7 @@ fun EqScreen(
         onBack = {
           navigator?.popBackStack()
         },
-        title =  stringResource(R.string.setting_eq)
+        title = stringResource(R.string.setting_eq)
       )
     }) { it ->
     Box(

@@ -191,8 +191,7 @@ fun PlaylistDetailScreen(
             .fillMaxWidth()
             .nestedScroll(rememberBindPlayerOverlyConnect())
             .scrollEndHaptic()
-            .overScrollVertical()
-          ,
+            .overScrollVertical(),
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           items(songs, key = {

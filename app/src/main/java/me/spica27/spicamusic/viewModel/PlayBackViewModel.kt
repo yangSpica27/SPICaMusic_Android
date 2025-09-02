@@ -139,7 +139,7 @@ class PlayBackViewModel(
         playHistoryRepository.insertPlayHistory(
           PlayHistory(
             mediaId = it.mediaStoreId,
-            title = it.displayName ,
+            title = it.displayName,
             artist = it.artist,
           )
         )

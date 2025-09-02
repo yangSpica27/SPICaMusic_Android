@@ -131,6 +131,7 @@ fun HomePage(
     )
   }
 
+
   Box(
     modifier = modifier
       .fillMaxSize()
@@ -140,24 +141,21 @@ fun HomePage(
       ),
     contentAlignment = Alignment.TopStart
   ) {
-    Column(
+    Box(
       modifier = Modifier
         .fillMaxSize(),
-      verticalArrangement = Arrangement.Top
     ) {
-      // 标题
-      TitleBar(navigator, pagerState = pagerState)
+
       Column(
         modifier = Modifier
-          .weight(1f)
+          .fillMaxWidth()
           .verticalScroll(
             state = listState
           )
-          .padding(bottom = 200.dp)
+          .padding(bottom = 64.dp, top = 64.dp)
           .navigationBarsPadding(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-
-        ) {
+      ) {
 
 
         Row(
@@ -322,6 +320,8 @@ fun HomePage(
           }
         }
       }
+      // 标题
+      TitleBar(pagerState = pagerState)
     }
 
   }
@@ -560,12 +560,16 @@ private fun Title(
  * 顶部标题栏
  */
 @Composable
-private fun TitleBar(navigator: NavController? = null, pagerState: PagerState) {
+private fun TitleBar(pagerState: PagerState) {
   val coroutineScope = rememberCoroutineScope()
   Box(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(horizontal = 16.dp, vertical = 10.dp),
+      .height(64.dp)
+      .background(
+        color = MaterialTheme.colorScheme.surface.copy(alpha = .9f)
+      ),
+    contentAlignment = Alignment.Center
   ) {
 
 

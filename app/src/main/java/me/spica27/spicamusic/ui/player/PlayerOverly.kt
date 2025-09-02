@@ -162,22 +162,22 @@ fun PlayerOverly(
 //          }
 
           PlayerOverlyState.HIDE -> {
-           Box(
-             modifier = Modifier.fillMaxSize()
-           ){
-             Box(
-               modifier = Modifier
-                 .fillMaxWidth()
-                 .align(alignment = Alignment.BottomCenter)
-                 .sharedBounds(
-                   animatedVisibilityScope = this@AnimatedContent,
-                   sharedContentState = sharedContentState,
-                   enter = materialSharedAxisYIn(false),
-                   exit = materialSharedAxisYOut(false),
-                   resizeMode = ScaleToBounds(ContentScale.FillHeight, Center)
-                 )
-             )
-           }
+            Box(
+              modifier = Modifier.fillMaxSize()
+            ) {
+              Box(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .align(alignment = Alignment.BottomCenter)
+                  .sharedBounds(
+                    animatedVisibilityScope = this@AnimatedContent,
+                    sharedContentState = sharedContentState,
+                    enter = materialSharedAxisYIn(false),
+                    exit = materialSharedAxisYOut(false),
+                    resizeMode = ScaleToBounds(ContentScale.FillHeight, Center)
+                  )
+              )
+            }
           }
 
           PlayerOverlyState.BOTTOM -> {

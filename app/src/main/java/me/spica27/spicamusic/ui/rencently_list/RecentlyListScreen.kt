@@ -75,7 +75,7 @@ fun RecentlyListScreen(
         onBack = {
           navigator?.popBackStack()
         },
-        title =  stringResource(R.string.recently_listen),
+        title = stringResource(R.string.recently_listen),
         lazyListState = listState
       )
     }

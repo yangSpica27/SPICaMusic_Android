@@ -61,7 +61,7 @@ fun InputTextDialog(
         )
       }
     }, dismissButton = {
-      TextButton (onClick = {
+      TextButton(onClick = {
         onCancel.invoke()
       }) {
         Text(

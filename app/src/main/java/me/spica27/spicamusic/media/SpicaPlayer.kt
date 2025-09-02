@@ -81,7 +81,7 @@ class SpicaPlayer(
   }
 
   internal fun init() {
-    if (browserInstance!=null)return
+    if (browserInstance != null) return
     launch(Dispatchers.Main) {
       val browser = browserFuture.await()
       browserInstance = browser

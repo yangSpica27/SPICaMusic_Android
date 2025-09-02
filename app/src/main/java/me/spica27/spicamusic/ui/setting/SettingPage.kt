@@ -338,7 +338,7 @@ private fun TopBar(
   Box(
     modifier = Modifier
       .fillMaxWidth()
-      .height(64.dp)
+      .height(64.dp),
   ) {
     IconButton(
       onClick = {

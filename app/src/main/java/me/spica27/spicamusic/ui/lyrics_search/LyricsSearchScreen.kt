@@ -128,7 +128,7 @@ private fun TopPanel(song: Song, lyricSearchViewModel: LyricSearchViewModel) {
   ) {
     EditText(
       leftLabel = stringResource(R.string.song_displayname),
-      rightLabel =stringResource(R.string.hint_edit_song_name),
+      rightLabel = stringResource(R.string.hint_edit_song_name),
       text = songName.value,
       onValueChange = {
         songName.value = it

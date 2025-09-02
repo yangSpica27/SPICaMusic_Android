@@ -170,7 +170,7 @@ fun LyricSettingDialog(
                 }
               ),
             progress = fontSize.toFloat(),
-            onProgressChange  = {
+            onProgressChange = {
               coroutineScope.launch {
                 dataStoreUtil.setLyricFontSize(it.toInt())
               }
