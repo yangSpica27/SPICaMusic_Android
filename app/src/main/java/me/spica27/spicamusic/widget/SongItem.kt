@@ -59,9 +59,10 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.toCoilUri
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
-import me.spica27.spicamusic.utils.clickableWithVibration
+import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
 import me.spica27.spicamusic.utils.getColorFromMimeTypeString
 import me.spica27.spicamusic.utils.noRippleClickable
+import me.spica27.spicamusic.utils.pressable
 
 
 /// 带封面的歌曲列表项
@@ -90,7 +91,8 @@ fun SongItemWithCover(
     verticalAlignment = Alignment.CenterVertically,
     modifier = modifier
       .fillMaxWidth()
-      .clickableWithVibration { onClick() }
+      .pressable()
+      .clickableNoRippleWithVibration { onClick() }
       .padding(horizontal = 16.dp, vertical = 6.dp),
   ) {
     Box(

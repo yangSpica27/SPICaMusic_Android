@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
+import me.spica27.spicamusic.utils.pressable
 
 
 /// 歌单条目
@@ -34,6 +35,7 @@ fun PlaylistItem(
 ) {
   Row(
     modifier = modifier
+      .pressable()
       .clickableNoRippleWithVibration {
         onClick()
       }

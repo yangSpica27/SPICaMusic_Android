@@ -159,7 +159,7 @@ fun LyricSettingDialog(
             textColor = textColorAnimValue.value
           )
           Spacer(Modifier.height(8.dp))
-          SimpleSlider(
+          Slider(
             modifier = Modifier
               .fillMaxWidth()
               .alpha(
@@ -169,17 +169,19 @@ fun LyricSettingDialog(
                   0f
                 }
               ),
-            value = fontSize.toFloat(),
-            onValueChange = {
+            progress = fontSize.toFloat(),
+            onProgressChange  = {
               coroutineScope.launch {
                 dataStoreUtil.setLyricFontSize(it.toInt())
               }
               isSeekFontSize = true
             },
-            onValueChangeFinished = {
+            onProgressChangeFinished = {
               isSeekFontSize = false
             },
-            valueRange = 12f..24f,
+            maxValue = 24f,
+            minValue = 16f,
+            decimalPlaces = 1
           )
           Spacer(Modifier.height(8.dp))
           TitleText(
@@ -187,7 +189,7 @@ fun LyricSettingDialog(
             textColor = textColorAnimValue.value
           )
           Spacer(Modifier.height(8.dp))
-          SimpleSlider(
+          Slider(
             modifier = Modifier
               .fillMaxWidth()
               .alpha(
@@ -197,18 +199,19 @@ fun LyricSettingDialog(
                   0f
                 }
               ),
-            value = fontWeight.toFloat(),
-            onValueChange = {
+            progress = fontWeight.toFloat(),
+            onProgressChange = {
               coroutineScope.launch {
                 dataStoreUtil.setLyricFontWeight(it.toInt())
               }
               isSeekFontWeight = true
             },
-            onValueChangeFinished = {
+            onProgressChangeFinished = {
               isSeekFontWeight = false
             },
-            valueRange = 100f..900f,
-            steps = 100,
+            minValue = 100f,
+            maxValue = 900f,
+            decimalPlaces = 1,
           )
 
           if (haveLyric && delay != null) {

@@ -69,6 +69,8 @@ import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.TimeUtils
 import me.spica27.spicamusic.utils.dip
+import me.spica27.spicamusic.utils.overScrollVertical
+import me.spica27.spicamusic.utils.scrollEndHaptic
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.PlaylistViewModel
 import me.spica27.spicamusic.widget.InputTextDialog
@@ -187,7 +189,10 @@ fun PlaylistDetailScreen(
           modifier = Modifier
             .weight(1f)
             .fillMaxWidth()
-            .nestedScroll(rememberBindPlayerOverlyConnect()),
+            .nestedScroll(rememberBindPlayerOverlyConnect())
+            .scrollEndHaptic()
+            .overScrollVertical()
+          ,
           verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           items(songs, key = {

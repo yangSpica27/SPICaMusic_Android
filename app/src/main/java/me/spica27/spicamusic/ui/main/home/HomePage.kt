@@ -51,7 +51,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -73,17 +72,16 @@ import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
+import me.spica27.spicamusic.utils.overScrollHorizontal
+import me.spica27.spicamusic.utils.pressable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
-import me.spica27.spicamusic.widget.FadingEdges
 import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlaylistItem
 import me.spica27.spicamusic.widget.SongItemWithCover
 import me.spica27.spicamusic.widget.blur.progressiveBlur
-import me.spica27.spicamusic.widget.fadingEdges
 import me.spica27.spicamusic.widget.materialSharedAxisXIn
 import me.spica27.spicamusic.widget.materialSharedAxisXOut
-import me.spica27.spicamusic.widget.rememberBindPlayerOverlyConnect
 import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
 
@@ -143,7 +141,8 @@ fun HomePage(
     contentAlignment = Alignment.TopStart
   ) {
     Column(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier
+        .fillMaxSize(),
       verticalArrangement = Arrangement.Top
     ) {
       // 标题
@@ -151,14 +150,8 @@ fun HomePage(
       Column(
         modifier = Modifier
           .weight(1f)
-          .nestedScroll(rememberBindPlayerOverlyConnect())
           .verticalScroll(
             state = listState
-          )
-          .fadingEdges(
-            FadingEdges(
-              bottom = 12.dp
-            )
           )
           .padding(bottom = 200.dp)
           .navigationBarsPadding(),
@@ -407,7 +400,9 @@ private fun OftenListenSongList(
   )
 
   LazyRow(
-    modifier = Modifier.fillMaxWidth(),
+    modifier = Modifier
+      .fillMaxWidth()
+      .overScrollHorizontal(),
     horizontalArrangement = Arrangement.spacedBy(12.dp),
     state = listState,
     flingBehavior = rememberSnapFlingBehavior(
@@ -440,6 +435,7 @@ private fun OftenListenSongList(
           .clip(
             MaterialTheme.shapes.small
           )
+          .pressable()
           .clickableNoRippleWithVibration {
             playBackViewModel.play(it, songs)
           }

@@ -103,7 +103,8 @@ fun PlayerScreen(
       } else {
         // 播放列表不为空
         VerticalPager(
-          modifier = Modifier.fillMaxSize(),
+          modifier = Modifier
+            .fillMaxSize(),
           state = pageState,
           key = { it },
           flingBehavior =

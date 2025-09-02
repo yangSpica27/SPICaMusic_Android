@@ -31,6 +31,8 @@ import coil3.compose.AsyncImage
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
+import me.spica27.spicamusic.utils.overScrollVertical
+import me.spica27.spicamusic.utils.scrollEndHaptic
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.SimpleTopBar
@@ -117,6 +119,8 @@ fun RecentlyListScreen(
           LazyColumn(
             modifier = Modifier
               .fillMaxSize()
+              .scrollEndHaptic()
+              .overScrollVertical()
               .nestedScroll(rememberBindPlayerOverlyConnect()),
             state = listState,
             flingBehavior = rememberSnapFlingBehavior(
