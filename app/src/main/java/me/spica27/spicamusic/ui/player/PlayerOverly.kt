@@ -10,11 +10,14 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -108,7 +111,9 @@ fun PlayerOverly(
         label = "player_overly_state",
         contentKey = { it.name },
         transitionSpec = {
-          materialSharedAxisZIn(forward = true) togetherWith materialSharedAxisZOut(forward = true)
+          fadeIn(animationSpec = spring(dampingRatio = 0.9f, stiffness = 900f)) +
+              scaleIn(initialScale = 0.8f, animationSpec = spring(0.73f, 900f)) togetherWith
+              materialSharedAxisYOut(forward = true)
         }
       ) { state ->
         when (state) {
@@ -156,7 +161,25 @@ fun PlayerOverly(
 //            }
 //          }
 
-          PlayerOverlyState.HIDE -> {}
+          PlayerOverlyState.HIDE -> {
+           Box(
+             modifier = Modifier.fillMaxSize()
+           ){
+             Box(
+               modifier = Modifier
+                 .fillMaxWidth()
+                 .align(alignment = Alignment.BottomCenter)
+                 .sharedBounds(
+                   animatedVisibilityScope = this@AnimatedContent,
+                   sharedContentState = sharedContentState,
+                   enter = materialSharedAxisYIn(false),
+                   exit = materialSharedAxisYOut(false),
+                   resizeMode = ScaleToBounds(ContentScale.FillHeight, Center)
+                 )
+             )
+           }
+          }
+
           PlayerOverlyState.BOTTOM -> {
             Box(
               modifier = Modifier
@@ -168,8 +191,9 @@ fun PlayerOverly(
                   .sharedBounds(
                     animatedVisibilityScope = this@AnimatedContent,
                     sharedContentState = sharedContentState,
-                    enter = materialSharedAxisYIn(false),
-                    exit = materialSharedAxisYOut(false),
+                    enter = fadeIn(animationSpec = spring(dampingRatio = 0.9f, stiffness = 900f)) +
+                        scaleIn(initialScale = 0.8f, animationSpec = spring(0.73f, 900f)),
+                    exit = slideOutVertically { it },
                     resizeMode = ScaleToBounds(ContentScale.Fit, Center)
                   )
                   .align(Alignment.BottomCenter)

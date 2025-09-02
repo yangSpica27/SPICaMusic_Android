@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -90,6 +91,7 @@ class PlayBackViewModel(
     get() = player.isPlaying
       .debounce(250)
       .distinctUntilChanged()
+      .conflate()
       .flowOn(Dispatchers.Default)
       .shareIn(viewModelScope, SharingStarted.Eagerly, 1)
 
