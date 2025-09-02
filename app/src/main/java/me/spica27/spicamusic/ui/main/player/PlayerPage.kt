@@ -297,7 +297,7 @@ fun PlayerPage(
             .padding(10.dp)
             .fillMaxWidth(),
           textAlign = TextAlign.Center,
-          text = "向上滑动查看播放列表",
+          text = stringResource(R.string.swipe_up_to_view_current_play_list),
           style = MaterialTheme.typography.bodyMedium.copy(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
           )

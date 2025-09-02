@@ -49,6 +49,8 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -77,6 +79,7 @@ import me.spica27.spicamusic.widget.FadingEdges
 import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlaylistItem
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.widget.blur.progressiveBlur
 import me.spica27.spicamusic.widget.fadingEdges
 import me.spica27.spicamusic.widget.materialSharedAxisXIn
 import me.spica27.spicamusic.widget.materialSharedAxisXOut
@@ -191,7 +194,10 @@ fun HomePage(
             contentDescription = stringResource(R.string.more),
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
           )
-          Text(stringResource(R.string.search_all_music), style = MaterialTheme.typography.bodyLarge.copy())
+          Text(
+            stringResource(R.string.search_all_music),
+            style = MaterialTheme.typography.bodyLarge.copy()
+          )
         }
 
         Title(
@@ -423,9 +429,10 @@ private fun OftenListenSongList(
       )
       val coverState = coverPainter.state.collectAsState().value
 
-      Column(
+      Box(
         modifier = Modifier
           .width(150.dp)
+          .height(180.dp)
           .background(
             MaterialTheme.colorScheme.surface
           )
@@ -446,6 +453,7 @@ private fun OftenListenSongList(
               MaterialTheme.shapes.small
             )
             .clip(MaterialTheme.shapes.small)
+            .progressiveBlur()
 
         ) {
           if (coverState is AsyncImagePainter.State.Success) {
@@ -466,36 +474,55 @@ private fun OftenListenSongList(
             )
           }
         }
-        Spacer(
+        Column(
           modifier = Modifier
-            .fillMaxWidth()
-            .height(12.dp)
-        )
-        Text(
-          text = it.displayName,
-          modifier = Modifier.fillMaxWidth(),
-          maxLines = 1,
-          style = MaterialTheme.typography.titleMedium.copy(
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            .fillMaxSize()
+            .background(
+              brush = Brush.verticalGradient(
+                colors = listOf(
+                  Color.Transparent,
+                  MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                  MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
+                )
+              )
+            )
+            .padding(
+              horizontal = 16.dp,
+              vertical = 12.dp
+            ),
+          verticalArrangement = Arrangement.Bottom,
+        ) {
+          Spacer(
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(12.dp)
           )
-        )
-        Spacer(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(6.dp)
-        )
-        Text(
-          text = it.artist,
-          modifier = Modifier.fillMaxWidth(),
-          maxLines = 1,
-          style = MaterialTheme.typography.titleSmall.copy(
-            fontWeight = FontWeight.Normal,
-            color = MaterialTheme.colorScheme.onSurface.copy(
-              alpha = 0.6f
+          Text(
+            text = it.displayName,
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 1,
+            style = MaterialTheme.typography.titleMedium.copy(
+              fontWeight = FontWeight.Bold,
+              color = MaterialTheme.colorScheme.onSurface
             )
           )
-        )
+          Spacer(
+            modifier = Modifier
+              .fillMaxWidth()
+              .height(6.dp)
+          )
+          Text(
+            text = it.artist,
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 1,
+            style = MaterialTheme.typography.titleSmall.copy(
+              fontWeight = FontWeight.Normal,
+              color = MaterialTheme.colorScheme.onSurface.copy(
+                alpha = 0.6f
+              )
+            )
+          )
+        }
       }
     }
     item {

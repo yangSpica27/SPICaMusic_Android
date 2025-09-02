@@ -75,6 +75,7 @@ import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlaylistCover
 import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.SongItemWithCover
+import me.spica27.spicamusic.widget.blur.progressiveBlur
 import me.spica27.spicamusic.widget.rememberBindPlayerOverlyConnect
 import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.activityViewModel
@@ -326,10 +327,11 @@ fun Header(
       playlist = playlist,
       modifier = Modifier
         .fillMaxSize()
+        .progressiveBlur()
     )
     Box(
       modifier = Modifier
-        .fillMaxSize()
+        .matchParentSize()
         .background(
           brush = Brush.verticalGradient(
             colors = listOf(

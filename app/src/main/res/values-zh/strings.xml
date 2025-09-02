@@ -132,4 +132,12 @@
   <string name="remove_from_playlist">从歌单中移除</string>
   <string name="add_to_ignore_list">添加到忽略清单</string>
   <string name="copy_success">复制成功</string>
+  <string name="title_dialog_lrc_ui_setting">歌词显示设置</string>
+  <string name="lrc_setting_font_size">字号 %s</string>
+  <string name="lrc_setting_font_weight">字重 %s</string>
+  <string name="lrc_setting_change_lrc">搜索网络歌词</string>
+  <string name="lrc_setting_full_screen">全屏歌词</string>
+  <string name="swipe_up_to_view_current_play_list">向上滑动查看播放列表</string>
+  <string name="swipe_down_to_view_player_page">向下轻扫回到播放器页面</string>
+  <string name="remove">移除</string>
 </resources>

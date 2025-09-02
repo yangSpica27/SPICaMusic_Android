@@ -94,7 +94,7 @@ fun CurrentListPage(
     modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top
   ) {
     Text(
-      "向下轻扫回到播放页面",
+      stringResource(R.string.swipe_down_to_view_player_page),
       style = MaterialTheme.typography.bodyMedium.copy(
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
       ),

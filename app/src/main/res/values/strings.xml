@@ -133,4 +133,12 @@
   <string name="remove_from_playlist">Remove From Playlist</string>
   <string name="add_to_ignore_list">Add To Ignore List</string>
   <string name="copy_success">Copy Success</string>
+  <string name="title_dialog_lrc_ui_setting">Lyrics UI Setting</string>
+  <string name="lrc_setting_font_size">Font Size %s</string>
+  <string name="lrc_setting_font_weight">Font Weight %s</string>
+  <string name="lrc_setting_change_lrc">Search Lyrics From Network</string>
+  <string name="lrc_setting_full_screen">Full Screen Lyrics</string>
+  <string name="swipe_up_to_view_current_play_list">swipe up to view the now playing list</string>
+  <string name="swipe_down_to_view_player_page">swipe down to view player page</string>
+  <string name="remove">remove</string>
 </resources>

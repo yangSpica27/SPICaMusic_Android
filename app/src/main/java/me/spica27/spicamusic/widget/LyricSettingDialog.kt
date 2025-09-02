@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
@@ -34,6 +35,7 @@ import androidx.navigation.NavOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.repository.LyricRepository
 import me.spica27.spicamusic.route.Routes
@@ -143,7 +145,7 @@ fun LyricSettingDialog(
       shape = MaterialTheme.shapes.large,
       onDismissRequest = { onDismissRequest() },
       title = {
-        Text("歌词显示设置", color = textColor)
+        Text(stringResource(R.string.title_dialog_lrc_ui_setting), color = textColor)
       },
       text = {
         (LocalView.current.parent as DialogWindowProvider).window.setDimAmount(0f)
@@ -152,7 +154,10 @@ fun LyricSettingDialog(
           horizontalAlignment = Alignment.Start,
           verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-          TitleText("字号 $fontSize", textColor = textColorAnimValue.value)
+          TitleText(
+            stringResource(R.string.lrc_setting_font_size, fontSize),
+            textColor = textColorAnimValue.value
+          )
           Spacer(Modifier.height(8.dp))
           SimpleSlider(
             modifier = Modifier
@@ -177,7 +182,10 @@ fun LyricSettingDialog(
             valueRange = 12f..24f,
           )
           Spacer(Modifier.height(8.dp))
-          TitleText("字重 $fontWeight", textColor = textColorAnimValue.value)
+          TitleText(
+            stringResource(R.string.lrc_setting_font_weight, fontWeight),
+            textColor = textColorAnimValue.value
+          )
           Spacer(Modifier.height(8.dp))
           SimpleSlider(
             modifier = Modifier
@@ -204,6 +212,7 @@ fun LyricSettingDialog(
           )
 
           if (haveLyric && delay != null) {
+            Spacer(modifier = Modifier.height(8.dp))
             TitleText(
               if (delay > 0) {
                 "延迟${delay.absoluteValue}毫秒"
@@ -212,6 +221,7 @@ fun LyricSettingDialog(
               },
               textColor = textColorAnimValue.value
             )
+            Spacer(modifier = Modifier.height(8.dp))
             SimpleSlider(
               modifier = Modifier
                 .fillMaxWidth()
@@ -257,7 +267,7 @@ fun LyricSettingDialog(
           }
           Spacer(modifier = Modifier.height(8.dp))
           Text(
-            "切换其他版本歌词",
+            stringResource(R.string.lrc_setting_change_lrc),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.clickableNoRippleWithVibration {
               onDismissRequest.invoke()
@@ -273,7 +283,7 @@ fun LyricSettingDialog(
             }
           )
           Text(
-            "全屏歌词",
+            stringResource(R.string.lrc_setting_full_screen),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.clickableNoRippleWithVibration {
               onDismissRequest.invoke()
@@ -293,7 +303,7 @@ fun LyricSettingDialog(
           // 确认
           onDismissRequest.invoke()
         }) {
-          Text("确定")
+          Text(stringResource(android.R.string.ok))
         }
       })
   }

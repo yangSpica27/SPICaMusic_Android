@@ -56,7 +56,7 @@ fun IgnoreListScreen(navigator: NavController) {
   Scaffold(
     topBar = {
       SimpleTopBar(
-        title = "忽略的歌曲",
+        title = stringResource(R.string.setting_ignore_music),
         onBack = {
           navigator.popBackStack()
         },
@@ -168,7 +168,7 @@ fun List(
           )
         }
         Text(
-          text = "移出",
+          text = stringResource(R.string.remove),
           style = MaterialTheme.typography.bodyMedium
         )
       }
