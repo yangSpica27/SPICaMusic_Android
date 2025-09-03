@@ -10,7 +10,7 @@ plugins {
 
 android {
   namespace 'me.spica27.spicamusic'
-  compileSdk 36
+  compileSdk = 36
 
   defaultConfig {
     applicationId "me.spica27.spicamusic"

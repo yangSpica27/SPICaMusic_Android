@@ -2,8 +2,11 @@ package me.spica27.spicamusic.ui.plady_list_detail
 
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateTo
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +24,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -43,6 +47,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
@@ -185,6 +191,8 @@ fun PlaylistDetailScreen(
           ),
       ) {
 
+        val listState = rememberLazyListState()
+
         LazyColumn(
           modifier = Modifier
             .weight(1f)
@@ -192,11 +200,12 @@ fun PlaylistDetailScreen(
             .nestedScroll(rememberBindPlayerOverlyConnect())
             .scrollEndHaptic()
             .overScrollVertical(),
-          verticalArrangement = Arrangement.spacedBy(8.dp)
+          verticalArrangement = Arrangement.spacedBy(8.dp),
+          state = listState
         ) {
-          items(songs, key = {
-            it.songId ?: -1
-          }) { song ->
+          itemsIndexed(songs, key = {_,song->
+            song.songId ?: -1
+          }) { index, song ->
 
             val swipeToDismissBoxState = rememberSwipeToDismissBoxState(
               confirmValueChange = {
@@ -208,9 +217,31 @@ fun PlaylistDetailScreen(
               },
               positionalThreshold = { distance: Float -> 140.dip },
             )
+
+            val isVisible = remember {
+              derivedStateOf {
+                val visibleItems = listState.layoutInfo.visibleItemsInfo
+                visibleItems.any { it.index == index }
+              }
+            }
+            val scale = remember { Animatable(.8f) }
+
+            LaunchedEffect(isVisible.value) {
+              if (isVisible.value && scale.value != 1f) {
+                scale.animateTo(
+                  targetValue = 1f,
+                  animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                    stiffness = Spring.StiffnessLow
+                  )
+                )
+              }
+            }
+
             SwipeToDismissBox(
               modifier = Modifier
                 .fillMaxWidth()
+                .graphicsLayer(scaleX = scale.value, scaleY = scale.value)
                 .animateItem(),
               state = swipeToDismissBoxState,
               enableDismissFromStartToEnd = false,
