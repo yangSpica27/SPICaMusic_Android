@@ -48,209 +48,204 @@ import me.spica27.spicamusic.widget.InputTextDialog
 import me.spica27.spicamusic.widget.PlayingSongItem
 import me.spica27.spicamusic.wrapper.activityViewModel
 
-
 /**
  * 当前播放列表
  */
 @Composable
-fun CurrentListPage(
-  playBackViewModel: PlayBackViewModel = activityViewModel(),
-) {
+fun CurrentListPage(playBackViewModel: PlayBackViewModel = activityViewModel()) {
+    val playIndexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()
 
+    val playListSizeState =
+        playBackViewModel.nowPlayingListSize.collectAsState()
 
-  val playIndexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()
+    var showCreateDialog by remember { mutableStateOf(false) }
 
-  val playListSizeState =
-    playBackViewModel.nowPlayingListSize.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
-  var showCreateDialog by remember { mutableStateOf(false) }
-
-  val coroutineScope = rememberCoroutineScope()
-
-  if (showCreateDialog) {
-    InputTextDialog(
-      onDismissRequest = {
-        showCreateDialog = false
-      },
-      title = "创建为新歌单",
-      placeholder = "新歌单名称",
-      onConfirm = { txt ->
-        if (txt.isEmpty()) {
-          playBackViewModel.createPlaylistWithSongs("新建歌单", playBackViewModel.playList.value)
-          showCreateDialog = false
-        } else {
-          playBackViewModel.createPlaylistWithSongs(txt, playBackViewModel.playList.value)
-          showCreateDialog = false
-        }
-        ToastUtils.showToast("歌单创建完成")
-      },
-      onCancel = {
-        showCreateDialog = false
-      }
-    )
-  }
-
-  Column(
-    modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Top
-  ) {
-    Text(
-      stringResource(R.string.swipe_down_to_view_player_page),
-      style = MaterialTheme.typography.bodyMedium.copy(
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-      ),
-      modifier = Modifier
-        .padding(vertical = 12.dp, horizontal = 20.dp)
-        .fillMaxWidth(),
-      textAlign = TextAlign.Center
-    )
-    Spacer(modifier = Modifier.size(4.dp))
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 4.dp, horizontal = 20.dp)
-    ) {
-      Box {
-        Column {
-          Text(
-            text = stringResource(R.string.now_playinglist),
-            style = MaterialTheme.typography.bodyMedium.copy(
-              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            ),
-          )
-          Text(
-            text = "${playIndexState.value + 1}/${playListSizeState.value}",
-            style = MaterialTheme.typography.bodyMedium
-          )
-        }
-      }
-      Box(modifier = Modifier.align(Alignment.BottomEnd)) {
-        Row {
-          IconButton(
-            onClick = {
-              // 清空播放列表
-              playBackViewModel.clear()
-            }
-          ) {
-            Icon(
-              painter = painterResource(id = R.drawable.ic_playlist_remove),
-              contentDescription = null,
-              tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-          }
-          IconButton(
-            onClick = {
-              // 保存为新歌单
-              showCreateDialog = true
-            }
-          ) {
-            Icon(
-              painter = painterResource(id = R.drawable.ic_new),
-              contentDescription = null,
-              tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-          }
-        }
-      }
+    if (showCreateDialog) {
+        InputTextDialog(
+            onDismissRequest = {
+                showCreateDialog = false
+            },
+            title = "创建为新歌单",
+            placeholder = "新歌单名称",
+            onConfirm = { txt ->
+                if (txt.isEmpty()) {
+                    playBackViewModel.createPlaylistWithSongs("新建歌单", playBackViewModel.playList.value)
+                    showCreateDialog = false
+                } else {
+                    playBackViewModel.createPlaylistWithSongs(txt, playBackViewModel.playList.value)
+                    showCreateDialog = false
+                }
+                ToastUtils.showToast("歌单创建完成")
+            },
+            onCancel = {
+                showCreateDialog = false
+            },
+        )
     }
-    HorizontalDivider(
-      thickness = 1.dp / 2, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-    )
-    Box(
-      modifier = Modifier
-        .weight(1f)
-        .fillMaxWidth()
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Top,
     ) {
-      val listState = rememberLazyListState()
-
-
-      val showScrollToCurrent = remember {
-        derivedStateOf {
-          !listState.layoutInfo.visibleItemsInfo.any {
-            it.index == playIndexState.value
-          }
-        }
-      }
-
-      CurrentList(playBackViewModel, listState)
-
-
-      if (showScrollToCurrent.value) {
+        Text(
+            stringResource(R.string.swipe_down_to_view_player_page),
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                ),
+            modifier =
+                Modifier
+                    .padding(vertical = 12.dp, horizontal = 20.dp)
+                    .fillMaxWidth(),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.size(4.dp))
         Box(
-          modifier = Modifier
-            .align(Alignment.BottomEnd)
-            .offset(
-              x = (-64).dp,
-              y = (-64).dp
-            )
-            .width(40.dp)
-            .height(40.dp)
-            .background(
-              color = MaterialTheme.colorScheme.primaryContainer,
-              shape = CircleShape
-            )
-            .clip(CircleShape)
-            .clickableNoRippleWithVibration {
-              coroutineScope.launch {
-                listState.animateScrollToItem(playIndexState.value)
-              }
-            }
-            .padding(8.dp),
-          contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp, horizontal = 20.dp),
         ) {
-          Icon(
-            modifier = Modifier.fillMaxSize(),
-            painter = painterResource(R.drawable.ic_radar),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer
-          )
+            Box {
+                Column {
+                    Text(
+                        text = stringResource(R.string.now_playinglist),
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            ),
+                    )
+                    Text(
+                        text = "${playIndexState.value + 1}/${playListSizeState.value}",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+            Box(modifier = Modifier.align(Alignment.BottomEnd)) {
+                Row {
+                    IconButton(
+                        onClick = {
+                            // 清空播放列表
+                            playBackViewModel.clear()
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_playlist_remove),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            // 保存为新歌单
+                            showCreateDialog = true
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_new),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                }
+            }
         }
-      }
+        HorizontalDivider(
+            thickness = 1.dp / 2,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+        )
+        Box(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+        ) {
+            val listState = rememberLazyListState()
 
+            val showScrollToCurrent =
+                remember {
+                    derivedStateOf {
+                        !listState.layoutInfo.visibleItemsInfo.any {
+                            it.index == playIndexState.value
+                        }
+                    }
+                }
+
+            CurrentList(playBackViewModel, listState)
+
+            if (showScrollToCurrent.value) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomEnd)
+                            .offset(
+                                x = (-64).dp,
+                                y = (-64).dp,
+                            ).width(40.dp)
+                            .height(40.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = CircleShape,
+                            ).clip(CircleShape)
+                            .clickableNoRippleWithVibration {
+                                coroutineScope.launch {
+                                    listState.animateScrollToItem(playIndexState.value)
+                                }
+                            }.padding(8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        modifier = Modifier.fillMaxSize(),
+                        painter = painterResource(R.drawable.ic_radar),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+        }
     }
-  }
-
 }
 
 @Composable
 private fun CurrentList(
-  viewModel: PlayBackViewModel,
-  listState: LazyListState
+    viewModel: PlayBackViewModel,
+    listState: LazyListState,
 ) {
+    val playingSongState = viewModel.currentSongFlow.collectAsStateWithLifecycle()
 
-  val playingSongState = viewModel.currentSongFlow.collectAsStateWithLifecycle()
+    val listDataState =
+        viewModel
+            .playList
+            .collectAsStateWithLifecycle(emptyList())
 
-  val listDataState = viewModel
-    .playList
-    .collectAsStateWithLifecycle(emptyList())
+    LazyColumn(
+        modifier =
+            Modifier
+                .fillMaxSize(),
+        state = listState,
+    ) {
+        itemsIndexed(listDataState.value, key = { _, song -> song.songId.toString() }) { index, song ->
+            PlayingSongItem(
+                showRemove = true,
+                onRemoveClick = {
+                    viewModel.removeSong(song)
+                },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .animateItem(),
+                isPlaying = playingSongState.value?.songId == song.songId,
+                song = song,
+                onClick = {
+                    viewModel.play(listDataState.value[index])
+                },
+            )
+        }
 
-  LazyColumn(
-    modifier = Modifier
-      .fillMaxSize(),
-    state = listState,
-  ) {
-
-    itemsIndexed(listDataState.value, key = { _, song -> song.songId.toString() }) { index, song ->
-      PlayingSongItem(
-        showRemove = true,
-        onRemoveClick = {
-          viewModel.removeSong(song)
-        },
-        modifier = Modifier
-          .fillMaxWidth()
-          .animateItem(),
-        isPlaying = playingSongState.value?.songId == song.songId,
-        song = song, onClick = {
-          viewModel.play(listDataState.value[index])
-        })
+        item {
+            Spacer(modifier = Modifier.size(60.dp))
+        }
     }
-
-    item {
-      Spacer(modifier = Modifier.size(60.dp))
-    }
-  }
 }
-
-
-
-
-

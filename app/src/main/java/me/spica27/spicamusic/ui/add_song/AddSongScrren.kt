@@ -39,168 +39,173 @@ import me.spica27.spicamusic.viewModel.SelectSongViewModel
 import me.spica27.spicamusic.widget.SelectableSongItem
 import org.koin.androidx.compose.koinViewModel
 
-
-/// 给歌单添加歌曲的页面
+// / 给歌单添加歌曲的页面
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSongScreen(
-  navigator: NavController,
-  playlistId: Long
+    navigator: NavController,
+    playlistId: Long,
 ) {
-  val viewModel: SelectSongViewModel = koinViewModel()
-  viewModel.setPlaylistId(playlistId)
+    val viewModel: SelectSongViewModel = koinViewModel()
+    viewModel.setPlaylistId(playlistId)
 
-  val coroutineScope = rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope()
 
-  val songs = viewModel.allSongsFlow.collectAsState(initial = emptyList()).value
+    val songs = viewModel.allSongsFlow.collectAsState(initial = emptyList()).value
 
-  Scaffold(topBar = {
-    TopAppBar(title = {
-      Column {
-        Text(text = "选择歌曲")
-        Text(
-          text = "已选择${viewModel.selectedSongsIds.collectAsState(initial = emptyList()).value.size}首",
-          style = MaterialTheme.typography.bodySmall
-        )
-      }
-    }, navigationIcon = {
-      // 返回按钮
-      IconButton(onClick = {
-        navigator.popBackStack()
-      }) {
-        Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
-      }
-    }, actions = {
-
-
-      TextButton(
-        onClick = {
-          viewModel.selectSongs(songs)
-        }
-      ) {
-        Text(
-          "全选", style = MaterialTheme.typography.bodyLarge.copy(
-            color = MaterialTheme.colorScheme.primary
-          )
-        )
-      }
-
-      TextButton(
-        onClick = {
-          viewModel.clearSelectedSongs()
-        }
-      ) {
-        Text(
-          "清空选择", style = MaterialTheme.typography.bodyLarge.copy(
-            color = MaterialTheme.colorScheme.primary
-          )
-        )
-      }
-
-
-      // 保存按钮
-      TextButton(onClick = {
-        coroutineScope.launch(Dispatchers.IO) {
-          viewModel.addSongToPlaylist(playlistId)
-          withContext(Dispatchers.Main) {
-            navigator.popBackStack()
-          }
-        }
-      }
-      ) {
-        Text(
-          "保存", style = MaterialTheme.typography.bodyLarge.copy(
-            color = MaterialTheme.colorScheme.primary
-          )
-        )
-      }
-    })
-  }, content = { paddingValues ->
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(paddingValues)
-    ) {
-      // 歌曲列表
-      val listDataState =
-        combine(
-          viewModel.allSongsFlow,
-          viewModel.selectedSongsIds
-        ) { allSongs, selectIds ->
-          allSongs.map {
-            Pair(it, selectIds.contains(it.songId))
-          }
-        }
-          .collectAsState(initial = emptyList())
-
-      Column(
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        TextField(
-          value = viewModel.keyword.collectAsState("").value,
-          onValueChange = {
-            viewModel.setKeyword(it.trim())
-          },
-          placeholder = {
-            Text(text = "筛选关键词")
-          },
-          singleLine = true,
-          leadingIcon = {
-            Icon(imageVector = Icons.Default.Search, contentDescription = "搜索")
-          },
-          modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-          shape = MaterialTheme.shapes.medium,
-          colors = TextFieldDefaults.colors().copy(
-            disabledIndicatorColor = Color.Transparent,
-            errorIndicatorColor = Color.Transparent,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent
-          )
-        )
-        Spacer(
-          modifier = Modifier
-            .height(12.dp)
-        )
-        HorizontalDivider(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(.5.dp),
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = .11f)
-        )
-        Box(
-          modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f)
-        ) {
-          if (listDataState.value.isEmpty()) {
-            Text("没有更多歌曲了", modifier = Modifier.align(Alignment.Center))
-          } else {
-            LazyColumn(
-              modifier = Modifier
-                .fillMaxSize()
-            ) {
-              itemsIndexed(listDataState.value, key = { _, item ->
-                item.first.songId.toString()
-              }) { _, song ->
-                // 歌曲条目
-                SelectableSongItem(
-                  modifier = Modifier.animateItem(),
-                  song = song.first,
-                  selected = song.second,
-                  onToggle = { viewModel.toggleSongSelection(song.first.songId) })
-              }
+    Scaffold(topBar = {
+        TopAppBar(title = {
+            Column {
+                Text(text = "选择歌曲")
+                Text(
+                    text = "已选择${viewModel.selectedSongsIds.collectAsState(initial = emptyList()).value.size}首",
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
-          }
+        }, navigationIcon = {
+            // 返回按钮
+            IconButton(onClick = {
+                navigator.popBackStack()
+            }) {
+                Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
+            }
+        }, actions = {
+            TextButton(
+                onClick = {
+                    viewModel.selectSongs(songs)
+                },
+            ) {
+                Text(
+                    "全选",
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                        ),
+                )
+            }
+
+            TextButton(
+                onClick = {
+                    viewModel.clearSelectedSongs()
+                },
+            ) {
+                Text(
+                    "清空选择",
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                        ),
+                )
+            }
+
+            // 保存按钮
+            TextButton(
+                onClick = {
+                    coroutineScope.launch(Dispatchers.IO) {
+                        viewModel.addSongToPlaylist(playlistId)
+                        withContext(Dispatchers.Main) {
+                            navigator.popBackStack()
+                        }
+                    }
+                },
+            ) {
+                Text(
+                    "保存",
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                        ),
+                )
+            }
+        })
+    }, content = { paddingValues ->
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+        ) {
+            // 歌曲列表
+            val listDataState =
+                combine(
+                    viewModel.allSongsFlow,
+                    viewModel.selectedSongsIds,
+                ) { allSongs, selectIds ->
+                    allSongs.map {
+                        Pair(it, selectIds.contains(it.songId))
+                    }
+                }.collectAsState(initial = emptyList())
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                TextField(
+                    value = viewModel.keyword.collectAsState("").value,
+                    onValueChange = {
+                        viewModel.setKeyword(it.trim())
+                    },
+                    placeholder = {
+                        Text(text = "筛选关键词")
+                    },
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(imageVector = Icons.Default.Search, contentDescription = "搜索")
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    colors =
+                        TextFieldDefaults.colors().copy(
+                            disabledIndicatorColor = Color.Transparent,
+                            errorIndicatorColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                        ),
+                )
+                Spacer(
+                    modifier =
+                        Modifier
+                            .height(12.dp),
+                )
+                HorizontalDivider(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(.5.dp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = .11f),
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                ) {
+                    if (listDataState.value.isEmpty()) {
+                        Text("没有更多歌曲了", modifier = Modifier.align(Alignment.Center))
+                    } else {
+                        LazyColumn(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize(),
+                        ) {
+                            itemsIndexed(listDataState.value, key = { _, item ->
+                                item.first.songId.toString()
+                            }) { _, song ->
+                                // 歌曲条目
+                                SelectableSongItem(
+                                    modifier = Modifier.animateItem(),
+                                    song = song.first,
+                                    selected = song.second,
+                                    onToggle = { viewModel.toggleSongSelection(song.first.songId) },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
-      }
-    }
-  })
+    })
 }
-
-
-
-
-

@@ -6,47 +6,51 @@ import androidx.media3.common.Player
  * 循环模式
  */
 sealed class PlayMode(
-  val name: String
+    val name: String,
 ) {
-  /**
-   * 列表循环
-   */
-  object LOOP : PlayMode("LOOP")
+    /**
+     * 列表循环
+     */
+    object LOOP : PlayMode("LOOP")
 
-  /**
-   * 单循环
-   */
-  object LIST : PlayMode("LIST")
+    /**
+     * 单循环
+     */
+    object LIST : PlayMode("LIST")
 
-  /**
-   * 随机模式
-   */
-  object SHUFFLE : PlayMode("SHUFFLE")
+    /**
+     * 随机模式
+     */
+    object SHUFFLE : PlayMode("SHUFFLE")
 
-  companion object {
+    companion object {
+        fun of(
+            repeatMode: Int,
+            shuffleModeEnabled: Boolean,
+        ): PlayMode {
+            if (repeatMode == Player.REPEAT_MODE_ONE) return LIST
+            if (shuffleModeEnabled) return SHUFFLE
+            return LOOP
+        }
 
-    fun of(repeatMode: Int, shuffleModeEnabled: Boolean): PlayMode {
-      if (repeatMode == Player.REPEAT_MODE_ONE) return LIST
-      if (shuffleModeEnabled) return SHUFFLE
-      return LOOP
+        fun from(string: String?): PlayMode =
+            when (string) {
+                LOOP.name -> LOOP
+                LIST.name -> LIST
+                SHUFFLE.name -> SHUFFLE
+                else -> LOOP
+            }
     }
-
-    fun from(string: String?): PlayMode {
-      return when (string) {
-        LOOP.name -> LOOP
-        LIST.name -> LIST
-        SHUFFLE.name -> SHUFFLE
-        else -> LOOP
-      }
-    }
-  }
 }
 
 var Player.playMode
-  get() = PlayMode.of(repeatMode, shuffleModeEnabled)
-  set(value) {
-    shuffleModeEnabled = value == PlayMode.SHUFFLE
-    repeatMode = if (value == PlayMode.LIST) Player.REPEAT_MODE_ONE
-    else Player.REPEAT_MODE_ALL
-  }
-
+    get() = PlayMode.of(repeatMode, shuffleModeEnabled)
+    set(value) {
+        shuffleModeEnabled = value == PlayMode.SHUFFLE
+        repeatMode =
+            if (value == PlayMode.LIST) {
+                Player.REPEAT_MODE_ONE
+            } else {
+                Player.REPEAT_MODE_ALL
+            }
+    }

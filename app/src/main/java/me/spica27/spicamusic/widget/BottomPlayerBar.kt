@@ -53,164 +53,161 @@ import me.spica27.spicamusic.wrapper.activityViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlayerBar(
-  modifier: Modifier = Modifier,
-  playBackViewModel: PlayBackViewModel = activityViewModel(),
+    modifier: Modifier = Modifier,
+    playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
+    val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
 
-  val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
+    val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
 
-  val isPlaying = playBackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
+    val positionSec = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
 
-  val positionSec = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
+    val isSeekingState = remember { mutableStateOf(false) }
 
-  val isSeekingState = remember { mutableStateOf(false) }
+    val seekValueState = remember { mutableFloatStateOf(0f) }
 
-  val seekValueState = remember { mutableFloatStateOf(0f) }
-
-
-
-  LaunchedEffect(positionSec) {
-    if (isSeekingState.value) return@LaunchedEffect
-    seekValueState.floatValue = positionSec.secsToMs() * 1f
-  }
-
-
-
-  Box(
-    modifier = modifier
-  ) {
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .background(
-          color = MaterialTheme.colorScheme.surfaceContainer
-        )
-        .padding(horizontal = 16.dp, vertical = 12.dp),
-      verticalArrangement = Arrangement.Center
-    ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        AnimatedContent(
-          songState,
-          label = "cover",
-          contentKey = {
-            it?.songId ?: -1L
-          },
-          transitionSpec =
-            {
-              scaleIn(
-                animationSpec = spring()
-              ) + fadeIn() togetherWith scaleOut() + fadeOut()
-            },
-        ) { songState ->
-          songState?.let {
-            CoverWidget(
-              modifier = Modifier
-                .size(48.dp)
-                .background(
-                  MaterialTheme.colorScheme.surfaceContainerHigh,
-                  MaterialTheme.shapes.medium
-                )
-                .clip(MaterialTheme.shapes.medium),
-              song = songState
-            )
-          }
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(
-          modifier = Modifier.weight(1f)
-        ) {
-          AnimatedContent(
-            songState,
-            label = "songName",
-            contentKey = {
-              "${it?.displayName}"
-            },
-            transitionSpec =
-              {
-                slideInVertically(
-                  initialOffsetY = { -it },
-                  animationSpec = tween(delayMillis = 150)
-                ) togetherWith slideOutVertically { it }
-              }
-          ) { songState ->
-            Text(
-              songState?.displayName ?: "UNKNOWN",
-              maxLines = 1,
-              style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface
-              ),
-              modifier = Modifier
-                .fillMaxWidth()
-                .basicMarquee()
-            )
-          }
-          AnimatedContent(
-            songState,
-            label = "artist",
-            contentKey = {
-              it?.artist ?: "<unknown>"
-            },
-            transitionSpec =
-              {
-                slideInVertically { -it } togetherWith slideOutVertically { it }
-              }
-          ) { songState ->
-            Text(
-              songState?.artist ?: "<unknown>",
-              maxLines = 1,
-              style = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface
-              ),
-              modifier = Modifier
-                .fillMaxWidth()
-                .alpha(.5f),
-            )
-          }
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        AnimatedContent(
-          isPlaying,
-          transitionSpec =
-            {
-              scaleIn() togetherWith scaleOut()
-            }
-        ) { isPlaying ->
-          Box(
-            modifier =
-              Modifier
-                .size(48.dp)
-                .background(
-                  MaterialTheme.colorScheme.primaryContainer,
-                  CircleShape
-                )
-                .clip(CircleShape)
-                .clickable {
-                  playBackViewModel.togglePlaying()
-                }
-                .innerShadow(
-                  shape = CircleShape, shadow = Shadow(
-                    radius = 10.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                    alpha = .11f
-                  )
-                ),
-            contentAlignment = Alignment.Center
-          ) {
-            Icon(
-              painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-              contentDescription = "Play/Pause",
-              tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-          }
-        }
-      }
+    LaunchedEffect(positionSec) {
+        if (isSeekingState.value) return@LaunchedEffect
+        seekValueState.floatValue = positionSec.secsToMs() * 1f
     }
-  }
+
+    Box(
+        modifier = modifier,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                    ).padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AnimatedContent(
+                    songState,
+                    label = "cover",
+                    contentKey = {
+                        it?.songId ?: -1L
+                    },
+                    transitionSpec =
+                        {
+                            scaleIn(
+                                animationSpec = spring(),
+                            ) + fadeIn() togetherWith scaleOut() + fadeOut()
+                        },
+                ) { songState ->
+                    songState?.let {
+                        CoverWidget(
+                            modifier =
+                                Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        MaterialTheme.shapes.medium,
+                                    ).clip(MaterialTheme.shapes.medium),
+                            song = songState,
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    AnimatedContent(
+                        songState,
+                        label = "songName",
+                        contentKey = {
+                            "${it?.displayName}"
+                        },
+                        transitionSpec =
+                            {
+                                slideInVertically(
+                                    initialOffsetY = { -it },
+                                    animationSpec = tween(delayMillis = 150),
+                                ) togetherWith slideOutVertically { it }
+                            },
+                    ) { songState ->
+                        Text(
+                            songState?.displayName ?: "UNKNOWN",
+                            maxLines = 1,
+                            style =
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                ),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .basicMarquee(),
+                        )
+                    }
+                    AnimatedContent(
+                        songState,
+                        label = "artist",
+                        contentKey = {
+                            it?.artist ?: "<unknown>"
+                        },
+                        transitionSpec =
+                            {
+                                slideInVertically { -it } togetherWith slideOutVertically { it }
+                            },
+                    ) { songState ->
+                        Text(
+                            songState?.artist ?: "<unknown>",
+                            maxLines = 1,
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                ),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .alpha(.5f),
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                AnimatedContent(
+                    isPlaying,
+                    transitionSpec =
+                        {
+                            scaleIn() togetherWith scaleOut()
+                        },
+                ) { isPlaying ->
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(48.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    CircleShape,
+                                ).clip(CircleShape)
+                                .clickable {
+                                    playBackViewModel.togglePlaying()
+                                }.innerShadow(
+                                    shape = CircleShape,
+                                    shadow =
+                                        Shadow(
+                                            radius = 10.dp,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            alpha = .11f,
+                                        ),
+                                ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                            contentDescription = "Play/Pause",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
-
-

@@ -31,86 +31,83 @@ import me.spica27.spicamusic.db.entity.Playlist
 import org.koin.compose.koinInject
 import timber.log.Timber
 
-
 @Composable
 fun PlaylistCover(
-  modifier: Modifier = Modifier,
-  playlist: Playlist? = null,
+    modifier: Modifier = Modifier,
+    playlist: Playlist? = null,
 ) {
+    val playlistDao = koinInject<PlaylistDao>()
 
-  val playlistDao = koinInject<PlaylistDao>()
+    var cover by remember {
+        mutableStateOf(
+            if (playlist?.cover != null) {
+                playlist.cover?.toUri()
+            } else {
+                null
+            },
+        )
+    }
 
-  var cover by remember {
-    mutableStateOf(
-      if (playlist?.cover != null) {
-        playlist.cover?.toUri()
-      } else {
-        null
-      }
-    )
-  }
-
-
-
-  LaunchedEffect(Unit) {
-    launch(Dispatchers.IO) {
-      if (playlist == null) return@launch
-      if (!playlist.needUpdate) return@launch
-      val songs = playlistDao.getSongsByPlaylistId(playlist.playlistId ?: -1)
-      Timber.tag("PlaylistCover").d("开始更新封面")
-      for (song in songs) {
-        val uri = song.getCoverUri()
-        val request = ImageRequest
-          .Builder(App.getInstance())
-          .data(uri)
-          .build()
-        val result = ImageLoader(App.getInstance())
-          .executeBlocking(request)
-        if (result.image != null) {
-          cover = uri
-          if (playlist.cover !== uri.toString()) {
-            playlist.cover = uri.toString()
-            playlist.needUpdate = false
-            playlistDao.insertPlaylist(playlist)
-          }
-          return@launch
+    LaunchedEffect(Unit) {
+        launch(Dispatchers.IO) {
+            if (playlist == null) return@launch
+            if (!playlist.needUpdate) return@launch
+            val songs = playlistDao.getSongsByPlaylistId(playlist.playlistId ?: -1)
+            Timber.tag("PlaylistCover").d("开始更新封面")
+            for (song in songs) {
+                val uri = song.getCoverUri()
+                val request =
+                    ImageRequest
+                        .Builder(App.getInstance())
+                        .data(uri)
+                        .build()
+                val result =
+                    ImageLoader(App.getInstance())
+                        .executeBlocking(request)
+                if (result.image != null) {
+                    cover = uri
+                    if (playlist.cover !== uri.toString()) {
+                        playlist.cover = uri.toString()
+                        playlist.needUpdate = false
+                        playlistDao.insertPlaylist(playlist)
+                    }
+                    return@launch
+                }
+                playlist.needUpdate = false
+                playlistDao.insertPlaylist(playlist)
+            }
+            Timber.tag("PlaylistCover").d("更新封面完成")
         }
-        playlist.needUpdate = false
-        playlistDao.insertPlaylist(playlist)
-      }
-      Timber.tag("PlaylistCover").d("更新封面完成")
     }
-  }
 
+    AnimatedContent(
+        cover,
+        transitionSpec = {
+            fadeIn() togetherWith fadeOut()
+        },
+    ) { cover ->
 
-
-  AnimatedContent(
-    cover,
-    transitionSpec = {
-      fadeIn() togetherWith fadeOut()
+        Box(
+            modifier = modifier,
+            contentAlignment = Alignment.Center,
+        ) {
+            if (cover == null) {
+                Text(
+                    "${playlist?.playlistName?.firstOrNull() ?: "A"}",
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Normal,
+                        ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            } else {
+                AsyncImage(
+                    model = cover,
+                    contentDescription = "Playlist Cover",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+        }
     }
-  ) { cover ->
-
-    Box(
-      modifier = modifier,
-      contentAlignment = Alignment.Center
-    ) {
-      if (cover == null) {
-        Text(
-          "${playlist?.playlistName?.firstOrNull() ?: "A"}",
-          style = MaterialTheme.typography.titleLarge.copy(
-            fontWeight = FontWeight.Normal
-          ),
-          color = MaterialTheme.colorScheme.onSurface
-        )
-      } else {
-        AsyncImage(
-          model = cover,
-          contentDescription = "Playlist Cover",
-          modifier = Modifier.fillMaxSize(),
-          contentScale = ContentScale.Crop
-        )
-      }
-    }
-  }
 }

@@ -24,86 +24,87 @@ import me.spica27.spicamusic.shaderrippleeffect.data.WaveEffectParams
 import me.spica27.spicamusic.theme.AppTheme
 import me.spica27.spicamusic.ui.setting.SettingPage
 
-
 @Composable
 fun TranslateScreen(
-  navigator: NavController? = null,
-  pointX: Float,
-  pointY: Float,
-  fromLight: Boolean
+    navigator: NavController? = null,
+    pointX: Float,
+    pointY: Float,
+    fromLight: Boolean,
 ) {
+    var trigger by remember { mutableIntStateOf(0) }
 
-  var trigger by remember { mutableIntStateOf(0) }
-
-  BackHandler(true) {
-
-  }
-
-  LaunchedEffect(Unit) {
-    trigger = 1
-    delay(1750)
-    navigator?.popBackStack()
-  }
-
-  Box(
-    modifier = Modifier
-      .fillMaxSize()
-  ) {
-    ExpandingWaveEffect(
-      origin = Offset(
-        pointX,
-        pointY
-      ),
-      trigger = trigger,
-      params = WaveEffectParams()
-    ) {
-      RevealContentTransition(
-        origin = Offset(
-          pointX,
-          pointY
-        ),
-        trigger = trigger,
-        params = RevealTransitionParams(),
-        firstContent = {
-          AppTheme(
-            darkTheme = fromLight,
-            dynamicColor = false
-          ) {
-            Scaffold { paddingValues ->
-              Box(
-                modifier = Modifier
-                  .fillMaxSize()
-                  .padding(paddingValues)
-                  .pointerInput(Unit) {
-                    detectTapGestures {}
-                  }
-              ) {
-                SettingPage()
-              }
-            }
-          }
-        },
-        secondContent = {
-          AppTheme(
-            darkTheme = !fromLight,
-            dynamicColor = false
-          ) {
-            Scaffold { paddingValues ->
-              Box(
-                modifier = Modifier
-                  .fillMaxSize()
-                  .padding(paddingValues)
-                  .pointerInput(Unit) {
-                    detectTapGestures {}
-                  }
-              ) {
-                SettingPage()
-              }
-            }
-          }
-
-        }
-      )
+    BackHandler(true) {
     }
-  }
+
+    LaunchedEffect(Unit) {
+        trigger = 1
+        delay(1750)
+        navigator?.popBackStack()
+    }
+
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize(),
+    ) {
+        ExpandingWaveEffect(
+            origin =
+                Offset(
+                    pointX,
+                    pointY,
+                ),
+            trigger = trigger,
+            params = WaveEffectParams(),
+        ) {
+            RevealContentTransition(
+                origin =
+                    Offset(
+                        pointX,
+                        pointY,
+                    ),
+                trigger = trigger,
+                params = RevealTransitionParams(),
+                firstContent = {
+                    AppTheme(
+                        darkTheme = fromLight,
+                        dynamicColor = false,
+                    ) {
+                        Scaffold { paddingValues ->
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .padding(paddingValues)
+                                        .pointerInput(Unit) {
+                                            detectTapGestures {}
+                                        },
+                            ) {
+                                SettingPage()
+                            }
+                        }
+                    }
+                },
+                secondContent = {
+                    AppTheme(
+                        darkTheme = !fromLight,
+                        dynamicColor = false,
+                    ) {
+                        Scaffold { paddingValues ->
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .padding(paddingValues)
+                                        .pointerInput(Unit) {
+                                            detectTapGestures {}
+                                        },
+                            ) {
+                                SettingPage()
+                            }
+                        }
+                    }
+                },
+            )
+        }
+    }
 }

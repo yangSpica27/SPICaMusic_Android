@@ -12,14 +12,15 @@ import org.koin.core.scope.Scope
 
 @Composable
 inline fun <reified T : ViewModel> activityViewModel(
-  qualifier: Qualifier? = null,
-  key: String? = null,
-  scope: Scope = currentKoinScope(),
-  noinline parameters: ParametersDefinition? = null,
-): T = koinViewModel<T>(
-  qualifier = qualifier,
-  viewModelStoreOwner = LocalActivity.current as ComponentActivity,
-  key = key,
-  scope = scope,
-  parameters = parameters,
-)
+    qualifier: Qualifier? = null,
+    key: String? = null,
+    scope: Scope = currentKoinScope(),
+    noinline parameters: ParametersDefinition? = null,
+): T =
+    koinViewModel<T>(
+        qualifier = qualifier,
+        viewModelStoreOwner = LocalActivity.current as ComponentActivity,
+        key = key,
+        scope = scope,
+        parameters = parameters,
+    )

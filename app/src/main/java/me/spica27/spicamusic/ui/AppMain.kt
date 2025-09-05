@@ -40,139 +40,133 @@ import me.spica27.spicamusic.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.widget.materialSharedAxisYOut
 import kotlin.reflect.typeOf
 
-
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppMain() {
-  val systemIsDark = DataStoreUtil().isForceDarkTheme
-  val darkTheme = DataStoreUtil()
-    .getForceDarkTheme.collectAsStateWithLifecycle(systemIsDark)
-    .value
+    val systemIsDark = DataStoreUtil().isForceDarkTheme
+    val darkTheme =
+        DataStoreUtil()
+            .getForceDarkTheme
+            .collectAsStateWithLifecycle(systemIsDark)
+            .value
 
-  val navHostController = rememberNavController()
+    val navHostController = rememberNavController()
 
-  BackPress(navigator = navHostController)
+    BackPress(navigator = navHostController)
 
+    AppTheme(
+        darkTheme = darkTheme,
+        dynamicColor = false,
+    ) {
+        PlayerOverlyContent {
+            NavHost(
+                startDestination = Routes.Main,
+                navController = navHostController,
+                modifier =
+                    Modifier
+                        .fillMaxSize(),
+                enterTransition = {
+                    materialSharedAxisXIn(forward = true)
+                },
+                exitTransition = {
+                    materialSharedAxisXOut(forward = true)
+                },
+                popEnterTransition = {
+                    materialSharedAxisXIn(forward = true)
+                },
+                popExitTransition = {
+                    materialSharedAxisXOut(forward = true)
+                },
+            ) {
+                composable<Routes.Main> {
+                    MainScreen(
+                        navigator = navHostController,
+                    )
+                }
+                composable<Routes.FullScreenLrc>(
+                    enterTransition = { materialSharedAxisYIn(true) },
+                    exitTransition = { materialSharedAxisYOut(true) },
+                    popEnterTransition = { materialSharedAxisYIn(true) },
+                    popExitTransition = { materialSharedAxisYOut(true) },
+                ) {
+                    FullScreenLrcScreen()
+                }
+                composable<Routes.AddSong> { key ->
+                    val playlistId = key.toRoute<Routes.AddSong>().playlistId
+                    AddSongScreen(
+                        navigator = navHostController,
+                        playlistId = playlistId,
+                    )
+                }
+                composable<Routes.PlaylistDetail> { key ->
+                    val playlistId = key.toRoute<Routes.PlaylistDetail>().playlistId
+                    PlaylistDetailScreen(
+                        navigator = navHostController,
+                        playlistId = playlistId,
+                    )
+                }
+                composable<Routes.SearchAll>(
+                    enterTransition = { materialSharedAxisYIn(true) },
+                    exitTransition = { materialSharedAxisYOut(true) },
+                    popEnterTransition = { materialSharedAxisYIn(true) },
+                    popExitTransition = { materialSharedAxisYOut(true) },
+                ) {
+                    SearchAllScreen(navigator = navHostController)
+                }
+                composable<Routes.EQ> {
+                    EqScreen(navigator = navHostController)
+                }
+                composable<Routes.Scanner> {
+                    ScannerScreen(navigator = navHostController)
+                }
+                composable<Routes.AgreePrivacy> {
+                    AgreePrivacyScreen(navigator = navHostController)
+                }
 
-
-  AppTheme(
-    darkTheme = darkTheme,
-    dynamicColor = false
-  ) {
-    PlayerOverlyContent {
-      NavHost(
-        startDestination = Routes.Main,
-        navController = navHostController,
-        modifier = Modifier
-          .fillMaxSize(),
-        enterTransition = {
-          materialSharedAxisXIn(forward = true)
-        },
-        exitTransition = {
-          materialSharedAxisXOut(forward = true)
-        },
-        popEnterTransition = {
-          materialSharedAxisXIn(forward = true)
-        },
-        popExitTransition = {
-          materialSharedAxisXOut(forward = true)
-        },
-      ) {
-        composable<Routes.Main> {
-          MainScreen(
-            navigator = navHostController
-          )
-        }
-        composable<Routes.FullScreenLrc>(
-          enterTransition = { materialSharedAxisYIn(true) },
-          exitTransition = { materialSharedAxisYOut(true) },
-          popEnterTransition = { materialSharedAxisYIn(true) },
-          popExitTransition = { materialSharedAxisYOut(true) },
-        ) {
-          FullScreenLrcScreen()
-        }
-        composable<Routes.AddSong> { key ->
-          val playlistId = key.toRoute<Routes.AddSong>().playlistId
-          AddSongScreen(
-            navigator = navHostController,
-            playlistId = playlistId
-          )
-        }
-        composable<Routes.PlaylistDetail> { key ->
-          val playlistId = key.toRoute<Routes.PlaylistDetail>().playlistId
-          PlaylistDetailScreen(
-            navigator = navHostController,
-            playlistId = playlistId
-          )
-        }
-        composable<Routes.SearchAll>(
-          enterTransition = { materialSharedAxisYIn(true) },
-          exitTransition = { materialSharedAxisYOut(true) },
-          popEnterTransition = { materialSharedAxisYIn(true) },
-          popExitTransition = { materialSharedAxisYOut(true) },
-        ) {
-          SearchAllScreen(navigator = navHostController)
-        }
-        composable<Routes.EQ> {
-          EqScreen(navigator = navHostController)
-        }
-        composable<Routes.Scanner> {
-          ScannerScreen(navigator = navHostController)
-        }
-        composable<Routes.AgreePrivacy> {
-          AgreePrivacyScreen(navigator = navHostController)
-        }
-
-        composable<Routes.Translate>(
-          enterTransition = { EnterTransition.None },
-          exitTransition = { ExitTransition.None },
-          popEnterTransition = { EnterTransition.None },
-          popExitTransition = { ExitTransition.None },
-        ) { key ->
-          val route = key.toRoute<Routes.Translate>()
-          TranslateScreen(
-            navigator = navHostController,
-            pointX = route.pointX,
-            pointY = route.pointY,
-            fromLight = route.fromLight
-          )
-        }
-        composable<Routes.LikeList> { LikeListScreen(navigator = navHostController) }
-        composable<Routes.RecentlyList> { RecentlyListScreen(navigator = navHostController) }
-        composable<Routes.IgnoreList> {
-          IgnoreListScreen(navigator = navHostController)
-        }
-        composable<Routes.LyricsSearch>(
-          typeMap = mapOf(
-            typeOf<Song>() to Routes.parcelableType<Song>()
-          ),
-          enterTransition = {
-            slideInVertically { it }
-          },
-          exitTransition = {
-            slideOutVertically(
-              targetOffsetY = { it },
-              animationSpec = tween(350)
+                composable<Routes.Translate>(
+                    enterTransition = { EnterTransition.None },
+                    exitTransition = { ExitTransition.None },
+                    popEnterTransition = { EnterTransition.None },
+                    popExitTransition = { ExitTransition.None },
+                ) { key ->
+                    val route = key.toRoute<Routes.Translate>()
+                    TranslateScreen(
+                        navigator = navHostController,
+                        pointX = route.pointX,
+                        pointY = route.pointY,
+                        fromLight = route.fromLight,
+                    )
+                }
+                composable<Routes.LikeList> { LikeListScreen(navigator = navHostController) }
+                composable<Routes.RecentlyList> { RecentlyListScreen(navigator = navHostController) }
+                composable<Routes.IgnoreList> {
+                    IgnoreListScreen(navigator = navHostController)
+                }
+                composable<Routes.LyricsSearch>(
+                    typeMap =
+                        mapOf(
+                            typeOf<Song>() to Routes.parcelableType<Song>(),
+                        ),
+                    enterTransition = {
+                        slideInVertically { it }
+                    },
+                    exitTransition = {
+                        slideOutVertically(
+                            targetOffsetY = { it },
+                            animationSpec = tween(350),
+                        )
+                    },
+                ) { key ->
+                    val song = key.toRoute<Routes.LyricsSearch>().song
+                    LyricsSearchScreen(
+                        navigator = navHostController,
+                        song = song,
+                    )
+                }
+            }
+            PlayerOverly(
+                navigator = navHostController,
             )
-          },
-        ) { key ->
-          val song = key.toRoute<Routes.LyricsSearch>().song
-          LyricsSearchScreen(
-            navigator = navHostController,
-            song = song
-          )
         }
-      }
-      PlayerOverly(
-        navigator = navHostController
-      )
     }
-
-  }
 }
-
-
-
-
-
-

@@ -17,36 +17,40 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import me.spica27.spicamusic.db.entity.Song
 
-
 @Composable
-fun CoverWidget(song: Song, modifier: Modifier = Modifier) {
-  val context = LocalContext.current
+fun CoverWidget(
+    song: Song,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
 
-  val coverPainter = rememberAsyncImagePainter(
-    model = ImageRequest.Builder(context).data(song.getCoverUri()).build(),
-  )
-
-  val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
-
-  Box(
-    modifier = modifier
-  ) {
-    if (coverPainterState.value is AsyncImagePainter.State.Success) {
-      Image(
-        painter = coverPainter,
-        contentDescription = "Cover",
-        modifier = Modifier.fillMaxSize(),
-        contentScale = ContentScale.Crop
-      )
-    } else {
-      Text(
-        modifier = Modifier.rotate(45f),
-        text = song.displayName,
-        style = MaterialTheme.typography.headlineLarge.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-          fontWeight = FontWeight.W900
+    val coverPainter =
+        rememberAsyncImagePainter(
+            model = ImageRequest.Builder(context).data(song.getCoverUri()).build(),
         )
-      )
+
+    val coverPainterState = coverPainter.state.collectAsStateWithLifecycle()
+
+    Box(
+        modifier = modifier,
+    ) {
+        if (coverPainterState.value is AsyncImagePainter.State.Success) {
+            Image(
+                painter = coverPainter,
+                contentDescription = "Cover",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            Text(
+                modifier = Modifier.rotate(45f),
+                text = song.displayName,
+                style =
+                    MaterialTheme.typography.headlineLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        fontWeight = FontWeight.W900,
+                    ),
+            )
+        }
     }
-  }
 }

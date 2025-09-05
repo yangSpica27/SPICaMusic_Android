@@ -8,71 +8,63 @@ import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.media.common.PlayMode
 import org.koin.java.KoinJavaComponent.getKoin
 
-
 internal class PlayerKVUtils(
-  context: Context
+    context: Context,
 ) {
+    private val sharedPreferences = context.getSharedPreferences("player", Context.MODE_PRIVATE)
 
-  private val sharedPreferences = context.getSharedPreferences("player", Context.MODE_PRIVATE)
+    private val songDao = getKoin().get<SongDao>()
 
-  private val songDao = getKoin().get<SongDao>()
-
-  companion object {
-    private val KEY_HISTORY_IDS = "history_ids"
-    private val KEY_HISTORY_POSITION = "history_position"
-    private val KEY_PLAY_MODE = "play_mode"
-  }
-
-
-  /**
-   * 历史播放的id
-   */
-  fun setHistoryIds(ids: List<Long>) {
-    sharedPreferences.edit { putString("history_ids", ids.joinToString(",")) }
-  }
-
-  @WorkerThread
-  fun getHistoryItems(): List<Song> {
-    return getHistoryIds().mapNotNull {
-      songDao.getSongWithMediaStoreId(it)
+    companion object {
+        private val KEY_HISTORY_IDS = "history_ids"
+        private val KEY_HISTORY_POSITION = "history_position"
+        private val KEY_PLAY_MODE = "play_mode"
     }
-  }
 
-  /**
-   * 获取历史播放的id
-   */
-  fun getHistoryIds(): List<Long> {
-    val ids = sharedPreferences.getString(KEY_HISTORY_IDS, "")
-    return ids?.split(",")?.mapNotNull { it.toLongOrNull() } ?: emptyList()
-  }
+    /**
+     * 历史播放的id
+     */
+    fun setHistoryIds(ids: List<Long>) {
+        sharedPreferences.edit { putString("history_ids", ids.joinToString(",")) }
+    }
 
-  /**
-   * 播放到第一个
-   */
-  fun setHistoryPosition(position: Int) {
-    sharedPreferences.edit { putInt(KEY_HISTORY_POSITION, position) }
-  }
+    @WorkerThread
+    fun getHistoryItems(): List<Song> =
+        getHistoryIds().mapNotNull {
+            songDao.getSongWithMediaStoreId(it)
+        }
 
-  /**
-   * 设置播放的到第几个的index到缓存
-   */
-  fun getHistoryPosition(position: Int) {
-    sharedPreferences.getInt(KEY_HISTORY_POSITION, 0)
-  }
+    /**
+     * 获取历史播放的id
+     */
+    fun getHistoryIds(): List<Long> {
+        val ids = sharedPreferences.getString(KEY_HISTORY_IDS, "")
+        return ids?.split(",")?.mapNotNull { it.toLongOrNull() } ?: emptyList()
+    }
 
-  /**
-   * 播放模式
-   */
-  fun setPlayMode(mode: String) {
-    sharedPreferences.edit { putString(KEY_PLAY_MODE, mode) }
-  }
+    /**
+     * 播放到第一个
+     */
+    fun setHistoryPosition(position: Int) {
+        sharedPreferences.edit { putInt(KEY_HISTORY_POSITION, position) }
+    }
 
+    /**
+     * 设置播放的到第几个的index到缓存
+     */
+    fun getHistoryPosition(position: Int) {
+        sharedPreferences.getInt(KEY_HISTORY_POSITION, 0)
+    }
 
-  /**
-   * 获取播放模式
-   */
-  fun getPlayMode(): String {
-    return sharedPreferences.getString(KEY_PLAY_MODE, null) ?: PlayMode.LOOP.name
-  }
+    /**
+     * 播放模式
+     */
+    fun setPlayMode(mode: String) {
+        sharedPreferences.edit { putString(KEY_PLAY_MODE, mode) }
+    }
 
+    /**
+     * 获取播放模式
+     */
+    fun getPlayMode(): String = sharedPreferences.getString(KEY_PLAY_MODE, null) ?: PlayMode.LOOP.name
 }

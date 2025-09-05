@@ -1,47 +1,46 @@
 package me.spica27.spicamusic.dsp
 
-
 import java.io.Serializable
 import kotlin.math.pow
 import kotlin.math.sqrt
 
+open class EqualizerBand(
+    val centerFrequency: Int,
+    var gain: Double,
+) : Serializable {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
 
-open class EqualizerBand(val centerFrequency: Int, var gain: Double) : Serializable {
+        other as EqualizerBand
 
-  override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (javaClass != other?.javaClass) return false
+        if (centerFrequency != other.centerFrequency) return false
+        if (gain != other.gain) return false
 
-    other as EqualizerBand
+        return true
+    }
 
-    if (centerFrequency != other.centerFrequency) return false
-    if (gain != other.gain) return false
-
-    return true
-  }
-
-  override fun hashCode(): Int {
-    var result = centerFrequency
-    result = 31 * result + gain.hashCode()
-    return result
-  }
+    override fun hashCode(): Int {
+        var result = centerFrequency
+        result = 31 * result + gain.hashCode()
+        return result
+    }
 }
 
 fun EqualizerBand.toNyquistBand(): NyquistBand {
+    val bandWidthGain =
+        if (gain > 0) {
+            sqrt((gain.pow(2) / 2)) // Boost
+        } else {
+            -sqrt((gain.pow(2) / 2)) // Cut
+        }
 
-  val bandWidthGain = if (gain > 0) {
-    sqrt((gain.pow(2) / 2)) // Boost
-  } else {
-    -sqrt((gain.pow(2) / 2)) // Cut
-  }
-
-  return NyquistBand(centerFrequency, (centerFrequency * 0.35f).toInt(), gain, bandWidthGain)
+    return NyquistBand(centerFrequency, (centerFrequency * 0.35f).toInt(), gain, bandWidthGain)
 }
 
 class NyquistBand(
-  centerFrequency: Int,
-  val bandwidth: Int,
-  peakGain: Double,
-  val bandwidthGain: Double
-) :
-  EqualizerBand(centerFrequency, peakGain)
+    centerFrequency: Int,
+    val bandwidth: Int,
+    peakGain: Double,
+    val bandwidthGain: Double,
+) : EqualizerBand(centerFrequency, peakGain)

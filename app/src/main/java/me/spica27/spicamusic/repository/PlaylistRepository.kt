@@ -12,90 +12,105 @@ import me.spica27.spicamusic.db.entity.PlaylistWithSongs
 import me.spica27.spicamusic.db.entity.Song
 
 class PlaylistRepository(
-  private val playlistDao: PlaylistDao,
+    private val playlistDao: PlaylistDao,
 ) {
+    fun getSongsByPlaylistIdFlow(playlistId: Long) = playlistDao.getSongsByPlaylistIdFlow(playlistId)
 
+    fun getPlayListByIdFlow(playlistId: Long) = playlistDao.getPlayListByIdFlow(playlistId)
 
-  fun getSongsByPlaylistIdFlow(
-    playlistId: Long
-  ) = playlistDao.getSongsByPlaylistIdFlow(playlistId)
+    fun getAllPlaylistFlow() = playlistDao.getAllPlaylist()
 
-  fun getPlayListByIdFlow(playlistId: Long) = playlistDao.getPlayListByIdFlow(playlistId)
+    fun getPlaylistsHaveSong(songId: Long) = playlistDao.getPlaylistsHaveSong(songId)
 
-  fun getAllPlaylistFlow() = playlistDao.getAllPlaylist()
+    fun getPlaylistsNotHaveSong(songId: Long) = playlistDao.getPlaylistsNotHaveSong(songId)
 
+    fun songInfoWithSongsFlow(playlistId: Long): Flow<PlaylistWithSongs?> =
+        playlistDao
+            .getPlaylistsWithSongsWithPlayListIdFlow(playlistId)
+            .flowOn(Dispatchers.IO)
+            .distinctUntilChanged()
 
-  fun getPlaylistsHaveSong(songId: Long) = playlistDao.getPlaylistsHaveSong(songId)
+    suspend fun addPlaylistPlayTime(playlistId: Long) =
+        withContext(Dispatchers.IO) {
+            playlistDao.addPlayTimes(playlistId)
+        }
 
-  fun getPlaylistsNotHaveSong(songId: Long) = playlistDao.getPlaylistsNotHaveSong(songId)
+    suspend fun createPlaylist(name: String) =
+        withContext(Dispatchers.IO) {
+            playlistDao.insertPlaylist(Playlist(playlistName = name))
+        }
 
-  fun songInfoWithSongsFlow(playlistId: Long): Flow<PlaylistWithSongs?> {
-    return playlistDao.getPlaylistsWithSongsWithPlayListIdFlow(playlistId).flowOn(Dispatchers.IO)
-      .distinctUntilChanged()
-  }
+    suspend fun deletePlaylist(id: Long) =
+        withContext(Dispatchers.IO) {
+            playlistDao.deleteById(id)
+        }
 
-  suspend fun addPlaylistPlayTime(
-    playlistId: Long
-  ) = withContext(Dispatchers.IO) {
-    playlistDao.addPlayTimes(playlistId)
-  }
-
-  suspend fun createPlaylist(name: String) = withContext(Dispatchers.IO) {
-    playlistDao.insertPlaylist(Playlist(playlistName = name))
-  }
-
-  suspend fun deletePlaylist(id: Long) = withContext(Dispatchers.IO) {
-    playlistDao.deleteById(id)
-  }
-
-  suspend fun renamePlaylist(
-    newName: String, playlistId: Long?
-  ) = withContext(Dispatchers.IO) {
-    playlistId.let { playlistDao.renamePlaylist(it ?: -1, newName) }
-  }
-
-  // 添加歌曲到歌单
-  suspend fun addSongToPlaylist(playlistId: Long?, songId: Long) = withContext(Dispatchers.IO) {
-    if (playlistId != null) {
-      playlistDao.insertListItem(PlaylistSongCrossRef(playlistId, songId))
-      playlistDao.setNeedUpdate(playlistId)
+    suspend fun renamePlaylist(
+        newName: String,
+        playlistId: Long?,
+    ) = withContext(Dispatchers.IO) {
+        playlistId.let { playlistDao.renamePlaylist(it ?: -1, newName) }
     }
-  }
 
-  // 从歌单中移除歌曲
-  suspend fun removeSongFromPlaylist(playlistId: Long?, songId: Long) =
-    withContext(Dispatchers.IO) {
-      if (playlistId != null) {
-        playlistDao.deleteListItem(PlaylistSongCrossRef(playlistId, songId))
+    // 添加歌曲到歌单
+    suspend fun addSongToPlaylist(
+        playlistId: Long?,
+        songId: Long,
+    ) = withContext(Dispatchers.IO) {
+        if (playlistId != null) {
+            playlistDao.insertListItem(PlaylistSongCrossRef(playlistId, songId))
+            playlistDao.setNeedUpdate(playlistId)
+        }
+    }
+
+    // 从歌单中移除歌曲
+    suspend fun removeSongFromPlaylist(
+        playlistId: Long?,
+        songId: Long,
+    ) = withContext(Dispatchers.IO) {
+        if (playlistId != null) {
+            playlistDao.deleteListItem(PlaylistSongCrossRef(playlistId, songId))
+            playlistDao.setNeedUpdate(playlistId)
+        }
+    }
+
+    // 从歌单中移除歌曲
+    suspend fun removeSongsFromPlaylist(
+        playlistId: Long?,
+        songIds: List<Long>,
+    ) = withContext(
+        Dispatchers.IO,
+    ) {
+        if (playlistId != null) {
+            playlistDao.deleteListItems(
+                songIds.map {
+                    PlaylistSongCrossRef(
+                        playlistId,
+                        it,
+                    )
+                },
+            )
+        }
+    }
+
+    suspend fun createPlaylistWithSongs(
+        name: String,
+        list: List<Song>,
+    ) = withContext(
+        Dispatchers.IO,
+    ) {
+        val playlistId =
+            playlistDao.insertPlaylistAndGetId(
+                Playlist(playlistName = name),
+            )
+        playlistDao.insertListItems(
+            list.map {
+                PlaylistSongCrossRef(
+                    playlistId,
+                    it.songId ?: -1,
+                )
+            },
+        )
         playlistDao.setNeedUpdate(playlistId)
-      }
     }
-
-  // 从歌单中移除歌曲
-  suspend fun removeSongsFromPlaylist(playlistId: Long?, songIds: List<Long>) = withContext(
-    Dispatchers.IO
-  ) {
-    if (playlistId != null) {
-      playlistDao.deleteListItems(songIds.map {
-        PlaylistSongCrossRef(
-          playlistId, it
-        )
-      })
-    }
-  }
-
-  suspend fun createPlaylistWithSongs(name: String, list: List<Song>) = withContext(
-    Dispatchers.IO
-  ) {
-    val playlistId = playlistDao.insertPlaylistAndGetId(
-      Playlist(playlistName = name)
-    )
-    playlistDao.insertListItems(
-      list.map {
-        PlaylistSongCrossRef(
-          playlistId, it.songId ?: -1
-        )
-      })
-    playlistDao.setNeedUpdate(playlistId)
-  }
 }

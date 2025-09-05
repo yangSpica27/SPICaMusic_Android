@@ -8,20 +8,17 @@ import java.util.*
 @JsonClass(generateAdapter = true)
 @Parcelize
 data class Crash(
-  val id: String = UUID.randomUUID().toString(),
-  val title: String = "",
-  val message: String = "",
-  val causeClass: String = "",
-  val causeMethod: String = "",
-  val causeFile: String = "",
-  val causeLine: String = "",
-  val stackTrace: String = "",
-  val deviceInfo: String = "",
-  val buildVersion: String = ""
+    val id: String = UUID.randomUUID().toString(),
+    val title: String = "",
+    val message: String = "",
+    val causeClass: String = "",
+    val causeMethod: String = "",
+    val causeFile: String = "",
+    val causeLine: String = "",
+    val stackTrace: String = "",
+    val deviceInfo: String = "",
+    val buildVersion: String = "",
 ) : Parcelable {
-
-
-  override fun toString(): String {
-    return "Crash(id='$id', title='$title', message='$message', causeClass='$causeClass', causeMethod='$causeMethod', causeFile='$causeFile', causeLine='$causeLine', stackTrace='$stackTrace', deviceInfo='$deviceInfo', buildVersion='$buildVersion')"
-  }
+    override fun toString(): String =
+        "Crash(id='$id', title='$title', message='$message', causeClass='$causeClass', causeMethod='$causeMethod', causeFile='$causeFile', causeLine='$causeLine', stackTrace='$stackTrace', deviceInfo='$deviceInfo', buildVersion='$buildVersion')"
 }

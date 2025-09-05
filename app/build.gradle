@@ -6,6 +6,7 @@ plugins {
   id 'com.google.devtools.ksp'
   alias(libs.plugins.jetbrains.kotlin.serialization)
   alias(libs.plugins.compose.compiler)
+  id "org.jlleitschuh.gradle.ktlint" version "13.1.0"
 }
 
 android {
@@ -86,6 +87,14 @@ android {
     }
   }
 }
+
+//build.gradle
+ktlint {
+  android = true // Enable Android-specific linting rules
+  ignoreFailures = true // Fail the build if KtLint finds any issues
+}
+
+tasks.getByPath("preBuild").dependsOn("ktlintFormat")
 
 dependencies {
   implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])

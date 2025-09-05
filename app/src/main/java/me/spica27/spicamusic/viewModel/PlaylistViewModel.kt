@@ -14,52 +14,52 @@ import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.repository.PlaylistRepository
 
-
 class PlaylistViewModel(
-  private val playlistRepository: PlaylistRepository
+    private val playlistRepository: PlaylistRepository,
 ) : ViewModel() {
+    fun songsFlow(playlistId: Long): Flow<List<Song>> =
+        playlistRepository
+            .getSongsByPlaylistIdFlow(playlistId)
+            .flowOn(Dispatchers.IO)
+            .distinctUntilChanged()
 
+    fun playlistFlow(playlistId: Long): SharedFlow<Playlist?> =
+        playlistRepository
+            .getPlayListByIdFlow(playlistId)
+            .flowOn(Dispatchers.IO)
+            .shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
-  fun songsFlow(playlistId: Long): Flow<List<Song>> {
-    return playlistRepository.getSongsByPlaylistIdFlow(playlistId).flowOn(Dispatchers.IO)
-      .distinctUntilChanged()
-  }
-
-
-  fun playlistFlow(playlistId: Long): SharedFlow<Playlist?> {
-    return playlistRepository.getPlayListByIdFlow(playlistId)
-      .flowOn(Dispatchers.IO)
-      .shareIn(viewModelScope, SharingStarted.Lazily, 1)
-  }
-
-
-  fun deletePlaylistItem(playlistId: Long, songId: Long) {
-    viewModelScope.launch(Dispatchers.IO) {
-      playlistRepository.removeSongFromPlaylist(playlistId, songId)
+    fun deletePlaylistItem(
+        playlistId: Long,
+        songId: Long,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            playlistRepository.removeSongFromPlaylist(playlistId, songId)
+        }
     }
-  }
 
-  fun deletePlaylist(id: Long) {
-    viewModelScope.launch(Dispatchers.IO) {
-      playlistRepository.deletePlaylist(id)
+    fun deletePlaylist(id: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            playlistRepository.deletePlaylist(id)
+        }
     }
-  }
 
-  fun addPlayCount(playlistId: Long) {
-    viewModelScope.launch(Dispatchers.IO) {
-      playlistRepository.addPlaylistPlayTime(playlistId)
+    fun addPlayCount(playlistId: Long) {
+        viewModelScope.launch(Dispatchers.IO) {
+            playlistRepository.addPlaylistPlayTime(playlistId)
+        }
     }
-  }
 
-  fun renamePlaylist(id: Long?, newName: String) {
-    if (id == null) return
-    viewModelScope.launch {
-      playlistRepository.renamePlaylist(
-        newName = newName,
-        playlistId = id
-      )
+    fun renamePlaylist(
+        id: Long?,
+        newName: String,
+    ) {
+        if (id == null) return
+        viewModelScope.launch {
+            playlistRepository.renamePlaylist(
+                newName = newName,
+                playlistId = id,
+            )
+        }
     }
-  }
-
-
 }

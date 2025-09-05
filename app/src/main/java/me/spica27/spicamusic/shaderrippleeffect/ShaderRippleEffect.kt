@@ -38,36 +38,37 @@ import kotlinx.coroutines.android.awaitFrame
  */
 @Composable
 fun ShaderRippleEffect(
-  modifier: Modifier = Modifier,
-  amplitude: Float = 12f,
-  frequency: Float = 15f,
-  decay: Float = 8f,
-  speed: Float = 1800f,
-  animationDuration: Float = 3f,
-  rippleShaderCode: String? = null,
-  content: @Composable () -> Unit
+    modifier: Modifier = Modifier,
+    amplitude: Float = 12f,
+    frequency: Float = 15f,
+    decay: Float = 8f,
+    speed: Float = 1800f,
+    animationDuration: Float = 3f,
+    rippleShaderCode: String? = null,
+    content: @Composable () -> Unit,
 ) {
-  var origin by remember { mutableStateOf(Offset.Zero) }
-  var trigger by remember { mutableIntStateOf(0) }
-  var elapsedTime by remember { mutableFloatStateOf(0f) }
+    var origin by remember { mutableStateOf(Offset.Zero) }
+    var trigger by remember { mutableIntStateOf(0) }
+    var elapsedTime by remember { mutableFloatStateOf(0f) }
 
-  LaunchedEffect(trigger) {
-    elapsedTime = 0f
-    val startTime = withFrameNanos { it }
-    do {
-      val now = withFrameNanos { it }
-      elapsedTime = (now - startTime) / 1_000_000_000f
-      if (elapsedTime >= animationDuration) break
-      awaitFrame()
-    } while (true)
-  }
+    LaunchedEffect(trigger) {
+        elapsedTime = 0f
+        val startTime = withFrameNanos { it }
+        do {
+            val now = withFrameNanos { it }
+            elapsedTime = (now - startTime) / 1_000_000_000f
+            if (elapsedTime >= animationDuration) break
+            awaitFrame()
+        } while (true)
+    }
 
-  val configuration = LocalConfiguration.current
-  val density = LocalDensity.current
-  val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
-  val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    val screenWidth = with(density) { configuration.screenWidthDp.dp.toPx() }
+    val screenHeight = with(density) { configuration.screenHeightDp.dp.toPx() }
 
-  val defaultShaderCode = """
+    val defaultShaderCode =
+        """
         uniform shader inputShader;
         uniform float2 uResolution;
         uniform float2 uOrigin;
@@ -87,32 +88,32 @@ fun ShaderRippleEffect(
             float2 newPos = pos + rippleAmount * n;
             return inputShader.eval(newPos);
         }
-    """.trimIndent()
+        """.trimIndent()
 
-  val shaderCode = rippleShaderCode ?: defaultShaderCode
-  val runtimeShader = remember { RuntimeShader(shaderCode) }
-  runtimeShader.setFloatUniform("uResolution", floatArrayOf(screenWidth, screenHeight))
-  runtimeShader.setFloatUniform("uOrigin", floatArrayOf(origin.x, origin.y))
-  runtimeShader.setFloatUniform("uTime", elapsedTime)
-  runtimeShader.setFloatUniform("uAmplitude", amplitude)
-  runtimeShader.setFloatUniform("uFrequency", frequency)
-  runtimeShader.setFloatUniform("uDecay", decay)
-  runtimeShader.setFloatUniform("uSpeed", speed)
+    val shaderCode = rippleShaderCode ?: defaultShaderCode
+    val runtimeShader = remember { RuntimeShader(shaderCode) }
+    runtimeShader.setFloatUniform("uResolution", floatArrayOf(screenWidth, screenHeight))
+    runtimeShader.setFloatUniform("uOrigin", floatArrayOf(origin.x, origin.y))
+    runtimeShader.setFloatUniform("uTime", elapsedTime)
+    runtimeShader.setFloatUniform("uAmplitude", amplitude)
+    runtimeShader.setFloatUniform("uFrequency", frequency)
+    runtimeShader.setFloatUniform("uDecay", decay)
+    runtimeShader.setFloatUniform("uSpeed", speed)
 
-  val androidRenderEffect = RenderEffect.createRuntimeShaderEffect(runtimeShader, "inputShader")
-  val composeRenderEffect = androidRenderEffect.asComposeRenderEffect()
+    val androidRenderEffect = RenderEffect.createRuntimeShaderEffect(runtimeShader, "inputShader")
+    val composeRenderEffect = androidRenderEffect.asComposeRenderEffect()
 
-  Box(
-    modifier
-      .fillMaxSize()
-      .graphicsLayer { renderEffect = composeRenderEffect }
-      .pointerInput(Unit) {
-        detectTapGestures { tapOffset ->
-          origin = tapOffset
-          trigger++
-        }
-      }
-  ) {
-    content()
-  }
+    Box(
+        modifier
+            .fillMaxSize()
+            .graphicsLayer { renderEffect = composeRenderEffect }
+            .pointerInput(Unit) {
+                detectTapGestures { tapOffset ->
+                    origin = tapOffset
+                    trigger++
+                }
+            },
+    ) {
+        content()
+    }
 }

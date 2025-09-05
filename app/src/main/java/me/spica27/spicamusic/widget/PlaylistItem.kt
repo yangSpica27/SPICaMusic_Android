@@ -23,63 +23,64 @@ import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
 import me.spica27.spicamusic.utils.pressable
 
-
-/// 歌单条目
+// / 歌单条目
 @Composable
 fun PlaylistItem(
-  modifier: Modifier = Modifier,
-  playlist: Playlist,
-  onClick: () -> Unit = {},
-  onClickMenu: () -> Unit = {},
-  showMenu: Boolean = false
+    modifier: Modifier = Modifier,
+    playlist: Playlist,
+    onClick: () -> Unit = {},
+    onClickMenu: () -> Unit = {},
+    showMenu: Boolean = false,
 ) {
-  Row(
-    modifier = modifier
-      .pressable()
-      .clickableNoRippleWithVibration {
-        onClick()
-      }
-      .padding(horizontal = 16.dp, vertical = 6.dp)
-      .fillMaxWidth(),
-    verticalAlignment = Alignment.CenterVertically) {
-    PlaylistCover(
-      playlist = playlist,
-      modifier = Modifier
-        .width(50.dp)
-        .height(50.dp)
-        .clip(
-          MaterialTheme.shapes.medium
+    Row(
+        modifier =
+            modifier
+                .pressable()
+                .clickableNoRippleWithVibration {
+                    onClick()
+                }.padding(horizontal = 16.dp, vertical = 6.dp)
+                .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PlaylistCover(
+            playlist = playlist,
+            modifier =
+                Modifier
+                    .width(50.dp)
+                    .height(50.dp)
+                    .clip(
+                        MaterialTheme.shapes.medium,
+                    ).background(
+                        MaterialTheme.colorScheme.surfaceContainer,
+                        MaterialTheme.shapes.medium,
+                    ),
         )
-        .background(
-          MaterialTheme.colorScheme.surfaceContainer,
-          MaterialTheme.shapes.medium
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            modifier = Modifier.weight(1f),
+            text = playlist.playlistName,
+            style =
+                MaterialTheme.typography.titleMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+            maxLines = 1,
         )
-    )
-    Spacer(modifier = Modifier.width(16.dp))
-    Text(
-      modifier = Modifier.weight(1f),
-      text = playlist.playlistName, style = MaterialTheme.typography.titleMedium.copy(
-        color = MaterialTheme.colorScheme.onSurface,
-      ),
-      maxLines = 1
-    )
-    if (showMenu) {
-      IconButton(
-        onClick = onClickMenu,
-      ) {
-        Icon(
-          imageVector = Icons.Default.MoreVert,
-          contentDescription = "More",
-          tint = MaterialTheme.colorScheme.onSurface
-        )
-      }
-    } else {
-      Icon(
-        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-        contentDescription = "More",
-        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f)
-      )
+        if (showMenu) {
+            IconButton(
+                onClick = onClickMenu,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "More",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        } else {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = "More",
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
+            )
+        }
     }
-  }
 }
-

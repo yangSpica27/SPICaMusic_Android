@@ -12,91 +12,87 @@ import me.spica27.spicamusic.db.entity.PlaylistSongCrossRef
 import me.spica27.spicamusic.db.entity.PlaylistWithSongs
 import me.spica27.spicamusic.db.entity.Song
 
-
 @Dao
 interface PlaylistDao {
+    @Query("update Playlist set needUpdate = 1 where playlistId = :playlistId")
+    fun setNeedUpdate(playlistId: Long)
 
+    @Transaction
+    @Query("SELECT * FROM Playlist")
+    fun getPlaylistsWithSongs(): List<PlaylistWithSongs>
 
-  @Query("update Playlist set needUpdate = 1 where playlistId = :playlistId")
-  fun setNeedUpdate(playlistId: Long)
+    @Transaction
+    @Query("SELECT * FROM Playlist")
+    fun getAllPlaylist(): Flow<List<Playlist>>
 
-  @Transaction
-  @Query("SELECT * FROM Playlist")
-  fun getPlaylistsWithSongs(): List<PlaylistWithSongs>
+    @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
+    fun getPlayListByIdFlow(playlistId: Long): Flow<Playlist?>
 
-  @Transaction
-  @Query("SELECT * FROM Playlist")
-  fun getAllPlaylist(): Flow<List<Playlist>>
+    @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
+    fun getPlayListById(playlistId: Long): Playlist
 
+    @Query("update Playlist set playlistName = :newName where playlistId = :playlistId")
+    suspend fun renamePlaylist(
+        playlistId: Long,
+        newName: String,
+    )
 
-  @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
-  fun getPlayListByIdFlow(playlistId: Long): Flow<Playlist?>
+    @Query("update Playlist set playTimes = playTimes + 1 where playlistId = :playlistId")
+    fun addPlayTimes(playlistId: Long)
 
-  @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
-  fun getPlayListById(playlistId: Long): Playlist
+    @Transaction
+    @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
+    fun getPlaylistsWithSongsWithPlayListId(playlistId: Long): PlaylistWithSongs?
 
-  @Query("update Playlist set playlistName = :newName where playlistId = :playlistId")
-  suspend fun renamePlaylist(playlistId: Long, newName: String)
+    @Transaction
+    @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
+    fun getPlaylistsWithSongsWithPlayListIdFlow(playlistId: Long): Flow<PlaylistWithSongs?>
 
+    @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")
+    fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<Song>>
 
-  @Query("update Playlist set playTimes = playTimes + 1 where playlistId = :playlistId")
-  fun addPlayTimes(playlistId: Long)
+    @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")
+    fun getSongsByPlaylistId(playlistId: Long): List<Song>
 
-  @Transaction
-  @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
-  fun getPlaylistsWithSongsWithPlayListId(playlistId: Long): PlaylistWithSongs?
+    @Query("SELECT * FROM Playlist WHERE playlistId IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)")
+    fun getPlaylistsHaveSong(songId: Long): Flow<List<Playlist>>
 
+    @Query("SELECT * FROM Playlist WHERE playlistId NOT IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)")
+    fun getPlaylistsNotHaveSong(songId: Long): Flow<List<Playlist>>
 
-  @Transaction
-  @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
-  fun getPlaylistsWithSongsWithPlayListIdFlow(playlistId: Long): Flow<PlaylistWithSongs?>
+    @Transaction
+    @Query("DELETE FROM playlist WHERE playlistId ==:playlistId")
+    fun deleteList(playlistId: Long)
 
+    @Transaction
+    @Insert
+    suspend fun insertListItems(songs: List<PlaylistSongCrossRef>)
 
-  @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")
-  fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<Song>>
+    @Transaction
+    @Insert
+    suspend fun insertListItem(songs: PlaylistSongCrossRef)
 
+    @Transaction
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPlaylist(list: Playlist)
 
-  @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")
-  fun getSongsByPlaylistId(playlistId: Long): List<Song>
+    @Insert
+    fun insertPlaylistAndGetId(list: Playlist): Long
 
-  @Query("SELECT * FROM Playlist WHERE playlistId IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)")
-  fun getPlaylistsHaveSong(songId: Long): Flow<List<Playlist>>
+    @Query("DELETE FROM playlist WHERE playlistId == :playlistId")
+    suspend fun deleteById(playlistId: Long)
 
-  @Query("SELECT * FROM Playlist WHERE playlistId NOT IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)")
-  fun getPlaylistsNotHaveSong(songId: Long): Flow<List<Playlist>>
+    @Query("UPDATE playlist SET playlistName = :newName WHERE playlistId == :playlistId")
+    suspend fun saveNewNameById(
+        playlistId: Long,
+        newName: String,
+    )
 
-  @Transaction
-  @Query("DELETE FROM playlist WHERE playlistId ==:playlistId")
-  fun deleteList(playlistId: Long)
+    @Transaction
+    @Delete
+    suspend fun deleteListItem(song: PlaylistSongCrossRef)
 
-  @Transaction
-  @Insert
-  suspend fun insertListItems(songs: List<PlaylistSongCrossRef>)
-
-  @Transaction
-  @Insert
-  suspend fun insertListItem(songs: PlaylistSongCrossRef)
-
-  @Transaction
-  @Insert(onConflict = OnConflictStrategy.REPLACE)
-  suspend fun insertPlaylist(list: Playlist)
-
-  @Insert
-  fun insertPlaylistAndGetId(list: Playlist): Long
-
-  @Query("DELETE FROM playlist WHERE playlistId == :playlistId")
-  suspend fun deleteById(playlistId: Long)
-
-  @Query("UPDATE playlist SET playlistName = :newName WHERE playlistId == :playlistId")
-  suspend fun saveNewNameById(playlistId: Long, newName: String)
-
-  @Transaction
-  @Delete
-  suspend fun deleteListItem(song: PlaylistSongCrossRef)
-
-
-  @Transaction
-  @Delete
-  suspend fun deleteListItems(songs: List<PlaylistSongCrossRef>)
-
+    @Transaction
+    @Delete
+    suspend fun deleteListItems(songs: List<PlaylistSongCrossRef>)
 }

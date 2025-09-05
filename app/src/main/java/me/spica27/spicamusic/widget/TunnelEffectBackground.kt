@@ -33,56 +33,56 @@ import me.spica27.spicamusic.wrapper.activityViewModel
 @OptIn(UnstableApi::class)
 @Composable
 fun TunEffectBackground(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    // 从资源加载GLSL字符串或使用传入的字符串
+    val glsl =
+        remember {
+            readRawResource(context, R.raw.tunnel)
+        }
 
-  val context = LocalContext.current
-  // 从资源加载GLSL字符串或使用传入的字符串
-  val glsl = remember {
-    readRawResource(context, R.raw.tunnel)
-  }
+    val playBackViewModel = activityViewModel<PlayBackViewModel>()
 
-  val playBackViewModel = activityViewModel<PlayBackViewModel>()
+    val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState().value
 
-  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState().value
+    val currentCoverBitmap =
+        remember {
+            BitmapFactory.decodeResource(App.getInstance().resources, R.drawable.default_cover)
+        }
 
-  val currentCoverBitmap = remember {
-    BitmapFactory.decodeResource(App.getInstance().resources, R.drawable.default_cover)
-  }
+    val bitmapShader =
+        remember(currentCoverBitmap) {
+            BitmapShader(currentCoverBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+        }
 
-
-  val bitmapShader = remember(currentCoverBitmap) {
-    BitmapShader(currentCoverBitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
-  }
-
-
-  val shader = remember(glsl, bitmapShader) {
-    RuntimeShader(glsl).also {
-      it.setFloatUniform("u_time", 0f)
-      it.setFloatUniform("u_speed", 1.5f)
-      it.setFloatUniform("u_blend", 0f)
-      it.setFloatUniform("u_center_radius", 0.1f)
-      it.setFloatUniform("u_center_color", 1f, 1f, 1f)
-      it.setInputShader("u_tex0", bitmapShader)
+    val shader =
+        remember(glsl, bitmapShader) {
+            RuntimeShader(glsl).also {
+                it.setFloatUniform("u_time", 0f)
+                it.setFloatUniform("u_speed", 1.5f)
+                it.setFloatUniform("u_blend", 0f)
+                it.setFloatUniform("u_center_radius", 0.1f)
+                it.setFloatUniform("u_center_color", 1f, 1f, 1f)
+                it.setInputShader("u_tex0", bitmapShader)
 //      it.setInputShader("u_tex1", bitmapShader2)
+            }
+        }
+
+    var animTimeState by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(Unit) {
+        val startTime = withFrameNanos { it }
+        do {
+            val now = withFrameNanos { it }
+            animTimeState = (now - startTime) / 1.0E9f
+            delay(16)
+            awaitFrame()
+        } while (true)
     }
-  }
 
-  var animTimeState by remember { mutableFloatStateOf(0f) }
-
-  LaunchedEffect(Unit) {
-    val startTime = withFrameNanos { it }
-    do {
-      val now = withFrameNanos { it }
-      animTimeState = (now - startTime) / 1.0E9f
-      delay(16)
-      awaitFrame()
-    } while (true)
-  }
-
-  Canvas(modifier = modifier.fillMaxSize()) {
-    shader.setFloatUniform("u_resolution", size.width, size.height)
-    shader.setFloatUniform("u_time", animTimeState)
-    val brush = ShaderBrush(shader)
-    drawRect(brush = brush)
-  }
-
+    Canvas(modifier = modifier.fillMaxSize()) {
+        shader.setFloatUniform("u_resolution", size.width, size.height)
+        shader.setFloatUniform("u_time", animTimeState)
+        val brush = ShaderBrush(shader)
+        drawRect(brush = brush)
+    }
 }

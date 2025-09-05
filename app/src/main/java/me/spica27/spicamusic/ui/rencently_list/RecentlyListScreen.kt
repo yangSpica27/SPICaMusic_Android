@@ -43,122 +43,119 @@ import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
 
-
 /**
  * 最近播放列表
  */
 @OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RecentlyListScreen(
-  navigator: NavController? = null,
-  songViewModel: SongViewModel = activityViewModel(),
-  playBackViewModel: PlayBackViewModel = activityViewModel()
+    navigator: NavController? = null,
+    songViewModel: SongViewModel = activityViewModel(),
+    playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
+    val songs = songViewModel.oftenListenSongs.collectAsStateWithLifecycle().value
 
-  val songs = songViewModel.oftenListenSongs.collectAsStateWithLifecycle().value
+    val coroutineScope = rememberCoroutineScope()
 
-  val coroutineScope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
 
-  val listState = rememberLazyListState()
+    val songItemMenuDialogState = rememberSongItemMenuDialogState()
 
-  val songItemMenuDialogState = rememberSongItemMenuDialogState()
+    SongItemMenu(
+        songItemMenuDialogState,
+        playBackViewModel,
+    )
 
-  SongItemMenu(
-    songItemMenuDialogState,
-    playBackViewModel
-  )
-
-
-  Scaffold(
-    topBar = {
-      SimpleTopBar(
-        onBack = {
-          navigator?.popBackStack()
+    Scaffold(
+        topBar = {
+            SimpleTopBar(
+                onBack = {
+                    navigator?.popBackStack()
+                },
+                title = stringResource(R.string.recently_listen),
+                lazyListState = listState,
+            )
         },
-        title = stringResource(R.string.recently_listen),
-        lazyListState = listState
-      )
-    }
-  ) { paddingValues ->
-    Box(
-      modifier = Modifier.padding(paddingValues)
-    ) {
-      AnimatedContent(
-        targetState = songs.isEmpty(),
-        modifier = Modifier.fillMaxSize(),
-        label = "LikeListScreen"
-      ) { isEmpty ->
-        if (isEmpty) {
-          Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-          ) {
-            Spacer(
-              modifier = Modifier.height(70.dp)
-            )
-            AsyncImage(
-              modifier = Modifier.height(130.dp),
-              model = R.drawable.load_error,
-              contentDescription = null
-            )
-            Spacer(
-              modifier = Modifier.height(10.dp)
-            )
-            Text(text = "没有歌曲")
-          }
-        } else {
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier.padding(paddingValues),
+        ) {
+            AnimatedContent(
+                targetState = songs.isEmpty(),
+                modifier = Modifier.fillMaxSize(),
+                label = "LikeListScreen",
+            ) { isEmpty ->
+                if (isEmpty) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Top,
+                    ) {
+                        Spacer(
+                            modifier = Modifier.height(70.dp),
+                        )
+                        AsyncImage(
+                            modifier = Modifier.height(130.dp),
+                            model = R.drawable.load_error,
+                            contentDescription = null,
+                        )
+                        Spacer(
+                            modifier = Modifier.height(10.dp),
+                        )
+                        Text(text = "没有歌曲")
+                    }
+                } else {
+                    ScrollHaptics(
+                        listState = listState,
+                        vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
+                        enabled = false,
+                    )
 
-
-          ScrollHaptics(
-            listState = listState,
-            vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
-            enabled = false,
-          )
-
-          LazyColumn(
-            modifier = Modifier
-              .fillMaxSize()
-              .scrollEndHaptic()
-              .overScrollVertical()
-              .nestedScroll(rememberBindPlayerOverlyConnect()),
-            state = listState,
-            flingBehavior = rememberSnapFlingBehavior(
-              lazyListState = listState,
-              snapPosition = SnapPosition.Start
-            )
-          ) {
-            itemsIndexed(
-              songs,
-              key = { _, song ->
-                song.songId ?: UUID.randomUUID().toString()
-              }
-            ) { index, song ->
-              SongItemWithCover(
-                modifier = Modifier.animateItem(),
-                song = song,
-                onClick = {
-                  playBackViewModel.play(song, songs)
-                },
-                coverSize = 66.dp,
-                showLike = true,
-                onLikeClick = {
-                  songViewModel.toggleFavorite(song.songId ?: -1)
-                },
-                showMenu = true,
-                onMenuClick = {
-                  songItemMenuDialogState.show(song)
+                    LazyColumn(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .scrollEndHaptic()
+                                .overScrollVertical()
+                                .nestedScroll(rememberBindPlayerOverlyConnect()),
+                        state = listState,
+                        flingBehavior =
+                            rememberSnapFlingBehavior(
+                                lazyListState = listState,
+                                snapPosition = SnapPosition.Start,
+                            ),
+                    ) {
+                        itemsIndexed(
+                            songs,
+                            key = { _, song ->
+                                song.songId ?: UUID.randomUUID().toString()
+                            },
+                        ) { index, song ->
+                            SongItemWithCover(
+                                modifier = Modifier.animateItem(),
+                                song = song,
+                                onClick = {
+                                    playBackViewModel.play(song, songs)
+                                },
+                                coverSize = 66.dp,
+                                showLike = true,
+                                onLikeClick = {
+                                    songViewModel.toggleFavorite(song.songId ?: -1)
+                                },
+                                showMenu = true,
+                                onMenuClick = {
+                                    songItemMenuDialogState.show(song)
+                                },
+                            )
+                        }
+                        item {
+                            Spacer(
+                                modifier = Modifier.height(100.dp),
+                            )
+                        }
+                    }
                 }
-              )
             }
-            item {
-              Spacer(
-                modifier = Modifier.height(100.dp)
-              )
-            }
-          }
         }
-      }
     }
-  }
 }

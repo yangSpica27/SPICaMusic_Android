@@ -16,46 +16,50 @@ import org.intellij.lang.annotations.Language
 
 private val DEFAULT_BLUR_RADIUS = 12.dp
 
-internal fun Modifier.uniformBlurImpl() = this.blur(
-  DEFAULT_BLUR_RADIUS,
-  DEFAULT_BLUR_RADIUS,
-  edgeTreatment = BlurredEdgeTreatment.Unbounded
-)
+internal fun Modifier.uniformBlurImpl() =
+    this.blur(
+        DEFAULT_BLUR_RADIUS,
+        DEFAULT_BLUR_RADIUS,
+        edgeTreatment = BlurredEdgeTreatment.Unbounded,
+    )
 
 @Composable
 internal fun Modifier.progressiveBlurImpl(): Modifier =
-  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-    val shader = remember { RuntimeShader(BLUR_SHADER) }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val shader = remember { RuntimeShader(BLUR_SHADER) }
 
-    this
-      .clipToBounds()
-      .graphicsLayer {
-        val imageHeight = size.height
-        val maxSigma = DEFAULT_BLUR_RADIUS.toPx()
+        this
+            .clipToBounds()
+            .graphicsLayer {
+                val imageHeight = size.height
+                val maxSigma = DEFAULT_BLUR_RADIUS.toPx()
 
-        shader.setFloatUniform("uMaxSigma", maxSigma)
-        shader.setFloatUniform("uImageHeight", imageHeight)
-        // X pass
-        shader.setFloatUniform("uDirection", 0f)
-        val blurEffectX = RenderEffect
-          .createRuntimeShaderEffect(shader, "uContent")
+                shader.setFloatUniform("uMaxSigma", maxSigma)
+                shader.setFloatUniform("uImageHeight", imageHeight)
+                // X pass
+                shader.setFloatUniform("uDirection", 0f)
+                val blurEffectX =
+                    RenderEffect
+                        .createRuntimeShaderEffect(shader, "uContent")
 
-        // Y pass
-        shader.setFloatUniform("uDirection", 1f)
-        val blurEffectY = RenderEffect
-          .createRuntimeShaderEffect(shader, "uContent")
+                // Y pass
+                shader.setFloatUniform("uDirection", 1f)
+                val blurEffectY =
+                    RenderEffect
+                        .createRuntimeShaderEffect(shader, "uContent")
 
-        // Chain Y after X
-        val combinedEffect = RenderEffect.createChainEffect(blurEffectY, blurEffectX)
+                // Chain Y after X
+                val combinedEffect = RenderEffect.createChainEffect(blurEffectY, blurEffectX)
 
-        this.renderEffect = combinedEffect.asComposeRenderEffect()
-      }
-  } else {
-    uniformBlur()
-  }
+                this.renderEffect = combinedEffect.asComposeRenderEffect()
+            }
+    } else {
+        uniformBlur()
+    }
 
 @Language("AGSL")
-val BLUR_SHADER = """
+val BLUR_SHADER =
+    """
 uniform shader uContent;           // The input image/content to blur
 uniform float uMaxSigma;           // Maximum blur sigma (strength)
 uniform float uImageHeight;        // Height of the image/composable
@@ -100,4 +104,4 @@ half4 main(float2 fragCoord) {
     // Normalize and return blurred color
     return accumulatedColor / weightSum;
 }
-""".trimIndent()
+    """.trimIndent()

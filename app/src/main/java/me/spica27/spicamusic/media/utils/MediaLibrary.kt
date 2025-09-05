@@ -8,34 +8,28 @@ import me.spica27.spicamusic.db.dao.SongDao
 import org.koin.java.KoinJavaComponent.getKoin
 
 object MediaLibrary {
+    const val ROOT = "root"
+    const val ALL_SONGS = "all_songs"
 
-  const val ROOT = "root"
-  const val ALL_SONGS = "all_songs"
+    private val songDao = getKoin().get<SongDao>()
 
-  private val songDao = getKoin().get<SongDao>()
+    private val songFlow =
+        songDao
+            .getAll()
+            .flowOn(Dispatchers.IO)
 
-  private val songFlow = songDao
-    .getAll()
-    .flowOn(Dispatchers.IO)
+    @WorkerThread
+    fun getItem(mediaId: String): MediaItem? = songDao.getSongWithMediaStoreId(mediaId.toLongOrNull() ?: -1)?.toMediaItem()
 
+    fun mediaIdToMediaItems(mediaIds: List<String>): List<MediaItem> =
+        mediaIds.mapNotNull {
+            songDao.getSongWithMediaStoreId(it.toLongOrNull() ?: -1)?.toMediaItem()
+        }
 
-  @WorkerThread
-  fun getItem(mediaId: String): MediaItem? {
-    return songDao.getSongWithMediaStoreId(mediaId.toLongOrNull() ?: -1)?.toMediaItem()
-  }
-
-
-  fun mediaIdToMediaItems(mediaIds: List<String>): List<MediaItem> {
-    return mediaIds.mapNotNull {
-      songDao.getSongWithMediaStoreId(it.toLongOrNull() ?: -1)?.toMediaItem()
+    fun getChildren(parentId: String): List<MediaItem> {
+        if (parentId == ALL_SONGS) {
+            return songDao.getAllSync().map { it.toMediaItem() }
+        }
+        return emptyList()
     }
-  }
-
-  fun getChildren(parentId: String): List<MediaItem> {
-    if (parentId == ALL_SONGS) {
-      return songDao.getAllSync().map { it.toMediaItem() }
-    }
-    return emptyList()
-  }
-
 }

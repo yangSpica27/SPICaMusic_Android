@@ -49,169 +49,173 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun ScannerScreen(navigator: NavController? = null) {
-
-  // 权限状态
-  val permissionState =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-      rememberMultiplePermissionsState(
-        listOf(
-          Manifest.permission.FOREGROUND_SERVICE,
-          Manifest.permission.READ_MEDIA_AUDIO,
-          Manifest.permission.POST_NOTIFICATIONS,
-          Manifest.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK,
-        )
-      )
-    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      rememberMultiplePermissionsState(
-        listOf(
-          Manifest.permission.FOREGROUND_SERVICE,
-          Manifest.permission.READ_MEDIA_AUDIO,
-          Manifest.permission.POST_NOTIFICATIONS,
-        )
-      )
-    } else {
-      rememberMultiplePermissionsState(
-        listOf(
-          Manifest.permission.READ_EXTERNAL_STORAGE,
-          Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        )
-      )
-    }
-
-  var isScanning by remember { mutableStateOf(false) }
-
-  var text by remember { mutableStateOf("") }
-
-  val context = LocalContext.current
-
-  val lyricDao: LyricDao = koinInject<LyricDao>()
-
-  val songDao: SongDao = koinInject<SongDao>()
-
-  LaunchedEffect(
-    isScanning
-  ) {
-    if (isScanning) {
-      launch(Dispatchers.IO) {
-        val songs = AudioTool.getSongsFromPhone(context, lyricDao, {
-          text = "扫描到${it.displayName}"
-        })
-        withContext(Dispatchers.Main) {
-          text = ("共${songs.size}首")
+    // 权限状态
+    val permissionState =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            rememberMultiplePermissionsState(
+                listOf(
+                    Manifest.permission.FOREGROUND_SERVICE,
+                    Manifest.permission.READ_MEDIA_AUDIO,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                    Manifest.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK,
+                ),
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            rememberMultiplePermissionsState(
+                listOf(
+                    Manifest.permission.FOREGROUND_SERVICE,
+                    Manifest.permission.READ_MEDIA_AUDIO,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ),
+            )
+        } else {
+            rememberMultiplePermissionsState(
+                listOf(
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                ),
+            )
         }
-        songDao.updateSongs(songs)
-        isScanning = false
-      }
-    }
-  }
 
-  Scaffold(
-    topBar = {
-      SimpleTopBar(
-        title = stringResource(R.string.setting_scanner),
-        onBack = { navigator?.popBackStack() }
-      )
-    }
-  ) { paddingValues ->
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(paddingValues),
-      contentAlignment = Alignment.TopStart
+    var isScanning by remember { mutableStateOf(false) }
+
+    var text by remember { mutableStateOf("") }
+
+    val context = LocalContext.current
+
+    val lyricDao: LyricDao = koinInject<LyricDao>()
+
+    val songDao: SongDao = koinInject<SongDao>()
+
+    LaunchedEffect(
+        isScanning,
     ) {
-      Column(
-        modifier = Modifier
-          .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-      ) {
-        AnimatedVisibility(
-          visible = !permissionState.allPermissionsGranted
-        ) {
-          RequestCard(permissionState)
-        }
-        AnimatedVisibility(
-          visible = permissionState.allPermissionsGranted
-        ) {
-          ElevatedButton(
-            modifier = Modifier
-              .fillMaxWidth()
-              .padding(horizontal = 16.dp),
-            onClick = {
-              if (!isScanning) {
-                isScanning = true
-              }
-            },
-            shape = MaterialTheme.shapes.medium,
-            colors = ButtonDefaults.elevatedButtonColors().copy(
-              containerColor = MaterialTheme.colorScheme.primaryContainer,
-              contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ),
-          ) {
-            if (isScanning) {
-              Text(stringResource(R.string.is_scanner))
-            } else {
-              Text(stringResource(R.string.start_scanner))
+        if (isScanning) {
+            launch(Dispatchers.IO) {
+                val songs =
+                    AudioTool.getSongsFromPhone(context, lyricDao, {
+                        text = "扫描到${it.displayName}"
+                    })
+                withContext(Dispatchers.Main) {
+                    text = ("共${songs.size}首")
+                }
+                songDao.updateSongs(songs)
+                isScanning = false
             }
-          }
         }
-        Text(
-          text,
-          modifier = Modifier
-            .weight(1f)
-            .padding(horizontal = 16.dp),
-        )
-      }
     }
-  }
+
+    Scaffold(
+        topBar = {
+            SimpleTopBar(
+                title = stringResource(R.string.setting_scanner),
+                onBack = { navigator?.popBackStack() },
+            )
+        },
+    ) { paddingValues ->
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+            contentAlignment = Alignment.TopStart,
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                AnimatedVisibility(
+                    visible = !permissionState.allPermissionsGranted,
+                ) {
+                    RequestCard(permissionState)
+                }
+                AnimatedVisibility(
+                    visible = permissionState.allPermissionsGranted,
+                ) {
+                    ElevatedButton(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                        onClick = {
+                            if (!isScanning) {
+                                isScanning = true
+                            }
+                        },
+                        shape = MaterialTheme.shapes.medium,
+                        colors =
+                            ButtonDefaults.elevatedButtonColors().copy(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ),
+                    ) {
+                        if (isScanning) {
+                            Text(stringResource(R.string.is_scanner))
+                        } else {
+                            Text(stringResource(R.string.start_scanner))
+                        }
+                    }
+                }
+                Text(
+                    text,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .padding(horizontal = 16.dp),
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 private fun RequestCard(permissionState: MultiplePermissionsState) {
-  Column(
-    modifier = Modifier
-      .padding(
-        horizontal = 16.dp
-      )
-      .background(
-        MaterialTheme.colorScheme.surfaceContainerLow,
-        MaterialTheme.shapes.medium
-      )
-      .padding(16.dp),
-  ) {
-    Text(
-      "本应用需要获取本地存储权限，以访问本机存储的所有歌曲文件",
-      modifier = Modifier.padding(vertical = 16.dp),
-      color = MaterialTheme.colorScheme.onSurface.copy(0.44f),
-      style = MaterialTheme.typography.bodyLarge
-    )
-    Spacer(
-      modifier = Modifier.height(20.dp)
-    )
-    Row(
-      horizontalArrangement = Arrangement.End
+    Column(
+        modifier =
+            Modifier
+                .padding(
+                    horizontal = 16.dp,
+                ).background(
+                    MaterialTheme.colorScheme.surfaceContainerLow,
+                    MaterialTheme.shapes.medium,
+                ).padding(16.dp),
     ) {
-      ElevatedButton(
-        onClick = {
-          permissionState.launchMultiplePermissionRequest()
-        },
-        shape = MaterialTheme.shapes.medium,
-        colors = ButtonDefaults.elevatedButtonColors().copy(
-          containerColor = MaterialTheme.colorScheme.primaryContainer,
-          contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ),
-      ) {
-        Text("授权")
-      }
+        Text(
+            "本应用需要获取本地存储权限，以访问本机存储的所有歌曲文件",
+            modifier = Modifier.padding(vertical = 16.dp),
+            color = MaterialTheme.colorScheme.onSurface.copy(0.44f),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Spacer(
+            modifier = Modifier.height(20.dp),
+        )
+        Row(
+            horizontalArrangement = Arrangement.End,
+        ) {
+            ElevatedButton(
+                onClick = {
+                    permissionState.launchMultiplePermissionRequest()
+                },
+                shape = MaterialTheme.shapes.medium,
+                colors =
+                    ButtonDefaults.elevatedButtonColors().copy(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+            ) {
+                Text("授权")
+            }
+        }
     }
-  }
 }
 
-
-//@OptIn(ExperimentalPermissionsApi::class)
-//@Composable
-//fun PermissionCard(permissionState: MultiplePermissionsState) {
+// @OptIn(ExperimentalPermissionsApi::class)
+// @Composable
+// fun PermissionCard(permissionState: MultiplePermissionsState) {
 //  Card(
 //    modifier = Modifier.padding(16.dp)
 //  ) {
@@ -229,4 +233,4 @@ private fun RequestCard(permissionState: MultiplePermissionsState) {
 //            """
 //    )
 //  }
-//}
+// }

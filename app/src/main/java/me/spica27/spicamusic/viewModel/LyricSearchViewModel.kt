@@ -15,47 +15,47 @@ import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.network.bean.LyricResponse
 import me.spica27.spicamusic.repository.LyricRepository
 
-
 class LyricSearchViewModel(
-  private val lyricRepository: LyricRepository
+    private val lyricRepository: LyricRepository,
 ) : ViewModel() {
+    private val _lyricsFlow = MutableStateFlow<List<LyricResponse>>(emptyList())
 
+    val lyricsFlow: Flow<List<LyricResponse>> = _lyricsFlow
 
-  private val _lyricsFlow = MutableStateFlow<List<LyricResponse>>(emptyList())
+    private val _state = MutableStateFlow<NetworkState>(NetworkState.IDLE)
 
-  val lyricsFlow: Flow<List<LyricResponse>> = _lyricsFlow
+    val state: Flow<NetworkState> = _state
 
-  private val _state = MutableStateFlow<NetworkState>(NetworkState.IDLE)
-
-  val state: Flow<NetworkState> = _state
-
-
-  /**
-   * 获取歌词
-   * @param title 歌曲名
-   * @param artist 歌手名
-   */
-  fun fetchLyric(title: String, artist: String?) {
-    _state.value = NetworkState.LOADING
-    viewModelScope.launch(Dispatchers.IO) {
-      lyricRepository.fetchLyric(title, artist)
-        .onSuccess {
-          _lyricsFlow.value = data
-          _state.value = NetworkState.SUCCESS
-        }
-        .onError {
-          _state.value = NetworkState.ERROR(message = message())
-        }
-        .onException {
-          _state.value = NetworkState.ERROR(message = message())
+    /**
+     * 获取歌词
+     * @param title 歌曲名
+     * @param artist 歌手名
+     */
+    fun fetchLyric(
+        title: String,
+        artist: String?,
+    ) {
+        _state.value = NetworkState.LOADING
+        viewModelScope.launch(Dispatchers.IO) {
+            lyricRepository
+                .fetchLyric(title, artist)
+                .onSuccess {
+                    _lyricsFlow.value = data
+                    _state.value = NetworkState.SUCCESS
+                }.onError {
+                    _state.value = NetworkState.ERROR(message = message())
+                }.onException {
+                    _state.value = NetworkState.ERROR(message = message())
+                }
         }
     }
-  }
 
-  fun applyLyric(lyric: LyricResponse, song: Song) {
-    viewModelScope.launch(Dispatchers.IO) {
-      lyricRepository.saveSongLyric(lyric, song)
+    fun applyLyric(
+        lyric: LyricResponse,
+        song: Song,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            lyricRepository.saveSongLyric(lyric, song)
+        }
     }
-  }
-
 }

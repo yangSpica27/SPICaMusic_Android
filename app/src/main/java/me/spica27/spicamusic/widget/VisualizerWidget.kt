@@ -12,18 +12,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 
-
 @Composable
 fun VisualizerView(modifier: Modifier = Modifier) {
-  var canvasSize by remember { mutableStateOf(Size(0f, 0f)) }
-  Box(
-    modifier = modifier
-      .aspectRatio(1f)
-  ) {
-    Canvas(
-      modifier = Modifier.fillMaxSize()
+    var canvasSize by remember { mutableStateOf(Size(0f, 0f)) }
+    Box(
+        modifier =
+            modifier
+                .aspectRatio(1f),
     ) {
-      canvasSize = size
+        Canvas(
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            canvasSize = size
+        }
     }
-  }
 }

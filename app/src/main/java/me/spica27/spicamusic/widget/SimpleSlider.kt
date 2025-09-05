@@ -25,101 +25,98 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SimpleSlider(
-  value: Float,
-  modifier: Modifier = Modifier,
-  valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
-  enabled: Boolean = true,
-  onValueChangeFinished: (() -> Unit)? = null,
-  onValueChange: (Float) -> Unit,
-  @IntRange(from = 0) steps: Int = 0,
-  cutLineSize: Int = 20
+    value: Float,
+    modifier: Modifier = Modifier,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    enabled: Boolean = true,
+    onValueChangeFinished: (() -> Unit)? = null,
+    onValueChange: (Float) -> Unit,
+    @IntRange(from = 0) steps: Int = 0,
+    cutLineSize: Int = 20,
 ) {
+    val sliderBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
 
-  val sliderBackgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val lineColor = MaterialTheme.colorScheme.onSurface.copy(.35f)
 
-  val lineColor = MaterialTheme.colorScheme.onSurface.copy(.35f)
+    var isPlaying by remember { mutableStateOf(false) }
 
+    Slider(
+        modifier =
+            modifier
+                .height((25).dp)
+                .background(
+                    color = sliderBackgroundColor,
+                    shape = MaterialTheme.shapes.small,
+                ),
+        value = value,
+        onValueChange = {
+            isPlaying = true
+            onValueChange(it)
+        },
+        valueRange = valueRange,
+        steps = steps,
+        enabled = enabled,
+        onValueChangeFinished = {
+            isPlaying = false
+            onValueChangeFinished?.invoke()
+        },
+        track = {
+            Spacer(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer()
+                        .drawWithCache {
+                            val with = size.width / (cutLineSize - 1)
 
-  var isPlaying by remember { mutableStateOf(false) }
+                            val cornerRadius = CornerRadius(20f, 20f)
 
-
-  Slider(
-    modifier = modifier
-      .height((25).dp)
-      .background(
-        color = sliderBackgroundColor,
-        shape = MaterialTheme.shapes.small
-      ),
-    value = value,
-    onValueChange = {
-      isPlaying = true
-      onValueChange(it)
-    },
-    valueRange = valueRange,
-    steps = steps,
-    enabled = enabled,
-    onValueChangeFinished = {
-      isPlaying = false
-      onValueChangeFinished?.invoke()
-    },
-    track = {
-      Spacer(
-        modifier = Modifier
-          .fillMaxSize()
-          .graphicsLayer()
-          .drawWithCache {
-
-            val with = size.width / (cutLineSize - 1)
-
-            val cornerRadius = CornerRadius(20f, 20f)
-
-            onDrawWithContent {
-              for (i in 0 until cutLineSize) {
+                            onDrawWithContent {
+                                for (i in 0 until cutLineSize) {
 //                if (i == 0) continue
 //                if (i == cutLineSize - 1) continue
-                drawLine(
-                  color = lineColor,
-                  Offset(
-                    x = i * with,
-                    y = size.height / 3
-                  ),
-                  Offset(
-                    x = i * with,
-                    y = size.height / 3 * 2
-                  ),
-                  strokeWidth = 2.dp.toPx()
+                                    drawLine(
+                                        color = lineColor,
+                                        Offset(
+                                            x = i * with,
+                                            y = size.height / 3,
+                                        ),
+                                        Offset(
+                                            x = i * with,
+                                            y = size.height / 3 * 2,
+                                        ),
+                                        strokeWidth = 2.dp.toPx(),
+                                    )
+                                }
+                            }
+                        },
+            )
+        },
+        thumb = {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxHeight(),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .height(25.dp)
+                            .width(25.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = CircleShape,
+                            ).padding(7.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.background,
+                                shape = CircleShape,
+                            ),
                 )
-              }
             }
-          }
-      )
-    },
-    thumb = {
-
-      Box(
-        modifier = Modifier
-          .fillMaxHeight(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
-      ) {
-        Box(
-          modifier = Modifier
-            .height(25.dp)
-            .width(25.dp)
-            .background(
-              color = MaterialTheme.colorScheme.primary,
-              shape = CircleShape
-            )
-            .padding(7.dp)
-            .background(
-              color = MaterialTheme.colorScheme.background,
-              shape = CircleShape
-            )
-        )
-      }
-    },
-  )
+        },
+    )
 }

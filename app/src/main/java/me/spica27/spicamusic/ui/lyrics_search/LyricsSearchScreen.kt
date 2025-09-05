@@ -56,295 +56,328 @@ import me.spica27.spicamusic.utils.ToastUtils
 import me.spica27.spicamusic.viewModel.LyricSearchViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LyricsSearchScreen(
-  song: Song, lyricSearchViewModel: LyricSearchViewModel = koinViewModel(),
-  navigator: NavController? = null
+    song: Song,
+    lyricSearchViewModel: LyricSearchViewModel = koinViewModel(),
+    navigator: NavController? = null,
 ) {
+    val data = lyricSearchViewModel.lyricsFlow.collectAsState(initial = emptyList()).value
 
-  val data = lyricSearchViewModel.lyricsFlow.collectAsState(initial = emptyList()).value
+    val state = lyricSearchViewModel.state.collectAsState(initial = NetworkState.IDLE).value
 
-  val state = lyricSearchViewModel.state.collectAsState(initial = NetworkState.IDLE).value
+    val overlyState = LocalPlayerWidgetState.current
 
-  val overlyState = LocalPlayerWidgetState.current
+    LaunchedEffect(Unit) {
+        overlyState.value = PlayerOverlyState.BOTTOM
+    }
 
-  LaunchedEffect(Unit) {
-    overlyState.value = PlayerOverlyState.BOTTOM
-  }
-
-  Scaffold(
-    modifier = Modifier
-      .fillMaxSize(),
-    topBar = {
-      TopAppBar(navigationIcon = {
-        IconButton(
-          onClick = {
-            navigator?.popBackStack()
-          }) {
-          Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
+    Scaffold(
+        modifier =
+            Modifier
+                .fillMaxSize(),
+        topBar = {
+            TopAppBar(navigationIcon = {
+                IconButton(
+                    onClick = {
+                        navigator?.popBackStack()
+                    },
+                ) {
+                    Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")
+                }
+            }, title = {
+                Text(
+                    stringResource(R.string.title_lyrics_search),
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                            fontWeight = FontWeight.ExtraBold,
+                        ),
+                )
+            })
+        },
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier.padding(paddingValues),
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                TopPanel(song, lyricSearchViewModel)
+                HorizontalDivider()
+                ListView(
+                    song = song,
+                    state = state,
+                    modifier = Modifier.weight(1f),
+                    data = data,
+                    viewModel = lyricSearchViewModel,
+                )
+            }
         }
-      }, title = {
-        Text(
-          stringResource(R.string.title_lyrics_search),
-          style = MaterialTheme.typography.titleLarge.copy(
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-            fontWeight = FontWeight.ExtraBold
-          ),
-        )
-      })
     }
-
-  ) { paddingValues ->
-    Box(
-      modifier = Modifier.padding(paddingValues)
-    ) {
-
-      Column(
-        modifier = Modifier.fillMaxSize()
-      ) {
-        TopPanel(song, lyricSearchViewModel)
-        HorizontalDivider()
-        ListView(
-          song = song, state = state, modifier = Modifier.weight(1f), data = data,
-          viewModel = lyricSearchViewModel
-        )
-      }
-    }
-  }
 }
-
 
 @Composable
-private fun TopPanel(song: Song, lyricSearchViewModel: LyricSearchViewModel) {
+private fun TopPanel(
+    song: Song,
+    lyricSearchViewModel: LyricSearchViewModel,
+) {
+    val songName = rememberSaveable { mutableStateOf(song.displayName) }
 
-  val songName = rememberSaveable { mutableStateOf(song.displayName) }
-
-  val artists = rememberSaveable { mutableStateOf(song.artist) }
-  val keyboardController = LocalSoftwareKeyboardController.current
-  Column(
-    modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    EditText(
-      leftLabel = stringResource(R.string.song_displayname),
-      rightLabel = stringResource(R.string.hint_edit_song_name),
-      text = songName.value,
-      onValueChange = {
-        songName.value = it
-      })
-    EditText(
-      leftLabel = stringResource(R.string.song_artist),
-      rightLabel = stringResource(R.string.hint_edit_song_artist),
-      text = artists.value,
-      onValueChange = {
-        artists.value = it
-      })
-    ElevatedButton(
-      shape = MaterialTheme.shapes.small,
-      onClick = {
-        keyboardController?.hide()
-        if (songName.value.isEmpty()) {
-          ToastUtils.showToast(App.getInstance().getString(R.string.hint_edit_song_name))
-        } else {
-          lyricSearchViewModel.fetchLyric(songName.value, artists.value)
-        }
-      }, modifier = Modifier
-        .padding(16.dp)
-        .fillMaxWidth(),
-      colors = ButtonDefaults.elevatedButtonColors().copy(
-        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-      )
+    val artists = rememberSaveable { mutableStateOf(song.artist) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-      Text(stringResource(R.string.search))
+        EditText(
+            leftLabel = stringResource(R.string.song_displayname),
+            rightLabel = stringResource(R.string.hint_edit_song_name),
+            text = songName.value,
+            onValueChange = {
+                songName.value = it
+            },
+        )
+        EditText(
+            leftLabel = stringResource(R.string.song_artist),
+            rightLabel = stringResource(R.string.hint_edit_song_artist),
+            text = artists.value,
+            onValueChange = {
+                artists.value = it
+            },
+        )
+        ElevatedButton(
+            shape = MaterialTheme.shapes.small,
+            onClick = {
+                keyboardController?.hide()
+                if (songName.value.isEmpty()) {
+                    ToastUtils.showToast(App.getInstance().getString(R.string.hint_edit_song_name))
+                } else {
+                    lyricSearchViewModel.fetchLyric(songName.value, artists.value)
+                }
+            },
+            modifier =
+                Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+            colors =
+                ButtonDefaults.elevatedButtonColors().copy(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+        ) {
+            Text(stringResource(R.string.search))
+        }
     }
-  }
 }
-
 
 @Composable
 private fun ListView(
-  song: Song, state: NetworkState, modifier: Modifier, data: List<LyricResponse>,
-  viewModel: LyricSearchViewModel
+    song: Song,
+    state: NetworkState,
+    modifier: Modifier,
+    data: List<LyricResponse>,
+    viewModel: LyricSearchViewModel,
 ) {
-  Box(
-    modifier = modifier
-  ) {
-    when (state) {
-      is NetworkState.IDLE -> {
-        Box(
-          modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-        ) {
-          Text(stringResource(R.string.empty), style = MaterialTheme.typography.titleMedium)
-        }
-      }
-
-      is NetworkState.LOADING -> {
-        Box(
-          modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-        ) {
-          CircularProgressIndicator()
-        }
-      }
-
-      is NetworkState.ERROR -> {
-        Box(
-          modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-        ) {
-          Text(state.message, style = MaterialTheme.typography.titleMedium)
-        }
-      }
-
-      is NetworkState.SUCCESS -> {
-        if (data.isEmpty()) {
-          Box(
-            modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
-          ) {
-            Text(stringResource(R.string.empty), style = MaterialTheme.typography.titleMedium)
-          }
-        } else {
-          LazyColumn(
-            modifier = Modifier.fillMaxSize()
-          ) {
-            items(data.size) {
-              Column(
-                modifier = Modifier.padding(
-                  horizontal = 12.dp, vertical = 6.dp
-                )
-              ) {
-                LyricItem(lyric = data[it], song = song, lyricSearchViewModel = viewModel)
-              }
+    Box(
+        modifier = modifier,
+    ) {
+        when (state) {
+            is NetworkState.IDLE -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(stringResource(R.string.empty), style = MaterialTheme.typography.titleMedium)
+                }
             }
-          }
-        }
-      }
-    }
-  }
-}
 
+            is NetworkState.LOADING -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            is NetworkState.ERROR -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(state.message, style = MaterialTheme.typography.titleMedium)
+                }
+            }
+
+            is NetworkState.SUCCESS -> {
+                if (data.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(stringResource(R.string.empty), style = MaterialTheme.typography.titleMedium)
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        items(data.size) {
+                            Column(
+                                modifier =
+                                    Modifier.padding(
+                                        horizontal = 12.dp,
+                                        vertical = 6.dp,
+                                    ),
+                            ) {
+                                LyricItem(lyric = data[it], song = song, lyricSearchViewModel = viewModel)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun LyricItem(
-  lyricSearchViewModel: LyricSearchViewModel,
-  song: Song,
-  lyric: LyricResponse,
+    lyricSearchViewModel: LyricSearchViewModel,
+    song: Song,
+    lyric: LyricResponse,
 ) {
+    val showDetailState = rememberSaveable { mutableStateOf(false) }
 
-  val showDetailState = rememberSaveable { mutableStateOf(false) }
-
-  Column(
-    modifier = Modifier
-      .fillMaxWidth()
-      .background(
-        color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.small
-      )
-      .clip(
-        MaterialTheme.shapes.small
-      )
-      .clickable {
-        showDetailState.value = !showDetailState.value
-      }
-      .padding(
-        horizontal = 12.dp, vertical = 10.dp
-      )) {
-    Row(
-      modifier = Modifier.fillMaxWidth()
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    shape = MaterialTheme.shapes.small,
+                ).clip(
+                    MaterialTheme.shapes.small,
+                ).clickable {
+                    showDetailState.value = !showDetailState.value
+                }.padding(
+                    horizontal = 12.dp,
+                    vertical = 10.dp,
+                ),
     ) {
-      AsyncImage(
-        model = lyric.cover,
-        modifier = Modifier
-          .width(80.dp)
-          .height(80.dp)
-          .clip(MaterialTheme.shapes.small),
-        contentDescription = "background",
-        contentScale = ContentScale.Crop,
-        onError = {
-
-        },
-        placeholder = null,
-        error = null
-      )
-      Spacer(modifier = Modifier.width(12.dp))
-      Column(
-        modifier = Modifier
-          .height(80.dp)
-          .weight(1f), verticalArrangement = Arrangement.SpaceBetween
-      ) {
-        Text(
-          "${lyric.title}",
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-          style = MaterialTheme.typography.titleLarge.copy(
-            fontWeight = FontWeight.ExtraBold
-          )
-        )
-        Text(
-          "${lyric.artist}",
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-          style = MaterialTheme.typography.titleMedium
-        )
-      }
-    }
-    AnimatedVisibility(
-      visible = showDetailState.value, modifier = Modifier.fillMaxWidth()
-    ) {
-      Column(
-        modifier = Modifier.padding(
-          horizontal = 12.dp, vertical = 6.dp
-        )
-      ) {
-        ElevatedButton(
-          colors = ButtonDefaults.elevatedButtonColors().copy(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-          ), shape = MaterialTheme.shapes.extraSmall, onClick = {
-            lyricSearchViewModel.applyLyric(lyric, song)
-            ToastUtils.showToast(App.getInstance().getString(R.string.lrc_apply_success))
-          }) {
-          Text(stringResource(R.string.apply_lrc))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            AsyncImage(
+                model = lyric.cover,
+                modifier =
+                    Modifier
+                        .width(80.dp)
+                        .height(80.dp)
+                        .clip(MaterialTheme.shapes.small),
+                contentDescription = "background",
+                contentScale = ContentScale.Crop,
+                onError = {
+                },
+                placeholder = null,
+                error = null,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(
+                modifier =
+                    Modifier
+                        .height(80.dp)
+                        .weight(1f),
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "${lyric.title}",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                        ),
+                )
+                Text(
+                    "${lyric.artist}",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-          lyric.lyrics, style = MaterialTheme.typography.bodyMedium
-        )
-      }
+        AnimatedVisibility(
+            visible = showDetailState.value,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(
+                modifier =
+                    Modifier.padding(
+                        horizontal = 12.dp,
+                        vertical = 6.dp,
+                    ),
+            ) {
+                ElevatedButton(
+                    colors =
+                        ButtonDefaults.elevatedButtonColors().copy(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                    shape = MaterialTheme.shapes.extraSmall,
+                    onClick = {
+                        lyricSearchViewModel.applyLyric(lyric, song)
+                        ToastUtils.showToast(App.getInstance().getString(R.string.lrc_apply_success))
+                    },
+                ) {
+                    Text(stringResource(R.string.apply_lrc))
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    lyric.lyrics,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
     }
-  }
 }
-
 
 @Composable
 private fun EditText(
-  leftLabel: String, rightLabel: String, text: String, onValueChange: (String) -> Unit
+    leftLabel: String,
+    rightLabel: String,
+    text: String,
+    onValueChange: (String) -> Unit,
 ) {
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(vertical = 6.dp, horizontal = 12.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Text(
-      leftLabel, modifier = Modifier.width(60.dp), style = MaterialTheme.typography.bodyMedium.copy(
-        fontWeight = FontWeight.W500
-      )
-    )
-    TextField(
-      value = text,
-      onValueChange = onValueChange,
-      textStyle = MaterialTheme.typography.bodyMedium,
-      placeholder = { Text(rightLabel) },
-      singleLine = true,
-      modifier = Modifier.fillMaxWidth(),
-      maxLines = 2,
-      shape = MaterialTheme.shapes.small,
-      colors = TextFieldDefaults.colors().copy(
-        disabledIndicatorColor = Color.Transparent,
-        errorIndicatorColor = Color.Transparent,
-        focusedIndicatorColor = Color.Transparent,
-        unfocusedIndicatorColor = Color.Transparent
-      )
-    )
-  }
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp, horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            leftLabel,
+            modifier = Modifier.width(60.dp),
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.W500,
+                ),
+        )
+        TextField(
+            value = text,
+            onValueChange = onValueChange,
+            textStyle = MaterialTheme.typography.bodyMedium,
+            placeholder = { Text(rightLabel) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 2,
+            shape = MaterialTheme.shapes.small,
+            colors =
+                TextFieldDefaults.colors().copy(
+                    disabledIndicatorColor = Color.Transparent,
+                    errorIndicatorColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
+        )
+    }
 }
-
-

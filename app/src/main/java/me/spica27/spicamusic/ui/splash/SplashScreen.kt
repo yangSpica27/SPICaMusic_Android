@@ -18,39 +18,43 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import me.spica27.spicamusic.route.Routes
 
-
 //  Splash Screen
 @Composable
-fun SplashScreen(modifier: Modifier = Modifier, navigator: NavController) {
+fun SplashScreen(
+    modifier: Modifier = Modifier,
+    navigator: NavController,
+) {
+    val visibilityState = remember { mutableStateOf(false) }
 
-  val visibilityState = remember { mutableStateOf(false) }
+    // 透明度动画
+    val textAlphaState =
+        animateFloatAsState(
+            targetValue =
+                if (visibilityState.value) 1f else 0f,
+            label = "textAlphaState",
+        )
 
-  // 透明度动画
-  val textAlphaState = animateFloatAsState(
-    targetValue =
-      if (visibilityState.value) 1f else 0f, label = "textAlphaState"
-  )
-
-  LaunchedEffect(Unit) {
-    delay(1000) // 延迟2秒
-    navigator.navigate(Routes.Main)
-  }
-
-  Scaffold { padding ->
-    Box(
-      modifier = modifier
-        .fillMaxSize()
-        .padding(padding),
-      contentAlignment = Alignment.Center
-    ) {
-      Text(
-        text = "Splash Screen", modifier = Modifier
-          .alpha(textAlphaState.value)
-          .align(alignment = Alignment.Center)
-          .padding(16.dp)
-      )
+    LaunchedEffect(Unit) {
+        delay(1000) // 延迟2秒
+        navigator.navigate(Routes.Main)
     }
 
-  }
-
+    Scaffold { padding ->
+        Box(
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "Splash Screen",
+                modifier =
+                    Modifier
+                        .alpha(textAlphaState.value)
+                        .align(alignment = Alignment.Center)
+                        .padding(16.dp),
+            )
+        }
+    }
 }

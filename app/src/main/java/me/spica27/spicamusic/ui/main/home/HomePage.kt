@@ -85,246 +85,248 @@ import me.spica27.spicamusic.widget.materialSharedAxisXOut
 import me.spica27.spicamusic.wrapper.activityViewModel
 import java.util.*
 
-
 // 主页
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePage(
-  modifier: Modifier = Modifier,
-  songViewModel: SongViewModel = activityViewModel(),
-  navigator: NavController? = null,
-  listState: ScrollState = rememberScrollState(),
-  pagerState: PagerState,
-  playBackViewModel: PlayBackViewModel = activityViewModel()
+    modifier: Modifier = Modifier,
+    songViewModel: SongViewModel = activityViewModel(),
+    navigator: NavController? = null,
+    listState: ScrollState = rememberScrollState(),
+    pagerState: PagerState,
+    playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
+    val oftenListenSongs = songViewModel.oftenListenSongs10.collectAsStateWithLifecycle()
 
+    val playlist = songViewModel.allPlayList.collectAsStateWithLifecycle().value
 
-  val oftenListenSongs = songViewModel.oftenListenSongs10.collectAsStateWithLifecycle()
+    val randomSong = songViewModel.randomSongs.collectAsState().value
 
-  val playlist = songViewModel.allPlayList.collectAsStateWithLifecycle().value
+    val showCreatePlaylistDialog = remember { mutableStateOf(false) }
 
-
-  val randomSong = songViewModel.randomSongs.collectAsState().value
-
-
-  val showCreatePlaylistDialog = remember { mutableStateOf(false) }
-
-  val surfaceBlur = animateFloatAsState(
-    targetValue = if (showCreatePlaylistDialog.value) {
-      12f
-    } else {
-      0f
-    }
-  )
-
-  if (showCreatePlaylistDialog.value) {
-    InputTextDialog(
-      onDismissRequest = {
-        showCreatePlaylistDialog.value = false
-      },
-      title = stringResource(R.string.create_playlist),
-      onConfirm = {
-        songViewModel.addPlayList(it)
-        showCreatePlaylistDialog.value = false
-      }
-    )
-  }
-
-
-  Box(
-    modifier = modifier
-      .fillMaxSize()
-      .blur(
-        surfaceBlur.value.dp,
-        BlurredEdgeTreatment.Unbounded
-      ),
-    contentAlignment = Alignment.TopStart
-  ) {
-    Box(
-      modifier = Modifier
-        .fillMaxSize(),
-    ) {
-
-      Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .verticalScroll(
-            state = listState
-          )
-          .padding(bottom = 64.dp, top = 64.dp)
-          .navigationBarsPadding(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-      ) {
-
-
-        Row(
-          modifier = Modifier
-            .padding(
-              horizontal = 16.dp,
-            )
-            .fillMaxWidth()
-            .border(
-              width = 1.dp,
-              color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-              shape = MaterialTheme.shapes.small
-            )
-            .clip(MaterialTheme.shapes.small)
-            .clickable {
-              navigator?.navigate(Routes.SearchAll)
-            }
-            .padding(
-              horizontal = 16.dp,
-              vertical = 10.dp
-            ),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-          Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = stringResource(R.string.more),
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-          )
-          Text(
-            stringResource(R.string.search_all_music),
-            style = MaterialTheme.typography.bodyLarge.copy()
-          )
-        }
-
-        Title(
-          stringResource(R.string.recently_listen),
-          right = {
-            Text(
-              stringResource(R.string.see_more),
-              modifier = Modifier.clickableNoRippleWithVibration {
-                navigator?.navigate(Routes.RecentlyList)
-              },
-              style = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
-                fontWeight = FontWeight.W600,
-                fontSize = 15.sp
-              )
-            )
-          }
-        )
-        AnimatedContent(
-          targetState = oftenListenSongs.value,
-          modifier = Modifier.fillMaxWidth(),
-          transitionSpec = {
-            materialSharedAxisXIn(true) togetherWith materialSharedAxisXOut(true)
-          },
-          contentKey = {
-            it.isEmpty()
-          }
-        ) { songs ->
-          if (songs.isEmpty()) {
-            OftenListenEmptyContent(
-              navigator = navigator
-            )
-          } else {
-            OftenListenSongList(songs = songs)
-          }
-        }
-        HorizontalDivider(
-          color = MaterialTheme.colorScheme.onSurface.copy(
-            alpha = 0.05f
-          ),
-          thickness = 2.dp,
-          modifier = Modifier.padding(vertical = 6.dp)
-        )
-        Title(
-          stringResource(R.string.title_playlist),
-          {
-            Text(
-              stringResource(R.string.create_playlist),
-              modifier = Modifier.clickableNoRippleWithVibration {
-                showCreatePlaylistDialog.value = true
-              },
-              style = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
-                fontWeight = FontWeight.W600,
-                fontSize = 15.sp
-              )
-            )
-          })
-        Column(
-          modifier = Modifier.fillMaxWidth(),
-        ) {
-          PlaylistItem(
-            playlist = Playlist(
-              playlistId = 0,
-              playlistName = App.getInstance().getString(R.string.my_favorites),
-              cover = null,
-              needUpdate = false
-            ),
-            onClick = {
-              navigator?.navigate(Routes.LikeList)
-            },
-            showMenu = false
-          )
-
-          playlist.forEach {
-            PlaylistItem(
-              playlist = it,
-              onClick = {
-                navigator?.navigate(
-                  Routes.PlaylistDetail(
-                    it.playlistId ?: -1
-                  )
-                )
-              },
-              showMenu = false
-            )
-          }
-        }
-        HorizontalDivider(
-          color = MaterialTheme.colorScheme.onSurface.copy(
-            alpha = 0.05f
-          ),
-          thickness = 2.dp,
-          modifier = Modifier.padding(vertical = 6.dp)
-        )
-        Title(
-          stringResource(R.string.title_recommended),
-        )
-
-        if (randomSong.isEmpty()) {
-          Box(
-            modifier = Modifier
-              .padding(
-                horizontal = 16.dp,
-              )
-          ) {
-            Text(
-              stringResource(R.string.no_recommendations),
-              style = MaterialTheme.typography.bodyLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
-                fontWeight = FontWeight.W600,
-                fontSize = 20.sp
-              )
-            )
-          }
-        } else {
-          Column {
-            randomSong.forEach {
-              SongItemWithCover(
-                song = it,
-                onClick = {
-                  playBackViewModel.play(it, randomSong)
+    val surfaceBlur =
+        animateFloatAsState(
+            targetValue =
+                if (showCreatePlaylistDialog.value) {
+                    12f
+                } else {
+                    0f
                 },
-                showMenu = false,
-                showPlus = false,
-                showLike = false
-              )
-            }
-          }
-        }
-      }
-      // 标题
-      TitleBar(pagerState = pagerState)
+        )
+
+    if (showCreatePlaylistDialog.value) {
+        InputTextDialog(
+            onDismissRequest = {
+                showCreatePlaylistDialog.value = false
+            },
+            title = stringResource(R.string.create_playlist),
+            onConfirm = {
+                songViewModel.addPlayList(it)
+                showCreatePlaylistDialog.value = false
+            },
+        )
     }
 
-  }
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .blur(
+                    surfaceBlur.value.dp,
+                    BlurredEdgeTreatment.Unbounded,
+                ),
+        contentAlignment = Alignment.TopStart,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize(),
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(
+                            state = listState,
+                        ).padding(bottom = 64.dp, top = 64.dp)
+                        .navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .padding(
+                                horizontal = 16.dp,
+                            ).fillMaxWidth()
+                            .border(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                                shape = MaterialTheme.shapes.small,
+                            ).clip(MaterialTheme.shapes.small)
+                            .clickable {
+                                navigator?.navigate(Routes.SearchAll)
+                            }.padding(
+                                horizontal = 16.dp,
+                                vertical = 10.dp,
+                            ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = stringResource(R.string.more),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                    Text(
+                        stringResource(R.string.search_all_music),
+                        style = MaterialTheme.typography.bodyLarge.copy(),
+                    )
+                }
+
+                Title(
+                    stringResource(R.string.recently_listen),
+                    right = {
+                        Text(
+                            stringResource(R.string.see_more),
+                            modifier =
+                                Modifier.clickableNoRippleWithVibration {
+                                    navigator?.navigate(Routes.RecentlyList)
+                                },
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
+                                    fontWeight = FontWeight.W600,
+                                    fontSize = 15.sp,
+                                ),
+                        )
+                    },
+                )
+                AnimatedContent(
+                    targetState = oftenListenSongs.value,
+                    modifier = Modifier.fillMaxWidth(),
+                    transitionSpec = {
+                        materialSharedAxisXIn(true) togetherWith materialSharedAxisXOut(true)
+                    },
+                    contentKey = {
+                        it.isEmpty()
+                    },
+                ) { songs ->
+                    if (songs.isEmpty()) {
+                        OftenListenEmptyContent(
+                            navigator = navigator,
+                        )
+                    } else {
+                        OftenListenSongList(songs = songs)
+                    }
+                }
+                HorizontalDivider(
+                    color =
+                        MaterialTheme.colorScheme.onSurface.copy(
+                            alpha = 0.05f,
+                        ),
+                    thickness = 2.dp,
+                    modifier = Modifier.padding(vertical = 6.dp),
+                )
+                Title(
+                    stringResource(R.string.title_playlist),
+                    {
+                        Text(
+                            stringResource(R.string.create_playlist),
+                            modifier =
+                                Modifier.clickableNoRippleWithVibration {
+                                    showCreatePlaylistDialog.value = true
+                                },
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = .6f),
+                                    fontWeight = FontWeight.W600,
+                                    fontSize = 15.sp,
+                                ),
+                        )
+                    },
+                )
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    PlaylistItem(
+                        playlist =
+                            Playlist(
+                                playlistId = 0,
+                                playlistName = App.getInstance().getString(R.string.my_favorites),
+                                cover = null,
+                                needUpdate = false,
+                            ),
+                        onClick = {
+                            navigator?.navigate(Routes.LikeList)
+                        },
+                        showMenu = false,
+                    )
+
+                    playlist.forEach {
+                        PlaylistItem(
+                            playlist = it,
+                            onClick = {
+                                navigator?.navigate(
+                                    Routes.PlaylistDetail(
+                                        it.playlistId ?: -1,
+                                    ),
+                                )
+                            },
+                            showMenu = false,
+                        )
+                    }
+                }
+                HorizontalDivider(
+                    color =
+                        MaterialTheme.colorScheme.onSurface.copy(
+                            alpha = 0.05f,
+                        ),
+                    thickness = 2.dp,
+                    modifier = Modifier.padding(vertical = 6.dp),
+                )
+                Title(
+                    stringResource(R.string.title_recommended),
+                )
+
+                if (randomSong.isEmpty()) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .padding(
+                                    horizontal = 16.dp,
+                                ),
+                    ) {
+                        Text(
+                            stringResource(R.string.no_recommendations),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f),
+                                    fontWeight = FontWeight.W600,
+                                    fontSize = 20.sp,
+                                ),
+                        )
+                    }
+                } else {
+                    Column {
+                        randomSong.forEach {
+                            SongItemWithCover(
+                                song = it,
+                                onClick = {
+                                    playBackViewModel.play(it, randomSong)
+                                },
+                                showMenu = false,
+                                showPlus = false,
+                                showLike = false,
+                            )
+                        }
+                    }
+                }
+            }
+            // 标题
+            TitleBar(pagerState = pagerState)
+        }
+    }
 }
 
 /**
@@ -332,55 +334,55 @@ fun HomePage(
  */
 @Composable
 private fun OftenListenEmptyContent(
-  modifier: Modifier = Modifier,
-  navigator: NavController? = null
+    modifier: Modifier = Modifier,
+    navigator: NavController? = null,
 ) {
-  Box(
-    modifier = Modifier
-      .then(modifier)
-      .padding(
-        horizontal = 16.dp,
-      )
-      .width(120.dp)
-      .height(180.dp)
-      .background(
-        MaterialTheme.colorScheme.surfaceContainer,
-        MaterialTheme.shapes.small
-      )
-      .padding(
-        horizontal = 16.dp,
-        vertical = 12.dp
-      )
-      .clip(MaterialTheme.shapes.small),
-    contentAlignment = Alignment.Center
-  ) {
-    Column(
-      modifier = Modifier.fillMaxSize(),
-      horizontalAlignment = Alignment.Start,
-      verticalArrangement = Arrangement.Center
+    Box(
+        modifier =
+            Modifier
+                .then(modifier)
+                .padding(
+                    horizontal = 16.dp,
+                ).width(120.dp)
+                .height(180.dp)
+                .background(
+                    MaterialTheme.colorScheme.surfaceContainer,
+                    MaterialTheme.shapes.small,
+                ).padding(
+                    horizontal = 16.dp,
+                    vertical = 12.dp,
+                ).clip(MaterialTheme.shapes.small),
+        contentAlignment = Alignment.Center,
     ) {
-      Text(
-        text = stringResource(R.string.empty),
-        style = MaterialTheme.typography.titleLarge.copy(
-          color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-          fontWeight = FontWeight.Black
-        )
-      )
-      Spacer(
-        modifier = Modifier
-          .fillMaxWidth()
-          .weight(1f)
-          .height(4.dp)
-      )
-      TextButton(
-        onClick = {
-          navigator?.navigate(Routes.Scanner)
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = stringResource(R.string.empty),
+                style =
+                    MaterialTheme.typography.titleLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        fontWeight = FontWeight.Black,
+                    ),
+            )
+            Spacer(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .height(4.dp),
+            )
+            TextButton(
+                onClick = {
+                    navigator?.navigate(Routes.Scanner)
+                },
+            ) {
+                Text(stringResource(R.string.scan_local_music))
+            }
         }
-      ) {
-        Text(stringResource(R.string.scan_local_music))
-      }
     }
-  }
 }
 
 /**
@@ -388,222 +390,228 @@ private fun OftenListenEmptyContent(
  */
 @Composable
 private fun OftenListenSongList(
-  songs: List<Song> = emptyList(),
-  playBackViewModel: PlayBackViewModel = activityViewModel(),
+    songs: List<Song> = emptyList(),
+    playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
-  val listState = rememberLazyListState()
+    val listState = rememberLazyListState()
 
-  ScrollHaptics(
-    listState = listState,
-    vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
-    enabled = true,
-  )
-
-  LazyRow(
-    modifier = Modifier
-      .fillMaxWidth()
-      .overScrollHorizontal(),
-    horizontalArrangement = Arrangement.spacedBy(12.dp),
-    state = listState,
-    flingBehavior = rememberSnapFlingBehavior(
-      lazyListState = listState,
-      snapPosition = SnapPosition.Center
+    ScrollHaptics(
+        listState = listState,
+        vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
+        enabled = true,
     )
-  ) {
-    item {
-      Spacer(
-        modifier = Modifier
-          .width(4.dp)
-      )
-    }
-    items(songs, key = {
-      it.songId?.toString() ?: UUID.randomUUID().toString()
-    }) {
-      val coverPainter = rememberAsyncImagePainter(
-        model = it.getCoverUri().toCoilUri()
-      )
-      val coverState = coverPainter.state.collectAsState().value
 
-      Box(
-        modifier = Modifier
-          .width(150.dp)
-          .height(180.dp)
-          .background(
-            MaterialTheme.colorScheme.surface
-          )
-          .animateItem()
-          .clip(
-            MaterialTheme.shapes.small
-          )
-          .pressable()
-          .clickableNoRippleWithVibration {
-            playBackViewModel.play(it, songs)
-          }
-      ) {
-        Box(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(180.dp)
-            .background(
-              MaterialTheme.colorScheme.surfaceContainer,
-              MaterialTheme.shapes.small
-            )
-            .clip(MaterialTheme.shapes.small)
-            .progressiveBlur()
-
-        ) {
-          if (coverState is AsyncImagePainter.State.Success) {
-            AsyncImage(
-              model = it.getCoverUri().toCoilUri(),
-              contentDescription = null,
-              modifier = Modifier.fillMaxSize(),
-              contentScale = ContentScale.Crop
-            )
-          } else {
-            Text(
-              modifier = Modifier.rotate(45f),
-              text = it.displayName,
-              style = MaterialTheme.typography.headlineLarge.copy(
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                fontWeight = FontWeight.W900
-              )
-            )
-          }
-        }
-        Column(
-          modifier = Modifier
-            .fillMaxSize()
-            .background(
-              brush = Brush.verticalGradient(
-                colors = listOf(
-                  Color.Transparent,
-                  MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                  MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-                )
-              )
-            )
-            .padding(
-              horizontal = 16.dp,
-              vertical = 12.dp
+    LazyRow(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .overScrollHorizontal(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        state = listState,
+        flingBehavior =
+            rememberSnapFlingBehavior(
+                lazyListState = listState,
+                snapPosition = SnapPosition.Center,
             ),
-          verticalArrangement = Arrangement.Bottom,
-        ) {
-          Spacer(
-            modifier = Modifier
-              .fillMaxWidth()
-              .height(12.dp)
-          )
-          Text(
-            text = it.displayName,
-            modifier = Modifier.fillMaxWidth(),
-            maxLines = 1,
-            style = MaterialTheme.typography.titleMedium.copy(
-              fontWeight = FontWeight.Bold,
-              color = MaterialTheme.colorScheme.onSurface
+    ) {
+        item {
+            Spacer(
+                modifier =
+                    Modifier
+                        .width(4.dp),
             )
-          )
-          Spacer(
-            modifier = Modifier
-              .fillMaxWidth()
-              .height(6.dp)
-          )
-          Text(
-            text = it.artist,
-            modifier = Modifier.fillMaxWidth(),
-            maxLines = 1,
-            style = MaterialTheme.typography.titleSmall.copy(
-              fontWeight = FontWeight.Normal,
-              color = MaterialTheme.colorScheme.onSurface.copy(
-                alpha = 0.6f
-              )
-            )
-          )
         }
-      }
+        items(songs, key = {
+            it.songId?.toString() ?: UUID.randomUUID().toString()
+        }) {
+            val coverPainter =
+                rememberAsyncImagePainter(
+                    model = it.getCoverUri().toCoilUri(),
+                )
+            val coverState = coverPainter.state.collectAsState().value
+
+            Box(
+                modifier =
+                    Modifier
+                        .width(150.dp)
+                        .height(180.dp)
+                        .background(
+                            MaterialTheme.colorScheme.surface,
+                        ).animateItem()
+                        .clip(
+                            MaterialTheme.shapes.small,
+                        ).pressable()
+                        .clickableNoRippleWithVibration {
+                            playBackViewModel.play(it, songs)
+                        },
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surfaceContainer,
+                                MaterialTheme.shapes.small,
+                            ).clip(MaterialTheme.shapes.small)
+                            .progressiveBlur(),
+                ) {
+                    if (coverState is AsyncImagePainter.State.Success) {
+                        AsyncImage(
+                            model = it.getCoverUri().toCoilUri(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Text(
+                            modifier = Modifier.rotate(45f),
+                            text = it.displayName,
+                            style =
+                                MaterialTheme.typography.headlineLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    fontWeight = FontWeight.W900,
+                                ),
+                        )
+                    }
+                }
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush =
+                                    Brush.verticalGradient(
+                                        colors =
+                                            listOf(
+                                                Color.Transparent,
+                                                MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                            ),
+                                    ),
+                            ).padding(
+                                horizontal = 16.dp,
+                                vertical = 12.dp,
+                            ),
+                    verticalArrangement = Arrangement.Bottom,
+                ) {
+                    Spacer(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(12.dp),
+                    )
+                    Text(
+                        text = it.displayName,
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1,
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            ),
+                    )
+                    Spacer(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(6.dp),
+                    )
+                    Text(
+                        text = it.artist,
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1,
+                        style =
+                            MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Normal,
+                                color =
+                                    MaterialTheme.colorScheme.onSurface.copy(
+                                        alpha = 0.6f,
+                                    ),
+                            ),
+                    )
+                }
+            }
+        }
+        item {
+            Spacer(
+                modifier =
+                    Modifier
+                        .width(16.dp),
+            )
+        }
     }
-    item {
-      Spacer(
-        modifier = Modifier
-          .width(16.dp)
-      )
-    }
-  }
 }
 
 // 标题
 @Composable
 private fun Title(
-  title: String,
-  right: @Composable () -> Unit = {},
+    title: String,
+    right: @Composable () -> Unit = {},
 ) {
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(horizontal = 16.dp),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Text(
-      text = title,
-      style = MaterialTheme.typography.bodyLarge.copy(
-        color = MaterialTheme.colorScheme.onSurface,
-        fontWeight = FontWeight.W600,
-        fontSize = 20.sp
-      )
-    )
-    Spacer(modifier = Modifier.weight(1f))
-    right()
-  }
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style =
+                MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.W600,
+                    fontSize = 20.sp,
+                ),
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        right()
+    }
 }
-
 
 /**
  * 顶部标题栏
  */
 @Composable
 private fun TitleBar(pagerState: PagerState) {
-  val coroutineScope = rememberCoroutineScope()
-  Box(
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(64.dp)
-      .background(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = .9f)
-      ),
-    contentAlignment = Alignment.Center
-  ) {
-
-
-    Text(
-      text = stringResource(R.string.home_page_title),
-      style = MaterialTheme.typography.bodyMedium.copy(
-        color = MaterialTheme.colorScheme.onSurface,
-        fontWeight = FontWeight.Black,
-        fontSize = 22.sp
-      ),
-      modifier = Modifier
-        .align(Alignment.Center)
-    )
-
-    IconButton(
-      onClick = {
-        coroutineScope.launch {
-          pagerState.animateScrollToPage(1)
-        }
-      },
-      modifier = Modifier.align(Alignment.CenterEnd)
+    val coroutineScope = rememberCoroutineScope()
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = .9f),
+                ),
+        contentAlignment = Alignment.Center,
     ) {
-      Icon(
-        imageVector = Icons.Default.MoreVert,
-        contentDescription = "设置",
-        tint = MaterialTheme.colorScheme.onSurface
-      )
+        Text(
+            text = stringResource(R.string.home_page_title),
+            style =
+                MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 22.sp,
+                ),
+            modifier =
+                Modifier
+                    .align(Alignment.Center),
+        )
+
+        IconButton(
+            onClick = {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage(1)
+                }
+            },
+            modifier = Modifier.align(Alignment.CenterEnd),
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "设置",
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
     }
-
-  }
 }
-
-
-
-
-
-

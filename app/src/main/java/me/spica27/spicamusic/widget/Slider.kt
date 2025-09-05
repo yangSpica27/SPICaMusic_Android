@@ -3,7 +3,6 @@
 
 package me.spica27.spicamusic.widget
 
-
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -60,79 +59,83 @@ import kotlin.math.round
  */
 @Composable
 fun Slider(
-  modifier: Modifier = Modifier,
-  progress: Float,
-  onProgressChange: (Float) -> Unit,
-  onProgressChangeFinished: () -> Unit = {},
-  enabled: Boolean = true,
-  minValue: Float = 0f,
-  maxValue: Float = 1f,
-  height: Dp = SliderDefaults.MinHeight,
-  colors: SliderColors = SliderDefaults.sliderColors(),
-  effect: Boolean = true,
-  decimalPlaces: Int = 1,
-  hapticEffect: SliderDefaults.SliderHapticEffect = SliderDefaults.DefaultHapticEffect
+    modifier: Modifier = Modifier,
+    progress: Float,
+    onProgressChange: (Float) -> Unit,
+    onProgressChangeFinished: () -> Unit = {},
+    enabled: Boolean = true,
+    minValue: Float = 0f,
+    maxValue: Float = 1f,
+    height: Dp = SliderDefaults.MinHeight,
+    colors: SliderColors = SliderDefaults.sliderColors(),
+    effect: Boolean = true,
+    decimalPlaces: Int = 1,
+    hapticEffect: SliderDefaults.SliderHapticEffect = SliderDefaults.DefaultHapticEffect,
 ) {
-  val hapticFeedback = LocalHapticFeedback.current
-  var dragOffset by remember { mutableStateOf(0f) }
-  var isDragging by remember { mutableStateOf(false) }
-  val factor = remember(decimalPlaces) { 10f.pow(decimalPlaces) }
-  val hapticState = remember { SliderHapticState() }
-  val interactionSource = remember { MutableInteractionSource() }
-  val shape = remember(height) { RoundedCornerShape(height) }
+    val hapticFeedback = LocalHapticFeedback.current
+    var dragOffset by remember { mutableStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
+    val factor = remember(decimalPlaces) { 10f.pow(decimalPlaces) }
+    val hapticState = remember { SliderHapticState() }
+    val interactionSource = remember { MutableInteractionSource() }
+    val shape = remember(height) { RoundedCornerShape(height) }
 
-  val calculateProgress = remember(minValue, maxValue, factor) {
-    { offset: Float, width: Int ->
-      val newValue = (offset / width) * (maxValue - minValue) + minValue
-      (round(newValue * factor) / factor).coerceIn(minValue, maxValue)
-    }
-  }
-
-  Box(
-    modifier = modifier
-      .then(
-        if (enabled) {
-          Modifier
-            .pointerInput(Unit) {
-              detectHorizontalDragGestures(
-                onDragStart = { offset ->
-                  isDragging = true
-                  dragOffset = offset.x
-                  val calculatedValue = calculateProgress(dragOffset, size.width)
-                  onProgressChange(calculatedValue)
-                  hapticState.reset(calculatedValue)
-                },
-                onHorizontalDrag = { _, dragAmount ->
-                  dragOffset = (dragOffset + dragAmount).coerceIn(0f, size.width.toFloat())
-                  val calculatedValue = calculateProgress(dragOffset, size.width)
-                  onProgressChange(calculatedValue)
-                  hapticState.handleHapticFeedback(calculatedValue, hapticEffect, hapticFeedback)
-                },
-                onDragEnd = {
-                  isDragging = false
-                  onProgressChangeFinished()
-                }
-              )
+    val calculateProgress =
+        remember(minValue, maxValue, factor) {
+            { offset: Float, width: Int ->
+                val newValue = (offset / width) * (maxValue - minValue) + minValue
+                (round(newValue * factor) / factor).coerceIn(minValue, maxValue)
             }
-            .indication(interactionSource, LocalIndication.current)
-        } else Modifier
-      ),
-    contentAlignment = Alignment.CenterStart
-  ) {
-    SliderTrack(
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(height),
-      shape = shape,
-      backgroundColor = colors.backgroundColor(),
-      foregroundColor = colors.foregroundColor(enabled),
-      effect = effect,
-      progress = progress,
-      minValue = minValue,
-      maxValue = maxValue,
-      isDragging = isDragging,
-    )
-  }
+        }
+
+    Box(
+        modifier =
+            modifier
+                .then(
+                    if (enabled) {
+                        Modifier
+                            .pointerInput(Unit) {
+                                detectHorizontalDragGestures(
+                                    onDragStart = { offset ->
+                                        isDragging = true
+                                        dragOffset = offset.x
+                                        val calculatedValue = calculateProgress(dragOffset, size.width)
+                                        onProgressChange(calculatedValue)
+                                        hapticState.reset(calculatedValue)
+                                    },
+                                    onHorizontalDrag = { _, dragAmount ->
+                                        dragOffset = (dragOffset + dragAmount).coerceIn(0f, size.width.toFloat())
+                                        val calculatedValue = calculateProgress(dragOffset, size.width)
+                                        onProgressChange(calculatedValue)
+                                        hapticState.handleHapticFeedback(calculatedValue, hapticEffect, hapticFeedback)
+                                    },
+                                    onDragEnd = {
+                                        isDragging = false
+                                        onProgressChangeFinished()
+                                    },
+                                )
+                            }.indication(interactionSource, LocalIndication.current)
+                    } else {
+                        Modifier
+                    },
+                ),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        SliderTrack(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(height),
+            shape = shape,
+            backgroundColor = colors.backgroundColor(),
+            foregroundColor = colors.foregroundColor(enabled),
+            effect = effect,
+            progress = progress,
+            minValue = minValue,
+            maxValue = maxValue,
+            isDragging = isDragging,
+        )
+    }
 }
 
 /**
@@ -140,119 +143,120 @@ fun Slider(
  */
 @Composable
 private fun SliderTrack(
-  modifier: Modifier,
-  shape: Shape,
-  backgroundColor: Color,
-  foregroundColor: Color,
-  effect: Boolean,
-  progress: Float,
-  minValue: Float,
-  maxValue: Float,
-  isDragging: Boolean,
+    modifier: Modifier,
+    shape: Shape,
+    backgroundColor: Color,
+    foregroundColor: Color,
+    effect: Boolean,
+    progress: Float,
+    minValue: Float,
+    maxValue: Float,
+    isDragging: Boolean,
 ) {
-  val backgroundAlpha by animateFloatAsState(
-    targetValue = if (isDragging) 0.044f else 0f,
-    animationSpec = tween(150)
-  )
-
-  Canvas(
-    modifier = modifier
-      .clip(shape)
-      .background(backgroundColor)
-      .drawBehind { drawRect(Color.Black.copy(alpha = backgroundAlpha)) }
-  ) {
-    val barHeight = size.height
-    val barWidth = size.width
-    val progressWidth = barWidth * ((progress - minValue) / (maxValue - minValue))
-    val cornerRadius = if (effect) CornerRadius(barHeight / 2) else CornerRadius.Zero
-
-    drawRoundRect(
-      color = foregroundColor,
-      size = Size(progressWidth, barHeight),
-      topLeft = Offset(0f, center.y - barHeight / 2),
-      cornerRadius = cornerRadius
+    val backgroundAlpha by animateFloatAsState(
+        targetValue = if (isDragging) 0.044f else 0f,
+        animationSpec = tween(150),
     )
-  }
+
+    Canvas(
+        modifier =
+            modifier
+                .clip(shape)
+                .background(backgroundColor)
+                .drawBehind { drawRect(Color.Black.copy(alpha = backgroundAlpha)) },
+    ) {
+        val barHeight = size.height
+        val barWidth = size.width
+        val progressWidth = barWidth * ((progress - minValue) / (maxValue - minValue))
+        val cornerRadius = if (effect) CornerRadius(barHeight / 2) else CornerRadius.Zero
+
+        drawRoundRect(
+            color = foregroundColor,
+            size = Size(progressWidth, barHeight),
+            topLeft = Offset(0f, center.y - barHeight / 2),
+            cornerRadius = cornerRadius,
+        )
+    }
 }
 
 /**
  * Manages haptic feedback state for the slider.
  */
 internal class SliderHapticState {
-  private var edgeFeedbackTriggered: Boolean = false
-  private var lastStep: Float = 0f
+    private var edgeFeedbackTriggered: Boolean = false
+    private var lastStep: Float = 0f
 
-  fun reset(currentValue: Float) {
-    edgeFeedbackTriggered = false
-    lastStep = currentValue
-  }
-
-  fun handleHapticFeedback(
-    currentValue: Float,
-    hapticEffect: SliderDefaults.SliderHapticEffect,
-    hapticFeedback: HapticFeedback
-  ) {
-    if (hapticEffect == SliderDefaults.SliderHapticEffect.None) return
-
-    val isAtEdge = currentValue == 0f || currentValue == 1f
-    if (isAtEdge && !edgeFeedbackTriggered) {
-      hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-      edgeFeedbackTriggered = true
-    } else if (!isAtEdge) {
-      edgeFeedbackTriggered = false
-    }
-
-    if (hapticEffect == SliderDefaults.SliderHapticEffect.Step) {
-      val isNotAtEdge = currentValue != 0f && currentValue != 1f
-      if (currentValue != lastStep && isNotAtEdge) {
-        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+    fun reset(currentValue: Float) {
+        edgeFeedbackTriggered = false
         lastStep = currentValue
-      }
     }
-  }
+
+    fun handleHapticFeedback(
+        currentValue: Float,
+        hapticEffect: SliderDefaults.SliderHapticEffect,
+        hapticFeedback: HapticFeedback,
+    ) {
+        if (hapticEffect == SliderDefaults.SliderHapticEffect.None) return
+
+        val isAtEdge = currentValue == 0f || currentValue == 1f
+        if (isAtEdge && !edgeFeedbackTriggered) {
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+            edgeFeedbackTriggered = true
+        } else if (!isAtEdge) {
+            edgeFeedbackTriggered = false
+        }
+
+        if (hapticEffect == SliderDefaults.SliderHapticEffect.Step) {
+            val isNotAtEdge = currentValue != 0f && currentValue != 1f
+            if (currentValue != lastStep && isNotAtEdge) {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                lastStep = currentValue
+            }
+        }
+    }
 }
 
 object SliderDefaults {
-  val MinHeight = 30.dp
+    val MinHeight = 30.dp
 
-  /**
-   * The type of haptic feedback to be used for the slider.
-   */
-  enum class SliderHapticEffect {
-    /** No haptic feedback. */
-    None,
+    /**
+     * The type of haptic feedback to be used for the slider.
+     */
+    enum class SliderHapticEffect {
+        /** No haptic feedback. */
+        None,
 
-    /** Haptic feedback at 0% and 100%. */
-    Edge,
+        /** Haptic feedback at 0% and 100%. */
+        Edge,
 
-    /** Haptic feedback at steps. */
-    Step
-  }
+        /** Haptic feedback at steps. */
+        Step,
+    }
 
-  val DefaultHapticEffect = SliderHapticEffect.Step
+    val DefaultHapticEffect = SliderHapticEffect.Step
 
-  @Composable
-  fun sliderColors(
-    foregroundColor: Color = MaterialTheme.colorScheme.primary,
-    disabledForegroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
-    backgroundColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh
-  ): SliderColors = SliderColors(
-    foregroundColor = foregroundColor,
-    disabledForegroundColor = disabledForegroundColor,
-    backgroundColor = backgroundColor
-  )
+    @Composable
+    fun sliderColors(
+        foregroundColor: Color = MaterialTheme.colorScheme.primary,
+        disabledForegroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
+        backgroundColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ): SliderColors =
+        SliderColors(
+            foregroundColor = foregroundColor,
+            disabledForegroundColor = disabledForegroundColor,
+            backgroundColor = backgroundColor,
+        )
 }
 
 @Immutable
 class SliderColors(
-  private val foregroundColor: Color,
-  private val disabledForegroundColor: Color,
-  private val backgroundColor: Color
+    private val foregroundColor: Color,
+    private val disabledForegroundColor: Color,
+    private val backgroundColor: Color,
 ) {
-  @Stable
-  internal fun foregroundColor(enabled: Boolean): Color =
-    if (enabled) foregroundColor else disabledForegroundColor
+    @Stable
+    internal fun foregroundColor(enabled: Boolean): Color = if (enabled) foregroundColor else disabledForegroundColor
 
-  @Stable
-  internal fun backgroundColor(): Color = backgroundColor
+    @Stable
+    internal fun backgroundColor(): Color = backgroundColor
 }

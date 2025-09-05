@@ -40,176 +40,179 @@ import timber.log.Timber
 
 @OptIn(UnstableApi::class)
 class PlayBackViewModel(
-  private val songDao: SongDao,
-  private val amplituda: Amplituda,
-  private val playlistRepository: PlaylistRepository,
-  val player: SpicaPlayer,
-  private val playHistoryRepository: PlayHistoryRepository
+    private val songDao: SongDao,
+    private val amplituda: Amplituda,
+    private val playlistRepository: PlaylistRepository,
+    val player: SpicaPlayer,
+    private val playHistoryRepository: PlayHistoryRepository,
 ) : ViewModel() {
+    fun getAmplituda(): Amplituda = amplituda
 
+    val playList: StateFlow<List<Song>>
+        get() =
+            player.currentTimelineItems
+                .mapNotNull {
+                    it.mapNotNull { item ->
+                        songDao.getSongWithMediaStoreId(item.mediaId.toLongOrNull() ?: -1)
+                    }
+                }.flowOn(Dispatchers.IO)
+                .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-  fun getAmplituda(): Amplituda {
-    return amplituda
-  }
+    // 当前歌单大小大小
+    val nowPlayingListSize: StateFlow<Int> =
+        playList
+            .map {
+                it.size
+            }.distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                initialValue = 0,
+            )
 
-  val playList: StateFlow<List<Song>>
-    get() = player.currentTimelineItems
-      .mapNotNull {
-        it.mapNotNull { item ->
-          songDao.getSongWithMediaStoreId(item.mediaId.toLongOrNull() ?: -1)
+    val currentSongFlow: StateFlow<Song?> =
+        player.currentMediaItem
+            .map {
+                songDao.getSongWithMediaStoreId(it?.mediaId?.toLongOrNull() ?: -1)
+            }.flowOn(Dispatchers.IO)
+            .distinctUntilChanged()
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                initialValue = null,
+            )
+
+    @kotlin.OptIn(FlowPreview::class)
+    val isPlaying: SharedFlow<Boolean>
+        get() =
+            player.isPlaying
+                .debounce(250)
+                .distinctUntilChanged()
+                .conflate()
+                .flowOn(Dispatchers.Default)
+                .shareIn(viewModelScope, SharingStarted.Eagerly, 1)
+
+    // 当前的进度
+    private val _positionSec =
+        flow {
+            while (currentCoroutineContext().isActive) {
+                emit(player.currentPosition)
+                delay(1000)
+            }
         }
-      }.flowOn(Dispatchers.IO)
-      .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-  // 当前歌单大小大小
-  val nowPlayingListSize: StateFlow<Int> = playList.map {
-    it.size
-  }
-    .distinctUntilChanged()
-    .flowOn(Dispatchers.IO)
-    .stateIn(
-      viewModelScope,
-      SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-      initialValue = 0
-    )
+    val positionSec: StateFlow<Long>
+        get() =
+            _positionSec
+                .distinctUntilChanged()
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                    initialValue = 0,
+                )
 
-
-  val currentSongFlow: StateFlow<Song?> = player.currentMediaItem.map {
-    songDao.getSongWithMediaStoreId(it?.mediaId?.toLongOrNull() ?: -1)
-  }
-    .flowOn(Dispatchers.IO)
-    .distinctUntilChanged()
-    .stateIn(
-      viewModelScope,
-      SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-      initialValue = null
-    )
-
-
-  @kotlin.OptIn(FlowPreview::class)
-  val isPlaying: SharedFlow<Boolean>
-    get() = player.isPlaying
-      .debounce(250)
-      .distinctUntilChanged()
-      .conflate()
-      .flowOn(Dispatchers.Default)
-      .shareIn(viewModelScope, SharingStarted.Eagerly, 1)
-
-  // 当前的进度
-  private val _positionSec = flow {
-    while (currentCoroutineContext().isActive) {
-      emit(player.currentPosition)
-      delay(1000)
-    }
-  }
-
-  val positionSec: StateFlow<Long>
-    get() = _positionSec.distinctUntilChanged()
-      .stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-        initialValue = 0
-      )
-
-  private val _playlistCurrentIndex = combine(
-    playList,
-    currentSongFlow
-  ) { list, song ->
-    list.indexOfFirst { it.mediaStoreId == song?.mediaStoreId }
-  }.stateIn(
-    viewModelScope,
-    SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-    initialValue = 0
-  )
-
-  val playlistCurrentIndex: StateFlow<Int>
-    get() = _playlistCurrentIndex
-
-
-  // 是否随机播放
-  private val _isShuffled = MutableStateFlow(false)
-  val isShuffled: Flow<Boolean>
-    get() = _isShuffled
-
-
-  init {
-    Timber.tag("MusicViewModel").d("init")
-    viewModelScope.launch(Dispatchers.IO) {
-      currentSongFlow.filterNotNull().collectLatest {
-        playHistoryRepository.insertPlayHistory(
-          PlayHistory(
-            mediaId = it.mediaStoreId,
-            title = it.displayName,
-            artist = it.artist,
-          )
+    private val _playlistCurrentIndex =
+        combine(
+            playList,
+            currentSongFlow,
+        ) { list, song ->
+            list.indexOfFirst { it.mediaStoreId == song?.mediaStoreId }
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+            initialValue = 0,
         )
-      }
+
+    val playlistCurrentIndex: StateFlow<Int>
+        get() = _playlistCurrentIndex
+
+    // 是否随机播放
+    private val _isShuffled = MutableStateFlow(false)
+    val isShuffled: Flow<Boolean>
+        get() = _isShuffled
+
+    init {
+        Timber.tag("MusicViewModel").d("init")
+        viewModelScope.launch(Dispatchers.IO) {
+            currentSongFlow.filterNotNull().collectLatest {
+                playHistoryRepository.insertPlayHistory(
+                    PlayHistory(
+                        mediaId = it.mediaStoreId,
+                        title = it.displayName,
+                        artist = it.artist,
+                    ),
+                )
+            }
+        }
     }
-  }
 
-
-  fun createPlaylistWithSongs(name: String, list: List<Song>) {
-    viewModelScope.launch {
-      playlistRepository.createPlaylistWithSongs(name, list)
+    fun createPlaylistWithSongs(
+        name: String,
+        list: List<Song>,
+    ) {
+        viewModelScope.launch {
+            playlistRepository.createPlaylistWithSongs(name, list)
+        }
     }
-  }
 
-
-  fun togglePlaying() {
-    player.doAction(
-      PlayerAction.PlayOrPause
-    )
-  }
-
-  fun playPre() {
-    player.doAction(
-      PlayerAction.SkipToPrevious
-    )
-  }
-
-  fun playNext() {
-    player.doAction(
-      PlayerAction.SkipToNext
-    )
-  }
-
-  // 收藏/不收藏歌曲
-  fun toggleLike(song: Song) {
-    viewModelScope.launch {
-      songDao.toggleLike(song.songId ?: -1)
+    fun togglePlaying() {
+        player.doAction(
+            PlayerAction.PlayOrPause,
+        )
     }
-  }
 
-  fun play(song: Song, list: List<Song>) {
-    MediaControl.playWithList(
-      mediaIds = list.map { it.mediaStoreId.toString() },
-      mediaId = song.mediaStoreId.toString(),
-      start = true
-    )
-  }
-
-  fun play(song: Song) {
-    viewModelScope.launch(Dispatchers.Default) {
-      PlayerAction.PlayById(mediaId = song.mediaStoreId.toString())
-        .action()
+    fun playPre() {
+        player.doAction(
+            PlayerAction.SkipToPrevious,
+        )
     }
-  }
 
-  fun removeSong(song: Song) {
-    player.doAction(PlayerAction.RemoveWithMediaId(song.mediaStoreId.toString()))
-  }
+    fun playNext() {
+        player.doAction(
+            PlayerAction.SkipToNext,
+        )
+    }
 
-  fun clear() {
-    player.doAction(
-      PlayerAction.UpdateList(
-        mediaIds = emptyList()
-      )
-    )
-  }
+    // 收藏/不收藏歌曲
+    fun toggleLike(song: Song) {
+        viewModelScope.launch {
+            songDao.toggleLike(song.songId ?: -1)
+        }
+    }
 
-  fun seekTo(position: Long) {
-    player.doAction(PlayerAction.SeekTo(position))
-  }
+    fun play(
+        song: Song,
+        list: List<Song>,
+    ) {
+        MediaControl.playWithList(
+            mediaIds = list.map { it.mediaStoreId.toString() },
+            mediaId = song.mediaStoreId.toString(),
+            start = true,
+        )
+    }
 
+    fun play(song: Song) {
+        viewModelScope.launch(Dispatchers.Default) {
+            PlayerAction
+                .PlayById(mediaId = song.mediaStoreId.toString())
+                .action()
+        }
+    }
 
+    fun removeSong(song: Song) {
+        player.doAction(PlayerAction.RemoveWithMediaId(song.mediaStoreId.toString()))
+    }
+
+    fun clear() {
+        player.doAction(
+            PlayerAction.UpdateList(
+                mediaIds = emptyList(),
+            ),
+        )
+    }
+
+    fun seekTo(position: Long) {
+        player.doAction(PlayerAction.SeekTo(position))
+    }
 }

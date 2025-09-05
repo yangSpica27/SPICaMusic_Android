@@ -43,132 +43,143 @@ import org.koin.compose.koinInject
 
 @Composable
 fun AgreePrivacyScreen(
-  navigator: NavController,
-  dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>()
+    navigator: NavController,
+    dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>(),
 ) {
-
-  BackHandler(true) {
-    ToastUtils.showToast("请同意隐私政策")
-  }
-
-  val coroutineScope = rememberCoroutineScope()
-
-  var showPrivacy by remember { mutableStateOf(false) }
-
-  LaunchedEffect(Unit) {
-    delay(1500)
-    showPrivacy = true
-  }
-
-  Scaffold { paddingValues ->
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(paddingValues)
-    ) {
-
-      Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .verticalScroll(
-            rememberScrollState()
-          )
-      ) {
-        MyWebView(
-          url = "file:///android_asset/privacy.html",
-          onPageFinished = {
-
-          }
-        )
-        Row(
-          modifier = Modifier
-            .background(Color(0xfff4f4f4))
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 33.dp),
-          horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-          ElevatedButton(
-            modifier = Modifier.weight(1f),
-            onClick = {
-              System.exit(0)
-            },
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.elevatedButtonColors().copy(
-              containerColor = Color(
-                0xfff5222d
-              ),
-              contentColor = Color.White
-            )
-          ) {
-            Text("拒绝")
-          }
-          ElevatedButton(
-            modifier = Modifier.weight(1f),
-            onClick = {
-              coroutineScope.launch {
-                dataStoreUtil.setAgreePrivacy(true)
-                navigator.popBackStack()
-              }
-            },
-            shape = MaterialTheme.shapes.small,
-            colors = ButtonDefaults.elevatedButtonColors().copy(
-              containerColor = Color(
-                0xff52c41a
-              ),
-              contentColor = Color.White
-            )
-          ) {
-            Text("同意")
-          }
-        }
-      }
-      AnimatedVisibility(
-        visible = !showPrivacy,
-        exit = fadeOut(
-          tween(
-            durationMillis = 500
-          )
-        )
-      ) {
-        Box(
-          modifier = Modifier
-            .background(
-              Color(0xfff4f4f4)
-            )
-            .fillMaxSize(),
-          contentAlignment = Alignment.Center,
-        ) {
-          CircularProgressIndicator()
-        }
-      }
+    BackHandler(true) {
+        ToastUtils.showToast("请同意隐私政策")
     }
-  }
+
+    val coroutineScope = rememberCoroutineScope()
+
+    var showPrivacy by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        delay(1500)
+        showPrivacy = true
+    }
+
+    Scaffold { paddingValues ->
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(
+                            rememberScrollState(),
+                        ),
+            ) {
+                MyWebView(
+                    url = "file:///android_asset/privacy.html",
+                    onPageFinished = {
+                    },
+                )
+                Row(
+                    modifier =
+                        Modifier
+                            .background(Color(0xfff4f4f4))
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 33.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    ElevatedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            System.exit(0)
+                        },
+                        shape = MaterialTheme.shapes.small,
+                        colors =
+                            ButtonDefaults.elevatedButtonColors().copy(
+                                containerColor =
+                                    Color(
+                                        0xfff5222d,
+                                    ),
+                                contentColor = Color.White,
+                            ),
+                    ) {
+                        Text("拒绝")
+                    }
+                    ElevatedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            coroutineScope.launch {
+                                dataStoreUtil.setAgreePrivacy(true)
+                                navigator.popBackStack()
+                            }
+                        },
+                        shape = MaterialTheme.shapes.small,
+                        colors =
+                            ButtonDefaults.elevatedButtonColors().copy(
+                                containerColor =
+                                    Color(
+                                        0xff52c41a,
+                                    ),
+                                contentColor = Color.White,
+                            ),
+                    ) {
+                        Text("同意")
+                    }
+                }
+            }
+            AnimatedVisibility(
+                visible = !showPrivacy,
+                exit =
+                    fadeOut(
+                        tween(
+                            durationMillis = 500,
+                        ),
+                    ),
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .background(
+                                Color(0xfff4f4f4),
+                            ).fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    }
 }
 
 @Composable
-fun MyWebView(url: String, onPageFinished: (() -> Unit)? = null) {
-  AndroidView(
-    factory = { context ->
-      WebView(context).apply {
-        webViewClient = object : WebViewClient() {
-
-          override fun onPageFinished(view: WebView?, url: String?) {
-            super.onPageFinished(view, url)
-            onPageFinished?.invoke()
-          }
-        }
-        post {
-          loadUrl(url)
-        }
-      }
-    },
-    update = { webView ->
-      webView.post {
-        webView.loadUrl(url)
-      }
-    },
-    onRelease = {
-      it.destroy()
-    }
-  )
+fun MyWebView(
+    url: String,
+    onPageFinished: (() -> Unit)? = null,
+) {
+    AndroidView(
+        factory = { context ->
+            WebView(context).apply {
+                webViewClient =
+                    object : WebViewClient() {
+                        override fun onPageFinished(
+                            view: WebView?,
+                            url: String?,
+                        ) {
+                            super.onPageFinished(view, url)
+                            onPageFinished?.invoke()
+                        }
+                    }
+                post {
+                    loadUrl(url)
+                }
+            }
+        },
+        update = { webView ->
+            webView.post {
+                webView.loadUrl(url)
+            }
+        },
+        onRelease = {
+            it.destroy()
+        },
+    )
 }

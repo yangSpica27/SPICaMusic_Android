@@ -82,371 +82,383 @@ import me.spica27.spicamusic.repository.LyricRepository
 import me.spica27.spicamusic.utils.DataStoreUtil
 import org.koin.compose.koinInject
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LyricsView(
-  modifier: Modifier = Modifier,
-  song: Song,
-  currentTime: Long,
-  dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>(),
-  placeHolder: @Composable () -> Unit = {},
-  onScroll: (Float) -> Unit = {}
+    modifier: Modifier = Modifier,
+    song: Song,
+    currentTime: Long,
+    dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>(),
+    placeHolder: @Composable () -> Unit = {},
+    onScroll: (Float) -> Unit = {},
 ) {
+    val listState = rememberLazyListState()
 
-  val listState = rememberLazyListState()
+    val isUserScrolling by listState.interactionSource.interactions
+        .filterIsInstance<DragInteraction>()
+        .map { dragInteraction ->
+            dragInteraction is DragInteraction.Start
+        }.collectAsStateWithLifecycle(null)
 
-  val isUserScrolling by listState.interactionSource.interactions
-    .filterIsInstance<DragInteraction>()
-    .map { dragInteraction ->
-      dragInteraction is DragInteraction.Start
-    }
-    .collectAsStateWithLifecycle(null)
+    val activeIndex = remember { mutableIntStateOf(0) }
 
-  val activeIndex = remember { mutableIntStateOf(0) }
+    val layoutHeight = remember { mutableIntStateOf(0) }
 
-  val layoutHeight = remember { mutableIntStateOf(0) }
+    val itemFontSize = dataStoreUtil.getLyricFontSize().collectAsState(18)
 
-  val itemFontSize = dataStoreUtil.getLyricFontSize().collectAsState(18)
+    val itemFontWeight = dataStoreUtil.getLyricFontWeight().collectAsState(900)
 
-  val itemFontWeight = dataStoreUtil.getLyricFontWeight().collectAsState(900)
+    val lyricRepository = koinInject<LyricRepository>()
 
-  val lyricRepository = koinInject<LyricRepository>()
+    // 延迟
+    val delay = lyricRepository.getDelay(song.mediaStoreId).collectAsState(0).value
 
-  // 延迟
-  val delay = lyricRepository.getDelay(song.mediaStoreId).collectAsState(0).value
+    // 歌词原始数据
+    val lyric = lyricRepository.getLyrics(song.mediaStoreId).collectAsState(null).value
 
-  // 歌词原始数据
-  val lyric = lyricRepository.getLyrics(song.mediaStoreId).collectAsState(null).value
+    // 解析后的
+    var currentLyric by remember { mutableStateOf(emptyList<LyricItem>()) }
 
-  // 解析后的
-  var currentLyric by remember { mutableStateOf(emptyList<LyricItem>()) }
-
-  LaunchedEffect(lyric) {
-    launch(Dispatchers.IO) {
-      currentLyric = LrcParser.parse(lyric ?: "")
-    }
-  }
-
-  LaunchedEffect(currentTime) {
-    if (isUserScrolling == true) return@LaunchedEffect
-    launch(Dispatchers.IO + SupervisorJob()) {
-      var index = 0
-      for (item in currentLyric) {
-        if (item.time >= (currentTime + 125 - delay)) {
-          activeIndex.intValue = (index - 1).fastCoerceAtLeast(0)
-          return@launch
+    LaunchedEffect(lyric) {
+        launch(Dispatchers.IO) {
+            currentLyric = LrcParser.parse(lyric ?: "")
         }
-        index++
-      }
-      activeIndex.intValue = (currentLyric.size - 1).coerceAtLeast(0)
     }
-  }
 
-  LaunchedEffect(activeIndex.intValue) {
-    launch(Dispatchers.IO) {
-      listState.animateScrollToItemAndCenter(
-        index = activeIndex.intValue,
-        offset = -layoutHeight.intValue / 6
-      )
-    }
-  }
-
-
-
-
-  LaunchedEffect(isUserScrolling) {
-    if (isUserScrolling == false && currentLyric.isNotEmpty()) {
-      val layoutInfo = listState.layoutInfo
-      if (layoutInfo.visibleItemsInfo.isEmpty()) {
-        return@LaunchedEffect
-      }
-
-      val viewportCenterY: Int =
-        layoutInfo.viewportSize.height / 2 - layoutInfo.viewportSize.height / 3
-
-      var closestItemIndex = -1
-
-
-      layoutInfo.visibleItemsInfo.forEach { itemInfo ->
-        val itemCenterInViewport: Int = itemInfo.offset + (itemInfo.size / 2)
-        val distance: Int = Math.max(itemCenterInViewport, viewportCenterY) - Math.min(
-          itemCenterInViewport, viewportCenterY
-        )
-
-        if (distance < itemInfo.size / 2) {
-          closestItemIndex = itemInfo.index
+    LaunchedEffect(currentTime) {
+        if (isUserScrolling == true) return@LaunchedEffect
+        launch(Dispatchers.IO + SupervisorJob()) {
+            var index = 0
+            for (item in currentLyric) {
+                if (item.time >= (currentTime + 125 - delay)) {
+                    activeIndex.intValue = (index - 1).fastCoerceAtLeast(0)
+                    return@launch
+                }
+                index++
+            }
+            activeIndex.intValue = (currentLyric.size - 1).coerceAtLeast(0)
         }
-      }
-
-      if (closestItemIndex != -1 && closestItemIndex < currentLyric.size) {
-        val targetLyricItem = currentLyric[closestItemIndex]
-        onScroll(targetLyricItem.time.toFloat())
-      }
     }
-  }
 
-
-  if (currentLyric.isEmpty()) {
-    placeHolder.invoke()
-  } else {
-    val providerState = rememberLiquidGlassProviderState(
-      backgroundColor = Color.Transparent
-    )
-
-    val density = LocalDensity.current
-
-    Box(
-      modifier = modifier
-        .fillMaxSize()
-        .onSizeChanged {
-          layoutHeight.intValue = it.height
-        },
-    ) {
-
-      LazyColumn(
-        modifier = Modifier
-          .fillMaxSize()
-          .liquidGlassProvider(providerState),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        state = listState,
-        userScrollEnabled = false,
-        contentPadding = PaddingValues(vertical = with(density) {
-          (layoutHeight.intValue / 3f).toDp()
-        })
-      ) {
-        itemsIndexed(
-          currentLyric.map { it.toNormal() },
-          key = { index, _ ->
-            index
-          }
-        ) { index, it ->
-          it?.toNormal()?.let { item ->
-            LyricsViewLine(
-              contentColor = MaterialTheme.colorScheme.onSurface,
-              isActive = index == activeIndex.intValue,
-              content = item.content,
-              inactiveBlur = ((index.coerceAtLeast(activeIndex.intValue) -
-                  index.coerceAtMost(activeIndex.intValue)) * 0.8f).fastCoerceAtMost(4f),
-              onClick = { },
-              fontWeight = FontWeight(itemFontWeight.value),
-              fontSize = itemFontSize.value.sp
+    LaunchedEffect(activeIndex.intValue) {
+        launch(Dispatchers.IO) {
+            listState.animateScrollToItemAndCenter(
+                index = activeIndex.intValue,
+                offset = -layoutHeight.intValue / 6,
             )
-          }
         }
-      }
-      Box(
-        Modifier
-          .fillMaxSize()
-          .liquidGlass(
-            providerState,
-            GlassStyle(
-              shape = MaterialTheme.shapes.medium,
-              innerRefraction = InnerRefraction(
-                height = RefractionHeight(32.dp),
-                amount = RefractionAmount((-24).dp)
-              ),
-              material = GlassMaterial.None,
-              highlight = GlassHighlight.None,
-              shadow = null
-            ),
-            compositingStrategy = CompositingStrategy.Auto,
-          )
-      )
-      if (isUserScrolling == true) {
+    }
+
+    LaunchedEffect(isUserScrolling) {
+        if (isUserScrolling == false && currentLyric.isNotEmpty()) {
+            val layoutInfo = listState.layoutInfo
+            if (layoutInfo.visibleItemsInfo.isEmpty()) {
+                return@LaunchedEffect
+            }
+
+            val viewportCenterY: Int =
+                layoutInfo.viewportSize.height / 2 - layoutInfo.viewportSize.height / 3
+
+            var closestItemIndex = -1
+
+            layoutInfo.visibleItemsInfo.forEach { itemInfo ->
+                val itemCenterInViewport: Int = itemInfo.offset + (itemInfo.size / 2)
+                val distance: Int =
+                    Math.max(itemCenterInViewport, viewportCenterY) -
+                        Math.min(
+                            itemCenterInViewport,
+                            viewportCenterY,
+                        )
+
+                if (distance < itemInfo.size / 2) {
+                    closestItemIndex = itemInfo.index
+                }
+            }
+
+            if (closestItemIndex != -1 && closestItemIndex < currentLyric.size) {
+                val targetLyricItem = currentLyric[closestItemIndex]
+                onScroll(targetLyricItem.time.toFloat())
+            }
+        }
+    }
+
+    if (currentLyric.isEmpty()) {
+        placeHolder.invoke()
+    } else {
+        val providerState =
+            rememberLiquidGlassProviderState(
+                backgroundColor = Color.Transparent,
+            )
+
+        val density = LocalDensity.current
+
         Box(
-          modifier = Modifier
-            .fillMaxWidth()
-            .height(
-              2.dp
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .onSizeChanged {
+                        layoutHeight.intValue = it.height
+                    },
+        ) {
+            LazyColumn(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .liquidGlassProvider(providerState),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                state = listState,
+                userScrollEnabled = false,
+                contentPadding =
+                    PaddingValues(
+                        vertical =
+                            with(density) {
+                                (layoutHeight.intValue / 3f).toDp()
+                            },
+                    ),
+            ) {
+                itemsIndexed(
+                    currentLyric.map { it.toNormal() },
+                    key = { index, _ ->
+                        index
+                    },
+                ) { index, it ->
+                    it?.toNormal()?.let { item ->
+                        LyricsViewLine(
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            isActive = index == activeIndex.intValue,
+                            content = item.content,
+                            inactiveBlur =
+                                (
+                                    (
+                                        index.coerceAtLeast(activeIndex.intValue) -
+                                            index.coerceAtMost(activeIndex.intValue)
+                                    ) * 0.8f
+                                ).fastCoerceAtMost(4f),
+                            onClick = { },
+                            fontWeight = FontWeight(itemFontWeight.value),
+                            fontSize = itemFontSize.value.sp,
+                        )
+                    }
+                }
+            }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .liquidGlass(
+                        providerState,
+                        GlassStyle(
+                            shape = MaterialTheme.shapes.medium,
+                            innerRefraction =
+                                InnerRefraction(
+                                    height = RefractionHeight(32.dp),
+                                    amount = RefractionAmount((-24).dp),
+                                ),
+                            material = GlassMaterial.None,
+                            highlight = GlassHighlight.None,
+                            shadow = null,
+                        ),
+                        compositingStrategy = CompositingStrategy.Auto,
+                    ),
             )
-            .offset(
-              y = with(density) {
-                (layoutHeight.intValue / 3f).toDp()
-              }
-            )
-            .background(
-              MaterialTheme.colorScheme.surfaceVariant.copy(
-                alpha = 0.5f
-              )
-            )
-            .align(Alignment.TopCenter)
-        )
-      }
+            if (isUserScrolling == true) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(
+                                2.dp,
+                            ).offset(
+                                y =
+                                    with(density) {
+                                        (layoutHeight.intValue / 3f).toDp()
+                                    },
+                            ).background(
+                                MaterialTheme.colorScheme.surfaceVariant.copy(
+                                    alpha = 0.5f,
+                                ),
+                            ).align(Alignment.TopCenter),
+                )
+            }
+        }
     }
-  }
-
 }
-
 
 @Composable
 fun LyricsViewLine(
-  isActive: Boolean,
-  content: String,
-  contentColor: Color = Color.Black,
-  fontSize: TextUnit = 18.sp,
-  fontWeight: FontWeight = FontWeight.Black,
-  lineHeight: TextUnit = 1.2.em,
-  onClick: () -> Unit,
-  @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
-  activeScale: Float = 1.15f,
-  inactiveScale: Float = 1f,
-  activeAlpha: Float = 1f,
-  inactiveAlpha: Float = 0.35f,
-  activeBlur: Float = 0f,
-  inactiveBlur: Float = 1f,
-  itemTranslationY: Float = 0f,
+    isActive: Boolean,
+    content: String,
+    contentColor: Color = Color.Black,
+    fontSize: TextUnit = 18.sp,
+    fontWeight: FontWeight = FontWeight.Black,
+    lineHeight: TextUnit = 1.2.em,
+    onClick: () -> Unit,
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
+    activeScale: Float = 1.15f,
+    inactiveScale: Float = 1f,
+    activeAlpha: Float = 1f,
+    inactiveAlpha: Float = 0.35f,
+    activeBlur: Float = 0f,
+    inactiveBlur: Float = 1f,
+    itemTranslationY: Float = 0f,
 ) {
+    val scale = remember { mutableFloatStateOf(inactiveScale) }
+    val alpha = remember { mutableFloatStateOf(inactiveAlpha) }
+    val blur = remember { mutableFloatStateOf(0f) }
 
-  val scale = remember { mutableFloatStateOf(inactiveScale) }
-  val alpha = remember { mutableFloatStateOf(inactiveAlpha) }
-  val blur = remember { mutableFloatStateOf(0f) }
+    val interactionSource = remember { MutableInteractionSource() }
 
-  val interactionSource = remember { MutableInteractionSource() }
-
-
-  LaunchedEffect(
-    isActive
-  ) {
-    launch {
-      animate(
-        initialValue = scale.floatValue,
-        targetValue = if (isActive) {
-          activeScale
-        } else {
-          inactiveScale
-        },
-        animationSpec = spring(
-          dampingRatio = Spring.DampingRatioMediumBouncy,
-          stiffness = Spring.StiffnessLow,
-        )
-      ) { value, _ ->
-        scale.floatValue = value
-      }
-    }
-
-    launch {
-      animate(
-        initialValue = alpha.floatValue,
-        targetValue = if (isActive) {
-          activeAlpha
-        } else {
-          inactiveAlpha
-        },
-        animationSpec = spring(
-          dampingRatio = Spring.DampingRatioMediumBouncy,
-          stiffness = Spring.StiffnessLow,
-        )
-      ) { value, _ ->
-        alpha.floatValue = value
-      }
-    }
-  }
-
-  LaunchedEffect(isActive, inactiveBlur) {
-    launch {
-      animate(
-        initialValue = blur.floatValue,
-        targetValue = if (isActive) {
-          activeBlur
-        } else {
-          inactiveBlur
-        },
-        animationSpec = tween(
-          durationMillis = 300,
-          delayMillis = 100,
-          easing = EaseInCubic
-        )
-      ) { value, _ ->
-        blur.floatValue = value
-      }
-    }
-  }
-
-  Box(
-    modifier = modifier
-      .fillMaxWidth()
-      .graphicsLayer {
-        scaleX = scale.floatValue
-        scaleY = scale.floatValue
-        translationY = itemTranslationY
-      }
-      .padding(horizontal = 40.dp, vertical = 10.dp)
-      .indication(interactionSource, indication = null)
-      .blur(
-        radius = blur.floatValue.dp,
-      )
-      .pointerInput(interactionSource) {
-        detectTapGestures(
-          onPress = {
-            val press = PressInteraction.Press(it)
-            try {
-              // 其他动画进行进行的时候进制波纹动画
-              withTimeout(timeMillis = 100) {
-                tryAwaitRelease()
-              }
-            } catch (e: TimeoutCancellationException) {
-              e.printStackTrace()
-              interactionSource.emit(press)
-              tryAwaitRelease()
+    LaunchedEffect(
+        isActive,
+    ) {
+        launch {
+            animate(
+                initialValue = scale.floatValue,
+                targetValue =
+                    if (isActive) {
+                        activeScale
+                    } else {
+                        inactiveScale
+                    },
+                animationSpec =
+                    spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow,
+                    ),
+            ) { value, _ ->
+                scale.floatValue = value
             }
-            interactionSource.emit(PressInteraction.Release(press))
-          },
-          onTap = { onClick() },
+        }
+
+        launch {
+            animate(
+                initialValue = alpha.floatValue,
+                targetValue =
+                    if (isActive) {
+                        activeAlpha
+                    } else {
+                        inactiveAlpha
+                    },
+                animationSpec =
+                    spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow,
+                    ),
+            ) { value, _ ->
+                alpha.floatValue = value
+            }
+        }
+    }
+
+    LaunchedEffect(isActive, inactiveBlur) {
+        launch {
+            animate(
+                initialValue = blur.floatValue,
+                targetValue =
+                    if (isActive) {
+                        activeBlur
+                    } else {
+                        inactiveBlur
+                    },
+                animationSpec =
+                    tween(
+                        durationMillis = 300,
+                        delayMillis = 100,
+                        easing = EaseInCubic,
+                    ),
+            ) { value, _ ->
+                blur.floatValue = value
+            }
+        }
+    }
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = scale.floatValue
+                    scaleY = scale.floatValue
+                    translationY = itemTranslationY
+                }.padding(horizontal = 40.dp, vertical = 10.dp)
+                .indication(interactionSource, indication = null)
+                .blur(
+                    radius = blur.floatValue.dp,
+                ).pointerInput(interactionSource) {
+                    detectTapGestures(
+                        onPress = {
+                            val press = PressInteraction.Press(it)
+                            try {
+                                // 其他动画进行进行的时候进制波纹动画
+                                withTimeout(timeMillis = 100) {
+                                    tryAwaitRelease()
+                                }
+                            } catch (e: TimeoutCancellationException) {
+                                e.printStackTrace()
+                                interactionSource.emit(press)
+                                tryAwaitRelease()
+                            }
+                            interactionSource.emit(PressInteraction.Release(press))
+                        },
+                        onTap = { onClick() },
+                    )
+                },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = content,
+            modifier =
+                Modifier
+                    .graphicsLayer {
+                        this.alpha = alpha.floatValue
+                    },
+            style =
+                TextStyle(
+                    color = contentColor,
+                    fontSize = fontSize,
+                    fontWeight = fontWeight,
+                    lineHeight = lineHeight,
+                    shadow =
+                        Shadow(
+                            color = contentColor.copy(alpha = .2f),
+                            blurRadius =
+                                if (isActive) {
+                                    5f
+                                } else {
+                                    13f
+                                },
+                        ),
+                ),
         )
-      },
-    contentAlignment = Alignment.Center
-  ) {
-    Text(
-      text = content,
-      modifier = Modifier
-        .graphicsLayer {
-          this.alpha = alpha.floatValue
-        },
-      style = TextStyle(
-        color = contentColor,
-        fontSize = fontSize,
-        fontWeight = fontWeight,
-        lineHeight = lineHeight,
-        shadow = Shadow(
-          color = contentColor.copy(alpha = .2f),
-          blurRadius = if (isActive) {
-            5f
-          } else {
-            13f
-          }
-        )
-      )
-    )
-  }
+    }
 }
 
-
 suspend fun LazyListState.animateScrollToItemAndCenter(
-  index: Int,
-  offset: Int,
+    index: Int,
+    offset: Int,
 ) {
-  if (layoutInfo.visibleItemsInfo.none { it.index == index }) {
-    withContext(Dispatchers.Main) {
-      animateScrollToItem(index = index, scrollOffset = offset)
+    if (layoutInfo.visibleItemsInfo.none { it.index == index }) {
+        withContext(Dispatchers.Main) {
+            animateScrollToItem(index = index, scrollOffset = offset)
+        }
     }
-  }
-  val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+    val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
 
-  if (itemInfo != null) {
-    val viewportCenter = layoutInfo.viewportEndOffset / 2f // Use float for precision
-    val itemCenter = itemInfo.offset + itemInfo.size / 2f
-    val scrollAmount = itemCenter - viewportCenter + layoutInfo.afterContentPadding
-    this.animateScrollBy(
-      scrollAmount, animationSpec = tween(
-        durationMillis = 500,
-        easing = EaseInOut
-      )
-    )
-  } else {
-    withContext(Dispatchers.Main) {
-      animateScrollToItem(index = index, scrollOffset = offset)
+    if (itemInfo != null) {
+        val viewportCenter = layoutInfo.viewportEndOffset / 2f // Use float for precision
+        val itemCenter = itemInfo.offset + itemInfo.size / 2f
+        val scrollAmount = itemCenter - viewportCenter + layoutInfo.afterContentPadding
+        this.animateScrollBy(
+            scrollAmount,
+            animationSpec =
+                tween(
+                    durationMillis = 500,
+                    easing = EaseInOut,
+                ),
+        )
+    } else {
+        withContext(Dispatchers.Main) {
+            animateScrollToItem(index = index, scrollOffset = offset)
+        }
     }
-  }
 }

@@ -20,87 +20,93 @@ import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.MusicEffectBackground
 import me.spica27.spicamusic.wrapper.activityViewModel
 
-
 @Composable
 fun FullScreenLrcScreen() {
-  val playBackViewModel = activityViewModel<PlayBackViewModel>()
-  // 当前播放的歌曲
-  val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState()
-    .value
+    val playBackViewModel = activityViewModel<PlayBackViewModel>()
+    // 当前播放的歌曲
+    val currentPlayingSong =
+        playBackViewModel.currentSongFlow
+            .collectAsState()
+            .value
 
-  val currentTime = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
+    val currentTime = playBackViewModel.positionSec.collectAsStateWithLifecycle().value
 
+    val overlyState = LocalPlayerWidgetState.current
 
-  val overlyState = LocalPlayerWidgetState.current
+    LaunchedEffect(Unit) {
+        overlyState.value = PlayerOverlyState.BOTTOM
+    }
 
-  LaunchedEffect(Unit) {
-    overlyState.value = PlayerOverlyState.BOTTOM
-  }
-
-
-
-  Box(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(
-        MaterialTheme.colorScheme.surfaceContainer
-      )
-  ) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      MusicEffectBackground(
-        modifier = Modifier.fillMaxSize()
-      )
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(
+                    MaterialTheme.colorScheme.surfaceContainer,
+                ),
+    ) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            MusicEffectBackground(
+                modifier = Modifier.fillMaxSize(),
+            )
 //      TunEffectBackground(
 //        modifier = Modifier.fillMaxSize()
 //      )
-    }
-    if (currentPlayingSong == null) {
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .clip(
-            MaterialTheme.shapes.medium
-          ),
-        contentAlignment = Center
-      ) {
-        Text(
-          "未在播放", style = MaterialTheme.typography.titleLarge.copy(
-            color = MaterialTheme.colorScheme.onSurface.copy(
-              alpha = 0.8f
-            )
-          )
-        )
-      }
-    } else {
-      Box {
-        LyricsView(
-          modifier = Modifier.fillMaxSize(),
-          currentTime = currentTime * 1000,
-          song = currentPlayingSong,
-          onScroll = {
-            playBackViewModel.seekTo(it.toLong())
-          },
-          placeHolder = {
+        }
+        if (currentPlayingSong == null) {
             Box(
-              modifier = Modifier
-                .fillMaxSize()
-                .clip(
-                  MaterialTheme.shapes.medium
-                ),
-              contentAlignment = Center
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .clip(
+                            MaterialTheme.shapes.medium,
+                        ),
+                contentAlignment = Center,
             ) {
-              Text(
-                "暂无歌词", style = MaterialTheme.typography.titleLarge.copy(
-                  color = MaterialTheme.colorScheme.onSurface.copy(
-                    alpha = 0.8f
-                  )
+                Text(
+                    "未在播放",
+                    style =
+                        MaterialTheme.typography.titleLarge.copy(
+                            color =
+                                MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.8f,
+                                ),
+                        ),
                 )
-              )
             }
-          }
-        )
-      }
+        } else {
+            Box {
+                LyricsView(
+                    modifier = Modifier.fillMaxSize(),
+                    currentTime = currentTime * 1000,
+                    song = currentPlayingSong,
+                    onScroll = {
+                        playBackViewModel.seekTo(it.toLong())
+                    },
+                    placeHolder = {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .clip(
+                                        MaterialTheme.shapes.medium,
+                                    ),
+                            contentAlignment = Center,
+                        ) {
+                            Text(
+                                "暂无歌词",
+                                style =
+                                    MaterialTheme.typography.titleLarge.copy(
+                                        color =
+                                            MaterialTheme.colorScheme.onSurface.copy(
+                                                alpha = 0.8f,
+                                            ),
+                                    ),
+                            )
+                        }
+                    },
+                )
+            }
+        }
     }
-  }
-
 }

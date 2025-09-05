@@ -11,28 +11,25 @@ import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.GlobalContext.startKoin
 import timber.log.Timber
 
-
 @OptIn(UnstableApi::class)
 class App : Application() {
-
-
-  override fun onCreate() {
-    super.onCreate()
-    instance = this
-    Timber.plant(Timber.DebugTree())
-    CrashHandler.init(this)
-    startKoin {
-      androidLogger()
-      androidContext(this@App)
-      modules(
-        InjectModules.networkModule,
-        InjectModules.persistenceModule,
-        InjectModules.utilsModule,
-        InjectModules.repositoryModule,
-        InjectModules.viewModelModule,
-        SpicaPlayer.module
-      )
-    }
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+        Timber.plant(Timber.DebugTree())
+        CrashHandler.init(this)
+        startKoin {
+            androidLogger()
+            androidContext(this@App)
+            modules(
+                InjectModules.networkModule,
+                InjectModules.persistenceModule,
+                InjectModules.utilsModule,
+                InjectModules.repositoryModule,
+                InjectModules.viewModelModule,
+                SpicaPlayer.module,
+            )
+        }
 //    SingletonImageLoader.setSafe(factory = {
 //      ImageLoader.Builder(this)
 //        .crossfade(true)
@@ -43,15 +40,11 @@ class App : Application() {
 //        }
 //        .build()
 //    })
-  }
-
-  companion object {
-    private lateinit var instance: App
-
-    fun getInstance(): App {
-      return instance
     }
-  }
 
+    companion object {
+        private lateinit var instance: App
 
+        fun getInstance(): App = instance
+    }
 }

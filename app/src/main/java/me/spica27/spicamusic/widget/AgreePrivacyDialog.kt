@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.widget
 
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -20,40 +19,38 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import me.spica27.spicamusic.R
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgreePrivacyDialog(onDismissRequest: () -> Unit) {
-
-
-  BasicAlertDialog(
-    properties = DialogProperties(
-      dismissOnBackPress = false,
-      dismissOnClickOutside = false
-    ),
-    onDismissRequest = {
-      onDismissRequest()
-    },
-    content = {
-      Surface(
-        modifier = Modifier
-          .wrapContentWidth()
-          .height(350.dp),
-        shape = MaterialTheme.shapes.large,
-        tonalElevation = AlertDialogDefaults.TonalElevation
-      ) {
-        Column(
-          modifier = Modifier.fillMaxSize()
-        ) {
-          Text(
-            text = AnnotatedString.fromHtml(
-              stringResource(R.string.permission_declaration)
+    BasicAlertDialog(
+        properties =
+            DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false,
             ),
-          )
-        }
-      }
-
-
-    },
-  )
+        onDismissRequest = {
+            onDismissRequest()
+        },
+        content = {
+            Surface(
+                modifier =
+                    Modifier
+                        .wrapContentWidth()
+                        .height(350.dp),
+                shape = MaterialTheme.shapes.large,
+                tonalElevation = AlertDialogDefaults.TonalElevation,
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    Text(
+                        text =
+                            AnnotatedString.fromHtml(
+                                stringResource(R.string.permission_declaration),
+                            ),
+                    )
+                }
+            }
+        },
+    )
 }
