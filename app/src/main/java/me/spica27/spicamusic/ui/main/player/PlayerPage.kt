@@ -4,6 +4,7 @@ import android.os.ParcelFileDescriptor
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -702,6 +703,20 @@ private fun SongInfo(
 
     val isLike = songViewModel.songLikeFlow(songId).collectAsStateWithLifecycle(false).value
 
+    val isShuffleMode = playBackViewModel.isShuffled.collectAsState().value
+
+    val shuffleModeColorTint =
+        animateColorAsState(
+            targetValue =
+                if (isShuffleMode) {
+                    MaterialTheme.colorScheme.onSurface.copy(0.9f)
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(
+                        alpha = 0.3f,
+                    )
+                },
+        )
+
     LaunchedEffect(Unit) {
         Timber.e("重组")
     }
@@ -768,6 +783,17 @@ private fun SongInfo(
             }
         }
         Spacer(modifier = Modifier.weight(1f))
+        IconButton(
+            onClick = {
+                playBackViewModel.toggleShuffleMode()
+            },
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_shuffle),
+                contentDescription = "sh",
+                tint = shuffleModeColorTint.value,
+            )
+        }
         IconButton(
             onClick = {
                 songViewModel.toggleFavorite(songId)

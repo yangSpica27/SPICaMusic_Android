@@ -9,8 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +32,7 @@ import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.media.SpicaPlayer
 import me.spica27.spicamusic.media.action.MediaControl
 import me.spica27.spicamusic.media.action.PlayerAction
+import me.spica27.spicamusic.media.common.PlayMode
 import me.spica27.spicamusic.repository.PlayHistoryRepository
 import me.spica27.spicamusic.repository.PlaylistRepository
 import timber.log.Timber
@@ -128,9 +127,9 @@ class PlayBackViewModel(
         get() = _playlistCurrentIndex
 
     // 是否随机播放
-    private val _isShuffled = MutableStateFlow(false)
-    val isShuffled: Flow<Boolean>
-        get() = _isShuffled
+    private val _isShuffled = player.playMode.map { it == PlayMode.SHUFFLE }
+    val isShuffled: StateFlow<Boolean>
+        get() = _isShuffled.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     init {
         Timber.tag("MusicViewModel").d("init")
@@ -144,6 +143,14 @@ class PlayBackViewModel(
                     ),
                 )
             }
+        }
+    }
+
+    fun toggleShuffleMode() {
+        if (isShuffled.value) {
+            player.doAction(PlayerAction.SetPlayMode(PlayMode.LOOP))
+        } else {
+            player.doAction(PlayerAction.SetPlayMode(PlayMode.SHUFFLE))
         }
     }
 

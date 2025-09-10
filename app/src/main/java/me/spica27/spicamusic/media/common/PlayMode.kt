@@ -28,8 +28,8 @@ sealed class PlayMode(
             repeatMode: Int,
             shuffleModeEnabled: Boolean,
         ): PlayMode {
-            if (repeatMode == Player.REPEAT_MODE_ONE) return LIST
             if (shuffleModeEnabled) return SHUFFLE
+            if (repeatMode == Player.REPEAT_MODE_ONE) return LIST
             return LOOP
         }
 

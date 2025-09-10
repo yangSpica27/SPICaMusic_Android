@@ -1,8 +1,14 @@
 package me.spica27.spicamusic.media.utils
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.annotation.WorkerThread
 import androidx.core.content.edit
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.callbackFlow
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.media.common.PlayMode
@@ -67,4 +73,19 @@ internal class PlayerKVUtils(
      * 获取播放模式
      */
     fun getPlayMode(): String = sharedPreferences.getString(KEY_PLAY_MODE, null) ?: PlayMode.LOOP.name
+
+    fun getPlayModeFlow(): Flow<PlayMode> =
+        callbackFlow {
+            val listener =
+                SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                    if (key == KEY_PLAY_MODE) {
+                        trySend(PlayMode.from(getPlayMode()))
+                    }
+                }
+            if (sharedPreferences.contains(KEY_PLAY_MODE)) {
+                trySend(PlayMode.from(getPlayMode()))
+            }
+            sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
+            awaitClose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
+        }.buffer(Channel.UNLIMITED)
 }

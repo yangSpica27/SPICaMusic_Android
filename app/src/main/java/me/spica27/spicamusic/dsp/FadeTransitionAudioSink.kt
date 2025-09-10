@@ -87,7 +87,7 @@ class FadeTransitionRenderersFactory(
                 .setAudioProcessorChain(this)
                 .build()
 
-        return FadeTransitionAudioSink(defaultAudioSink, scope)
+        return ForwardingAudioSink(defaultAudioSink)
     }
 
     override fun getAudioProcessors(): Array<AudioProcessor> {

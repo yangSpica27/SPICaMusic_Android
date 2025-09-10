@@ -56,6 +56,7 @@ class SpicaPlayer(
             .buildAsync()
     }
 
+    val playMode = playerKVUtils.getPlayModeFlow()
     private val _pauseWhenCompletion = MutableStateFlow(false)
     val pauseWhenCompletion: StateFlow<Boolean> = _pauseWhenCompletion
     private val _isPlaying = MutableStateFlow(false)
@@ -97,8 +98,7 @@ class SpicaPlayer(
                 Timber.e("No songs found")
                 return@launch
             }
-
-            browser.playMode = PlayMode.LOOP
+            browser.playMode = PlayMode.from(playerKVUtils.getPlayMode())
             browser.playWhenReady = false
             browser.setMediaItems(items)
             browser.prepare()
@@ -205,6 +205,11 @@ class SpicaPlayer(
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         this@SpicaPlayer._isPlaying.value = isPlaying
+    }
+
+    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+        super.onShuffleModeEnabledChanged(shuffleModeEnabled)
+        Timber.e("onShuffleModeEnabledChanged $shuffleModeEnabled")
     }
 
     override fun onMediaItemTransition(
