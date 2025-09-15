@@ -190,7 +190,7 @@ fun PlayerOverly(navigator: NavController? = null) {
                                             enter =
                                                 fadeIn(animationSpec = spring(dampingRatio = 0.9f, stiffness = 900f)) +
                                                     scaleIn(initialScale = 0.8f, animationSpec = spring(0.73f, 900f)),
-                                            exit = slideOutVertically { it },
+                                            exit = slideOutVertically { it } + fadeOut(),
                                             resizeMode = ScaleToBounds(ContentScale.Fit, Center),
                                         ).align(Alignment.BottomCenter)
                                         .clickable {
