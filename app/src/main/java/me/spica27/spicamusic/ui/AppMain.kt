@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -64,6 +65,7 @@ fun AppMain() {
                 navController = navHostController,
                 modifier =
                     Modifier
+                        .clearAndSetSemantics {}
                         .fillMaxSize(),
                 enterTransition = {
                     materialSharedAxisXIn(forward = true)

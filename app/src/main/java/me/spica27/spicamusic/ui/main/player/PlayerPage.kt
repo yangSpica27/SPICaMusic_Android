@@ -64,8 +64,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
@@ -93,15 +93,10 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
-import com.kyant.liquidglass.GlassStyle
-import com.kyant.liquidglass.highlight.GlassHighlight
-import com.kyant.liquidglass.liquidGlass
-import com.kyant.liquidglass.liquidGlassProvider
-import com.kyant.liquidglass.material.GlassMaterial
-import com.kyant.liquidglass.refraction.InnerRefraction
-import com.kyant.liquidglass.refraction.RefractionAmount
-import com.kyant.liquidglass.refraction.RefractionHeight
-import com.kyant.liquidglass.rememberLiquidGlassProviderState
+import com.kyant.backdrop.backdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.refraction
+import com.kyant.backdrop.rememberBackdrop
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -131,6 +126,7 @@ import me.spica27.spicamusic.widget.ObserveLifecycleEvent
 import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
+import me.spica27.spicamusic.widget.capsule.G2RoundedCornerShape
 import me.spica27.spicamusic.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
@@ -571,6 +567,8 @@ private fun ControlPanel(
         }
     }
 
+    val playerBtnColor = MaterialTheme.colorScheme.primaryContainer
+
     Column(
         modifier = modifier,
     ) {
@@ -867,10 +865,9 @@ private fun TabBar(
             return@remember baseOffset + additionalOffset
         }
 
-    val providerState =
-        rememberLiquidGlassProviderState(
-            backgroundColor = MaterialTheme.colorScheme.surfaceContainer,
-        )
+    val backdrop = rememberBackdrop()
+
+    val tabBackgroundColor = MaterialTheme.colorScheme.surfaceContainer
 
     Box(
         modifier =
@@ -883,7 +880,7 @@ private fun TabBar(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .liquidGlassProvider(providerState)
+                    .backdrop(backdrop)
                     .onSizeChanged {
                         indicatorWidth = it.width / 3
                     },
@@ -941,28 +938,24 @@ private fun TabBar(
                             x = offsetX.fastRoundToInt(),
                             y = 0,
                         )
-                    }.liquidGlass(
-                        state = providerState,
-                        GlassStyle(
-                            shadow = null,
-                            shape = MaterialTheme.shapes.small,
-                            innerRefraction =
-                                InnerRefraction(
-                                    height =
-                                        RefractionHeight(
-                                            8.dp,
-                                        ),
-                                    amount =
-                                        RefractionAmount(
-                                            (-12).dp,
-                                        ),
-                                ),
-                            material = GlassMaterial.None,
-                            highlight = GlassHighlight.None,
-                        ),
-                        compositingStrategy = CompositingStrategy.Auto,
-                        transformBlock = {
-                            scale(1.1f, 1.1f, this.center)
+                    }.drawBackdrop(
+                        backdrop = backdrop,
+                        shadow = null,
+                        highlight = null,
+                        shapeProvider = { G2RoundedCornerShape(12.dp) },
+                        onDrawBackdrop = { drawBackdrop ->
+                            drawRect(
+                                tabBackgroundColor,
+                            )
+                            scale(
+                                1.2f,
+                                1.2f,
+                            ) {
+                                drawBackdrop()
+                            }
+                        },
+                        effects = {
+                            refraction(8f.dp.toPx(), 12f.dp.toPx(), true)
                         },
                     ),
         )

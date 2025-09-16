@@ -42,7 +42,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -57,15 +56,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastCoerceAtLeast
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kyant.liquidglass.GlassStyle
-import com.kyant.liquidglass.highlight.GlassHighlight
-import com.kyant.liquidglass.liquidGlass
-import com.kyant.liquidglass.liquidGlassProvider
-import com.kyant.liquidglass.material.GlassMaterial
-import com.kyant.liquidglass.refraction.InnerRefraction
-import com.kyant.liquidglass.refraction.RefractionAmount
-import com.kyant.liquidglass.refraction.RefractionHeight
-import com.kyant.liquidglass.rememberLiquidGlassProviderState
+import com.kyant.backdrop.contentBackdrop
+import com.kyant.backdrop.effects.refraction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
@@ -80,6 +72,7 @@ import me.spica27.spicamusic.lyric.LyricItem
 import me.spica27.spicamusic.lyric.toNormal
 import me.spica27.spicamusic.repository.LyricRepository
 import me.spica27.spicamusic.utils.DataStoreUtil
+import me.spica27.spicamusic.widget.capsule.G2RoundedCornerShape
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -185,11 +178,6 @@ fun LyricsView(
     if (currentLyric.isEmpty()) {
         placeHolder.invoke()
     } else {
-        val providerState =
-            rememberLiquidGlassProviderState(
-                backgroundColor = Color.Transparent,
-            )
-
         val density = LocalDensity.current
 
         Box(
@@ -204,7 +192,14 @@ fun LyricsView(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .liquidGlassProvider(providerState),
+                        .contentBackdrop(
+                            shapeProvider = {
+                                G2RoundedCornerShape(12.dp)
+                            },
+                            effects = {
+                                refraction(32.dp.toPx(), 12.dp.toPx(), true)
+                            },
+                        ),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
                 state = listState,
@@ -242,25 +237,6 @@ fun LyricsView(
                     }
                 }
             }
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .liquidGlass(
-                        providerState,
-                        GlassStyle(
-                            shape = MaterialTheme.shapes.medium,
-                            innerRefraction =
-                                InnerRefraction(
-                                    height = RefractionHeight(32.dp),
-                                    amount = RefractionAmount((-24).dp),
-                                ),
-                            material = GlassMaterial.None,
-                            highlight = GlassHighlight.None,
-                            shadow = null,
-                        ),
-                        compositingStrategy = CompositingStrategy.Auto,
-                    ),
-            )
             if (isUserScrolling == true) {
                 Box(
                     modifier =

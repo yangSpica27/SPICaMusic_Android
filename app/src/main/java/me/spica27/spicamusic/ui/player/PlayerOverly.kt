@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -63,6 +64,8 @@ fun PlayerOverly(navigator: NavController? = null) {
 
     val currentSong = playbackViewModel.currentSongFlow.collectAsStateWithLifecycle(null).value
 
+    val nowPlayingSize = playbackViewModel.nowPlayingListSize.collectAsState().value
+
     val overlyState = LocalPlayerWidgetState.current
 
     BackHandler(overlyState.value == PlayerOverlyState.PLAYER) {
@@ -72,7 +75,7 @@ fun PlayerOverly(navigator: NavController? = null) {
     LaunchedEffect(isPlaying) {
         if (isPlaying && overlyState.value == PlayerOverlyState.HIDE) {
             overlyState.value = PlayerOverlyState.BOTTOM
-        } else if (!isPlaying && overlyState.value == PlayerOverlyState.BOTTOM) {
+        } else if (nowPlayingSize == 0 && overlyState.value == PlayerOverlyState.BOTTOM) {
             overlyState.value = PlayerOverlyState.HIDE
         } else {
             Timber.tag("PlayerOverly").d("都不符合 isPlay =$isPlaying overlyState = $overlyState")
@@ -188,7 +191,13 @@ fun PlayerOverly(navigator: NavController? = null) {
                                             animatedVisibilityScope = this@AnimatedContent,
                                             sharedContentState = sharedContentState,
                                             enter =
-                                                fadeIn(animationSpec = spring(dampingRatio = 0.9f, stiffness = 900f)) +
+                                                fadeIn(
+                                                    animationSpec =
+                                                        spring(
+                                                            dampingRatio = 0.9f,
+                                                            stiffness = 900f,
+                                                        ),
+                                                ) +
                                                     scaleIn(initialScale = 0.8f, animationSpec = spring(0.73f, 900f)),
                                             exit = slideOutVertically { it } + fadeOut(),
                                             resizeMode = ScaleToBounds(ContentScale.Fit, Center),
