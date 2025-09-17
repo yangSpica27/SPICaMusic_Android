@@ -23,7 +23,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
@@ -43,6 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.kyant.backdrop.Backdrop
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.ui.main.player.PlayerScreen
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
@@ -57,7 +57,10 @@ import timber.log.Timber
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun PlayerOverly(navigator: NavController? = null) {
+fun PlayerOverly(
+    navigator: NavController? = null,
+    backdrop: Backdrop,
+) {
     val playbackViewModel: PlayBackViewModel = activityViewModel()
 
     val isPlaying = playbackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
@@ -204,10 +207,10 @@ fun PlayerOverly(navigator: NavController? = null) {
                                         ).align(Alignment.BottomCenter)
                                         .clickable {
                                             overlyState.value = PlayerOverlyState.PLAYER
-                                        }.navigationBarsPadding(),
+                                        },
                             ) {
                                 currentSong?.let {
-                                    Bottom()
+                                    Bottom(backdrop)
                                 }
                             }
                         }
@@ -240,8 +243,8 @@ fun PlayerOverly(navigator: NavController? = null) {
 }
 
 @Composable
-private fun Bottom() {
-    PlayerBar()
+private fun Bottom(backdrop: Backdrop) {
+    PlayerBar(backdrop = backdrop)
 }
 
 @Composable

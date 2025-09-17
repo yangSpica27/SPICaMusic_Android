@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,11 +40,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.contentBackdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.refraction
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.secsToMs
@@ -58,6 +64,7 @@ import me.spica27.spicamusic.wrapper.activityViewModel
 fun PlayerBar(
     modifier: Modifier = Modifier,
     playBackViewModel: PlayBackViewModel = activityViewModel(),
+    backdrop: Backdrop,
 ) {
     val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
 
@@ -73,21 +80,51 @@ fun PlayerBar(
 
     val btnBgColor = MaterialTheme.colorScheme.primaryContainer
 
+    val contentColor =
+        remember(isNight) {
+            if (isNight) {
+                Color.White.copy(0.12f)
+            } else {
+                Color.Black.copy(0.075f)
+            }
+        }
+
+    val glassSurface: DrawScope.() -> Unit = { drawRect(contentColor) }
+
     LaunchedEffect(positionSec) {
         if (isSeekingState.value) return@LaunchedEffect
         seekValueState.floatValue = positionSec.secsToMs() * 1f
     }
 
     Box(
-        modifier = modifier,
+        modifier =
+            modifier
+                .contentBackdrop(
+                    shapeProvider = {
+                        RoundedCornerShape(0)
+                    },
+                    effects = {
+                        refraction(12.dp.toPx(), size.minDimension / 3.5f, true)
+                    },
+                    highlight = null,
+                ).drawBackdrop(
+                    backdrop,
+                    effects = {
+                        blur(16.dp.toPx())
+                        refraction(12.dp.toPx(), 16.dp.toPx(), true)
+                    },
+                    onDrawSurface = glassSurface,
+                    shadow = null,
+                    shapeProvider = {
+                        RoundedCornerShape(0)
+                    },
+                ).navigationBarsPadding(),
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .background(
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                    ).padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.Center,
         ) {
             Row(

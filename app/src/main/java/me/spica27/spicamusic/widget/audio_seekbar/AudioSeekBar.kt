@@ -4,7 +4,9 @@ package me.spica27.spicamusic.widget.audio_seekbar
 
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -35,7 +37,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
-import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -45,7 +46,6 @@ import androidx.compose.ui.util.fastCoerceAtLeast
 import com.kyant.backdrop.backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.refraction
-import com.kyant.backdrop.effects.saturation
 import com.kyant.backdrop.rememberBackdrop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -125,7 +125,21 @@ fun AudioWaveSlider(
 
     var isTouch by remember { mutableStateOf(false) }
 
-    val thumbColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .8f)
+    val thumbColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .2f)
+
+    val thumbWidth =
+        animateDpAsState(
+            if (isTouch) {
+                40.dp
+            } else {
+                0.dp
+            },
+            animationSpec =
+                spring(
+                    dampingRatio = 0.9f,
+                    stiffness = 900f,
+                ),
+        )
 
     Slider(
         modifier =
@@ -176,30 +190,26 @@ fun AudioWaveSlider(
                     )
                 }
             }
-            if (isTouch) {
+            if (thumbWidth.value > 0.dp) {
                 Box(
                     modifier =
                         Modifier
                             .offset(
-                                x = with(LocalDensity.current) { (progress * canvasSize.width).toDp() - 20.dp },
+                                x = with(LocalDensity.current) { (progress * canvasSize.width).toDp() - thumbWidth.value / 2 },
                             ).drawBackdrop(
                                 backdrop,
                                 shapeProvider = { G2RoundedCornerShape(12.dp) },
                                 effects = {
-                                    saturation()
-                                    refraction(24.dp.toPx(), 12.dp.toPx(), true)
+                                    refraction(size.minDimension / 2, size.minDimension / 4, true)
                                 },
                                 onDrawSurface = {
                                     drawRect(thumbColor)
                                 },
                                 onDrawBackdrop = { drawBackdrop ->
-                                    scale(2f, 2f) {
-                                        drawBackdrop()
-                                    }
+                                    drawBackdrop()
                                 },
-                            ).width(40.dp)
-                            .fillMaxHeight()
-                            .graphicsLayer(alpha = DefaultGraphicsLayerAlpha),
+                            ).width(thumbWidth.value)
+                            .fillMaxHeight(),
                 )
             }
         },

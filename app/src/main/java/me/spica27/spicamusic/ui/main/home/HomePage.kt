@@ -9,8 +9,6 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.snapping.SnapPosition
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,9 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -38,6 +33,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -69,10 +66,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
-import me.spica27.spicamusic.utils.ScrollHaptics
-import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
-import me.spica27.spicamusic.utils.overScrollHorizontal
 import me.spica27.spicamusic.utils.pressable
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
@@ -83,7 +77,6 @@ import me.spica27.spicamusic.widget.blur.progressiveBlur
 import me.spica27.spicamusic.widget.materialSharedAxisXIn
 import me.spica27.spicamusic.widget.materialSharedAxisXOut
 import me.spica27.spicamusic.wrapper.activityViewModel
-import java.util.*
 
 // 主页
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -139,9 +132,7 @@ fun HomePage(
         contentAlignment = Alignment.TopStart,
     ) {
         Box(
-            modifier =
-                Modifier
-                    .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
         ) {
             Column(
                 modifier =
@@ -292,10 +283,9 @@ fun HomePage(
                 if (randomSong.isEmpty()) {
                     Box(
                         modifier =
-                            Modifier
-                                .padding(
-                                    horizontal = 16.dp,
-                                ),
+                            Modifier.padding(
+                                horizontal = 16.dp,
+                            ),
                     ) {
                         Text(
                             stringResource(R.string.no_recommendations),
@@ -393,154 +383,162 @@ private fun OftenListenSongList(
     songs: List<Song> = emptyList(),
     playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
-    val listState = rememberLazyListState()
-
-    ScrollHaptics(
-        listState = listState,
-        vibrationType = ScrollVibrationType.ON_ITEM_CHANGED,
-        enabled = true,
-    )
-
-    LazyRow(
+    HorizontalMultiBrowseCarousel(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .overScrollHorizontal(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        state = listState,
-        flingBehavior =
-            rememberSnapFlingBehavior(
-                lazyListState = listState,
-                snapPosition = SnapPosition.Center,
+                .height(180.dp),
+        state =
+            rememberCarouselState(
+                initialItem = 0,
+                itemCount = { songs.size },
             ),
-    ) {
-        item {
-            Spacer(
-                modifier =
-                    Modifier
-                        .width(4.dp),
+        itemSpacing = 8.dp,
+        preferredItemWidth = 150.dp,
+    ) { index ->
+        val item = songs[index]
+        val coverPainter =
+            rememberAsyncImagePainter(
+                model = item.getCoverUri().toCoilUri(),
             )
-        }
-        items(songs, key = {
-            it.songId?.toString() ?: UUID.randomUUID().toString()
-        }) {
-            val coverPainter =
-                rememberAsyncImagePainter(
-                    model = it.getCoverUri().toCoilUri(),
-                )
-            val coverState = coverPainter.state.collectAsState().value
+        val coverState = coverPainter.state.collectAsState().value
 
+        Box(
+            modifier =
+                Modifier
+                    .width(150.dp)
+                    .height(180.dp)
+                    .background(
+                        MaterialTheme.colorScheme.surface,
+                    ).clip(
+                        MaterialTheme.shapes.small,
+                    ).pressable()
+                    .clickableNoRippleWithVibration {
+                        playBackViewModel.play(item, songs)
+                    },
+        ) {
             Box(
                 modifier =
                     Modifier
-                        .width(150.dp)
+                        .fillMaxWidth()
                         .height(180.dp)
                         .background(
-                            MaterialTheme.colorScheme.surface,
-                        ).animateItem()
-                        .clip(
+                            MaterialTheme.colorScheme.surfaceContainer,
                             MaterialTheme.shapes.small,
-                        ).pressable()
-                        .clickableNoRippleWithVibration {
-                            playBackViewModel.play(it, songs)
-                        },
+                        ).clip(MaterialTheme.shapes.small)
+                        .progressiveBlur(),
             ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceContainer,
-                                MaterialTheme.shapes.small,
-                            ).clip(MaterialTheme.shapes.small)
-                            .progressiveBlur(),
-                ) {
-                    if (coverState is AsyncImagePainter.State.Success) {
-                        AsyncImage(
-                            model = it.getCoverUri().toCoilUri(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Text(
-                            modifier = Modifier.rotate(45f),
-                            text = it.displayName,
-                            style =
-                                MaterialTheme.typography.headlineLarge.copy(
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                    fontWeight = FontWeight.W900,
-                                ),
-                        )
-                    }
-                }
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(
-                                brush =
-                                    Brush.verticalGradient(
-                                        colors =
-                                            listOf(
-                                                Color.Transparent,
-                                                MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                                                MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
-                                            ),
-                                    ),
-                            ).padding(
-                                horizontal = 16.dp,
-                                vertical = 12.dp,
-                            ),
-                    verticalArrangement = Arrangement.Bottom,
-                ) {
-                    Spacer(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(12.dp),
+                if (coverState is AsyncImagePainter.State.Success) {
+                    AsyncImage(
+                        model = item.getCoverUri().toCoilUri(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
                     )
+                } else {
                     Text(
-                        text = it.displayName,
-                        modifier = Modifier.fillMaxWidth(),
-                        maxLines = 1,
+                        modifier = Modifier.rotate(45f),
+                        text = item.displayName,
                         style =
-                            MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            ),
-                    )
-                    Spacer(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(6.dp),
-                    )
-                    Text(
-                        text = it.artist,
-                        modifier = Modifier.fillMaxWidth(),
-                        maxLines = 1,
-                        style =
-                            MaterialTheme.typography.titleSmall.copy(
-                                fontWeight = FontWeight.Normal,
-                                color =
-                                    MaterialTheme.colorScheme.onSurface.copy(
-                                        alpha = 0.6f,
-                                    ),
+                            MaterialTheme.typography.headlineLarge.copy(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                fontWeight = FontWeight.W900,
                             ),
                     )
                 }
             }
-        }
-        item {
-            Spacer(
+            Column(
                 modifier =
                     Modifier
-                        .width(16.dp),
-            )
+                        .fillMaxSize()
+                        .background(
+                            brush =
+                                Brush.verticalGradient(
+                                    colors =
+                                        listOf(
+                                            Color.Transparent,
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                                            MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                                        ),
+                                ),
+                        ).padding(
+                            horizontal = 16.dp,
+                            vertical = 12.dp,
+                        ),
+                verticalArrangement = Arrangement.Bottom,
+            ) {
+                Spacer(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(12.dp),
+                )
+                Text(
+                    text = item.displayName,
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 1,
+                    style =
+                        MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        ),
+                )
+                Spacer(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(6.dp),
+                )
+                Text(
+                    text = item.artist,
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 1,
+                    style =
+                        MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Normal,
+                            color =
+                                MaterialTheme.colorScheme.onSurface.copy(
+                                    alpha = 0.6f,
+                                ),
+                        ),
+                )
+            }
         }
     }
+
+//  LazyRow(
+//    modifier =
+//      Modifier
+//        .fillMaxWidth()
+//        .overScrollHorizontal(),
+//    horizontalArrangement = Arrangement.spacedBy(12.dp),
+//    state = listState,
+//    flingBehavior =
+//      rememberSnapFlingBehavior(
+//        lazyListState = listState,
+//        snapPosition = SnapPosition.Center,
+//      ),
+//  ) {
+//    item {
+//      Spacer(
+//        modifier =
+//          Modifier
+//            .width(4.dp),
+//      )
+//    }
+//    items(songs, key = {
+//      it.songId?.toString() ?: UUID.randomUUID().toString()
+//    }) {
+//
+//    }
+//    item {
+//      Spacer(
+//        modifier =
+//          Modifier
+//            .width(16.dp),
+//      )
+//    }
+//  }
 }
 
 // 标题
@@ -594,9 +592,7 @@ private fun TitleBar(pagerState: PagerState) {
                     fontWeight = FontWeight.Black,
                     fontSize = 22.sp,
                 ),
-            modifier =
-                Modifier
-                    .align(Alignment.Center),
+            modifier = Modifier.align(Alignment.Center),
         )
 
         IconButton(

@@ -93,7 +93,7 @@ fun MusicEffectBackground(modifier: Modifier = Modifier) {
                 shader.setFloatUniform("uLightOffset", 0.1f)
                 shader.setFloatUniform("uAlphaOffset", 0.5f)
                 shader.setFloatUniform("uShadowNoiseScale", 3.5f)
-                shader.setFloatUniform("uMusicLevel", 0f)
+                shader.setFloatUniform("uMusicLevel", 1f)
                 shader.setFloatUniform("uBeat", 0f)
                 shader.setFloatUniform("uAnimTime", 0f)
             }

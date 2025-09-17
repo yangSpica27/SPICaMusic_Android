@@ -15,6 +15,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.kyant.backdrop.backdrop
+import com.kyant.backdrop.rememberBackdrop
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.theme.AppTheme
@@ -55,6 +57,8 @@ fun AppMain() {
 
     BackPress(navigator = navHostController)
 
+    val backdrop = rememberBackdrop()
+
     AppTheme(
         darkTheme = darkTheme,
         dynamicColor = false,
@@ -66,6 +70,7 @@ fun AppMain() {
                 modifier =
                     Modifier
                         .clearAndSetSemantics {}
+                        .backdrop(backdrop)
                         .fillMaxSize(),
                 enterTransition = {
                     materialSharedAxisXIn(forward = true)
@@ -168,6 +173,7 @@ fun AppMain() {
             }
             PlayerOverly(
                 navigator = navHostController,
+                backdrop,
             )
         }
     }
