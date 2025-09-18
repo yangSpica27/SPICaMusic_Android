@@ -3,42 +3,34 @@ package me.spica27.spicamusic.ui.player
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.ScaleToBounds
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -46,12 +38,13 @@ import com.kyant.backdrop.Backdrop
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.ui.main.player.PlayerScreen
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.widget.COLLAPSED_ANCHOR
 import me.spica27.spicamusic.widget.CoverWidget
+import me.spica27.spicamusic.widget.DISMISSED_ANCHOR
+import me.spica27.spicamusic.widget.EXPANDED_ANCHOR
 import me.spica27.spicamusic.widget.PlayerBar
-import me.spica27.spicamusic.widget.materialSharedAxisYIn
-import me.spica27.spicamusic.widget.materialSharedAxisYOut
-import me.spica27.spicamusic.widget.materialSharedAxisZIn
-import me.spica27.spicamusic.widget.materialSharedAxisZOut
+import me.spica27.spicamusic.widget.PlayerSheet
+import me.spica27.spicamusic.widget.rememberBottomSheetState
 import me.spica27.spicamusic.wrapper.activityViewModel
 import timber.log.Timber
 
@@ -85,160 +78,69 @@ fun PlayerOverly(
         }
     }
 
-//  LaunchedEffect(overlyState.value) {
-//    Timber.tag("PlayerOverly").d("overlyState: $overlyState")
-//    if (overlyState.value == PlayerOverlyState.BOTTOM) {
-//      delay(5000)
-//      if (isPlaying) {
-//        overlyState.value = PlayerOverlyState.BOTTOM
-//      }
-//    }
-//  }
-
-    Box(
+    BoxWithConstraints(
         modifier =
             Modifier
                 .fillMaxSize(),
+        contentAlignment = Alignment.BottomCenter,
     ) {
-        SharedTransitionLayout(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            val sharedContentState = rememberSharedContentState("player_widget")
-            AnimatedContent(
-                modifier = Modifier.fillMaxSize(),
-                targetState = overlyState.value,
-                label = "player_overly_state",
-                contentKey = { it.name },
-                transitionSpec = {
-                    fadeIn(animationSpec = spring(dampingRatio = 0.9f, stiffness = 900f)) +
-                        scaleIn(initialScale = 0.8f, animationSpec = spring(0.73f, 900f)) togetherWith
-                        materialSharedAxisYOut(forward = true)
+        val playerBottomSheetState =
+            rememberBottomSheetState(
+                dismissedBound = 0.dp,
+                collapsedBound = 80.dp,
+                expandedBound = maxHeight,
+                onAnchorChanged = {
+                    Timber.tag("PlayerOverly").d("onAnchorChanged = $it")
+                    if (it == EXPANDED_ANCHOR) {
+                        overlyState.value = PlayerOverlyState.PLAYER
+                    }
+                    if (it == COLLAPSED_ANCHOR) {
+                        overlyState.value = PlayerOverlyState.BOTTOM
+                    }
+                    if (it == DISMISSED_ANCHOR) {
+                        overlyState.value = PlayerOverlyState.HIDE
+                    }
                 },
-            ) { state ->
-                when (state) {
-//          PlayerOverlyState.MINI -> {
-//            Box(
-//              modifier = Modifier.fillMaxSize()
-//            ) {
-//              Box(
-//                modifier = Modifier
-//                  .size(width = 64.dp, height = 64.dp)
-//                  .absoluteOffset(x = (32).dp)
-//                  .sharedBounds(
-//                    animatedVisibilityScope = this@AnimatedContent,
-//                    sharedContentState = sharedContentState,
-//                    renderInOverlayDuringTransition = false,
-//                    enter = scaleIn(
-//                      animationSpec = spring(
-//                        dampingRatio = Spring.DampingRatioLowBouncy,
-//                        stiffness = Spring.StiffnessLow,
-//                      )
-//                    ) + fadeIn(),
-//                    exit = scaleOut() + fadeOut(),
-//                  )
-//                  .background(MaterialTheme.colorScheme.surfaceContainer, CircleShape)
-//                  .clip(CircleShape)
-//                  .innerShadow(
-//                    shape = CircleShape,
-//                    Shadow(
-//                      radius = 6.dp,
-//                      color = MaterialTheme.colorScheme.onSurface,
-//                      alpha = .11f
-//                    )
-//                  )
-//                  .clickable {
-//                    overlyState.value = PlayerOverlyState.BOTTOM
-//                  }
-//                  .align(Alignment.CenterEnd)
-//              ) {
-//                currentSong?.let {
-//                  Mimi(
-//                    currentSong,
-//                  )
-//                }
-//              }
-//            }
-//          }
+            )
 
-                    PlayerOverlyState.HIDE -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                        ) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .align(alignment = Alignment.BottomCenter)
-                                        .sharedBounds(
-                                            animatedVisibilityScope = this@AnimatedContent,
-                                            sharedContentState = sharedContentState,
-                                            enter = materialSharedAxisYIn(false),
-                                            exit = materialSharedAxisYOut(false),
-                                            resizeMode = ScaleToBounds(ContentScale.FillHeight, Center),
-                                        ),
-                            )
-                        }
+        LaunchedEffect(overlyState.value) {
+            when (overlyState.value) {
+                PlayerOverlyState.HIDE -> {
+                    if (!playerBottomSheetState.isDismissed) {
+                        playerBottomSheetState.dismiss()
                     }
+                }
 
-                    PlayerOverlyState.BOTTOM -> {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize(),
-                        ) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .sharedBounds(
-                                            animatedVisibilityScope = this@AnimatedContent,
-                                            sharedContentState = sharedContentState,
-                                            enter =
-                                                fadeIn(
-                                                    animationSpec =
-                                                        spring(
-                                                            dampingRatio = 0.9f,
-                                                            stiffness = 900f,
-                                                        ),
-                                                ) +
-                                                    scaleIn(initialScale = 0.8f, animationSpec = spring(0.73f, 900f)),
-                                            exit = slideOutVertically { it } + fadeOut(),
-                                            resizeMode = ScaleToBounds(ContentScale.Fit, Center),
-                                        ).align(Alignment.BottomCenter)
-                                        .clickable {
-                                            overlyState.value = PlayerOverlyState.PLAYER
-                                        },
-                            ) {
-                                currentSong?.let {
-                                    Bottom(backdrop)
-                                }
-                            }
-                        }
+                PlayerOverlyState.BOTTOM -> {
+                    if (!playerBottomSheetState.isCollapsed) {
+                        playerBottomSheetState.collapseSoft()
                     }
+                }
 
-                    PlayerOverlyState.PLAYER -> {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .sharedBounds(
-                                        animatedVisibilityScope = this@AnimatedContent,
-                                        sharedContentState = sharedContentState,
-                                        enter = materialSharedAxisZIn(true),
-                                        exit = materialSharedAxisZOut(true),
-                                    ),
-                        ) {
-                            PlayerScreen(
-                                navigator = navigator,
-                                onBackClick = {
-                                    overlyState.value = PlayerOverlyState.BOTTOM
-                                },
-                            )
-                        }
+                PlayerOverlyState.PLAYER -> {
+                    if (!playerBottomSheetState.isExpanded) {
+                        playerBottomSheetState.expandSoft()
                     }
                 }
             }
         }
+
+        PlayerSheet(
+            state = playerBottomSheetState,
+            collapsedContent = {
+                Bottom(backdrop)
+            },
+            content = {
+                PlayerScreen(
+                    navigator = navigator,
+                    onBackClick = {
+                        overlyState.value = PlayerOverlyState.BOTTOM
+                    },
+                )
+            },
+            modifier = Modifier.fillMaxSize(),
+            backgroundColor = MaterialTheme.colorScheme.background,
+        )
     }
 }
 
@@ -282,7 +184,7 @@ private fun Mimi(song: Song) {
 
 @Composable
 fun PlayerOverlyContent(content: @Composable () -> Unit) {
-    val overlyState = remember { mutableStateOf(PlayerOverlyState.HIDE) }
+    val overlyState = rememberSaveable { mutableStateOf(PlayerOverlyState.HIDE) }
     CompositionLocalProvider(LocalPlayerWidgetState provides overlyState) {
         content.invoke()
     }

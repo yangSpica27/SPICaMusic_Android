@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -50,6 +51,7 @@ import com.kyant.backdrop.contentBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.blur
 import com.kyant.backdrop.effects.refraction
+import com.kyant.backdrop.effects.saturation
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.secsToMs
@@ -99,21 +101,15 @@ fun PlayerBar(
     Box(
         modifier =
             modifier
-                .contentBackdrop(
-                    shapeProvider = {
-                        RoundedCornerShape(0)
-                    },
-                    effects = {
-                        refraction(12.dp.toPx(), size.minDimension / 3.5f, true)
-                    },
-                    highlight = null,
-                ).drawBackdrop(
+                .drawBackdrop(
                     backdrop,
                     effects = {
+                        saturation()
                         blur(16.dp.toPx())
-                        refraction(12.dp.toPx(), 16.dp.toPx(), true)
+                        refraction(12.dp.toPx(), size.minDimension / 2f, true)
                     },
                     onDrawSurface = glassSurface,
+                    highlight = null,
                     shadow = null,
                     shapeProvider = {
                         RoundedCornerShape(0)
@@ -124,7 +120,8 @@ fun PlayerBar(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .height(80.dp)
+                    .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.Center,
         ) {
             Row(

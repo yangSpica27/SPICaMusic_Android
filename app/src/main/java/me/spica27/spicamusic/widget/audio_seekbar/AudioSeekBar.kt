@@ -200,7 +200,7 @@ fun AudioWaveSlider(
                                 backdrop,
                                 shapeProvider = { G2RoundedCornerShape(12.dp) },
                                 effects = {
-                                    refraction(size.minDimension / 2, size.minDimension / 4, true)
+                                    refraction(16.dp.toPx(), size.minDimension / 2, true)
                                 },
                                 onDrawSurface = {
                                     drawRect(thumbColor)
