@@ -94,6 +94,7 @@ import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
 import com.kyant.backdrop.backdrop
+import com.kyant.backdrop.contentBackdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.refraction
 import com.kyant.backdrop.rememberBackdrop
@@ -115,11 +116,13 @@ import me.spica27.spicamusic.utils.formatDurationSecs
 import me.spica27.spicamusic.utils.msToDs
 import me.spica27.spicamusic.utils.msToSecs
 import me.spica27.spicamusic.utils.noRippleClickable
+import me.spica27.spicamusic.utils.pressable
 import me.spica27.spicamusic.utils.rememberVibrator
 import me.spica27.spicamusic.utils.secsToMs
 import me.spica27.spicamusic.utils.tick
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
+import me.spica27.spicamusic.widget.BottomSheetState
 import me.spica27.spicamusic.widget.LyricSettingDialog
 import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.ObserveLifecycleEvent
@@ -140,6 +143,7 @@ import java.util.*
 fun PlayerPage(
     playBackViewModel: PlayBackViewModel = activityViewModel(),
     navigator: NavController? = null,
+    currentListBottomSheetState: BottomSheetState,
 ) {
     // 当前播放的歌曲
     val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState().value
@@ -175,6 +179,15 @@ fun PlayerPage(
             CircularProgressIndicator()
         }
     } else {
+        // 是否显示歌词设置
+        var showLyricsSetting by remember { mutableStateOf(false) }
+
+        if (showLyricsSetting) {
+            LyricSettingDialog(onDismissRequest = {
+                showLyricsSetting = false
+            }, song = currentPlayingSong!!, navController = navigator, dialogBackgroundIsTranslate = {})
+        }
+
         Box(
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -238,35 +251,63 @@ fun PlayerPage(
                                 }
 
                                 1 -> {
-                                    LyricsView(
+                                    Box(
                                         modifier = Modifier.fillMaxSize(),
-                                        currentTime = currentTime * 1000,
-                                        song = currentPlayingSong!!,
-                                        onScroll = {
-                                            playBackViewModel.seekTo(it.toLong())
-                                        },
-                                        placeHolder = {
-                                            Box(
-                                                modifier =
-                                                    Modifier
-                                                        .fillMaxSize()
-                                                        .clip(
-                                                            MaterialTheme.shapes.medium,
-                                                        ).clickable {
-                                                            currentPlayingSong.let {
-                                                                navigator?.navigate(
-                                                                    Routes.LyricsSearch(
-                                                                        song = it,
-                                                                    ),
-                                                                )
-                                                            }
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        LyricsView(
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxSize(),
+                                            currentTime = currentTime * 1000,
+                                            song = currentPlayingSong!!,
+                                            onScroll = {
+                                                playBackViewModel.seekTo(it.toLong())
+                                            },
+                                            placeHolder = {
+                                                Box(
+                                                    modifier =
+                                                        Modifier
+                                                            .fillMaxSize()
+                                                            .clip(
+                                                                MaterialTheme.shapes.medium,
+                                                            ).clickable {
+                                                                currentPlayingSong.let {
+                                                                    navigator?.navigate(
+                                                                        Routes.LyricsSearch(
+                                                                            song = it,
+                                                                        ),
+                                                                    )
+                                                                }
+                                                            },
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    Text("暂无歌词,点击搜索", color = MaterialTheme.colorScheme.onSurface)
+                                                }
+                                            },
+                                        )
+                                        IconButton(
+                                            onClick = {
+                                                showLyricsSetting = true
+                                            },
+                                            modifier =
+                                                Modifier
+                                                    .align(alignment = Alignment.BottomEnd)
+                                                    .offset(x = (-12).dp, y = (-12).dp)
+                                                    .contentBackdrop(
+                                                        shapeProvider = { CircleShape },
+                                                        effects = {
+                                                            refraction(8f.dp.toPx(), 12f.dp.toPx(), true)
                                                         },
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                Text("暂无歌词,点击搜索")
-                                            }
-                                        },
-                                    )
+                                                    ).pressable(),
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.ic_font_download),
+                                                contentDescription = "PlayList",
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            )
+                                        }
+                                    }
                                 }
 
                                 2 -> {
@@ -288,23 +329,13 @@ fun PlayerPage(
                             .padding(horizontal = 20.dp)
                             .padding(top = 12.dp),
                     navigator = navigator,
+                    currentListBottomSheetState = currentListBottomSheetState,
                 )
                 ControlPanel(
                     modifier = Modifier.padding(vertical = 15.dp, horizontal = 20.dp),
                     playBackViewModel = playBackViewModel,
                 )
-                Text(
-                    modifier =
-                        Modifier
-                            .padding(10.dp)
-                            .fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    text = stringResource(R.string.swipe_up_to_view_current_play_list),
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        ),
-                )
+                Spacer(modifier = Modifier.height(48.dp))
             }
         }
     }
@@ -567,8 +598,6 @@ private fun ControlPanel(
         }
     }
 
-    val playerBtnColor = MaterialTheme.colorScheme.primaryContainer
-
     Column(
         modifier = modifier,
     ) {
@@ -696,6 +725,7 @@ private fun SongInfo(
     songViewModel: SongViewModel = activityViewModel(),
     navigator: NavController? = null,
     playBackViewModel: PlayBackViewModel = activityViewModel(),
+    currentListBottomSheetState: BottomSheetState,
 ) {
     val songId = remember(song) { song.songId ?: -1 }
 
@@ -719,15 +749,6 @@ private fun SongInfo(
         Timber.e("重组")
     }
 
-    // 是否显示歌词设置
-    var showLyricsSetting by remember { mutableStateOf(false) }
-
-    if (showLyricsSetting) {
-        LyricSettingDialog(onDismissRequest = {
-            showLyricsSetting = false
-        }, song = song, navController = navigator, dialogBackgroundIsTranslate = {})
-    }
-
     val songListItemMenuDialogState = rememberSongItemMenuDialogState()
 
     SongItemMenu(
@@ -737,9 +758,10 @@ private fun SongInfo(
 
     Row(
         modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         AnimatedContent(
-            modifier = Modifier.weight(2f),
+            modifier = Modifier.weight(1f),
             targetState = song,
             label = "song_info_transition",
             transitionSpec = {
@@ -748,7 +770,7 @@ private fun SongInfo(
         ) { song ->
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
                     maxLines = 1,
@@ -764,7 +786,6 @@ private fun SongInfo(
                         ),
                     modifier = Modifier.basicMarquee(),
                 )
-                Spacer(modifier = Modifier.height(5.dp))
                 Text(
                     modifier = Modifier.basicMarquee(),
                     maxLines = 1,
@@ -780,7 +801,6 @@ private fun SongInfo(
                 )
             }
         }
-        Spacer(modifier = Modifier.weight(1f))
         IconButton(
             onClick = {
                 playBackViewModel.toggleShuffleMode()
@@ -800,31 +820,29 @@ private fun SongInfo(
             if (isLike) {
                 Icon(
                     imageVector = Icons.Default.Favorite,
-                    contentDescription = "More",
+                    contentDescription = stringResource(R.string.more),
                     tint = Color(0xFFF44336),
                 )
             } else {
                 Icon(
                     imageVector = Icons.Default.FavoriteBorder,
-                    contentDescription = "More",
+                    contentDescription = stringResource(R.string.more),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                 )
             }
         }
-        Spacer(Modifier.width(10.dp))
         IconButton(
             onClick = {
-                showLyricsSetting = true
+                currentListBottomSheetState.expandSoft()
             },
         ) {
             Icon(
                 modifier = Modifier.size(24.dp),
-                painter = painterResource(R.drawable.ic_lyrics_line),
-                contentDescription = "lyrics",
+                painter = painterResource(R.drawable.ic_playlist),
+                contentDescription = stringResource(R.string.now_playinglist),
                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
             )
         }
-        Spacer(Modifier.width(10.dp))
         IconButton(
             onClick = {
                 songListItemMenuDialogState.show(song)

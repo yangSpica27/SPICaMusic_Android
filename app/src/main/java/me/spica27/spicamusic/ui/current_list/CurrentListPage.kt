@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui.main.player
+package me.spica27.spicamusic.ui.current_list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -52,7 +54,10 @@ import me.spica27.spicamusic.wrapper.activityViewModel
  * 当前播放列表
  */
 @Composable
-fun CurrentListPage(playBackViewModel: PlayBackViewModel = activityViewModel()) {
+fun CurrentListPage(
+    playBackViewModel: PlayBackViewModel = activityViewModel(),
+    nestedScrollConnection: NestedScrollConnection,
+) {
     val playIndexState = playBackViewModel.playlistCurrentIndex.collectAsStateWithLifecycle()
 
     val playListSizeState =
@@ -173,7 +178,7 @@ fun CurrentListPage(playBackViewModel: PlayBackViewModel = activityViewModel()) 
                     }
                 }
 
-            CurrentList(playBackViewModel, listState)
+            CurrentList(playBackViewModel, listState, nestedScrollConnection)
 
             if (showScrollToCurrent.value) {
                 Box(
@@ -212,6 +217,7 @@ fun CurrentListPage(playBackViewModel: PlayBackViewModel = activityViewModel()) 
 private fun CurrentList(
     viewModel: PlayBackViewModel,
     listState: LazyListState,
+    nestedScrollConnection: NestedScrollConnection,
 ) {
     val playingSongState = viewModel.currentSongFlow.collectAsStateWithLifecycle()
 
@@ -223,7 +229,8 @@ private fun CurrentList(
     LazyColumn(
         modifier =
             Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
         state = listState,
     ) {
         itemsIndexed(listDataState.value, key = { _, song -> song.songId.toString() }) { index, song ->

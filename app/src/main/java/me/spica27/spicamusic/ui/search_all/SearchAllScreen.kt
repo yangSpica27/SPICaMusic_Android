@@ -4,9 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imeNestedScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,7 +32,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.media3.common.util.UnstableApi
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
@@ -47,7 +48,7 @@ import me.spica27.spicamusic.wrapper.activityViewModel
 import org.koin.androidx.compose.koinViewModel
 
 // / 搜索所有歌曲的页面
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SearchAllScreen(
     musicViewModel: MusicSearchViewModel = koinViewModel(),
@@ -98,7 +99,7 @@ fun SearchAllScreen(
     )
 }
 
-@androidx.annotation.OptIn(UnstableApi::class)
+@ExperimentalLayoutApi
 @Composable
 private fun SongList(
     modifier: Modifier = Modifier,
@@ -133,7 +134,10 @@ private fun SongList(
 
         // 歌曲列表
         LazyColumn(
-            modifier = modifier.nestedScroll(rememberBindPlayerOverlyConnect()),
+            modifier =
+                modifier
+                    .imeNestedScroll()
+                    .nestedScroll(rememberBindPlayerOverlyConnect()),
             state = listState,
         ) {
             itemsIndexed(

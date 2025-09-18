@@ -38,12 +38,12 @@ import com.kyant.backdrop.Backdrop
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.ui.main.player.PlayerScreen
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
+import me.spica27.spicamusic.widget.BottomSheet
 import me.spica27.spicamusic.widget.COLLAPSED_ANCHOR
 import me.spica27.spicamusic.widget.CoverWidget
 import me.spica27.spicamusic.widget.DISMISSED_ANCHOR
 import me.spica27.spicamusic.widget.EXPANDED_ANCHOR
 import me.spica27.spicamusic.widget.PlayerBar
-import me.spica27.spicamusic.widget.PlayerSheet
 import me.spica27.spicamusic.widget.rememberBottomSheetState
 import me.spica27.spicamusic.wrapper.activityViewModel
 import timber.log.Timber
@@ -57,8 +57,6 @@ fun PlayerOverly(
     val playbackViewModel: PlayBackViewModel = activityViewModel()
 
     val isPlaying = playbackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
-
-    val currentSong = playbackViewModel.currentSongFlow.collectAsStateWithLifecycle(null).value
 
     val nowPlayingSize = playbackViewModel.nowPlayingListSize.collectAsState().value
 
@@ -125,7 +123,7 @@ fun PlayerOverly(
             }
         }
 
-        PlayerSheet(
+        BottomSheet(
             state = playerBottomSheetState,
             collapsedContent = {
                 Bottom(backdrop)

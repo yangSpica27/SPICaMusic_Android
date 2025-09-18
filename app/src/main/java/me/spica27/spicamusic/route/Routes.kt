@@ -73,6 +73,9 @@ object Routes {
     @Serializable
     data object FullScreenLrc
 
+    @Serializable
+    data object CurrentList
+
     /**
      * 歌词搜索
      */

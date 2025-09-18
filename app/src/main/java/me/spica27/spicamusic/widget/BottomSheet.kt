@@ -52,7 +52,7 @@ val BottomSheetSoftAnimationSpec = spring<Dp>(stiffness = Spring.StiffnessLow)
  * Modified from [ViMusic](https://github.com/vfsfitvnm/ViMusic)
  */
 @Composable
-fun PlayerSheet(
+fun BottomSheet(
     state: BottomSheetState,
     modifier: Modifier = Modifier,
     backgroundColor: Color,
@@ -283,11 +283,11 @@ const val DISMISSED_ANCHOR = 0
 
 @Composable
 fun rememberBottomSheetState(
-    dismissedBound: Dp,
+    dismissedBound: Dp = 0.dp,
     expandedBound: Dp,
     collapsedBound: Dp = dismissedBound,
     initialAnchor: Int = DISMISSED_ANCHOR,
-    onAnchorChanged: (Int) -> Unit,
+    onAnchorChanged: (Int) -> Unit = {},
 ): BottomSheetState {
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()

@@ -22,6 +22,7 @@ import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.theme.AppTheme
 import me.spica27.spicamusic.ui.add_song.AddSongScreen
 import me.spica27.spicamusic.ui.agree_privacy.AgreePrivacyScreen
+import me.spica27.spicamusic.ui.current_list.CurrentListScreen
 import me.spica27.spicamusic.ui.eq.EqScreen
 import me.spica27.spicamusic.ui.full_screen_lrc.FullScreenLrcScreen
 import me.spica27.spicamusic.ui.ignore_list.IgnoreListScreen
@@ -129,7 +130,9 @@ fun AppMain() {
                 composable<Routes.AgreePrivacy> {
                     AgreePrivacyScreen(navigator = navHostController)
                 }
-
+                composable<Routes.CurrentList> {
+                    CurrentListScreen()
+                }
                 composable<Routes.Translate>(
                     enterTransition = { EnterTransition.None },
                     exitTransition = { ExitTransition.None },

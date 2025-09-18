@@ -15,7 +15,7 @@ class LineVisualiser : VisualiserDrawable() {
     private var lastSampleTime = 0L
 
     // 采样间隔
-    private val interval = 60
+    private val interval = 100
 
     // 采集到的数据
     private val yList by lazy {

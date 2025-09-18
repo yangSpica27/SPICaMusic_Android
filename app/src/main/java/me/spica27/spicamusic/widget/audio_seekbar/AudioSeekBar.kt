@@ -4,6 +4,7 @@ package me.spica27.spicamusic.widget.audio_seekbar
 
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -28,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -125,6 +127,16 @@ fun AudioWaveSlider(
 
     var isTouch by remember { mutableStateOf(false) }
 
+    val scaleY =
+        animateFloatAsState(
+            if (isTouch) {
+                0.8f
+            } else {
+                1f
+            },
+            spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+        )
+
     val thumbColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = .2f)
 
     val thumbWidth =
@@ -154,6 +166,7 @@ fun AudioWaveSlider(
                         .backdrop(backdrop)
                         .fillMaxWidth()
                         .fillMaxHeight()
+                        .scale(1f, scaleY.value)
                         .graphicsLayer(alpha = DefaultGraphicsLayerAlpha),
             ) {
                 canvasSize = size
