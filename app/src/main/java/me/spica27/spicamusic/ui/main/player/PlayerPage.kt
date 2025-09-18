@@ -635,6 +635,7 @@ private fun ControlPanel(
                 modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
                 text = positionSec.formatDurationSecs(),
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -674,7 +675,11 @@ private fun ControlPanel(
             IconButton(onClick = {
                 playBackViewModel.playPre()
             }, modifier = Modifier.size(60.dp)) {
-                Icon(painter = painterResource(id = R.drawable.ic_pre), contentDescription = "Previous")
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_pre),
+                    contentDescription = "Previous",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
             }
             Spacer(modifier = Modifier.weight(1f))
             // Play/Pause
@@ -710,7 +715,11 @@ private fun ControlPanel(
             IconButton(onClick = {
                 playBackViewModel.playNext()
             }, modifier = Modifier.size(60.dp)) {
-                Icon(painter = painterResource(id = R.drawable.ic_next), contentDescription = "Next")
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_next),
+                    contentDescription = "Next",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
             }
             Spacer(modifier = Modifier.weight(2f))
         }
@@ -1060,7 +1069,13 @@ fun SongInfoCard(
                             ),
                     )
                     Spacer(modifier = Modifier.height(5.dp))
-                    Text(lastPlayTimeDescText, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        lastPlayTimeDescText,
+                        style =
+                            MaterialTheme.typography.bodyLarge.copy(
+                                MaterialTheme.colorScheme.onSurface,
+                            ),
+                    )
                     Spacer(modifier = Modifier.height(5.dp))
                 }
                 Spacer(
@@ -1103,6 +1118,7 @@ fun SongInfoCard(
                             "经常听"
                         },
                         style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(5.dp))
                 }

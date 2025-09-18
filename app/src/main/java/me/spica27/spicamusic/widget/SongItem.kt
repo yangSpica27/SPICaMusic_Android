@@ -343,6 +343,7 @@ fun PlayingSongItem(
                     } else {
                         Modifier.fillMaxWidth()
                     },
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
                 fontWeight = FontWeight.W600,
                 maxLines = 1,
             )

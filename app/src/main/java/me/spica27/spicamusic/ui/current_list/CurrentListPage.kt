@@ -125,6 +125,7 @@ fun CurrentListPage(
                     Text(
                         text = "${playIndexState.value + 1}/${playListSizeState.value}",
                         style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }

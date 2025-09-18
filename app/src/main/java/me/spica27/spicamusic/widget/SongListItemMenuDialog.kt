@@ -524,6 +524,7 @@ private fun SongItemDialog(
                 ) {
                     Text(
                         text = song.displayName,
+                        color = MaterialTheme.colorScheme.onSurface,
                         style =
                             MaterialTheme.typography.bodyLarge.copy(
                                 fontWeight = FontWeight.W700,

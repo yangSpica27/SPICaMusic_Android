@@ -196,6 +196,7 @@ fun LyricsView(
                             shapeProvider = {
                                 G2RoundedCornerShape(12.dp)
                             },
+                            highlight = null,
                             effects = {
                                 refraction(32.dp.toPx(), 12.dp.toPx(), true)
                             },
