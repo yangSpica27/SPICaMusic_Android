@@ -31,6 +31,7 @@
   <string name="add">新增</string>
   <string name="delete">删除</string>
   <string name="add_to_list">添加到播放列表</string>
+  <string name="add_new_song_to_playlist">新增歌曲到当前歌单</string>
   <string name="info">信息</string>
 
   <string name="permission_declaration">
@@ -76,6 +77,9 @@
             感谢您的理解与支持！希望 SPICaMusic 能为您带来愉悦的音乐时光。
         </p>
   </string>
+  <string name="play_all">播放全部</string>
+  <string name="quick_action">快速操作</string>
+  <string name="play_action">播放操作</string>
   <string name="crash_log">崩溃日志</string>
   <string name="see_more">查看更多</string>
   <string name="title_home">主页</string>

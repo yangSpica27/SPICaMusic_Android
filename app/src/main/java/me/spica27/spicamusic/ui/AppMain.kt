@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,6 +39,8 @@ import me.spica27.spicamusic.ui.search_all.SearchAllScreen
 import me.spica27.spicamusic.ui.translate.TranslateScreen
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.widget.BackPress
+import me.spica27.spicamusic.widget.BottomSheetMenu
+import me.spica27.spicamusic.widget.LocalMenuState
 import me.spica27.spicamusic.widget.materialSharedAxisXIn
 import me.spica27.spicamusic.widget.materialSharedAxisXOut
 import me.spica27.spicamusic.widget.materialSharedAxisYIn
@@ -177,6 +180,10 @@ fun AppMain() {
             PlayerOverly(
                 navigator = navHostController,
                 backdrop,
+            )
+            BottomSheetMenu(
+                state = LocalMenuState.current,
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
     }

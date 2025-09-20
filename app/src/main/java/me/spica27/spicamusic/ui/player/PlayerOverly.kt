@@ -14,6 +14,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -181,10 +183,13 @@ private fun Mimi(song: Song) {
 }
 
 @Composable
-fun PlayerOverlyContent(content: @Composable () -> Unit) {
+fun PlayerOverlyContent(content: @Composable BoxScope.() -> Unit) {
     val overlyState = rememberSaveable { mutableStateOf(PlayerOverlyState.HIDE) }
     CompositionLocalProvider(LocalPlayerWidgetState provides overlyState) {
-        content.invoke()
+        Box(
+            content = content,
+            modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 

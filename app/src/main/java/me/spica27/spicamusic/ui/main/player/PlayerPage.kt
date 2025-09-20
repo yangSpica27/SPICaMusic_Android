@@ -663,6 +663,7 @@ private fun ControlPanel(
             Text(
                 text = songState?.duration?.msToDs()?.formatDurationDs() ?: "0:00",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
             )
         }
 

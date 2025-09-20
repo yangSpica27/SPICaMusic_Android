@@ -1,12 +1,14 @@
 <resources>
   <string name="app_name">SPICaMusic</string>
   <string name="action_settings">Settings</string>
-
+  <string name="play_all">Play All</string>
   <string name="first_fragment_label">First Fragment</string>
   <string name="second_fragment_label">Second Fragment</string>
   <string name="next">Next</string>
   <string name="previous">Previous</string>
+  <string name="quick_action">Quick Action</string>
 
+  <string name="play_action">Play Action</string>
   <string name="play_list_header">Swipe down to go back to details</string>
   <string name="playing">Now Playing</string>
   <string name="queue">Playlist</string>
@@ -141,4 +143,5 @@
   <string name="swipe_up_to_view_current_play_list">swipe up to view the now playing list</string>
   <string name="swipe_down_to_view_player_page">swipe down to view player page</string>
   <string name="remove">remove</string>
+  <string name="add_new_song_to_playlist">Add New Song To Current Playlist</string>
 </resources>
