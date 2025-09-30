@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.main.player
 
+import android.content.ClipData
 import android.os.ParcelFileDescriptor
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedContent
@@ -32,6 +33,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -39,10 +42,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,6 +77,8 @@ import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -105,11 +114,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.repository.PlayHistoryRepository
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.TimeUtils
 import me.spica27.spicamusic.utils.TimeUtils.prettyTime
+import me.spica27.spicamusic.utils.ToastUtils
+import me.spica27.spicamusic.utils.clickableWithVibration
 import me.spica27.spicamusic.utils.contentResolverSafe
 import me.spica27.spicamusic.utils.formatDurationDs
 import me.spica27.spicamusic.utils.formatDurationSecs
@@ -123,16 +135,16 @@ import me.spica27.spicamusic.utils.tick
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.viewModel.SongViewModel
 import me.spica27.spicamusic.widget.BottomSheetState
+import me.spica27.spicamusic.widget.CoverWidget
+import me.spica27.spicamusic.widget.LocalMenuState
 import me.spica27.spicamusic.widget.LyricSettingDialog
 import me.spica27.spicamusic.widget.LyricsView
 import me.spica27.spicamusic.widget.ObserveLifecycleEvent
-import me.spica27.spicamusic.widget.SongItemMenu
 import me.spica27.spicamusic.widget.VisualizerView
 import me.spica27.spicamusic.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.widget.capsule.G2RoundedCornerShape
 import me.spica27.spicamusic.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.widget.materialSharedAxisYOut
-import me.spica27.spicamusic.widget.rememberSongItemMenuDialogState
 import me.spica27.spicamusic.wrapper.TaglibUtils
 import me.spica27.spicamusic.wrapper.activityViewModel
 import org.koin.compose.koinInject
@@ -759,12 +771,7 @@ private fun SongInfo(
         Timber.e("重组")
     }
 
-    val songListItemMenuDialogState = rememberSongItemMenuDialogState()
-
-    SongItemMenu(
-        songListItemMenuDialogState,
-        playBackViewModel = playBackViewModel,
-    )
+    val menuState = LocalMenuState.current
 
     Row(
         modifier = modifier,
@@ -855,7 +862,12 @@ private fun SongInfo(
         }
         IconButton(
             onClick = {
-                songListItemMenuDialogState.show(song)
+                menuState.show {
+                    SongItemMenu(
+                        song = song,
+                        onDismissRequest = { menuState.dismiss() },
+                    )
+                }
             },
         ) {
             Icon(
@@ -990,6 +1002,9 @@ private fun TabBar(
     }
 }
 
+/**
+ * 歌曲信息
+ */
 @Composable
 fun SongInfoCard(
     modifier: Modifier = Modifier,
@@ -1244,6 +1259,187 @@ fun SongInfoCard(
                             ),
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * 歌曲菜单面板
+ */
+@Composable
+private fun SongItemMenu(
+    song: Song,
+    onDismissRequest: () -> Unit,
+) {
+    val songDao = koinInject<SongDao>()
+
+    val isLike = songDao.getSongIsLikeFlowWithId(song.songId ?: -1).collectAsStateWithLifecycle(false)
+
+    val coroutineScope = rememberCoroutineScope()
+
+    val clipboardManager = LocalClipboard.current
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(15.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    CoverWidget(
+                        song = song,
+                        modifier =
+                            Modifier
+                                .size(66.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    MaterialTheme.shapes.medium,
+                                ).clip(MaterialTheme.shapes.medium),
+                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            song.displayName,
+                            style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                        )
+                        Text(
+                            song.artist,
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    color =
+                                        MaterialTheme.colorScheme.onSurface.copy(
+                                            alpha = .6f,
+                                        ),
+                                ),
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            val clipData = ClipData.newPlainText("songName", song.displayName)
+                            val clipEntry = ClipEntry(clipData)
+                            coroutineScope.launch {
+                                clipboardManager.setClipEntry(clipEntry)
+                            }
+                            ToastUtils.showToast(App.getInstance().getString(R.string.copy_success))
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_copy),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+        }
+        item {
+            Text(
+                stringResource(R.string.quick_action),
+                style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+            )
+        }
+
+        item {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentSize()
+                        .border(
+                            width = 1.dp,
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = .3f),
+                            MaterialTheme.shapes.small,
+                        ).clip(MaterialTheme.shapes.small),
+            ) {
+                ListItem(
+                    modifier =
+                        Modifier.clickableWithVibration {
+                            coroutineScope.launch(Dispatchers.IO) {
+                                songDao.toggleLike(song.songId ?: -1)
+                            }
+                        },
+                    headlineContent = {
+                        Text(
+                            if (isLike.value == 1) {
+                                "取消收藏"
+                            } else {
+                                "收藏"
+                            },
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    MaterialTheme.colorScheme.onSurface,
+                                ),
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            imageVector =
+                                if (isLike.value == 1) {
+                                    Icons.Default.Favorite
+                                } else {
+                                    Icons.Default.FavoriteBorder
+                                },
+                            contentDescription = null,
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            if (isLike.value == 1) {
+                                stringResource(R.string.has_liked_current_song)
+                            } else {
+                                stringResource(R.string.has_not_liked_current_song)
+                            },
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = .5f),
+                                ),
+                        )
+                    },
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = .3f))
+                ListItem(
+                    modifier =
+                        Modifier.clickableWithVibration {
+                            ToastUtils.showToast("敬请期待！")
+                            onDismissRequest.invoke()
+                        },
+                    headlineContent = {
+                        Text(
+                            stringResource(R.string.info),
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    MaterialTheme.colorScheme.onSurface,
+                                ),
+                        )
+                    },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = stringResource(R.string.info),
+                        )
+                    },
+                    supportingContent = {
+                        Text(
+                            "查看歌曲的文件信息",
+                            style =
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = .5f),
+                                ),
+                        )
+                    },
+                )
             }
         }
     }

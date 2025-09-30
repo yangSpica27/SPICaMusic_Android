@@ -494,9 +494,9 @@ private fun SongItemMenu(
                     supportingContent = {
                         Text(
                             if (isLike.value == 1) {
-                                "已经收藏当前歌曲"
+                                stringResource(R.string.has_liked_current_song)
                             } else {
-                                "未收藏当前歌曲"
+                                stringResource(R.string.has_not_liked_current_song)
                             },
                             style =
                                 MaterialTheme.typography.bodyMedium.copy(
@@ -617,7 +617,7 @@ private fun SongItemMenu(
                     },
                     supportingContent = {
                         Text(
-                            "添加到播放列表，并且立刻播放",
+                            stringResource(R.string.add_to_current_playlist),
                             style =
                                 MaterialTheme.typography.bodyMedium.copy(
                                     MaterialTheme.colorScheme.onSurface.copy(alpha = .5f),
@@ -634,7 +634,7 @@ private fun SongItemMenu(
                         },
                     headlineContent = {
                         Text(
-                            "播放全部歌曲",
+                            stringResource(R.string.play_all_songs),
                             style =
                                 MaterialTheme.typography.bodyLarge.copy(
                                     MaterialTheme.colorScheme.onSurface,
@@ -649,7 +649,7 @@ private fun SongItemMenu(
                     },
                     supportingContent = {
                         Text(
-                            "用当前歌单替换当前播放列表，并且立刻播放此曲目",
+                            stringResource(R.string.replace_current_playlist),
                             style =
                                 MaterialTheme.typography.bodyMedium.copy(
                                     MaterialTheme.colorScheme.onSurface.copy(alpha = .5f),

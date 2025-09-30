@@ -144,4 +144,9 @@
   <string name="swipe_down_to_view_player_page">swipe down to view player page</string>
   <string name="remove">remove</string>
   <string name="add_new_song_to_playlist">Add New Song To Current Playlist</string>
+  <string name="play_all_songs">Play All</string>
+  <string name="replace_current_playlist">Replace Current Playlist</string>
+  <string name="add_to_current_playlist">Add to Current Playing List</string>
+  <string name="has_liked_current_song">LIKED</string>
+  <string name="has_not_liked_current_song">NOT LIKED</string>"
 </resources>

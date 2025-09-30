@@ -144,4 +144,9 @@
   <string name="swipe_up_to_view_current_play_list">向上滑动查看播放列表</string>
   <string name="swipe_down_to_view_player_page">向下轻扫回到播放器页面</string>
   <string name="remove">移除</string>
+  <string name="play_all_songs">播放全部歌曲</string>
+  <string name="replace_current_playlist">用当前歌单替换当前播放列表，并且立刻播放此曲目</string>
+  <string name="add_to_current_playlist">添加到播放列表，并且立刻播放</string>
+  <string name="has_liked_current_song">已收藏</string>
+  <string name="has_not_liked_current_song">未收藏</string>"
 </resources>
