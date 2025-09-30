@@ -13,12 +13,23 @@ android {
   namespace 'me.spica27.spicamusic'
   compileSdk = 36
 
+  def props = new Properties()
+  file("$rootDir/gradle.properties").withInputStream { props.load(it) }
+  def MAJOR_VERSION = Integer.parseInt(props["MAJOR_VERSION"])
+  def MINOR_VERSION = Integer.parseInt(props["MINOR_VERSION"])
+  def BUILD_VERSION = Integer.parseInt(props["BUILD_VERSION"])
+  rootProject.ext.buildVersionCode = (MAJOR_VERSION)* 1_000_000 + (MINOR_VERSION) * 10_000 + BUILD_VERSION
+  rootProject.ext.buildVersionName = "$MAJOR_VERSION.$MINOR_VERSION.$BUILD_VERSION BETA"
+
+  println("buildVersionCode = ${rootProject.ext.buildVersionCode}")
+  println("buildVersionName= ${rootProject.ext.buildVersionName}")
+
   defaultConfig {
     applicationId "me.spica27.spicamusic"
     minSdk 24
     targetSdk 36
-    versionCode 17
-    versionName "beta17"
+    versionCode buildVersionCode
+    versionName buildVersionName
 
     testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     vectorDrawables {
@@ -141,9 +152,9 @@ dependencies {
   def nav_version = "2.9.3"
   // Jetpack Compose integration
   implementation("androidx.navigation:navigation-compose:$nav_version")
-//  implementation libs.androidx.lifecycle.viewmodel.navigation3
-//  implementation libs.androidx.navigation3.runtime
-//  implementation libs.androidx.navigation3.ui
+  //  implementation libs.androidx.lifecycle.viewmodel.navigation3
+  //  implementation libs.androidx.navigation3.runtime
+  //  implementation libs.androidx.navigation3.ui
   implementation libs.material3
   // 播放器
   // For media playback using ExoPlayer
@@ -172,3 +183,24 @@ dependencies {
   implementation libs.kotlinx.coroutines.guava
   implementation libs.androidx.media3.session
 }
+
+tasks.register('incrementBuildNumber') {
+  doLast {
+    def filePath = rootProject.file("gradle.properties")
+    if (!filePath.exists()) {
+      return
+    }
+    def props = new Properties()
+    props.load(new FileInputStream(filePath))
+    String currentBuildNumber = props["BUILD_VERSION"]
+    Integer buildNumber = Integer.parseInt(currentBuildNumber)
+    buildNumber++
+    if (buildNumber >= 10_000) {
+      throw new IllegalStateException("Build number limited to 3 digits; cannot exceed 10,000")
+    }
+    props["BUILD_VERSION"] = buildNumber.toString()
+    def os = new FileOutputStream(filePath)
+    props.store(os, null)
+  }
+}
+tasks.getByPath("preBuild").dependsOn("incrementBuildNumber")
