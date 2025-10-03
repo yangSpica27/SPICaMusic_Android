@@ -50,7 +50,7 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_16_17 =
             object : Migration(16, 17) {
                 override fun migrate(db: SupportSQLiteDatabase) {
-                    db.execSQL("ALTER PlaylistSongCrossRef  ADD COLUMN insertTime INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("ALTER TABLE PlaylistSongCrossRef  ADD COLUMN insertTime INTEGER NOT NULL DEFAULT 0")
                 }
             }
     }
