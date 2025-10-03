@@ -692,9 +692,12 @@ private fun Header(
 
     if (showDeleteDialog) {
         DeleteSureDialog(
-            onDismissRequest = { showDeleteDialog = false },
+            onDismissRequest = {
+                showDeleteDialog = false
+            },
             playlistId = playlist.playlistId ?: -1,
             playlistViewModel = playlistViewModel,
+            navigator = navigator,
         )
     }
 
@@ -808,6 +811,7 @@ private fun Header(
                         ).clickableNoRippleWithVibration {
                             menuState.show {
                                 PlaylistMenu(
+                                    navigator = navigator,
                                     onDismissRequest = {
                                         menuState.dismiss()
                                     },
@@ -845,6 +849,7 @@ private fun PlaylistMenu(
     onDelete: () -> Unit = {},
     onPlayAll: () -> Unit = {},
     onAddToPlaylist: () -> Unit = {},
+    navigator: NavController? = null,
 ) {
     LazyColumn(
         modifier =
