@@ -18,9 +18,6 @@ import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.entity.Lyric
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.wrapper.TaglibUtils
-import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType
-import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat
-import net.sourceforge.pinyin4j.format.HanyuPinyinToneType
 import timber.log.Timber
 
 // 查询字段
@@ -70,11 +67,11 @@ object AudioTool {
         val songs = mutableListOf<Song>()
         Timber.d("开始扫描音频文件")
 
-        val hanyuPinyinOutputFormat =
-            HanyuPinyinOutputFormat().apply {
-                caseType = HanyuPinyinCaseType.LOWERCASE
-                toneType = HanyuPinyinToneType.WITHOUT_TONE
-            }
+//        val hanyuPinyinOutputFormat =
+//            HanyuPinyinOutputFormat().apply {
+//                caseType = HanyuPinyinCaseType.LOWERCASE
+//                toneType = HanyuPinyinToneType.WITHOUT_TONE
+//            }
 
         do {
             val isMusic =

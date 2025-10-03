@@ -48,16 +48,30 @@ interface PlaylistDao {
     @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
     fun getPlaylistsWithSongsWithPlayListIdFlow(playlistId: Long): Flow<PlaylistWithSongs?>
 
-    @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")
+    @Query(
+        "SELECT s.* FROM Song as s " +
+            "JOIN PlaylistSongCrossRef as psc ON s.songId = psc.songId " +
+            "WHERE psc.playlistId = :playlistId " +
+            "ORDER BY psc.insertTime DESC",
+    )
     fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<Song>>
 
-    @Query("SELECT * FROM Song WHERE songId IN (SELECT songId FROM PlaylistSongCrossRef WHERE playlistId == :playlistId)")
+    @Query(
+        "SELECT s.* FROM Song as s " +
+            "JOIN PlaylistSongCrossRef as psc ON s.songId = psc.songId " +
+            "WHERE psc.playlistId = :playlistId " +
+            "ORDER BY psc.insertTime DESC",
+    )
     fun getSongsByPlaylistId(playlistId: Long): List<Song>
 
-    @Query("SELECT * FROM Playlist WHERE playlistId IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)")
+    @Query(
+        "SELECT * FROM Playlist WHERE playlistId IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)",
+    )
     fun getPlaylistsHaveSong(songId: Long): Flow<List<Playlist>>
 
-    @Query("SELECT * FROM Playlist WHERE playlistId NOT IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)")
+    @Query(
+        "SELECT * FROM Playlist WHERE playlistId NOT IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)",
+    )
     fun getPlaylistsNotHaveSong(songId: Long): Flow<List<Playlist>>
 
     @Transaction
