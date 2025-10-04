@@ -31,9 +31,9 @@ class VisualizerView :
     )
 
     init {
-        setOnClickListener {
-//      nextVisualiserType()
-        }
+//        setOnClickListener {
+// //      nextVisualiserType()
+//        }
     }
 
     private val infiniteAnim =

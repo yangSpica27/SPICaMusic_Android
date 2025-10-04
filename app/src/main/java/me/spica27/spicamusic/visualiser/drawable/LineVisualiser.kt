@@ -14,8 +14,10 @@ class LineVisualiser : VisualiserDrawable() {
     // 上次采样的时间
     private var lastSampleTime = 0L
 
+    private var lastLastSampleTime = 0L
+
     // 采样间隔
-    private val interval = 100
+    private var interval = 100L
 
     // 采集到的数据
     private val yList by lazy {
@@ -58,7 +60,7 @@ class LineVisualiser : VisualiserDrawable() {
         }
 
     private val decelerateInterpolator by lazy {
-        android.view.animation.DecelerateInterpolator()
+        android.view.animation.LinearInterpolator()
     }
 
     override fun draw(canvas: Canvas) {
@@ -111,10 +113,12 @@ class LineVisualiser : VisualiserDrawable() {
     }
 
     override fun update(list: List<Float>) {
-        if (((System.currentTimeMillis() - lastSampleTime) < interval) &&
+        if (
             yList.isNotEmpty() &&
-            lastYList.isNotEmpty()
+            lastYList.isNotEmpty() &&
+            lastSampleTime == 0L
         ) {
+            lastSampleTime = System.currentTimeMillis()
             return
         }
 
@@ -142,6 +146,8 @@ class LineVisualiser : VisualiserDrawable() {
             maxYList.addAll(yList)
         }
 
+        lastLastSampleTime = lastSampleTime
         lastSampleTime = System.currentTimeMillis()
+        interval = lastSampleTime - lastLastSampleTime
     }
 }

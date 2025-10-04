@@ -203,4 +203,4 @@ tasks.register('incrementBuildNumber') {
     props.store(os, null)
   }
 }
-tasks.getByPath("preBuild").dependsOn("incrementBuildNumber")
+//tasks.getByPath("preBuild").dependsOn("incrementBuildNumber")

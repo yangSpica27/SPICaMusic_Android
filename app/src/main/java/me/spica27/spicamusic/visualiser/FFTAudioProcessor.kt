@@ -168,7 +168,6 @@ class FFTAudioProcessor : AudioProcessor {
         val singleChannelOutputSize = frameCount * 2
         // 计算所有声道输出所需的总大小（字节
         val outputSize = frameCount * inputAudioFormat.channelCount * 2
-
         // 检查 processBuffer 和 fftBuffer 的容量是否足够容纳当前输入的数据。
         // 如果不够，则重新分配具有足够大小的直接字节缓冲区
         // (ByteBuffer.allocateDirect) 并设置为本地字节序 (ByteOrder.nativeOrder())。

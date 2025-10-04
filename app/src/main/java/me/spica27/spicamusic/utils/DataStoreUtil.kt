@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
+import me.spica27.spicamusic.common.VisaulizerMode
 import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.EqualizerBand
 import me.spica27.spicamusic.dsp.NyquistBand
@@ -49,7 +50,27 @@ class DataStoreUtil(
 
         // 用户是否同意隐私政策
         val AGREE_PRIVACY = booleanPreferencesKey("agree_privacy")
+
+        val VISAULIZER_MODE = intPreferencesKey("VISUALIZER_MODE")
     }
+
+    suspend fun setVisualizerMode(mode: VisaulizerMode) =
+        withContext(Dispatchers.IO) {
+            context.dataStore.edit {
+                it[VISAULIZER_MODE] = mode.value
+            }
+        }
+
+    fun getVisualizerMode(): Flow<VisaulizerMode> =
+        context.dataStore.data
+            .map {
+                val value = it[VISAULIZER_MODE] ?: 0
+                return@map when (value) {
+                    0 -> VisaulizerMode.CIRCLE
+                    1 -> VisaulizerMode.BOTTOM
+                    else -> VisaulizerMode.CIRCLE
+                }
+            }.distinctUntilChanged()
 
     suspend fun setAgreePrivacy(value: Boolean) =
         withContext(Dispatchers.IO) {
