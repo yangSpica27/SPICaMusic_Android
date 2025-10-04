@@ -12,7 +12,7 @@
 <img src="/img/Screenshot_20251004_164645.png" width="20%"/>
 <img src="/img/Screenshot_20251004_164037.png" width="20%"/>
 <img src="/img/Screenshot_20251004_164029.png" width="20%"/>
-<img src="/img/Screenshot_20251004_163651.png" width="20%">
+<img src="/img/Screenshot_20251004_164106.png" width="20%">
 </p>
 
 ## 项目简介
