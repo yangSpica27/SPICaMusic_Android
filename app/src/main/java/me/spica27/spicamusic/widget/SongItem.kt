@@ -157,7 +157,7 @@ fun SongItemWithCover(
                 )
                 Text(
                     text = song.artist,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)),
                     maxLines = 1,
                 )
             }
@@ -170,6 +170,7 @@ fun SongItemWithCover(
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "更多",
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
@@ -206,6 +207,7 @@ fun SongItemWithCover(
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = "更多",
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
         }

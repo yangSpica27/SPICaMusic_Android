@@ -2,17 +2,17 @@
 
 <p align="center">
 
-<img src="/img/Screenshot_20250728_201015.png" width="20%"/>
-<img src="/img/Screenshot_20250730_174948.png" width="20%"/>
-<img src="/img/Screenshot_20250621_231303.png" width="20%"/>
-<img src="/img/Screenshot_20250820_145443.png" width="20%"/>
+<img src="/img/Screenshot_20251004_163459.png" width="20%"/>
+<img src="/img/Screenshot_20251004_163651.png" width="20%"/>
+<img src="/img/Screenshot_20251004_163810.png" width="20%"/>
+<img src="/img/Screenshot_20251004_163917.png" width="20%"/>
 </p>
 
 <p align="center">
-<img src="/img/Screenshot_20250820_145709.png" width="20%"/>
-<img src="/img/Screenshot_20250731_144309.png" width="20%"/>
-<img src="/img/Screenshot_20250731_144457.png" width="20%"/>
-<img src="/img/Screenshot_20250820_145606.png" width="20%">
+<img src="/img/Screenshot_20251004_164645.png" width="20%"/>
+<img src="/img/Screenshot_20251004_164037.png" width="20%"/>
+<img src="/img/Screenshot_20251004_164029.png" width="20%"/>
+<img src="/img/Screenshot_20251004_163651.png" width="20%">
 </p>
 
 ## 项目简介
