@@ -74,6 +74,7 @@ class FFTAudioProcessor : AudioProcessor {
     private var fftBuffer: ByteBuffer
     private var outputBuffer: ByteBuffer
 
+    @Volatile
     var listeners: MutableList<FFTListener> = mutableListOf()
     private var inputEnded: Boolean = false
 
@@ -215,6 +216,8 @@ class FFTAudioProcessor : AudioProcessor {
     private fun processFFT(buffer: ByteBuffer) {
         // 如果没有注册 FFT 监听器，则直接返回，不执行 FFT 计算，以节省资源。
         if (listeners.isEmpty()) {
+            srcBuffer.clear()
+            srcBufferPosition = 0
             return
         }
         // 将传入的 buffer (即 fftBuffer 中的数据) 的内容复制到 srcBuffer 的当前位置
