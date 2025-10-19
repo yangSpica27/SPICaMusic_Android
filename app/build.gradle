@@ -174,7 +174,7 @@ dependencies {
 
   implementation(libs.androidliquidglass)
   implementation "androidx.constraintlayout:constraintlayout-compose:1.1.1"
-
+  implementation libs.androidx.compose.material.icons.core
   implementation libs.prettytime
   def koin_version = "4.1.0"
   implementation libs.koin.androidx.compose
