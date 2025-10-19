@@ -62,7 +62,7 @@ class PlaybackService :
                         replayGainAudioProcessor,
                     ),
             ).apply {
-                this.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+                this.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
             }
 
         exoPlayer =
