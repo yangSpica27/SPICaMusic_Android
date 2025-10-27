@@ -29,7 +29,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
-import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
@@ -37,6 +36,7 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.repository.LyricRepository
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
@@ -54,7 +54,6 @@ fun LyricSettingDialog(
     dialogBackgroundColor: Color = MaterialTheme.colorScheme.background,
     textColor: Color = MaterialTheme.colorScheme.onBackground,
     song: Song,
-    navController: NavController? = null,
     // 窗口是否透明
     dialogBackgroundIsTranslate: (Boolean) -> Unit = {},
 ) {
@@ -88,6 +87,10 @@ fun LyricSettingDialog(
 
     // 弹窗背景颜色
     var dialogBackgroundColor by remember { mutableStateOf(dialogBackgroundColor) }
+
+    val navController = LocalNavController.current
+
+    // 弹窗背景颜色动画
 
     LaunchedEffect(dialogBackgroundColor) {
         dialogBackgroundIsTranslate.invoke(dialogBackgroundColor.alpha == 1f)
@@ -282,8 +285,8 @@ fun LyricSettingDialog(
                         modifier =
                             Modifier.clickableNoRippleWithVibration {
                                 onDismissRequest.invoke()
-                                navController?.clearBackStack(Routes.Main)
-                                navController?.navigate(
+                                navController.clearBackStack(Routes.Main)
+                                navController.navigate(
                                     Routes.LyricsSearch(
                                         song = song,
                                     ),

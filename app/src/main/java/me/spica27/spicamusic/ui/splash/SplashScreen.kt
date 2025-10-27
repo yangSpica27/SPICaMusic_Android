@@ -16,13 +16,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.route.Routes
 
 //  Splash Screen
 @Composable
 fun SplashScreen(
     modifier: Modifier = Modifier,
-    navigator: NavController,
+    navController: NavController = LocalNavController.current,
 ) {
     val visibilityState = remember { mutableStateOf(false) }
 
@@ -36,7 +37,7 @@ fun SplashScreen(
 
     LaunchedEffect(Unit) {
         delay(1000) // 延迟2秒
-        navigator.navigate(Routes.Main)
+        navController.navigate(Routes.Main)
     }
 
     Scaffold { padding ->

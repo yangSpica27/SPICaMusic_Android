@@ -35,7 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.ui.current_list.CurrentListPage
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
@@ -51,7 +51,6 @@ import timber.log.Timber
 fun PlayerScreen(
     playBackViewModel: PlayBackViewModel = activityViewModel(),
     onBackClick: () -> Unit,
-    navigator: NavController? = null,
 ) {
     val nowPlayingSongs =
         playBackViewModel.player.currentTimelineItems
@@ -70,7 +69,7 @@ fun PlayerScreen(
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         if (nowPlayingSongs.isEmpty()) {
-            EmptyPage(navigator)
+            EmptyPage()
         } else {
             var anchor by remember { mutableIntStateOf(COLLAPSED_ANCHOR) }
             val currentListBottomSheetState =
@@ -116,7 +115,6 @@ fun PlayerScreen(
                     },
                 )
                 PlayerPage(
-                    navigator = navigator,
                     currentListBottomSheetState = currentListBottomSheetState,
                 )
             }
@@ -140,7 +138,8 @@ fun PlayerScreen(
 }
 
 @Composable
-private fun EmptyPage(navigator: NavController? = null) {
+private fun EmptyPage() {
+    val navigator = LocalNavController.current
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -150,7 +149,7 @@ private fun EmptyPage(navigator: NavController? = null) {
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedButton(
             onClick = {
-                navigator?.navigate(Routes.SearchAll)
+                navigator.navigate(Routes.SearchAll)
             },
         ) {
             Text("选取音乐")

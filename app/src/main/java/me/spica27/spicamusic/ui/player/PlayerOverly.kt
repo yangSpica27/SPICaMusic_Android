@@ -35,9 +35,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import com.kyant.backdrop.Backdrop
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.ui.main.player.PlayerScreen
 import me.spica27.spicamusic.viewModel.PlayBackViewModel
 import me.spica27.spicamusic.widget.BottomSheet
@@ -53,9 +53,11 @@ import timber.log.Timber
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun PlayerOverly(
-    navigator: NavController? = null,
     backdrop: Backdrop,
 ) {
+
+    val navHostController = LocalNavController.current
+
     val playbackViewModel: PlayBackViewModel = activityViewModel()
 
     val isPlaying = playbackViewModel.isPlaying.collectAsStateWithLifecycle(false).value
@@ -132,7 +134,7 @@ fun PlayerOverly(
             },
             content = {
                 PlayerScreen(
-                    navigator = navigator,
+                    navigator = navHostController,
                     onBackClick = {
                         overlyState.value = PlayerOverlyState.BOTTOM
                     },

@@ -2,6 +2,8 @@ package me.spica27.spicamusic.shaderrippleeffect
 
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +21,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.delay
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun MotionBlurEffect(
     modifier: Modifier = Modifier,

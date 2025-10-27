@@ -2,6 +2,8 @@ package me.spica27.spicamusic.route
 
 import android.net.Uri
 import android.os.Parcelable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.savedstate.SavedState
 import kotlinx.serialization.Serializable
@@ -107,3 +109,8 @@ object Routes {
                 )
         }
 }
+
+val LocalNavController =
+    staticCompositionLocalOf<NavHostController> {
+        error("No NavController provided")
+    }

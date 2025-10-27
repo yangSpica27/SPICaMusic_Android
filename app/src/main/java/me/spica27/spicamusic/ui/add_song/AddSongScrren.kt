@@ -35,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.viewModel.SelectSongViewModel
 import me.spica27.spicamusic.widget.SelectableSongItem
 import org.koin.androidx.compose.koinViewModel
@@ -44,7 +45,7 @@ import org.koin.androidx.compose.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSongScreen(
-    navigator: NavController,
+    navigator: NavController = LocalNavController.current,
     playlistId: Long,
 ) {
     val viewModel: SelectSongViewModel = koinViewModel()

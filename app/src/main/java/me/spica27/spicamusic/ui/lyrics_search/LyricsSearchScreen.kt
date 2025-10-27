@@ -43,13 +43,13 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.NetworkState
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.network.bean.LyricResponse
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.ui.player.LocalPlayerWidgetState
 import me.spica27.spicamusic.ui.player.PlayerOverlyState
 import me.spica27.spicamusic.utils.ToastUtils
@@ -61,7 +61,6 @@ import org.koin.compose.viewmodel.koinViewModel
 fun LyricsSearchScreen(
     song: Song,
     lyricSearchViewModel: LyricSearchViewModel = koinViewModel(),
-    navigator: NavController? = null,
 ) {
     val data = lyricSearchViewModel.lyricsFlow.collectAsState(initial = emptyList()).value
 
@@ -73,6 +72,8 @@ fun LyricsSearchScreen(
         overlyState.value = PlayerOverlyState.BOTTOM
     }
 
+    val navigator = LocalNavController.current
+
     Scaffold(
         modifier =
             Modifier
@@ -81,7 +82,7 @@ fun LyricsSearchScreen(
             TopAppBar(navigationIcon = {
                 IconButton(
                     onClick = {
-                        navigator?.popBackStack()
+                        navigator.popBackStack()
                     },
                 ) {
                     Icon(Icons.AutoMirrored.Default.KeyboardArrowLeft, contentDescription = "Back")

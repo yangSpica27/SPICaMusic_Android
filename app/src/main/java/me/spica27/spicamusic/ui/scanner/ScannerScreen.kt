@@ -29,7 +29,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -39,6 +38,7 @@ import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.dao.LyricDao
 import me.spica27.spicamusic.db.dao.SongDao
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.utils.AudioTool
 import me.spica27.spicamusic.widget.SimpleTopBar
 import org.koin.compose.koinInject
@@ -48,7 +48,7 @@ import org.koin.compose.koinInject
  */
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun ScannerScreen(navigator: NavController? = null) {
+fun ScannerScreen() {
     // 权限状态
     val permissionState =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -105,11 +105,13 @@ fun ScannerScreen(navigator: NavController? = null) {
         }
     }
 
+    val navController = LocalNavController.current
+
     Scaffold(
         topBar = {
             SimpleTopBar(
                 title = stringResource(R.string.setting_scanner),
-                onBack = { navigator?.popBackStack() },
+                onBack = { navController.popBackStack() },
             )
         },
     ) { paddingValues ->

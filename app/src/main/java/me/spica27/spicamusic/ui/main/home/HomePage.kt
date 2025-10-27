@@ -66,6 +66,7 @@ import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
 import me.spica27.spicamusic.utils.pressable
@@ -86,7 +87,7 @@ import me.spica27.spicamusic.wrapper.activityViewModel
 fun HomePage(
     modifier: Modifier = Modifier,
     songViewModel: SongViewModel = activityViewModel(),
-    navigator: NavController? = null,
+    navigator: NavController = LocalNavController.current,
     listState: ScrollState = rememberScrollState(),
     pagerState: PagerState,
     playBackViewModel: PlayBackViewModel = activityViewModel(),
@@ -157,7 +158,7 @@ fun HomePage(
                                 shape = MaterialTheme.shapes.small,
                             ).clip(MaterialTheme.shapes.small)
                             .clickable {
-                                navigator?.navigate(Routes.SearchAll)
+                                navigator.navigate(Routes.SearchAll)
                             }.padding(
                                 horizontal = 16.dp,
                                 vertical = 10.dp,
@@ -183,7 +184,7 @@ fun HomePage(
                             stringResource(R.string.see_more),
                             modifier =
                                 Modifier.clickableNoRippleWithVibration {
-                                    navigator?.navigate(Routes.RecentlyList)
+                                    navigator.navigate(Routes.RecentlyList)
                                 },
                             style =
                                 MaterialTheme.typography.bodyMedium.copy(
@@ -205,9 +206,7 @@ fun HomePage(
                     },
                 ) { songs ->
                     if (songs.isEmpty()) {
-                        OftenListenEmptyContent(
-                            navigator = navigator,
-                        )
+                        OftenListenEmptyContent()
                     } else {
                         OftenListenSongList(songs = songs)
                     }
@@ -250,7 +249,7 @@ fun HomePage(
                                 needUpdate = false,
                             ),
                         onClick = {
-                            navigator?.navigate(Routes.LikeList)
+                            navigator.navigate(Routes.LikeList)
                         },
                         showMenu = false,
                     )
@@ -259,7 +258,7 @@ fun HomePage(
                         PlaylistItem(
                             playlist = it,
                             onClick = {
-                                navigator?.navigate(
+                                navigator.navigate(
                                     Routes.PlaylistDetail(
                                         it.playlistId ?: -1,
                                     ),
@@ -326,8 +325,8 @@ fun HomePage(
 @Composable
 private fun OftenListenEmptyContent(
     modifier: Modifier = Modifier,
-    navigator: NavController? = null,
 ) {
+    val navigator = LocalNavController.current
     Box(
         modifier =
             Modifier
@@ -367,7 +366,7 @@ private fun OftenListenEmptyContent(
             )
             TextButton(
                 onClick = {
-                    navigator?.navigate(Routes.Scanner)
+                    navigator.navigate(Routes.Scanner)
                 },
             ) {
                 Text(stringResource(R.string.scan_local_music))

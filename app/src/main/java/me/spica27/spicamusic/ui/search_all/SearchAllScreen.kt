@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.viewModel.MusicSearchViewModel
@@ -52,7 +53,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun SearchAllScreen(
     musicViewModel: MusicSearchViewModel = koinViewModel(),
-    navigator: NavController,
+    navigator: NavController = LocalNavController.current,
     playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
     Scaffold(

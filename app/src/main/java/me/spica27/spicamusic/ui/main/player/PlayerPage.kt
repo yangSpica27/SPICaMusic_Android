@@ -81,7 +81,6 @@ import androidx.compose.ui.util.fastRoundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import com.kyant.backdrop.backdrop
 import com.kyant.backdrop.contentBackdrop
 import com.kyant.backdrop.drawBackdrop
@@ -97,6 +96,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.repository.PlayHistoryRepository
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.TimeUtils
 import me.spica27.spicamusic.utils.TimeUtils.prettyTime
@@ -132,11 +132,13 @@ import java.util.*
 @Composable
 fun PlayerPage(
     playBackViewModel: PlayBackViewModel = activityViewModel(),
-    navigator: NavController? = null,
     currentListBottomSheetState: BottomSheetState,
 ) {
     // 当前播放的歌曲
     val currentPlayingSong = playBackViewModel.currentSongFlow.collectAsState().value
+
+
+    val navigator = LocalNavController.current
 
     val showEmpty =
         remember(currentPlayingSong) {
@@ -175,7 +177,7 @@ fun PlayerPage(
         if (showLyricsSetting) {
             LyricSettingDialog(onDismissRequest = {
                 showLyricsSetting = false
-            }, song = currentPlayingSong!!, navController = navigator, dialogBackgroundIsTranslate = {})
+            }, song = currentPlayingSong!!, dialogBackgroundIsTranslate = {})
         }
 
         Box(
@@ -263,7 +265,7 @@ fun PlayerPage(
                                                                 MaterialTheme.shapes.medium,
                                                             ).clickable {
                                                                 currentPlayingSong.let {
-                                                                    navigator?.navigate(
+                                                                    navigator.navigate(
                                                                         Routes.LyricsSearch(
                                                                             song = it,
                                                                         ),
@@ -318,7 +320,6 @@ fun PlayerPage(
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp)
                             .padding(top = 12.dp),
-                    navigator = navigator,
                     currentListBottomSheetState = currentListBottomSheetState,
                 )
                 ControlPanel(
@@ -725,7 +726,6 @@ private fun SongInfo(
     song: Song,
     modifier: Modifier = Modifier,
     songViewModel: SongViewModel = activityViewModel(),
-    navigator: NavController? = null,
     playBackViewModel: PlayBackViewModel = activityViewModel(),
     currentListBottomSheetState: BottomSheetState,
 ) {

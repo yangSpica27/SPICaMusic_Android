@@ -37,13 +37,14 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.ToastUtils
 import org.koin.compose.koinInject
 
 @Composable
 fun AgreePrivacyScreen(
-    navigator: NavController,
+    navigator: NavController = LocalNavController.current,
     dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>(),
 ) {
     BackHandler(true) {

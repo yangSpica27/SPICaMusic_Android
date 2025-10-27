@@ -53,6 +53,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.BuildConfig
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.ToastUtils
@@ -62,7 +63,7 @@ import org.koin.compose.koinInject
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SettingPage(
-    navigator: NavController? = null,
+    navigator: NavController = LocalNavController.current,
     pagerState: PagerState? = null,
 ) {
     val coroutineScope = rememberCoroutineScope()

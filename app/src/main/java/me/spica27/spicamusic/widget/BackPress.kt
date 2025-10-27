@@ -8,10 +8,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
 
 @Composable
-fun BackPress(navigator: NavController? = null) {
+fun BackPress() {
     var backPress: BackPressState by remember { mutableStateOf(BackPressState.Idle) }
 
     // 显示是否退出的提示

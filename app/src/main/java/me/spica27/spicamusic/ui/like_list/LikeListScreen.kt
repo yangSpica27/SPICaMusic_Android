@@ -25,11 +25,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.utils.overScrollVertical
@@ -46,7 +46,6 @@ import java.util.*
 @OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun LikeListScreen(
-    navigator: NavController? = null,
     songViewModel: SongViewModel = activityViewModel(),
     playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
@@ -69,11 +68,13 @@ fun LikeListScreen(
         playBackViewModel,
     )
 
+    val navigator = LocalNavController.current
+
     Scaffold(
         topBar = {
             SimpleTopBar(
                 onBack = {
-                    navigator?.popBackStack()
+                    navigator.popBackStack()
                 },
                 title = stringResource(R.string.my_favorites),
                 lazyListState = listState,

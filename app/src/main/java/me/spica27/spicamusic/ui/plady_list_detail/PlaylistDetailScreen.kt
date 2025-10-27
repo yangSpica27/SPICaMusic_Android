@@ -78,7 +78,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -87,6 +86,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.db.dao.SongDao
 import me.spica27.spicamusic.db.entity.Playlist
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.utils.TimeUtils
 import me.spica27.spicamusic.utils.ToastUtils
@@ -116,7 +116,6 @@ import java.util.*
 @Composable
 fun PlaylistDetailScreen(
     playlistViewModel: PlaylistViewModel = activityViewModel(),
-    navigator: NavController? = null,
     playlistId: Long,
     playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
@@ -138,7 +137,6 @@ fun PlaylistDetailScreen(
     ) {
         if (songs.isEmpty() || playlist == null) {
             EmptyPage(
-                navigator = navigator,
                 playlist = playlist,
             )
         } else {
@@ -146,14 +144,12 @@ fun PlaylistDetailScreen(
                 songs,
                 listState = listState,
                 playlist = playlist,
-                navigator = navigator,
                 playlistViewModel = playlistViewModel,
             )
         }
         TopBar(
             title = playlist?.playlistName.orEmpty(),
             lazyListState = listState,
-            navigator = navigator,
         )
     }
 }
@@ -162,13 +158,14 @@ fun PlaylistDetailScreen(
 private fun TopBar(
     title: String,
     lazyListState: LazyListState,
-    navigator: NavController? = null,
 ) {
     val transparentAppBar by remember {
         derivedStateOf {
             lazyListState.firstVisibleItemIndex == 0 && lazyListState.firstVisibleItemScrollOffset < 100
         }
     }
+
+    val navigator = LocalNavController.current
 
     val barHeight =
         64.dp + with(LocalDensity.current) { LocalContext.current.getStatusBarHeight().toDp() }
@@ -225,9 +222,9 @@ private fun TopBar(
 
 @Composable
 private fun EmptyPage(
-    navigator: NavController?,
     playlist: Playlist?,
 ) {
+    val navigator = LocalNavController.current
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -274,7 +271,6 @@ private fun PlayListView(
     playBackViewModel: PlayBackViewModel = activityViewModel(),
     playlistId: Long = -1L,
     playlist: Playlist,
-    navigator: NavController? = null,
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -298,7 +294,6 @@ private fun PlayListView(
                         .aspectRatio(1.38f),
                 playlist = playlist,
                 playlistViewModel = playlistViewModel,
-                navigator = navigator,
                 songs = songs,
             )
         }
@@ -667,7 +662,6 @@ private fun Header(
     modifier: Modifier = Modifier,
     playlist: Playlist,
     playlistViewModel: PlaylistViewModel,
-    navigator: NavController? = null,
     playBackViewModel: PlayBackViewModel = activityViewModel(),
     songs: List<Song>,
 ) {
@@ -683,7 +677,7 @@ private fun Header(
                 playlistViewModel.renamePlaylist(playlist.playlistId, it)
                 showRenameDialog = false
             },
-            defaultText = playlist.playlistName.orEmpty(),
+            defaultText = playlist.playlistName,
             placeholder = "请输入歌单名称",
         )
     }
@@ -697,7 +691,6 @@ private fun Header(
             },
             playlistId = playlist.playlistId ?: -1,
             playlistViewModel = playlistViewModel,
-            navigator = navigator,
         )
     }
 
@@ -716,6 +709,8 @@ private fun Header(
         }.value
 
     val menuState = LocalMenuState.current
+
+    val navigator = LocalNavController.current
 
     Box(
         modifier = modifier,
@@ -787,7 +782,7 @@ private fun Header(
                             MaterialTheme.colorScheme.primary,
                             shape = MaterialTheme.shapes.small,
                         ).clickableNoRippleWithVibration {
-                            navigator?.navigate(
+                            navigator.navigate(
                                 Routes.AddSong(
                                     playlist.playlistId ?: -1,
                                 ),
@@ -811,7 +806,6 @@ private fun Header(
                         ).clickableNoRippleWithVibration {
                             menuState.show {
                                 PlaylistMenu(
-                                    navigator = navigator,
                                     onDismissRequest = {
                                         menuState.dismiss()
                                     },
@@ -821,7 +815,7 @@ private fun Header(
                                     },
                                     onRename = { showRenameDialog = true },
                                     onAddToPlaylist = {
-                                        navigator?.navigate(
+                                        navigator.navigate(
                                             Routes.AddSong(
                                                 playlistId = playlist.playlistId ?: -1,
                                             ),
@@ -849,7 +843,6 @@ private fun PlaylistMenu(
     onDelete: () -> Unit = {},
     onPlayAll: () -> Unit = {},
     onAddToPlaylist: () -> Unit = {},
-    navigator: NavController? = null,
 ) {
     LazyColumn(
         modifier =
@@ -1091,9 +1084,9 @@ private fun DeleteSureDialog(
     playlistId: Long,
     onDismissRequest: () -> Unit = { },
     playlistViewModel: PlaylistViewModel,
-    navigator: NavController? = null,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val navHostController = LocalNavController.current
     AlertDialog(
         shape = MaterialTheme.shapes.small,
         onDismissRequest = { onDismissRequest() },
@@ -1109,7 +1102,7 @@ private fun DeleteSureDialog(
                 coroutineScope.launch {
                     playlistViewModel.deletePlaylist(playlistId)
                     onDismissRequest()
-                    navigator?.popBackStack()
+                    navHostController.popBackStack()
                 }
             }) {
                 Text("确定")

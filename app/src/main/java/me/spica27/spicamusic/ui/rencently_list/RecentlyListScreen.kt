@@ -18,7 +18,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -26,9 +25,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import androidx.navigation.NavController
 import coil3.compose.AsyncImage
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.utils.ScrollHaptics
 import me.spica27.spicamusic.utils.ScrollVibrationType
 import me.spica27.spicamusic.utils.overScrollVertical
@@ -49,13 +48,12 @@ import java.util.*
 @OptIn(UnstableApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun RecentlyListScreen(
-    navigator: NavController? = null,
     songViewModel: SongViewModel = activityViewModel(),
     playBackViewModel: PlayBackViewModel = activityViewModel(),
 ) {
     val songs = songViewModel.oftenListenSongs.collectAsStateWithLifecycle().value
 
-    val coroutineScope = rememberCoroutineScope()
+   val navHostController = LocalNavController.current
 
     val listState = rememberLazyListState()
 
@@ -70,7 +68,7 @@ fun RecentlyListScreen(
         topBar = {
             SimpleTopBar(
                 onBack = {
-                    navigator?.popBackStack()
+                    navHostController.popBackStack()
                 },
                 title = stringResource(R.string.recently_listen),
                 lazyListState = listState,

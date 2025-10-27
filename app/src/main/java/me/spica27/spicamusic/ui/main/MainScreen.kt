@@ -15,8 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.ui.main.home.HomePage
 import me.spica27.spicamusic.ui.setting.SettingPage
@@ -30,7 +30,6 @@ import org.koin.compose.koinInject
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
-    navigator: NavController? = null,
     playBackViewModel: PlayBackViewModel = activityViewModel(),
     dataStoreUtil: DataStoreUtil = koinInject<DataStoreUtil>(),
 ) {
@@ -56,7 +55,7 @@ fun MainScreen(
     val agreePrivacy = dataStoreUtil.getAgreePrivacy().collectAsStateWithLifecycle(null).value
 
     if (agreePrivacy == false) {
-        navigator?.navigate(Routes.AgreePrivacy)
+        LocalNavController.current.navigate(Routes.AgreePrivacy)
     }
 
     Box(
@@ -85,12 +84,11 @@ fun MainScreen(
                     when (page) {
                         0 ->
                             HomePage(
-                                navigator = navigator,
                                 listState = homeScrollState,
                                 pagerState = pagerState,
                             )
 
-                        1 -> SettingPage(navigator = navigator, pagerState = pagerState)
+                        1 -> SettingPage(pagerState = pagerState)
                     }
                 }
             }

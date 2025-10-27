@@ -15,8 +15,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.navigation.NavController
 import kotlinx.coroutines.delay
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.shaderrippleeffect.ExpandingWaveEffect
 import me.spica27.spicamusic.shaderrippleeffect.RevealContentTransition
 import me.spica27.spicamusic.shaderrippleeffect.data.RevealTransitionParams
@@ -26,12 +26,13 @@ import me.spica27.spicamusic.ui.setting.SettingPage
 
 @Composable
 fun TranslateScreen(
-    navigator: NavController? = null,
     pointX: Float,
     pointY: Float,
     fromLight: Boolean,
 ) {
     var trigger by remember { mutableIntStateOf(0) }
+
+    val navHostController = LocalNavController.current
 
     BackHandler(true) {
     }
@@ -39,7 +40,7 @@ fun TranslateScreen(
     LaunchedEffect(Unit) {
         trigger = 1
         delay(1750)
-        navigator?.popBackStack()
+        navHostController.popBackStack()
     }
 
     Box(

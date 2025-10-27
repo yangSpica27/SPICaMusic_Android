@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -19,6 +20,7 @@ import androidx.navigation.toRoute
 import com.kyant.backdrop.backdrop
 import com.kyant.backdrop.rememberBackdrop
 import me.spica27.spicamusic.db.entity.Song
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.route.Routes
 import me.spica27.spicamusic.theme.AppTheme
 import me.spica27.spicamusic.ui.add_song.AddSongScreen
@@ -59,132 +61,125 @@ fun AppMain() {
 
     val navHostController = rememberNavController()
 
-    BackPress(navigator = navHostController)
+    BackPress()
 
     val backdrop = rememberBackdrop()
 
-    AppTheme(
-        darkTheme = darkTheme,
-        dynamicColor = false,
-    ) {
-        PlayerOverlyContent {
-            NavHost(
-                startDestination = Routes.Main,
-                navController = navHostController,
-                modifier =
-                    Modifier
-                        .clearAndSetSemantics {}
-                        .backdrop(backdrop)
-                        .fillMaxSize(),
-                enterTransition = {
-                    materialSharedAxisXIn(forward = true)
-                },
-                exitTransition = {
-                    materialSharedAxisXOut(forward = true)
-                },
-                popEnterTransition = {
-                    materialSharedAxisXIn(forward = true)
-                },
-                popExitTransition = {
-                    materialSharedAxisXOut(forward = true)
-                },
-            ) {
-                composable<Routes.Main> {
-                    MainScreen(
-                        navigator = navHostController,
-                    )
-                }
-                composable<Routes.FullScreenLrc>(
-                    enterTransition = { materialSharedAxisYIn(true) },
-                    exitTransition = { materialSharedAxisYOut(true) },
-                    popEnterTransition = { materialSharedAxisYIn(true) },
-                    popExitTransition = { materialSharedAxisYOut(true) },
-                ) {
-                    FullScreenLrcScreen()
-                }
-                composable<Routes.AddSong> { key ->
-                    val playlistId = key.toRoute<Routes.AddSong>().playlistId
-                    AddSongScreen(
-                        navigator = navHostController,
-                        playlistId = playlistId,
-                    )
-                }
-                composable<Routes.PlaylistDetail> { key ->
-                    val playlistId = key.toRoute<Routes.PlaylistDetail>().playlistId
-                    PlaylistDetailScreen(
-                        navigator = navHostController,
-                        playlistId = playlistId,
-                    )
-                }
-                composable<Routes.SearchAll>(
-                    enterTransition = { materialSharedAxisYIn(true) },
-                    exitTransition = { materialSharedAxisYOut(true) },
-                    popEnterTransition = { materialSharedAxisYIn(true) },
-                    popExitTransition = { materialSharedAxisYOut(true) },
-                ) {
-                    SearchAllScreen(navigator = navHostController)
-                }
-                composable<Routes.EQ> {
-                    EqScreen(navigator = navHostController)
-                }
-                composable<Routes.Scanner> {
-                    ScannerScreen(navigator = navHostController)
-                }
-                composable<Routes.AgreePrivacy> {
-                    AgreePrivacyScreen(navigator = navHostController)
-                }
-                composable<Routes.CurrentList> {
-                    CurrentListScreen()
-                }
-                composable<Routes.Translate>(
-                    enterTransition = { EnterTransition.None },
-                    exitTransition = { ExitTransition.None },
-                    popEnterTransition = { EnterTransition.None },
-                    popExitTransition = { ExitTransition.None },
-                ) { key ->
-                    val route = key.toRoute<Routes.Translate>()
-                    TranslateScreen(
-                        navigator = navHostController,
-                        pointX = route.pointX,
-                        pointY = route.pointY,
-                        fromLight = route.fromLight,
-                    )
-                }
-                composable<Routes.LikeList> { LikeListScreen(navigator = navHostController) }
-                composable<Routes.RecentlyList> { RecentlyListScreen(navigator = navHostController) }
-                composable<Routes.IgnoreList> {
-                    IgnoreListScreen(navigator = navHostController)
-                }
-                composable<Routes.LyricsSearch>(
-                    typeMap =
-                        mapOf(
-                            typeOf<Song>() to Routes.parcelableType<Song>(),
-                        ),
+    CompositionLocalProvider(LocalNavController provides navHostController) {
+        AppTheme(
+            darkTheme = darkTheme,
+            dynamicColor = false,
+        ) {
+            PlayerOverlyContent {
+                NavHost(
+                    startDestination = Routes.Main,
+                    navController = LocalNavController.current,
+                    modifier =
+                        Modifier
+                            .clearAndSetSemantics {}
+                            .backdrop(backdrop)
+                            .fillMaxSize(),
                     enterTransition = {
-                        slideInVertically { it }
+                        materialSharedAxisXIn(forward = true)
                     },
                     exitTransition = {
-                        slideOutVertically(
-                            targetOffsetY = { it },
-                            animationSpec = tween(350),
-                        )
+                        materialSharedAxisXOut(forward = true)
                     },
-                ) { key ->
-                    val song = key.toRoute<Routes.LyricsSearch>().song
-                    LyricsSearchScreen(
-                        navigator = navHostController,
-                        song = song,
-                    )
+                    popEnterTransition = {
+                        materialSharedAxisXIn(forward = true)
+                    },
+                    popExitTransition = {
+                        materialSharedAxisXOut(forward = true)
+                    },
+                ) {
+                    composable<Routes.Main> {
+                        MainScreen()
+                    }
+                    composable<Routes.FullScreenLrc>(
+                        enterTransition = { materialSharedAxisYIn(true) },
+                        exitTransition = { materialSharedAxisYOut(true) },
+                        popEnterTransition = { materialSharedAxisYIn(true) },
+                        popExitTransition = { materialSharedAxisYOut(true) },
+                    ) {
+                        FullScreenLrcScreen()
+                    }
+                    composable<Routes.AddSong> { key ->
+                        val playlistId = key.toRoute<Routes.AddSong>().playlistId
+                        AddSongScreen(
+                            playlistId = playlistId,
+                        )
+                    }
+                    composable<Routes.PlaylistDetail> { key ->
+                        val playlistId = key.toRoute<Routes.PlaylistDetail>().playlistId
+                        PlaylistDetailScreen(playlistId = playlistId)
+                    }
+                    composable<Routes.SearchAll>(
+                        enterTransition = { materialSharedAxisYIn(true) },
+                        exitTransition = { materialSharedAxisYOut(true) },
+                        popEnterTransition = { materialSharedAxisYIn(true) },
+                        popExitTransition = { materialSharedAxisYOut(true) },
+                    ) {
+                        SearchAllScreen()
+                    }
+                    composable<Routes.EQ> {
+                        EqScreen()
+                    }
+                    composable<Routes.Scanner> {
+                        ScannerScreen()
+                    }
+                    composable<Routes.AgreePrivacy> {
+                        AgreePrivacyScreen()
+                    }
+                    composable<Routes.CurrentList> {
+                        CurrentListScreen()
+                    }
+                    composable<Routes.Translate>(
+                        enterTransition = { EnterTransition.None },
+                        exitTransition = { ExitTransition.None },
+                        popEnterTransition = { EnterTransition.None },
+                        popExitTransition = { ExitTransition.None },
+                    ) { key ->
+                        val route = key.toRoute<Routes.Translate>()
+                        TranslateScreen(
+                            pointX = route.pointX,
+                            pointY = route.pointY,
+                            fromLight = route.fromLight,
+                        )
+                    }
+                    composable<Routes.LikeList> { LikeListScreen() }
+                    composable<Routes.RecentlyList> { RecentlyListScreen() }
+                    composable<Routes.IgnoreList> {
+                        IgnoreListScreen()
+                    }
+                    composable<Routes.LyricsSearch>(
+                        typeMap =
+                            mapOf(
+                                typeOf<Song>() to Routes.parcelableType<Song>(),
+                            ),
+                        enterTransition = {
+                            slideInVertically { it }
+                        },
+                        exitTransition = {
+                            slideOutVertically(
+                                targetOffsetY = { it },
+                                animationSpec = tween(350),
+                            )
+                        },
+                    ) { key ->
+                        val song = key.toRoute<Routes.LyricsSearch>().song
+                        LyricsSearchScreen(
+                            song = song,
+                        )
+                    }
                 }
+                PlayerOverly(
+                    backdrop,
+                )
+                BottomSheetMenu(
+                    state = LocalMenuState.current,
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
             }
-            PlayerOverly(
-                navigator = navHostController,
-                backdrop,
-            )
-            BottomSheetMenu(
-                state = LocalMenuState.current,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
 }

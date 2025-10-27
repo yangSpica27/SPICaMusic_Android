@@ -48,6 +48,7 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.dsp.Equalizer
 import me.spica27.spicamusic.dsp.NyquistBand
+import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.clickableNoRippleWithVibration
 import me.spica27.spicamusic.utils.rememberVibrator
@@ -58,7 +59,7 @@ import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EqScreen(navigator: NavController? = null) {
+fun EqScreen(navigator: NavController = LocalNavController.current) {
     val dataStoreUtil = DataStoreUtil()
 
     val replayGain = dataStoreUtil.getReplayGain.collectAsState(0)
