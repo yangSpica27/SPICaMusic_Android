@@ -53,7 +53,7 @@ fun RecentlyListScreen(
 ) {
     val songs = songViewModel.oftenListenSongs.collectAsStateWithLifecycle().value
 
-   val navHostController = LocalNavController.current
+    val navHostController = LocalNavController.current
 
     val listState = rememberLazyListState()
 

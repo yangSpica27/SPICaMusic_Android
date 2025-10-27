@@ -52,10 +52,7 @@ import timber.log.Timber
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun PlayerOverly(
-    backdrop: Backdrop,
-) {
-
+fun PlayerOverly(backdrop: Backdrop) {
     val navHostController = LocalNavController.current
 
     val playbackViewModel: PlayBackViewModel = activityViewModel()
@@ -134,7 +131,6 @@ fun PlayerOverly(
             },
             content = {
                 PlayerScreen(
-                    navigator = navHostController,
                     onBackClick = {
                         overlyState.value = PlayerOverlyState.BOTTOM
                     },

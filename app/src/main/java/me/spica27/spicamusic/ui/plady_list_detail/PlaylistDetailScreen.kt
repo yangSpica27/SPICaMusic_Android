@@ -221,9 +221,7 @@ private fun TopBar(
 }
 
 @Composable
-private fun EmptyPage(
-    playlist: Playlist?,
-) {
+private fun EmptyPage(playlist: Playlist?) {
     val navigator = LocalNavController.current
     Column(
         modifier = Modifier.fillMaxSize(),

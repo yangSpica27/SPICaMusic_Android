@@ -323,9 +323,7 @@ fun HomePage(
  * 最近常听占位空
  */
 @Composable
-private fun OftenListenEmptyContent(
-    modifier: Modifier = Modifier,
-) {
+private fun OftenListenEmptyContent(modifier: Modifier = Modifier) {
     val navigator = LocalNavController.current
     Box(
         modifier =
