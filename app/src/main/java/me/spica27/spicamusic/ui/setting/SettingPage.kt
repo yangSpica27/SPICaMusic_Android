@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hasRoute
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.BuildConfig
@@ -105,8 +106,14 @@ fun SettingPage(
                             ImageVector.vectorResource(R.drawable.ic_outlined_sunny)
                         },
                     onPoint = {
+                        val isTranslateRoute = navigator.currentDestination?.hasRoute(Routes.Translate::class) == true
+
+                        if (isTranslateRoute) {
+                            return@CategoryItem2
+                        }
+
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            navigator?.navigate(
+                            navigator.navigate(
                                 Routes.Translate(
                                     it.x,
                                     it.y,
@@ -115,9 +122,7 @@ fun SettingPage(
                             )
                         }
                         coroutineScope.launch {
-                            if (navigator != null) {
-                                dataStoreUtil.saveForceDarkTheme(!forceDarkThemeSettingState.value)
-                            }
+                            dataStoreUtil.saveForceDarkTheme(!forceDarkThemeSettingState.value)
                         }
                     },
                 )
