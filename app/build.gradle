@@ -108,6 +108,11 @@ ktlint {
 tasks.getByPath("preBuild").dependsOn("ktlintFormat")
 
 dependencies {
+    // 模块依赖
+    implementation project(':common')
+    implementation project(':storage-core')
+    implementation project(':player-core')
+    
     implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
     implementation libs.androidx.core.ktx
     implementation libs.androidx.lifecycle.runtime.ktx
@@ -129,11 +134,10 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    //  implementation 'com.github.EspoirX:StarrySky:v2.6.9'
-    implementation(libs.androidx.room.runtime)
-    ksp(libs.androidx.room.compiler)
-    implementation(libs.androidx.room.ktx)
-    implementation libs.androidx.datastore.preferences
+    // Room 依赖已由 storage-core 模块提供
+    // Media3 依赖已由 player-core 模块提供
+    // DataStore 依赖已由 storage-core 模块提供
+    
     implementation libs.timber
     implementation(libs.accompanist.permissions)
 
@@ -148,13 +152,16 @@ dependencies {
     //  implementation libs.androidx.navigation3.runtime
     //  implementation libs.androidx.navigation3.ui
     implementation libs.material3
-    // 播放器
-    // For media playback using ExoPlayer
+    
+    // 播放器相关依赖 (实现层需要)
     implementation libs.androidx.media3.exoplayer
-    //    implementation 'com.google.android.exoplayer:exoplayer-core:2.X.X'
     implementation libs.androidx.media
+    implementation libs.androidx.media3.session
+    implementation libs.kotlinx.coroutines.guava
+    
     implementation libs.amplituda
     implementation(libs.androidx.dynamicanimation.ktx)
+    
     // 网络请求
     implementation libs.okhttp
     implementation(libs.logging.interceptor)
@@ -170,9 +177,6 @@ dependencies {
     implementation libs.prettytime
     implementation libs.koin.androidx.compose
     implementation(libs.pinyin4j)
-
-    implementation libs.kotlinx.coroutines.guava
-    implementation libs.androidx.media3.session
 }
 
 tasks.register('incrementBuildNumber') {

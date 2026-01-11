@@ -32,5 +32,8 @@ dependencyResolutionManagement {
 
 rootProject.name = "SPICaMusic"
 include ':app'
+include ':common'
+include ':storage-core'
+include ':player-core'
 //include(':decoder_flac')
 //include(":starrysky")

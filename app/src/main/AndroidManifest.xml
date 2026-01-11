@@ -86,12 +86,8 @@
       </intent-filter>
     </activity>
 
-    <activity
-      android:name="me.spica27.spicamusic.ui.crash.CrashActivity"
-      android:screenOrientation="portrait" />
-
     <service
-      android:name=".media.service.PlaybackService"
+      android:name=".service.PlaybackService"
       android:exported="true"
       android:foregroundServiceType="mediaPlayback"
       tools:ignore="ExportedService">
