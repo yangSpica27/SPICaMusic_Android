@@ -4,7 +4,6 @@ import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.ui.home.HomeViewModel
-import me.spica27.spicamusic.ui.home.pages.AudioEffectViewModel
 import me.spica27.spicamusic.ui.home.pages.SearchViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import org.koin.core.module.dsl.viewModel
@@ -35,13 +34,6 @@ object AppModule {
             viewModel {
                 SearchViewModel(
                     songRepository = get<ISongRepository>(),
-                )
-            }
-
-            // 音效页面 ViewModel
-            viewModel {
-                AudioEffectViewModel(
-                    player = get<IMusicPlayer>(),
                 )
             }
 

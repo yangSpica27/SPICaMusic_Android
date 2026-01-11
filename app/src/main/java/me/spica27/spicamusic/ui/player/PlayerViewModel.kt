@@ -141,8 +141,8 @@ class PlayerViewModel(
      * 播放歌曲
      */
     fun playSong(song: Song) {
-        song.songId?.let { id ->
-            playById(id.toString())
+        song.mediaStoreId.toString().let { id ->
+            playById(id)
         }
     }
 

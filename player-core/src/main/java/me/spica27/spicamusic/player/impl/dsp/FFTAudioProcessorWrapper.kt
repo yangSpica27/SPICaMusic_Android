@@ -37,32 +37,10 @@ class FFTAudioProcessorWrapper(
         return outputAudioFormat
     }
 
-    override fun isActive(): Boolean = isActive
+    override fun isActive(): Boolean = false // 完全禁用，避免任何音频处理开销
 
     override fun queueInput(inputBuffer: ByteBuffer) {
-        if (!isActive || inputBuffer.remaining() == 0) {
-            outputBuffer = inputBuffer
-            return
-        }
-
-        // 复制数据进行 FFT 分析 (不修改原始数据)
-        val size = inputBuffer.remaining()
-        val audioData = ByteArray(size)
-
-        // 保存位置
-        val position = inputBuffer.position()
-        inputBuffer.get(audioData)
-        // 恢复位置，让音频继续播放
-        inputBuffer.position(position)
-
-        // 传递给 FFT 处理器
-        fftProcessor.process(
-            audioData = audioData,
-            sampleRate = inputAudioFormat.sampleRate,
-            channelCount = inputAudioFormat.channelCount
-        )
-
-        // 直接传递原始数据，不做修改
+        // 完全不处理，直接传递
         outputBuffer = inputBuffer
     }
 

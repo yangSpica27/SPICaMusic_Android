@@ -215,7 +215,9 @@ private fun SongItemCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         onClick = {
-            playerViewModel.playById(song.songId.toString())
+            // 使用 mediaStoreId 而不是 songId (MediaLibrary 使用 mediaStoreId 查找歌曲)
+            timber.log.Timber.d("SearchPage: Clicking song: ${song.displayName}, mediaStoreId=${song.mediaStoreId}, songId=${song.songId}")
+            playerViewModel.playSong(song)
         },
     ) {
         Row(

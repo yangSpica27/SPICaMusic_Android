@@ -13,17 +13,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
-import me.spica27.spicamusic.player.api.IAudioEffectProcessor
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
-import me.spica27.spicamusic.player.impl.dsp.AudioEffectProcessor
 import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessor
 import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessorWrapper
 import me.spica27.spicamusic.player.impl.utils.MediaLibrary
@@ -45,6 +42,7 @@ class SpicaPlayer(
 ) : IMusicPlayer,
     CoroutineScope,
     Player.Listener {
+    
     private val playerKVUtils = getKoin().get<PlayerKVUtils>()
 
     override val coroutineContext: CoroutineContext = Dispatchers.IO
@@ -55,15 +53,12 @@ class SpicaPlayer(
 
     // FFT 音频处理器
     private val _fftProcessor = FFTAudioProcessor()
+
     override val fftProcessor: IFFTProcessor = _fftProcessor
 
     // FFT AudioProcessor 包装器 (用于 ExoPlayer)
     private val _fftAudioProcessorWrapper = FFTAudioProcessorWrapper(_fftProcessor)
     override val fftAudioProcessor: androidx.media3.common.audio.AudioProcessor = _fftAudioProcessorWrapper
-
-    // 音效处理器
-    private val _audioEffectProcessor = AudioEffectProcessor()
-    override val audioEffectProcessor: IAudioEffectProcessor = _audioEffectProcessor
 
     private var browserInstance: MediaBrowser? = null
     private val browserFuture by lazy {
@@ -164,25 +159,49 @@ class SpicaPlayer(
                 }
 
                 is PlayerAction.PlayById -> {
+                    Timber.tag(TAG).d("PlayById: mediaId=${action.mediaId}")
                     val index = browser.currentTimeline.indexOf(action.mediaId)
+                    Timber.tag(TAG).d("Current timeline index: $index, timeline size: ${browser.currentTimeline.windowCount}")
+                    
                     if (index == -1) {
-                        val currentIndex = browser.currentMediaItemIndex
+                        // 不在播放列表中，清空列表并添加这首歌
+                        val timelineSize = browser.currentTimeline.windowCount
+                        Timber.tag(TAG).d("Item not in timeline, clearing playlist (current size: $timelineSize)")
+                        
                         if (browser.isPlaying) {
                             browser.pause()
                         }
+                        
+                        // 清空当前播放列表
+                        browser.clearMediaItems()
+                        
+                        Timber.tag(TAG).d("Getting item from MediaLibrary...")
                         val item =
                             browser
                                 .getItem(action.mediaId)
                                 .await()
-                                .value ?: return@launch
-
-                        browser.addMediaItem(currentIndex + 1, item)
-                        browser.seekTo(currentIndex + 1, 0)
+                                .value
+                        
+                        if (item == null) {
+                            Timber.tag(TAG).e("Failed to get item for mediaId: ${action.mediaId}")
+                            return@launch
+                        }
+                        
+                        Timber.tag(TAG).d("Got item: ${item.mediaId}, adding to playlist")
+                        
+                        // 添加到空列表
+                        browser.addMediaItem(item)
+                        browser.seekTo(0, 0)
+                        Timber.tag(TAG).d("Calling prepare()...")
                         browser.prepare()
+                        Timber.tag(TAG).d("Calling play()...")
                         browser.play()
+                        Timber.tag(TAG).d("Play() called, playWhenReady=${browser.playWhenReady}, playbackState=${browser.playbackState}")
                     } else {
+                        Timber.tag(TAG).d("Item already in playlist, seeking to index: $index")
                         browser.seekTo(index, 0)
                         browser.play()
+                        Timber.tag(TAG).d("Play() called on existing item, playWhenReady=${browser.playWhenReady}")
                     }
                 }
 
@@ -284,6 +303,8 @@ class SpicaPlayer(
     }
 
     companion object {
+        private const val TAG = "SpicaPlayer"
+        
         fun createModule(playbackServiceClass: Class<*>) =
             module {
                 single<PlayerKVUtils> { PlayerKVUtils(androidApplication()) }

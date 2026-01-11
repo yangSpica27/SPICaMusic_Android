@@ -7,14 +7,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import me.spica27.spicamusic.ui.home.pages.AudioEffectPage
 import me.spica27.spicamusic.ui.home.pages.LibraryPage
 import me.spica27.spicamusic.ui.home.pages.SearchPage
 import me.spica27.spicamusic.ui.home.pages.SettingsPage
@@ -43,7 +41,6 @@ fun HomeScreen(
                 items =
                     listOf(
                         NavigationItem("媒体库", Icons.Outlined.Home),
-                        NavigationItem("音效", Icons.Outlined.ThumbUp),
                         NavigationItem("搜索", Icons.Outlined.Search),
                         NavigationItem("设置", Icons.Outlined.Menu),
                     ),
@@ -61,9 +58,8 @@ fun HomeScreen(
         ) {
             when (selectedIndex) {
                 0 -> LibraryPage()
-                1 -> AudioEffectPage()
-                2 -> SearchPage()
-                3 -> SettingsPage()
+                1 -> SearchPage()
+                2 -> SettingsPage()
             }
         }
     }

@@ -1,13 +1,20 @@
 package me.spica27.spicamusic.player.impl.dsp
 
 import be.tarsos.dsp.util.fft.FFT
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import me.spica27.spicamusic.player.api.FFTListener
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import timber.log.Timber
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -15,6 +22,7 @@ import kotlin.math.sqrt
 /**
  * FFT 音频处理器实现
  * 使用 TarsosDSP 进行实时傅里叶变换，分析 31 个频段的响度
+ * 使用独立线程异步处理，避免阻塞音频流
  */
 class FFTAudioProcessor : IFFTProcessor {
 
@@ -53,6 +61,23 @@ class FFTAudioProcessor : IFFTProcessor {
     private val audioBuffer = FloatArray(FFT_SIZE)
     private var bufferIndex = 0
 
+    // 处理标志 - 使用原子布尔值确保线程安全
+    private val isProcessing = AtomicBoolean(false)
+    
+    /**
+     * 检查是否正在处理，用于外部快速判断
+     */
+    fun isBusy(): Boolean = isProcessing.get()
+
+    // 独立的FFT处理线程
+    private val fftExecutor = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "FFT-Processor").apply {
+            priority = Thread.MIN_PRIORITY // 设置为最低优先级，避免影响音频播放
+        }
+    }
+    private val fftDispatcher = fftExecutor.asCoroutineDispatcher()
+    private val fftScope = CoroutineScope(fftDispatcher + SupervisorJob())
+
     override fun enable() {
         _isEnabled.value = true
     }
@@ -60,6 +85,14 @@ class FFTAudioProcessor : IFFTProcessor {
     override fun disable() {
         _isEnabled.value = false
         reset()
+    }
+
+    /**
+     * 释放资源
+     */
+    fun release() {
+        fftScope.cancel()
+        fftExecutor.shutdown()
     }
 
     override fun addListener(listener: FFTListener) {
@@ -70,8 +103,15 @@ class FFTAudioProcessor : IFFTProcessor {
         listeners.remove(listener)
     }
 
+    /**
+     * 处理音频数据
+     * 如果正在处理FFT，丢弃当前音频数据，避免阻塞
+     */
     override fun process(audioData: ByteArray, sampleRate: Int, channelCount: Int) {
-        if (!_isEnabled.value) return
+        // 如果正在处理FFT，丢弃当前音频数据，避免阻塞
+        if (isProcessing.get()) {
+            return
+        }
 
         // 更新采样率
         if (sampleRate != currentSampleRate) {
@@ -91,10 +131,26 @@ class FFTAudioProcessor : IFFTProcessor {
             audioBuffer[bufferIndex] = sample
             bufferIndex++
 
-            // 缓冲区满时进行 FFT 分析
+            // 缓冲区满时异步执行 FFT 分析
             if (bufferIndex >= FFT_SIZE) {
-                performFFT()
+                // 复制缓冲区数据，避免在异步处理时被覆盖
+                val bufferCopy = audioBuffer.copyOf()
                 bufferIndex = 0
+
+                // 标记开始处理
+                if (isProcessing.compareAndSet(false, true)) {
+                    // 在独立线程中异步处理FFT
+                    fftScope.launch {
+                        try {
+                            performFFT(bufferCopy)
+                        } catch (e: Exception) {
+                            Timber.e(e, "FFT processing error")
+                        } finally {
+                            // 处理完成，允许接收新数据
+                            isProcessing.set(false)
+                        }
+                    }
+                }
             }
         }
     }
@@ -104,16 +160,15 @@ class FFTAudioProcessor : IFFTProcessor {
         audioBuffer.fill(0f)
         smoothedBands.fill(0f)
         _bands.value = FloatArray(IFFTProcessor.BAND_COUNT)
+        isProcessing.set(false)
     }
 
     /**
-     * 执行 FFT 分析
+     * 执行 FFT 分析（在独立线程中执行）
+     * @param fftData 已填充的音频数据
      */
-    private fun performFFT() {
+    private fun performFFT(fftData: FloatArray) {
         val fftInstance = fft ?: return
-
-        // 复制数据用于 FFT (避免修改原始缓冲区)
-        val fftData = audioBuffer.copyOf()
 
         // 应用汉宁窗
         applyHanningWindow(fftData)
