@@ -37,8 +37,12 @@ class PlaybackService : MediaLibraryService() {
                         .Builder(context)
                         .setEnableFloatOutput(enableFloatOutput)
                         .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-                        .setAudioProcessors(arrayOf(player.fftAudioProcessor))
-                        .build()
+                        .setAudioProcessors(
+                            arrayOf(
+                                player.audioEffectProcessor.getAudioProcessor(),
+                                player.fftAudioProcessor,
+                            ),
+                        ).build()
             }
 
         exoPlayer =

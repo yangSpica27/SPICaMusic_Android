@@ -20,8 +20,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.player.api.IAudioEffectProcessor
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
+import me.spica27.spicamusic.player.impl.dsp.AudioEffectProcessor
 import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessor
 import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessorWrapper
 import me.spica27.spicamusic.player.impl.utils.MediaLibrary
@@ -58,6 +60,10 @@ class SpicaPlayer(
     // FFT AudioProcessor 包装器 (用于 ExoPlayer)
     private val _fftAudioProcessorWrapper = FFTAudioProcessorWrapper(_fftProcessor)
     override val fftAudioProcessor: androidx.media3.common.audio.AudioProcessor = _fftAudioProcessorWrapper
+
+    // 音效处理器
+    private val _audioEffectProcessor = AudioEffectProcessor()
+    override val audioEffectProcessor: IAudioEffectProcessor = _audioEffectProcessor
 
     private var browserInstance: MediaBrowser? = null
     private val browserFuture by lazy {

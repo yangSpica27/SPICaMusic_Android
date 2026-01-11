@@ -66,6 +66,11 @@ interface IMusicPlayer {
     val fftAudioProcessor: androidx.media3.common.audio.AudioProcessor
 
     /**
+     * 音效处理器
+     */
+    val audioEffectProcessor: IAudioEffectProcessor
+
+    /**
      * 初始化播放器
      */
     fun init()
