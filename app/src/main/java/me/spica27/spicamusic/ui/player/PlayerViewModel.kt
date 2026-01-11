@@ -5,6 +5,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import kotlinx.coroutines.flow.StateFlow
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.player.api.FFTListener
+import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
@@ -234,4 +236,53 @@ class PlayerViewModel(
      * 判断指定歌曲是否正在播放
      */
     fun isSongPlaying(song: Song): Boolean = song.songId?.let { isItemPlaying(it.toString()) } ?: false
+
+    // ==================== FFT 频谱分析 ====================
+
+    /**
+     * FFT 频谱数据 (31个频段, 0.0-1.0)
+     * 频段: 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630,
+     *       800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000,
+     *       12500, 16000, 20000 Hz
+     */
+    val fftBands: StateFlow<FloatArray> = player.fftProcessor.bands
+
+    /**
+     * FFT 是否启用
+     */
+    val fftEnabled: StateFlow<Boolean> = player.fftProcessor.isEnabled
+
+    /**
+     * 启用 FFT 分析
+     */
+    fun enableFFT() {
+        player.fftProcessor.enable()
+    }
+
+    /**
+     * 禁用 FFT 分析
+     */
+    fun disableFFT() {
+        player.fftProcessor.disable()
+    }
+
+    /**
+     * 添加 FFT 监听器
+     * @param listener 频谱数据回调
+     */
+    fun addFFTListener(listener: FFTListener) {
+        player.fftProcessor.addListener(listener)
+    }
+
+    /**
+     * 移除 FFT 监听器
+     */
+    fun removeFFTListener(listener: FFTListener) {
+        player.fftProcessor.removeListener(listener)
+    }
+
+    /**
+     * 获取频段信息
+     */
+    val frequencyBands: FloatArray = IFFTProcessor.FREQUENCY_BANDS
 }

@@ -22,9 +22,9 @@ class PlayerKVUtils(
     private val songRepository = getKoin().get<ISongRepository>()
 
     companion object {
-        private val KEY_HISTORY_IDS = "history_ids"
-        private val KEY_HISTORY_POSITION = "history_position"
-        private val KEY_PLAY_MODE = "play_mode"
+      private const val KEY_HISTORY_IDS = "history_ids"
+      private const val KEY_HISTORY_POSITION = "history_position"
+      private const val KEY_PLAY_MODE = "play_mode"
     }
 
     /**

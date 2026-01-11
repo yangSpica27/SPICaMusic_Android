@@ -50,6 +50,9 @@ dependencies {
     // Storage API (for song data access)
     implementation project(':storage-core')
     
+    // TarsosDSP for FFT analysis
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    
     implementation libs.androidx.core.ktx
     implementation libs.androidx.lifecycle.runtime.ktx
     

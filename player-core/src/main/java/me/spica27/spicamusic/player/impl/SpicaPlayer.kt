@@ -18,12 +18,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.spica27.spicamusic.player.impl.utils.MediaLibrary
-import me.spica27.spicamusic.player.impl.utils.PlayerKVUtils
-import me.spica27.spicamusic.player.impl.utils.toMediaItem
+import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
+import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessor
+import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessorWrapper
+import me.spica27.spicamusic.player.impl.utils.MediaLibrary
+import me.spica27.spicamusic.player.impl.utils.PlayerKVUtils
+import me.spica27.spicamusic.player.impl.utils.toMediaItem
 import org.koin.android.ext.koin.androidApplication
 import org.koin.dsl.module
 import org.koin.java.KoinJavaComponent.getKoin
@@ -47,6 +50,14 @@ class SpicaPlayer(
     private val sessionToken by lazy {
         SessionToken(context, ComponentName(context, playbackServiceClass))
     }
+
+    // FFT 音频处理器
+    private val _fftProcessor = FFTAudioProcessor()
+    override val fftProcessor: IFFTProcessor = _fftProcessor
+
+    // FFT AudioProcessor 包装器 (用于 ExoPlayer)
+    private val _fftAudioProcessorWrapper = FFTAudioProcessorWrapper(_fftProcessor)
+    override val fftAudioProcessor: androidx.media3.common.audio.AudioProcessor = _fftAudioProcessorWrapper
 
     private var browserInstance: MediaBrowser? = null
     private val browserFuture by lazy {

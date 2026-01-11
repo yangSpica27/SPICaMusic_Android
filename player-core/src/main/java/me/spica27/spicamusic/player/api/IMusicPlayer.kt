@@ -55,6 +55,17 @@ interface IMusicPlayer {
     val currentPosition: Long
 
     /**
+     * FFT 频谱处理器
+     */
+    val fftProcessor: IFFTProcessor
+
+    /**
+     * 获取用于 ExoPlayer 的 FFT AudioProcessor
+     * 需要在创建 ExoPlayer 时添加到渲染器
+     */
+    val fftAudioProcessor: androidx.media3.common.audio.AudioProcessor
+
+    /**
      * 初始化播放器
      */
     fun init()
