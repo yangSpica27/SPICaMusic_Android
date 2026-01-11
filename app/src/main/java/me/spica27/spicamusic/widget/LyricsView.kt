@@ -56,8 +56,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastCoerceAtLeast
 import androidx.compose.ui.util.fastCoerceAtMost
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kyant.backdrop.contentBackdrop
-import com.kyant.backdrop.effects.refraction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
@@ -72,7 +70,6 @@ import me.spica27.spicamusic.lyric.LyricItem
 import me.spica27.spicamusic.lyric.toNormal
 import me.spica27.spicamusic.repository.LyricRepository
 import me.spica27.spicamusic.utils.DataStoreUtil
-import me.spica27.spicamusic.widget.capsule.G2RoundedCornerShape
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,16 +188,7 @@ fun LyricsView(
             LazyColumn(
                 modifier =
                     Modifier
-                        .fillMaxSize()
-                        .contentBackdrop(
-                            shapeProvider = {
-                                G2RoundedCornerShape(12.dp)
-                            },
-                            highlight = null,
-                            effects = {
-                                refraction(32.dp.toPx(), 12.dp.toPx(), true)
-                            },
-                        ),
+                        .fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
                 state = listState,

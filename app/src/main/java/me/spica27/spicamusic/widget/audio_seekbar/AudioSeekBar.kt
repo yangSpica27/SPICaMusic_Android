@@ -10,11 +10,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -40,20 +37,14 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtLeast
-import com.kyant.backdrop.backdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.refraction
-import com.kyant.backdrop.rememberBackdrop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.utils.rememberVibrator
 import me.spica27.spicamusic.utils.tick
-import me.spica27.spicamusic.widget.capsule.G2RoundedCornerShape
 
 private val MinSpikeWidthDp: Dp = 1.dp
 private val MaxSpikeWidthDp: Dp = 24.dp
@@ -123,8 +114,6 @@ fun AudioWaveSlider(
 
     val coroutineScope = rememberCoroutineScope()
 
-    val backdrop = rememberBackdrop()
-
     var isTouch by remember { mutableStateOf(false) }
 
     val scaleY =
@@ -163,7 +152,6 @@ fun AudioWaveSlider(
             Canvas(
                 modifier =
                     Modifier
-                        .backdrop(backdrop)
                         .fillMaxWidth()
                         .fillMaxHeight()
                         .scale(1f, scaleY.value)
@@ -204,26 +192,6 @@ fun AudioWaveSlider(
                 }
             }
             if (thumbWidth.value > 0.dp) {
-                Box(
-                    modifier =
-                        Modifier
-                            .offset(
-                                x = with(LocalDensity.current) { (progress * canvasSize.width).toDp() - thumbWidth.value / 2 },
-                            ).drawBackdrop(
-                                backdrop,
-                                shapeProvider = { G2RoundedCornerShape(12.dp) },
-                                effects = {
-                                    refraction(16.dp.toPx(), size.minDimension / 2, true)
-                                },
-                                onDrawSurface = {
-                                    drawRect(thumbColor)
-                                },
-                                onDrawBackdrop = { drawBackdrop ->
-                                    drawBackdrop()
-                                },
-                            ).width(thumbWidth.value)
-                            .fillMaxHeight(),
-                )
             }
         },
         valueRange = MinProgress..MaxProgress,

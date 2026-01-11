@@ -62,7 +62,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.ClipEntry
@@ -81,11 +80,6 @@ import androidx.compose.ui.util.fastRoundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
-import com.kyant.backdrop.backdrop
-import com.kyant.backdrop.contentBackdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.refraction
-import com.kyant.backdrop.rememberBackdrop
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -127,7 +121,7 @@ import me.spica27.spicamusic.wrapper.TaglibUtils
 import me.spica27.spicamusic.wrapper.activityViewModel
 import org.koin.compose.koinInject
 import timber.log.Timber
-import java.util.*
+import java.util.Date
 
 @Composable
 fun PlayerPage(
@@ -273,7 +267,10 @@ fun PlayerPage(
                                                             },
                                                     contentAlignment = Alignment.Center,
                                                 ) {
-                                                    Text("暂无歌词,点击搜索", color = MaterialTheme.colorScheme.onSurface)
+                                                    Text(
+                                                        "暂无歌词,点击搜索",
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                    )
                                                 }
                                             },
                                         )
@@ -285,12 +282,7 @@ fun PlayerPage(
                                                 Modifier
                                                     .align(alignment = Alignment.BottomEnd)
                                                     .offset(x = (-12).dp, y = (-12).dp)
-                                                    .contentBackdrop(
-                                                        shapeProvider = { CircleShape },
-                                                        effects = {
-                                                            refraction(8f.dp.toPx(), 12f.dp.toPx(), true)
-                                                        },
-                                                    ).pressable(),
+                                                    .pressable(),
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.ic_font_download),
@@ -571,7 +563,8 @@ private fun ControlPanel(
         ) {
             val amplituda = playBackViewModel.getAmplituda()
             if (song?.getSongUri() != null && song.mimeType != MimeTypes.AUDIO_ALAC && song.mimeType != MimeTypes.AUDIO_MP4) {
-                val inputStream = App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
+                val inputStream =
+                    App.getInstance().contentResolverSafe.openInputStream(song.getSongUri())
                 inputStream.use { inputStream ->
                     if (inputStream != null) {
                         val amplitudes = amplituda.processAudio(inputStream)
@@ -884,8 +877,6 @@ private fun TabBar(
             return@remember baseOffset + additionalOffset
         }
 
-    val backdrop = rememberBackdrop()
-
     val tabBackgroundColor = MaterialTheme.colorScheme.surfaceContainer
 
     Box(
@@ -899,7 +890,6 @@ private fun TabBar(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .backdrop(backdrop)
                     .onSizeChanged {
                         indicatorWidth = it.width / 3
                     },
@@ -957,25 +947,11 @@ private fun TabBar(
                             x = offsetX.fastRoundToInt(),
                             y = 0,
                         )
-                    }.drawBackdrop(
-                        backdrop = backdrop,
-                        shadow = null,
-                        highlight = null,
-                        shapeProvider = { G2RoundedCornerShape(12.dp) },
-                        onDrawBackdrop = { drawBackdrop ->
-                            drawRect(
-                                tabBackgroundColor,
-                            )
-                            scale(
-                                1.2f,
-                                1.2f,
-                            ) {
-                                drawBackdrop()
-                            }
-                        },
-                        effects = {
-                            refraction(8f.dp.toPx(), 12f.dp.toPx(), true)
-                        },
+                    }.background(
+                        tabBackgroundColor.copy(alpha = 0.5f),
+                        G2RoundedCornerShape(
+                            percent = 50,
+                        ),
                     ),
         )
     }
@@ -1253,7 +1229,8 @@ private fun SongItemMenu(
 ) {
     val songDao = koinInject<SongDao>()
 
-    val isLike = songDao.getSongIsLikeFlowWithId(song.songId ?: -1).collectAsStateWithLifecycle(false)
+    val isLike =
+        songDao.getSongIsLikeFlowWithId(song.songId ?: -1).collectAsStateWithLifecycle(false)
 
     val coroutineScope = rememberCoroutineScope()
 

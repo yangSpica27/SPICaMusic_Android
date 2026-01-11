@@ -11,14 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.kyant.backdrop.backdrop
-import com.kyant.backdrop.rememberBackdrop
 import me.spica27.spicamusic.db.entity.Song
 import me.spica27.spicamusic.route.LocalNavController
 import me.spica27.spicamusic.route.Routes
@@ -63,8 +60,6 @@ fun AppMain() {
 
     BackPress()
 
-    val backdrop = rememberBackdrop()
-
     CompositionLocalProvider(LocalNavController provides navHostController) {
         AppTheme(
             darkTheme = darkTheme,
@@ -76,8 +71,6 @@ fun AppMain() {
                     navController = LocalNavController.current,
                     modifier =
                         Modifier
-                            .clearAndSetSemantics {}
-                            .backdrop(backdrop)
                             .fillMaxSize(),
                     enterTransition = {
                         materialSharedAxisXIn(forward = true)
@@ -172,9 +165,7 @@ fun AppMain() {
                         )
                     }
                 }
-                PlayerOverly(
-                    backdrop,
-                )
+                PlayerOverly()
                 BottomSheetMenu(
                     state = LocalMenuState.current,
                     modifier = Modifier.align(Alignment.BottomCenter),

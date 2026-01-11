@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -46,12 +47,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.contentBackdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.refraction
-import com.kyant.backdrop.effects.saturation
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.utils.DataStoreUtil
 import me.spica27.spicamusic.utils.secsToMs
@@ -66,7 +61,6 @@ import me.spica27.spicamusic.wrapper.activityViewModel
 fun PlayerBar(
     modifier: Modifier = Modifier,
     playBackViewModel: PlayBackViewModel = activityViewModel(),
-    backdrop: Backdrop,
 ) {
     val songState = playBackViewModel.currentSongFlow.collectAsStateWithLifecycle().value
 
@@ -80,7 +74,7 @@ fun PlayerBar(
 
     val isNight = DataStoreUtil().getForceDarkTheme.collectAsState(false).value
 
-    val btnBgColor = MaterialTheme.colorScheme.primaryContainer
+    val btnBgColor = MaterialTheme.colorScheme.tertiaryContainer
 
     val contentColor =
         remember(isNight) {
@@ -101,19 +95,8 @@ fun PlayerBar(
     Box(
         modifier =
             modifier
-                .drawBackdrop(
-                    backdrop,
-                    effects = {
-                        saturation()
-                        blur(16.dp.toPx())
-                        refraction(12.dp.toPx(), size.minDimension / 2f, true)
-                    },
-                    onDrawSurface = glassSurface,
-                    highlight = null,
-                    shadow = null,
-                    shapeProvider = {
-                        RoundedCornerShape(0)
-                    },
+                .background(
+                    MaterialTheme.colorScheme.surfaceContainer,
                 ).navigationBarsPadding(),
     ) {
         Column(
@@ -224,15 +207,11 @@ fun PlayerBar(
                         modifier =
                             Modifier
                                 .size(48.dp)
-                                .contentBackdrop(
-                                    shapeProvider = { RoundedCornerShape(50) },
-                                    effects = {
-                                    },
-                                    shadow = null,
-                                    onDrawBehind = {
-                                        drawCircle(btnBgColor)
-                                    },
-                                ).clickable {
+                                .background(
+                                    btnBgColor,
+                                    RoundedCornerShape(24.dp),
+                                ).clip(CircleShape)
+                                .clickable {
                                     playBackViewModel.togglePlaying()
                                 }.paint(
                                     painterResource(id = if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),

@@ -5,12 +5,14 @@ agp = "8.12.3"
 amplitudaVersion = "2.3.0"
 androidliquidglassVersion = "1.0.0-alpha11"
 coilCompose = "3.3.0"
+constraintlayoutComposeVersion = "1.1.1"
+converterMoshiVersion = "3.0.0"
 datastorePreferencesVersion = "1.1.7"
 dynamicanimationKtxVersion = "1.1.0"
 hiltAndroidVersion = "2.56.2"
 hiltNavigationComposeVersion = "1.3.0-beta01"
 koinAndroidxComposeVersion = "4.1.1"
-kotlin = "2.1.21"
+kotlin = "2.2.21"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -19,12 +21,16 @@ lifecycleRuntimeKtx = "2.9.2"
 activityCompose = "1.11.0"
 composeBom = "2025.10.00"
 constraintlayout = "2.2.1"
+loggingInterceptorVersion = "5.3.2"
 material3Version = "1.4.0"
 materialIconsCoreVersion = "1.7.8"
 media3ExoplayerVersion = "1.8.0"
 mediaVersion = "1.7.1"
+okhttpVersion = "5.3.2"
 pinyin4jVersion = "2.5.1"
 prettytimeVersion = "5.0.8.Final"
+retrofitVersion = "3.0.0"
+sandwichRetrofitVersion = "2.2.0"
 timberVersion = "5.0.1"
 nav3Core = "1.0.0-alpha07"
 material3AdaptiveNav3 = "1.1.0"
@@ -38,7 +44,11 @@ materialVersion = "1.13.0"
 workRuntimeKtxVersion = "2.10.3"
 media3ExoplayerDashVersion = "1.8.0"
 media3SessionVersion = "1.8.0"
+ksp = "2.2.21-2.0.4"
+roomVersion = "2.7.2"
+navigationCompose = "2.9.6"
 [libraries]
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistVersion" }
 amplituda = { module = "com.github.lincollincol:amplituda", version.ref = "amplitudaVersion" }
 androidliquidglass = { module = "com.github.Kyant0:AndroidLiquidGlass", version.ref = "androidliquidglassVersion" }
@@ -46,6 +56,7 @@ androidx-adaptive = { module = "androidx.compose.material3.adaptive:adaptive", v
 androidx-adaptive-layout = { module = "androidx.compose.material3.adaptive:adaptive-layout", version.ref = "adaptiveVersion" }
 androidx-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation", version.ref = "adaptiveVersion" }
 androidx-compose-material-icons-core = { module = "androidx.compose.material:material-icons-core", version.ref = "materialIconsCoreVersion" }
+androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayoutComposeVersion" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferencesVersion" }
 androidx-dynamicanimation-ktx = { module = "androidx.dynamicanimation:dynamicanimation-ktx", version.ref = "dynamicanimationKtxVersion" }
@@ -54,6 +65,7 @@ androidx-media = { module = "androidx.media:media", version.ref = "mediaVersion"
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3ExoplayerVersion" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtxVersion" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
+converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "converterMoshiVersion" }
 kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version = "1.10.2" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -72,9 +84,13 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 #noinspection Aligned16KB
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koinAndroidxComposeVersion" }
+logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptorVersion" }
 material3 = { module = "androidx.compose.material3:material3", version.ref = "material3Version" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttpVersion" }
 pinyin4j = { module = "com.belerweb:pinyin4j", version.ref = "pinyin4jVersion" }
 prettytime = { module = "org.ocpsoft.prettytime:prettytime", version.ref = "prettytimeVersion" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofitVersion" }
+sandwich-retrofit = { module = "com.github.skydoves:sandwich-retrofit", version.ref = "sandwichRetrofitVersion" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timberVersion" }
 # Core Navigation 3 libraries
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
@@ -90,6 +106,9 @@ androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version
 material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
 androidx-media3-exoplayer-dash = { group = "androidx.media3", name = "media3-exoplayer-dash", version.ref = "media3ExoplayerDashVersion" }
 androidx-media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3SessionVersion" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -97,3 +116,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization"}
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
