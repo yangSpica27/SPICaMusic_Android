@@ -1,73 +1,70 @@
 package me.spica27.spicamusic.ui.home
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
-import org.koin.androidx.compose.koinViewModel
+import me.spica27.spicamusic.ui.home.pages.AudioEffectPage
+import me.spica27.spicamusic.ui.home.pages.LibraryPage
+import me.spica27.spicamusic.ui.home.pages.SearchPage
+import me.spica27.spicamusic.ui.home.pages.SettingsPage
+import org.koin.compose.viewmodel.koinActivityViewModel
+import top.yukonga.miuix.kmp.basic.NavigationBar
+import top.yukonga.miuix.kmp.basic.NavigationItem
+import top.yukonga.miuix.kmp.basic.Scaffold
 
 /**
  * 首页界面
- * 通过 LocalNavController.current 获取导航控制器
- * 通过 LocalPlayerViewModel.current 获取播放器 ViewModel
+ * 底部NavigationBar + 内容区域
  */
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    homeViewModel: HomeViewModel = koinViewModel(),
+    homeViewModel: HomeViewModel = koinActivityViewModel(),
 ) {
-    // 如需导航，使用: val navController = LocalNavController.current
-    // 播放器控制: Activity 级别的单例
-    val playerViewModel = LocalPlayerViewModel.current
+    // 当前选中的页面索引
+    var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
 
-    // 首页数据
-    val allSongs by homeViewModel.allSongs.collectAsState()
-    val playlists by homeViewModel.playlists.collectAsState()
-
-    // 播放器状态 (来自 PlayerViewModel)
-    val isPlaying by playerViewModel.isPlaying.collectAsState()
-    val currentPlaylist by playerViewModel.currentPlaylist.collectAsState()
-
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(
-            text = "柠檬音乐",
-            style = MaterialTheme.typography.headlineLarge,
-        )
-        Text(
-            text = "歌曲数量: ${allSongs.size}",
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Text(
-            text = "歌单数量: ${playlists.size}",
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-        Text(
-            text = "播放列表: ${currentPlaylist.size} 首",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Text(
-            text = if (isPlaying) "▶ 正在播放" else "⏸ 已暂停",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 4.dp),
-        )
+    // 使用Material3的Scaffold布局
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        bottomBar = {
+            NavigationBar(
+                items =
+                    listOf(
+                        NavigationItem("媒体库", Icons.Outlined.Home),
+                        NavigationItem("音效", Icons.Outlined.ThumbUp),
+                        NavigationItem("搜索", Icons.Outlined.Search),
+                        NavigationItem("设置", Icons.Outlined.Menu),
+                    ),
+                selected = selectedIndex,
+                onClick = { index -> selectedIndex = index },
+            )
+        },
+    ) { paddingValues ->
+        // 内容区域
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+        ) {
+            when (selectedIndex) {
+                0 -> LibraryPage()
+                1 -> AudioEffectPage()
+                2 -> SearchPage()
+                3 -> SettingsPage()
+            }
+        }
     }
 }

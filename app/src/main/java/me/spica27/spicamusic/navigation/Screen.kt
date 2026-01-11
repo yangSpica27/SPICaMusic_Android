@@ -14,5 +14,20 @@ sealed class Screen(
 
     data object Settings : Screen("settings")
 
-    // TODO: 添加更多路由定义
+    // 媒体库相关路由
+    data object AllSongs : Screen("all_songs")
+
+    data object Playlists : Screen("playlists")
+
+    data object Albums : Screen("albums")
+
+    data object Artists : Screen("artists")
+
+    data object RecentlyAdded : Screen("recently_added")
+
+    data object MostPlayed : Screen("most_played")
+
+    data object PlayHistory : Screen("play_history")
+
+    data object Folders : Screen("folders")
 }

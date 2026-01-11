@@ -1,10 +1,10 @@
 package me.spica27.spicamusic.ui.theme
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.darkColorScheme
+import top.yukonga.miuix.kmp.theme.lightColorScheme
 
 // 主色调
 private val Primary = Color(0xFF6750A4)
@@ -14,12 +14,7 @@ private val OnPrimaryContainer = Color(0xFF21005D)
 
 // 亮色主题
 private val LightColorScheme =
-    lightColorScheme(
-        primary = Primary,
-        onPrimary = OnPrimary,
-        primaryContainer = PrimaryContainer,
-        onPrimaryContainer = OnPrimaryContainer,
-    )
+    lightColorScheme()
 
 // 暗色主题
 private val DarkColorScheme =
@@ -30,9 +25,6 @@ private val DarkColorScheme =
         onPrimaryContainer = OnPrimaryContainer,
     )
 
-/**
- * 应用主题
- */
 @Composable
 fun SPICaMusicTheme(
     darkTheme: Boolean = false, // TODO: 从设置中读取
@@ -45,8 +37,8 @@ fun SPICaMusicTheme(
             LightColorScheme
         }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
+    MiuixTheme(
+        colors = colorScheme,
         content = content,
     )
 }

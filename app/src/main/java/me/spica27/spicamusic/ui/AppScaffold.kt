@@ -1,8 +1,5 @@
 package me.spica27.spicamusic.ui
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -32,13 +29,9 @@ fun AppScaffold() {
             LocalNavController provides navController,
             LocalPlayerViewModel provides playerViewModel,
         ) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-            ) { innerPadding ->
-                AppNavGraph(
-                    modifier = Modifier.padding(innerPadding),
-                )
-            }
+            AppNavGraph(
+                modifier = Modifier,
+            )
         }
     }
 }

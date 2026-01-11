@@ -116,4 +116,32 @@ interface SongDao {
 
     @Query("UPDATE song SET isIgnore = :isIgnore WHERE songId == :id")
     fun ignore(id: Long, isIgnore: Boolean)
+
+    /**
+     * 搜索歌曲（关键词匹配）
+     * 注意：排序需要在应用层处理
+     */
+    @Query("""
+        SELECT * FROM song 
+        WHERE (displayName LIKE '%' || :keyword || '%' OR artist LIKE '%' || :keyword || '%')
+        AND (:excludeIgnored = 0 OR isIgnore == 0)
+        AND (:onlyLiked = 0 OR `like` == 1)
+    """)
+    fun searchSongs(
+        keyword: String,
+        onlyLiked: Int = 0,
+        excludeIgnored: Int = 1
+    ): Flow<List<SongEntity>>
+
+    @Query("""
+        SELECT * FROM song 
+        WHERE (displayName LIKE '%' || :keyword || '%' OR artist LIKE '%' || :keyword || '%')
+        AND (:excludeIgnored = 0 OR isIgnore == 0)
+        AND (:onlyLiked = 0 OR `like` == 1)
+    """)
+    fun searchSongsSync(
+        keyword: String,
+        onlyLiked: Int = 0,
+        excludeIgnored: Int = 1
+    ): List<SongEntity>
 }

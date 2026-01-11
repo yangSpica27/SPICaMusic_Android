@@ -8,7 +8,6 @@ import me.spica27.spicamusic.player.api.FFTListener
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import timber.log.Timber
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
@@ -29,7 +28,7 @@ class FFTAudioProcessor : IFFTProcessor {
         private const val SMOOTHING_FACTOR = 0.7f
 
         // 最小分贝值
-        private const val MIN_DB = -60f
+        private const val MIN_DB = -80f
 
         // 最大分贝值
         private const val MAX_DB = 0f

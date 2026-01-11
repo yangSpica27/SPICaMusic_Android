@@ -1,201 +1,203 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    id 'kotlin-android'
-    id 'kotlin-parcelize'
-    id 'com.google.devtools.ksp'
-    alias(libs.plugins.jetbrains.kotlin.serialization)
-    alias(libs.plugins.compose.compiler)
-    id "org.jlleitschuh.gradle.ktlint" version "13.1.0"
+  alias(libs.plugins.android.application)
+  alias(libs.plugins.kotlin.android)
+  id 'kotlin-android'
+  id 'kotlin-parcelize'
+  id 'com.google.devtools.ksp'
+  alias(libs.plugins.jetbrains.kotlin.serialization)
+  alias(libs.plugins.compose.compiler)
+  id "org.jlleitschuh.gradle.ktlint" version "13.1.0"
 }
 
 android {
-    namespace 'me.spica27.spicamusic'
-    compileSdk = 36
+  namespace 'me.spica27.spicamusic'
+  compileSdk = 36
 
-    def props = new Properties()
-    file("$rootDir/gradle.properties").withInputStream { props.load(it) }
-    def MAJOR_VERSION = Integer.parseInt(props["MAJOR_VERSION"])
-    def MINOR_VERSION = Integer.parseInt(props["MINOR_VERSION"])
-    def BUILD_VERSION = Integer.parseInt(props["BUILD_VERSION"])
-    rootProject.ext.buildVersionCode = (MAJOR_VERSION) * 1_000_000 + (MINOR_VERSION) * 10_000 + BUILD_VERSION
-    rootProject.ext.buildVersionName = "$MAJOR_VERSION.$MINOR_VERSION.$BUILD_VERSION BETA"
+  def props = new Properties()
+  file("$rootDir/gradle.properties").withInputStream { props.load(it) }
+  def MAJOR_VERSION = Integer.parseInt(props["MAJOR_VERSION"])
+  def MINOR_VERSION = Integer.parseInt(props["MINOR_VERSION"])
+  def BUILD_VERSION = Integer.parseInt(props["BUILD_VERSION"])
+  rootProject.ext.buildVersionCode =
+      (MAJOR_VERSION) * 1_000_000 + (MINOR_VERSION) * 10_000 + BUILD_VERSION
+  rootProject.ext.buildVersionName = "$MAJOR_VERSION.$MINOR_VERSION.$BUILD_VERSION BETA"
 
-    println("buildVersionCode = ${rootProject.ext.buildVersionCode}")
-    println("buildVersionName= ${rootProject.ext.buildVersionName}")
+  println("buildVersionCode = ${rootProject.ext.buildVersionCode}")
+  println("buildVersionName= ${rootProject.ext.buildVersionName}")
 
-    defaultConfig {
-        applicationId "me.spica27.spicamusic"
-        minSdk 24
-        targetSdk 36
-        versionCode buildVersionCode
-        versionName buildVersionName
+  defaultConfig {
+    applicationId "me.spica27.spicamusic"
+    minSdk 24
+    targetSdk 36
+    versionCode buildVersionCode
+    versionName buildVersionName
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables {
-            useSupportLibrary true
-        }
-        ndk {
-            //armeabi armeabi-v7a arm64-v8a x86 x86_64
-            abiFilters 'arm64-v8a'
-        }
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    vectorDrawables {
+      useSupportLibrary true
     }
+    ndk {
+      //armeabi armeabi-v7a arm64-v8a x86 x86_64
+      abiFilters 'arm64-v8a'
+    }
+  }
 
-    signingConfigs {
-        signingConfig {
-            storeFile rootProject.file("key.jks")
-            storePassword 'SPICa27'
-            keyAlias 'wuqi'
-            keyPassword 'SPICa27'
-        }
+  signingConfigs {
+    signingConfig {
+      storeFile rootProject.file("key.jks")
+      storePassword 'SPICa27'
+      keyAlias 'wuqi'
+      keyPassword 'SPICa27'
     }
+  }
 
-    lintOptions {
-        checkReleaseBuilds false
-        abortOnError false
-    }
+  lintOptions {
+    checkReleaseBuilds false
+    abortOnError false
+  }
 
-    buildTypes {
-        release {
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.signingConfig
-        }
-        debug {
-            minifyEnabled false
-            signingConfig signingConfigs.signingConfig
-        }
+  buildTypes {
+    release {
+      minifyEnabled true
+      shrinkResources true
+      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+      signingConfig signingConfigs.signingConfig
     }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+    debug {
+      minifyEnabled false
+      signingConfig signingConfigs.signingConfig
     }
-    kotlinOptions {
-        jvmTarget = "11"
+  }
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_11
+    targetCompatibility JavaVersion.VERSION_11
+  }
+  kotlinOptions {
+    jvmTarget = "11"
+  }
+  buildFeatures {
+    compose true
+  }
+  buildFeatures {
+    //    aidl=true
+    buildConfig = true
+  }
+  sourceSets {
+    main {
+      jniLibs.srcDirs = ['libs']
     }
-    buildFeatures {
-        compose true
+  }
+  composeOptions {
+    kotlinCompilerExtensionVersion '1.5.7'
+  }
+  //  kapt {
+  //    correctErrorTypes = true
+  //  }
+  packaging {
+    resources {
+      it.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
-    buildFeatures {
-        //    aidl=true
-        buildConfig = true
-    }
-    sourceSets {
-        main {
-            jniLibs.srcDirs = ['libs']
-        }
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion '1.5.7'
-    }
-    //  kapt {
-    //    correctErrorTypes = true
-    //  }
-    packaging {
-        resources {
-            it.excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
+  }
 }
 
 //build.gradle
 ktlint {
-    android = true // Enable Android-specific linting rules
-    ignoreFailures = true // Fail the build if KtLint finds any issues
+  android = true // Enable Android-specific linting rules
+  ignoreFailures = true // Fail the build if KtLint finds any issues
 }
 
 tasks.getByPath("preBuild").dependsOn("ktlintFormat")
 
 dependencies {
-    // 模块依赖
-    implementation project(':common')
-    implementation project(':storage-core')
-    implementation project(':player-core')
-    
-    implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
-    implementation libs.androidx.core.ktx
-    implementation libs.androidx.lifecycle.runtime.ktx
-    implementation libs.androidx.activity.compose
-    implementation platform(libs.androidx.compose.bom)
-    implementation libs.androidx.ui
-    implementation libs.androidx.ui.graphics
-    implementation libs.androidx.ui.tooling.preview
-    implementation libs.androidx.material3
-    implementation libs.androidx.constraintlayout
-    testImplementation libs.junit
-    androidTestImplementation libs.androidx.junit
-    androidTestImplementation libs.androidx.espresso.core
-    androidTestImplementation platform(libs.androidx.compose.bom)
-    androidTestImplementation libs.androidx.ui.test.junit4
-    debugImplementation libs.androidx.ui.tooling
-    debugImplementation libs.androidx.ui.test.manifest
-    implementation(libs.coil.compose)
-    implementation(libs.coil.network.okhttp)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
+  // 模块依赖
+  implementation project(':common')
+  implementation project(':storage-core')
+  implementation project(':player-core')
 
-    // Room 依赖已由 storage-core 模块提供
-    // Media3 依赖已由 player-core 模块提供
-    // DataStore 依赖已由 storage-core 模块提供
-    
-    implementation libs.timber
-    implementation(libs.accompanist.permissions)
+  implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
+  implementation libs.androidx.core.ktx
+  implementation libs.androidx.lifecycle.runtime.ktx
+  implementation libs.androidx.activity.compose
+  implementation platform(libs.androidx.compose.bom)
+  implementation libs.androidx.ui
+  implementation libs.androidx.ui.graphics
+  implementation libs.androidx.ui.tooling.preview
+  implementation libs.androidautosize
+  implementation libs.miuix.android
+  implementation libs.androidx.constraintlayout
+  testImplementation libs.junit
+  androidTestImplementation libs.androidx.junit
+  androidTestImplementation libs.androidx.espresso.core
+  androidTestImplementation platform(libs.androidx.compose.bom)
+  androidTestImplementation libs.androidx.ui.test.junit4
+  debugImplementation libs.androidx.ui.tooling
+  debugImplementation libs.androidx.ui.test.manifest
+  implementation(libs.coil.compose)
+  implementation(libs.coil.network.okhttp)
+  implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    //  implementation project(":decoder_flac")
-    implementation libs.kotlinx.serialization.core
-    implementation libs.androidx.adaptive
-    implementation libs.androidx.adaptive.layout
-    implementation libs.androidx.adaptive.navigation
-    // Jetpack Compose integration
-    implementation(libs.androidx.navigation.compose)
-    //  implementation libs.androidx.lifecycle.viewmodel.navigation3
-    //  implementation libs.androidx.navigation3.runtime
-    //  implementation libs.androidx.navigation3.ui
-    implementation libs.material3
-    
-    // 播放器相关依赖 (实现层需要)
-    implementation libs.androidx.media3.exoplayer
-    implementation libs.androidx.media
-    implementation libs.androidx.media3.session
-    implementation libs.kotlinx.coroutines.guava
-    
-    implementation libs.amplituda
-    implementation(libs.androidx.dynamicanimation.ktx)
-    
-    // 网络请求
-    implementation libs.okhttp
-    implementation(libs.logging.interceptor)
-    implementation libs.retrofit
-    implementation libs.converter.moshi
-    implementation libs.sandwich.retrofit
-    implementation libs.moshi.kotlin
-    ksp libs.moshi.kotlin.codegen
+  // Room 依赖已由 storage-core 模块提供
+  // Media3 依赖已由 player-core 模块提供
+  // DataStore 依赖已由 storage-core 模块提供
 
-//  implementation(libs.androidliquidglass)
-    implementation libs.androidx.constraintlayout.compose
-    implementation libs.androidx.compose.material.icons.core
-    implementation libs.prettytime
-    implementation libs.koin.androidx.compose
-    implementation(libs.pinyin4j)
+  implementation libs.timber
+  implementation(libs.accompanist.permissions)
+
+  //  implementation project(":decoder_flac")
+  implementation libs.kotlinx.serialization.core
+  implementation libs.androidx.adaptive
+  implementation libs.androidx.adaptive.layout
+  implementation libs.androidx.adaptive.navigation
+  // Jetpack Compose integration
+  implementation(libs.androidx.navigation.compose)
+  //  implementation libs.androidx.lifecycle.viewmodel.navigation3
+  //  implementation libs.androidx.navigation3.runtime
+  //  implementation libs.androidx.navigation3.ui
+  implementation libs.material3
+
+  // 播放器相关依赖 (实现层需要)
+  implementation libs.androidx.media3.exoplayer
+  implementation libs.androidx.media
+  implementation libs.androidx.media3.session
+  implementation libs.kotlinx.coroutines.guava
+
+  implementation libs.amplituda
+  implementation(libs.androidx.dynamicanimation.ktx)
+
+  // 网络请求
+  implementation libs.okhttp
+  implementation(libs.logging.interceptor)
+  implementation libs.retrofit
+  implementation libs.converter.moshi
+  implementation libs.sandwich.retrofit
+  implementation libs.moshi.kotlin
+  ksp libs.moshi.kotlin.codegen
+
+  //  implementation(libs.androidliquidglass)
+  implementation libs.androidx.constraintlayout.compose
+  implementation libs.androidx.compose.material.icons.core
+  implementation libs.prettytime
+  implementation libs.koin.androidx.compose
+  implementation(libs.pinyin4j)
 }
 
 tasks.register('incrementBuildNumber') {
-    doLast {
-        def filePath = rootProject.file("gradle.properties")
-        if (!filePath.exists()) {
-            return
-        }
-        def props = new Properties()
-        props.load(new FileInputStream(filePath))
-        String currentBuildNumber = props["BUILD_VERSION"]
-        Integer buildNumber = Integer.parseInt(currentBuildNumber)
-        buildNumber++
-        if (buildNumber >= 10_000) {
-            throw new IllegalStateException("Build number limited to 3 digits; cannot exceed 10,000")
-        }
-        props["BUILD_VERSION"] = buildNumber.toString()
-        def os = new FileOutputStream(filePath)
-        props.store(os, null)
+  doLast {
+    def filePath = rootProject.file("gradle.properties")
+    if (!filePath.exists()) {
+      return
     }
+    def props = new Properties()
+    props.load(new FileInputStream(filePath))
+    String currentBuildNumber = props["BUILD_VERSION"]
+    Integer buildNumber = Integer.parseInt(currentBuildNumber)
+    buildNumber++
+    if (buildNumber >= 10_000) {
+      throw new IllegalStateException("Build number limited to 3 digits; cannot exceed 10,000")
+    }
+    props["BUILD_VERSION"] = buildNumber.toString()
+    def os = new FileOutputStream(filePath)
+    props.store(os, null)
+  }
 }
 //tasks.getByPath("preBuild").dependsOn("incrementBuildNumber")

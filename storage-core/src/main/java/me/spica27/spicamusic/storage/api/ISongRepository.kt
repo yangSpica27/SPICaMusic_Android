@@ -4,6 +4,8 @@ import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.PlaylistWithSongs
+import me.spica27.spicamusic.common.entity.SongFilter
+import me.spica27.spicamusic.common.entity.SongSortOrder
 
 /**
  * 歌曲仓库接口
@@ -74,4 +76,37 @@ interface ISongRepository {
      * 获取被忽略的歌曲列表 Flow
      */
     fun getIgnoreSongsFlow(): Flow<List<Song>>
+
+    /**
+     * 获取歌曲列表（支持排序和筛选）
+     * @param sortOrder 排序方式
+     * @param filter 筛选条件
+     * @return 歌曲列表 Flow
+     */
+    fun getSongsFlow(
+        sortOrder: SongSortOrder = SongSortOrder.DEFAULT,
+        filter: SongFilter = SongFilter.EMPTY
+    ): Flow<List<Song>>
+
+    /**
+     * 获取歌曲列表（支持排序和筛选，同步）
+     * @param sortOrder 排序方式
+     * @param filter 筛选条件
+     * @return 歌曲列表
+     */
+    suspend fun getSongs(
+        sortOrder: SongSortOrder = SongSortOrder.DEFAULT,
+        filter: SongFilter = SongFilter.EMPTY
+    ): List<Song>
+
+    /**
+     * 搜索歌曲（关键词匹配歌名或艺术家）
+     * @param keyword 搜索关键词
+     * @param sortOrder 排序方式
+     * @return 匹配的歌曲列表 Flow
+     */
+    fun searchSongsFlow(
+        keyword: String,
+        sortOrder: SongSortOrder = SongSortOrder.DEFAULT
+    ): Flow<List<Song>>
 }

@@ -6,12 +6,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import me.jessyan.autosize.internal.CustomAdapt
 import me.spica27.spicamusic.ui.AppScaffold
 
 /**
  * 主 Activity
  */
-class MainActivity : ComponentActivity() {
+class MainActivity :
+    ComponentActivity(),
+    CustomAdapt {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -33,4 +36,13 @@ class MainActivity : ComponentActivity() {
             AppScaffold()
         }
     }
+
+    override fun isBaseOnWidth(): Boolean = true
+
+    /**
+     * 设计稿基准尺寸（dp）
+     * 竖屏：375dp（手机设计稿）
+     * 横屏：1024dp（平板/横屏设计稿）
+     */
+    override fun getSizeInDp(): Float = 375f
 }
