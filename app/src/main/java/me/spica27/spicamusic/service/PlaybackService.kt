@@ -9,6 +9,7 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
+import androidx.media3.session.SessionError
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -47,7 +48,7 @@ class PlaybackService : MediaLibraryService() {
                         .setAudioProcessors(
                             arrayOf(
                                 // 仅保留 FFT 音频处理器用于频谱分析
-//                                player.fftAudioProcessor,
+                                player.fftAudioProcessor,
                             ),
                         ).build()
             }
@@ -91,7 +92,7 @@ class PlaybackService : MediaLibraryService() {
                                 Futures.immediateFuture(LibraryResult.ofItem(item, null))
                             } else {
                                 Timber.tag("PlaybackService").e("onGetItem: Item not found for mediaId=$mediaId")
-                                Futures.immediateFuture(LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE))
+                                Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_BAD_VALUE))
                             }
                         }
 
@@ -109,21 +110,21 @@ class PlaybackService : MediaLibraryService() {
                             )
                         }
 
-                        override fun onPlaybackResumption(
-                            session: MediaSession,
-                            controller: MediaSession.ControllerInfo,
-                        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
-                            Timber.tag("PlaybackService").d("onPlaybackResumption called")
-                            // 从播放历史恢复最后播放的歌曲列表
-                            val items = MediaLibrary.getChildren(MediaLibrary.ALL_SONGS)
-                            return Futures.immediateFuture(
-                                MediaSession.MediaItemsWithStartPosition(
-                                    items,
-                                    0,
-                                    0,
-                                ),
-                            )
-                        }
+//                        override fun onPlaybackResumption(
+//                            session: MediaSession,
+//                            controller: MediaSession.ControllerInfo,
+//                        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+//                            Timber.tag("PlaybackService").d("onPlaybackResumption called")
+//                            // 从播放历史恢复最后播放的歌曲列表
+//                            val items = MediaLibrary.getChildren(MediaLibrary.ALL_SONGS)
+//                            return Futures.immediateFuture(
+//                                MediaSession.MediaItemsWithStartPosition(
+//                                    items,
+//                                    0,
+//                                    0,
+//                                ),
+//                            )
+//                        }
                     },
                 ).build()
     }

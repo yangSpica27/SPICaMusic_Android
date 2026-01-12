@@ -11,6 +11,7 @@ import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -37,301 +38,289 @@ import kotlin.coroutines.CoroutineContext
  */
 @UnstableApi
 class SpicaPlayer(
-    private val context: Context,
-    private val playbackServiceClass: Class<*>,
-) : IMusicPlayer,
-    CoroutineScope,
-    Player.Listener {
-    
-    private val playerKVUtils = getKoin().get<PlayerKVUtils>()
+  private val context: Context,
+  private val playbackServiceClass: Class<*>,
+) : IMusicPlayer, CoroutineScope, Player.Listener {
 
-    override val coroutineContext: CoroutineContext = Dispatchers.IO
+  private val TAG = "SpicaPlayer"
 
-    private val sessionToken by lazy {
-        SessionToken(context, ComponentName(context, playbackServiceClass))
+  private val playerKVUtils = getKoin().get<PlayerKVUtils>()
+
+  override val coroutineContext: CoroutineContext = Dispatchers.IO
+
+  private val sessionToken by lazy {
+    SessionToken(context, ComponentName(context, playbackServiceClass))
+  }
+
+  // FFT 音频处理器
+  private val _fftProcessor = FFTAudioProcessor()
+
+  override val fftProcessor: IFFTProcessor = _fftProcessor
+
+  // FFT AudioProcessor 包装器 (用于 ExoPlayer)
+  private val _fftAudioProcessorWrapper = FFTAudioProcessorWrapper(_fftProcessor)
+  override val fftAudioProcessor: androidx.media3.common.audio.AudioProcessor =
+    _fftAudioProcessorWrapper
+
+  private var browserInstance: MediaBrowser? = null
+  private val browserFuture by lazy {
+    MediaBrowser.Builder(context, sessionToken).buildAsync()
+  }
+
+  override val playMode: StateFlow<PlayMode> = playerKVUtils.getPlayModeFlow()
+    .stateIn(this, kotlinx.coroutines.flow.SharingStarted.Eagerly, PlayMode.LIST)
+
+  private val _pauseWhenCompletion = MutableStateFlow(false)
+  override val pauseWhenCompletion: StateFlow<Boolean> = _pauseWhenCompletion
+
+  private val _isPlaying = MutableStateFlow(false)
+  override val isPlaying: StateFlow<Boolean> = _isPlaying
+
+  private val _currentMediaItem = MutableStateFlow<MediaItem?>(null)
+  override val currentMediaItem: StateFlow<MediaItem?> = _currentMediaItem
+
+  private val _currentMediaMetadata = MutableStateFlow<MediaMetadata?>(null)
+  override val currentMediaMetadata: StateFlow<MediaMetadata?> = _currentMediaMetadata
+
+  private val _currentPlaylistMetadata = MutableStateFlow<MediaMetadata?>(null)
+  override val currentPlaylistMetadata: StateFlow<MediaMetadata?> = _currentPlaylistMetadata
+
+  private val _currentDuration = MutableStateFlow(0L)
+  override val currentDuration: StateFlow<Long> = _currentDuration
+
+  private val _currentTimelineItems = MutableStateFlow<List<MediaItem>>(emptyList())
+  override val currentTimelineItems: StateFlow<List<MediaItem>> = _currentTimelineItems
+
+  override val currentPosition: Long
+    get() = runCatching { if (browserFuture.isDone) browserFuture.get()?.currentPosition?.div(1000) else null }.getOrNull()
+      ?: 0L
+
+  override fun isItemPlaying(mediaId: String): Boolean {
+    if (!_isPlaying.value) return false
+    return _currentMediaItem.value?.mediaId == mediaId
+  }
+
+  override fun init() {
+    if (browserInstance != null) return
+    launch(Dispatchers.Main) {
+      val browser = browserFuture.await()
+      browserInstance = browser
+      browser.addListener(this@SpicaPlayer)
+
+      val items = withContext(Dispatchers.IO) {
+        playerKVUtils.getHistoryItems().map { it.toMediaItem() }
+      }
+
+      if (items.isEmpty()) {
+        Timber.e("No songs found")
+        return@launch
+      }
+      // TODO: browser.playMode 需要通过 Service 来设置
+      // browser.playMode = PlayMode.from(playerKVUtils.getPlayMode())
+      browser.playWhenReady = false
+      browser.setMediaItems(items)
+      browser.prepare()
     }
+  }
 
-    // FFT 音频处理器
-    private val _fftProcessor = FFTAudioProcessor()
+  override fun doAction(action: PlayerAction) {
+    launch(Dispatchers.Main) {
+      val browser = browserFuture.await()
+      Timber.e("doACTION = ${action.javaClass.name}")
+      when (action) {
+        PlayerAction.Play -> browser.play()
+        PlayerAction.Pause -> browser.pause()
 
-    override val fftProcessor: IFFTProcessor = _fftProcessor
-
-    // FFT AudioProcessor 包装器 (用于 ExoPlayer)
-    private val _fftAudioProcessorWrapper = FFTAudioProcessorWrapper(_fftProcessor)
-    override val fftAudioProcessor: androidx.media3.common.audio.AudioProcessor = _fftAudioProcessorWrapper
-
-    private var browserInstance: MediaBrowser? = null
-    private val browserFuture by lazy {
-        MediaBrowser
-            .Builder(context, sessionToken)
-            .buildAsync()
-    }
-
-    override val playMode: StateFlow<PlayMode> =
-        playerKVUtils
-            .getPlayModeFlow()
-            .stateIn(this, kotlinx.coroutines.flow.SharingStarted.Eagerly, PlayMode.LIST)
-
-    private val _pauseWhenCompletion = MutableStateFlow(false)
-    override val pauseWhenCompletion: StateFlow<Boolean> = _pauseWhenCompletion
-
-    private val _isPlaying = MutableStateFlow(false)
-    override val isPlaying: StateFlow<Boolean> = _isPlaying
-
-    private val _currentMediaItem = MutableStateFlow<MediaItem?>(null)
-    override val currentMediaItem: StateFlow<MediaItem?> = _currentMediaItem
-
-    private val _currentMediaMetadata = MutableStateFlow<MediaMetadata?>(null)
-    override val currentMediaMetadata: StateFlow<MediaMetadata?> = _currentMediaMetadata
-
-    private val _currentPlaylistMetadata = MutableStateFlow<MediaMetadata?>(null)
-    override val currentPlaylistMetadata: StateFlow<MediaMetadata?> = _currentPlaylistMetadata
-
-    private val _currentDuration = MutableStateFlow(0L)
-    override val currentDuration: StateFlow<Long> = _currentDuration
-
-    private val _currentTimelineItems = MutableStateFlow<List<MediaItem>>(emptyList())
-    override val currentTimelineItems: StateFlow<List<MediaItem>> = _currentTimelineItems
-
-    override val currentPosition: Long
-        get() =
-            runCatching { if (browserFuture.isDone) browserFuture.get()?.currentPosition?.div(1000) else null }
-                .getOrNull() ?: 0L
-
-    override fun isItemPlaying(mediaId: String): Boolean {
-        if (!_isPlaying.value) return false
-        return _currentMediaItem.value?.mediaId == mediaId
-    }
-
-    override fun init() {
-        if (browserInstance != null) return
-        launch(Dispatchers.Main) {
-            val browser = browserFuture.await()
-            browserInstance = browser
-            browser.addListener(this@SpicaPlayer)
-
-            val items =
-                withContext(Dispatchers.IO) {
-                    playerKVUtils.getHistoryItems().map { it.toMediaItem() }
-                }
-
-            if (items.isEmpty()) {
-                Timber.e("No songs found")
-                return@launch
-            }
-            // TODO: browser.playMode 需要通过 Service 来设置
-            // browser.playMode = PlayMode.from(playerKVUtils.getPlayMode())
-            browser.playWhenReady = false
-            browser.setMediaItems(items)
-            browser.prepare()
+        PlayerAction.SkipToNext -> {
+          browser.seekToNext()
         }
-    }
 
-    override fun doAction(action: PlayerAction) {
-        launch(Dispatchers.Main) {
-            val browser = browserFuture.await()
-            Timber.e("doACTION = ${action.javaClass.name}")
-            when (action) {
-                PlayerAction.Play -> browser.play()
-                PlayerAction.Pause -> browser.pause()
-
-                PlayerAction.SkipToNext -> {
-                    browser.seekToNext()
-                }
-
-                PlayerAction.SkipToPrevious -> {
-                    browser.seekToPrevious()
-                }
-
-                is PlayerAction.RemoveWithMediaId -> {
-                    val index = browser.currentTimeline.indexOf(action.mediaId)
-                    if (index != -1) {
-                        browser.removeMediaItem(index)
-                    }
-                }
-
-                PlayerAction.PlayOrPause -> {
-                    if (browser.isPlaying) {
-                        browser.pause()
-                    } else {
-                        browser.play()
-                    }
-                }
-
-                is PlayerAction.PlayById -> {
-                    Timber.tag(TAG).d("PlayById: mediaId=${action.mediaId}")
-                    val index = browser.currentTimeline.indexOf(action.mediaId)
-                    Timber.tag(TAG).d("Current timeline index: $index, timeline size: ${browser.currentTimeline.windowCount}")
-                    
-                    if (index == -1) {
-                        // 不在播放列表中，清空列表并添加这首歌
-                        val timelineSize = browser.currentTimeline.windowCount
-                        Timber.tag(TAG).d("Item not in timeline, clearing playlist (current size: $timelineSize)")
-                        
-                        if (browser.isPlaying) {
-                            browser.pause()
-                        }
-                        
-                        // 清空当前播放列表
-                        browser.clearMediaItems()
-                        
-                        Timber.tag(TAG).d("Getting item from MediaLibrary...")
-                        val item =
-                            browser
-                                .getItem(action.mediaId)
-                                .await()
-                                .value
-                        
-                        if (item == null) {
-                            Timber.tag(TAG).e("Failed to get item for mediaId: ${action.mediaId}")
-                            return@launch
-                        }
-                        
-                        Timber.tag(TAG).d("Got item: ${item.mediaId}, adding to playlist")
-                        
-                        // 添加到空列表
-                        browser.addMediaItem(item)
-                        browser.seekTo(0, 0)
-                        Timber.tag(TAG).d("Calling prepare()...")
-                        browser.prepare()
-                        Timber.tag(TAG).d("Calling play()...")
-                        browser.play()
-                        Timber.tag(TAG).d("Play() called, playWhenReady=${browser.playWhenReady}, playbackState=${browser.playbackState}")
-                    } else {
-                        Timber.tag(TAG).d("Item already in playlist, seeking to index: $index")
-                        browser.seekTo(index, 0)
-                        browser.play()
-                        Timber.tag(TAG).d("Play() called on existing item, playWhenReady=${browser.playWhenReady}")
-                    }
-                }
-
-                is PlayerAction.SeekTo -> {
-                    browser.seekTo(action.positionMs)
-                }
-
-                is PlayerAction.PauseWhenCompletion -> {
-                    _pauseWhenCompletion.value = !action.cancel
-                }
-
-                is PlayerAction.SetPlayMode -> {
-                    // 保存到 KV 存储
-                    playerKVUtils.setPlayMode(action.playMode.name)
-                    // TODO: 通过 Service 来应用播放模式
-                }
-
-                is PlayerAction.AddToNext -> {
-                    val item = browser.getItem(action.mediaId).await().value ?: return@launch
-                    val index = browser.currentTimeline.indexOf(action.mediaId)
-
-                    if (index != -1) {
-                        val offset = if (index > browser.currentMediaItemIndex) 1 else 0
-                        browser.moveMediaItem(index, browser.currentMediaItemIndex + offset)
-                    } else {
-                        browser.addMediaItem(browser.currentMediaItemIndex + 1, item)
-                    }
-                }
-
-                is PlayerAction.UpdateList -> {
-                    launch(Dispatchers.IO) {
-                        val index =
-                            action.mediaId
-                                ?.let { action.mediaIds.indexOf(it) }
-                                ?.takeIf { it >= 0 }
-                                ?: 0
-                        val items = MediaLibrary.mediaIdToMediaItems(action.mediaIds)
-                        withContext(Dispatchers.Main) {
-                            browser.setMediaItems(items, index, 0)
-                            if (action.start) {
-                                browser.play()
-                            }
-                        }
-                    }
-                }
-
-                PlayerAction.ReloadAndPlay -> {
-                    // TODO: 实现重新加载并播放逻辑
-                    Timber.w("ReloadAndPlay action not yet implemented")
-                }
-            }
+        PlayerAction.SkipToPrevious -> {
+          browser.seekToPrevious()
         }
-    }
 
-    override fun release() {
-        browserInstance?.release()
-        browserInstance = null
-    }
-
-    override fun onIsPlayingChanged(isPlaying: Boolean) {
-        this@SpicaPlayer._isPlaying.value = isPlaying
-    }
-
-    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-        super.onShuffleModeEnabledChanged(shuffleModeEnabled)
-        Timber.e("onShuffleModeEnabledChanged $shuffleModeEnabled")
-    }
-
-    override fun onMediaItemTransition(
-        mediaItem: MediaItem?,
-        reason: Int,
-    ) {
-        Timber.e("onMediaItemTransition $mediaItem $reason")
-        _currentMediaItem.value = mediaItem
-        if (_pauseWhenCompletion.value) {
-            browserInstance?.pause()
-            _pauseWhenCompletion.value = false
+        is PlayerAction.RemoveWithMediaId -> {
+          val index = browser.currentTimeline.indexOf(action.mediaId)
+          if (index != -1) {
+            browser.removeMediaItem(index)
+          }
         }
-    }
 
-    override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
-        Timber.e("onMediaMetadataChanged $mediaMetadata")
-        _currentMediaItem.value = browserInstance?.currentMediaItem
-        _currentMediaMetadata.value = mediaMetadata
-        _currentDuration.value = mediaMetadata.durationMs ?: browserInstance?.duration ?: 0L
-        // TODO 此处获取到的duration仍然可能是上一首歌曲的时长
-    }
-
-    override fun onPlaylistMetadataChanged(mediaMetadata: MediaMetadata) {
-        _currentPlaylistMetadata.value = mediaMetadata
-    }
-
-    override fun onTimelineChanged(
-        timeline: Timeline,
-        @Player.TimelineChangeReason reason: Int,
-    ) {
-        updateItems(timeline)
-        Timber.e("onTimelineChanged 切换原因 $reason")
-    }
-
-    companion object {
-        private const val TAG = "SpicaPlayer"
-        
-        fun createModule(playbackServiceClass: Class<*>) =
-            module {
-                single<PlayerKVUtils> { PlayerKVUtils(androidApplication()) }
-                single<IMusicPlayer> { SpicaPlayer(androidApplication(), playbackServiceClass) }
-            }
-    }
-
-    private fun updateItems(timeline: Timeline?) {
-        val items = timeline?.toMediaItems() ?: emptyList()
-        _currentTimelineItems.value = items
-
-        val ids = _currentTimelineItems.value.map { it.mediaId }
-        playerKVUtils.setHistoryIds(ids.mapNotNull { it.toLongOrNull() })
-    }
-
-    private fun Timeline.toMediaItems(): List<MediaItem> =
-        (0 until this.windowCount)
-            .mapNotNull { this.getWindow(it, Timeline.Window()).mediaItem }
-
-    private fun Timeline.indexOf(mediaId: String): Int {
-        var index = -1
-        (0 until this.windowCount).forEach {
-            if (this.getWindow(it, Timeline.Window()).mediaItem.mediaId == mediaId) {
-                index = it
-                return@forEach
-            }
+        PlayerAction.PlayOrPause -> {
+          if (browser.isPlaying) {
+            browser.pause()
+          } else {
+            browser.play()
+          }
         }
-        return index
+
+        is PlayerAction.PlayById -> {
+          Timber.tag(TAG).d("PlayById: mediaId=${action.mediaId}")
+          val index = browser.currentTimeline.indexOf(action.mediaId)
+          Timber.tag(TAG)
+            .d("Current timeline index: $index, timeline size: ${browser.currentTimeline.windowCount}")
+
+          if (index == -1) {
+            // 不在播放列表中，添加并播放
+            launch(Dispatchers.IO) {
+              val item = async { MediaLibrary.getItem(action.mediaId) }.await()
+
+              withContext(Dispatchers.Main) {
+                if (item != null) {
+                  Timber.tag(TAG).d("Item not in playlist, adding and playing: ${item.mediaId}")
+                  val currentIndex = browser.currentMediaItemIndex
+                  val toIndex = if (currentIndex == -1) 0 else currentIndex + 1
+                  browser.addMediaItem(toIndex, item)
+                  browser.prepare()
+                  browser.seekTo(toIndex, 0)
+                  browser.playWhenReady = true
+                  Timber.tag(TAG).d("Seeking to new item at index: $toIndex, playWhenReady=true")
+                } else {
+                  Timber.tag(TAG)
+                    .w("Item with mediaId=${action.mediaId} not found in media library")
+                }
+              }
+            }
+          } else {
+            Timber.tag(TAG).d("Item already in playlist, seeking to index: $index")
+            browser.seekTo(index, 0)
+            browser.playWhenReady = true
+            Timber.tag(TAG)
+              .d("Play() called on existing item, playWhenReady=${browser.playWhenReady}")
+          }
+        }
+
+        is PlayerAction.SeekTo -> {
+          browser.seekTo(action.positionMs)
+        }
+
+        is PlayerAction.PauseWhenCompletion -> {
+          _pauseWhenCompletion.value = !action.cancel
+        }
+
+        is PlayerAction.SetPlayMode -> {
+          // 保存到 KV 存储
+          playerKVUtils.setPlayMode(action.playMode.name)
+          // TODO: 通过 Service 来应用播放模式
+        }
+
+        is PlayerAction.AddToNext -> {
+          launch(Dispatchers.IO) {
+            val item = MediaLibrary.getItem(action.mediaId)
+
+            withContext(Dispatchers.Main) {
+              if (item == null) {
+                Timber.tag(TAG).w("Item with mediaId=${action.mediaId} not found for AddToNext")
+                return@withContext
+              }
+
+              val index = browser.currentTimeline.indexOf(action.mediaId)
+
+              if (index != -1) {
+                val offset = if (index > browser.currentMediaItemIndex) 1 else 0
+                browser.moveMediaItem(index, browser.currentMediaItemIndex + offset)
+              } else {
+                browser.addMediaItem(browser.currentMediaItemIndex + 1, item)
+              }
+            }
+          }
+        }
+
+        is PlayerAction.UpdateList -> {
+          launch(Dispatchers.IO) {
+            val index = action.mediaId?.let { action.mediaIds.indexOf(it) }?.takeIf { it >= 0 } ?: 0
+            val items = MediaLibrary.mediaIdToMediaItems(action.mediaIds)
+            withContext(Dispatchers.Main) {
+              browser.setMediaItems(items, index, 0)
+              if (action.start) {
+                browser.play()
+              }
+            }
+          }
+        }
+
+        PlayerAction.ReloadAndPlay -> {
+          // TODO: 实现重新加载并播放逻辑
+
+        }
+      }
     }
+  }
+
+  override fun release() {
+    browserInstance?.release()
+    browserInstance = null
+  }
+
+  override fun onIsPlayingChanged(isPlaying: Boolean) {
+    this@SpicaPlayer._isPlaying.value = isPlaying
+  }
+
+  override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+    super.onShuffleModeEnabledChanged(shuffleModeEnabled)
+    Timber.e("onShuffleModeEnabledChanged $shuffleModeEnabled")
+  }
+
+  override fun onMediaItemTransition(
+    mediaItem: MediaItem?,
+    reason: Int,
+  ) {
+    Timber.e("onMediaItemTransition $mediaItem $reason")
+    _currentMediaItem.value = mediaItem
+    if (_pauseWhenCompletion.value) {
+      browserInstance?.pause()
+      _pauseWhenCompletion.value = false
+    }
+  }
+
+  override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
+    Timber.e("onMediaMetadataChanged $mediaMetadata")
+    _currentMediaItem.value = browserInstance?.currentMediaItem
+    _currentMediaMetadata.value = mediaMetadata
+    _currentDuration.value = mediaMetadata.durationMs ?: browserInstance?.duration ?: 0L
+    // TODO 此处获取到的duration仍然可能是上一首歌曲的时长
+  }
+
+  override fun onPlaylistMetadataChanged(mediaMetadata: MediaMetadata) {
+    _currentPlaylistMetadata.value = mediaMetadata
+  }
+
+  override fun onTimelineChanged(
+    timeline: Timeline,
+    @Player.TimelineChangeReason reason: Int,
+  ) {
+    updateItems(timeline)
+    Timber.e("onTimelineChanged 切换原因 $reason")
+  }
+
+  companion object {
+    private const val TAG = "SpicaPlayer"
+
+    fun createModule(playbackServiceClass: Class<*>) = module {
+      single<PlayerKVUtils> { PlayerKVUtils(androidApplication()) }
+      single<IMusicPlayer> { SpicaPlayer(androidApplication(), playbackServiceClass) }
+    }
+  }
+
+  private fun updateItems(timeline: Timeline?) {
+    val items = timeline?.toMediaItems() ?: emptyList()
+    _currentTimelineItems.value = items
+
+    val ids = _currentTimelineItems.value.map { it.mediaId }
+    playerKVUtils.setHistoryIds(ids.mapNotNull { it.toLongOrNull() })
+  }
+
+  private fun Timeline.toMediaItems(): List<MediaItem> =
+    (0 until this.windowCount).mapNotNull { this.getWindow(it, Timeline.Window()).mediaItem }
+
+  private fun Timeline.indexOf(mediaId: String): Int {
+    var index = -1
+    (0 until this.windowCount).forEach {
+      if (this.getWindow(it, Timeline.Window()).mediaItem.mediaId == mediaId) {
+        index = it
+        return@forEach
+      }
+    }
+    return index
+  }
 }
