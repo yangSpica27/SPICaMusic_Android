@@ -6,6 +6,9 @@ import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.pages.SearchViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
+import me.spica27.spicamusic.ui.settings.SettingsViewModel
+import me.spica27.spicamusic.utils.PreferencesManager
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -15,6 +18,9 @@ import org.koin.dsl.module
 object AppModule {
     val appModule =
         module {
+            // PreferencesManager
+            single { PreferencesManager(androidContext()) }
+
             // 播放器 ViewModel - 全局共享
             viewModel {
                 PlayerViewModel(
@@ -34,6 +40,13 @@ object AppModule {
             viewModel {
                 SearchViewModel(
                     songRepository = get<ISongRepository>(),
+                )
+            }
+
+            // 设置页面 ViewModel
+            viewModel {
+                SettingsViewModel(
+                    preferencesManager = get<PreferencesManager>(),
                 )
             }
 

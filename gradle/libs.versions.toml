@@ -34,7 +34,7 @@ sandwichRetrofitVersion = "2.2.0"
 timberVersion = "5.0.1"
 nav3Core = "1.0.0-alpha07"
 material3AdaptiveNav3 = "1.1.0"
-lifecycleViewmodelNav3 = "1.0.0-alpha04"
+lifecycleViewmodelNav3 = "2.10.0"
 kotlinSerialization = "2.2.0"
 kotlinxSerializationCore = "1.9.0"
 moshiKotlin = "1.15.2"
@@ -46,12 +46,10 @@ media3ExoplayerDashVersion = "1.8.0"
 media3SessionVersion = "1.8.0"
 ksp = "2.2.21-2.0.4"
 roomVersion = "2.7.2"
-navigationCompose = "2.9.6"
 miuixAndroid = "0.8.0-rc04"
 androidautosize = "v1.2.1"
 [libraries]
 androidautosize = { module = "com.github.JessYanCoding:AndroidAutoSize", version.ref = "androidautosize" }
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistVersion" }
 amplituda = { module = "com.github.lincollincol:amplituda", version.ref = "amplitudaVersion" }
 androidliquidglass = { module = "com.github.Kyant0:AndroidLiquidGlass", version.ref = "androidliquidglassVersion" }

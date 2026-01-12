@@ -17,7 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import me.spica27.spicamusic.navigation.LocalNavController
+import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -51,7 +51,7 @@ fun LibraryPage(modifier: Modifier = Modifier) {
  */
 @Composable
 private fun LibraryContent(modifier: Modifier = Modifier) {
-    val navController = LocalNavController.current
+    val backStack = LocalNavBackStack.current
 
     // 媒体库列表项数据
     val libraryItems =
@@ -75,7 +75,7 @@ private fun LibraryContent(modifier: Modifier = Modifier) {
                 title = item.title,
                 icon = item.icon,
                 onClick = {
-                    navController.navigate(item.screen.route)
+                    backStack.add(item.screen)
                 },
             )
         }

@@ -136,10 +136,6 @@ dependencies {
   implementation(libs.coil.network.okhttp)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-  // Room 依赖已由 storage-core 模块提供
-  // Media3 依赖已由 player-core 模块提供
-  // DataStore 依赖已由 storage-core 模块提供
-
   implementation libs.timber
   implementation(libs.accompanist.permissions)
 
@@ -148,11 +144,10 @@ dependencies {
   implementation libs.androidx.adaptive
   implementation libs.androidx.adaptive.layout
   implementation libs.androidx.adaptive.navigation
-  // Jetpack Compose integration
-  implementation(libs.androidx.navigation.compose)
-  //  implementation libs.androidx.lifecycle.viewmodel.navigation3
-  //  implementation libs.androidx.navigation3.runtime
-  //  implementation libs.androidx.navigation3.ui
+  // Jetpack Compose integration - Navigation 3
+  implementation libs.androidx.navigation3.runtime
+  implementation libs.androidx.navigation3.ui
+  implementation libs.androidx.lifecycle.viewmodel.navigation3
   implementation libs.material3
 
   // 播放器相关依赖 (实现层需要)

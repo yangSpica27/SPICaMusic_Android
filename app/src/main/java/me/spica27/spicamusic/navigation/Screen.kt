@@ -1,33 +1,52 @@
 package me.spica27.spicamusic.navigation
 
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
+
 /**
- * 应用路由定义
+ * 应用路由定义 (Navigation 3)
+ * 使用 @Serializable 支持类型安全导航
+ * 继承 NavKey 以满足 Navigation 3 的类型约束
  */
-sealed class Screen(
-    val route: String,
-) {
-    data object Home : Screen("home")
+sealed interface Screen : NavKey {
+    @Serializable
+    data object Home : Screen
 
-    data object Player : Screen("player")
+    @Serializable
+    data object Player : Screen
 
-    data object Playlist : Screen("playlist")
+    @Serializable
+    data object Playlist : Screen
 
-    data object Settings : Screen("settings")
+    @Serializable
+    data object Settings : Screen
 
     // 媒体库相关路由
-    data object AllSongs : Screen("all_songs")
+    @Serializable
+    data object AllSongs : Screen
 
-    data object Playlists : Screen("playlists")
+    @Serializable
+    data object Playlists : Screen
 
-    data object Albums : Screen("albums")
+    @Serializable
+    data object Albums : Screen
 
-    data object Artists : Screen("artists")
+    @Serializable
+    data object Artists : Screen
 
-    data object RecentlyAdded : Screen("recently_added")
+    @Serializable
+    data object RecentlyAdded : Screen
 
-    data object MostPlayed : Screen("most_played")
+    @Serializable
+    data object MostPlayed : Screen
 
-    data object PlayHistory : Screen("play_history")
+    @Serializable
+    data object PlayHistory : Screen
 
-    data object Folders : Screen("folders")
+    @Serializable
+    data object Folders : Screen
+
+    // 设置相关路由
+    @Serializable
+    data object MediaLibrarySource : Screen
 }

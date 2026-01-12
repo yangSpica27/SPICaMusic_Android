@@ -2,8 +2,8 @@ package me.spica27.spicamusic.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.NavDisplay
 import me.spica27.spicamusic.ui.home.HomeScreen
 import me.spica27.spicamusic.ui.library.AlbumsScreen
 import me.spica27.spicamusic.ui.library.AllSongsScreen
@@ -13,54 +13,61 @@ import me.spica27.spicamusic.ui.library.MostPlayedScreen
 import me.spica27.spicamusic.ui.library.PlayHistoryScreen
 import me.spica27.spicamusic.ui.library.PlaylistsScreen
 import me.spica27.spicamusic.ui.library.RecentlyAddedScreen
+import me.spica27.spicamusic.ui.settings.MediaLibrarySourceScreen
 
 /**
- * 应用导航图
+ * 应用导航图 (Navigation 3)
  */
 @Composable
 fun AppNavGraph(modifier: Modifier = Modifier) {
-    val navController = LocalNavController.current
+    val backStack = LocalNavBackStack.current
 
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Home.route,
+    NavDisplay(
+        backStack = backStack,
         modifier = modifier,
-    ) {
-        composable(Screen.Home.route) {
-            HomeScreen()
-        }
+        entryProvider =
+            entryProvider {
+                entry<Screen.Home> {
+                    HomeScreen()
+                }
 
-        // 媒体库相关路由
-        composable(Screen.AllSongs.route) {
-            AllSongsScreen()
-        }
+                // 媒体库相关路由
+                entry<Screen.AllSongs> {
+                    AllSongsScreen()
+                }
 
-        composable(Screen.Playlists.route) {
-            PlaylistsScreen()
-        }
+                entry<Screen.Playlists> {
+                    PlaylistsScreen()
+                }
 
-        composable(Screen.Albums.route) {
-            AlbumsScreen()
-        }
+                entry<Screen.Albums> {
+                    AlbumsScreen()
+                }
 
-        composable(Screen.Artists.route) {
-            ArtistsScreen()
-        }
+                entry<Screen.Artists> {
+                    ArtistsScreen()
+                }
 
-        composable(Screen.RecentlyAdded.route) {
-            RecentlyAddedScreen()
-        }
+                entry<Screen.RecentlyAdded> {
+                    RecentlyAddedScreen()
+                }
 
-        composable(Screen.MostPlayed.route) {
-            MostPlayedScreen()
-        }
+                entry<Screen.MostPlayed> {
+                    MostPlayedScreen()
+                }
 
-        composable(Screen.PlayHistory.route) {
-            PlayHistoryScreen()
-        }
+                entry<Screen.PlayHistory> {
+                    PlayHistoryScreen()
+                }
 
-        composable(Screen.Folders.route) {
-            FoldersScreen()
-        }
-    }
+                entry<Screen.Folders> {
+                    FoldersScreen()
+                }
+
+                // 设置相关路由
+                entry<Screen.MediaLibrarySource> {
+                    MediaLibrarySourceScreen()
+                }
+            },
+    )
 }
