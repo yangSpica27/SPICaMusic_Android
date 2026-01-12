@@ -174,6 +174,7 @@ dependencies {
   implementation libs.prettytime
   implementation libs.koin.androidx.compose
   implementation(libs.pinyin4j)
+  implementation("androidx.compose.material:material-icons-extended:1.6.0-rc01")
 }
 
 tasks.register('incrementBuildNumber') {
