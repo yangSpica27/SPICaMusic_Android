@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.navigation.LocalNavBackStack
+import me.spica27.spicamusic.ui.player.ResetBottomPadding
 
 /**
  * 媒体库来源页面
@@ -26,6 +27,8 @@ import me.spica27.spicamusic.navigation.LocalNavBackStack
 @Composable
 fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
+
+    ResetBottomPadding()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),

@@ -3,6 +3,7 @@ package me.spica27.spicamusic.ui.player
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,6 +46,10 @@ fun BottomPlayerBar(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
     onExpand: () -> Unit,
+    onDragStart: () -> Unit = {},
+    onDragEnd: () -> Unit = {},
+    onDragCancel: () -> Unit = {},
+    onDrag: (Float) -> Unit = {},
 ) {
     val currentMediaItem by viewModel.currentMediaItem.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
@@ -67,10 +73,17 @@ fun BottomPlayerBar(
 
     Box(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .background(MiuixTheme.colorScheme.surfaceContainer)
-                .clickable {
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragStart = { onDragStart() },
+                        onDragEnd = { onDragEnd() },
+                        onDragCancel = { onDragCancel() },
+                        onVerticalDrag = { _, dragAmount -> onDrag(dragAmount) },
+                    )
+                }.clickable {
                     onExpand()
                 },
     ) {

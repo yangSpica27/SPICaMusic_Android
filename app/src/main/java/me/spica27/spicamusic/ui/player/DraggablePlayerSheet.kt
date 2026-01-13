@@ -5,7 +5,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.Constraints
 import kotlinx.coroutines.launch
@@ -71,58 +69,58 @@ fun DraggablePlayerSheet(
         }
     }
 
+    // 拖拽手势处理函数
+    val handleDragStart: () -> Unit = {
+        isDragging = true
+        dragOffset = 0f
+    }
+
+    val handleDragEnd: () -> Unit = {
+        isDragging = false
+        scope.launch {
+            // 根据当前进度决定是展开还是收起
+            // 阈值设为 0.5（中点）
+            val targetProgress = if (progress.value > 0.5f) 1f else 0f
+            progress.animateTo(targetProgress, animationSpec)
+            isExpanded = targetProgress == 1f
+        }
+        dragOffset = 0f
+    }
+
+    val handleDragCancel: () -> Unit = {
+        isDragging = false
+        scope.launch {
+            val targetProgress = if (isExpanded) 1f else 0f
+            progress.animateTo(targetProgress, animationSpec)
+        }
+        dragOffset = 0f
+    }
+
+    val handleDrag: (Float) -> Unit = { dragAmount ->
+        dragOffset += dragAmount
+        scope.launch {
+            // 计算可拖动的总距离（从迷你模式到完全展开）
+            // 使用屏幕高度作为总距离的估算
+            val totalDragDistance = 1000f // 假设一个合理的拖动距离
+
+            // 根据拖动偏移更新进度
+            // 向上拖动（负值）增加进度，向下拖动（正值）减少进度
+            val currentProgress = progress.value
+            val deltaProgress = -dragOffset / totalDragDistance
+            val newProgress = (currentProgress + deltaProgress).coerceIn(0f, 1f)
+
+            progress.snapTo(newProgress)
+            dragOffset = 0f // 重置偏移量，避免累积
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
         content()
 
         SubcomposeLayout(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectVerticalDragGestures(
-                            onDragStart = {
-                                isDragging = true
-                                dragOffset = 0f
-                            },
-                            onDragEnd = {
-                                isDragging = false
-                                scope.launch {
-                                    // 根据当前进度决定是展开还是收起
-                                    // 阈值设为 0.5（中点）
-                                    val targetProgress = if (progress.value > 0.5f) 1f else 0f
-                                    progress.animateTo(targetProgress, animationSpec)
-                                    isExpanded = targetProgress == 1f
-                                }
-                                dragOffset = 0f
-                            },
-                            onDragCancel = {
-                                isDragging = false
-                                scope.launch {
-                                    val targetProgress = if (isExpanded) 1f else 0f
-                                    progress.animateTo(targetProgress, animationSpec)
-                                }
-                                dragOffset = 0f
-                            },
-                            onVerticalDrag = { _, dragAmount ->
-                                dragOffset += dragAmount
-                                scope.launch {
-                                    // 计算可拖动的总距离（从迷你模式到完全展开）
-                                    val totalDragDistance = size.height - bottomPadding
-
-                                    // 根据拖动偏移更新进度
-                                    // 向上拖动（负值）增加进度，向下拖动（正值）减少进度
-                                    val currentProgress = progress.value
-                                    val deltaProgress = -dragOffset / totalDragDistance
-                                    val newProgress = (currentProgress + deltaProgress).coerceIn(0f, 1f)
-
-                                    progress.snapTo(newProgress)
-                                    dragOffset = 0f // 重置偏移量，避免累积
-                                }
-                            },
-                        )
-                    },
+            modifier = Modifier.fillMaxSize(),
         ) { constraints: Constraints ->
 
             val looseConstraints =
@@ -137,6 +135,10 @@ fun DraggablePlayerSheet(
                         onExpand = {
                             isExpanded = !isExpanded
                         },
+                        onDragStart = handleDragStart,
+                        onDragEnd = handleDragEnd,
+                        onDragCancel = handleDragCancel,
+                        onDrag = handleDrag,
                     )
                 }.map { it.measure(looseConstraints) }
 
@@ -146,6 +148,10 @@ fun DraggablePlayerSheet(
                         onCollapse = {
                             isExpanded = !isExpanded
                         },
+                        onDragStart = handleDragStart,
+                        onDragEnd = handleDragEnd,
+                        onDragCancel = handleDragCancel,
+                        onDrag = handleDrag,
                     )
                 }.map {
                     it.measure(
