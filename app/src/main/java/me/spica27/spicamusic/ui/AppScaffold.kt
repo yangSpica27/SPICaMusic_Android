@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableFloatStateOf
@@ -34,6 +35,8 @@ fun AppScaffold() {
         // 全局底部 padding 状态，供各页面动态设置
         val bottomPaddingState = remember { mutableFloatStateOf(0f) }
 
+        val bottomPaddingAnimValue = animateFloatAsState(bottomPaddingState.floatValue).value
+
         CompositionLocalProvider(
             LocalNavBackStack provides backStack,
             LocalPlayerViewModel provides playerViewModel,
@@ -42,7 +45,7 @@ fun AppScaffold() {
             // 全局播放器层包裹整个导航
             DraggablePlayerSheet(
                 viewModel = playerViewModel,
-                bottomPadding = bottomPaddingState.floatValue,
+                bottomPadding = bottomPaddingAnimValue,
             ) {
                 AppNavGraph(
                     modifier = Modifier,

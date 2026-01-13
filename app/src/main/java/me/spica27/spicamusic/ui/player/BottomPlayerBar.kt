@@ -50,6 +50,7 @@ fun BottomPlayerBar(
     onDragEnd: () -> Unit = {},
     onDragCancel: () -> Unit = {},
     onDrag: (Float) -> Unit = {},
+    progress: Float = 0f, // 展开进度，用于视觉效果
 ) {
     val currentMediaItem by viewModel.currentMediaItem.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()

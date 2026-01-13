@@ -23,6 +23,7 @@ fun ExpandedPlayerScreen(
     onDragEnd: () -> Unit = {},
     onDragCancel: () -> Unit = {},
     onDrag: (Float) -> Unit = {},
+    progress: Float = 1f, // 展开进度，用于视觉效果
 ) {
     Box(
         modifier =
