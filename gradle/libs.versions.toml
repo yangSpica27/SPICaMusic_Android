@@ -31,6 +31,7 @@ pinyin4jVersion = "2.5.1"
 prettytimeVersion = "5.0.8.Final"
 retrofitVersion = "3.0.0"
 sandwichRetrofitVersion = "2.2.0"
+taglibVersion = "1.0.5"
 timberVersion = "5.0.1"
 nav3Core = "1.0.0-alpha07"
 material3AdaptiveNav3 = "1.1.0"
@@ -93,6 +94,7 @@ pinyin4j = { module = "com.belerweb:pinyin4j", version.ref = "pinyin4jVersion" }
 prettytime = { module = "org.ocpsoft.prettytime:prettytime", version.ref = "prettytimeVersion" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofitVersion" }
 sandwich-retrofit = { module = "com.github.skydoves:sandwich-retrofit", version.ref = "sandwichRetrofitVersion" }
+taglib = { module = "io.github.kyant0:taglib", version.ref = "taglibVersion" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timberVersion" }
 # Core Navigation 3 libraries
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }

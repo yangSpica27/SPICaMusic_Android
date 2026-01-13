@@ -1,24 +1,44 @@
 package me.spica27.spicamusic.ui.settings
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.navigation.LocalNavBackStack
+import me.spica27.spicamusic.storage.api.ScanResult
 import me.spica27.spicamusic.ui.player.ResetBottomPadding
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * 媒体库来源页面
@@ -27,6 +47,8 @@ import me.spica27.spicamusic.ui.player.ResetBottomPadding
 @Composable
 fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
+    val viewModel = koinViewModel<MediaLibrarySourceViewModel>()
+    val scanState by viewModel.scanState.collectAsState()
 
     ResetBottomPadding()
 
@@ -46,28 +68,349 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
             )
         },
     ) { paddingValues ->
-        Box(
+        Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
-            contentAlignment = Alignment.Center,
+                    .padding(paddingValues)
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            // 扫描来源卡片
+            ScanSourceCard(
+                onScanMediaStore = { viewModel.startMediaStoreScan() },
+            )
+
+            // 扫描状态显示
+            when (val state = scanState) {
+                is ScanState.Idle -> {
+                    InfoCard(
+                        title = "扫描说明",
+                        message =
+                            "点击上方按钮开始扫描设备中的音乐文件\n\n" +
+                                "• 支持格式: MP3, FLAC, WAV, M4A, OGG, OPUS\n" +
+                                "• 自动过滤小于 10 秒的音频\n" +
+                                "• 扫描完成后会自动更新媒体库",
+                    )
+                }
+
+                is ScanState.Scanning -> {
+                    ScanningCard(progress = state.progress)
+                }
+
+                is ScanState.Success -> {
+                    ScanResultCard(
+                        result = state.result,
+                        onDismiss = { viewModel.resetState() },
+                    )
+                }
+
+                is ScanState.Error -> {
+                    ErrorCard(
+                        message = state.message,
+                        onRetry = { viewModel.startMediaStoreScan() },
+                        onDismiss = { viewModel.resetState() },
+                    )
+                }
+            }
+
+            // 预留：自定义文件夹扫描
+            Spacer(modifier = Modifier.weight(1f))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    ),
             ) {
-                Text(
-                    text = "媒体库来源管理",
-                    style = MaterialTheme.typography.headlineSmall,
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(32.dp),
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "自定义文件夹扫描功能",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "即将推出，敬请期待",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScanSourceCard(onScanMediaStore: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+            ),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+        ) {
+            Text(
+                text = "扫描媒体库",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "扫描设备中的所有音乐文件",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onScanMediaStore,
+                modifier = Modifier.align(Alignment.End),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("开始扫描")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScanningCard(progress: me.spica27.spicamusic.storage.api.ScanProgress) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            ),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 3.dp,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "此功能正在开发中",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
+                    text = "正在扫描...",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
+
+            if (progress.total > 0) {
+                Spacer(modifier = Modifier.height(12.dp))
+                LinearProgressIndicator(
+                    progress = { progress.current.toFloat() / progress.total },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "${progress.current} / ${progress.total}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                    )
+                    Text(
+                        text = "${(progress.current * 100 / progress.total)}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = progress.currentFile,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScanResultCard(
+    result: ScanResult,
+    onDismiss: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            ),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(32.dp),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "扫描完成",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ResultRow("总计扫描", "${result.totalScanned} 首")
+            ResultRow("新增歌曲", "${result.newAdded} 首")
+            ResultRow("更新歌曲", "${result.updated} 首")
+            ResultRow("删除歌曲", "${result.removed} 首")
+
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.End),
+            ) {
+                Text("确定")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResultRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun ErrorCard(
+    message: String,
+    onRetry: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+            ),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+        ) {
+            Text(
+                text = "扫描失败",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text("取消")
+                }
+                Button(onClick = onRetry) {
+                    Text("重试")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoCard(
+    title: String,
+    message: String,
+) {
+    Card(
+        modifier = Modifier.fillMaxSize(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.Start,
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                textAlign = TextAlign.Start,
+            )
         }
     }
 }

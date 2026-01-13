@@ -1,11 +1,13 @@
 package me.spica27.spicamusic.di
 
 import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.pages.SearchViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
+import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.settings.SettingsViewModel
 import me.spica27.spicamusic.utils.PreferencesManager
 import org.koin.android.ext.koin.androidContext
@@ -50,6 +52,11 @@ object AppModule {
                 )
             }
 
-            // TODO: 添加更多 ViewModel
+            // 媒体库来源页面 ViewModel
+            viewModel {
+                MediaLibrarySourceViewModel(
+                    scanService = get<IMusicScanService>(),
+                )
+            }
         }
 }

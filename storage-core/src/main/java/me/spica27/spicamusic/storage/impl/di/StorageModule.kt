@@ -5,6 +5,7 @@ import androidx.room.Room
 import me.spica27.spicamusic.storage.api.*
 import me.spica27.spicamusic.storage.impl.db.AppDatabase
 import me.spica27.spicamusic.storage.impl.repository.*
+import me.spica27.spicamusic.storage.impl.scanner.MusicScanService
 import org.koin.dsl.module
 
 /**
@@ -36,4 +37,7 @@ val storageModule = module {
     single<IPlaylistRepository> { PlaylistRepositoryImpl(get()) }
     single<ILyricRepository> { LyricRepositoryImpl(get()) }
     single<IPlayHistoryRepository> { PlayHistoryRepositoryImpl(get()) }
+
+    // 扫描服务
+    single<IMusicScanService> { MusicScanService(get(), get()) }
 }
