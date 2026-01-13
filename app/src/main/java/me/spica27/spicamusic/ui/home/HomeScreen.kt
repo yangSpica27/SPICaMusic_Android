@@ -8,10 +8,13 @@ import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import me.spica27.spicamusic.ui.home.pages.LibraryPage
 import me.spica27.spicamusic.ui.home.pages.SearchPage
 import me.spica27.spicamusic.ui.home.pages.SettingsPage
@@ -37,15 +40,22 @@ fun HomeScreen(
     // 获取全局 PlayerViewModel
     val playerViewModel = LocalPlayerViewModel.current
 
+    var bottomPadding by remember { mutableFloatStateOf(0f) }
+
     // 使用 DraggablePlayerSheet 包裹整个界面
     DraggablePlayerSheet(
         viewModel = playerViewModel,
+        bottomPadding = bottomPadding,
     ) {
         // Scaffold 布局
         Scaffold(
             modifier = modifier.fillMaxSize(),
             bottomBar = {
                 NavigationBar(
+                    modifier =
+                        Modifier.onSizeChanged {
+                            bottomPadding = it.height.toFloat()
+                        },
                     items =
                         listOf(
                             NavigationItem("媒体库", Icons.Outlined.Home),
@@ -59,9 +69,7 @@ fun HomeScreen(
         ) { paddingValues ->
             // 内容区域 - 如果有播放内容，为播放条留出空间
             Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
             ) {
                 when (selectedIndex) {
                     0 -> LibraryPage()
