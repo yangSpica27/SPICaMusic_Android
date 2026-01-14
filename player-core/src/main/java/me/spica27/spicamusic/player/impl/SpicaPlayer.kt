@@ -6,6 +6,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
+import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionToken
@@ -59,7 +60,7 @@ class SpicaPlayer(
 
   // FFT AudioProcessor 包装器 (用于 ExoPlayer)
   private val _fftAudioProcessorWrapper = FFTAudioProcessorWrapper(_fftProcessor)
-  override val fftAudioProcessor: androidx.media3.common.audio.AudioProcessor =
+  override val fftAudioProcessor: AudioProcessor =
     _fftAudioProcessorWrapper
 
   private var browserInstance: MediaBrowser? = null

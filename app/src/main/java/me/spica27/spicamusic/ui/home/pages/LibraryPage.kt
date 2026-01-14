@@ -16,24 +16,32 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.utils.overScrollVertical
 
 /**
  * 媒体库页面
  */
 @Composable
 fun LibraryPage(modifier: Modifier = Modifier) {
+    val scrollBehavior = MiuixScrollBehavior()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = "媒体库",
+                largeTitle = "媒体库", // If not specified, title value will be used
+                scrollBehavior = scrollBehavior,
             )
         },
     ) { paddingValues ->
@@ -42,6 +50,7 @@ fun LibraryPage(modifier: Modifier = Modifier) {
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
+            scrollBehavior,
         )
     }
 }
@@ -50,7 +59,10 @@ fun LibraryPage(modifier: Modifier = Modifier) {
  * 媒体库内容列表
  */
 @Composable
-private fun LibraryContent(modifier: Modifier = Modifier) {
+private fun LibraryContent(
+    modifier: Modifier = Modifier,
+    scrollBehavior: ScrollBehavior,
+) {
     val backStack = LocalNavBackStack.current
 
     // 媒体库列表项数据
@@ -67,7 +79,10 @@ private fun LibraryContent(modifier: Modifier = Modifier) {
         )
 
     LazyColumn(
-        modifier = modifier,
+        modifier =
+            modifier
+                .overScrollVertical()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
     ) {
         items(libraryItems) { item ->

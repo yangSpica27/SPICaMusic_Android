@@ -5,7 +5,6 @@ import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 /**
  * Media3 AudioProcessor 包装器
@@ -37,10 +36,31 @@ class FFTAudioProcessorWrapper(
         return outputAudioFormat
     }
 
-    override fun isActive(): Boolean = false // 完全禁用，避免任何音频处理开销
+    override fun isActive(): Boolean = true
 
     override fun queueInput(inputBuffer: ByteBuffer) {
-        // 完全不处理，直接传递
+        // 将音频数据传递给 FFT 处理器进行频谱分析
+        if (isActive && inputBuffer.hasRemaining() && fftProcessor.isEnabled.value) {
+            val position = inputBuffer.position()
+            val limit = inputBuffer.limit()
+            val size = limit - position
+            
+            // 提取音频数据
+            val audioData = ByteArray(size)
+            inputBuffer.get(audioData)
+            
+            // 重置 position 以便后续播放使用
+            inputBuffer.position(position)
+            
+            // 异步处理 FFT（不阻塞音频流）
+            fftProcessor.process(
+                audioData = audioData,
+                sampleRate = inputAudioFormat.sampleRate,
+                channelCount = inputAudioFormat.channelCount
+            )
+        }
+        
+        // 将缓冲区传递给输出（透传模式，不修改音频数据）
         outputBuffer = inputBuffer
     }
 

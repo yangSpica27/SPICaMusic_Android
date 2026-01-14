@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.util.fastCoerceIn
 import kotlinx.coroutines.launch
 
 // 拖拽常量配置
@@ -207,7 +208,6 @@ fun DraggablePlayerSheet(
                 if (progress.value < 0.99f) {
                     miniPlayerPlaceables.forEach {
                         it.placeWithLayer(0, miniPlayerY) {
-                            shadowElevation = MINI_SHADOW_ELEVATION * (1f - progress.value)
                             alpha = 1f - progress.value
                         }
                     }
@@ -216,10 +216,7 @@ fun DraggablePlayerSheet(
                 if (progress.value > 0.01f) {
                     fullPlayerPlaceables.forEach {
                         it.placeWithLayer(0, fullPlayerY) {
-                            alpha = progress.value
-                            val scale = MIN_SCALE + progress.value * (1f - MIN_SCALE)
-                            scaleX = scale
-                            scaleY = scale
+                            alpha = progress.value * 4f.fastCoerceIn(0f, 1f)
                         }
                     }
                 }

@@ -114,9 +114,6 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
                 }
             }
 
-            // 预留：自定义文件夹扫描
-            Spacer(modifier = Modifier.weight(1f))
-
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors =
@@ -125,7 +122,10 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
                     ),
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
@@ -389,7 +389,7 @@ private fun InfoCard(
     message: String,
 ) {
     Card(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,

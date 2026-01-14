@@ -36,10 +36,10 @@ class FFTAudioProcessor : IFFTProcessor {
         private const val SMOOTHING_FACTOR = 0.7f
 
         // 最小分贝值
-        private const val MIN_DB = -80f
+        private const val MIN_DB = 0f
 
         // 最大分贝值
-        private const val MAX_DB = 0f
+        private const val MAX_DB = 60f
     }
 
     private val listeners = CopyOnWriteArrayList<FFTListener>()

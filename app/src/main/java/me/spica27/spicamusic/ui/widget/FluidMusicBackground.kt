@@ -1,10 +1,18 @@
 package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
@@ -24,7 +32,7 @@ import kotlin.math.sin
 fun FluidMusicBackground(
     modifier: Modifier = Modifier,
     fftBands: FloatArray = FloatArray(31),
-    coverColor: Color = Color(0xFF6200EE),
+    coverColor: Color = Color(0xFF2196F3),
     enabled: Boolean = true,
     isDarkMode: Boolean? = null,
 ) {
@@ -190,7 +198,7 @@ private fun DrawScope.drawFluidBlob(
                 colors =
                     listOf(
                         color,
-                        color.copy(alpha = color.alpha * 0.5f),
+                        color.copy(alpha = color.alpha),
                         Color.Transparent,
                     ),
                 center = Offset(centerX, centerY),

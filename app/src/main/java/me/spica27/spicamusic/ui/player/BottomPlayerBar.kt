@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui.player
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -24,7 +23,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,7 +32,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import me.spica27.spicamusic.ui.widget.CompactMusicBackground
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -56,21 +56,11 @@ fun BottomPlayerBar(
     val isPlaying by viewModel.isPlaying.collectAsState()
     val currentPosition = viewModel.currentPosition
     val currentDuration by viewModel.currentDuration.collectAsState()
-
-    // 调试日志
-    LaunchedEffect(currentMediaItem) {
-        Log.d(
-            "BottomPlayerBar",
-            "currentMediaItem: $currentMediaItem, title: ${currentMediaItem?.mediaMetadata?.title}",
-        )
-    }
-
     val metadata = currentMediaItem?.mediaMetadata
     val title = metadata?.title?.toString() ?: "未知歌曲"
     val artist = metadata?.artist?.toString() ?: "未知艺术家"
     val artworkUri = metadata?.artworkUri
-
-    Log.d("BottomPlayerBar", "Rendering player bar: $title")
+    val fft = viewModel.fftBands.collectAsStateWithLifecycle().value
 
     Box(
         modifier =
@@ -88,6 +78,11 @@ fun BottomPlayerBar(
                     onExpand()
                 },
     ) {
+        CompactMusicBackground(
+            modifier = Modifier.matchParentSize(),
+            fftBands = fft,
+            isDarkMode = false,
+        )
         Column {
             // 进度条
             if (currentDuration > 0) {
