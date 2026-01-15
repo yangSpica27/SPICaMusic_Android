@@ -182,7 +182,8 @@ fun DraggablePlayerSheet(
 
             val miniPlayerHeight = miniPlayerPlaceables.first().height
             val fullPlayerMaxHeight = constraints.maxHeight
-            val fullPlayerHeight = miniPlayerHeight + ((fullPlayerMaxHeight - miniPlayerHeight) * progress.value).toInt()
+            val fullPlayerHeight =
+                miniPlayerHeight + ((fullPlayerMaxHeight - miniPlayerHeight) * progress.value).toInt()
 
             val fullPlayerPlaceables =
                 subcompose("FullPlayer") {
@@ -199,25 +200,37 @@ fun DraggablePlayerSheet(
                         onDrag = handleDrag,
                         progress = progress.value,
                     )
-                }.map { it.measure(looseConstraints.copy(maxHeight = fullPlayerHeight)) }
+                }.map {
+                    it.measure(
+                        looseConstraints.copy(
+                            maxHeight = fullPlayerHeight,
+                        ),
+                    )
+                }
 
             layout(constraints.maxWidth, constraints.maxHeight) {
                 val miniPlayerY = constraints.maxHeight - bottomPadding.toInt() - miniPlayerHeight
                 val fullPlayerY = (miniPlayerY * (1f - progress.value)).toInt()
 
-                if (progress.value < 0.99f) {
-                    miniPlayerPlaceables.forEach {
-                        it.placeWithLayer(0, miniPlayerY) {
-                            alpha = 1f - progress.value
-                        }
+                miniPlayerPlaceables.forEach {
+                    it.placeWithLayer(0, miniPlayerY, zIndex = 2f) {
+                        alpha =
+                            if (progress.value > 0.2f) {
+                                0f
+                            } else {
+                                (1f - progress.value * 5f).fastCoerceIn(0f, 1f)
+                            }
                     }
                 }
 
-                if (progress.value > 0.01f) {
-                    fullPlayerPlaceables.forEach {
-                        it.placeWithLayer(0, fullPlayerY) {
-                            alpha = progress.value * 4f.fastCoerceIn(0f, 1f)
-                        }
+                fullPlayerPlaceables.forEach {
+                    it.placeWithLayer(0, fullPlayerY, zIndex = if (progress.value > 0.2f) 3f else 1f) {
+                        alpha =
+                            if (progress.value > 0.1f) {
+                                1f
+                            } else {
+                                1f
+                            }
                     }
                 }
             }

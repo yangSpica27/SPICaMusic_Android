@@ -101,10 +101,10 @@ fun ExpandedPlayerScreen(
     Box(
         modifier =
             modifier
+                .background(MiuixTheme.colorScheme.background)
                 .statusBarsPadding()
                 .navigationBarsPadding()
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
                 .pointerInput(Unit) {
                     detectVerticalDragGestures(
                         onDragStart = { onDragStart() },
