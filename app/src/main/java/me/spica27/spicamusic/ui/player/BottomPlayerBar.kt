@@ -23,6 +23,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import me.spica27.spicamusic.ui.widget.CompactMusicBackground
+import timber.log.Timber
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -54,8 +56,15 @@ fun BottomPlayerBar(
 ) {
     val currentMediaItem by viewModel.currentMediaItem.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
-    val currentPosition = viewModel.currentPosition
+    val currentPosition = viewModel.currentPosition.collectAsStateWithLifecycle().value
     val currentDuration by viewModel.currentDuration.collectAsState()
+
+    LaunchedEffect(currentPosition, currentDuration) {
+        Timber
+            .tag("BottomPlayerBar")
+            .d("currentPosition: $currentPosition, currentDuration: $currentDuration")
+    }
+
     val metadata = currentMediaItem?.mediaMetadata
     val title = metadata?.title?.toString() ?: "未知歌曲"
     val artist = metadata?.artist?.toString() ?: "未知艺术家"

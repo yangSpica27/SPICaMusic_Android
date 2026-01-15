@@ -43,7 +43,6 @@ private const val MIN_SCALE = 0.98f
  */
 @Composable
 fun DraggablePlayerSheet(
-    viewModel: PlayerViewModel,
     bottomPadding: Float = 0f,
     content: @Composable BoxScope.() -> Unit,
 ) {

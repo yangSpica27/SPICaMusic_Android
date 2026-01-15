@@ -21,7 +21,6 @@ import me.spica27.spicamusic.ui.settings.MediaLibrarySourceScreen
 @Composable
 fun AppNavGraph(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
-
     NavDisplay(
         backStack = backStack,
         modifier = modifier,

@@ -39,6 +39,8 @@ import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.storage.api.ScanResult
 import me.spica27.spicamusic.ui.player.ResetBottomPadding
 import org.koin.androidx.compose.koinViewModel
+import top.yukonga.miuix.kmp.utils.SinkFeedback
+import top.yukonga.miuix.kmp.utils.pressable
 
 /**
  * 媒体库来源页面
@@ -180,7 +182,10 @@ private fun ScanSourceCard(onScanMediaStore: () -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = onScanMediaStore,
-                modifier = Modifier.align(Alignment.End),
+                modifier =
+                    Modifier
+                        .pressable(interactionSource = null, indication = SinkFeedback())
+                        .align(Alignment.End),
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
@@ -304,7 +309,10 @@ private fun ScanResultCard(
             Spacer(modifier = Modifier.height(12.dp))
             TextButton(
                 onClick = onDismiss,
-                modifier = Modifier.align(Alignment.End),
+                modifier =
+                    Modifier
+                        .pressable(interactionSource = null, indication = SinkFeedback())
+                        .align(Alignment.End),
             ) {
                 Text("确定")
             }

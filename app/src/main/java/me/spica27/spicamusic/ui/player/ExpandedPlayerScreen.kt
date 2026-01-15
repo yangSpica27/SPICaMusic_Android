@@ -1,13 +1,8 @@
 package me.spica27.spicamusic.ui.player
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -61,8 +55,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import kotlinx.coroutines.delay
 import me.spica27.spicamusic.player.api.PlayMode
+import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.concurrent.TimeUnit
 
@@ -90,11 +84,11 @@ fun ExpandedPlayerScreen(
     var currentPosition by remember { mutableFloatStateOf(0f) }
     var userIsDragging by remember { mutableStateOf(false) }
 
-    // 定时更新播放位置
-    LaunchedEffect(isPlaying, userIsDragging) {
-        while (isPlaying && !userIsDragging) {
-            currentPosition = viewModel.currentPosition.toFloat()
-            delay(100) // 每 100ms 更新一次
+    val trueTimePosition = viewModel.currentPosition.collectAsStateWithLifecycle()
+
+    LaunchedEffect(trueTimePosition, userIsDragging) {
+        if (!userIsDragging) {
+            currentPosition = trueTimePosition.value.toFloat()
         }
     }
 
@@ -115,13 +109,13 @@ fun ExpandedPlayerScreen(
                 },
     ) {
         // 流动背景
-//        FluidMusicBackground(
-//            modifier = Modifier.fillMaxSize(),
-//            fftBands = fft,
-//            coverColor = MiuixTheme.colorScheme.primary,
-//            enabled = isPlaying,
-//            isDarkMode = isSystemInDarkTheme(),
-//        )
+        FluidMusicBackground(
+            modifier = Modifier.fillMaxSize(),
+            fftBands = fft,
+            coverColor = MiuixTheme.colorScheme.primary,
+            enabled = true,
+            isDarkMode = isSystemInDarkTheme(),
+        )
 
         // 内容层
         Column(
@@ -260,19 +254,6 @@ private fun AlbumArtwork(
     isPlaying: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    // 旋转动画
-    val infiniteTransition = rememberInfiniteTransition(label = "rotation")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(20000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "rotation_angle",
-    )
-
     Box(
         modifier = modifier.fillMaxWidth(0.8f),
         contentAlignment = Alignment.Center,
@@ -284,7 +265,6 @@ private fun AlbumArtwork(
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .rotate(if (isPlaying) rotation else 0f)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.Gray.copy(alpha = 0.3f)),
             contentScale = ContentScale.Crop,

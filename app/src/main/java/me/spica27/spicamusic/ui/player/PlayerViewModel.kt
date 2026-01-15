@@ -1,9 +1,21 @@
 package me.spica27.spicamusic.ui.player
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.player.api.FFTListener
 import me.spica27.spicamusic.player.api.IFFTProcessor
@@ -24,7 +36,14 @@ class PlayerViewModel(
     /**
      * 是否正在播放
      */
-    val isPlaying: StateFlow<Boolean> = player.isPlaying
+    @OptIn(FlowPreview::class)
+    val isPlaying: StateFlow<Boolean> =
+        player.isPlaying
+            .debounce(250)
+            .distinctUntilChanged()
+            .conflate()
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /**
      * 当前播放模式
@@ -59,8 +78,18 @@ class PlayerViewModel(
     /**
      * 当前播放位置 (毫秒)
      */
-    val currentPosition: Long
-        get() = player.currentPosition
+    val currentPosition: StateFlow<Long> =
+        flow {
+            while (currentCoroutineContext().isActive) {
+                emit(player.currentPosition)
+                kotlinx.coroutines.delay(1000)
+            }
+        }.conflate()
+            .stateIn(
+                viewModelScope,
+                started = SharingStarted.Eagerly,
+                initialValue = 0L,
+            )
 
     // ==================== 基础播放控制 ====================
 

@@ -1,27 +1,22 @@
 package me.spica27.spicamusic.ui.widget
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import java.util.concurrent.Executors
 
 /**
  * 流动融合动态背景组件
@@ -36,178 +31,93 @@ fun FluidMusicBackground(
     enabled: Boolean = true,
     isDarkMode: Boolean? = null,
 ) {
-    // 自动判断亮暗模式（基于颜色亮度）
-    val actualDarkMode =
-        isDarkMode ?: remember(coverColor) {
-            calculateLuminance(coverColor) < 0.5f
+    val o =
+        remember { List(31) { 0f }.toMutableStateList() }
+
+    val last = remember { List(31) { 0f }.toMutableStateList() }
+
+    var lastTime by remember { mutableStateOf(0L) }
+
+    var interval by remember { mutableStateOf(0L) }
+
+    val drawData = remember { List(31) { 0f }.toMutableStateList() }
+
+    val drawDataAnim = remember { List(31) { Animatable(0f) } }
+
+    // 创建专用的计算线程池，并在组件销毁时自动关闭
+    val computeContext =
+        remember {
+            Executors.newFixedThreadPool(1).asCoroutineDispatcher()
         }
 
-    // 颜色动画过渡（避免切换时跳变）
-    val animatedCoverColor by animateColorAsState(
-        targetValue = coverColor,
-        animationSpec = tween(800, easing = FastOutSlowInEasing),
-        label = "cover_color",
-    )
-
-    // 动画时间
-    val infiniteTransition = rememberInfiniteTransition(label = "fluid_bg")
-    val animationProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(20000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "progress",
-    )
-
-    // 从FFT数据计算平均响度（低频、中频、高频）- 增强响应系数
-    val lowFreqAvg =
-        remember(fftBands) {
-            if (fftBands.isEmpty()) {
-                0f
-            } else {
-                (fftBands.take(10).average().toFloat() * 1.8f).coerceAtMost(1f)
-            }
+    // 确保在组件销毁时关闭线程池，避免内存泄漏
+    DisposableEffect(Unit) {
+        onDispose {
+            computeContext.close()
         }
-    val midFreqAvg =
-        remember(fftBands) {
-            if (fftBands.size < 20) {
-                0f
-            } else {
-                (fftBands.slice(10..19).average().toFloat() * 1.5f).coerceAtMost(1f)
-            }
-        }
-    val highFreqAvg =
-        remember(fftBands) {
-            if (fftBands.size < 31) {
-                0f
-            } else {
-                (fftBands.slice(20..30).average().toFloat() * 1.3f).coerceAtMost(1f)
-            }
-        }
-
-    // 从封面颜色派生柔和的辅助颜色（根据亮暗模式调整）
-    val colors =
-        remember(animatedCoverColor, actualDarkMode) {
-            val baseAlpha = if (actualDarkMode) 0.4f else 0.6f
-            listOf(
-                animatedCoverColor.copy(alpha = baseAlpha),
-                shiftHue(animatedCoverColor, 30f).copy(alpha = baseAlpha * 0.8f),
-                shiftHue(animatedCoverColor, -30f).copy(alpha = baseAlpha * 0.9f),
-                shiftHue(animatedCoverColor, 60f).copy(alpha = baseAlpha * 0.7f),
-            )
-        }
-
-    Canvas(modifier = modifier.fillMaxSize()) {
-        if (!enabled) {
-            // 禁用时显示静态渐变
-            drawRect(
-                brush =
-                    Brush.verticalGradient(
-                        colors =
-                            listOf(
-                                Color(0xFF1A1A2E),
-                                Color(0xFF16213E),
-                            ),
-                    ),
-            )
-            return@Canvas
-        }
-
-        // 绘制背景渐变（根据亮暗模式）
-        val bgColors =
-            if (actualDarkMode) {
-                listOf(
-                    Color(0xFF0F0F1E),
-                    Color(0xFF000000),
-                )
-            } else {
-                listOf(
-                    Color(0xFFE8E8F0),
-                    Color(0xFFD0D0E0),
-                )
-            }
-        drawRect(
-            brush =
-                Brush.radialGradient(
-                    colors = bgColors,
-                    center = center,
-                ),
-        )
-
-        // 绘制多个流动的blob
-        // 增强FFT响应的缩放系数
-        drawFluidBlob(
-            color = colors[0],
-            progress = animationProgress,
-            scale = 1f + lowFreqAvg * 1.2f,
-            speed = 0.3f,
-            offset = Offset(0f, 0f),
-        )
-
-        drawFluidBlob(
-            color = colors[1],
-            progress = animationProgress,
-            scale = 1f + midFreqAvg * 1.0f,
-            speed = 0.5f,
-            offset = Offset(size.width * 0.3f, size.height * 0.2f),
-        )
-
-        drawFluidBlob(
-            color = colors[2],
-            progress = animationProgress,
-            scale = 1f + highFreqAvg * 0.8f,
-            speed = 0.7f,
-            offset = Offset(size.width * 0.6f, size.height * 0.5f),
-        )
-
-        drawFluidBlob(
-            color = colors[3],
-            progress = animationProgress,
-            scale = 1f + (lowFreqAvg + midFreqAvg) * 0.7f,
-            speed = 0.4f,
-            offset = Offset(size.width * 0.2f, size.height * 0.7f),
-        )
     }
-}
 
-/**
- * 绘制单个流动blob
- */
-private fun DrawScope.drawFluidBlob(
-    color: Color,
-    progress: Float,
-    scale: Float,
-    speed: Float,
-    offset: Offset,
-) {
-    val angle = progress * 2 * PI.toFloat() * speed
-    val radius = size.minDimension * 0.4f * scale
+    val lock = remember { Any() }
 
-    // 计算blob中心位置（圆形路径运动）
-    val orbitRadius = size.minDimension * 0.15f
-    val centerX = center.x + offset.x + cos(angle) * orbitRadius
-    val centerY = center.y + offset.y + sin(angle) * orbitRadius
+    LaunchedEffect(fftBands) {
+        launch(computeContext) {
+            synchronized(lock) {
+                fftBands.forEachIndexed { index, f ->
+                    last[index] = o[index]
+                    o[index] = f
+                }
+                val currentTime = System.currentTimeMillis()
+                interval = currentTime - lastTime
+                lastTime = currentTime
+            }
+        }
+    }
 
-    // 绘制渐变圆形blob
-    drawCircle(
-        brush =
-            Brush.radialGradient(
-                colors =
-                    listOf(
-                        color,
-                        color.copy(alpha = color.alpha),
-                        Color.Transparent,
-                    ),
-                center = Offset(centerX, centerY),
-                radius = radius,
-            ),
-        radius = radius,
-        center = Offset(centerX, centerY),
-        blendMode = BlendMode.Screen, // 使用Screen混合模式产生柔和融合效果
-    )
+    LaunchedEffect(Unit) {
+        launch(computeContext) {
+            while (isActive) {
+                synchronized(lock) {
+                    val currentTime = System.currentTimeMillis()
+                    // 添加最小时间间隔保护，避免除零和进度突变
+                    val safeInterval = interval.coerceAtLeast(16L)
+                    val progress =
+                        ((currentTime - lastTime) / safeInterval.toFloat()).coerceIn(0f, 1f)
+                    drawData.forEachIndexed { index, f ->
+                        // 从last线性插值到o，避免逆向插值导致的抖动
+                        drawData[index] = last[index] + (o[index] - last[index]) * progress
+                    }
+                }
+                delay(16)
+            }
+        }
+    }
+
+    Canvas(
+        modifier =
+        modifier,
+    ) {
+        drawData.forEachIndexed { index, f ->
+
+            val bandHeight = size.height * f
+            val bandWidth = size.width / fftBands.size
+
+            // 根据封面颜色调整色相偏移和亮度
+            val luminance = calculateLuminance(coverColor)
+            val hueShift = if (luminance < 0.5f) 30f else -30f
+            val adjustedColor = shiftHue(coverColor, hueShift)
+
+            // 绘制矩形条
+            drawRect(
+                color = adjustedColor,
+                topLeft =
+                    androidx.compose.ui.geometry
+                        .Offset(x = index * bandWidth, y = size.height - bandHeight),
+                size =
+                    androidx.compose.ui.geometry
+                        .Size(width = bandWidth - 2f, height = bandHeight),
+            )
+        }
+    }
 }
 
 /**

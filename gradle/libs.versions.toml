@@ -1,7 +1,7 @@
 [versions]
 accompanistVersion = "0.37.3"
-adaptiveVersion = "1.2.0-alpha11"
-agp = "8.12.3"
+adaptiveVersion = "1.2.0"
+agp = "8.13.2"
 amplitudaVersion = "2.3.0"
 androidliquidglassVersion = "1.0.0-alpha11"
 coilCompose = "3.3.0"
@@ -18,13 +18,13 @@ junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.9.2"
-activityCompose = "1.11.0"
-composeBom = "2025.10.00"
+activityCompose = "1.12.2"
+composeBom = "2026.01.00"
 constraintlayout = "2.2.1"
 loggingInterceptorVersion = "5.3.2"
 material3Version = "1.4.0"
 materialIconsCoreVersion = "1.7.8"
-media3ExoplayerVersion = "1.8.0"
+media3ExoplayerVersion = "1.9.0"
 mediaVersion = "1.7.1"
 okhttpVersion = "5.3.2"
 pinyin4jVersion = "2.5.1"
@@ -33,7 +33,7 @@ retrofitVersion = "3.0.0"
 sandwichRetrofitVersion = "2.2.0"
 taglibVersion = "1.0.5"
 timberVersion = "5.0.1"
-nav3Core = "1.0.0-alpha07"
+nav3Core = "1.0.0"
 material3AdaptiveNav3 = "1.1.0"
 lifecycleViewmodelNav3 = "2.10.0"
 kotlinSerialization = "2.2.0"
@@ -43,11 +43,11 @@ wavySliderVersion = "2.1.0"
 appcompatVersion = "1.7.1"
 materialVersion = "1.13.0"
 workRuntimeKtxVersion = "2.10.3"
-media3ExoplayerDashVersion = "1.8.0"
-media3SessionVersion = "1.8.0"
+media3ExoplayerDashVersion = "1.9.0"
+media3SessionVersion = "1.9.0"
 ksp = "2.2.21-2.0.4"
 roomVersion = "2.7.2"
-miuixAndroid = "0.8.0-rc04"
+miuixAndroid = "0.8.0-rc05"
 androidautosize = "v1.2.1"
 [libraries]
 androidautosize = { module = "com.github.JessYanCoding:AndroidAutoSize", version.ref = "androidautosize" }
@@ -83,6 +83,7 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+miuix-android-nav3 = { module = "top.yukonga.miuix.kmp:miuix-navigation3-ui-android", version.ref = "miuixAndroid" }
 miuix-android = { module = "top.yukonga.miuix.kmp:miuix-android", version.ref = "miuixAndroid" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 #noinspection Aligned16KB

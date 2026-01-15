@@ -124,6 +124,7 @@ dependencies {
   implementation libs.androidx.ui.tooling.preview
   implementation libs.androidautosize
   implementation libs.miuix.android
+  implementation libs.miuix.android.nav3
   implementation libs.androidx.constraintlayout
   testImplementation libs.junit
   androidTestImplementation libs.androidx.junit
@@ -143,10 +144,10 @@ dependencies {
   implementation libs.kotlinx.serialization.core
   implementation libs.androidx.adaptive
   implementation libs.androidx.adaptive.layout
-  implementation libs.androidx.adaptive.navigation
+//  implementation libs.androidx.adaptive.navigation
   // Jetpack Compose integration - Navigation 3
-  implementation libs.androidx.navigation3.runtime
-  implementation libs.androidx.navigation3.ui
+//  implementation libs.androidx.navigation3.runtime
+//  implementation libs.androidx.navigation3.ui
   implementation libs.androidx.lifecycle.viewmodel.navigation3
   implementation libs.material3
 

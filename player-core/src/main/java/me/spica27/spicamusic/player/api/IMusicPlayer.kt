@@ -3,6 +3,7 @@ package me.spica27.spicamusic.player.api
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.flow.StateFlow
 
@@ -66,7 +67,7 @@ interface IMusicPlayer {
      * 需要在创建 ExoPlayer 时添加到渲染器
      */
     @OptIn(UnstableApi::class)
-    val fftAudioProcessor: androidx.media3.common.audio.AudioProcessor
+    val fftAudioProcessor: AudioProcessor
 
     /**
      * 初始化播放器

@@ -44,7 +44,6 @@ fun AppScaffold() {
         ) {
             // 全局播放器层包裹整个导航
             DraggablePlayerSheet(
-                viewModel = playerViewModel,
                 bottomPadding = bottomPaddingAnimValue,
             ) {
                 AppNavGraph(

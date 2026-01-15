@@ -93,12 +93,16 @@ class SpicaPlayer(
   override val currentTimelineItems: StateFlow<List<MediaItem>> = _currentTimelineItems
 
   override val currentPosition: Long
-    get() = runCatching { if (browserFuture.isDone) browserFuture.get()?.currentPosition?.div(1000) else null }.getOrNull()
+    get() = runCatching { if (browserFuture.isDone) browserFuture.get()?.currentPosition else null }.getOrNull()
       ?: 0L
 
   override fun isItemPlaying(mediaId: String): Boolean {
     if (!_isPlaying.value) return false
     return _currentMediaItem.value?.mediaId == mediaId
+  }
+
+  init {
+    init()
   }
 
   override fun init() {

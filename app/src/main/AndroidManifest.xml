@@ -52,7 +52,7 @@
     android:name=".App"
     android:theme="@style/Theme.SPICaMusic"
     android:allowBackup="true"
-    android:enableOnBackInvokedCallback="false"
+    android:enableOnBackInvokedCallback="true"
     android:dataExtractionRules="@xml/data_extraction_rules"
     android:extractNativeLibs="true"
     android:fullBackupContent="@xml/backup_rules"
