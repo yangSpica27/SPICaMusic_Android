@@ -1,11 +1,15 @@
 package me.spica27.spicamusic.ui.player
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -17,7 +21,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -34,6 +43,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +51,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,7 +85,6 @@ fun ExpandedPlayerScreen(
     onDrag: (Float) -> Unit = {},
     progress: Float = 1f, // 展开进度，用于视觉效果
 ) {
-    val fft by viewModel.fftBands.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val playMode by viewModel.playMode.collectAsStateWithLifecycle()
     val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
@@ -86,18 +96,20 @@ fun ExpandedPlayerScreen(
 
     val trueTimePosition = viewModel.currentPosition.collectAsStateWithLifecycle()
 
-    LaunchedEffect(trueTimePosition, userIsDragging) {
+    LaunchedEffect(trueTimePosition.value, userIsDragging) {
         if (!userIsDragging) {
             currentPosition = trueTimePosition.value.toFloat()
         }
     }
 
+    // Pager 状态，默认显示播放器页面（index=1）
+    val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
+    val scope = rememberCoroutineScope()
+
     Box(
         modifier =
             modifier
                 .background(MiuixTheme.colorScheme.background)
-                .statusBarsPadding()
-                .navigationBarsPadding()
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectVerticalDragGestures(
@@ -111,7 +123,6 @@ fun ExpandedPlayerScreen(
         // 流动背景
         FluidMusicBackground(
             modifier = Modifier.fillMaxSize(),
-            fftBands = fft,
             coverColor = MiuixTheme.colorScheme.primary,
             enabled = true,
             isDarkMode = isSystemInDarkTheme(),
@@ -122,89 +133,544 @@ fun ExpandedPlayerScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .statusBarsPadding()
                     .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // 顶部工具栏
+            // 顶部工具栏（带页面指示器）
             TopBar(
+                currentPage = pagerState.currentPage,
                 onCollapse = onCollapse,
                 onMoreClick = { /* TODO: 显示更多选项 */ },
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // 水平 Pager 内容区域
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.weight(1f),
+            ) { page ->
+                when (page) {
+                    0 -> {
+                        // 歌曲详情页面
+                        SongDetailPage(
+                            currentMediaItem = currentMediaItem,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
 
-            // 封面
-            AlbumArtwork(
-                artworkUri = currentMediaItem?.mediaMetadata?.artworkUri?.toString(),
-                isPlaying = isPlaying,
+                    1 -> {
+                        // 播放器页面
+                        PlayerPage(
+                            currentMediaItem = currentMediaItem,
+                            currentPosition = currentPosition,
+                            duration = duration,
+                            isPlaying = isPlaying,
+                            playMode = playMode,
+                            onValueChange = {
+                                userIsDragging = true
+                                currentPosition = it
+                            },
+                            onValueChangeFinished = {
+                                userIsDragging = false
+                                viewModel.seekTo(currentPosition.toLong())
+                            },
+                            onPlayPauseClick = { viewModel.togglePlayPause() },
+                            onPreviousClick = { viewModel.skipToPrevious() },
+                            onNextClick = { viewModel.skipToNext() },
+                            onPlayModeClick = { viewModel.togglePlayMode() },
+                            onFavoriteClick = { /* TODO: 收藏功能 */ },
+                            progress = progress,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+
+                    2 -> {
+                        // 全屏歌词页面（占位）
+                        FullScreenLyricsPage(
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 顶部工具栏（带页面指示器）
+ */
+@Composable
+private fun TopBar(
+    currentPage: Int,
+    onCollapse: () -> Unit,
+    onMoreClick: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onCollapse) {
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = "收起",
+                    tint = MiuixTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+
+            // 页面指示器
+            PageIndicator(
+                pageCount = 3,
+                currentPage = currentPage,
+            )
+
+            IconButton(onClick = onMoreClick) {
+                Icon(
+                    imageVector = Icons.Rounded.MoreVert,
+                    contentDescription = "更多",
+                    tint = MiuixTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 页面指示器
+ */
+@Composable
+private fun PageIndicator(
+    pageCount: Int,
+    currentPage: Int,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        repeat(pageCount) { index ->
+            val isSelected = index == currentPage
+            val width = animateDpAsState(if (isSelected) 20.dp else 6.dp).value
+            Box(
                 modifier =
                     Modifier
-                        .graphicsLayer {
-                            alpha =
-                                if (progress < 0.5f) {
-                                    0f
-                                } else {
-                                    (progress - 0.5f) * 2
-                                }
-                        }.weight(1f, fill = false),
+                        .size(
+                            width = width,
+                            height = 6.dp,
+                        ).clip(CircleShape)
+                        .background(
+                            if (isSelected) {
+                                MiuixTheme.colorScheme.onSurface
+                            } else {
+                                MiuixTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                            },
+                        ),
+            )
+        }
+    }
+}
+
+/**
+ * 歌曲详情页面
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SongDetailPage(
+    currentMediaItem: androidx.media3.common.MediaItem?,
+    modifier: Modifier = Modifier,
+) {
+    val scrollState = rememberScrollState()
+
+    Column(
+        modifier =
+            modifier
+                .verticalScroll(scrollState)
+                .padding(horizontal = 15.dp, vertical = 24.dp)
+                .navigationBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // 顶部封面
+        AsyncImage(
+            model = currentMediaItem?.mediaMetadata?.artworkUri,
+            contentDescription = "专辑封面",
+            modifier =
+                Modifier
+                    .size(200.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Gray.copy(alpha = 0.3f)),
+            contentScale = ContentScale.Crop,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 歌曲名称
+        Text(
+            text = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MiuixTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 音频格式标签
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // 从 extras 中获取音频信息（如果有）
+            val sampleRate = currentMediaItem?.mediaMetadata?.extras?.getInt("sampleRate") ?: 0
+            val bitRate = currentMediaItem?.mediaMetadata?.extras?.getInt("bitRate") ?: 0
+            val mimeType = currentMediaItem?.mediaMetadata?.extras?.getString("mimeType") ?: ""
+
+            // 采样率标签
+            if (sampleRate > 0) {
+                AudioTag(
+                    text = "${sampleRate / 1000}kHz",
+                    color = if (sampleRate >= 96000) Color(0xFF4CAF50) else MiuixTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // 比特率标签
+            if (bitRate > 0) {
+                val bitRateKbps = bitRate / 1000
+                AudioTag(
+                    text = "${bitRateKbps}kbps",
+                    color = if (bitRateKbps >= 320) Color(0xFF2196F3) else MiuixTheme.colorScheme.secondary,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // 无损标签
+            val isLossless =
+                mimeType.contains("flac", ignoreCase = true) ||
+                    mimeType.contains("alac", ignoreCase = true) ||
+                    mimeType.contains("wav", ignoreCase = true)
+            if (isLossless) {
+                AudioTag(
+                    text = "无损",
+                    color = Color(0xFFFF9800),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // 高码率标签
+            if (bitRate >= 320000 && !isLossless) {
+                AudioTag(
+                    text = "高品质",
+                    color = Color(0xFF9C27B0),
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 基础信息卡片
+        InfoCard(title = "基础信息") {
+            InfoRow(
+                label = "文件名",
+                value =
+                    currentMediaItem?.mediaMetadata?.displayTitle?.toString()
+                        ?: currentMediaItem?.mediaId
+                        ?: "未知",
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // 歌曲信息
-            SongInfo(
-                title = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲",
-                artist = currentMediaItem?.mediaMetadata?.artist?.toString() ?: "未知艺术家",
+            InfoRow(
+                label = "URI",
+                value = currentMediaItem?.requestMetadata?.mediaUri?.toString() ?: "N/A",
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            InfoRow(
+                label = "歌曲名称",
+                value = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲",
+            )
 
-            // 进度条
-            ProgressBar(
-                modifier =
-                    Modifier.graphicsLayer {
+            InfoRow(
+                label = "艺术家",
+                value = currentMediaItem?.mediaMetadata?.artist?.toString() ?: "未知艺术家",
+            )
+
+            InfoRow(
+                label = "专辑",
+                value = currentMediaItem?.mediaMetadata?.albumTitle?.toString() ?: "未知专辑",
+            )
+
+            InfoRow(
+                label = "时长",
+                value = formatTime(currentMediaItem?.mediaMetadata?.extras?.getLong("duration") ?: 0),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 音频信息卡片
+        InfoCard(title = "音频信息") {
+            val sampleRate = currentMediaItem?.mediaMetadata?.extras?.getInt("sampleRate") ?: 0
+            val bitRate = currentMediaItem?.mediaMetadata?.extras?.getInt("bitRate") ?: 0
+            val channels = currentMediaItem?.mediaMetadata?.extras?.getInt("channels") ?: 0
+            val mimeType = currentMediaItem?.mediaMetadata?.extras?.getString("mimeType") ?: "未知"
+
+            InfoRow(
+                label = "格式",
+                value = mimeType,
+            )
+
+            if (sampleRate > 0) {
+                InfoRow(
+                    label = "采样率",
+                    value = "${sampleRate}Hz (${sampleRate / 1000}kHz)",
+                )
+            }
+
+            if (bitRate > 0) {
+                InfoRow(
+                    label = "比特率",
+                    value = "${bitRate / 1000}kbps",
+                )
+            }
+
+            if (channels > 0) {
+                InfoRow(
+                    label = "声道数",
+                    value =
+                        when (channels) {
+                            1 -> "单声道"
+                            2 -> "立体声"
+                            else -> "$channels 声道"
+                        },
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
+    }
+}
+
+/**
+ * 音频标签
+ */
+@Composable
+private fun AudioTag(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = color.copy(alpha = 0.15f),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = color,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+/**
+ * 信息卡片
+ */
+@Composable
+private fun InfoCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MiuixTheme.colorScheme.surfaceContainer)
+                .border(
+                    width = 1.dp,
+                    color = MiuixTheme.colorScheme.outline,
+                    shape = RoundedCornerShape(16.dp),
+                ).padding(16.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MiuixTheme.colorScheme.onSurface,
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        content()
+    }
+}
+
+/**
+ * 信息行
+ */
+@Composable
+private fun InfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MiuixTheme.colorScheme.onSurface,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/**
+ * 播放器页面（原有的播放器内容）
+ */
+@Composable
+private fun PlayerPage(
+    currentMediaItem: androidx.media3.common.MediaItem?,
+    currentPosition: Float,
+    duration: Long,
+    isPlaying: Boolean,
+    playMode: PlayMode,
+    onValueChange: (Float) -> Unit,
+    onValueChangeFinished: () -> Unit,
+    onPlayPauseClick: () -> Unit,
+    onPreviousClick: () -> Unit,
+    onNextClick: () -> Unit,
+    onPlayModeClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    progress: Float,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier.padding(
+                vertical = 24.dp,
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // 封面
+        AlbumArtwork(
+            artworkUri = currentMediaItem?.mediaMetadata?.artworkUri?.toString(),
+            modifier =
+                Modifier
+                    .graphicsLayer {
                         alpha =
                             if (progress < 0.5f) {
                                 0f
                             } else {
                                 (progress - 0.5f) * 2
                             }
-                    },
-                currentPosition = currentPosition,
-                duration = duration.toFloat(),
-                onValueChange = {
-                    userIsDragging = true
-                    currentPosition = it
+                    }.weight(1f, fill = false),
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // 歌曲信息
+        SongInfo(
+            title = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲",
+            artist = currentMediaItem?.mediaMetadata?.artist?.toString() ?: "未知艺术家",
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 进度条
+        ProgressBar(
+            modifier =
+                Modifier.graphicsLayer {
+                    alpha =
+                        if (progress < 0.5f) {
+                            0f
+                        } else {
+                            (progress - 0.5f) * 2
+                        }
                 },
-                onValueChangeFinished = {
-                    userIsDragging = false
-                    viewModel.seekTo(currentPosition.toLong())
+            currentPosition = currentPosition,
+            duration = duration.toFloat(),
+            onValueChange = onValueChange,
+            onValueChangeFinished = onValueChangeFinished,
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // 控制按钮
+        PlayerControls(
+            modifier =
+                Modifier.graphicsLayer {
+                    alpha =
+                        if (progress < 0.5f) {
+                            0f
+                        } else {
+                            (progress - 0.5f) * 2
+                        }
                 },
+            isPlaying = isPlaying,
+            playMode = playMode,
+            onPlayPauseClick = onPlayPauseClick,
+            onPreviousClick = onPreviousClick,
+            onNextClick = onNextClick,
+            onPlayModeClick = onPlayModeClick,
+            onFavoriteClick = onFavoriteClick,
+        )
+    }
+}
+
+/**
+ * 全屏歌词页面（占位）
+ */
+@Composable
+private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = "🎵",
+                style = MaterialTheme.typography.displayLarge,
             )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // 控制按钮
-            PlayerControls(
-                modifier =
-                    Modifier.graphicsLayer {
-                        alpha =
-                            if (progress < 0.5f) {
-                                0f
-                            } else {
-                                (progress - 0.5f) * 2
-                            }
-                    },
-                isPlaying = isPlaying,
-                playMode = playMode,
-                onPlayPauseClick = { viewModel.togglePlayPause() },
-                onPreviousClick = { viewModel.skipToPrevious() },
-                onNextClick = { viewModel.skipToNext() },
-                onPlayModeClick = { viewModel.togglePlayMode() },
-                onFavoriteClick = { /* TODO: 收藏功能 */ },
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "全屏歌词",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MiuixTheme.colorScheme.onSurface,
             )
-
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "（待实现）",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
         }
     }
 }
@@ -213,7 +679,7 @@ fun ExpandedPlayerScreen(
  * 顶部工具栏
  */
 @Composable
-private fun TopBar(
+private fun TopBarOld(
     onCollapse: () -> Unit,
     onMoreClick: () -> Unit,
 ) {
@@ -251,7 +717,6 @@ private fun TopBar(
 @Composable
 private fun AlbumArtwork(
     artworkUri: String?,
-    isPlaying: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Box(

@@ -97,6 +97,49 @@ class PlayerViewModel(
         enableFFT()
     }
 
+    // ==================== FFT 插值器 ====================
+
+    /**
+     * FFT 数据插值器
+     * 自动将原始 FFT 数据插值为适合绘制的 60fps 数据
+     */
+    private val fftInterpolator = FFTInterpolator(player, player.fftProcessor, viewModelScope)
+
+    /**
+     * 插值后的 FFT 绘制数据 (31个频段, 0.0-1.0)
+     * 适合直接用于 UI 绘制，60fps 平滑更新
+     *
+     * 使用方式:
+     * ```
+     * val drawData by playerViewModel.fftDrawData.collectAsState()
+     * FluidMusicBackground(fftBands = drawData)
+     * ```
+     *
+     * 注意: 必须配合 subscribeFFTDrawData() 和 unsubscribeFFTDrawData() 使用
+     */
+    val fftDrawData: StateFlow<FloatArray> = fftInterpolator.interpolatedData
+
+    /**
+     * 订阅 FFT 绘制数据
+     * 当页面可见时调用，开始计算插值数据
+     */
+    suspend fun subscribeFFTDrawData() {
+        fftInterpolator.subscribe()
+    }
+
+    /**
+     * 取消订阅 FFT 绘制数据
+     * 当页面不可见时调用，停止计算以节约性能
+     */
+    suspend fun unsubscribeFFTDrawData() {
+        fftInterpolator.unsubscribe()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        fftInterpolator.dispose()
+    }
+
     /**
      * 播放
      */

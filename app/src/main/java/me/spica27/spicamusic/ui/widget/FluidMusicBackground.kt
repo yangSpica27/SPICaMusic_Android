@@ -1,117 +1,89 @@
 package me.spica27.spicamusic.ui.widget
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.concurrent.Executors
+import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 
 /**
  * 流动融合动态背景组件
  * 响应音乐FFT数据和封面颜色
+ *
+ * @param modifier 修饰符
+ * @param coverColor 封面主色，用于色彩调整
+ * @param enabled 是否启用动画
  * @param isDarkMode 暗色模式（true）或亮色模式（false），null时自动判断
  */
 @Composable
 fun FluidMusicBackground(
     modifier: Modifier = Modifier,
-    fftBands: FloatArray = FloatArray(31),
     coverColor: Color = Color(0xFF2196F3),
     enabled: Boolean = true,
     isDarkMode: Boolean? = null,
 ) {
-    val o =
-        remember { List(31) { 0f }.toMutableStateList() }
+    val playerViewModel = LocalPlayerViewModel.current
+    val scope = rememberCoroutineScope()
 
-    val last = remember { List(31) { 0f }.toMutableStateList() }
-
-    var lastTime by remember { mutableStateOf(0L) }
-
-    var interval by remember { mutableStateOf(0L) }
-
-    val drawData = remember { List(31) { 0f }.toMutableStateList() }
-
-    val drawDataAnim = remember { List(31) { Animatable(0f) } }
-
-    // 创建专用的计算线程池，并在组件销毁时自动关闭
-    val computeContext =
-        remember {
-            Executors.newFixedThreadPool(1).asCoroutineDispatcher()
+    // 订阅和取消订阅 FFT 绘制数据
+    LaunchedEffect(enabled) {
+        if (enabled) {
+            withContext(Dispatchers.Default) {
+                playerViewModel.subscribeFFTDrawData()
+            }
         }
+    }
 
-    // 确保在组件销毁时关闭线程池，避免内存泄漏
     DisposableEffect(Unit) {
         onDispose {
-            computeContext.close()
-        }
-    }
-
-    val lock = remember { Any() }
-
-    LaunchedEffect(fftBands) {
-        launch(computeContext) {
-            synchronized(lock) {
-                fftBands.forEachIndexed { index, f ->
-                    last[index] = o[index]
-                    o[index] = f
-                }
-                val currentTime = System.currentTimeMillis()
-                interval = currentTime - lastTime
-                lastTime = currentTime
+            // 组件销毁时取消订阅
+            scope.launch(Dispatchers.Default) {
+                playerViewModel.unsubscribeFFTDrawData()
             }
         }
     }
 
-    LaunchedEffect(Unit) {
-        launch(computeContext) {
-            while (isActive) {
-                synchronized(lock) {
-                    val currentTime = System.currentTimeMillis()
-                    // 添加最小时间间隔保护，避免除零和进度突变
-                    val safeInterval = interval.coerceAtLeast(16L)
-                    val progress =
-                        ((currentTime - lastTime) / safeInterval.toFloat()).coerceIn(0f, 1f)
-                    drawData.forEachIndexed { index, f ->
-                        // 从last线性插值到o，避免逆向插值导致的抖动
-                        drawData[index] = last[index] + (o[index] - last[index]) * progress
-                    }
-                }
-                delay(16)
-            }
-        }
-    }
+    // 收集插值后的 FFT 数据
+    val fftDrawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
 
     Canvas(
-        modifier =
-        modifier,
+        modifier = modifier.blur(70.dp),
     ) {
-        drawData.forEachIndexed { index, f ->
+        if (!enabled) return@Canvas
 
-            val bandHeight = size.height * f
-            val bandWidth = size.width / fftBands.size
+        fftDrawData.forEachIndexed { index, f ->
+
+            val bandHeight = size.height / 3 * 2 * f
+            val bandWidth = size.width / fftDrawData.size
 
             // 根据封面颜色调整色相偏移和亮度
             val luminance = calculateLuminance(coverColor)
             val hueShift = if (luminance < 0.5f) 30f else -30f
-            val adjustedColor = shiftHue(coverColor, hueShift)
 
             // 绘制矩形条
             drawRect(
-                color = adjustedColor,
+                brush =
+                    Brush.linearGradient(
+                        colors =
+                            listOf(
+                                shiftHue(coverColor, hueShift).copy(alpha = 0.7f),
+                                shiftHue(coverColor, hueShift * 2).copy(alpha = 0.3f),
+                            ),
+                    ),
                 topLeft =
                     androidx.compose.ui.geometry
-                        .Offset(x = index * bandWidth, y = size.height - bandHeight),
+                        .Offset(x = index * bandWidth + bandWidth / 2, y = 0f),
                 size =
                     androidx.compose.ui.geometry
                         .Size(width = bandWidth - 2f, height = bandHeight),

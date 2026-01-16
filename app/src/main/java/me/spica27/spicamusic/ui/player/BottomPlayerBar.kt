@@ -35,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import me.spica27.spicamusic.ui.widget.CompactMusicBackground
 import timber.log.Timber
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -69,7 +68,6 @@ fun BottomPlayerBar(
     val title = metadata?.title?.toString() ?: "未知歌曲"
     val artist = metadata?.artist?.toString() ?: "未知艺术家"
     val artworkUri = metadata?.artworkUri
-    val fft = viewModel.fftBands.collectAsStateWithLifecycle().value
 
     Box(
         modifier =
@@ -87,11 +85,6 @@ fun BottomPlayerBar(
                     onExpand()
                 },
     ) {
-        CompactMusicBackground(
-            modifier = Modifier.matchParentSize(),
-            fftBands = fft,
-            isDarkMode = false,
-        )
         Column {
             // 进度条
             if (currentDuration > 0) {
