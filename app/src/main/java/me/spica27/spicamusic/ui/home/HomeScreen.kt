@@ -26,6 +26,7 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationItem
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 首页界面
@@ -64,6 +65,7 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar(
+                showDivider = false,
                 modifier =
                     Modifier.onSizeChanged {
                         // 记录高度并更新全局底部 padding
@@ -78,6 +80,7 @@ fun HomeScreen(
                     ),
                 selected = selectedIndex,
                 onClick = { index -> selectedIndex = index },
+                color = MiuixTheme.colorScheme.surfaceContainer,
             )
         },
     ) { paddingValues ->
