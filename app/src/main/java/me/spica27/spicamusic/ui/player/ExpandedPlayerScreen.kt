@@ -55,7 +55,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -69,9 +71,11 @@ import androidx.media3.common.MediaItem
 import coil3.compose.AsyncImage
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
+import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 /**
  * 全屏播放器页面
@@ -288,7 +292,7 @@ private fun PageIndicator(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SongDetailPage(
-    currentMediaItem: androidx.media3.common.MediaItem?,
+    currentMediaItem: MediaItem?,
     modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
@@ -314,7 +318,7 @@ private fun SongDetailPage(
                         .clip(RoundedCornerShape(16.dp))
                         .background(
                             brush =
-                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                Brush.linearGradient(
                                     colors =
                                         listOf(
                                             MiuixTheme.colorScheme.primaryContainer,
@@ -637,21 +641,21 @@ private fun PlayerPage(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        val amplitudes = remember { List(15) { 0 + Random.nextInt(10) } }
+
         // 进度条
-        ProgressBar(
+        AudioWaveSlider(
+            progress = if (duration > 0) currentPosition / duration else 0f,
+            amplitudes = amplitudes,
+            onProgressChange = {
+                onValueChangeFinished()
+            },
+            waveformBrush = SolidColor(MiuixTheme.colorScheme.surfaceContainerHigh),
+            progressBrush = SolidColor(MiuixTheme.colorScheme.onSurface),
             modifier =
-                Modifier.graphicsLayer {
-                    alpha =
-                        if (progress < 0.5f) {
-                            0f
-                        } else {
-                            (progress - 0.5f) * 2
-                        }
-                },
-            currentPosition = currentPosition,
-            duration = duration.toFloat(),
-            onValueChange = onValueChange,
-            onValueChangeFinished = onValueChangeFinished,
+                Modifier
+                    .fillMaxWidth()
+                    .height(80.dp),
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -733,7 +737,7 @@ private fun AlbumArtwork(
                         .clip(RoundedCornerShape(16.dp))
                         .background(
                             brush =
-                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                Brush.linearGradient(
                                     colors =
                                         listOf(
                                             MiuixTheme.colorScheme.surfaceContainerHigh,
@@ -893,12 +897,12 @@ private fun PlayerControls(
                     Modifier
                         .size(80.dp)
                         .clip(RoundedCornerShape(40.dp))
-                        .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.9f)),
+                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.9f)),
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                     contentDescription = if (isPlaying) "暂停" else "播放",
-                    tint = MiuixTheme.colorScheme.primary,
+                    tint = MiuixTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(48.dp),
                 )
             }

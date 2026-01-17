@@ -87,7 +87,8 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
                 actions = {
                     // 新增歌单按钮
                     IconButton(
-                      onClick = { viewModel.showCreateDialog() }) {
+                        onClick = { viewModel.showCreateDialog() },
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "新增歌单",
