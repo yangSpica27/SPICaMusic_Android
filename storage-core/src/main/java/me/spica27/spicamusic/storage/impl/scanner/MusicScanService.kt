@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.core.net.toUri
+import com.ibm.icu.text.Transliterator
 import com.kyant.taglib.TagLib
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -152,6 +153,9 @@ class MusicScanService(
           val finalDisplayName = audioInfo.title ?: displayName
           val finalArtist = audioInfo.artist ?: artist
 
+          // 生成排序名称
+          val sortName = generateSortName(finalDisplayName)
+
           val song = SongEntity(
             songId = null, // 让 Room 自动生成
             mediaStoreId = mediaStoreId,
@@ -169,6 +173,7 @@ class MusicScanService(
             channels = audioInfo.channels,
             digit = audioInfo.digit,
             isIgnore = false,
+            sortName = sortName
           )
 
           scannedSongs.add(song)
@@ -279,6 +284,24 @@ class MusicScanService(
         }
       }
 
+
+      contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+        try {
+
+          TagLib.getAudioProperties(
+            pfd.detachFd()
+          )?.let {
+            duration = (it.length).toLong()
+            sampleRate = it.sampleRate
+            bitRate = it.bitrate
+            channels = it.channels
+          }
+
+        } catch (e: Exception) {
+          Timber.tag(TAG).w(e, "Taglib 读取失败，回退到默认值")
+        }
+      }
+
       // 如果 Taglib 未能获取 duration，使用回退值
       if (duration == 0L) {
         duration = fallbackDuration
@@ -329,6 +352,58 @@ class MusicScanService(
       channels = channels,
       digit = digit
     )
+  }
+
+  /**
+   * 根据歌曲名称生成排序用的首字符
+   * - 英文：直接使用首字符（大写）
+   * - 中文：转换为拼音首字母
+   * - 日文：转换为罗马音首字母
+   * - 其他：返回 "#"
+   */
+  private fun generateSortName(displayName: String): String {
+    if (displayName.isEmpty()) return "#"
+    
+    val firstChar = displayName.first()
+    
+    return try {
+      when {
+        // 英文字母（A-Z, a-z）
+        firstChar.isLetter() && firstChar.code in 0x41..0x7A -> {
+          firstChar.uppercaseChar().toString()
+        }
+        
+        // 中文（CJK 统一表意文字）
+        firstChar.code in 0x4E00..0x9FFF -> {
+          val transliterator = Transliterator.getInstance("Han-Latin; Latin-ASCII")
+          val pinyin = transliterator.transliterate(firstChar.toString())
+          pinyin.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
+        }
+        
+        // 日文平假名（ひらがな）
+        firstChar.code in 0x3040..0x309F -> {
+          val transliterator = Transliterator.getInstance("Hiragana-Latin")
+          val romaji = transliterator.transliterate(firstChar.toString())
+          romaji.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
+        }
+        
+        // 日文片假名（カタカナ）
+        firstChar.code in 0x30A0..0x30FF -> {
+          val transliterator = Transliterator.getInstance("Katakana-Latin")
+          val romaji = transliterator.transliterate(firstChar.toString())
+          romaji.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
+        }
+        
+        // 数字
+        firstChar.isDigit() -> "#"
+        
+        // 其他字符
+        else -> "#"
+      }
+    } catch (e: Exception) {
+      Timber.tag(TAG).w(e, "生成排序名称失败: $displayName")
+      "#"
+    }
   }
 
   /**

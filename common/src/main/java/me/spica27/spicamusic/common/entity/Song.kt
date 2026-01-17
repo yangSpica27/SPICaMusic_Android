@@ -26,4 +26,5 @@ data class Song(
     val channels: Int, // 声道数
     val digit: Int, // 位深度
     val isIgnore: Boolean,
+    val sortName: String,
 ) : Parcelable

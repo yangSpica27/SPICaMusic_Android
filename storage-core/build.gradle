@@ -37,7 +37,7 @@ android {
 dependencies {
   // Common module
   api project(':common')
-
+  implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
   implementation libs.androidx.core.ktx
   implementation libs.androidx.lifecycle.runtime.ktx
 

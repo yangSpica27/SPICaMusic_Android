@@ -24,6 +24,7 @@ data class SongEntity(
     var like: Boolean,
     val duration: Long,
     var sort: Int,
+    var sortName: String,
     var mimeType: String,
     var albumId: Long,
     var sampleRate: Int,

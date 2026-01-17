@@ -4,13 +4,20 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import me.spica27.spicamusic.storage.impl.dao.*
-import me.spica27.spicamusic.storage.impl.entity.*
+import me.spica27.spicamusic.storage.impl.dao.LyricDao
+import me.spica27.spicamusic.storage.impl.dao.PlayHistoryDao
+import me.spica27.spicamusic.storage.impl.dao.PlaylistDao
+import me.spica27.spicamusic.storage.impl.dao.SongDao
+import me.spica27.spicamusic.storage.impl.entity.LyricEntity
+import me.spica27.spicamusic.storage.impl.entity.PlayHistoryEntity
+import me.spica27.spicamusic.storage.impl.entity.PlaylistEntity
+import me.spica27.spicamusic.storage.impl.entity.PlaylistSongCrossRefEntity
+import me.spica27.spicamusic.storage.impl.entity.SongEntity
 
 @Database(
     entities = [SongEntity::class, PlaylistEntity::class, PlaylistSongCrossRefEntity::class, 
                 LyricEntity::class, PlayHistoryEntity::class],
-    version = 17,
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
