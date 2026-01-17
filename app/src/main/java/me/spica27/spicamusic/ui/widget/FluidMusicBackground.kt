@@ -7,11 +7,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -58,7 +58,10 @@ fun FluidMusicBackground(
     val fftDrawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
 
     Canvas(
-        modifier = modifier.blur(70.dp),
+        modifier =
+            modifier.hazeEffect {
+                blurRadius = 50.dp
+            },
     ) {
         if (!enabled) return@Canvas
 

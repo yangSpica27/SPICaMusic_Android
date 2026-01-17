@@ -15,26 +15,11 @@ fun Song.getCoverUri(): Uri = "content://media/external/audio/albumart/$albumId"
 fun Song.getSongUri(): Uri = "content://media/external/audio/media/$mediaStoreId".toUri()
 
 fun Song.toMediaItem(): MediaItem =
-    MediaItem
-        .Builder()
-        .setMediaId(mediaStoreId.toString())
-        .setUri(getSongUri())
-        .setMimeType(mimeType)
-        .setRequestMetadata(
-            MediaItem.RequestMetadata
-                .Builder()
-                .setMediaUri(getSongUri())
-                .build(),
-        ).setMediaMetadata(
-            MediaMetadata
-                .Builder()
-                .setTitle(displayName)
-                .setDisplayTitle(displayName)
-                .setArtist(artist)
-                .setSubtitle(artist)
-                .setDurationMs(duration)
-                .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-                .setIsPlayable(true)
-                .setIsBrowsable(true)
-                .build(),
-        ).build()
+  MediaItem.Builder().setMediaId(mediaStoreId.toString()).setUri(getSongUri()).setMimeType(mimeType)
+    .setRequestMetadata(
+      MediaItem.RequestMetadata.Builder().setMediaUri(getSongUri()).build(),
+    ).setMediaMetadata(
+      MediaMetadata.Builder().setTitle(displayName).setDisplayTitle(displayName).setArtist(artist)
+        .setSubtitle(artist).setDurationMs(duration).setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+        .setIsPlayable(true).setIsBrowsable(true).setArtworkUri(getCoverUri()).build(),
+    ).build()

@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
+import dev.chrisbanes.haze.hazeSource
+import me.spica27.spicamusic.ui.LocalSurfaceHazeState
 import me.spica27.spicamusic.ui.home.HomeScreen
 import me.spica27.spicamusic.ui.library.AlbumsScreen
 import me.spica27.spicamusic.ui.library.AllSongsScreen
@@ -23,7 +25,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
     NavDisplay(
         backStack = backStack,
-        modifier = modifier,
+        modifier = modifier.hazeSource(LocalSurfaceHazeState.current),
         entryProvider =
             entryProvider {
                 entry<Screen.Home> {

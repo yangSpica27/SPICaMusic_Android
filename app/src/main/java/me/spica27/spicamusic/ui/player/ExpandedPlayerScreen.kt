@@ -40,7 +40,6 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
@@ -64,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import me.spica27.spicamusic.player.api.PlayMode
@@ -300,23 +300,55 @@ private fun SongDetailPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // 顶部封面
-        AsyncImage(
-            model = currentMediaItem?.mediaMetadata?.artworkUri,
-            contentDescription = "专辑封面",
-            modifier =
-                Modifier
-                    .size(200.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Gray.copy(alpha = 0.3f)),
-            contentScale = ContentScale.Crop,
-        )
+        val artworkUri = currentMediaItem?.mediaMetadata?.artworkUri?.toString()
+        val songTitle = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲"
+
+        if (artworkUri.isNullOrEmpty()) {
+            // 无封面时显示装饰性的歌曲名称
+            Box(
+                modifier =
+                    Modifier
+                        .size(200.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            brush =
+                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                    colors =
+                                        listOf(
+                                            MiuixTheme.colorScheme.primaryContainer,
+                                            MiuixTheme.colorScheme.tertiaryContainer,
+                                        ),
+                                ),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = songTitle.take(1).uppercase(),
+                    style = MiuixTheme.textStyles.title1,
+                    fontWeight = FontWeight.Bold,
+                    color = MiuixTheme.colorScheme.onPrimaryContainer,
+                    fontSize = MiuixTheme.textStyles.title1.fontSize * 1.5,
+                )
+            }
+        } else {
+            AsyncImage(
+                model = artworkUri,
+                contentDescription = "专辑封面",
+                modifier =
+                    Modifier
+                        .size(200.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.Gray.copy(alpha = 0.3f)),
+                contentScale = ContentScale.Crop,
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // 歌曲名称
         Text(
-            text = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲",
-            style = MaterialTheme.typography.headlineSmall,
+            text = songTitle,
+            style = MiuixTheme.textStyles.headline1,
             fontWeight = FontWeight.Bold,
             color = MiuixTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
@@ -478,7 +510,7 @@ private fun AudioTag(
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelMedium,
+            style = MiuixTheme.textStyles.subtitle,
             color = color,
             fontWeight = FontWeight.SemiBold,
         )
@@ -508,7 +540,7 @@ private fun InfoCard(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
+            style = MiuixTheme.textStyles.title4,
             fontWeight = FontWeight.Bold,
             color = MiuixTheme.colorScheme.onSurface,
         )
@@ -536,13 +568,13 @@ private fun InfoRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
+            style = MiuixTheme.textStyles.subtitle,
             color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MiuixTheme.textStyles.title4,
             color = MiuixTheme.colorScheme.onSurface,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
@@ -580,6 +612,7 @@ private fun PlayerPage(
         // 封面
         AlbumArtwork(
             artworkUri = currentMediaItem?.mediaMetadata?.artworkUri?.toString(),
+            songTitle = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲",
             modifier =
                 Modifier
                     .graphicsLayer {
@@ -657,18 +690,18 @@ private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = "🎵",
-                style = MaterialTheme.typography.displayLarge,
+                style = MiuixTheme.textStyles.headline2,
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "全屏歌词",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MiuixTheme.textStyles.headline1,
                 color = MiuixTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "（待实现）",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MiuixTheme.textStyles.title4,
                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
         }
@@ -718,22 +751,54 @@ private fun TopBarOld(
 private fun AlbumArtwork(
     artworkUri: String?,
     modifier: Modifier = Modifier,
+    songTitle: String = "未知歌曲",
 ) {
     Box(
         modifier = modifier.fillMaxWidth(0.8f),
         contentAlignment = Alignment.Center,
     ) {
-        AsyncImage(
-            model = artworkUri,
-            contentDescription = "专辑封面",
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Gray.copy(alpha = 0.3f)),
-            contentScale = ContentScale.Crop,
-        )
+        if (artworkUri.isNullOrEmpty()) {
+            // 无封面时显示装饰性的歌曲名称
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            brush =
+                                androidx.compose.ui.graphics.Brush.linearGradient(
+                                    colors =
+                                        listOf(
+                                            MiuixTheme.colorScheme.surfaceContainerHigh,
+                                            MiuixTheme.colorScheme.surfaceContainerHighest,
+                                        ),
+                                ),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = songTitle.take(1).uppercase(),
+                    style = MiuixTheme.textStyles.headline1,
+                    fontWeight = FontWeight.Bold,
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    fontSize = 100.sp,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+        } else {
+            AsyncImage(
+                model = artworkUri,
+                contentDescription = "专辑封面",
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.Gray.copy(alpha = 0.3f)),
+                contentScale = ContentScale.Crop,
+            )
+        }
     }
 }
 
@@ -751,7 +816,7 @@ private fun SongInfo(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineMedium,
+            style = MiuixTheme.textStyles.title1,
             fontWeight = FontWeight.Bold,
             color = MiuixTheme.colorScheme.onSurface,
             maxLines = 1,
@@ -763,7 +828,7 @@ private fun SongInfo(
 
         Text(
             text = artist,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MiuixTheme.textStyles.body1,
             color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.8f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -803,13 +868,13 @@ private fun ProgressBar(
         ) {
             Text(
                 text = formatTime(currentPosition.toLong()),
-                style = MaterialTheme.typography.bodySmall,
+                style = MiuixTheme.textStyles.body1,
                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
 
             Text(
                 text = formatTime(duration.toLong()),
-                style = MaterialTheme.typography.bodySmall,
+                style = MiuixTheme.textStyles.body1,
                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
         }

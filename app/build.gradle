@@ -175,7 +175,9 @@ dependencies {
   implementation libs.prettytime
   implementation libs.koin.androidx.compose
   implementation(libs.pinyin4j)
-  implementation("androidx.compose.material:material-icons-extended:1.6.0-rc01")
+  implementation(libs.androidx.compose.material.icons.extended)
+  implementation(libs.haze)
+  implementation("dev.chrisbanes.haze:haze-materials:1.7.1")
 }
 
 tasks.register('incrementBuildNumber') {

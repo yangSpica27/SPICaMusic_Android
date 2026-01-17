@@ -11,23 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,6 +26,17 @@ import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.storage.api.ScanResult
 import me.spica27.spicamusic.ui.player.ResetBottomPadding
 import org.koin.androidx.compose.koinViewModel
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.pressable
 
@@ -58,15 +56,7 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("媒体库来源") },
-                navigationIcon = {
-                    IconButton(onClick = { backStack.removeLastOrNull() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
-                        )
-                    }
-                },
+                title = "媒体库来源",
             )
         },
     ) { paddingValues ->
@@ -119,8 +109,9 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors =
-                    CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    CardDefaults.defaultColors().copy(
+                        contentColor = MiuixTheme.colorScheme.tertiaryContainer,
+                        color = MiuixTheme.colorScheme.tertiaryContainer,
                     ),
             ) {
                 Column(
@@ -133,19 +124,19 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MiuixTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.size(32.dp),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "自定义文件夹扫描功能",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MiuixTheme.textStyles.title4,
+                        color = MiuixTheme.colorScheme.onTertiaryContainer,
                     )
                     Text(
                         text = "即将推出，敬请期待",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
                     )
                 }
             }
@@ -158,8 +149,9 @@ private fun ScanSourceCard(onScanMediaStore: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
+            CardDefaults.defaultColors(
+                contentColor = MiuixTheme.colorScheme.primaryContainer,
+                color = MiuixTheme.colorScheme.primaryContainer,
             ),
     ) {
         Column(
@@ -170,14 +162,14 @@ private fun ScanSourceCard(onScanMediaStore: () -> Unit) {
         ) {
             Text(
                 text = "扫描媒体库",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                style = MiuixTheme.textStyles.title4,
+                color = MiuixTheme.colorScheme.onPrimaryContainer,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "扫描设备中的所有音乐文件",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
             )
             Spacer(modifier = Modifier.height(12.dp))
             Button(
@@ -204,8 +196,8 @@ private fun ScanningCard(progress: me.spica27.spicamusic.storage.api.ScanProgres
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            CardDefaults.defaultColors(
+                contentColor = MiuixTheme.colorScheme.secondaryContainer,
             ),
     ) {
         Column(
@@ -224,15 +216,15 @@ private fun ScanningCard(progress: me.spica27.spicamusic.storage.api.ScanProgres
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = "正在扫描...",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    style = MiuixTheme.textStyles.title4,
+                    color = MiuixTheme.colorScheme.onSecondaryContainer,
                 )
             }
 
             if (progress.total > 0) {
                 Spacer(modifier = Modifier.height(12.dp))
                 LinearProgressIndicator(
-                    progress = { progress.current.toFloat() / progress.total },
+                    progress = progress.current.toFloat() / progress.total,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -242,13 +234,13 @@ private fun ScanningCard(progress: me.spica27.spicamusic.storage.api.ScanProgres
                 ) {
                     Text(
                         text = "${progress.current} / ${progress.total}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
                     )
                     Text(
                         text = "${(progress.current * 100 / progress.total)}%",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
                     )
                 }
             }
@@ -256,8 +248,8 @@ private fun ScanningCard(progress: me.spica27.spicamusic.storage.api.ScanProgres
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = progress.currentFile,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
                 maxLines = 1,
             )
         }
@@ -272,8 +264,8 @@ private fun ScanResultCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            CardDefaults.defaultColors(
+                contentColor = MiuixTheme.colorScheme.tertiaryContainer,
             ),
     ) {
         Column(
@@ -288,14 +280,14 @@ private fun ScanResultCard(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
+                    tint = MiuixTheme.colorScheme.primary,
                     modifier = Modifier.size(32.dp),
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = "扫描完成",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    style = MiuixTheme.textStyles.title4,
+                    color = MiuixTheme.colorScheme.onTertiaryContainer,
                 )
             }
 
@@ -308,14 +300,13 @@ private fun ScanResultCard(
 
             Spacer(modifier = Modifier.height(12.dp))
             TextButton(
+                text = "确定",
                 onClick = onDismiss,
                 modifier =
                     Modifier
                         .pressable(interactionSource = null, indication = SinkFeedback())
                         .align(Alignment.End),
-            ) {
-                Text("确定")
-            }
+            )
         }
     }
 }
@@ -334,13 +325,13 @@ private fun ResultRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onTertiaryContainer,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onTertiaryContainer,
         )
     }
 }
@@ -354,9 +345,7 @@ private fun ErrorCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-            ),
+            CardDefaults.defaultColors(contentColor = MiuixTheme.colorScheme.errorContainer),
     ) {
         Column(
             modifier =
@@ -366,23 +355,24 @@ private fun ErrorCard(
         ) {
             Text(
                 text = "扫描失败",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onErrorContainer,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
             )
             Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.align(Alignment.End),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                TextButton(onClick = onDismiss) {
-                    Text("取消")
-                }
+                TextButton(
+                    text = "取消",
+                    onClick = onDismiss,
+                )
                 Button(onClick = onRetry) {
                     Text("重试")
                 }
@@ -399,8 +389,8 @@ private fun InfoCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            CardDefaults.defaultColors(
+                contentColor = MiuixTheme.colorScheme.surfaceVariant,
             ),
     ) {
         Column(
@@ -409,14 +399,14 @@ private fun InfoCard(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.8f),
                 textAlign = TextAlign.Start,
             )
         }

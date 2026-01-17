@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,12 +28,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.HazeMaterials
+import me.spica27.spicamusic.ui.LocalSurfaceHazeState
 import timber.log.Timber
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -72,8 +76,12 @@ fun BottomPlayerBar(
     Box(
         modifier =
             modifier
-                .fillMaxWidth()
-                .background(MiuixTheme.colorScheme.surfaceContainer)
+                .hazeEffect(
+                    LocalSurfaceHazeState.current,
+                    HazeMaterials.thick(
+                        MiuixTheme.colorScheme.surfaceContainer,
+                    ),
+                ).fillMaxWidth()
                 .pointerInput(Unit) {
                     detectVerticalDragGestures(
                         onDragStart = { onDragStart() },
@@ -89,6 +97,8 @@ fun BottomPlayerBar(
             // 进度条
             if (currentDuration > 0) {
                 LinearProgressIndicator(
+                    color = MiuixTheme.colorScheme.primary,
+                    trackColor = MiuixTheme.colorScheme.secondaryContainerVariant,
                     progress = { (currentPosition.toFloat() / currentDuration).coerceIn(0f, 1f) },
                     modifier =
                         Modifier
@@ -110,7 +120,20 @@ fun BottomPlayerBar(
                         Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                            .background(
+                                if (artworkUri == null) {
+                                    Brush.verticalGradient(
+                                        colors =
+                                            listOf(
+                                                MiuixTheme.colorScheme.surfaceContainerHigh,
+                                                MiuixTheme.colorScheme.secondaryContainer,
+                                            ),
+                                    )
+                                } else {
+                                    SolidColor(MiuixTheme.colorScheme.surfaceVariant)
+                                },
+                            ),
+                    contentAlignment = Alignment.Center,
                 ) {
                     if (artworkUri != null) {
                         AsyncImage(
@@ -118,6 +141,12 @@ fun BottomPlayerBar(
                             contentDescription = "封面",
                             modifier = Modifier.size(48.dp),
                             contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Text(
+                            text = title.take(1).uppercase(),
+                            style = MiuixTheme.textStyles.title1,
+                            color = MiuixTheme.colorScheme.onSecondaryVariant,
                         )
                     }
                 }
@@ -130,14 +159,14 @@ fun BottomPlayerBar(
                 ) {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MiuixTheme.textStyles.body1,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         text = artist,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

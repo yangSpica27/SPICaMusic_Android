@@ -6,7 +6,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.navigation.AppNavGraph
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
@@ -37,10 +40,13 @@ fun AppScaffold() {
 
         val bottomPaddingAnimValue = animateFloatAsState(bottomPaddingState.floatValue).value
 
+        val surfaceHazeState = rememberHazeState()
+
         CompositionLocalProvider(
             LocalNavBackStack provides backStack,
             LocalPlayerViewModel provides playerViewModel,
             LocalBottomPaddingState provides bottomPaddingState,
+            LocalSurfaceHazeState provides surfaceHazeState,
         ) {
             // 全局播放器层包裹整个导航
             DraggablePlayerSheet(
@@ -53,3 +59,8 @@ fun AppScaffold() {
         }
     }
 }
+
+val LocalSurfaceHazeState =
+    staticCompositionLocalOf<HazeState> {
+        error("HazeState not provided")
+    }
