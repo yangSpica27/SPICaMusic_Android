@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.SongGroup
 import me.spica27.spicamusic.common.entity.SongFilter
 import me.spica27.spicamusic.common.entity.SongSortOrder
 import me.spica27.spicamusic.storage.api.ISongRepository
@@ -164,4 +165,23 @@ class SongRepositoryImpl(
             SongSortOrder.DEFAULT -> songs
         }
     }
+
+    override fun getSongsGroupedBySortNameFlow(keyword: String?): Flow<List<SongGroup>> =
+        songDao.getSongsGroupedBySortName(keyword)
+            .map { entities -> 
+                // 数据库已按 sortName 排序，直接分组即可
+                entities.map { it.toCommon() }
+                    .groupBy { it.sortName }
+                    .map { (key, songs) -> SongGroup(key, songs) }
+            }
+
+    override suspend fun getSongsGroupedBySortName(keyword: String?): List<SongGroup> = 
+        withContext(Dispatchers.IO) {
+            // 数据库已按 sortName 排序，直接分组即可
+            songDao.getSongsGroupedBySortNameSync(keyword)
+                .map { it.toCommon() }
+                .groupBy { it.sortName }
+                .map { (key, songs) -> SongGroup(key, songs) }
+        }
 }
+

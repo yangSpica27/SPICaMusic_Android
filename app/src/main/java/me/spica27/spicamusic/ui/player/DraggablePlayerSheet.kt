@@ -221,7 +221,7 @@ fun DraggablePlayerSheet(
                             }
                     }
                 }
-
+                if (progress.value == 0f) return@layout
                 fullPlayerPlaceables.forEach {
                     it.placeWithLayer(0, fullPlayerY, zIndex = if (progress.value > 0.2f) 3f else 1f) {
                         alpha =

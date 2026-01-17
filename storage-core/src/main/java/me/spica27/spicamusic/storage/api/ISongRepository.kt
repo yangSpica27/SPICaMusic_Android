@@ -2,6 +2,7 @@ package me.spica27.spicamusic.storage.api
 
 import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.SongGroup
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.PlaylistWithSongs
 import me.spica27.spicamusic.common.entity.SongFilter
@@ -109,4 +110,19 @@ interface ISongRepository {
         keyword: String,
         sortOrder: SongSortOrder = SongSortOrder.DEFAULT
     ): Flow<List<Song>>
+
+    /**
+     * 获取按首字母分组的歌曲列表（A-Z + #）
+     * 在数据库层面完成排序和分组，减少内存操作
+     * @param keyword 模糊查询关键字（可选），搜索歌曲名称、艺术家
+     * @return 分组后的歌曲列表 Flow
+     */
+    fun getSongsGroupedBySortNameFlow(keyword: String? = null): Flow<List<SongGroup>>
+
+    /**
+     * 获取按首字母分组的歌曲列表（A-Z + #，同步）
+     * @param keyword 模糊查询关键字（可选），搜索歌曲名称、艺术家
+     * @return 分组后的歌曲列表
+     */
+    suspend fun getSongsGroupedBySortName(keyword: String? = null): List<SongGroup>
 }

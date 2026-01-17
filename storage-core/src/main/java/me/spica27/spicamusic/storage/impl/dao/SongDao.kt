@@ -144,4 +144,45 @@ interface SongDao {
         onlyLiked: Int = 0,
         excludeIgnored: Int = 1
     ): List<SongEntity>
+
+    /**
+     * 获取按 sortName 分组的歌曲（用于搜索页面分组展示）
+     * 在数据库层面按 sortName 分组并排序
+     * @param keyword 模糊查询关键字（可选），搜索歌曲名称、艺术家
+     */
+    @Query("""
+        SELECT * FROM song 
+        WHERE isIgnore == 0
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%' 
+            OR artist LIKE '%' || :keyword || '%'
+        )
+        ORDER BY 
+            CASE 
+                WHEN sortName = '#' THEN 1
+                ELSE 0
+            END,
+            sortName ASC,
+            displayName COLLATE NOCASE ASC
+    """)
+    fun getSongsGroupedBySortName(keyword: String? = null): Flow<List<SongEntity>>
+
+    @Query("""
+        SELECT * FROM song 
+        WHERE isIgnore == 0
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%' 
+            OR artist LIKE '%' || :keyword || '%'
+        )
+        ORDER BY 
+            CASE 
+                WHEN sortName = '#' THEN 1
+                ELSE 0
+            END,
+            sortName ASC,
+            displayName COLLATE NOCASE ASC
+    """)
+    suspend fun getSongsGroupedBySortNameSync(keyword: String? = null): List<SongEntity>
 }
