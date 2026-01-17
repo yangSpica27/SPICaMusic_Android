@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,7 +24,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +47,8 @@ import me.spica27.spicamusic.ui.player.LocalBottomPaddingState
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -73,6 +76,8 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
         bottomPaddingState.floatValue = -300f
     }
 
+    val scrollerBehavior = MiuixScrollBehavior()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         popupHost = { MiuixPopupHost() },
@@ -81,7 +86,8 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
                 title = "歌单",
                 actions = {
                     // 新增歌单按钮
-                    IconButton(onClick = { viewModel.showCreateDialog() }) {
+                    IconButton(
+                      onClick = { viewModel.showCreateDialog() }) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "新增歌单",
@@ -89,43 +95,48 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
                         )
                     }
                 },
+                scrollBehavior = scrollerBehavior,
             )
         },
     ) { paddingValues ->
-        if (playlists.isEmpty()) {
-            // 空状态
-            EmptyPlaylistState(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                onCreatePlaylist = { viewModel.showCreateDialog() },
-            )
-        } else {
-            // 歌单列表
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(playlists, key = { it.playlistId ?: 0 }) { playlist ->
-                    PlaylistCard(
-                        playlist = playlist,
-                        onClick = {
-                            playlist.playlistId?.let { id ->
-                                backStack.add(Screen.PlaylistDetail(id))
-                            }
-                        },
-                        onLongClick = {
-                            viewModel.showDeleteDialog(playlist)
-                        },
+        // 歌单列表
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollerBehavior.nestedScrollConnection)
+                    .padding(paddingValues),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (playlists.isEmpty()) {
+                item(
+                    span = { GridItemSpan(2) },
+                ) {
+                    EmptyPlaylistState(
+                        onCreatePlaylist = { viewModel.showCreateDialog() },
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(top = 80.dp),
                     )
                 }
+            }
+
+            items(playlists, key = { it.playlistId ?: 0 }) { playlist ->
+                PlaylistCard(
+                    playlist = playlist,
+                    onClick = {
+                        playlist.playlistId?.let { id ->
+                            backStack.add(Screen.PlaylistDetail(id))
+                        }
+                    },
+                    onLongClick = {
+                        viewModel.showDeleteDialog(playlist)
+                    },
+                )
             }
         }
     }

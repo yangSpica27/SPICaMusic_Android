@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
@@ -309,7 +310,7 @@ private fun ActionBar(
             colors =
                 CardDefaults.defaultColors(
                     color = MiuixTheme.colorScheme.primary,
-                    contentColor = MiuixTheme.colorScheme.onPrimary,
+                    contentColor = MiuixTheme.colorScheme.primary,
                 ),
         ) {
             Row(
@@ -324,12 +325,14 @@ private fun ActionBar(
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = null,
                     modifier = Modifier.size(24.dp),
+                    tint = MiuixTheme.colorScheme.onPrimary,
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "播放全部",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
+                    color = MiuixTheme.colorScheme.onPrimary,
                 )
             }
         }
@@ -361,7 +364,7 @@ private fun ActionBar(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = Icons.Default.CheckCircle,
+                    imageVector = Icons.Default.Checklist,
                     contentDescription = "多选",
                     modifier = Modifier.size(24.dp),
                 )
@@ -399,7 +402,7 @@ private fun ActionBar(
                 onDismissRequest = { showMenu = false },
             ) {
                 DropdownMenuItem(
-                    text = { androidx.compose.material3.Text("重命名") },
+                    text = { Text("重命名") },
                     onClick = {
                         showMenu = false
                         onShowMenu()
