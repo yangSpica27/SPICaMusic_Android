@@ -46,6 +46,12 @@ sealed interface Screen : NavKey {
     @Serializable
     data object Folders : Screen
 
+    // 歌单详情路由
+    @Serializable
+    data class PlaylistDetail(
+        val playlistId: Long,
+    ) : Screen
+
     // 设置相关路由
     @Serializable
     data object MediaLibrarySource : Screen

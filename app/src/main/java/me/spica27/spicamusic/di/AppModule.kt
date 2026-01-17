@@ -7,6 +7,8 @@ import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.pages.SearchViewModel
 import me.spica27.spicamusic.ui.library.AllSongsViewModel
+import me.spica27.spicamusic.ui.library.PlaylistDetailViewModel
+import me.spica27.spicamusic.ui.library.PlaylistViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.settings.SettingsViewModel
@@ -64,6 +66,22 @@ object AppModule {
             viewModel {
                 AllSongsViewModel(
                     songRepository = get<ISongRepository>(),
+                )
+            }
+
+            // 歌单页面 ViewModel
+            viewModel {
+                PlaylistViewModel(
+                    playlistRepository = get<IPlaylistRepository>(),
+                )
+            }
+
+            // 歌单详情页面 ViewModel
+            viewModel { parameters ->
+                PlaylistDetailViewModel(
+                    playlistId = parameters.get<Long>(),
+                    playlistRepository = get<IPlaylistRepository>(),
+                    player = get<IMusicPlayer>(),
                 )
             }
         }
