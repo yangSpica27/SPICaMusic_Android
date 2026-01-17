@@ -65,10 +65,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.MediaItem
 import coil3.compose.AsyncImage
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 /**
@@ -587,7 +589,7 @@ private fun InfoRow(
  */
 @Composable
 private fun PlayerPage(
-    currentMediaItem: androidx.media3.common.MediaItem?,
+    currentMediaItem: MediaItem?,
     currentPosition: Float,
     duration: Long,
     isPlaying: Boolean,
@@ -703,42 +705,6 @@ private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
                 text = "（待实现）",
                 style = MiuixTheme.textStyles.title4,
                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-        }
-    }
-}
-
-/**
- * 顶部工具栏
- */
-@Composable
-private fun TopBarOld(
-    onCollapse: () -> Unit,
-    onMoreClick: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onCollapse) {
-            Icon(
-                imageVector = Icons.Rounded.KeyboardArrowDown,
-                contentDescription = "收起",
-                tint = MiuixTheme.colorScheme.onSurface,
-                modifier = Modifier.size(32.dp),
-            )
-        }
-
-        IconButton(onClick = onMoreClick) {
-            Icon(
-                imageVector = Icons.Rounded.MoreVert,
-                contentDescription = "更多",
-                tint = MiuixTheme.colorScheme.onSurface,
-                modifier = Modifier.size(28.dp),
             )
         }
     }
@@ -995,5 +961,5 @@ private fun PlayerControls(
 private fun formatTime(millis: Long): String {
     val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)
     val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
-    return String.format("%d:%02d", minutes, seconds)
+    return String.format(Locale.CHINESE, "%d:%02d", minutes, seconds)
 }

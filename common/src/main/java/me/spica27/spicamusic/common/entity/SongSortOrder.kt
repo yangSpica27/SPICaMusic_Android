@@ -27,7 +27,7 @@ enum class SongSortOrder {
     
     /** 按文件大小降序 */
     SIZE_DESC,
-    
+
     /** 按添加时间升序 */
     DATE_ADDED_ASC,
     

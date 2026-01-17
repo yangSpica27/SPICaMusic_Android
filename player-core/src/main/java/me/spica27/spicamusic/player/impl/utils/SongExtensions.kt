@@ -20,6 +20,7 @@ fun Song.toMediaItem(): MediaItem =
       MediaItem.RequestMetadata.Builder().setMediaUri(getSongUri()).build(),
     ).setMediaMetadata(
       MediaMetadata.Builder().setTitle(displayName).setDisplayTitle(displayName).setArtist(artist)
-        .setSubtitle(artist).setDurationMs(duration).setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+        .setSubtitle(artist)
+        .setDurationMs(duration).setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
         .setIsPlayable(true).setIsBrowsable(true).setArtworkUri(getCoverUri()).build(),
     ).build()

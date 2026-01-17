@@ -6,6 +6,7 @@ import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.pages.SearchViewModel
+import me.spica27.spicamusic.ui.library.AllSongsViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.settings.SettingsViewModel
@@ -56,6 +57,13 @@ object AppModule {
             viewModel {
                 MediaLibrarySourceViewModel(
                     scanService = get<IMusicScanService>(),
+                )
+            }
+
+            // 所有歌曲页面 ViewModel
+            viewModel {
+                AllSongsViewModel(
+                    songRepository = get<ISongRepository>(),
                 )
             }
         }
