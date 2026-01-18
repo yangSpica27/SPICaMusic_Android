@@ -1,6 +1,8 @@
 package me.spica27.spicamusic.ui.player
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
@@ -55,27 +59,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
-import coil3.compose.AsyncImage
+import androidx.media3.common.MimeTypes
+import com.linc.amplituda.Amplituda
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.player.api.PlayMode
+import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
+import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 /**
  * 全屏播放器页面
@@ -306,48 +314,39 @@ private fun SongDetailPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // 顶部封面
-        val artworkUri = currentMediaItem?.mediaMetadata?.artworkUri?.toString()
+        val artworkUri = currentMediaItem?.mediaMetadata?.artworkUri
         val songTitle = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲"
 
-        if (artworkUri.isNullOrEmpty()) {
-            // 无封面时显示装饰性的歌曲名称
-            Box(
-                modifier =
-                    Modifier
-                        .size(200.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            brush =
-                                Brush.linearGradient(
-                                    colors =
-                                        listOf(
-                                            MiuixTheme.colorScheme.primaryContainer,
-                                            MiuixTheme.colorScheme.tertiaryContainer,
-                                        ),
+        AudioCover(
+            uri = artworkUri,
+            modifier =
+                Modifier
+                    .height(200.dp)
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(8.dp)),
+            placeHolder = {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.MusicNote,
+                        contentDescription = "封面占位符",
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier =
+                            Modifier
+                                .size(64.dp)
+                                .align(
+                                    Alignment.Center,
                                 ),
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = songTitle.take(1).uppercase(),
-                    style = MiuixTheme.textStyles.title1,
-                    fontWeight = FontWeight.Bold,
-                    color = MiuixTheme.colorScheme.onPrimaryContainer,
-                    fontSize = MiuixTheme.textStyles.title1.fontSize * 1.5,
-                )
-            }
-        } else {
-            AsyncImage(
-                model = artworkUri,
-                contentDescription = "专辑封面",
-                modifier =
-                    Modifier
-                        .size(200.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.Gray.copy(alpha = 0.3f)),
-                contentScale = ContentScale.Crop,
-            )
-        }
+                    )
+                }
+            },
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -397,7 +396,10 @@ private fun SongDetailPage(
             // 无损标签
             val isLossless =
                 mimeType.contains("flac", ignoreCase = true) ||
-                    mimeType.contains("alac", ignoreCase = true) ||
+                    mimeType.contains(
+                        "alac",
+                        ignoreCase = true,
+                    ) ||
                     mimeType.contains("wav", ignoreCase = true)
             if (isLossless) {
                 AudioTag(
@@ -424,8 +426,7 @@ private fun SongDetailPage(
                 label = "文件名",
                 value =
                     currentMediaItem?.mediaMetadata?.displayTitle?.toString()
-                        ?: currentMediaItem?.mediaId
-                        ?: "未知",
+                        ?: currentMediaItem?.mediaId ?: "未知",
             )
 
             InfoRow(
@@ -616,20 +617,54 @@ private fun PlayerPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // 封面
-        AlbumArtwork(
-            artworkUri = currentMediaItem?.mediaMetadata?.artworkUri?.toString(),
-            songTitle = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲",
+        AnimatedContent(
+            currentMediaItem,
+            transitionSpec = {
+                materialSharedAxisZIn(true) togetherWith materialSharedAxisZOut(true)
+            },
             modifier =
                 Modifier
                     .graphicsLayer {
                         alpha =
-                            if (progress < 0.5f) {
+                            if (progress < 0.8f) {
                                 0f
                             } else {
-                                (progress - 0.5f) * 2
+                                (progress - 0.8f) * 5
                             }
-                    }.weight(1f, fill = false),
-        )
+                    }.weight(1f, fill = false)
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(8.dp)),
+        ) { currentMediaItem ->
+            AudioCover(
+                uri = currentMediaItem?.mediaMetadata?.artworkUri,
+                placeHolder = {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxHeight()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.MusicNote,
+                            contentDescription = "封面占位符",
+                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            modifier =
+                                Modifier
+                                    .size(64.dp)
+                                    .align(
+                                        Alignment.Center,
+                                    ),
+                        )
+                    }
+                },
+                modifier =
+                    Modifier
+                        .fillMaxHeight()
+                        .aspectRatio(1f),
+            )
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -641,12 +676,44 @@ private fun PlayerPage(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        val amplitudes = remember { List(15) { 0 + Random.nextInt(10) } }
+        val amplituda: Amplituda = koinInject<Amplituda>()
+
+        var ampState by remember { mutableStateOf(listOf<Int>()) }
+
+        // 模拟的音频波形数据
+        LaunchedEffect(currentMediaItem) {
+            launch(Dispatchers.IO) {
+                val config = currentMediaItem?.localConfiguration
+
+                if (config == null) {
+                    ampState = arrayListOf()
+                    return@launch
+                }
+
+                if (config.mimeType != MimeTypes.AUDIO_ALAC && config.mimeType != MimeTypes.AUDIO_MP4) {
+                    val inputStream = App.getInstance().contentResolver.openInputStream(config.uri)
+                    inputStream.use { inputStream ->
+                        if (inputStream != null) {
+                            val amplitudes = amplituda.processAudio(inputStream)
+                            amplitudes.get({
+                                ampState = it.amplitudesAsList()
+                            }, {
+                                ampState = arrayListOf()
+                            })
+                        } else {
+                            ampState = arrayListOf()
+                        }
+                    }
+                } else {
+                    ampState = arrayListOf()
+                }
+            }
+        }
 
         // 进度条
         AudioWaveSlider(
             progress = if (duration > 0) currentPosition / duration else 0f,
-            amplitudes = amplitudes,
+            amplitudes = ampState,
             onProgressChange = {
                 onValueChangeFinished()
             },
@@ -655,7 +722,15 @@ private fun PlayerPage(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(80.dp),
+                    .height(80.dp)
+                    .graphicsLayer {
+                        alpha =
+                            if (progress < 0.5f) {
+                                0f
+                            } else {
+                                (progress - 0.5f) * 2
+                            }
+                    },
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -709,64 +784,6 @@ private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
                 text = "（待实现）",
                 style = MiuixTheme.textStyles.title4,
                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-        }
-    }
-}
-
-/**
- * 专辑封面
- */
-@Composable
-private fun AlbumArtwork(
-    artworkUri: String?,
-    modifier: Modifier = Modifier,
-    songTitle: String = "未知歌曲",
-) {
-    Box(
-        modifier = modifier.fillMaxWidth(0.8f),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (artworkUri.isNullOrEmpty()) {
-            // 无封面时显示装饰性的歌曲名称
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            brush =
-                                Brush.linearGradient(
-                                    colors =
-                                        listOf(
-                                            MiuixTheme.colorScheme.surfaceContainerHigh,
-                                            MiuixTheme.colorScheme.surfaceContainerHighest,
-                                        ),
-                                ),
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = songTitle.take(1).uppercase(),
-                    style = MiuixTheme.textStyles.headline1,
-                    fontWeight = FontWeight.Bold,
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                    fontSize = 100.sp,
-                    modifier = Modifier.padding(16.dp),
-                )
-            }
-        } else {
-            AsyncImage(
-                model = artworkUri,
-                contentDescription = "专辑封面",
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.Gray.copy(alpha = 0.3f)),
-                contentScale = ContentScale.Crop,
             )
         }
     }

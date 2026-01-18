@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.di
 
+import com.linc.amplituda.Amplituda
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
@@ -25,6 +26,9 @@ object AppModule {
         module {
             // PreferencesManager
             single { PreferencesManager(androidContext()) }
+
+            // Amplituda 分析工具
+            single { Amplituda(androidContext()) }
 
             // 播放器 ViewModel - 全局共享
             viewModel {

@@ -23,4 +23,6 @@ fun Song.toMediaItem(): MediaItem =
         .setSubtitle(artist)
         .setDurationMs(duration).setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
         .setIsPlayable(true).setIsBrowsable(true).setArtworkUri(getCoverUri()).build(),
-    ).build()
+    )
+    .setMimeType(mimeType)
+    .build()

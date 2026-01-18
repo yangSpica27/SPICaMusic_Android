@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.player
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -28,17 +29,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.HazeMaterials
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
+import me.spica27.spicamusic.ui.widget.AudioCover
 import timber.log.Timber
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -115,40 +113,32 @@ fun BottomPlayerBar(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // 封面
-                Box(
-                    modifier =
-                        Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                if (artworkUri == null) {
-                                    Brush.verticalGradient(
-                                        colors =
-                                            listOf(
-                                                MiuixTheme.colorScheme.surfaceContainerHigh,
-                                                MiuixTheme.colorScheme.secondaryContainer,
-                                            ),
-                                    )
-                                } else {
-                                    SolidColor(MiuixTheme.colorScheme.surfaceVariant)
-                                },
-                            ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (artworkUri != null) {
-                        AsyncImage(
-                            model = artworkUri,
-                            contentDescription = "封面",
-                            modifier = Modifier.size(48.dp),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Text(
-                            text = title.take(1).uppercase(),
-                            style = MiuixTheme.textStyles.title1,
-                            color = MiuixTheme.colorScheme.onSecondaryVariant,
-                        )
-                    }
+
+                AnimatedContent(artworkUri) { artworkUri ->
+                    AudioCover(
+                        uri = artworkUri,
+                        modifier =
+                            Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(
+                                    MiuixTheme.colorScheme.surfaceContainerHigh,
+                                ),
+                        placeHolder = {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(6.dp)),
+                            ) {
+                                Text(
+                                    "🎵",
+                                    modifier = Modifier.align(Alignment.Center),
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+                            }
+                        },
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))

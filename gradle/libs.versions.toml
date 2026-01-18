@@ -48,7 +48,7 @@ media3ExoplayerDashVersion = "1.9.0"
 media3SessionVersion = "1.9.0"
 ksp = "2.2.21-2.0.4"
 roomVersion = "2.7.2"
-miuixAndroid = "0.8.0-rc05"
+miuixAndroid = "0.8.0-rc06"
 androidautosize = "v1.2.1"
 [libraries]
 androidautosize = { module = "com.github.JessYanCoding:AndroidAutoSize", version.ref = "androidautosize" }
