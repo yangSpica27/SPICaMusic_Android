@@ -10,6 +10,7 @@ import me.spica27.spicamusic.ui.home.pages.SearchViewModel
 import me.spica27.spicamusic.ui.library.AllSongsViewModel
 import me.spica27.spicamusic.ui.library.PlaylistDetailViewModel
 import me.spica27.spicamusic.ui.library.PlaylistViewModel
+import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.settings.SettingsViewModel
@@ -34,6 +35,14 @@ object AppModule {
             viewModel {
                 PlayerViewModel(
                     player = get<IMusicPlayer>(),
+                )
+            }
+
+            // 当前播放列表面板 ViewModel
+            viewModel {
+                CurrentPlaylistPanelViewModel(
+                    playlistRepository = get<IPlaylistRepository>(),
+                    songRepository = get<ISongRepository>(),
                 )
             }
 

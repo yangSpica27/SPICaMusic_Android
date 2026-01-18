@@ -259,6 +259,7 @@ private fun TopBar(
                 currentPage = currentPage,
             )
 
+            val playlistPanelController = LocalPlaylistPanelController.current
             val showPopup = remember { mutableStateOf(false) }
             Box {
                 IconButton(onClick = {
@@ -283,6 +284,7 @@ private fun TopBar(
                             optionSize = 2,
                             isSelected = false,
                             onSelectedIndexChange = {
+                                playlistPanelController.show()
                                 dismiss()
                             },
                             index = 0,

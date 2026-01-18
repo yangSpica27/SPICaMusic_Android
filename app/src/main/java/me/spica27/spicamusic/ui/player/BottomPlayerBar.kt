@@ -32,6 +32,7 @@ import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.HazeMaterials
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
+import me.spica27.spicamusic.ui.player.LocalPlaylistPanelController
 import me.spica27.spicamusic.ui.widget.AudioCover
 import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Icon
@@ -60,6 +61,7 @@ fun BottomPlayerBar(
     val isPlaying by viewModel.isPlaying.collectAsState()
     val currentPosition = viewModel.currentPosition.collectAsStateWithLifecycle().value
     val currentDuration by viewModel.currentDuration.collectAsState()
+    val playlistPanelController = LocalPlaylistPanelController.current
 
     LaunchedEffect(currentPosition, currentDuration) {
         Timber
@@ -182,6 +184,7 @@ fun BottomPlayerBar(
                 // 播放列表按钮
                 IconButton(
                     onClick = {
+                        playlistPanelController.show()
                     },
                     modifier = Modifier.size(40.dp),
                 ) {

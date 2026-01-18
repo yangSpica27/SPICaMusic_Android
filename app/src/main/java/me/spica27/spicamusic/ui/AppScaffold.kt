@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -13,10 +14,13 @@ import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.navigation.AppNavGraph
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelHost
 import me.spica27.spicamusic.ui.player.DraggablePlayerSheet
 import me.spica27.spicamusic.ui.player.LocalBottomPaddingState
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.player.LocalPlaylistPanelController
 import me.spica27.spicamusic.ui.player.PlayerViewModel
+import me.spica27.spicamusic.ui.player.PlaylistPanelController
 import me.spica27.spicamusic.ui.theme.SPICaMusicTheme
 import org.koin.compose.viewmodel.koinActivityViewModel
 
@@ -40,6 +44,9 @@ fun AppScaffold() {
 
         val bottomPaddingAnimValue = animateFloatAsState(bottomPaddingState.floatValue).value
 
+        val playlistPanelVisible = remember { mutableStateOf(false) }
+        val playlistPanelController = remember { PlaylistPanelController(playlistPanelVisible) }
+
         val surfaceHazeState = rememberHazeState()
 
         CompositionLocalProvider(
@@ -47,14 +54,20 @@ fun AppScaffold() {
             LocalPlayerViewModel provides playerViewModel,
             LocalBottomPaddingState provides bottomPaddingState,
             LocalSurfaceHazeState provides surfaceHazeState,
+            LocalPlaylistPanelController provides playlistPanelController,
         ) {
-            // 全局播放器层包裹整个导航
-            DraggablePlayerSheet(
-                bottomPadding = bottomPaddingAnimValue,
+            CurrentPlaylistPanelHost(
+                visible = playlistPanelVisible.value,
+                onVisibleChange = { playlistPanelVisible.value = it },
             ) {
-                AppNavGraph(
-                    modifier = Modifier,
-                )
+                // 全局播放器层包裹整个导航
+                DraggablePlayerSheet(
+                    bottomPadding = bottomPaddingAnimValue,
+                ) {
+                    AppNavGraph(
+                        modifier = Modifier,
+                    )
+                }
             }
         }
     }
