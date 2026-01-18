@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.settings.SelectOption
@@ -70,7 +71,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                 )
                 add(
                     SettingsItem.SelectItem(
-                        title = "动态频谱",
+                        title = "动态频谱背景",
                         subtitle = null,
                         icon = {
                             Icon(
@@ -78,17 +79,16 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                                 contentDescription = null,
                             )
                         },
-                        key = "dynamic_spectrum",
+                        key = "dynamic_spectrum_background",
                         options =
-                            listOf(
-                                SelectOption("bar", "柱状图"),
-                                SelectOption("wave", "波形"),
-                                SelectOption("circular", "圆形"),
-                                SelectOption("line", "线性"),
-                                SelectOption("off", "关闭"),
-                            ),
-                        valueFlow = viewModel.dynamicSpectrum,
-                        onValueChange = { viewModel.setDynamicSpectrum(it) },
+                            DynamicSpectrumBackground.presets.map {
+                                SelectOption(
+                                    label = it.name,
+                                    value = it.value,
+                                )
+                            },
+                        valueFlow = viewModel.dynamicSpectrumBackground,
+                        onValueChange = { viewModel.setDynamicSpectrumBackground(it) },
                     ),
                 )
 

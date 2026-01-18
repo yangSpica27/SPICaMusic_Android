@@ -50,6 +50,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -70,12 +72,15 @@ import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
+import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
+import me.spica27.spicamusic.ui.widget.LryricUI
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
@@ -792,10 +797,39 @@ private fun PlayerPage(
  */
 @Composable
 private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
+    var currentTime by remember { mutableLongStateOf(0L) }
+
+    val lyric = remember { mutableStateListOf<LyricItem>() }
+
+    LaunchedEffect(Unit) {
+        for (i in 0 until 100) {
+            lyric.add(
+                LyricItem.NormalLyric(
+                    content = "这是第 $i 行歌词",
+                    time = i * 3000L,
+                    key = "$i",
+                ),
+            )
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000L)
+            currentTime += 1000L
+        }
+    }
+
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
+        LryricUI(
+            modifier = Modifier.fillMaxSize(),
+            lyric = lyric,
+            currentTime = currentTime,
+            onSeekToTime = { currentTime = it },
+        )
     }
 }
 

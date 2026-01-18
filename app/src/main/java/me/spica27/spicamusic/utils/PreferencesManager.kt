@@ -22,7 +22,7 @@ class PreferencesManager(
     object Keys {
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
-        val DYNAMIC_SPECTRUM = stringPreferencesKey("dynamic_spectrum")
+        val DYNAMIC_SPECTRUM_BACKGROUND = stringPreferencesKey("dynamic_spectrum_background")
     }
 
     /**

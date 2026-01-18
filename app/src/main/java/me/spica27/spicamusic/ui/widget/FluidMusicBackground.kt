@@ -1,21 +1,41 @@
 package me.spica27.spicamusic.ui.widget
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.settings.SettingsViewModel
+import org.koin.compose.viewmodel.koinViewModel
+import kotlin.math.PI
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sin
+import kotlin.random.Random
 
 /**
  * 流动融合动态背景组件
@@ -34,14 +54,15 @@ fun FluidMusicBackground(
     isDarkMode: Boolean? = null,
 ) {
     val playerViewModel = LocalPlayerViewModel.current
+    val settingsViewModel: SettingsViewModel = koinViewModel()
+
     val scope = rememberCoroutineScope()
 
-    // 订阅和取消订阅 FFT 绘制数据
     LaunchedEffect(enabled) {
         if (enabled) {
-            withContext(Dispatchers.Default) {
-                playerViewModel.subscribeFFTDrawData()
-            }
+            playerViewModel.subscribeFFTDrawData()
+        } else {
+            playerViewModel.unsubscribeFFTDrawData()
         }
     }
 
@@ -54,46 +75,270 @@ fun FluidMusicBackground(
         }
     }
 
-    // 收集插值后的 FFT 数据
     val fftDrawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
+    val modeValue by settingsViewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
+    val backgroundMode = remember(modeValue) { DynamicSpectrumBackground.fromString(modeValue) }
+    val fftSnapshot = if (enabled) fftDrawData else FloatArray(fftDrawData.size)
 
+    when (backgroundMode) {
+        DynamicSpectrumBackground.TopGlow ->
+            TopGlowBackground(
+                modifier = modifier,
+                fftDrawData = fftSnapshot,
+                coverColor = coverColor,
+            )
+
+        DynamicSpectrumBackground.LiquidAurora ->
+            LiquidAuroraBackground(
+                modifier = modifier,
+                fftDrawData = fftSnapshot,
+                coverColor = coverColor,
+                isDarkMode = isDarkMode,
+            )
+
+        DynamicSpectrumBackground.BubblePulse ->
+            BubblePulseBackground(
+                modifier = modifier,
+                fftDrawData = fftSnapshot,
+                coverColor = coverColor,
+            )
+
+        DynamicSpectrumBackground.NeonGrid ->
+            NeonGridBackground(
+                modifier = modifier,
+                fftDrawData = fftSnapshot,
+                coverColor = coverColor,
+                isDarkMode = isDarkMode,
+            )
+
+        DynamicSpectrumBackground.OFF ->
+            Box(modifier = modifier)
+    }
+}
+
+@Composable
+private fun TopGlowBackground(
+    modifier: Modifier,
+    fftDrawData: FloatArray,
+    coverColor: Color,
+) {
     Canvas(
         modifier =
             modifier.hazeEffect {
-                blurRadius = 50.dp
+                blurRadius = 72.dp
             },
     ) {
-        if (!enabled) return@Canvas
-
-        fftDrawData.forEachIndexed { index, f ->
-
-            val bandHeight = size.height / 3 * 2 * f
-            val bandWidth = size.width / fftDrawData.size
-
-            // 根据封面颜色调整色相偏移和亮度
-            val luminance = calculateLuminance(coverColor)
-            val hueShift = if (luminance < 0.5f) 30f else -30f
-
-            // 绘制矩形条
+        val bandWidth = if (fftDrawData.isNotEmpty()) size.width / fftDrawData.size else size.width
+        val luminance = calculateLuminance(coverColor)
+        val hueShift = if (luminance < 0.5f) 24f else -24f
+        fftDrawData.forEachIndexed { index, magnitude ->
+            val energy = magnitude.coerceIn(0f, 1f)
+            val barHeight = size.height * 0.8f * energy + size.height * 0.08f
             drawRect(
                 brush =
                     Brush.linearGradient(
                         colors =
                             listOf(
-                                shiftHue(coverColor, hueShift).copy(alpha = 0.7f),
-                                shiftHue(coverColor, hueShift * 2).copy(alpha = 0.3f),
+                                shiftHue(coverColor, hueShift).copy(alpha = 0.85f),
+                                shiftHue(coverColor, hueShift * 1.6f).copy(alpha = 0.2f),
                             ),
                     ),
-                topLeft =
-                    androidx.compose.ui.geometry
-                        .Offset(x = index * bandWidth + bandWidth / 2, y = 0f),
-                size =
-                    androidx.compose.ui.geometry
-                        .Size(width = bandWidth - 2f, height = bandHeight),
+                topLeft = Offset(x = index * bandWidth, y = 0f),
+                size = Size(width = max(1f, bandWidth * 0.9f), height = barHeight),
             )
         }
     }
 }
+
+@Composable
+private fun LiquidAuroraBackground(
+    modifier: Modifier,
+    fftDrawData: FloatArray,
+    coverColor: Color,
+    isDarkMode: Boolean?,
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "aurora-phase")
+    val phase by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 20000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "aurora-anim",
+    )
+
+    Canvas(
+        modifier =
+            modifier.hazeEffect {
+                blurRadius = 40.dp
+            },
+    ) {
+        val layers = 3
+        val chunkSize = (fftDrawData.size / layers).coerceAtLeast(1)
+        val baseAlpha = if (isDarkMode == true) 0.9f else 0.75f
+        repeat(layers) { layer ->
+            val startIndex = layer * chunkSize
+            val endIndex = min(fftDrawData.size, startIndex + chunkSize)
+            if (startIndex >= endIndex) return@repeat
+            val path = Path().apply { moveTo(0f, 0f) }
+            val steps = endIndex - startIndex
+            val amplitude = size.height * (0.28f - layer * 0.05f)
+            val phaseShift = (phase + layer * 45f) * (PI / 180f)
+            for (i in 0 until steps) {
+                val progress = if (steps == 1) 0f else i / (steps - 1f)
+                val energy = fftDrawData[startIndex + i].coerceIn(0f, 1f)
+                val wave = sin(progress * 6f + phaseShift).toFloat()
+                val y = size.height * 0.35f - amplitude * energy - amplitude * 0.2f * wave
+                val x = progress * size.width
+                if (i == 0) {
+                    path.lineTo(x, y)
+                } else {
+                    path.lineTo(x, y)
+                }
+            }
+            path.lineTo(size.width, 0f)
+            path.close()
+
+            val colorA = shiftHue(coverColor, layer * 18f + 120f)
+            val colorB = shiftHue(coverColor, layer * -14f - 116f)
+            drawPath(
+                path = path,
+                brush =
+                    Brush.verticalGradient(
+                        startY = 0f,
+                        endY = size.height * 0.5f,
+                        colors =
+                            listOf(
+                                colorA.copy(alpha = baseAlpha - layer * 0.2f),
+                                colorB.copy(alpha = (baseAlpha - layer * 0.3f).coerceAtLeast(0.1f)),
+                                colorB.copy(alpha = (baseAlpha - layer * 0.3f).coerceAtLeast(0.1f)),
+                            ),
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BubblePulseBackground(
+    modifier: Modifier,
+    fftDrawData: FloatArray,
+    coverColor: Color,
+) {
+    val bubbles =
+        remember {
+            List(14) {
+                BubbleSeed(
+                    xFactor = Random.nextFloat(),
+                    yFactor = Random.nextFloat(),
+                    baseSize = 0.08f + Random.nextFloat() * 0.12f,
+                )
+            }
+        }
+
+    Canvas(
+        modifier =
+            modifier.hazeEffect {
+                blurRadius = 45.dp
+            },
+    ) {
+        val minDimension = min(size.width, size.height)
+        bubbles.forEachIndexed { index, bubble ->
+            val fftIndex = (index * fftDrawData.size) / bubbles.size
+            val energy = fftDrawData.getOrNull(fftIndex)?.coerceIn(0f, 1f) ?: 0f
+            val radius = minDimension * bubble.baseSize * (0.8f + energy * 1.5f)
+            val center = Offset(size.width * bubble.xFactor, size.height * bubble.yFactor)
+            val coreColor = shiftHue(coverColor, (index - bubbles.size / 2) * 3f)
+            drawCircle(
+                brush =
+                    Brush.radialGradient(
+                        colors =
+                            listOf(
+                                coreColor.copy(alpha = 0.5f + energy * 0.4f),
+                                coreColor.copy(alpha = 0f),
+                            ),
+                    ),
+                center = center,
+                radius = radius,
+            )
+        }
+    }
+}
+
+@Composable
+private fun NeonGridBackground(
+    modifier: Modifier,
+    fftDrawData: FloatArray,
+    coverColor: Color,
+    isDarkMode: Boolean?,
+) {
+    Canvas(
+        modifier =
+            modifier.hazeEffect {
+                blurRadius = 48.dp
+            },
+    ) {
+        val columns = 12
+        val rows = 5
+        val cellWidth = size.width / columns
+        val cellHeight = size.height / rows
+        val baseColor = if (isDarkMode == true) Color(0xFF050505) else Color(0xFFF8F8FF)
+        drawRect(color = baseColor.copy(alpha = if (isDarkMode == true) 0.9f else 0.65f), size = size)
+
+        for (row in 0..rows) {
+            val y = row * cellHeight
+            drawLine(
+                color = Color.White.copy(alpha = 0.06f),
+                start = Offset(0f, y),
+                end = Offset(size.width, y),
+                strokeWidth = 1f,
+                cap = StrokeCap.Round,
+            )
+        }
+
+        for (column in 0..columns) {
+            val x = column * cellWidth
+            drawLine(
+                color = Color.White.copy(alpha = 0.04f),
+                start = Offset(x, 0f),
+                end = Offset(x, size.height),
+                strokeWidth = 1f,
+                cap = StrokeCap.Round,
+            )
+        }
+
+        val neonBase = shiftHue(coverColor, if (isDarkMode == true) 8f else -8f)
+        val barWidth = cellWidth * 0.45f
+        for (column in 0 until columns) {
+            val fftIndex = column % max(1, fftDrawData.size)
+            val energy = fftDrawData.getOrNull(fftIndex)?.coerceIn(0f, 1f) ?: 0f
+            val barHeight = size.height * (0.15f + energy * 0.85f)
+            val top = size.height - barHeight
+            drawRoundRect(
+                brush =
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                neonBase.copy(alpha = 0.9f),
+                                shiftHue(neonBase, 24f).copy(alpha = 0.2f),
+                            ),
+                    ),
+                topLeft = Offset(column * cellWidth + (cellWidth - barWidth) / 2f, top),
+                size = Size(barWidth, barHeight),
+                cornerRadius = CornerRadius(barWidth / 2f, barWidth / 2f),
+                alpha = 0.5f + energy * 0.5f,
+            )
+        }
+    }
+}
+
+private data class BubbleSeed(
+    val xFactor: Float,
+    val yFactor: Float,
+    val baseSize: Float,
+)
 
 /**
  * 计算颜色亮度（感知亮度）
@@ -123,6 +368,7 @@ private fun shiftHue(
                 blue = (b + amount * (1 - b) * 0.5f).coerceIn(0f, 1f),
                 alpha = color.alpha,
             )
+
         else ->
             Color(
                 red = (r + amount * r * 0.5f).coerceIn(0f, 1f),

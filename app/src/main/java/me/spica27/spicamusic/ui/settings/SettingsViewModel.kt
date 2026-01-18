@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.utils.PreferencesManager
 
 /**
@@ -38,14 +39,16 @@ class SettingsViewModel(
     }
 
     // 动态频谱
-    val dynamicSpectrum =
+    val dynamicSpectrumBackground =
         preferencesManager
-            .getString(PreferencesManager.Keys.DYNAMIC_SPECTRUM, "bar")
-            .stateIn(viewModelScope, SharingStarted.Eagerly, "bar")
+            .getString(
+                PreferencesManager.Keys.DYNAMIC_SPECTRUM_BACKGROUND,
+                DynamicSpectrumBackground.TopGlow.value,
+            ).stateIn(viewModelScope, SharingStarted.Eagerly, DynamicSpectrumBackground.TopGlow.value)
 
-    fun setDynamicSpectrum(value: String) {
+    fun setDynamicSpectrumBackground(value: String) {
         viewModelScope.launch {
-            preferencesManager.setString(PreferencesManager.Keys.DYNAMIC_SPECTRUM, value)
+            preferencesManager.setString(PreferencesManager.Keys.DYNAMIC_SPECTRUM_BACKGROUND, value)
         }
     }
 }
