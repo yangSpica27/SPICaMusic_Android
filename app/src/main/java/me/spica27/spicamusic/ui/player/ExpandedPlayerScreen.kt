@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui.player
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
@@ -28,7 +29,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FavoriteBorder
@@ -44,8 +44,6 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,7 +52,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,8 +68,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
+import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -84,6 +83,12 @@ import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.*
 import java.util.concurrent.TimeUnit
+
+// 展开动画透明度阈值常量
+private const val COVER_FADE_THRESHOLD = 0.8f
+private const val CONTROLS_FADE_THRESHOLD = 0.5f
+private const val PAGE_COUNT = 3
+private const val DEFAULT_PAGE = 1
 
 /**
  * 全屏播放器页面
@@ -105,20 +110,19 @@ fun ExpandedPlayerScreen(
     val duration by viewModel.currentDuration.collectAsStateWithLifecycle()
 
     // 当前播放位置（定时更新）
-    var currentPosition by remember { mutableFloatStateOf(0f) }
-    var userIsDragging by remember { mutableStateOf(false) }
+    var seekValueState by remember { mutableFloatStateOf(0f) }
+    var isSeekingState by remember { mutableStateOf(false) }
 
     val trueTimePosition = viewModel.currentPosition.collectAsStateWithLifecycle()
 
-    LaunchedEffect(trueTimePosition.value, userIsDragging) {
-        if (!userIsDragging) {
-            currentPosition = trueTimePosition.value.toFloat()
+    LaunchedEffect(trueTimePosition.value) {
+        if (!isSeekingState) {
+            seekValueState = trueTimePosition.value.toFloat()
         }
     }
 
     // Pager 状态，默认显示播放器页面（index=1）
-    val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
-    val scope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(initialPage = DEFAULT_PAGE, pageCount = { PAGE_COUNT })
 
     Box(
         modifier =
@@ -175,18 +179,20 @@ fun ExpandedPlayerScreen(
                     1 -> {
                         // 播放器页面
                         PlayerPage(
+                            isSeekingState = isSeekingState,
                             currentMediaItem = currentMediaItem,
-                            currentPosition = currentPosition,
+                            realPosition = trueTimePosition.value.toFloat(),
+                            seekPosition = seekValueState,
                             duration = duration,
                             isPlaying = isPlaying,
                             playMode = playMode,
                             onValueChange = {
-                                userIsDragging = true
-                                currentPosition = it
+                                isSeekingState = true
+                                seekValueState = it * duration
                             },
                             onValueChangeFinished = {
-                                userIsDragging = false
-                                viewModel.seekTo(currentPosition.toLong())
+                                viewModel.seekTo(seekValueState.toLong())
+                                isSeekingState = false
                             },
                             onPlayPauseClick = { viewModel.togglePlayPause() },
                             onPreviousClick = { viewModel.skipToPrevious() },
@@ -274,21 +280,18 @@ private fun PageIndicator(
     ) {
         repeat(pageCount) { index ->
             val isSelected = index == currentPage
-            val width = animateDpAsState(if (isSelected) 20.dp else 6.dp).value
+            val width by animateDpAsState(
+                targetValue = if (isSelected) 20.dp else 6.dp,
+                label = "indicatorWidth",
+            )
+            val alpha = if (isSelected) 1f else 0.3f
+
             Box(
                 modifier =
                     Modifier
-                        .size(
-                            width = width,
-                            height = 6.dp,
-                        ).clip(CircleShape)
-                        .background(
-                            if (isSelected) {
-                                MiuixTheme.colorScheme.onSurface
-                            } else {
-                                MiuixTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                            },
-                        ),
+                        .size(width = width, height = 6.dp)
+                        .clip(CircleShape)
+                        .background(MiuixTheme.colorScheme.onSurface.copy(alpha = alpha)),
             )
         }
     }
@@ -323,14 +326,14 @@ private fun SongDetailPage(
                 Modifier
                     .height(200.dp)
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(ContinuousRoundedRectangle(8.dp)),
             placeHolder = {
                 Box(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .aspectRatio(1f)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(ContinuousRoundedRectangle(8.dp))
                             .background(MiuixTheme.colorScheme.surfaceContainerHigh),
                 ) {
                     Icon(
@@ -364,59 +367,10 @@ private fun SongDetailPage(
         Spacer(modifier = Modifier.height(24.dp))
 
         // 音频格式标签
-        FlowRow(
+        AudioQualityTags(
+            currentMediaItem = currentMediaItem,
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            // 从 extras 中获取音频信息（如果有）
-            val sampleRate = currentMediaItem?.mediaMetadata?.extras?.getInt("sampleRate") ?: 0
-            val bitRate = currentMediaItem?.mediaMetadata?.extras?.getInt("bitRate") ?: 0
-            val mimeType = currentMediaItem?.mediaMetadata?.extras?.getString("mimeType") ?: ""
-
-            // 采样率标签
-            if (sampleRate > 0) {
-                AudioTag(
-                    text = "${sampleRate / 1000}kHz",
-                    color = if (sampleRate >= 96000) Color(0xFF4CAF50) else MiuixTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            // 比特率标签
-            if (bitRate > 0) {
-                val bitRateKbps = bitRate / 1000
-                AudioTag(
-                    text = "${bitRateKbps}kbps",
-                    color = if (bitRateKbps >= 320) Color(0xFF2196F3) else MiuixTheme.colorScheme.secondary,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            // 无损标签
-            val isLossless =
-                mimeType.contains("flac", ignoreCase = true) ||
-                    mimeType.contains(
-                        "alac",
-                        ignoreCase = true,
-                    ) ||
-                    mimeType.contains("wav", ignoreCase = true)
-            if (isLossless) {
-                AudioTag(
-                    text = "无损",
-                    color = Color(0xFFFF9800),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            // 高码率标签
-            if (bitRate >= 320000 && !isLossless) {
-                AudioTag(
-                    text = "高品质",
-                    color = Color(0xFF9C27B0),
-                )
-            }
-        }
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -458,43 +412,7 @@ private fun SongDetailPage(
         Spacer(modifier = Modifier.height(16.dp))
 
         // 音频信息卡片
-        InfoCard(title = "音频信息") {
-            val sampleRate = currentMediaItem?.mediaMetadata?.extras?.getInt("sampleRate") ?: 0
-            val bitRate = currentMediaItem?.mediaMetadata?.extras?.getInt("bitRate") ?: 0
-            val channels = currentMediaItem?.mediaMetadata?.extras?.getInt("channels") ?: 0
-            val mimeType = currentMediaItem?.mediaMetadata?.extras?.getString("mimeType") ?: "未知"
-
-            InfoRow(
-                label = "格式",
-                value = mimeType,
-            )
-
-            if (sampleRate > 0) {
-                InfoRow(
-                    label = "采样率",
-                    value = "${sampleRate}Hz (${sampleRate / 1000}kHz)",
-                )
-            }
-
-            if (bitRate > 0) {
-                InfoRow(
-                    label = "比特率",
-                    value = "${bitRate / 1000}kbps",
-                )
-            }
-
-            if (channels > 0) {
-                InfoRow(
-                    label = "声道数",
-                    value =
-                        when (channels) {
-                            1 -> "单声道"
-                            2 -> "立体声"
-                            else -> "$channels 声道"
-                        },
-                )
-            }
-        }
+        AudioInfoCard(currentMediaItem = currentMediaItem)
 
         Spacer(modifier = Modifier.height(48.dp))
     }
@@ -511,7 +429,7 @@ private fun AudioTag(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = ContinuousRoundedRectangle(12.dp),
         color = color.copy(alpha = 0.15f),
     ) {
         Text(
@@ -521,6 +439,113 @@ private fun AudioTag(
             color = color,
             fontWeight = FontWeight.SemiBold,
         )
+    }
+}
+
+/**
+ * 音频质量标签组
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AudioQualityTags(
+    currentMediaItem: MediaItem?,
+    modifier: Modifier = Modifier,
+) {
+    val extras = currentMediaItem?.mediaMetadata?.extras
+    val sampleRate = extras?.getInt("sampleRate") ?: 0
+    val bitRate = extras?.getInt("bitRate") ?: 0
+    val mimeType = extras?.getString("mimeType") ?: ""
+    val isLossless =
+        mimeType.contains("flac", ignoreCase = true) ||
+            mimeType.contains(
+                "alac",
+                ignoreCase = true,
+            ) ||
+            mimeType.contains("wav", ignoreCase = true)
+
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        // 采样率标签
+        if (sampleRate > 0) {
+            AudioTag(
+                text = "${sampleRate / 1000}kHz",
+                color = if (sampleRate >= 96000) Color(0xFF4CAF50) else MiuixTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        // 比特率标签
+        if (bitRate > 0) {
+            val bitRateKbps = bitRate / 1000
+            AudioTag(
+                text = "${bitRateKbps}kbps",
+                color = if (bitRateKbps >= 320) Color(0xFF2196F3) else MiuixTheme.colorScheme.secondary,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        // 无损标签
+        if (isLossless) {
+            AudioTag(
+                text = "无损",
+                color = Color(0xFFFF9800),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        // 高品质标签
+        if (bitRate >= 320000 && !isLossless) {
+            AudioTag(
+                text = "高品质",
+                color = Color(0xFF9C27B0),
+            )
+        }
+    }
+}
+
+/**
+ * 音频信息卡片
+ */
+@Composable
+private fun AudioInfoCard(
+    currentMediaItem: MediaItem?,
+    modifier: Modifier = Modifier,
+) {
+    val extras = currentMediaItem?.mediaMetadata?.extras
+    val sampleRate = extras?.getInt("sampleRate") ?: 0
+    val bitRate = extras?.getInt("bitRate") ?: 0
+    val channels = extras?.getInt("channels") ?: 0
+    val mimeType = extras?.getString("mimeType") ?: "未知"
+
+    InfoCard(title = "音频信息", modifier = modifier) {
+        InfoRow(label = "格式", value = mimeType)
+
+        if (sampleRate > 0) {
+            InfoRow(
+                label = "采样率",
+                value = "${sampleRate}Hz (${sampleRate / 1000}kHz)",
+            )
+        }
+
+        if (bitRate > 0) {
+            InfoRow(
+                label = "比特率",
+                value = "${bitRate / 1000}kbps",
+            )
+        }
+
+        if (channels > 0) {
+            val channelName =
+                when (channels) {
+                    1 -> "单声道"
+                    2 -> "立体声"
+                    else -> "$channels 声道"
+                }
+            InfoRow(label = "声道数", value = channelName)
+        }
     }
 }
 
@@ -537,12 +562,12 @@ private fun InfoCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(ContinuousRoundedRectangle(16.dp))
                 .background(MiuixTheme.colorScheme.surfaceContainer)
                 .border(
                     width = 1.dp,
                     color = MiuixTheme.colorScheme.outline,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = ContinuousRoundedRectangle(16.dp),
                 ).padding(16.dp),
     ) {
         Text(
@@ -595,7 +620,8 @@ private fun InfoRow(
 @Composable
 private fun PlayerPage(
     currentMediaItem: MediaItem?,
-    currentPosition: Float,
+    seekPosition: Float,
+    realPosition: Float,
     duration: Long,
     isPlaying: Boolean,
     playMode: PlayMode,
@@ -608,6 +634,7 @@ private fun PlayerPage(
     onFavoriteClick: () -> Unit,
     progress: Float,
     modifier: Modifier = Modifier,
+    isSeekingState: Boolean = false,
 ) {
     Column(
         modifier =
@@ -625,15 +652,10 @@ private fun PlayerPage(
             modifier =
                 Modifier
                     .graphicsLayer {
-                        alpha =
-                            if (progress < 0.8f) {
-                                0f
-                            } else {
-                                (progress - 0.8f) * 5
-                            }
+                        alpha = calculateFadeAlpha(progress, COVER_FADE_THRESHOLD)
                     }.weight(1f, fill = false)
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(ContinuousRoundedRectangle(8.dp)),
         ) { currentMediaItem ->
             AudioCover(
                 uri = currentMediaItem?.mediaMetadata?.artworkUri,
@@ -643,7 +665,7 @@ private fun PlayerPage(
                             Modifier
                                 .fillMaxHeight()
                                 .aspectRatio(1f)
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(ContinuousRoundedRectangle(8.dp))
                                 .background(MiuixTheme.colorScheme.surfaceContainerHigh),
                     ) {
                         Icon(
@@ -680,42 +702,22 @@ private fun PlayerPage(
 
         var ampState by remember { mutableStateOf(listOf<Int>()) }
 
-        // 模拟的音频波形数据
+        // 音频波形数据
         LaunchedEffect(currentMediaItem) {
             launch(Dispatchers.IO) {
-                val config = currentMediaItem?.localConfiguration
-
-                if (config == null) {
-                    ampState = arrayListOf()
-                    return@launch
-                }
-
-                if (config.mimeType != MimeTypes.AUDIO_ALAC && config.mimeType != MimeTypes.AUDIO_MP4) {
-                    val inputStream = App.getInstance().contentResolver.openInputStream(config.uri)
-                    inputStream.use { inputStream ->
-                        if (inputStream != null) {
-                            val amplitudes = amplituda.processAudio(inputStream)
-                            amplitudes.get({
-                                ampState = it.amplitudesAsList()
-                            }, {
-                                ampState = arrayListOf()
-                            })
-                        } else {
-                            ampState = arrayListOf()
-                        }
-                    }
-                } else {
-                    ampState = arrayListOf()
-                }
+                ampState = loadAmplitudeData(currentMediaItem, amplituda)
             }
         }
 
         // 进度条
         AudioWaveSlider(
-            progress = if (duration > 0) currentPosition / duration else 0f,
+            progress = if (duration > 0) seekPosition / duration else 0f,
             amplitudes = ampState,
             onProgressChange = {
-                onValueChangeFinished()
+                onValueChange.invoke(it)
+            },
+            onProgressChangeFinished = {
+                onValueChangeFinished.invoke()
             },
             waveformBrush = SolidColor(MiuixTheme.colorScheme.surfaceContainerHigh),
             progressBrush = SolidColor(MiuixTheme.colorScheme.onSurface),
@@ -724,27 +726,55 @@ private fun PlayerPage(
                     .fillMaxWidth()
                     .height(80.dp)
                     .graphicsLayer {
-                        alpha =
-                            if (progress < 0.5f) {
-                                0f
-                            } else {
-                                (progress - 0.5f) * 2
-                            }
+                        alpha = calculateFadeAlpha(progress, CONTROLS_FADE_THRESHOLD)
                     },
         )
+        // 当前位置 和 总时长
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = formatTime(realPosition.toLong()),
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+            )
 
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // 滑动到的地方
+            AnimatedVisibility(
+                visible = isSeekingState,
+            ) {
+                Text(
+                    modifier =
+                        Modifier
+                            .background(
+                                MiuixTheme.colorScheme.primaryVariant,
+                                shape = ContinuousRoundedRectangle(8.dp),
+                            ).padding(vertical = 4.dp, horizontal = 8.dp),
+                    text = formatTime(seekPosition.toLong()),
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onPrimaryVariant,
+                )
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                text = formatTime(duration),
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+            )
+        }
         Spacer(modifier = Modifier.height(32.dp))
-
         // 控制按钮
         PlayerControls(
             modifier =
                 Modifier.graphicsLayer {
-                    alpha =
-                        if (progress < 0.5f) {
-                            0f
-                        } else {
-                            (progress - 0.5f) * 2
-                        }
+                    alpha = calculateFadeAlpha(progress, CONTROLS_FADE_THRESHOLD)
                 },
             isPlaying = isPlaying,
             playMode = playMode,
@@ -762,30 +792,13 @@ private fun PlayerPage(
  */
 @Composable
 private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
+
+
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = "🎵",
-                style = MiuixTheme.textStyles.headline2,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "全屏歌词",
-                style = MiuixTheme.textStyles.headline1,
-                color = MiuixTheme.colorScheme.onSurface,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "（待实现）",
-                style = MiuixTheme.textStyles.title4,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-        }
+
     }
 }
 
@@ -821,50 +834,6 @@ private fun SongInfo(
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
         )
-    }
-}
-
-/**
- * 进度条
- */
-@Composable
-private fun ProgressBar(
-    modifier: Modifier,
-    currentPosition: Float,
-    duration: Float,
-    onValueChange: (Float) -> Unit,
-    onValueChangeFinished: () -> Unit,
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Slider(
-            value = currentPosition,
-            onValueChange = onValueChange,
-            onValueChangeFinished = onValueChangeFinished,
-            valueRange = 0f..duration.coerceAtLeast(1f),
-            colors =
-                SliderDefaults.colors(
-                    thumbColor = MiuixTheme.colorScheme.onSurface,
-                    activeTrackColor = MiuixTheme.colorScheme.onSurface,
-                    inactiveTrackColor = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                ),
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = formatTime(currentPosition.toLong()),
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
-
-            Text(
-                text = formatTime(duration.toLong()),
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
-        }
     }
 }
 
@@ -913,7 +882,7 @@ private fun PlayerControls(
                 modifier =
                     Modifier
                         .size(80.dp)
-                        .clip(RoundedCornerShape(40.dp))
+                        .clip(ContinuousRoundedRectangle(40.dp))
                         .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.9f)),
             ) {
                 Icon(
@@ -984,3 +953,48 @@ private fun formatTime(millis: Long): String {
     val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
     return String.format(Locale.CHINESE, "%d:%02d", minutes, seconds)
 }
+
+/**
+ * 计算淡入透明度
+ * @param progress 当前进度 (0-1)
+ * @param threshold 开始淡入的阈值
+ * @return 透明度值 (0-1)
+ */
+private fun calculateFadeAlpha(
+    progress: Float,
+    threshold: Float,
+): Float =
+    if (progress < threshold) {
+        0f
+    } else {
+        ((progress - threshold) / (1f - threshold)).coerceIn(0f, 1f)
+    }
+
+/**
+ * 加载音频波形数据
+ */
+private suspend fun loadAmplitudeData(
+    mediaItem: MediaItem?,
+    amplituda: Amplituda,
+): List<Int> =
+    withContext(Dispatchers.IO) {
+        val config = mediaItem?.localConfiguration ?: return@withContext emptyList()
+
+        // ALAC 和 MP4 格式不支持波形提取
+        if (config.mimeType == MimeTypes.AUDIO_ALAC || config.mimeType == MimeTypes.AUDIO_MP4) {
+            return@withContext emptyList()
+        }
+
+        return@withContext try {
+            App.getInstance().contentResolver.openInputStream(config.uri)?.use { inputStream ->
+                var result = emptyList<Int>()
+                amplituda.processAudio(inputStream).get(
+                    { result = it.amplitudesAsList() },
+                    { result = emptyList() },
+                )
+                result
+            } ?: emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }

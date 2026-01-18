@@ -4,6 +4,7 @@ adaptiveVersion = "1.2.0"
 agp = "8.13.2"
 amplitudaVersion = "2.3.0"
 androidliquidglassVersion = "1.0.0-alpha11"
+capsuleAndroidVersion = "2.1.1-patch2"
 coilCompose = "3.3.0"
 constraintlayoutComposeVersion = "1.1.1"
 converterMoshiVersion = "3.0.0"
@@ -68,9 +69,11 @@ androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-
 androidx-media = { module = "androidx.media:media", version.ref = "mediaVersion" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3ExoplayerVersion" }
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtxVersion" }
+capsule-android = { module = "com.mocharealm.gaze:capsule-android", version.ref = "capsuleAndroidVersion" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "converterMoshiVersion" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "hazeVersion" }
+haze-materials = { module = "dev.chrisbanes.haze:haze-materials", version.ref = "hazeVersion" }
 kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version = "1.10.2" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

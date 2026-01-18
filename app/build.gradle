@@ -27,7 +27,7 @@ android {
 
   defaultConfig {
     applicationId "me.spica27.spicamusic"
-    minSdk 24
+    minSdk 29
     targetSdk 36
     versionCode buildVersionCode
     versionName buildVersionName
@@ -177,7 +177,8 @@ dependencies {
   implementation(libs.pinyin4j)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.haze)
-  implementation("dev.chrisbanes.haze:haze-materials:1.7.1")
+  implementation(libs.haze.materials)
+  implementation(libs.capsule.android)
 }
 
 tasks.register('incrementBuildNumber') {

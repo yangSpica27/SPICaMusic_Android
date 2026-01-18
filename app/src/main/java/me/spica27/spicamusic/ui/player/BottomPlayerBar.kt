@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -33,6 +32,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.HazeMaterials
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
@@ -120,7 +120,7 @@ fun BottomPlayerBar(
                         modifier =
                             Modifier
                                 .size(48.dp)
-                                .clip(RoundedCornerShape(6.dp))
+                                .clip(ContinuousRoundedRectangle(6.dp))
                                 .background(
                                     MiuixTheme.colorScheme.surfaceContainerHigh,
                                 ),
@@ -129,7 +129,7 @@ fun BottomPlayerBar(
                                 modifier =
                                     Modifier
                                         .size(48.dp)
-                                        .clip(RoundedCornerShape(6.dp)),
+                                        .clip(ContinuousRoundedRectangle(6.dp)),
                             ) {
                                 Text(
                                     "🎵",
