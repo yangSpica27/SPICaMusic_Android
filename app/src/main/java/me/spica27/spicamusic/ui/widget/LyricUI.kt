@@ -1,10 +1,14 @@
 package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,14 +17,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -32,21 +36,25 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.findPlayingIndex
 import me.spica27.spicamusic.common.entity.toNormal
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.*
+import kotlin.math.abs
 
 @Composable
 fun LryricUI(
@@ -56,9 +64,11 @@ fun LryricUI(
     onSeekToTime: (Long) -> Unit = {},
 ) {
     val lyricLines =
-        lyric
-            .sortedBy { it.time }
-            .mapNotNull { it.toNormal() }
+        remember(lyric) {
+            lyric
+                .sortedBy { it.time }
+                .mapNotNull { it.toNormal() }
+        }
 
     if (lyricLines.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -110,32 +120,39 @@ fun LryricUI(
             }
     }
 
-    LaunchedEffect(playingIndex, showSeekOverlay, lyricLines) {
-        val target = playingIndex
-        if (showSeekOverlay || target == Int.MAX_VALUE || target !in lyricLines.indices) {
-            return@LaunchedEffect
+    BoxWithConstraints(modifier = modifier) {
+        LaunchedEffect(playingIndex, showSeekOverlay, lyricLines) {
+            val target = playingIndex
+            if (showSeekOverlay || target == Int.MAX_VALUE || target !in lyricLines.indices) {
+                return@LaunchedEffect
+            }
+            isAutoScrolling = true
+            try {
+                lazyListState.slowScrollToIndex(
+                    targetIndex = target,
+                    viewportHeightPx = constraints.maxHeight,
+                )
+            } finally {
+                isAutoScrolling = false
+            }
         }
-        isAutoScrolling = true
-        try {
-            lazyListState.animateScrollToItem((target - 2).coerceAtLeast(0))
-        } finally {
-            isAutoScrolling = false
-        }
-    }
 
-    val highlightedIndex = if (showSeekOverlay) previewIndex else playingIndex
-    val gradientColors =
-        listOf(
-            MiuixTheme.colorScheme.surface,
-            Color.Transparent,
-        )
+        val highlightedIndex = if (showSeekOverlay) previewIndex else playingIndex
 
-    Box(modifier = modifier) {
+        val density = LocalDensity.current
+
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 96.dp, horizontal = 24.dp),
+            contentPadding =
+                PaddingValues(
+                    vertical =
+                        with(density) {
+                            constraints.maxHeight.toDp() / 2
+                        },
+                    horizontal = 16.dp,
+                ),
             state = lazyListState,
         ) {
             itemsIndexed(
@@ -158,11 +175,14 @@ fun LryricUI(
                     label = "lyricAlpha",
                 )
 
+                val blurRadius = ((1f - emphasis) * 6).dp
+
                 LyricLine(
                     lyric = line,
                     isActive = distanceFromActive == 0,
                     alpha = alpha,
                     scale = scale,
+                    blurRadius = blurRadius,
                 )
             }
         }
@@ -172,8 +192,7 @@ fun LryricUI(
                 Modifier
                     .fillMaxWidth()
                     .height(96.dp)
-                    .align(Alignment.TopCenter)
-                    .background(Brush.verticalGradient(gradientColors)),
+                    .align(Alignment.TopCenter),
         )
 
         Box(
@@ -181,8 +200,7 @@ fun LryricUI(
                 Modifier
                     .fillMaxWidth()
                     .height(96.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(Brush.verticalGradient(gradientColors.reversed())),
+                    .align(Alignment.BottomCenter),
         )
 
         if (showSeekOverlay) {
@@ -199,6 +217,8 @@ fun LryricUI(
         AnimatedVisibility(
             modifier = Modifier.align(Alignment.CenterEnd),
             visible = showSeekOverlay && previewIndex in lyricLines.indices,
+            enter = materialSharedAxisXIn(true),
+            exit = materialSharedAxisXOut(true),
         ) {
             val previewLine = lyricLines.getOrNull(previewIndex)
             if (previewLine != null) {
@@ -217,8 +237,8 @@ private fun LyricLine(
     isActive: Boolean,
     alpha: Float,
     scale: Float,
+    blurRadius: Dp,
 ) {
-    val activeBackground = MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
     val inactiveTextColor = MiuixTheme.colorScheme.onSurface.copy(alpha = alpha)
     val activeTextColor = MiuixTheme.colorScheme.onSurface
 
@@ -227,21 +247,20 @@ private fun LyricLine(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(32.dp))
-                .graphicsLayer {
+                .hazeEffect {
+                    this.blurRadius = blurRadius
+                }.graphicsLayer {
                     this.alpha = alpha
                     scaleX = scale
                     scaleY = scale
-                }.background(if (isActive) activeBackground else Color.Transparent)
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+                }.padding(horizontal = 24.dp, vertical = 16.dp),
     ) {
         Text(
             text = lyric.content.ifBlank { " · · · " },
             style = MiuixTheme.textStyles.title2,
             fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Medium,
             color = if (isActive) activeTextColor else inactiveTextColor,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
+            textAlign = TextAlign.Start,
             overflow = TextOverflow.Ellipsis,
         )
 
@@ -251,8 +270,7 @@ private fun LyricLine(
                 text = lyric.translation!!,
                 style = MiuixTheme.textStyles.body2,
                 color = if (isActive) activeTextColor.copy(alpha = 0.85f) else inactiveTextColor.copy(alpha = 0.8f),
-                textAlign = TextAlign.Center,
-                maxLines = 2,
+                textAlign = TextAlign.Start,
                 overflow = TextOverflow.Ellipsis,
             )
         }
@@ -287,16 +305,45 @@ private fun SeekPreview(
             onClick = onSeek,
             modifier =
                 Modifier
-                    .clip(RoundedCornerShape(48.dp))
-                    .background(MiuixTheme.colorScheme.primary),
+                    .width(88.dp)
+                    .height(44.dp),
+            backgroundColor = MiuixTheme.colorScheme.primaryContainer,
         ) {
             Icon(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = "定位到此行",
-                tint = MiuixTheme.colorScheme.onPrimary,
+                tint = MiuixTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
+}
+
+private suspend fun LazyListState.slowScrollToIndex(
+    targetIndex: Int,
+    viewportHeightPx: Int,
+    durationMillis: Int = 950,
+) {
+    if (viewportHeightPx <= 0 || targetIndex < 0) return
+    val layoutInfoSnapshot = layoutInfo
+    val averageItemSize =
+        layoutInfoSnapshot.visibleItemsInfo
+            .takeIf { it.isNotEmpty() }
+            ?.map { it.size }
+            ?.average()
+            ?.toFloat()
+            ?.takeIf { it > 0f }
+            ?: (viewportHeightPx / 6f)
+
+    val currentOffsetPx = firstVisibleItemIndex * averageItemSize + firstVisibleItemScrollOffset
+    val targetOffsetPx = targetIndex * averageItemSize
+    val desiredOffsetPx = targetOffsetPx + viewportHeightPx * 0.35f
+    val distance = desiredOffsetPx - currentOffsetPx
+
+    if (abs(distance) < 0.5f) return
+    animateScrollBy(
+        value = distance,
+        animationSpec = tween(durationMillis = durationMillis, easing = LinearOutSlowInEasing),
+    )
 }
 
 private fun formatLyricTime(time: Long): String {

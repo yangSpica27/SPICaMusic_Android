@@ -799,19 +799,20 @@ private fun PlayerPage(
 private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
     var currentTime by remember { mutableLongStateOf(0L) }
 
-    val lyric = remember { mutableStateListOf<LyricItem>() }
-
-    LaunchedEffect(Unit) {
-        for (i in 0 until 100) {
-            lyric.add(
-                LyricItem.NormalLyric(
-                    content = "这是第 $i 行歌词",
-                    time = i * 3000L,
-                    key = "$i",
-                ),
-            )
+    val lyric =
+        remember {
+            mutableStateListOf<LyricItem>().apply {
+                for (i in 0 until 100) {
+                    add(
+                        LyricItem.NormalLyric(
+                            content = "这是第 $i 行歌词",
+                            time = i * 3000L,
+                            key = "$i",
+                        ),
+                    )
+                }
+            }
         }
-    }
 
     LaunchedEffect(Unit) {
         while (true) {
