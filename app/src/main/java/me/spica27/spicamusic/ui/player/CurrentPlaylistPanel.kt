@@ -8,6 +8,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,7 +27,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -55,7 +55,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.extra.SuperDialog
+import top.yukonga.miuix.kmp.extra.WindowDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 class PlaylistPanelController internal constructor(
@@ -90,7 +90,7 @@ fun CurrentPlaylistPanelHost(
     onVisibleChange: (Boolean) -> Unit,
     content: @Composable () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var keepSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(visible) {
@@ -111,8 +111,8 @@ fun CurrentPlaylistPanelHost(
         ModalBottomSheet(
             onDismissRequest = { onVisibleChange(false) },
             sheetState = sheetState,
+            sheetGesturesEnabled = true,
             containerColor = MiuixTheme.colorScheme.surface,
-            dragHandle = { BottomSheetDefaults.DragHandle() },
         ) {
             CurrentPlaylistPanelContent(
                 onDismiss = { onVisibleChange(false) },
@@ -188,12 +188,20 @@ private fun CurrentPlaylistPanelContent(
         }
 
         if (currentPlaylist.isEmpty()) {
-            EmptyPlaylistState(modifier = Modifier.fillMaxWidth().padding(24.dp))
+            EmptyPlaylistState(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+            )
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                 contentPadding =
-                    androidx.compose.foundation.layout.PaddingValues(
+                    PaddingValues(
                         horizontal = 16.dp,
                         vertical = 8.dp,
                     ),
@@ -413,7 +421,7 @@ private fun CreatePlaylistDialog(
     var playlistName by remember { mutableStateOf("") }
     val showState = remember { mutableStateOf(true) }
 
-    SuperDialog(
+    WindowDialog(
         title = "创建歌单",
         onDismissRequest = onDismiss,
         show = showState,
