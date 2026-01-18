@@ -1,19 +1,24 @@
 package me.spica27.spicamusic.ui.home.pages
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -69,21 +74,23 @@ private fun LibraryContent(
     val libraryItems =
         listOf(
             LibraryItem("所有歌曲", Icons.Default.Home, Screen.AllSongs),
-            LibraryItem("歌单", Icons.Default.List, Screen.Playlists),
+            LibraryItem("歌单", Icons.AutoMirrored.Filled.List, Screen.Playlists),
             LibraryItem("专辑", Icons.Default.Star, Screen.Albums),
             LibraryItem("艺术家", Icons.Default.Person, Screen.Artists),
             LibraryItem("最近添加", Icons.Default.Add, Screen.RecentlyAdded),
             LibraryItem("最常播放", Icons.Default.Favorite, Screen.MostPlayed),
-            LibraryItem("播放历史", Icons.Default.List, Screen.PlayHistory),
+            LibraryItem("播放历史", Icons.AutoMirrored.Filled.PlaylistPlay, Screen.PlayHistory),
             LibraryItem("文件夹", Icons.Default.Home, Screen.Folders),
         )
 
-    LazyColumn(
+    LazyVerticalGrid(
         modifier =
             modifier
                 .overScrollVertical()
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        columns = GridCells.Fixed(2),
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(libraryItems) { item ->
             LibraryItemCard(
@@ -111,11 +118,11 @@ private fun LibraryItemCard(
         modifier = modifier.padding(vertical = 6.dp),
         onClick = onClick,
     ) {
-        androidx.compose.foundation.layout.Row(
+        Row(
             modifier =
                 Modifier
                     .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = icon,

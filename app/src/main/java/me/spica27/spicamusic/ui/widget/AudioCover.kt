@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImagePainter
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
@@ -23,7 +24,9 @@ fun AudioCover(
         val state by painter.state.collectAsState()
         when (state) {
             is AsyncImagePainter.State.Success -> {
-                SubcomposeAsyncImageContent()
+                SubcomposeAsyncImageContent(
+                    contentScale = ContentScale.Crop,
+                )
             }
 
             is AsyncImagePainter.State.Error -> {

@@ -85,6 +85,10 @@ import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
 import org.koin.compose.koinInject
+import top.yukonga.miuix.kmp.basic.DropdownImpl
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
+import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -164,7 +168,6 @@ fun ExpandedPlayerScreen(
             TopBar(
                 currentPage = pagerState.currentPage,
                 onCollapse = onCollapse,
-                onMoreClick = { /* TODO: 显示更多选项 */ },
             )
 
             // 水平 Pager 内容区域
@@ -228,7 +231,6 @@ fun ExpandedPlayerScreen(
 private fun TopBar(
     currentPage: Int,
     onCollapse: () -> Unit,
-    onMoreClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -257,13 +259,45 @@ private fun TopBar(
                 currentPage = currentPage,
             )
 
-            IconButton(onClick = onMoreClick) {
-                Icon(
-                    imageVector = Icons.Rounded.MoreVert,
-                    contentDescription = "更多",
-                    tint = MiuixTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(28.dp),
-                )
+            val showPopup = remember { mutableStateOf(false) }
+            Box {
+                IconButton(onClick = {
+                    showPopup.value = true
+                }) {
+                    Icon(
+                        imageVector = Icons.Rounded.MoreVert,
+                        contentDescription = "更多",
+                        tint = MiuixTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+                WindowListPopup(
+                    show = showPopup,
+                    alignment = top.yukonga.miuix.kmp.basic.PopupPositionProvider.Align.End,
+                    onDismissRequest = { showPopup.value = false },
+                ) {
+                    val dismiss = LocalWindowListPopupState.current
+                    ListPopupColumn {
+                        DropdownImpl(
+                            text = "播放列表",
+                            optionSize = 2,
+                            isSelected = false,
+                            onSelectedIndexChange = {
+                                dismiss()
+                            },
+                            index = 0,
+                        )
+                        DropdownImpl(
+                            text = "查看详情",
+                            optionSize = 2,
+                            isSelected = false,
+                            onSelectedIndexChange = {
+                                dismiss()
+                            },
+                            index = 1,
+                        )
+                    }
+                }
             }
         }
     }

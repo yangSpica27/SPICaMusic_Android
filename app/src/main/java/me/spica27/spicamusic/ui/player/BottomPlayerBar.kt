@@ -14,13 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,6 +34,11 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
 import me.spica27.spicamusic.ui.widget.AudioCover
 import timber.log.Timber
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
+import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -95,9 +96,12 @@ fun BottomPlayerBar(
             // 进度条
             if (currentDuration > 0) {
                 LinearProgressIndicator(
-                    color = MiuixTheme.colorScheme.primary,
-                    trackColor = MiuixTheme.colorScheme.secondaryContainerVariant,
-                    progress = { (currentPosition.toFloat() / currentDuration).coerceIn(0f, 1f) },
+                    colors =
+                        ProgressIndicatorDefaults.progressIndicatorColors().copy(
+                            backgroundColor = MiuixTheme.colorScheme.secondaryContainerVariant,
+                            foregroundColor = MiuixTheme.colorScheme.primary,
+                        ),
+                    progress = (currentPosition.toFloat() / currentDuration).coerceIn(0f, 1f),
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -175,14 +179,15 @@ fun BottomPlayerBar(
                     )
                 }
 
-                // 下一曲按钮
+                // 播放列表按钮
                 IconButton(
-                    onClick = { viewModel.skipToNext() },
+                    onClick = {
+                    },
                     modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
-                        imageVector = Icons.Default.SkipNext,
-                        contentDescription = "下一曲",
+                        imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
+                        contentDescription = "播放列表",
                     )
                 }
             }
