@@ -363,40 +363,40 @@ class MusicScanService(
    */
   private fun generateSortName(displayName: String): String {
     if (displayName.isEmpty()) return "#"
-    
+
     val firstChar = displayName.first()
-    
+
     return try {
       when {
         // 英文字母（A-Z, a-z）
         firstChar.isLetter() && firstChar.code in 0x41..0x7A -> {
           firstChar.uppercaseChar().toString()
         }
-        
+
         // 中文（CJK 统一表意文字）
         firstChar.code in 0x4E00..0x9FFF -> {
           val transliterator = Transliterator.getInstance("Han-Latin; Latin-ASCII")
           val pinyin = transliterator.transliterate(firstChar.toString())
           pinyin.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
         }
-        
+
         // 日文平假名（ひらがな）
         firstChar.code in 0x3040..0x309F -> {
           val transliterator = Transliterator.getInstance("Hiragana-Latin")
           val romaji = transliterator.transliterate(firstChar.toString())
           romaji.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
         }
-        
+
         // 日文片假名（カタカナ）
         firstChar.code in 0x30A0..0x30FF -> {
           val transliterator = Transliterator.getInstance("Katakana-Latin")
           val romaji = transliterator.transliterate(firstChar.toString())
           romaji.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
         }
-        
+
         // 数字
         firstChar.isDigit() -> "#"
-        
+
         // 其他字符
         else -> "#"
       }

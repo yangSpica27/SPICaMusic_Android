@@ -792,13 +792,10 @@ private fun PlayerPage(
  */
 @Composable
 private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
-
-
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
-
     }
 }
 
