@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -67,6 +68,48 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
+// ==================== 常量 ====================
+private object LyricUIConstants {
+    const val EMPTY_LYRIC_TEXT = "暂无歌词"
+    const val EMPTY_WORD_PLACEHOLDER = " · · · "
+
+    const val LYRIC_ITEM_SPACING = 12
+    const val LYRIC_CORNER_RADIUS = 32
+    const val LYRIC_HORIZONTAL_PADDING = 24
+    const val LYRIC_VERTICAL_PADDING = 16
+    const val SEEK_PREVIEW_END_PADDING = 16
+
+    const val ACTIVE_SCALE = 1.12f
+    const val INACTIVE_SCALE = 1f
+    const val SCALE_ANIMATION_DURATION = 850
+
+    const val EMPHASIS_FACTOR = 0.18f
+    const val MIN_EMPHASIS = 0.35f
+    const val MAX_BLUR_RADIUS = 6f
+
+    const val ELASTIC_OFFSET_INITIAL = 100f
+    const val STAGGER_DELAY_PER_ITEM = 65L
+    const val SEEK_OVERLAY_HIDE_DELAY = 450L
+
+    const val SCROLL_ANIMATION_DURATION = 950
+    const val SCROLL_VIEWPORT_OFFSET_RATIO = 0.35f
+
+    const val BASE_TEXT_ALPHA = 0.24f
+    const val TRANSLATION_TEXT_ALPHA = 0.22f
+    const val ACTIVE_TRANSLATION_ALPHA = 0.85f
+    const val INACTIVE_TRANSLATION_ALPHA = 0.8f
+
+    const val WORD_GLOW_ALPHA = 0.4f
+    const val WORD_GLOW_BLUR_RADIUS = 12f
+    const val WORD_TRANSLATION_Y = -1.5f
+}
+
+// ==================== 主组件 ====================
+
+/**
+ * 歌词显示组件
+ * 支持普通歌词和逐字歌词，带弹性滚动动画和拖动定位功能
+ */
 @Composable
 fun LyricsUI(
     modifier: Modifier = Modifier,
@@ -74,19 +117,10 @@ fun LyricsUI(
     currentTime: Long,
     onSeekToTime: (Long) -> Unit = {},
 ) {
-    val lyricLines =
-        remember(lyric) {
-            lyric.sortedBy { it.time }
-        }
+    val lyricLines = remember(lyric) { lyric.sortedBy { it.time } }
 
     if (lyricLines.isEmpty()) {
-        Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            Text(
-                text = "暂无歌词",
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-        }
+        EmptyLyricState(modifier)
         return
     }
 
@@ -120,7 +154,7 @@ fun LyricsUI(
                 showSeekOverlay = true
             } else if (!inProgress) {
                 if (!isAutoScrolling) {
-                    delay(450)
+                    delay(LyricUIConstants.SEEK_OVERLAY_HIDE_DELAY)
                 }
                 showSeekOverlay = false
                 isAutoScrolling = false
@@ -152,14 +186,11 @@ fun LyricsUI(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(LyricUIConstants.LYRIC_ITEM_SPACING.dp),
             contentPadding =
                 PaddingValues(
-                    vertical =
-                        with(density) {
-                            constraints.maxHeight.toDp() / 2
-                        },
-                    horizontal = 16.dp,
+                    vertical = with(density) { constraints.maxHeight.toDp() / 2 },
+                    horizontal = LyricUIConstants.SEEK_PREVIEW_END_PADDING.dp,
                 ),
             state = lazyListState,
         ) {
@@ -167,73 +198,65 @@ fun LyricsUI(
                 items = lyricLines,
                 key = { _, line -> line.key },
             ) { index, line ->
-                val distanceFromActive =
-                    if (highlightedIndex == Int.MAX_VALUE) {
-                        Int.MAX_VALUE
-                    } else {
-                        kotlin.math.abs(index - highlightedIndex)
-                    }
-                val emphasis = (1f - distanceFromActive * 0.18f).coerceIn(0.35f, 1f)
+                val distanceFromActive = calculateDistance(index, highlightedIndex)
+                val emphasis = calculateEmphasis(distanceFromActive)
                 val scale by animateFloatAsState(
-                    targetValue = if (distanceFromActive == 0) 1.12f else 1f,
+                    targetValue = if (distanceFromActive == 0) LyricUIConstants.ACTIVE_SCALE else LyricUIConstants.INACTIVE_SCALE,
                     label = "lyricScale",
-                    animationSpec = tween(850),
+                    animationSpec = tween(LyricUIConstants.SCALE_ANIMATION_DURATION),
                 )
                 val alpha by animateFloatAsState(
                     targetValue = emphasis,
                     label = "lyricAlpha",
                 )
-
-                val blurRadius = ((1f - emphasis) * 6).dp
+                val blurRadius = ((1f - emphasis) * LyricUIConstants.MAX_BLUR_RADIUS).dp
 
                 val elasticOffset = remember { Animatable(0f) }
+                var lastPlayingIndex by remember { mutableStateOf(playingIndex) }
+
                 LaunchedEffect(playingIndex) {
-                    if (playingIndex != Int.MAX_VALUE && index > playingIndex) {
-                        val staggerDelay = (index - playingIndex) * 50L
-                        delay(staggerDelay)
-                        elasticOffset.animateTo(
-                            targetValue = 0f,
-                            animationSpec =
-                                spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessLow,
-                                ),
-                        )
-                    } else {
-                        elasticOffset.snapTo(0f)
+                    if (playingIndex != Int.MAX_VALUE && playingIndex != lastPlayingIndex) {
+                        if (index > playingIndex) {
+                            elasticOffset.snapTo(LyricUIConstants.ELASTIC_OFFSET_INITIAL)
+                            val staggerDelay = (index - playingIndex) * LyricUIConstants.STAGGER_DELAY_PER_ITEM
+                            delay(staggerDelay)
+                            elasticOffset.animateTo(
+                                targetValue = 0f,
+                                animationSpec =
+                                    spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessLow,
+                                    ),
+                            )
+                        } else {
+                            elasticOffset.snapTo(0f)
+                        }
+                        lastPlayingIndex = playingIndex
                     }
                 }
 
-                if (line is LyricItem.NormalLyric) {
-                    Box(
-                        modifier =
-                            Modifier.graphicsLayer {
-                                translationY = elasticOffset.value
-                            },
-                    ) {
-                        LyricLine(
-                            lyric = line,
-                            isActive = index == highlightedIndex,
-                            alpha = alpha,
-                            scale = scale,
-                            blurRadius = blurRadius,
-                        )
-                    }
-                } else if (line is LyricItem.WordsLyric) {
-                    Box(
-                        modifier =
-                            Modifier.graphicsLayer {
-                                translationY = elasticOffset.value
-                            },
-                    ) {
-                        WordsLyricLine(
-                            lyric = line,
-                            currentTime = currentTime,
-                            isActive = index == highlightedIndex,
-                            alpha = alpha,
-                            scale = scale,
-                            blurRadius = blurRadius,
-                        )
+                LyricItemWrapper(
+                    elasticOffset = elasticOffset.value,
+                ) {
+                    when (line) {
+                        is LyricItem.NormalLyric ->
+                            LyricLine(
+                                lyric = line,
+                                isActive = index == highlightedIndex,
+                                alpha = alpha,
+                                scale = scale,
+                                blurRadius = blurRadius,
+                            )
+
+                        is LyricItem.WordsLyric ->
+                            WordsLyricLine(
+                                lyric = line,
+                                currentTime = currentTime,
+                                isActive = index == highlightedIndex,
+                                alpha = alpha,
+                                scale = scale,
+                                blurRadius = blurRadius,
+                            )
                     }
                 }
             }
@@ -283,6 +306,45 @@ fun LyricsUI(
     }
 }
 
+// ==================== 辅助组件 ====================
+
+/**
+ * 空歌词状态显示
+ */
+@Composable
+private fun EmptyLyricState(modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Text(
+            text = LyricUIConstants.EMPTY_LYRIC_TEXT,
+            style = MiuixTheme.textStyles.body1,
+            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        )
+    }
+}
+
+/**
+ * 歌词项弹性偏移包装器
+ */
+@Composable
+private fun LyricItemWrapper(
+    elasticOffset: Float,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier.graphicsLayer {
+                translationY = elasticOffset
+            },
+    ) {
+        content()
+    }
+}
+
+// ==================== 普通歌词 ====================
+
+/**
+ * 普通歌词行显示
+ */
 @Composable
 private fun LyricLine(
     lyric: LyricItem.NormalLyric,
@@ -298,17 +360,19 @@ private fun LyricLine(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .hazeEffect {
-                    this.blurRadius = blurRadius
-                }.graphicsLayer {
+                .clip(RoundedCornerShape(LyricUIConstants.LYRIC_CORNER_RADIUS.dp))
+                .hazeEffect { this.blurRadius = blurRadius }
+                .graphicsLayer {
                     this.alpha = alpha
                     scaleX = scale
                     scaleY = scale
-                }.padding(horizontal = 24.dp, vertical = 16.dp),
+                }.padding(
+                    horizontal = LyricUIConstants.LYRIC_HORIZONTAL_PADDING.dp,
+                    vertical = LyricUIConstants.LYRIC_VERTICAL_PADDING.dp,
+                ),
     ) {
         Text(
-            text = lyric.content.ifBlank { " · · · " },
+            text = lyric.content.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
             style = MiuixTheme.textStyles.title2,
             fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Medium,
             color = if (isActive) activeTextColor else inactiveTextColor,
@@ -321,7 +385,12 @@ private fun LyricLine(
             Text(
                 text = lyric.translation!!,
                 style = MiuixTheme.textStyles.body2,
-                color = if (isActive) activeTextColor.copy(alpha = 0.85f) else inactiveTextColor.copy(alpha = 0.8f),
+                color =
+                    if (isActive) {
+                        activeTextColor.copy(alpha = LyricUIConstants.ACTIVE_TRANSLATION_ALPHA)
+                    } else {
+                        inactiveTextColor.copy(alpha = LyricUIConstants.INACTIVE_TRANSLATION_ALPHA)
+                    },
                 textAlign = TextAlign.Start,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -329,6 +398,11 @@ private fun LyricLine(
     }
 }
 
+// ==================== 逐字歌词 ====================
+
+/**
+ * 计算单词播放进度
+ */
 private fun wordProgress(
     word: LyricItem.WordsLyric.WordWithTiming,
     time: Long,
@@ -342,12 +416,18 @@ private fun wordProgress(
     }
 }
 
+/**
+ * 单词字符范围
+ */
 private data class WordCharRange(
     val start: Int,
     val end: Int,
     val word: LyricItem.WordsLyric.WordWithTiming,
 )
 
+/**
+ * 构建单词字符范围列表
+ */
 private fun buildWordRanges(words: List<LyricItem.WordsLyric.WordWithTiming>): List<WordCharRange> {
     if (words.isEmpty()) return emptyList()
     var cursor = 0
@@ -359,6 +439,9 @@ private fun buildWordRanges(words: List<LyricItem.WordsLyric.WordWithTiming>): L
     }
 }
 
+/**
+ * 获取单词在文本布局中的边界框
+ */
 private fun wordBoundingBox(
     layout: TextLayoutResult,
     start: Int,
@@ -382,6 +465,9 @@ private fun wordBoundingBox(
     return rect
 }
 
+/**
+ * 逐字歌词行显示（支持单词级别进度控制）
+ */
 @Composable
 private fun WordsLyricLine(
     lyric: LyricItem.WordsLyric,
@@ -392,8 +478,9 @@ private fun WordsLyricLine(
     blurRadius: Dp,
 ) {
     val activeTextColor = MiuixTheme.colorScheme.onSurface
-    val baseTextColor = activeTextColor.copy(alpha = 0.24f * alpha)
-    val translationColor = activeTextColor.copy(alpha = 0.22f * alpha)
+    val baseTextColor = activeTextColor.copy(alpha = LyricUIConstants.BASE_TEXT_ALPHA * alpha)
+    val translationColor =
+        activeTextColor.copy(alpha = LyricUIConstants.TRANSLATION_TEXT_ALPHA * alpha)
     val sortedWords = remember(lyric) { lyric.words.sortedBy { it.startTime } }
     val sentence = remember(sortedWords) { sortedWords.joinToString(separator = "") { it.content } }
     val wordRanges = remember(sortedWords) { buildWordRanges(sortedWords) }
@@ -417,16 +504,18 @@ private fun WordsLyricLine(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .hazeEffect {
-                    this.blurRadius = blurRadius
-                }.graphicsLayer {
+                .clip(RoundedCornerShape(LyricUIConstants.LYRIC_CORNER_RADIUS.dp))
+                .hazeEffect { this.blurRadius = blurRadius }
+                .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
-                }.padding(horizontal = 24.dp, vertical = 16.dp),
+                }.padding(
+                    horizontal = LyricUIConstants.LYRIC_HORIZONTAL_PADDING.dp,
+                    vertical = LyricUIConstants.LYRIC_VERTICAL_PADDING.dp,
+                ),
     ) {
         ProgressiveWordsText(
-            text = sentence.ifBlank { " · · · " },
+            text = sentence.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
             wordRanges = wordRanges,
             progressProvider = { range -> wordProgress(range.word, effectiveTime) },
             baseStyle =
@@ -456,6 +545,9 @@ private fun WordsLyricLine(
     }
 }
 
+/**
+ * 渐进式单词文本显示（带发光效果和进度控制）
+ */
 @Composable
 private fun ProgressiveWordsText(
     text: String,
@@ -475,23 +567,23 @@ private fun ProgressiveWordsText(
             overflow = TextOverflow.Ellipsis,
         )
 
-        if (text.isNotBlank() && wordRanges.isNotEmpty()) {
+        Crossfade(text.isNotBlank() && wordRanges.isNotEmpty()) {
             BasicText(
                 text = text,
                 style =
                     activeStyle.copy(
                         shadow =
                             Shadow(
-                                color = activeStyle.color.copy(alpha = 0.4f),
+                                color = activeStyle.color.copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA),
                                 offset = Offset(0f, 0f),
-                                blurRadius = 12f,
+                                blurRadius = LyricUIConstants.WORD_GLOW_BLUR_RADIUS,
                             ),
                     ),
                 modifier =
                     Modifier
                         .fillMaxWidth()
                         .graphicsLayer {
-                            translationY = -1.5f
+                            translationY = LyricUIConstants.WORD_TRANSLATION_Y
                         }.drawWithCache {
                             val layout = textLayoutResult
                             onDrawWithContent {
@@ -520,6 +612,11 @@ private fun ProgressiveWordsText(
     }
 }
 
+// ==================== UI 辅助组件 ====================
+
+/**
+ * 拖动定位预览（显示时间和播放按钮）
+ */
 @Composable
 private fun SeekPreview(
     timeText: String,
@@ -528,7 +625,7 @@ private fun SeekPreview(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.padding(end = 16.dp),
+        modifier = Modifier.padding(end = LyricUIConstants.SEEK_PREVIEW_END_PADDING.dp),
     ) {
         Box(
             modifier =
@@ -561,10 +658,16 @@ private fun SeekPreview(
     }
 }
 
+// ==================== 工具函数 ====================
+
+/**
+ * LazyListState 缓慢滚动扩展函数
+ * 实现平滑的歌词切换动画
+ */
 private suspend fun LazyListState.slowScrollToIndex(
     targetIndex: Int,
     viewportHeightPx: Int,
-    durationMillis: Int = 950,
+    durationMillis: Int = LyricUIConstants.SCROLL_ANIMATION_DURATION,
 ) {
     if (viewportHeightPx <= 0 || targetIndex < 0) return
     val layoutInfoSnapshot = layoutInfo
@@ -578,7 +681,8 @@ private suspend fun LazyListState.slowScrollToIndex(
 
     val currentOffsetPx = firstVisibleItemIndex * averageItemSize + firstVisibleItemScrollOffset
     val targetOffsetPx = targetIndex * averageItemSize
-    val desiredOffsetPx = targetOffsetPx + viewportHeightPx * 0.35f
+    val desiredOffsetPx =
+        targetOffsetPx + viewportHeightPx * LyricUIConstants.SCROLL_VIEWPORT_OFFSET_RATIO
     val distance = desiredOffsetPx - currentOffsetPx
 
     if (abs(distance) < 0.5f) return
@@ -588,9 +692,36 @@ private suspend fun LazyListState.slowScrollToIndex(
     )
 }
 
+/**
+ * 格式化歌词时间为 mm:ss 格式
+ */
 private fun formatLyricTime(time: Long): String {
     val totalSeconds = (time / 1000).coerceAtLeast(0)
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     return String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
 }
+
+// ==================== 计算辅助函数 ====================
+
+/**
+ * 计算歌词项与激活项的距离
+ */
+private fun calculateDistance(
+    index: Int,
+    highlightedIndex: Int,
+): Int =
+    if (highlightedIndex == Int.MAX_VALUE) {
+        Int.MAX_VALUE
+    } else {
+        abs(index - highlightedIndex)
+    }
+
+/**
+ * 根据距离计算强调程度（用于透明度和模糊）
+ */
+private fun calculateEmphasis(distance: Int): Float =
+    (1f - distance * LyricUIConstants.EMPHASIS_FACTOR).coerceIn(
+        LyricUIConstants.MIN_EMPHASIS,
+        1f,
+    )
