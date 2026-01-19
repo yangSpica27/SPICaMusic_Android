@@ -82,8 +82,8 @@ import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.LyricsUI
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
-import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
-import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
+import me.spica27.spicamusic.ui.widget.materialSharedAxisXIn
+import me.spica27.spicamusic.ui.widget.materialSharedAxisXOut
 import org.koin.compose.koinInject
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
@@ -688,7 +688,7 @@ private fun PlayerPage(
         AnimatedContent(
             currentMediaItem,
             transitionSpec = {
-                materialSharedAxisZIn(true) togetherWith materialSharedAxisZOut(true)
+                materialSharedAxisXIn(true) togetherWith materialSharedAxisXOut(true)
             },
             modifier =
                 Modifier

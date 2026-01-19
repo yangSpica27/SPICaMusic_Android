@@ -26,6 +26,31 @@ sealed class DynamicSpectrumBackground(
     "霓虹栅格",
   )
 
+  object ParticleStarfield : DynamicSpectrumBackground(
+    "particle_starfield",
+    "粒子星空",
+  )
+
+  object RippleWave : DynamicSpectrumBackground(
+    "ripple_wave",
+    "波纹涟漪",
+  )
+
+  object SpectrumHelix : DynamicSpectrumBackground(
+    "spectrum_helix",
+    "光谱螺旋",
+  )
+
+  object EnergyPulse : DynamicSpectrumBackground(
+    "energy_pulse",
+    "能量脉冲",
+  )
+
+  object FluidVortex : DynamicSpectrumBackground(
+    "fluid_vortex",
+    "流体漩涡",
+  )
+
   object OFF : DynamicSpectrumBackground(
     "off",
     "关闭",
@@ -38,6 +63,11 @@ sealed class DynamicSpectrumBackground(
       is LiquidAurora -> "液态极光"
       is BubblePulse -> "浮泡律动"
       is NeonGrid -> "霓虹栅格"
+      is ParticleStarfield -> "粒子星空"
+      is RippleWave -> "波纹涟漪"
+      is SpectrumHelix -> "光谱螺旋"
+      is EnergyPulse -> "能量脉冲"
+      is FluidVortex -> "流体漩涡"
       is OFF -> "关闭"
     }
   }
@@ -49,13 +79,18 @@ sealed class DynamicSpectrumBackground(
         LiquidAurora.value -> LiquidAurora
         BubblePulse.value -> BubblePulse
         NeonGrid.value -> NeonGrid
+        ParticleStarfield.value -> ParticleStarfield
+        RippleWave.value -> RippleWave
+        SpectrumHelix.value -> SpectrumHelix
+        EnergyPulse.value -> EnergyPulse
+        FluidVortex.value -> FluidVortex
         OFF.value -> OFF
         else -> OFF
       }
     }
 
     val presets: List<DynamicSpectrumBackground>
-      get() = listOf(TopGlow, LiquidAurora, BubblePulse, NeonGrid, OFF)
+      get() = listOf(TopGlow, LiquidAurora, BubblePulse, EnergyPulse, OFF)
   }
 
 }
