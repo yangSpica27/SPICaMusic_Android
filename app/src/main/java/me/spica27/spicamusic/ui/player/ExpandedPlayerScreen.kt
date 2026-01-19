@@ -72,7 +72,7 @@ import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
@@ -80,7 +80,7 @@ import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
-import me.spica27.spicamusic.ui.widget.LryricUI
+import me.spica27.spicamusic.ui.widget.LyricsUI
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
@@ -840,10 +840,30 @@ private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
             mutableStateListOf<LyricItem>().apply {
                 for (i in 0 until 100) {
                     add(
-                        LyricItem.NormalLyric(
-                            content = "这是第 $i 行歌词",
-                            time = i * 3000L,
-                            key = "$i",
+                        LyricItem.WordsLyric(
+                            key = UUID.randomUUID().toString(),
+                            agent = "测试",
+                            startTime = i * 5000L,
+                            words =
+                                ArrayList<LyricItem.WordsLyric.WordWithTiming>().apply {
+                                    for (n in 0 until 5) {
+                                        add(
+                                            LyricItem.WordsLyric.WordWithTiming(
+                                                content = "测试$n",
+                                                startTime = i * 5000L + n * 1000L,
+                                                endTime = i * 5000L + (n + 1) * 1000L,
+                                            ),
+                                        )
+                                    }
+                                },
+                            endTime = i * 5000L + 5000L,
+                            translation =
+                                listOf(
+                                    LyricItem.WordsLyric.Translation(
+                                        content = "这是测试翻译",
+                                        lang = "zh",
+                                    ),
+                                ),
                         ),
                     )
                 }
@@ -852,8 +872,8 @@ private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(1000L)
-            currentTime += 1000L
+            awaitFrame()
+            currentTime += 16L
         }
     }
 
@@ -861,7 +881,7 @@ private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
         modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
-        LryricUI(
+        LyricsUI(
             modifier = Modifier.fillMaxSize(),
             lyric = lyric,
             currentTime = currentTime,

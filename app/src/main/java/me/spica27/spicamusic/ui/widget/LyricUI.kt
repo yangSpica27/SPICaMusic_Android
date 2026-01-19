@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.runtime.Composable
@@ -36,8 +37,14 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,16 +55,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.findPlayingIndex
-import me.spica27.spicamusic.common.entity.toNormal
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.*
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 @Composable
-fun LryricUI(
+fun LyricsUI(
     modifier: Modifier = Modifier,
     lyric: List<LyricItem>,
     currentTime: Long,
@@ -65,9 +73,7 @@ fun LryricUI(
 ) {
     val lyricLines =
         remember(lyric) {
-            lyric
-                .sortedBy { it.time }
-                .mapNotNull { it.toNormal() }
+            lyric.sortedBy { it.time }
         }
 
     if (lyricLines.isEmpty()) {
@@ -106,18 +112,17 @@ fun LryricUI(
     }
 
     LaunchedEffect(lazyListState) {
-        snapshotFlow { lazyListState.isScrollInProgress }
-            .collectLatest { inProgress ->
-                if (inProgress && !isAutoScrolling) {
-                    showSeekOverlay = true
-                } else if (!inProgress) {
-                    if (!isAutoScrolling) {
-                        delay(450)
-                    }
-                    showSeekOverlay = false
-                    isAutoScrolling = false
+        snapshotFlow { lazyListState.isScrollInProgress }.collectLatest { inProgress ->
+            if (inProgress && !isAutoScrolling) {
+                showSeekOverlay = true
+            } else if (!inProgress) {
+                if (!isAutoScrolling) {
+                    delay(450)
                 }
+                showSeekOverlay = false
+                isAutoScrolling = false
             }
+        }
     }
 
     BoxWithConstraints(modifier = modifier) {
@@ -177,13 +182,24 @@ fun LryricUI(
 
                 val blurRadius = ((1f - emphasis) * 6).dp
 
-                LyricLine(
-                    lyric = line,
-                    isActive = distanceFromActive == 0,
-                    alpha = alpha,
-                    scale = scale,
-                    blurRadius = blurRadius,
-                )
+                if (line is LyricItem.NormalLyric) {
+                    LyricLine(
+                        lyric = line,
+                        isActive = index == highlightedIndex,
+                        alpha = alpha,
+                        scale = scale,
+                        blurRadius = blurRadius,
+                    )
+                } else if (line is LyricItem.WordsLyric) {
+                    WordsLyricLine(
+                        lyric = line,
+                        currentTime = currentTime,
+                        isActive = index == highlightedIndex,
+                        alpha = alpha,
+                        scale = scale,
+                        blurRadius = blurRadius,
+                    )
+                }
             }
         }
 
@@ -277,6 +293,197 @@ private fun LyricLine(
     }
 }
 
+private fun wordProgress(
+    word: LyricItem.WordsLyric.WordWithTiming,
+    time: Long,
+): Float {
+    if (time == Long.MIN_VALUE) return 0f
+    val duration = (word.endTime - word.startTime).coerceAtLeast(1L)
+    return when {
+        time <= word.startTime -> 0f
+        time >= word.endTime -> 1f
+        else -> ((time - word.startTime).toFloat() / duration).coerceIn(0f, 1f)
+    }
+}
+
+private data class WordCharRange(
+    val start: Int,
+    val end: Int,
+    val word: LyricItem.WordsLyric.WordWithTiming,
+)
+
+private fun buildWordRanges(words: List<LyricItem.WordsLyric.WordWithTiming>): List<WordCharRange> {
+    if (words.isEmpty()) return emptyList()
+    var cursor = 0
+    return words.map { word ->
+        val start = cursor
+        val end = cursor + word.content.length
+        cursor = end
+        WordCharRange(start, end, word)
+    }
+}
+
+private fun wordBoundingBox(
+    layout: TextLayoutResult,
+    start: Int,
+    end: Int,
+): androidx.compose.ui.geometry.Rect {
+    val safeStart = start.coerceIn(0, layout.layoutInput.text.length)
+    val safeEnd = end.coerceIn(safeStart, layout.layoutInput.text.length)
+    if (safeEnd <= safeStart) return androidx.compose.ui.geometry.Rect.Zero
+
+    var rect = layout.getBoundingBox(safeStart)
+    for (index in (safeStart + 1) until safeEnd) {
+        val box = layout.getBoundingBox(index)
+        rect =
+            androidx.compose.ui.geometry.Rect(
+                left = min(rect.left, box.left),
+                top = min(rect.top, box.top),
+                right = max(rect.right, box.right),
+                bottom = max(rect.bottom, box.bottom),
+            )
+    }
+    return rect
+}
+
+@Composable
+private fun WordsLyricLine(
+    lyric: LyricItem.WordsLyric,
+    currentTime: Long,
+    isActive: Boolean,
+    alpha: Float,
+    scale: Float,
+    blurRadius: Dp,
+) {
+    val activeTextColor = MiuixTheme.colorScheme.onSurface
+    val baseTextColor = activeTextColor.copy(alpha = 0.24f * alpha)
+    val translationColor = activeTextColor.copy(alpha = 0.22f * alpha)
+    val sortedWords = remember(lyric) { lyric.words.sortedBy { it.startTime } }
+    val sentence = remember(sortedWords) { sortedWords.joinToString(separator = "") { it.content } }
+    val wordRanges = remember(sortedWords) { buildWordRanges(sortedWords) }
+    val effectiveTime = if (isActive) currentTime else Long.MIN_VALUE
+
+    val lineProgressTarget =
+        remember(effectiveTime, lyric) {
+            if (effectiveTime == Long.MIN_VALUE) {
+                0f
+            } else {
+                val duration = (lyric.endTime - lyric.startTime).coerceAtLeast(1L)
+                ((effectiveTime - lyric.startTime).toFloat() / duration).coerceIn(0f, 1f)
+            }
+        }
+    val lineProgress by animateFloatAsState(
+        targetValue = lineProgressTarget,
+        label = "wordsLineProgress",
+    )
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(32.dp))
+                .hazeEffect {
+                    this.blurRadius = blurRadius
+                }.graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                }.padding(horizontal = 24.dp, vertical = 16.dp),
+    ) {
+        ProgressiveWordsText(
+            text = sentence.ifBlank { " · · · " },
+            wordRanges = wordRanges,
+            progressProvider = { range -> wordProgress(range.word, effectiveTime) },
+            baseStyle =
+                MiuixTheme.textStyles.title2.copy(
+                    color = baseTextColor,
+                    fontWeight = FontWeight.Medium,
+                ),
+            activeStyle =
+                MiuixTheme.textStyles.title2.copy(
+                    color = activeTextColor,
+                    fontWeight = FontWeight.Medium,
+                ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        val translation = lyric.translation.firstOrNull { it.content.isNotBlank() }?.content
+        if (!translation.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = translation,
+                style = MiuixTheme.textStyles.body2,
+                color = translationColor,
+                textAlign = TextAlign.Start,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProgressiveWordsText(
+    text: String,
+    wordRanges: List<WordCharRange>,
+    progressProvider: (WordCharRange) -> Float,
+    baseStyle: TextStyle,
+    activeStyle: TextStyle,
+    modifier: Modifier = Modifier,
+) {
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    Box(modifier = modifier) {
+        BasicText(
+            text = text,
+            style = baseStyle,
+            modifier = Modifier.fillMaxWidth(),
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        if (text.isNotBlank() && wordRanges.isNotEmpty()) {
+            BasicText(
+                text = text,
+                style =
+                    activeStyle.copy(
+                        shadow =
+                            Shadow(
+                                color = activeStyle.color.copy(alpha = 0.4f),
+                                offset = Offset(0f, 0f),
+                                blurRadius = 12f,
+                            ),
+                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            translationY = -1.5f
+                        }.drawWithCache {
+                            val layout = textLayoutResult
+                            onDrawWithContent {
+                                if (layout == null) return@onDrawWithContent
+                                wordRanges.forEach { range ->
+                                    val progress = progressProvider(range)
+                                    if (progress <= 0f) return@forEach
+                                    val bounds = wordBoundingBox(layout, range.start, range.end)
+                                    if (bounds.width <= 0f) return@forEach
+                                    val clipRight = bounds.left + bounds.width * progress
+                                    clipRect(
+                                        left = bounds.left,
+                                        top = bounds.top,
+                                        right = clipRight,
+                                        bottom = bounds.bottom,
+                                    ) {
+                                        this@onDrawWithContent.drawContent()
+                                    }
+                                }
+                            }
+                        },
+                onTextLayout = { textLayoutResult = it },
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
 @Composable
 private fun SeekPreview(
     timeText: String,
@@ -331,8 +538,7 @@ private suspend fun LazyListState.slowScrollToIndex(
             ?.map { it.size }
             ?.average()
             ?.toFloat()
-            ?.takeIf { it > 0f }
-            ?: (viewportHeightPx / 6f)
+            ?.takeIf { it > 0f } ?: (viewportHeightPx / 6f)
 
     val currentOffsetPx = firstVisibleItemIndex * averageItemSize + firstVisibleItemScrollOffset
     val targetOffsetPx = targetIndex * averageItemSize
