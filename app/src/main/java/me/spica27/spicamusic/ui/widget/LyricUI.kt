@@ -1,8 +1,11 @@
 package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -174,6 +177,7 @@ fun LyricsUI(
                 val scale by animateFloatAsState(
                     targetValue = if (distanceFromActive == 0) 1.12f else 1f,
                     label = "lyricScale",
+                    animationSpec = tween(850),
                 )
                 val alpha by animateFloatAsState(
                     targetValue = emphasis,
@@ -182,23 +186,55 @@ fun LyricsUI(
 
                 val blurRadius = ((1f - emphasis) * 6).dp
 
+                val elasticOffset = remember { Animatable(0f) }
+                LaunchedEffect(playingIndex) {
+                    if (playingIndex != Int.MAX_VALUE && index > playingIndex) {
+                        val staggerDelay = (index - playingIndex) * 50L
+                        delay(staggerDelay)
+                        elasticOffset.animateTo(
+                            targetValue = 0f,
+                            animationSpec =
+                                spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow,
+                                ),
+                        )
+                    } else {
+                        elasticOffset.snapTo(0f)
+                    }
+                }
+
                 if (line is LyricItem.NormalLyric) {
-                    LyricLine(
-                        lyric = line,
-                        isActive = index == highlightedIndex,
-                        alpha = alpha,
-                        scale = scale,
-                        blurRadius = blurRadius,
-                    )
+                    Box(
+                        modifier =
+                            Modifier.graphicsLayer {
+                                translationY = elasticOffset.value
+                            },
+                    ) {
+                        LyricLine(
+                            lyric = line,
+                            isActive = index == highlightedIndex,
+                            alpha = alpha,
+                            scale = scale,
+                            blurRadius = blurRadius,
+                        )
+                    }
                 } else if (line is LyricItem.WordsLyric) {
-                    WordsLyricLine(
-                        lyric = line,
-                        currentTime = currentTime,
-                        isActive = index == highlightedIndex,
-                        alpha = alpha,
-                        scale = scale,
-                        blurRadius = blurRadius,
-                    )
+                    Box(
+                        modifier =
+                            Modifier.graphicsLayer {
+                                translationY = elasticOffset.value
+                            },
+                    ) {
+                        WordsLyricLine(
+                            lyric = line,
+                            currentTime = currentTime,
+                            isActive = index == highlightedIndex,
+                            alpha = alpha,
+                            scale = scale,
+                            blurRadius = blurRadius,
+                        )
+                    }
                 }
             }
         }
