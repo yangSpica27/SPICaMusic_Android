@@ -1,13 +1,18 @@
 package me.spica27.spicamusic.ui.home.pages
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -23,22 +28,36 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.androidx.compose.koinViewModel
-import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.DropdownImpl
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
+import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -88,7 +107,7 @@ fun SearchPage(
                 // 歌曲列表
                 LazyColumn(
                     state = listState,
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     searchResults.forEach { (title, songs) ->
@@ -113,10 +132,13 @@ fun SearchPage(
                                 song = it,
                                 modifier =
                                     Modifier
-                                        .animateItem()
-                                        .padding(vertical = 4.dp),
+                                        .fillMaxSize()
+                                        .animateItem(),
                             )
                         }
+                    }
+                    item {
+                        Spacer(modifier = Modifier.size(150.dp))
                     }
                 }
             }
@@ -174,35 +196,74 @@ private fun SongItemCard(
 ) {
     val playerViewModel = LocalPlayerViewModel.current
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        onClick = {
-            // 使用 mediaStoreId 而不是 songId (MediaLibrary 使用 mediaStoreId 查找歌曲)
-            timber.log.Timber.d("SearchPage: Clicking song: ${song.displayName}, mediaStoreId=${song.mediaStoreId}, songId=${song.songId}")
-            playerViewModel.playSong(song)
-        },
+    val showPopup = remember { mutableStateOf(false) }
+    val items = listOf("立刻播放", "加入播放列表", "下一首播放", "全部播放", "查看详情")
+
+    Box(
+        modifier =
+            modifier.clickable {
+                showPopup.value = true
+            },
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            AudioCover(
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .shadow(
+                            elevation = 2.dp,
+                            shape = ContinuousRoundedRectangle(10.dp),
+                            clip = false,
+                            ambientColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            spotColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        ).clip(
+                            ContinuousRoundedRectangle(10.dp),
+                        ),
+                uri = song.getCoverUri(),
+                placeHolder = {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(
+                                    MiuixTheme.colorScheme.surfaceContainerHigh,
+                                ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_dvd),
+                            contentDescription = "默认封面",
+                            tint = MiuixTheme.colorScheme.onSurfaceContainerVariant.copy(alpha = .3f),
+                            modifier = Modifier.size(33.dp),
+                        )
+                    }
+                },
+            )
             // 歌曲信息
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = song.displayName,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
                     maxLines = 1,
+                    style = MiuixTheme.textStyles.body1,
+                    letterSpacing = 1.002.sp,
+                    fontWeight = FontWeight.Medium,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = song.artist,
-                    fontSize = 14.sp,
-                    color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                     modifier = Modifier.padding(top = 4.dp),
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    overflow = TextOverflow.Ellipsis,
+                    letterSpacing = 1.009.sp,
                 )
             }
 
@@ -213,6 +274,38 @@ private fun SongItemCard(
                 color = MiuixTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(start = 8.dp),
             )
+        }
+        WindowListPopup(
+            show = showPopup,
+            alignment = PopupPositionProvider.Align.End,
+            onDismissRequest = { showPopup.value = false },
+        ) {
+            val dismiss = LocalWindowListPopupState.current
+            ListPopupColumn {
+                items.forEachIndexed { index, string ->
+                    DropdownImpl(
+                        text = string,
+                        optionSize = items.size,
+                        isSelected = false,
+                        onSelectedIndexChange = { index ->
+                            when (index) {
+                                0 -> playerViewModel.playSong(song)
+                                1 -> playerViewModel.addSongToNext(song)
+                                2 -> playerViewModel.addSongToNext(song)
+                                3 ->
+                                    playerViewModel.updatePlaylistWithSongs(
+                                        listOf(song),
+                                    )
+                                4 -> {
+                                    // 查看详情
+                                }
+                            }
+                            dismiss()
+                        },
+                        index = index,
+                    )
+                }
+            }
         }
     }
 }

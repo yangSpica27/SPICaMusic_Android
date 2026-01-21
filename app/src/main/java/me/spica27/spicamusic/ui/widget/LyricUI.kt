@@ -567,47 +567,49 @@ private fun ProgressiveWordsText(
             overflow = TextOverflow.Ellipsis,
         )
 
-        Crossfade(text.isNotBlank() && wordRanges.isNotEmpty()) {
-            BasicText(
-                text = text,
-                style =
-                    activeStyle.copy(
-                        shadow =
-                            Shadow(
-                                color = activeStyle.color.copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA),
-                                offset = Offset(0f, 0f),
-                                blurRadius = LyricUIConstants.WORD_GLOW_BLUR_RADIUS,
-                            ),
-                    ),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .graphicsLayer {
-                            translationY = LyricUIConstants.WORD_TRANSLATION_Y
-                        }.drawWithCache {
-                            val layout = textLayoutResult
-                            onDrawWithContent {
-                                if (layout == null) return@onDrawWithContent
-                                wordRanges.forEach { range ->
-                                    val progress = progressProvider(range)
-                                    if (progress <= 0f) return@forEach
-                                    val bounds = wordBoundingBox(layout, range.start, range.end)
-                                    if (bounds.width <= 0f) return@forEach
-                                    val clipRight = bounds.left + bounds.width * progress
-                                    clipRect(
-                                        left = bounds.left,
-                                        top = bounds.top,
-                                        right = clipRight,
-                                        bottom = bounds.bottom,
-                                    ) {
-                                        this@onDrawWithContent.drawContent()
+        Crossfade(text.isNotBlank() && wordRanges.isNotEmpty()) { show ->
+            if (show) {
+                BasicText(
+                    text = text,
+                    style =
+                        activeStyle.copy(
+                            shadow =
+                                Shadow(
+                                    color = activeStyle.color.copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA),
+                                    offset = Offset(0f, 0f),
+                                    blurRadius = LyricUIConstants.WORD_GLOW_BLUR_RADIUS,
+                                ),
+                        ),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer {
+                                translationY = LyricUIConstants.WORD_TRANSLATION_Y
+                            }.drawWithCache {
+                                val layout = textLayoutResult
+                                onDrawWithContent {
+                                    if (layout == null) return@onDrawWithContent
+                                    wordRanges.forEach { range ->
+                                        val progress = progressProvider(range)
+                                        if (progress <= 0f) return@forEach
+                                        val bounds = wordBoundingBox(layout, range.start, range.end)
+                                        if (bounds.width <= 0f) return@forEach
+                                        val clipRight = bounds.left + bounds.width * progress
+                                        clipRect(
+                                            left = bounds.left,
+                                            top = bounds.top,
+                                            right = clipRight,
+                                            bottom = bounds.bottom,
+                                        ) {
+                                            this@onDrawWithContent.drawContent()
+                                        }
                                     }
                                 }
-                            }
-                        },
-                onTextLayout = { textLayoutResult = it },
-                overflow = TextOverflow.Ellipsis,
-            )
+                            },
+                    onTextLayout = { textLayoutResult = it },
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
