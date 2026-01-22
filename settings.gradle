@@ -37,3 +37,4 @@ include ':storage-core'
 include ':player-core'
 //include(':decoder_flac')
 //include(":starrysky")
+include ':lyric-core'

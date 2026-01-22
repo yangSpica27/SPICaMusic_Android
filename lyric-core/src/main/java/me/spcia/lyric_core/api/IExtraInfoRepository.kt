@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.storage.api
+package me.spcia.lyric_core.api
 
 import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.common.entity.Lyric
@@ -7,7 +7,7 @@ import me.spica27.spicamusic.common.entity.Lyric
  * 歌词仓库接口
  * 提供歌词数据的存储和查询操作
  */
-interface ILyricRepository {
+interface IExtraInfoRepository {
     /**
      * 根据歌曲ID获取歌词 Flow
      */

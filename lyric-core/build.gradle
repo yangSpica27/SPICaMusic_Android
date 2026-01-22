@@ -1,0 +1,69 @@
+plugins {
+  alias(libs.plugins.android.library)
+  alias(libs.plugins.kotlin.android)
+  id 'kotlin-parcelize'
+  id 'com.google.devtools.ksp'
+}
+
+android {
+  namespace 'me.spica27.lyric_core'
+  compileSdk = 36
+
+  defaultConfig {
+    minSdk 24
+    targetSdk 36
+
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    consumerProguardFiles "consumer-rules.pro"
+
+    ndk {
+      abiFilters 'arm64-v8a'
+    }
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled true
+      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    }
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_11
+    targetCompatibility JavaVersion.VERSION_11
+  }
+
+  kotlinOptions {
+    jvmTarget = "11"
+  }
+
+  sourceSets {
+    main {
+      jniLibs.srcDirs = ['libs']
+    }
+  }
+}
+
+dependencies {
+  // Common module
+  api project(':common')
+  // Storage API (for song data access)
+  implementation project(':storage-core')
+  implementation libs.androidx.core.ktx
+  implementation libs.androidx.lifecycle.runtime.ktx
+
+  // Coroutines
+  implementation libs.kotlinx.coroutines.guava
+  implementation libs.retrofit
+  implementation libs.converter.moshi
+  implementation libs.sandwich.retrofit
+  implementation libs.moshi.kotlin
+  ksp libs.moshi.kotlin.codegen
+  implementation libs.sandwich.retrofit
+
+  // Koin
+  api libs.koin.androidx.compose
+
+  // Timber
+  implementation libs.timber
+}

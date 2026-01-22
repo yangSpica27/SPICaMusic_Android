@@ -12,6 +12,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/common" />
+            <option value="$PROJECT_DIR$/lyric-core" />
             <option value="$PROJECT_DIR$/player-core" />
             <option value="$PROJECT_DIR$/storage-core" />
           </set>

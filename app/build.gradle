@@ -113,7 +113,7 @@ dependencies {
   implementation project(':common')
   implementation project(':storage-core')
   implementation project(':player-core')
-
+  implementation project(':lyric-core')
   implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
   implementation libs.androidx.core.ktx
   implementation libs.androidx.lifecycle.runtime.ktx

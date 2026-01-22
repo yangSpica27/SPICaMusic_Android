@@ -5,7 +5,7 @@ import me.spica27.spicamusic.common.entity.PlayHistory
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.PlaylistWithSongs
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.storage.impl.entity.LyricEntity
+import me.spica27.spicamusic.storage.impl.entity.ExtraInfoEntity
 import me.spica27.spicamusic.storage.impl.entity.PlayHistoryEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistWithSongsEntity
@@ -69,14 +69,14 @@ fun Playlist.toEntity() = PlaylistEntity(
   needUpdate = needUpdate,
 )
 
-fun LyricEntity.toCommon() = Lyric(
+fun ExtraInfoEntity.toCommon() = Lyric(
   songId = mediaId,
   lyricContent = lyrics,
   translatedLyric = null,
   source = null,
 )
 
-fun Lyric.toEntity() = LyricEntity(
+fun Lyric.toEntity() = ExtraInfoEntity(
   mediaId = songId,
   lyrics = lyricContent,
   cover = "",

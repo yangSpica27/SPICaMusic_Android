@@ -3,6 +3,7 @@ package me.spica27.spicamusic
 import android.app.Application
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
+import me.spcia.lyric_core.di.extraInfoModule
 import me.spica27.spicamusic.di.AppModule
 import me.spica27.spicamusic.player.impl.SpicaPlayer
 import me.spica27.spicamusic.service.PlaybackService
@@ -35,6 +36,7 @@ class App : Application() {
                 storageModule, // 存储模块 (storage-core)
                 SpicaPlayer.createModule(PlaybackService::class.java), // 播放器模块 (player-core)
                 AppModule.appModule, // 应用模块
+                extraInfoModule,
             )
         }
     }
