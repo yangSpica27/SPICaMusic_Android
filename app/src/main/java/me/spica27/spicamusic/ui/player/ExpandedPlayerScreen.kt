@@ -843,20 +843,16 @@ private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
                         LyricItem.WordsLyric(
                             key = UUID.randomUUID().toString(),
                             agent = "测试",
-                            startTime = i * 5000L,
+                            startTime = i * 7000L,
                             words =
-                                ArrayList<LyricItem.WordsLyric.WordWithTiming>().apply {
-                                    for (n in 0 until 5) {
-                                        add(
-                                            LyricItem.WordsLyric.WordWithTiming(
-                                                content = "测试$n",
-                                                startTime = i * 5000L + n * 1000L,
-                                                endTime = i * 5000L + (n + 1) * 1000L,
-                                            ),
-                                        )
-                                    }
+                                "这是第 ${i + 1} 行测试歌词".mapIndexed { index, ch ->
+                                    LyricItem.WordsLyric.WordWithTiming(
+                                        content = ch.toString(),
+                                        startTime = i * 7000L + index * 430L,
+                                        endTime = i * 7000L + (index + 1) * 430L - 1L,
+                                    )
                                 },
-                            endTime = i * 5000L + 5000L,
+                            endTime = i * 7000L + 6999L, // 比下一句早1ms结束
                             translation =
                                 listOf(
                                     LyricItem.WordsLyric.Translation(

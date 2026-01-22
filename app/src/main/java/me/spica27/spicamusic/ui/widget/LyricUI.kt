@@ -1,19 +1,21 @@
 package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,13 +23,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.runtime.Composable
@@ -41,15 +43,16 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -529,6 +532,7 @@ private fun WordsLyricLine(
                     fontWeight = FontWeight.Medium,
                 ),
             modifier = Modifier.fillMaxWidth(),
+            lineProgress = lineProgress,
         )
 
         val translation = lyric.translation.firstOrNull { it.content.isNotBlank() }?.content
@@ -556,59 +560,86 @@ private fun ProgressiveWordsText(
     baseStyle: TextStyle,
     activeStyle: TextStyle,
     modifier: Modifier = Modifier,
+    lineProgress: Float,
 ) {
-    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
-
-    Box(modifier = modifier) {
-        BasicText(
+    if (wordRanges.isEmpty()) {
+        Text(
             text = text,
             style = baseStyle,
-            modifier = Modifier.fillMaxWidth(),
-            overflow = TextOverflow.Ellipsis,
+            modifier = modifier,
         )
+        return
+    }
 
-        Crossfade(text.isNotBlank() && wordRanges.isNotEmpty()) { show ->
-            if (show) {
-                BasicText(
-                    text = text,
-                    style =
-                        activeStyle.copy(
-                            shadow =
-                                Shadow(
-                                    color = activeStyle.color.copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA),
-                                    offset = Offset(0f, 0f),
-                                    blurRadius = LyricUIConstants.WORD_GLOW_BLUR_RADIUS,
-                                ),
+    val textMeasurer = rememberTextMeasurer()
+
+    val textLayoutResults =
+        remember(text, wordRanges, lineProgress) {
+            wordRanges.map { range ->
+                val layoutResult = textMeasurer.measure(text = range.word.content, style = baseStyle)
+                // 对单词文本使用从 0 开始的索引
+                val boundingBox = wordBoundingBox(layoutResult, 0, range.word.content.length)
+                Pair(layoutResult, boundingBox)
+            }
+        }
+
+    val progresses =
+        remember(text, wordRanges, lineProgress) {
+            wordRanges.associateWith { range -> progressProvider(range) }
+        }
+
+    val density = LocalDensity.current
+
+    FlowRow(
+        modifier = modifier,
+    ) {
+        textLayoutResults.forEachIndexed { index, pair ->
+            val progress = progresses[wordRanges[index]] ?: 0f
+            val extraY =
+                animateDpAsState(
+                    if (progress > .1f && progress < 0.99f) (-2).dp else 0.dp,
+                    label = "wordGlowScale",
+                    animationSpec =
+                        spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
                         ),
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .graphicsLayer {
-                                translationY = LyricUIConstants.WORD_TRANSLATION_Y
-                            }.drawWithCache {
-                                val layout = textLayoutResult
-                                onDrawWithContent {
-                                    if (layout == null) return@onDrawWithContent
-                                    wordRanges.forEach { range ->
-                                        val progress = progressProvider(range)
-                                        if (progress <= 0f) return@forEach
-                                        val bounds = wordBoundingBox(layout, range.start, range.end)
-                                        if (bounds.width <= 0f) return@forEach
-                                        val clipRight = bounds.left + bounds.width * progress
-                                        clipRect(
-                                            left = bounds.left,
-                                            top = bounds.top,
-                                            right = clipRight,
-                                            bottom = bounds.bottom,
-                                        ) {
-                                            this@onDrawWithContent.drawContent()
-                                        }
-                                    }
-                                }
+                ).value
+            Canvas(
+                modifier =
+                    Modifier
+                        .graphicsLayer {
+                            translationY = extraY.toPx()
+                        }.size(
+                            with(density) {
+                                Size(
+                                    width = pair.second.width,
+                                    height = pair.second.height + LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx(),
+                                ).toDpSize()
                             },
-                    onTextLayout = { textLayoutResult = it },
-                    overflow = TextOverflow.Ellipsis,
+                        ),
+            ) {
+                drawText(
+                    pair.first,
                 )
+                clipRect(
+                    pair.second.left,
+                    pair.second.top + LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx(),
+                    pair.second.left + pair.second.width * progress,
+                    pair.second.bottom + LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx(),
+                ) {
+                    drawText(
+                        pair.first,
+                        color = activeStyle.color,
+                        shadow =
+                            Shadow(
+                                color =
+                                    activeStyle.color
+                                        .copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA * (progress)),
+                                blurRadius = LyricUIConstants.WORD_GLOW_BLUR_RADIUS,
+                            ),
+                    )
+                }
             }
         }
     }
