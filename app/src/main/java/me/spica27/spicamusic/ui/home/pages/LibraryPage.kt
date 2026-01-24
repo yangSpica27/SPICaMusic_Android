@@ -20,9 +20,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import top.yukonga.miuix.kmp.basic.Card
@@ -31,6 +38,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 
 /**
@@ -39,7 +47,7 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 @Composable
 fun LibraryPage(modifier: Modifier = Modifier) {
     val scrollBehavior = MiuixScrollBehavior()
-
+    val hazeState = rememberHazeState()
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -47,15 +55,31 @@ fun LibraryPage(modifier: Modifier = Modifier) {
                 title = "媒体库",
                 largeTitle = "媒体库", // If not specified, title value will be used
                 scrollBehavior = scrollBehavior,
+                color = Color.Transparent,
+                modifier =
+                    Modifier.hazeEffect(
+                        state = hazeState,
+                        style =
+                            HazeMaterials.ultraThick(
+                                MiuixTheme.colorScheme.surface,
+                            ),
+                    ) {
+                        progressive =
+                            HazeProgressive.verticalGradient(
+                                startIntensity = 1f,
+                                endIntensity = 0f,
+                            )
+                    },
             )
         },
     ) { paddingValues ->
         LibraryContent(
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
+                    .fillMaxSize(),
             scrollBehavior,
+            paddingValues,
+            hazeState,
         )
     }
 }
@@ -67,6 +91,8 @@ fun LibraryPage(modifier: Modifier = Modifier) {
 private fun LibraryContent(
     modifier: Modifier = Modifier,
     scrollBehavior: ScrollBehavior,
+    paddingValues: PaddingValues,
+    hazeState: HazeState,
 ) {
     val backStack = LocalNavBackStack.current
 
@@ -86,10 +112,17 @@ private fun LibraryContent(
     LazyVerticalGrid(
         modifier =
             modifier
+                .hazeSource(hazeState)
                 .overScrollVertical()
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
         columns = GridCells.Fixed(2),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding =
+            PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = paddingValues.calculateTopPadding(),
+                bottom = paddingValues.calculateBottomPadding(),
+            ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(libraryItems) { item ->
@@ -128,10 +161,12 @@ private fun LibraryItemCard(
                 imageVector = icon,
                 contentDescription = title,
                 modifier = Modifier.padding(end = 16.dp),
+                tint = MiuixTheme.colorScheme.onSurfaceContainer,
             )
             Text(
                 text = title,
                 modifier = Modifier.weight(1f),
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
             )
         }
     }

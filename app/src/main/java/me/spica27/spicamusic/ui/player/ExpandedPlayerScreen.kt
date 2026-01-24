@@ -51,7 +51,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -76,7 +75,7 @@ import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
-import me.spica27.spicamusic.common.entity.LyricItem
+import me.spica27.spicamusic.common.utils.LrcParser
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
@@ -85,6 +84,7 @@ import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisXIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisXOut
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
@@ -760,7 +760,7 @@ private fun PlayerPage(
             onProgressChangeFinished = {
                 onValueChangeFinished.invoke()
             },
-            waveformBrush = SolidColor(MiuixTheme.colorScheme.surfaceContainerHigh),
+            waveformBrush = SolidColor(MiuixTheme.colorScheme.onSurfaceContainerVariant),
             progressBrush = SolidColor(MiuixTheme.colorScheme.onSurface),
             modifier =
                 Modifier
@@ -834,42 +834,46 @@ private fun PlayerPage(
 @Composable
 private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
     var currentTime by remember { mutableLongStateOf(0L) }
-
+    val playerViewModel = koinActivityViewModel<PlayerViewModel>()
     val lyric =
         remember {
-            mutableStateListOf<LyricItem>().apply {
-                for (i in 0 until 100) {
-                    add(
-                        LyricItem.WordsLyric(
-                            key = UUID.randomUUID().toString(),
-                            agent = "测试",
-                            startTime = i * 7000L,
-                            words =
-                                "这是第 ${i + 1} 行测试歌词".mapIndexed { index, ch ->
-                                    LyricItem.WordsLyric.WordWithTiming(
-                                        content = ch.toString(),
-                                        startTime = i * 7000L + index * 430L,
-                                        endTime = i * 7000L + (index + 1) * 430L - 1L,
-                                    )
-                                },
-                            endTime = i * 7000L + 6999L, // 比下一句早1ms结束
-                            translation =
-                                listOf(
-                                    LyricItem.WordsLyric.Translation(
-                                        content = "这是测试翻译",
-                                        lang = "zh",
-                                    ),
-                                ),
-                        ),
-                    )
-                }
-            }
+            LrcParser.parse(
+                """
+[ar:花玲/洛奇Mabinogi]
+[al:布罗妮之歌]
+[ti:布罗妮之歌]
+[tool:LDDC v0.9.2 https://github.com/chenmozhijin/LDDC]
+
+[00:13.490]旋[00:13.750]律[00:13.990]
+[00:15.150]回[00:15.420]响[00:15.890]在[00:16.060]那[00:16.440]座[00:16.880]空[00:17.140]荡[00:17.590]的[00:18.090]房[00:18.360]间[00:18.580]里[00:19.370]
+[00:19.840]黑[00:20.100]白[00:20.280]琴[00:20.480]键[00:20.840]上[00:21.170]的[00:21.480]旅[00:21.750]行[00:22.650]
+[00:23.010]跃[00:23.200]动[00:23.420]指[00:23.570]尖[00:24.090]的[00:24.440]光[00:24.790]影 [00:25.330]曾[00:25.490]与[00:25.770]我[00:26.150]为[00:26.560]邻[00:26.850]
+[00:26.940]时[00:27.160]间 [00:28.450]停[00:28.610]留[00:28.860]在[00:29.520]某[00:29.870]个[00:30.300]孤[00:30.530]单[00:30.990]的[00:31.570]黑[00:31.810]夜[00:32.010]里[00:32.790]
+[00:33.210]随[00:33.510]着[00:33.710]风[00:33.870]潜[00:34.310]入[00:34.550]黎[00:34.940]明[00:35.810]
+[00:36.440]而[00:36.640]它[00:36.830]归[00:36.980]向[00:37.480]的[00:37.800]风[00:38.270]景[00:38.630]
+[00:38.790]一[00:38.910]定[00:39.110]是[00:39.520]你[00:40.250]
+[00:41.040]关[00:41.240]于[00:41.470]我[00:41.780]和[00:42.030]你[00:42.450]
+[00:42.710]有[00:43.150]一[00:43.360]种[00:43.510]默[00:43.740]契[00:44.120]
+[00:44.280]像[00:44.750]飞[00:44.950]鸟[00:45.190]森[00:45.440]林[00:45.890]
+[00:45.890]命[00:46.260]中[00:46.710]注[00:46.920]定[00:47.280]
+[00:47.680]重[00:47.950]逢[00:48.150]之[00:48.350]际 [00:48.580]将[00:48.720]那[00:49.210]个[00:49.540]姓[00:49.840]名 [00:50.480]温[00:50.620]柔[00:50.930]地[00:51.220]唤[00:51.700]起[00:52.330]
+[00:52.780]无[00:53.050]数[00:53.450]的[00:53.580]回[00:53.810]忆 [00:54.400]纷[00:54.870]若[00:55.300]满[00:55.480]天[00:55.910]星[00:56.580]
+[00:56.580]不[00:56.740]要[00:56.990]忘[00:57.200]记[00:57.550]
+[00:57.860]它[00:58.030]们[00:58.200]会[00:58.430]成[00:58.810]为[00:59.100]月[00:59.490]亮[00:59.700]河[01:00.150]那[01:00.780]银[01:01.130]色[01:01.360]的[01:01.840]轨[01:02.000]迹[01:02.180]
+[01:02.960]星[01:03.200]星[01:03.440]晚[01:03.670]风[01:03.830]协[01:04.290]奏[01:04.670]曲 [01:05.360]谱[01:05.490]写[01:06.210]光[01:06.430]阴[01:06.820]诗[01:07.010]集[01:07.570]
+[01:07.860]昼[01:08.310]夜[01:08.490]在[01:08.850]交[01:09.340]替 [01:10.010]太[01:10.190]阳[01:10.360]升[01:10.620]起[01:10.970]
+[01:11.200]像[01:11.670]晨[01:11.900]风[01:12.220]吹[01:12.960]拂[01:13.090]裙[01:13.550]角 [01:14.140]连[01:14.630]同[01:14.880]我[01:15.240]的[01:15.330]心[01:15.600]
+[01:16.440]时[01:16.740]钟[01:16.940]咔[01:17.130]哒[01:17.310]又[01:17.670]响[01:18.090]起 [01:18.750]追[01:18.940]寻[01:19.660]着[01:19.790]心[01:20.240]跳[01:20.920]和[01:21.300]鸣[01:22.630]
+[01:22.990]Ha[01:23.100]~[01:26.330]Ha[01:26.480]
+[01:29.930]无[01:30.120]论[01:30.380]你[01:30.500]身[01:30.720]在[01:31.120]哪[01:31.520]里 [01:32.420]我[01:32.570]总[01:32.990]是[01:33.170]向[01:33.670]你[01:34.250]前[01:34.730]行[01:36.490]
+                """.trimIndent(),
+            )
         }
 
     LaunchedEffect(Unit) {
         while (true) {
             awaitFrame()
-            currentTime += 16L
+            currentTime = playerViewModel.getCurrentPositionMs()
         }
     }
 
@@ -881,7 +885,9 @@ private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxSize(),
             lyric = lyric,
             currentTime = currentTime,
-            onSeekToTime = { currentTime = it },
+            onSeekToTime = {
+                playerViewModel.seekTo(it)
+            },
         )
     }
 }

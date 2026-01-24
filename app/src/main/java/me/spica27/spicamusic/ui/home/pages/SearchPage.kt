@@ -210,6 +210,7 @@ private fun SearchBar(
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "搜索",
+                    tint = MiuixTheme.colorScheme.onSurfaceContainer,
                 )
             }
         },
@@ -219,6 +220,7 @@ private fun SearchBar(
                     Icon(
                         imageVector = Icons.Default.Clear,
                         contentDescription = "清空",
+                        tint = MiuixTheme.colorScheme.onSurfaceContainer,
                     )
                 }
             }

@@ -32,7 +32,6 @@ import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.HazeMaterials
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
-import me.spica27.spicamusic.ui.player.LocalPlaylistPanelController
 import me.spica27.spicamusic.ui.widget.AudioCover
 import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Icon
@@ -128,7 +127,7 @@ fun BottomPlayerBar(
                                 .size(48.dp)
                                 .clip(ContinuousRoundedRectangle(6.dp))
                                 .background(
-                                    MiuixTheme.colorScheme.surfaceContainerHigh,
+                                    MiuixTheme.colorScheme.tertiaryContainer,
                                 ),
                         placeHolder = {
                             Box(
@@ -140,7 +139,7 @@ fun BottomPlayerBar(
                                 Text(
                                     "🎵",
                                     modifier = Modifier.align(Alignment.Center),
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    color = MiuixTheme.colorScheme.onTertiaryContainer,
                                 )
                             }
                         },
@@ -178,6 +177,7 @@ fun BottomPlayerBar(
                     Icon(
                         imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = if (isPlaying) "暂停" else "播放",
+                        tint = MiuixTheme.colorScheme.onSurface,
                     )
                 }
 
@@ -191,6 +191,7 @@ fun BottomPlayerBar(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                         contentDescription = "播放列表",
+                        tint = MiuixTheme.colorScheme.onSurface,
                     )
                 }
             }

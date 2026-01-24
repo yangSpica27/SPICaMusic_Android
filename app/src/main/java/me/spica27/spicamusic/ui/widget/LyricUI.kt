@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseInBounce
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -44,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -103,7 +105,7 @@ private object LyricUIConstants {
     const val INACTIVE_TRANSLATION_ALPHA = 0.8f
 
     const val WORD_GLOW_ALPHA = 0.4f
-    const val WORD_GLOW_BLUR_RADIUS = 12f
+    const val WORD_GLOW_BLUR_RADIUS = 10f
     const val WORD_TRANSLATION_Y = -1.5f
 }
 
@@ -622,24 +624,47 @@ private fun ProgressiveWordsText(
                             },
                         ),
             ) {
+                val fadeCenter = pair.second.left + pair.second.width * progress
+
+                val fadeWidth = pair.second.width * 0.25f
+                val fadeStart = (fadeCenter - fadeWidth / 2 - pair.second.left) / pair.second.width
+                val fadeEnd = (fadeCenter + fadeWidth / 2 - pair.second.left) / pair.second.width
+
+                val colorStops =
+                    arrayOf(
+                        0.0f to activeStyle.color,
+                        fadeStart.coerceIn(0f, 1f) to activeStyle.color,
+                        fadeEnd.coerceIn(0f, 1f) to baseStyle.color,
+                        1.0f to baseStyle.color,
+                    )
+
                 drawText(
                     pair.first,
                 )
                 clipRect(
                     pair.second.left,
                     pair.second.top + LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx(),
-                    pair.second.left + pair.second.width * progress,
+                    size.width,
                     pair.second.bottom + LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx(),
                 ) {
                     drawText(
                         pair.first,
-                        color = activeStyle.color,
+                        brush =
+                            Brush.horizontalGradient(
+                                colorStops = colorStops,
+                                startX = 0f,
+                                endX = size.width,
+                            ),
                         shadow =
                             Shadow(
                                 color =
                                     activeStyle.color
                                         .copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA * (progress)),
-                                blurRadius = LyricUIConstants.WORD_GLOW_BLUR_RADIUS,
+                                blurRadius =
+                                    LyricUIConstants.WORD_GLOW_BLUR_RADIUS *
+                                        EaseInBounce.transform(
+                                            progress,
+                                        ),
                             ),
                     )
                 }

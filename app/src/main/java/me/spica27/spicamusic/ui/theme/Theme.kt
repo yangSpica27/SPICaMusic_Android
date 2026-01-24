@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
@@ -19,7 +20,7 @@ private val DarkColorScheme = darkColorScheme()
 
 @Composable
 fun SPICaMusicTheme(
-    darkTheme: Boolean = false,
+    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     val colorScheme =

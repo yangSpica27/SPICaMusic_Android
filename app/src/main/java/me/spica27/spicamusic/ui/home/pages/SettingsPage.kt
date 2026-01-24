@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.ui.home.pages
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -13,7 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
@@ -22,7 +21,9 @@ import me.spica27.spicamusic.ui.settings.SettingsItem
 import me.spica27.spicamusic.ui.settings.SettingsItemView
 import me.spica27.spicamusic.ui.settings.SettingsViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 
 /**
@@ -115,16 +116,20 @@ fun SettingsPage(modifier: Modifier = Modifier) {
             }
         }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        popupHost = { MiuixPopupHost() },
-    ) { paddingValues ->
+    val scrollerBehavior = MiuixScrollBehavior()
+
+    Scaffold(modifier = modifier.fillMaxSize(), popupHost = { MiuixPopupHost() }, topBar = {
+        TopAppBar(
+            title = "设置",
+            scrollBehavior = scrollerBehavior,
+        )
+    }) { paddingValues ->
         LazyColumn(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(vertical = 8.dp),
+                    .nestedScroll(scrollerBehavior.nestedScrollConnection),
+            contentPadding = paddingValues,
         ) {
             items(
                 items = settingsItems,

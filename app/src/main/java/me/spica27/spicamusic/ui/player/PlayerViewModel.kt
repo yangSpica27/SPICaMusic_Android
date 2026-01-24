@@ -361,4 +361,6 @@ class PlayerViewModel(
      * 获取频段信息
      */
     val frequencyBands: FloatArray = IFFTProcessor.FREQUENCY_BANDS
+
+    fun getCurrentPositionMs(): Long = player.currentPosition
 }
