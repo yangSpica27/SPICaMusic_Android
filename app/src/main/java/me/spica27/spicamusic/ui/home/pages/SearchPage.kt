@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,6 +43,12 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
+import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
@@ -51,18 +57,22 @@ import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
 import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollVertical
 
 /**
  * 搜索页面
  */
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun SearchPage(
     modifier: Modifier = Modifier,
@@ -76,6 +86,7 @@ fun SearchPage(
     LaunchedEffect(searchKeyword) {
         listState.animateScrollToItem(0)
     }
+    val scrollBehavior = MiuixScrollBehavior()
 
     fun LazyListState.isSticking(index: Int): State<Boolean> =
         derivedStateOf {
@@ -83,16 +94,30 @@ fun SearchPage(
             firstVisible?.index == index && firstVisible.offset == -layoutInfo.beforeContentPadding
         }
 
+    val listHazeSource = rememberHazeState()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
-    ) { paddingValues ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+        topBar = {
+            Column(
+                modifier =
+                    Modifier
+                        .hazeEffect(
+                            listHazeSource,
+                            HazeMaterials.ultraThick(MiuixTheme.colorScheme.surface),
+                        ) {
+                            progressive =
+                                HazeProgressive.verticalGradient(
+                                    startIntensity = 1f,
+                                    endIntensity = 0f,
+                                )
+                        },
+            ) {
+                TopAppBar(
+                    title = "搜索",
+                    scrollBehavior = scrollBehavior,
+                    color = Color.Transparent,
+                )
                 // 搜索框
                 SearchBar(
                     keyword = searchKeyword,
@@ -101,45 +126,56 @@ fun SearchPage(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                 )
+            }
+        },
+    ) { paddingValues ->
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize(),
+        ) {
+            // 歌曲列表
+            LazyColumn(
+                state = listState,
+                contentPadding = paddingValues,
+                modifier =
+                    Modifier
+                        .hazeSource(state = listHazeSource)
+                        .fillMaxSize()
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .overScrollVertical(),
+            ) {
+                searchResults.forEach { (title, songs) ->
+                    stickyHeader(
+                        key = title.hashCode(),
+                    ) { headerIndex ->
 
-                // 歌曲列表
-                LazyColumn(
-                    state = listState,
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    searchResults.forEach { (title, songs) ->
-                        stickyHeader(
-                            key = title.hashCode(),
-                        ) { headerIndex ->
+                        val isSticking by listState.isSticking(headerIndex)
 
-                            val isSticking by listState.isSticking(headerIndex)
-
-                            val titleTextColor =
-                                animateColorAsState(
-                                    targetValue = if (isSticking) Color.Transparent else MiuixTheme.colorScheme.onSurface,
-                                )
-
-                            SmallTitle(
-                                text = title,
-                                textColor = titleTextColor.value,
+                        val titleTextColor =
+                            animateColorAsState(
+                                targetValue = if (isSticking) Color.Transparent else MiuixTheme.colorScheme.onSurface,
                             )
-                        }
-                        items(songs, key = { it.songId ?: -1 }) {
-                            SongItemCard(
-                                song = it,
-                                modifier =
-                                    Modifier
-                                        .fillMaxSize()
-                                        .animateItem(),
-                            )
-                        }
+
+                        SmallTitle(
+                            text = title,
+                            textColor = titleTextColor.value,
+                        )
                     }
-                    item {
-                        Spacer(modifier = Modifier.size(150.dp))
+                    items(songs, key = { it.songId ?: -1 }) {
+                        SongItemCard(
+                            song = it,
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .animateItem(),
+                        )
                     }
+                }
+                item {
+                    Spacer(modifier = Modifier.size(150.dp))
                 }
             }
         }
@@ -160,6 +196,11 @@ private fun SearchBar(
         value = keyword,
         onValueChange = onKeywordChange,
         modifier = modifier,
+        borderColor = MiuixTheme.colorScheme.surfaceContainer,
+        backgroundColor =
+            MiuixTheme.colorScheme.surfaceContainer.copy(
+                alpha = 0.6f,
+            ),
         insideMargin = DpSize(22.dp, 16.dp),
         label = "搜索歌曲或艺术家",
         maxLines = 1,
@@ -296,6 +337,7 @@ private fun SongItemCard(
                                     playerViewModel.updatePlaylistWithSongs(
                                         listOf(song),
                                     )
+
                                 4 -> {
                                     // 查看详情
                                 }

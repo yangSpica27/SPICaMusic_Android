@@ -1,5 +1,7 @@
 package me.spica27.spicamusic.ui.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
@@ -22,6 +24,8 @@ import me.spica27.spicamusic.ui.home.pages.LibraryPage
 import me.spica27.spicamusic.ui.home.pages.SearchPage
 import me.spica27.spicamusic.ui.home.pages.SettingsPage
 import me.spica27.spicamusic.ui.player.LocalBottomPaddingState
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
 import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationItem
@@ -88,10 +92,14 @@ fun HomeScreen(
         Box(
             modifier = Modifier.fillMaxSize(),
         ) {
-            when (selectedIndex) {
-                0 -> LibraryPage()
-                1 -> SearchPage()
-                2 -> SettingsPage()
+            AnimatedContent(selectedIndex, contentKey = { it }, transitionSpec = {
+                materialSharedAxisZIn(true) togetherWith materialSharedAxisZOut(true)
+            }) {
+                when (it) {
+                    0 -> LibraryPage()
+                    1 -> SearchPage()
+                    2 -> SettingsPage()
+                }
             }
         }
     }

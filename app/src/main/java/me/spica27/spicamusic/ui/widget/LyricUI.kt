@@ -98,7 +98,7 @@ private object LyricUIConstants {
     const val SCROLL_VIEWPORT_OFFSET_RATIO = 0.35f
 
     const val BASE_TEXT_ALPHA = 0.24f
-    const val TRANSLATION_TEXT_ALPHA = 0.22f
+    const val TRANSLATION_TEXT_ALPHA = 0.72f
     const val ACTIVE_TRANSLATION_ALPHA = 0.85f
     const val INACTIVE_TRANSLATION_ALPHA = 0.8f
 
@@ -220,14 +220,17 @@ fun LyricsUI(
                 LaunchedEffect(playingIndex) {
                     if (playingIndex != Int.MAX_VALUE && playingIndex != lastPlayingIndex) {
                         if (index > playingIndex) {
-                            elasticOffset.snapTo(LyricUIConstants.ELASTIC_OFFSET_INITIAL)
+                            elasticOffset.animateTo(LyricUIConstants.ELASTIC_OFFSET_INITIAL)
                             val staggerDelay = (index - playingIndex) * LyricUIConstants.STAGGER_DELAY_PER_ITEM
                             delay(staggerDelay)
                             elasticOffset.animateTo(
                                 targetValue = 0f,
                                 animationSpec =
                                     spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        dampingRatio =
+                                            1f - (index - playingIndex) *
+                                                0.1f
+                                                    .coerceIn(0f, 0.8f),
                                         stiffness = Spring.StiffnessLow,
                                     ),
                             )
@@ -524,12 +527,12 @@ private fun WordsLyricLine(
             baseStyle =
                 MiuixTheme.textStyles.title2.copy(
                     color = baseTextColor,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.ExtraBold,
                 ),
             activeStyle =
                 MiuixTheme.textStyles.title2.copy(
                     color = activeTextColor,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.ExtraBold,
                 ),
             modifier = Modifier.fillMaxWidth(),
             lineProgress = lineProgress,
@@ -597,7 +600,7 @@ private fun ProgressiveWordsText(
             val progress = progresses[wordRanges[index]] ?: 0f
             val extraY =
                 animateDpAsState(
-                    if (progress > .1f && progress < 0.99f) (-2).dp else 0.dp,
+                    if (progress > .1f && progress < 0.99f) (-1).dp else 0.dp,
                     label = "wordGlowScale",
                     animationSpec =
                         spring(
