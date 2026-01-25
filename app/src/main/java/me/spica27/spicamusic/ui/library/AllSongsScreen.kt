@@ -56,6 +56,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
@@ -108,54 +109,62 @@ fun AllSongsScreen(
             modifier
                 .fillMaxSize(),
         topBar = {
-            TopAppBar(
-                scrollBehavior = scrollBehavior,
-                title =
-                    if (isMultiSelectMode) {
-                        "已选择 ${selectedSongIds.size} 首"
-                    } else {
-                        "所有歌曲 (${filteredSongs.size})"
+            Column(
+                modifier =
+                    Modifier
+                        .hazeEffect(
+                            hazeSource,
+                            HazeMaterials.ultraThick(MiuixTheme.colorScheme.surface),
+                        ) {
+                            progressive =
+                                HazeProgressive.verticalGradient(
+                                    startIntensity = 1f,
+                                    endIntensity = 0f,
+                                )
+                        }.fillMaxWidth(),
+            ) {
+                TopAppBar(
+                    scrollBehavior = scrollBehavior,
+                    color = Color.Transparent,
+                    title =
+                        if (isMultiSelectMode) {
+                            "已选择 ${selectedSongIds.size} 首"
+                        } else {
+                            "所有歌曲 (${filteredSongs.size})"
+                        },
+                    actions = {
+                        if (isMultiSelectMode) {
+                            // 全选按钮
+                            IconButton(onClick = {
+                                if (selectedSongIds.size == filteredSongs.size) {
+                                    viewModel.deselectAll()
+                                } else {
+                                    viewModel.selectAll()
+                                }
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.SelectAll,
+                                    contentDescription = "全选",
+                                    tint = MiuixTheme.colorScheme.onSurface,
+                                )
+                            }
+                            // 确定按钮
+                            IconButton(onClick = {
+                                if (selectedSongIds.isNotEmpty()) {
+                                    showMultipleSelectMenu = true
+                                } else {
+                                    viewModel.exitMultiSelectMode()
+                                }
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "确定",
+                                    tint = MiuixTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
                     },
-                actions = {
-                    if (isMultiSelectMode) {
-                        // 全选按钮
-                        IconButton(onClick = {
-                            if (selectedSongIds.size == filteredSongs.size) {
-                                viewModel.deselectAll()
-                            } else {
-                                viewModel.selectAll()
-                            }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.SelectAll,
-                                contentDescription = "全选",
-                            )
-                        }
-                        // 确定按钮
-                        IconButton(onClick = {
-                            if (selectedSongIds.isNotEmpty()) {
-                                showMultipleSelectMenu = true
-                            } else {
-                                viewModel.exitMultiSelectMode()
-                            }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = "确定",
-                            )
-                        }
-                    }
-                },
-            )
-        },
-    ) { paddingValues ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+                )
                 // 功能按钮组
                 AnimatedVisibility(!isMultiSelectMode) {
                     FunctionButtonGroup(
@@ -165,10 +174,22 @@ fun AllSongsScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
-
+            }
+        },
+    ) { paddingValues ->
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize(),
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 // 歌曲列表
                 LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    contentPadding =
+                        PaddingValues(
+                            horizontal = 16.dp,
+                            vertical = paddingValues.calculateTopPadding(),
+                        ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier =
                         Modifier

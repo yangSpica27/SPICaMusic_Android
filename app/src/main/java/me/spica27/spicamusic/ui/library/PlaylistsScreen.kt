@@ -270,6 +270,7 @@ private fun EmptyPlaylistState(
                 imageVector = Icons.Default.Add,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
+                tint = MiuixTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.size(8.dp))
             Text("创建歌单")
