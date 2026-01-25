@@ -2,10 +2,9 @@ package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseInBounce
+import androidx.compose.animation.core.EaseOutBounce
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -600,16 +599,7 @@ private fun ProgressiveWordsText(
     ) {
         textLayoutResults.forEachIndexed { index, pair ->
             val progress = progresses[wordRanges[index]] ?: 0f
-            val extraY =
-                animateDpAsState(
-                    if (progress > .1f && progress < 0.99f) (-1).dp else 0.dp,
-                    label = "wordGlowScale",
-                    animationSpec =
-                        spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMediumLow,
-                        ),
-                ).value
+            val extraY = (progress * LyricUIConstants.WORD_TRANSLATION_Y).dp
             Canvas(
                 modifier =
                     Modifier
@@ -619,7 +609,7 @@ private fun ProgressiveWordsText(
                             with(density) {
                                 Size(
                                     width = pair.second.width,
-                                    height = pair.second.height + LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx(),
+                                    height = pair.second.height - LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx(),
                                 ).toDpSize()
                             },
                         ),
@@ -662,7 +652,7 @@ private fun ProgressiveWordsText(
                                         .copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA * (progress)),
                                 blurRadius =
                                     LyricUIConstants.WORD_GLOW_BLUR_RADIUS *
-                                        EaseInBounce.transform(
+                                        EaseOutBounce.transform(
                                             progress,
                                         ),
                             ),
