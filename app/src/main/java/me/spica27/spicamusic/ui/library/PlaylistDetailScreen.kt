@@ -3,8 +3,6 @@ package me.spica27.spicamusic.ui.library
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,6 +33,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,31 +49,36 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
-import me.spica27.spicamusic.ui.player.ResetBottomPadding
+import me.spica27.spicamusic.player.impl.utils.getCoverUri
+import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.MainTopBar
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.extra.SuperDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.utils.SinkFeedback
+import top.yukonga.miuix.kmp.utils.overScrollOutOfBound
 import top.yukonga.miuix.kmp.utils.pressable
 
 /**
@@ -82,8 +87,6 @@ import top.yukonga.miuix.kmp.utils.pressable
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
-    ResetBottomPadding()
-
     val backStack = LocalNavBackStack.current
     val playlistId =
         (backStack.lastOrNull() as? Screen.PlaylistDetail)?.playlistId
@@ -107,12 +110,52 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
         viewModel.toggleMultiSelectMode()
     }
 
+    val scrollBehavior = MiuixScrollBehavior()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         popupHost = { MiuixPopupHost() },
         topBar = {
-            TopAppBar(
-                title = playlist?.playlistName ?: "歌单详情",
+            MainTopBar(
+                scrollBehavior = scrollBehavior,
+                title = {
+                    Text(
+                        playlist?.playlistName ?: "歌单详情",
+                        maxLines = 1,
+                        style = MiuixTheme.textStyles.title2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                largeTitle = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Spacer(
+                            modifier = Modifier.height(44.dp),
+                        )
+                        // Header - 歌单信息
+                        playlist?.let { pl ->
+                            PlaylistHeader(
+                                playlist = pl,
+                                songCount = songs.size,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+
+                        // 操作按钮栏
+                        ActionBar(
+                            songCount = songs.size,
+                            isMultiSelectMode = isMultiSelectMode,
+                            onPlayAll = { viewModel.playAll() },
+                            onToggleMultiSelect = { viewModel.toggleMultiSelectMode() },
+                            onShowMenu = { viewModel.showRenameDialog() },
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(),
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { backStack.removeLastOrNull() }) {
                         Icon(
@@ -143,32 +186,6 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                     .fillMaxSize()
                     .padding(paddingValues),
         ) {
-            // Header - 歌单信息
-            playlist?.let { pl ->
-                PlaylistHeader(
-                    playlist = pl,
-                    songCount = songs.size,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 操作按钮栏
-            ActionBar(
-                songCount = songs.size,
-                isMultiSelectMode = isMultiSelectMode,
-                onPlayAll = { viewModel.playAll() },
-                onToggleMultiSelect = { viewModel.toggleMultiSelectMode() },
-                onShowMenu = { viewModel.showRenameDialog() },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             // 歌曲列表
             if (songs.isEmpty()) {
                 EmptySongList(
@@ -179,7 +196,11 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(scrollBehavior.nestedScrollConnection)
+                            .overScrollOutOfBound(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -220,8 +241,7 @@ private fun PlaylistHeader(
 ) {
     Row(
         modifier =
-            modifier
-                .padding(16.dp),
+        modifier,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // 封面
@@ -446,6 +466,7 @@ private fun SongItemCard(
         modifier =
             modifier
                 .fillMaxWidth()
+                .clip(ContinuousRoundedRectangle(16.dp))
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
@@ -461,13 +482,10 @@ private fun SongItemCard(
                     .fillMaxWidth()
                     .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // 选中状态图标
             AnimatedVisibility(
                 visible = isMultiSelectMode,
-                enter = fadeIn(),
-                exit = fadeOut(),
             ) {
                 Icon(
                     imageVector =
@@ -487,23 +505,49 @@ private fun SongItemCard(
                 )
             }
 
+            AnimatedVisibility(
+                visible = isMultiSelectMode,
+            ) {
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+
             // 封面
             Box(
                 modifier =
                     Modifier
                         .size(56.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(ContinuousRoundedRectangle(8.dp))
                         .background(MiuixTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp),
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
+                AudioCover(
+                    uri = song.getCoverUri(),
+                    modifier = Modifier.fillMaxSize(),
+                    placeHolder = {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1f)
+                                    .clip(ContinuousRoundedRectangle(8.dp))
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.MusicNote,
+                                contentDescription = "封面占位符",
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier =
+                                    Modifier
+                                        .size(24.dp)
+                                        .align(
+                                            Alignment.Center,
+                                        ),
+                            )
+                        }
+                    },
                 )
             }
-
+            Spacer(modifier = Modifier.width(12.dp))
             // 歌曲信息
             Column(
                 modifier = Modifier.weight(1f),

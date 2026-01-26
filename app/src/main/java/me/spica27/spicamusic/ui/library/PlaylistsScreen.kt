@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +41,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
+import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
@@ -58,6 +64,7 @@ import top.yukonga.miuix.kmp.extra.SuperDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.utils.SinkFeedback
+import top.yukonga.miuix.kmp.utils.overScrollOutOfBound
 import top.yukonga.miuix.kmp.utils.pressable
 
 /**
@@ -78,11 +85,27 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
 
     val scrollerBehavior = MiuixScrollBehavior()
 
+    val hazeState = rememberHazeState()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         popupHost = { MiuixPopupHost() },
         topBar = {
             TopAppBar(
+                color = Color.Transparent,
+                modifier =
+                    Modifier.hazeEffect(
+                        hazeState,
+                        HazeMaterials.ultraThick(
+                            MiuixTheme.colorScheme.surface.copy(alpha = 0.8f),
+                        ),
+                    ) {
+                        progressive =
+                            HazeProgressive.verticalGradient(
+                                startIntensity = 1f,
+                                endIntensity = 0f,
+                            )
+                    },
                 title = "歌单",
                 actions = {
                     // 新增歌单按钮
@@ -105,10 +128,17 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
             columns = GridCells.Fixed(2),
             modifier =
                 Modifier
+                    .hazeSource(hazeState)
                     .fillMaxSize()
                     .nestedScroll(scrollerBehavior.nestedScrollConnection)
-                    .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    .overScrollOutOfBound(),
+            contentPadding =
+                PaddingValues(
+                    16.dp,
+                    paddingValues.calculateTopPadding() + 12.dp,
+                    16.dp,
+                    paddingValues.calculateBottomPadding() + 200.dp,
+                ),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
