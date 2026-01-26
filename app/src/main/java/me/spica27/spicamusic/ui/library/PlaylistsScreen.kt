@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
@@ -177,6 +177,7 @@ private fun PlaylistCard(
         modifier =
             modifier
                 .fillMaxWidth()
+                .clip(ContinuousRoundedRectangle(16.dp))
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
@@ -207,8 +208,7 @@ private fun PlaylistCard(
                         contentDescription = playlist.playlistName,
                         modifier =
                             Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(12.dp)),
+                                .fillMaxSize(),
                         contentScale = ContentScale.Crop,
                     )
                 }

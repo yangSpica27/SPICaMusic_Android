@@ -17,7 +17,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.home.pages.LibraryPage
@@ -52,6 +57,7 @@ fun HomeScreen(
 
     // 获取导航栈
     val backStack = LocalNavBackStack.current
+
     val isHomeScreen = backStack.lastOrNull() == Screen.Home
 
     // 监听路由变化和高度变化，自动更新 padding
@@ -64,18 +70,28 @@ fun HomeScreen(
             }
     }
 
+    val hazeState = rememberHazeState()
+
     // Scaffold 布局
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar(
                 showDivider = false,
+                color = Color.Transparent,
                 modifier =
-                    Modifier.onSizeChanged {
-                        // 记录高度并更新全局底部 padding
-                        val height = it.height.toFloat()
-                        navBarHeight = height
-                    },
+                    Modifier
+                        .hazeEffect(
+                            hazeState,
+                            style =
+                                HazeMaterials.thick(
+                                    MiuixTheme.colorScheme.surfaceContainer,
+                                ),
+                        ).onSizeChanged {
+                            // 记录高度并更新全局底部 padding
+                            val height = it.height.toFloat()
+                            navBarHeight = height
+                        },
                 items =
                     listOf(
                         NavigationItem("媒体库", Icons.Outlined.Home),
@@ -84,13 +100,15 @@ fun HomeScreen(
                     ),
                 selected = selectedIndex,
                 onClick = { index -> selectedIndex = index },
-                color = MiuixTheme.colorScheme.surfaceContainer,
             )
         },
     ) { paddingValues ->
         // 内容区域
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier =
+                Modifier
+                    .hazeSource(hazeState)
+                    .fillMaxSize(),
         ) {
             AnimatedContent(selectedIndex, contentKey = { it }, transitionSpec = {
                 materialSharedAxisZIn(true) togetherWith materialSharedAxisZOut(true)

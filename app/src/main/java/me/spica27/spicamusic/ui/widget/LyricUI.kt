@@ -92,10 +92,10 @@ private object LyricUIConstants {
     const val MAX_BLUR_RADIUS = 6f
 
     const val ELASTIC_OFFSET_INITIAL = 100f
-    const val STAGGER_DELAY_PER_ITEM = 65L
+    const val STAGGER_DELAY_PER_ITEM = 35L
     const val SEEK_OVERLAY_HIDE_DELAY = 450L
 
-    const val SCROLL_ANIMATION_DURATION = 950
+    const val SCROLL_ANIMATION_DURATION = 550
     const val SCROLL_VIEWPORT_OFFSET_RATIO = 0.35f
 
     const val BASE_TEXT_ALPHA = 0.24f
