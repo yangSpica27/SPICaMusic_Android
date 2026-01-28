@@ -3,6 +3,8 @@ package me.spica27.spicamusic.ui.player
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,7 +18,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -81,8 +83,8 @@ import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.LyricsUI
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
-import me.spica27.spicamusic.ui.widget.materialSharedAxisXIn
-import me.spica27.spicamusic.ui.widget.materialSharedAxisXOut
+import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
+import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.DropdownImpl
@@ -688,7 +690,7 @@ private fun PlayerPage(
         AnimatedContent(
             currentMediaItem,
             transitionSpec = {
-                materialSharedAxisXIn(true) togetherWith materialSharedAxisXOut(true)
+                fadeIn() togetherWith fadeOut()
             },
             modifier =
                 Modifier
@@ -696,7 +698,11 @@ private fun PlayerPage(
                         alpha = calculateFadeAlpha(progress, COVER_FADE_THRESHOLD)
                     }.weight(1f, fill = false)
                     .aspectRatio(1f)
-                    .clip(ContinuousRoundedRectangle(8.dp)),
+                    .shadow(
+                        elevation = 8.dp,
+                        shape = ContinuousRoundedRectangle(8.dp),
+                        clip = false,
+                    ).clip(ContinuousRoundedRectangle(8.dp)),
         ) { currentMediaItem ->
             AudioCover(
                 uri = currentMediaItem?.mediaMetadata?.artworkUri,
@@ -704,8 +710,7 @@ private fun PlayerPage(
                     Box(
                         modifier =
                             Modifier
-                                .fillMaxHeight()
-                                .aspectRatio(1f)
+                                .fillMaxSize()
                                 .clip(ContinuousRoundedRectangle(8.dp))
                                 .background(MiuixTheme.colorScheme.surfaceContainerHigh),
                     ) {
@@ -724,8 +729,8 @@ private fun PlayerPage(
                 },
                 modifier =
                     Modifier
-                        .fillMaxHeight()
-                        .aspectRatio(1f),
+                        .fillMaxSize()
+                        .clip(ContinuousRoundedRectangle(8.dp)),
             )
         }
 
@@ -904,26 +909,41 @@ private fun SongInfo(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.title1,
-            fontWeight = FontWeight.Bold,
-            color = MiuixTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-        )
+        AnimatedContent(
+            title,
+            transitionSpec = {
+                materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
+            },
+            contentKey = { it },
+        ) { title ->
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.title1,
+                fontWeight = FontWeight.Bold,
+                color = MiuixTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = artist,
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
-        )
+        AnimatedContent(
+            artist,
+            contentKey = { it },
+            transitionSpec = {
+                materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
+            },
+        ) { artist ->
+            Text(
+                text = artist,
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
+        }
     }
 }
 
