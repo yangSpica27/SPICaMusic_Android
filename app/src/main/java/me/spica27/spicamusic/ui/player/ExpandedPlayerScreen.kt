@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -92,6 +91,7 @@ import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
 import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.overScrollOutOfBound
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -176,6 +176,7 @@ fun ExpandedPlayerScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.weight(1f),
+                key = { it },
             ) { page ->
                 when (page) {
                     0 -> {
@@ -355,6 +356,7 @@ private fun SongDetailPage(
         modifier =
             modifier
                 .verticalScroll(scrollState)
+                .overScrollOutOfBound()
                 .padding(horizontal = 15.dp, vertical = 24.dp)
                 .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -369,7 +371,11 @@ private fun SongDetailPage(
                 Modifier
                     .height(200.dp)
                     .aspectRatio(1f)
-                    .clip(ContinuousRoundedRectangle(8.dp)),
+                    .shadow(
+                        elevation = 8.dp,
+                        shape = ContinuousRoundedRectangle(8.dp),
+                        clip = false,
+                    ).clip(ContinuousRoundedRectangle(8.dp)),
             placeHolder = {
                 Box(
                     modifier =
@@ -448,7 +454,7 @@ private fun SongDetailPage(
 
             InfoRow(
                 label = "时长",
-                value = formatTime(currentMediaItem?.mediaMetadata?.extras?.getLong("duration") ?: 0),
+                value = formatTime(currentMediaItem?.mediaMetadata?.durationMs ?: 0L),
             )
         }
 
@@ -561,7 +567,7 @@ private fun AudioInfoCard(
     val sampleRate = extras?.getInt("sampleRate") ?: 0
     val bitRate = extras?.getInt("bitRate") ?: 0
     val channels = extras?.getInt("channels") ?: 0
-    val mimeType = extras?.getString("mimeType") ?: "未知"
+    val mimeType = currentMediaItem?.localConfiguration?.mimeType ?: "未知格式"
 
     InfoCard(title = "音频信息", modifier = modifier) {
         InfoRow(label = "格式", value = mimeType)
@@ -606,12 +612,8 @@ private fun InfoCard(
             modifier
                 .fillMaxWidth()
                 .clip(ContinuousRoundedRectangle(16.dp))
-                .background(MiuixTheme.colorScheme.surfaceContainer)
-                .border(
-                    width = 1.dp,
-                    color = MiuixTheme.colorScheme.outline,
-                    shape = ContinuousRoundedRectangle(16.dp),
-                ).padding(16.dp),
+                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                .padding(16.dp),
     ) {
         Text(
             text = title,
@@ -643,13 +645,13 @@ private fun InfoRow(
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.subtitle,
+            style = MiuixTheme.textStyles.title4,
             color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
-            style = MiuixTheme.textStyles.title4,
+            style = MiuixTheme.textStyles.body1,
             color = MiuixTheme.colorScheme.onSurface,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,

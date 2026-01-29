@@ -7,6 +7,7 @@ import android.os.Build
 import android.provider.MediaStore
 import androidx.core.net.toUri
 import com.ibm.icu.text.Transliterator
+import com.kyant.taglib.AudioPropertiesReadStyle
 import com.kyant.taglib.TagLib
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -289,11 +290,12 @@ class MusicScanService(
         try {
 
           TagLib.getAudioProperties(
-            pfd.detachFd()
+            pfd.detachFd(),
+            readStyle = AudioPropertiesReadStyle.Accurate
           )?.let {
             duration = (it.length).toLong()
             sampleRate = it.sampleRate
-            bitRate = it.bitrate
+            bitRate = it.bitrate * 1000 // kbps 转 bps
             channels = it.channels
           }
 
@@ -322,8 +324,8 @@ class MusicScanService(
           if (cursor.moveToFirst()) {
             val bitRateColumn = cursor.getColumnIndex(MediaStore.Audio.Media.BITRATE)
             if (bitRateColumn != -1) {
-              // MediaStore 返回的是 bps，转换为 kbps
-              bitRate = cursor.getInt(bitRateColumn) / 1000
+              // MediaStore 返回的是 bps
+              bitRate = cursor.getInt(bitRateColumn)
             }
           }
         }

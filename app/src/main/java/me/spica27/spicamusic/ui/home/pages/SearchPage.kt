@@ -86,6 +86,7 @@ fun SearchPage(
     LaunchedEffect(searchKeyword) {
         listState.animateScrollToItem(0)
     }
+
     val scrollBehavior = MiuixScrollBehavior()
 
     fun LazyListState.isSticking(index: Int): State<Boolean> =
@@ -333,13 +334,9 @@ private fun SongItemCard(
                         onSelectedIndexChange = { index ->
                             when (index) {
                                 0 -> playerViewModel.playSong(song)
-                                1 -> playerViewModel.addSongToNext(song)
-                                2 -> playerViewModel.addSongToNext(song)
-                                3 ->
-                                    playerViewModel.updatePlaylistWithSongs(
-                                        listOf(song),
-                                    )
-
+                                1 -> {}
+                                2 -> {}
+                                3 -> {}
                                 4 -> {
                                     // 查看详情
                                 }
