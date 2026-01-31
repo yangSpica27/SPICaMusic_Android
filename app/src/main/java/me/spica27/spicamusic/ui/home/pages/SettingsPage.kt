@@ -25,6 +25,7 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
+import top.yukonga.miuix.kmp.utils.overScrollVertical
 
 /**
  * 设置页面
@@ -128,6 +129,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .overScrollVertical()
                     .nestedScroll(scrollerBehavior.nestedScrollConnection),
             contentPadding = paddingValues,
         ) {

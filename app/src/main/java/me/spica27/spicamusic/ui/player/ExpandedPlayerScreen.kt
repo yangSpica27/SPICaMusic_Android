@@ -91,7 +91,7 @@ import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
 import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.overScrollOutOfBound
+import top.yukonga.miuix.kmp.utils.overScrollVertical
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -356,7 +356,7 @@ private fun SongDetailPage(
         modifier =
             modifier
                 .verticalScroll(scrollState)
-                .overScrollOutOfBound()
+                .overScrollVertical()
                 .padding(horizontal = 15.dp, vertical = 24.dp)
                 .navigationBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally,

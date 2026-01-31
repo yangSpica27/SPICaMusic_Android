@@ -331,13 +331,14 @@ private fun CreatePlaylistDialog(
         show = showState,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             TextField(
                 value = playlistName,
                 onValueChange = { playlistName = it },
                 label = "请输入歌单名称",
                 modifier = Modifier.fillMaxWidth(),
+                useLabelAsPlaceholder = true,
             )
             Spacer(modifier = Modifier.height(24.dp))
             Row(

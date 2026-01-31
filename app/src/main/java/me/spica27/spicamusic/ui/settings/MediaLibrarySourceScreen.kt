@@ -1,5 +1,11 @@
 package me.spica27.spicamusic.ui.settings
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,10 +24,15 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.storage.api.ScanResult
 import me.spica27.spicamusic.ui.player.ResetBottomPadding
@@ -49,6 +60,24 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
     val viewModel = koinViewModel<MediaLibrarySourceViewModel>()
     val scanState by viewModel.scanState.collectAsState()
+    val context = LocalContext.current
+
+    // 权限状态
+    var hasPermission by remember {
+        mutableStateOf(checkAudioPermission(context))
+    }
+
+    // 权限申请启动器
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            hasPermission = isGranted
+            if (isGranted) {
+                // 权限授予后自动开始扫描
+                viewModel.startMediaStoreScan()
+            }
+        }
 
     ResetBottomPadding()
 
@@ -70,7 +99,15 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
         ) {
             // 扫描来源卡片
             ScanSourceCard(
-                onScanMediaStore = { viewModel.startMediaStoreScan() },
+                hasPermission = hasPermission,
+                onScanMediaStore = {
+                    if (hasPermission) {
+                        viewModel.startMediaStoreScan()
+                    } else {
+                        // 请求权限
+                        permissionLauncher.launch(getAudioPermission())
+                    }
+                },
             )
 
             // 扫描状态显示
@@ -145,7 +182,10 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ScanSourceCard(onScanMediaStore: () -> Unit) {
+private fun ScanSourceCard(
+    hasPermission: Boolean,
+    onScanMediaStore: () -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors =
@@ -167,7 +207,12 @@ private fun ScanSourceCard(onScanMediaStore: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "扫描设备中的所有音乐文件",
+                text =
+                    if (hasPermission) {
+                        "扫描设备中的所有音乐文件"
+                    } else {
+                        "需要音频文件访问权限才能扫描设备中的音乐文件"
+                    },
                 style = MiuixTheme.textStyles.body1,
                 color = MiuixTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
             )
@@ -185,7 +230,7 @@ private fun ScanSourceCard(onScanMediaStore: () -> Unit) {
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("开始扫描")
+                Text(if (hasPermission) "开始扫描" else "授予权限并扫描")
             }
         }
     }
@@ -411,4 +456,27 @@ private fun InfoCard(
             )
         }
     }
+}
+
+/**
+ * 获取需要的音频权限
+ * Android 13+ 使用 READ_MEDIA_AUDIO
+ * Android 13- 使用 READ_EXTERNAL_STORAGE
+ */
+private fun getAudioPermission(): String =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Manifest.permission.READ_MEDIA_AUDIO
+    } else {
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    }
+
+/**
+ * 检查是否有音频权限
+ */
+private fun checkAudioPermission(context: Context): Boolean {
+    val permission = getAudioPermission()
+    return ContextCompat.checkSelfPermission(
+        context,
+        permission,
+    ) == PackageManager.PERMISSION_GRANTED
 }
