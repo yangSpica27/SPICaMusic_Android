@@ -19,7 +19,6 @@ data class SearchResponse(
         @Keep
         data class Song(
             val album: Album,
-            val alias: List<String>,
             val artists: List<Artist>,
             val copyrightId: Int,
             val duration: Int,
@@ -46,42 +45,23 @@ data class SearchResponse(
                 val size: Int,
                 val status: Int,
                 val transNames: List<String>?
-            ) {
-                @Keep
-                data class Artist(
-                    val albumSize: Int,
-                    val alias: List<String?>,
-                    val appendRecText: String?,
-                    val fansGroup: String?,
-                    val fansSize: String?,
-                    val id: Int,
-                    val img1v1: Int,
-                    val img1v1Url: String,
-                    val musicSize: Int,
-                    val name: String,
-                    val picId: Int,
-                    val picUrl: String?,
-                    val recommendText: String?,
-                    val trans: String?
-                )
-            }
+            )
 
             @Keep
             data class Artist(
-                val albumSize: Int,
-                val alias: List<Any>,
-                val appendRecText: String?,
-                val fansGroup: String?,
-                val fansSize: String?,
-                val id: Int,
-                val img1v1: Int,
-                val img1v1Url: String,
-                val musicSize: Int,
-                val name: String,
-                val picId: Int,
-                val picUrl: String?,
-                val recommendText: String?,
-                val trans: String?
+              val albumSize: Int,
+              val appendRecText: String?,
+              val fansGroup: String?,
+              val fansSize: String?,
+              val id: Int,
+              val img1v1: Int,
+              val img1v1Url: String,
+              val musicSize: Int,
+              val name: String,
+              val picId: Int,
+              val picUrl: String?,
+              val recommendText: String?,
+              val trans: String?
             )
         }
     }

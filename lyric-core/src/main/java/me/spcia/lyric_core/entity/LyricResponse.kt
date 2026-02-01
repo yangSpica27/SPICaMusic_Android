@@ -8,7 +8,10 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class LyricResponse(
     val code: Int,
-    val lrc: Lrc?,
+    val lrc: Lrc?,               // 普通LRC歌词
+    val yrc: Yrc?,               // 逐字歌词（YRC格式）
+    val tlyric: Lrc?,            // 翻译歌词
+    val romalrc: Lrc?,           // 罗马音歌词
     val lyricUser: LyricUser?,
     val qfy: Boolean,
     val sfy: Boolean,
@@ -18,6 +21,12 @@ data class LyricResponse(
     @Keep
     data class Lrc(
         val lyric: String,
+        val version: Int
+    )
+    
+    @Keep
+    data class Yrc(
+        val lyric: String,       // YRC 格式字符串
         val version: Int
     )
 
