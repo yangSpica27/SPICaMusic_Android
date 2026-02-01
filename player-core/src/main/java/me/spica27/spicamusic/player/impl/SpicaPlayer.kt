@@ -101,10 +101,10 @@ class SpicaPlayer(
     return _currentMediaItem.value?.mediaId == mediaId
   }
 
-  init {
-    init()
-  }
-
+  /**
+   * 延迟初始化播放器
+   * 仅在需要时才创建 MediaBrowser 连接，减少应用启动时间
+   */
   override fun init() {
     if (browserInstance != null) return
     launch(Dispatchers.Main) {
@@ -131,10 +131,21 @@ class SpicaPlayer(
     }
   }
 
+  /**
+   * 确保播放器已初始化
+   * 在执行播放操作前调用，实现懒加载
+   */
+  private suspend fun ensureInitialized(): MediaBrowser? {
+    if (browserInstance == null) {
+      init()
+    }
+    return browserFuture.await()
+  }
+
   override fun doAction(action: PlayerAction) {
     launch(Dispatchers.Main) {
       try {
-        val browser = browserFuture.await()
+        val browser = ensureInitialized() ?: return@launch
         Timber.d("doAction: ${action.javaClass.simpleName}")
         when (action) {
         PlayerAction.Play -> browser.play()

@@ -131,33 +131,22 @@ fun LyricsUI(
     val lazyListState = rememberLazyListState()
     var isAutoScrolling by remember { mutableStateOf(false) }
     var showSeekOverlay by remember { mutableStateOf(false) }
+    val playingIndex by remember(currentTime, lyricLines) {
+        derivedStateOf { lyricLines.findPlayingIndex(currentTime) }
+    }
 
-    // 优化：分离 playingIndex 计算，减少重复计算
-    val playingIndex =
-        remember(currentTime, lyricLines) {
-            derivedStateOf {
-                lyricLines.findPlayingIndex(currentTime)
-            }
-        }.value
-
-    // 优化：使用 remember 缓存 previewIndex 计算逻辑
     val previewIndex by remember {
         derivedStateOf {
-            if (!lazyListState.isScrollInProgress) {
-                return@derivedStateOf playingIndex
-            }
-
             val layoutInfo = lazyListState.layoutInfo
-            val viewportCenter = layoutInfo.viewportStartOffset + (layoutInfo.viewportSize.height / 2)
+            val viewportCenter = (layoutInfo.viewportStartOffset) + (layoutInfo.viewportSize.height / 2)
             val visible = layoutInfo.visibleItemsInfo
-
             if (visible.isEmpty()) {
                 playingIndex
             } else {
                 visible
                     .minByOrNull { item ->
                         val itemCenter = item.offset + item.size / 2
-                        kotlin.math.abs(itemCenter - viewportCenter)
+                        return@minByOrNull kotlin.math.abs(itemCenter - viewportCenter)
                     }?.index ?: playingIndex
             }
         }
@@ -232,16 +221,14 @@ fun LyricsUI(
                 LaunchedEffect(playingIndex) {
                     if (playingIndex != Int.MAX_VALUE && playingIndex != lastPlayingIndex) {
                         if (index > playingIndex) {
-                            elasticOffset.animateTo(LyricUIConstants.ELASTIC_OFFSET_INITIAL)
+                            elasticOffset.snapTo(LyricUIConstants.ELASTIC_OFFSET_INITIAL)
                             val staggerDelay = (index - playingIndex) * LyricUIConstants.STAGGER_DELAY_PER_ITEM
                             delay(staggerDelay)
                             elasticOffset.animateTo(
                                 targetValue = 0f,
                                 animationSpec =
                                     spring(
-                                        dampingRatio =
-                                            (1f - (index - playingIndex) * 0.1f)
-                                                .coerceIn(0.2f, 1.0f),
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
                                         stiffness = Spring.StiffnessLow,
                                     ),
                             )

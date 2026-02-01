@@ -16,3 +16,4 @@ local.properties
 /decoder_flac/build/
 /player-core/build/
 /storage-core/build/
+/docs/

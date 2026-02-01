@@ -94,6 +94,7 @@ class PlayerViewModel(
     // ==================== 基础播放控制 ====================
 
     init {
+        player.init()
         enableFFT()
     }
 
