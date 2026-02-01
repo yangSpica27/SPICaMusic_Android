@@ -69,7 +69,7 @@ class SpicaPlayer(
   }
 
   override val playMode: StateFlow<PlayMode> = playerKVUtils.getPlayModeFlow()
-    .stateIn(this, kotlinx.coroutines.flow.SharingStarted.Eagerly, PlayMode.LIST)
+    .stateIn(this, kotlinx.coroutines.flow.SharingStarted.Eagerly, PlayMode.LOOP)
 
   private val _pauseWhenCompletion = MutableStateFlow(false)
   override val pauseWhenCompletion: StateFlow<Boolean> = _pauseWhenCompletion
@@ -120,8 +120,11 @@ class SpicaPlayer(
         Timber.e("No songs found")
         return@launch
       }
-      // TODO: browser.playMode 需要通过 Service 来设置
-      // browser.playMode = PlayMode.from(playerKVUtils.getPlayMode())
+      
+      // 恢复上次的播放模式
+      val savedPlayMode = PlayMode.from(playerKVUtils.getPlayMode())
+      applyPlayMode(browser, savedPlayMode)
+      
       browser.playWhenReady = false
       browser.setMediaItems(items)
       browser.prepare()
@@ -130,9 +133,10 @@ class SpicaPlayer(
 
   override fun doAction(action: PlayerAction) {
     launch(Dispatchers.Main) {
-      val browser = browserFuture.await()
-      Timber.e("doACTION = ${action.javaClass.name}")
-      when (action) {
+      try {
+        val browser = browserFuture.await()
+        Timber.d("doAction: ${action.javaClass.simpleName}")
+        when (action) {
         PlayerAction.Play -> browser.play()
         PlayerAction.Pause -> browser.pause()
 
@@ -206,7 +210,9 @@ class SpicaPlayer(
         is PlayerAction.SetPlayMode -> {
           // 保存到 KV 存储
           playerKVUtils.setPlayMode(action.playMode.name)
-          // TODO: 通过 Service 来应用播放模式
+          // 应用播放模式到播放器
+          applyPlayMode(browser, action.playMode)
+          Timber.tag(TAG).d("Play mode applied: ${action.playMode}")
         }
 
         is PlayerAction.AddToNext -> {
@@ -219,13 +225,15 @@ class SpicaPlayer(
                 return@withContext
               }
 
+              // 处理空播放列表的情况
+              val currentIndex = browser.currentMediaItemIndex.coerceAtLeast(0)
               val index = browser.currentTimeline.indexOf(action.mediaId)
 
               if (index != -1) {
-                val offset = if (index > browser.currentMediaItemIndex) 1 else 0
-                browser.moveMediaItem(index, browser.currentMediaItemIndex + offset)
+                val offset = if (index > currentIndex) 1 else 0
+                browser.moveMediaItem(index, currentIndex + offset)
               } else {
-                browser.addMediaItem(browser.currentMediaItemIndex + 1, item)
+                browser.addMediaItem(currentIndex + 1, item)
               }
             }
           }
@@ -245,11 +253,14 @@ class SpicaPlayer(
         }
 
         PlayerAction.ReloadAndPlay -> {
+          Timber.tag(TAG).w("ReloadAndPlay not implemented yet")
           // TODO: 实现重新加载并播放逻辑
-
         }
       }
+    } catch (e: Exception) {
+      Timber.tag(TAG).e(e, "Error executing action: ${action.javaClass.simpleName}")
     }
+  }
   }
 
   override fun release() {
@@ -327,5 +338,25 @@ class SpicaPlayer(
       }
     }
     return index
+  }
+
+  /**
+   * 应用播放模式到 MediaBrowser
+   */
+  private fun applyPlayMode(browser: MediaBrowser, mode: PlayMode) {
+    when (mode) {
+      PlayMode.LOOP -> {
+        browser.repeatMode = Player.REPEAT_MODE_ALL
+        browser.shuffleModeEnabled = false
+      }
+      PlayMode.LIST -> {
+        browser.repeatMode = Player.REPEAT_MODE_ONE
+        browser.shuffleModeEnabled = false
+      }
+      PlayMode.SHUFFLE -> {
+        browser.repeatMode = Player.REPEAT_MODE_ALL
+        browser.shuffleModeEnabled = true
+      }
+    }
   }
 }

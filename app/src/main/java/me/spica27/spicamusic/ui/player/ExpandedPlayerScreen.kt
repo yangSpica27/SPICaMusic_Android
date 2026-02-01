@@ -84,6 +84,7 @@ import me.spica27.spicamusic.ui.widget.LyricsUI
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
+import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.DropdownImpl
@@ -135,6 +136,13 @@ fun ExpandedPlayerScreen(
     // Pager 状态，默认显示播放器页面（index=1）
     val pagerState = rememberPagerState(initialPage = DEFAULT_PAGE, pageCount = { PAGE_COUNT })
 
+    // 从封面提取主色调
+    val coverColor =
+        rememberDominantColorFromUri(
+            uri = currentMediaItem?.mediaMetadata?.artworkUri,
+            fallbackColor = MiuixTheme.colorScheme.primary,
+        )
+
     Box(
         modifier =
             modifier
@@ -152,7 +160,7 @@ fun ExpandedPlayerScreen(
         // 流动背景
         FluidMusicBackground(
             modifier = Modifier.fillMaxSize(),
-            coverColor = MiuixTheme.colorScheme.primary,
+            coverColor = coverColor,
             enabled = true,
             isDarkMode = isSystemInDarkTheme(),
         )
@@ -162,8 +170,7 @@ fun ExpandedPlayerScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(horizontal = 24.dp),
+                    .statusBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // 顶部工具栏（带页面指示器）
@@ -685,6 +692,7 @@ private fun PlayerPage(
         modifier =
             modifier.padding(
                 vertical = 24.dp,
+                horizontal = 16.dp,
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -1034,8 +1042,8 @@ private fun PlayerControls(
                 Icon(
                     imageVector =
                         when (playMode) {
-                            PlayMode.LOOP -> Icons.Rounded.RepeatOne
-                            PlayMode.LIST -> Icons.Rounded.Repeat
+                            PlayMode.LOOP -> Icons.Rounded.Repeat
+                            PlayMode.LIST -> Icons.Rounded.RepeatOne
                             PlayMode.SHUFFLE -> Icons.Rounded.Shuffle
                         },
                     contentDescription = "播放模式",

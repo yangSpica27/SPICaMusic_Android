@@ -44,6 +44,7 @@ moshiKotlin = "1.15.2"
 wavySliderVersion = "2.1.0"
 appcompatVersion = "1.7.1"
 materialVersion = "1.13.0"
+paletteVersion = "1.0.0"
 workRuntimeKtxVersion = "2.10.3"
 media3ExoplayerDashVersion = "1.9.1"
 media3SessionVersion = "1.9.1"
@@ -89,6 +90,7 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-palette-ktx = { group = "androidx.palette", name = "palette-ktx", version.ref = "paletteVersion" }
 miuix-android-nav3 = { module = "top.yukonga.miuix.kmp:miuix-navigation3-ui-android", version.ref = "miuixAndroid" }
 miuix-android = { module = "top.yukonga.miuix.kmp:miuix-android", version.ref = "miuixAndroid" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }

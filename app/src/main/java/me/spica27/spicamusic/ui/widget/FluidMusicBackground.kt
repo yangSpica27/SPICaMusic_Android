@@ -152,6 +152,29 @@ fun FluidMusicBackground(
                 isDarkMode = isDarkMode,
             )
 
+        DynamicSpectrumBackground.TunnelShader ->
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                TunnelShaderBackground(
+                    modifier = modifier,
+                    coverColor = coverColor,
+                    fftDrawData = fftSnapshot,
+                )
+            } else {
+                Box(modifier = modifier) // 不支持的系统版本回退
+            }
+
+        DynamicSpectrumBackground.EffectShader ->
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                EffectShaderBackground(
+                    modifier = modifier,
+                    coverColor = coverColor,
+                    fftDrawData = fftSnapshot,
+                    isDarkMode = isDarkMode,
+                )
+            } else {
+                Box(modifier = modifier) // 不支持的系统版本回退
+            }
+
         DynamicSpectrumBackground.OFF ->
             Box(modifier = modifier)
     }

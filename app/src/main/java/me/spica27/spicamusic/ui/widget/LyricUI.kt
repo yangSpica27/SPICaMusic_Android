@@ -229,9 +229,8 @@ fun LyricsUI(
                                 animationSpec =
                                     spring(
                                         dampingRatio =
-                                            1f - (index - playingIndex) *
-                                                0.1f
-                                                    .coerceIn(0f, 0.8f),
+                                            (1f - (index - playingIndex) * 0.1f)
+                                                .coerceIn(0.2f, 1.0f),
                                         stiffness = Spring.StiffnessLow,
                                     ),
                             )

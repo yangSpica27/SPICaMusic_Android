@@ -51,6 +51,16 @@ sealed class DynamicSpectrumBackground(
     "流体漩涡",
   )
 
+  object TunnelShader : DynamicSpectrumBackground(
+    "tunnel_shader",
+    "隧道隧道",
+  )
+
+  object EffectShader : DynamicSpectrumBackground(
+    "effect_shader",
+    "流体效果",
+  )
+
   object OFF : DynamicSpectrumBackground(
     "off",
     "关闭",
@@ -68,6 +78,8 @@ sealed class DynamicSpectrumBackground(
       is SpectrumHelix -> "光谱螺旋"
       is EnergyPulse -> "能量脉冲"
       is FluidVortex -> "流体漩涡"
+      is TunnelShader -> "隧道隧道"
+      is EffectShader -> "流体效果"
       is OFF -> "关闭"
     }
   }
@@ -84,13 +96,15 @@ sealed class DynamicSpectrumBackground(
         SpectrumHelix.value -> SpectrumHelix
         EnergyPulse.value -> EnergyPulse
         FluidVortex.value -> FluidVortex
+        TunnelShader.value -> TunnelShader
+        EffectShader.value -> EffectShader
         OFF.value -> OFF
         else -> OFF
       }
     }
 
     val presets: List<DynamicSpectrumBackground>
-      get() = listOf(TopGlow, LiquidAurora, BubblePulse, EnergyPulse, OFF)
+      get() = listOf(TopGlow, LiquidAurora, BubblePulse, EnergyPulse,EffectShader, OFF)
   }
 
 }
