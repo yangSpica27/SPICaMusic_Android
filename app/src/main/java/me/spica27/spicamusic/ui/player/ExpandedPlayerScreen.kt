@@ -1,12 +1,15 @@
 package me.spica27.spicamusic.ui.player
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -25,12 +29,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.MoreVert
@@ -48,9 +60,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -87,9 +101,14 @@ import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
+import org.koin.compose.viewmodel.koinViewModel
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
+import top.yukonga.miuix.kmp.extra.WindowDialog
 import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -187,9 +206,8 @@ fun ExpandedPlayerScreen(
             ) { page ->
                 when (page) {
                     0 -> {
-                        // 歌曲详情页面
-                        SongDetailPage(
-                            currentMediaItem = currentMediaItem,
+                        // 当前播放列表页面
+                        CurrentPlaylistPage(
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -344,6 +362,322 @@ private fun PageIndicator(
                         .clip(CircleShape)
                         .background(MiuixTheme.colorScheme.onSurface.copy(alpha = alpha)),
             )
+        }
+    }
+}
+
+/**
+ * 当前播放列表页面
+ */
+@Composable
+private fun CurrentPlaylistPage(
+    modifier: Modifier = Modifier,
+    viewModel: PlayerViewModel = LocalPlayerViewModel.current,
+) {
+    val panelViewModel: CurrentPlaylistPanelViewModel = koinViewModel()
+    val currentPlaylist by viewModel.currentPlaylist.collectAsStateWithLifecycle()
+    val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
+
+    var isMultiSelectMode by remember { mutableStateOf(false) }
+    val selectedMediaIds = remember { mutableStateListOf<String>() }
+    var showCreateDialog by remember { mutableStateOf(false) }
+
+    val selectedCount by remember { derivedStateOf { selectedMediaIds.size } }
+
+    BackHandler(enabled = isMultiSelectMode) {
+        isMultiSelectMode = false
+        selectedMediaIds.clear()
+    }
+
+    LaunchedEffect(currentPlaylist) {
+        val validIds = currentPlaylist.map { it.mediaId }.toSet()
+        selectedMediaIds.removeAll { it !in validIds }
+        if (selectedMediaIds.isEmpty()) {
+            isMultiSelectMode = false
+        }
+    }
+
+    Column(
+        modifier =
+            modifier
+                .padding(horizontal = 16.dp)
+                .navigationBarsPadding(),
+    ) {
+        // 顶部标题和操作
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = if (isMultiSelectMode) "已选择 $selectedCount 项" else "播放列表 (${currentPlaylist.size})",
+                style = MiuixTheme.textStyles.title3,
+                color = MiuixTheme.colorScheme.onSurface,
+            )
+
+            if (isMultiSelectMode) {
+                TextButton(
+                    text = "取消",
+                    onClick = {
+                        isMultiSelectMode = false
+                        selectedMediaIds.clear()
+                    },
+                )
+            }
+        }
+
+        if (currentPlaylist.isEmpty()) {
+            // 空状态
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LibraryMusic,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier.size(48.dp),
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "播放列表为空",
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .overScrollVertical()
+                        .weight(1f),
+                contentPadding =
+                    PaddingValues(
+                        vertical = 8.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(currentPlaylist, key = { it.mediaId }) { item ->
+                    val isSelected = selectedMediaIds.contains(item.mediaId)
+                    val isPlaying = currentMediaItem?.mediaId == item.mediaId
+                    PlaylistItemRow(
+                        modifier = Modifier.animateItem(),
+                        item = item,
+                        isPlaying = isPlaying,
+                        isMultiSelectMode = isMultiSelectMode,
+                        isSelected = isSelected,
+                        onClick = {
+                            if (isMultiSelectMode) {
+                                if (isSelected) {
+                                    selectedMediaIds.remove(item.mediaId)
+                                } else {
+                                    selectedMediaIds.add(item.mediaId)
+                                }
+                            } else {
+                                viewModel.playById(item.mediaId)
+                            }
+                        },
+                        onLongClick = {
+                            if (!isMultiSelectMode) {
+                                isMultiSelectMode = true
+                            }
+                            if (selectedMediaIds.contains(item.mediaId)) {
+                                selectedMediaIds.remove(item.mediaId)
+                            } else {
+                                selectedMediaIds.add(item.mediaId)
+                            }
+                        },
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(if (isMultiSelectMode) 72.dp else 16.dp))
+                }
+            }
+        }
+
+        AnimatedVisibility(visible = isMultiSelectMode) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Button(
+                    onClick = {
+                        val toRemove = selectedMediaIds.toList()
+                        toRemove.forEach { mediaId ->
+                            viewModel.removeFromPlaylist(mediaId)
+                        }
+                        selectedMediaIds.clear()
+                        isMultiSelectMode = false
+                    },
+                    enabled = selectedCount > 0,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "删除",
+                    )
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Text(text = "批量删除")
+                }
+
+                Button(
+                    onClick = { showCreateDialog = true },
+                    enabled = selectedCount > 0,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                        contentDescription = "创建歌单",
+                    )
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Text(text = "创建歌单")
+                }
+            }
+        }
+    }
+
+    if (showCreateDialog) {
+        var playlistName by remember { mutableStateOf("") }
+        val showState = remember { mutableStateOf(true) }
+
+        WindowDialog(
+            title = "创建歌单",
+            onDismissRequest = { showCreateDialog = false },
+            show = showState,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                TextField(
+                    value = playlistName,
+                    onValueChange = { playlistName = it },
+                    label = "请输入歌单名称",
+                    modifier = Modifier.fillMaxWidth(),
+                    useLabelAsPlaceholder = true,
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(
+                        text = "取消",
+                        onClick = { showCreateDialog = false },
+                    )
+                    Spacer(modifier = Modifier.size(12.dp))
+                    TextButton(
+                        text = "创建",
+                        onClick = {
+                            if (playlistName.isNotBlank()) {
+                                panelViewModel.createPlaylistWithMediaIds(
+                                    name = playlistName,
+                                    mediaIds = selectedMediaIds.toList(),
+                                ) { success ->
+                                    if (success) {
+                                        selectedMediaIds.clear()
+                                        isMultiSelectMode = false
+                                        showCreateDialog = false
+                                    }
+                                }
+                            }
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 播放列表项
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun PlaylistItemRow(
+    item: MediaItem,
+    isPlaying: Boolean,
+    isMultiSelectMode: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    modifier: Modifier,
+) {
+    val metadata = item.mediaMetadata
+    val title = metadata.title?.toString() ?: "未知歌曲"
+    val artist = metadata.artist?.toString() ?: "未知艺术家"
+    val artworkUri = metadata.artworkUri
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(
+                    if (isPlaying) {
+                        MiuixTheme.colorScheme.secondaryContainer
+                    } else {
+                        MiuixTheme.colorScheme.surfaceContainer
+                    },
+                ).combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                ).padding(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AudioCover(
+                uri = artworkUri,
+                modifier =
+                    Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+            )
+
+            Spacer(modifier = Modifier.size(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    text = title,
+                    style = MiuixTheme.textStyles.body1,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = artist,
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            if (isMultiSelectMode) {
+                Icon(
+                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                    contentDescription = null,
+                    tint = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
         }
     }
 }

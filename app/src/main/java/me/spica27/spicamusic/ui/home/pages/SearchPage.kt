@@ -237,8 +237,11 @@ private fun SearchBar(
 private fun SongItemCard(
     song: Song,
     modifier: Modifier = Modifier,
+    viewModel: SearchViewModel = koinViewModel(),
 ) {
     val playerViewModel = LocalPlayerViewModel.current
+    val searchResults by viewModel.searchResults.collectAsState()
+    val currentPlaylist by playerViewModel.currentPlaylist.collectAsState()
 
     val showPopup = remember { mutableStateOf(false) }
     val items = listOf("立刻播放", "加入播放列表", "下一首播放", "全部播放", "查看详情")
@@ -331,12 +334,43 @@ private fun SongItemCard(
                         text = string,
                         optionSize = items.size,
                         isSelected = false,
-                        onSelectedIndexChange = { index ->
+                        onSelectedIndexChange = {
                             when (index) {
-                                0 -> playerViewModel.playSong(song)
-                                1 -> {}
-                                2 -> {}
-                                3 -> {}
+                                0 -> {
+                                    // 立刻播放
+                                    playerViewModel.playSong(song)
+                                }
+                                1 -> {
+                                    // 加入播放列表：添加到队列末尾
+                                    val currentIds = currentPlaylist.map { it.mediaId }.toMutableList()
+                                    val mediaId = song.mediaStoreId.toString()
+                                    if (!currentIds.contains(mediaId)) {
+                                        currentIds.add(mediaId)
+                                        playerViewModel.updatePlaylist(
+                                            mediaIds = currentIds,
+                                            startMediaId = null,
+                                            autoStart = false,
+                                        )
+                                    }
+                                }
+                                2 -> {
+                                    // 下一首播放
+                                    playerViewModel.addSongToNext(song)
+                                }
+                                3 -> {
+                                    // 全部播放：播放搜索结果中该歌曲所在分组的所有歌曲
+                                    val songGroup =
+                                        searchResults.find { group ->
+                                            group.songs.any { it.songId == song.songId }
+                                        }
+                                    songGroup?.let { group ->
+                                        playerViewModel.updatePlaylistWithSongs(
+                                            songs = group.songs,
+                                            startSong = song,
+                                            autoStart = true,
+                                        )
+                                    }
+                                }
                                 4 -> {
                                     // 查看详情
                                 }

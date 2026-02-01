@@ -233,9 +233,7 @@ class PlayerViewModel(
      * 添加歌曲到下一曲播放
      */
     fun addSongToNext(song: Song) {
-        song.songId?.let { id ->
-            addToNext(id.toString())
-        }
+        addToNext(song.mediaStoreId.toString())
     }
 
     /**
@@ -249,9 +247,7 @@ class PlayerViewModel(
      * 从播放列表移除歌曲
      */
     fun removeSongFromPlaylist(song: Song) {
-        song.songId?.let { id ->
-            removeFromPlaylist(id.toString())
-        }
+        removeFromPlaylist(song.mediaStoreId.toString())
     }
 
     /**
@@ -282,8 +278,8 @@ class PlayerViewModel(
         startSong: Song? = null,
         autoStart: Boolean = false,
     ) {
-        val mediaIds = songs.mapNotNull { it.songId?.toString() }
-        val startMediaId = startSong?.songId?.toString()
+        val mediaIds = songs.map { it.mediaStoreId.toString() }
+        val startMediaId = startSong?.mediaStoreId?.toString()
         updatePlaylist(mediaIds, startMediaId, autoStart)
     }
 
