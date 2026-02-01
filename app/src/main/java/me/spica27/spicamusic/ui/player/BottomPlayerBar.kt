@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,10 +55,10 @@ fun BottomPlayerBar(
     onDrag: (Float) -> Unit = {},
     progress: Float = 0f, // 展开进度，用于视觉效果
 ) {
-    val currentMediaItem by viewModel.currentMediaItem.collectAsState()
-    val isPlaying by viewModel.isPlaying.collectAsState()
+    val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val currentPosition = viewModel.currentPosition.collectAsStateWithLifecycle().value
-    val currentDuration by viewModel.currentDuration.collectAsState()
+    val currentDuration by viewModel.currentDuration.collectAsStateWithLifecycle()
     val playlistPanelController = LocalPlaylistPanelController.current
 
     LaunchedEffect(currentPosition, currentDuration) {

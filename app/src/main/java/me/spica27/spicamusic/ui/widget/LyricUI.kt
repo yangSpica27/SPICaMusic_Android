@@ -131,22 +131,33 @@ fun LyricsUI(
     val lazyListState = rememberLazyListState()
     var isAutoScrolling by remember { mutableStateOf(false) }
     var showSeekOverlay by remember { mutableStateOf(false) }
-    val playingIndex by remember(currentTime, lyricLines) {
-        derivedStateOf { lyricLines.findPlayingIndex(currentTime) }
-    }
 
+    // 优化：分离 playingIndex 计算，减少重复计算
+    val playingIndex =
+        remember(currentTime, lyricLines) {
+            derivedStateOf {
+                lyricLines.findPlayingIndex(currentTime)
+            }
+        }.value
+
+    // 优化：使用 remember 缓存 previewIndex 计算逻辑
     val previewIndex by remember {
         derivedStateOf {
+            if (!lazyListState.isScrollInProgress) {
+                return@derivedStateOf playingIndex
+            }
+
             val layoutInfo = lazyListState.layoutInfo
-            val viewportCenter = (layoutInfo.viewportStartOffset) + (layoutInfo.viewportSize.height / 2)
+            val viewportCenter = layoutInfo.viewportStartOffset + (layoutInfo.viewportSize.height / 2)
             val visible = layoutInfo.visibleItemsInfo
+
             if (visible.isEmpty()) {
                 playingIndex
             } else {
                 visible
                     .minByOrNull { item ->
                         val itemCenter = item.offset + item.size / 2
-                        return@minByOrNull kotlin.math.abs(itemCenter - viewportCenter)
+                        kotlin.math.abs(itemCenter - viewportCenter)
                     }?.index ?: playingIndex
             }
         }

@@ -24,7 +24,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
@@ -78,8 +78,8 @@ fun SearchPage(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = koinViewModel(),
 ) {
-    val searchKeyword by viewModel.searchKeyword.collectAsState()
-    val searchResults by viewModel.searchResults.collectAsState()
+    val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
+    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -240,8 +240,8 @@ private fun SongItemCard(
     viewModel: SearchViewModel = koinViewModel(),
 ) {
     val playerViewModel = LocalPlayerViewModel.current
-    val searchResults by viewModel.searchResults.collectAsState()
-    val currentPlaylist by playerViewModel.currentPlaylist.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
+    val currentPlaylist by playerViewModel.currentPlaylist.collectAsStateWithLifecycle()
 
     val showPopup = remember { mutableStateOf(false) }
     val items = listOf("立刻播放", "加入播放列表", "下一首播放", "全部播放", "查看详情")

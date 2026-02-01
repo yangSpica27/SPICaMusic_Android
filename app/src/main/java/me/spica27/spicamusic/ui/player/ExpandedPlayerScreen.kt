@@ -115,11 +115,19 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+// ============================================
+// 常量定义
+// ============================================
+
 // 展开动画透明度阈值常量
 private const val COVER_FADE_THRESHOLD = 0.8f
 private const val CONTROLS_FADE_THRESHOLD = 0.5f
 private const val PAGE_COUNT = 3
 private const val DEFAULT_PAGE = 1
+
+// ============================================
+// 主屏幕组件
+// ============================================
 
 /**
  * 全屏播放器页面
@@ -252,6 +260,10 @@ fun ExpandedPlayerScreen(
     }
 }
 
+// ============================================
+// 导航栏组件
+// ============================================
+
 /**
  * 顶部工具栏（带页面指示器）
  */
@@ -365,6 +377,12 @@ private fun PageIndicator(
         }
     }
 }
+
+// ============================================
+// 页面内容组件
+// ============================================
+
+// ---------- 播放列表页面 ----------
 
 /**
  * 当前播放列表页面
@@ -682,6 +700,8 @@ private fun PlaylistItemRow(
     }
 }
 
+// ---------- 歌曲详情页面 ----------
+
 /**
  * 歌曲详情页面
  */
@@ -807,6 +827,8 @@ private fun SongDetailPage(
         Spacer(modifier = Modifier.height(48.dp))
     }
 }
+
+// ---------- 音频信息组件 ----------
 
 /**
  * 音频标签
@@ -1000,6 +1022,8 @@ private fun InfoRow(
     }
 }
 
+// ---------- 播放器页面 ----------
+
 /**
  * 播放器页面（原有的播放器内容）
  */
@@ -1090,12 +1114,30 @@ private fun PlayerPage(
 
         val amplituda: Amplituda = koinInject<Amplituda>()
 
+        // 优化：使用缓存机制避免重复加载波形数据
+        val amplitudeCache = remember { mutableMapOf<String, List<Int>>() }
         var ampState by remember { mutableStateOf(listOf<Int>()) }
 
         // 音频波形数据
-        LaunchedEffect(currentMediaItem) {
+        LaunchedEffect(currentMediaItem?.mediaId) {
+            val mediaId = currentMediaItem?.mediaId ?: return@LaunchedEffect
+
+            // 检查缓存
+            if (amplitudeCache.containsKey(mediaId)) {
+                ampState = amplitudeCache[mediaId] ?: emptyList()
+                return@LaunchedEffect
+            }
+
             launch(Dispatchers.IO) {
-                ampState = loadAmplitudeData(currentMediaItem, amplituda)
+                val data = loadAmplitudeData(currentMediaItem, amplituda)
+
+                // 保存到缓存，最多保留3首歌曲的数据
+                if (amplitudeCache.size >= 3) {
+                    // 移除最旧的项
+                    amplitudeCache.remove(amplitudeCache.keys.first())
+                }
+                amplitudeCache[mediaId] = data
+                ampState = data
             }
         }
 
@@ -1177,6 +1219,8 @@ private fun PlayerPage(
     }
 }
 
+// ---------- 歌词页面 ----------
+
 /**
  * 全屏歌词页面（占位）
  */
@@ -1240,6 +1284,12 @@ private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
         )
     }
 }
+
+// ============================================
+// UI 子组件
+// ============================================
+
+// ---------- 播放器控制组件 ----------
 
 /**
  * 歌曲信息
@@ -1398,6 +1448,10 @@ private fun PlayerControls(
         }
     }
 }
+
+// ============================================
+// 工具函数
+// ============================================
 
 /**
  * 格式化时间 (毫秒 -> mm:ss)
