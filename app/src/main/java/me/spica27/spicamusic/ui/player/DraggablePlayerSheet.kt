@@ -49,6 +49,7 @@ fun DraggablePlayerSheet(
     var isExpanded by remember { mutableStateOf(false) }
     var isDragging by remember { mutableStateOf(false) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
+    var initialPage by remember { mutableStateOf(DEFAULT_PAGE) } // 记录初始页面
     val scope = rememberCoroutineScope()
     val progress = remember { Animatable(0f) }
 
@@ -167,6 +168,14 @@ fun DraggablePlayerSheet(
                     BottomPlayerBar(
                         onExpand = {
                             scope.launch {
+                                initialPage = 1 // 默认页面
+                                isExpanded = true
+                                progress.animateTo(1f, quickAnimationSpec)
+                            }
+                        },
+                        onExpandToPlaylist = {
+                            scope.launch {
+                                initialPage = 0 // 播放列表页面
                                 isExpanded = true
                                 progress.animateTo(1f, quickAnimationSpec)
                             }
@@ -198,6 +207,7 @@ fun DraggablePlayerSheet(
                         onDragCancel = handleDragCancel,
                         onDrag = handleDrag,
                         progress = progress.value,
+                        initialPage = initialPage,
                     )
                 }.map {
                     it.measure(

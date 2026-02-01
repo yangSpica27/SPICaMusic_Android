@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Playlist
+import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import timber.log.Timber
 
@@ -98,4 +100,9 @@ class PlaylistViewModel(
             }
         }
     }
+
+    /**
+     * 获取歌单内的歌曲列表（用于封面显示）
+     */
+    fun getPlaylistSongs(playlistId: Long): Flow<List<Song>> = playlistRepository.getSongsByPlaylistIdFlow(playlistId)
 }

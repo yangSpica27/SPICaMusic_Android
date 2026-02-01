@@ -3,6 +3,7 @@ package me.spica27.spicamusic.ui.player
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -30,7 +31,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -45,7 +46,6 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -72,6 +72,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -85,6 +86,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
@@ -103,13 +109,9 @@ import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.DropdownImpl
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
 import top.yukonga.miuix.kmp.extra.WindowDialog
-import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import java.util.*
@@ -123,7 +125,7 @@ import java.util.concurrent.TimeUnit
 private const val COVER_FADE_THRESHOLD = 0.8f
 private const val CONTROLS_FADE_THRESHOLD = 0.5f
 private const val PAGE_COUNT = 3
-private const val DEFAULT_PAGE = 1
+public const val DEFAULT_PAGE = 1
 
 // ============================================
 // 主屏幕组件
@@ -142,6 +144,7 @@ fun ExpandedPlayerScreen(
     onDragCancel: () -> Unit = {},
     onDrag: (Float) -> Unit = {},
     progress: Float = 1f, // 展开进度，用于视觉效果
+    initialPage: Int = DEFAULT_PAGE, // 初始页面索引
 ) {
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val playMode by viewModel.playMode.collectAsStateWithLifecycle()
@@ -160,8 +163,8 @@ fun ExpandedPlayerScreen(
         }
     }
 
-    // Pager 状态，默认显示播放器页面（index=1）
-    val pagerState = rememberPagerState(initialPage = DEFAULT_PAGE, pageCount = { PAGE_COUNT })
+    // Pager 状态，使用传入的初始页面
+    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { PAGE_COUNT })
 
     // 从封面提取主色调
     val coverColor =
@@ -169,6 +172,8 @@ fun ExpandedPlayerScreen(
             uri = currentMediaItem?.mediaMetadata?.artworkUri,
             fallbackColor = MiuixTheme.colorScheme.primary,
         )
+
+    val backgroundState = rememberHazeState()
 
     Box(
         modifier =
@@ -186,7 +191,10 @@ fun ExpandedPlayerScreen(
     ) {
         // 流动背景
         FluidMusicBackground(
-            modifier = Modifier.fillMaxSize(),
+            modifier =
+                Modifier
+                    .hazeSource(backgroundState)
+                    .fillMaxSize(),
             coverColor = coverColor,
             enabled = true,
             isDarkMode = isSystemInDarkTheme(),
@@ -217,6 +225,7 @@ fun ExpandedPlayerScreen(
                         // 当前播放列表页面
                         CurrentPlaylistPage(
                             modifier = Modifier.fillMaxSize(),
+                            backgroundState = backgroundState,
                         )
                     }
 
@@ -299,48 +308,8 @@ private fun TopBar(
                 currentPage = currentPage,
             )
 
-            val playlistPanelController = LocalPlaylistPanelController.current
-            val showPopup = remember { mutableStateOf(false) }
-            Box {
-                IconButton(onClick = {
-                    showPopup.value = true
-                }) {
-                    Icon(
-                        imageVector = Icons.Rounded.MoreVert,
-                        contentDescription = "更多",
-                        tint = MiuixTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
-                WindowListPopup(
-                    show = showPopup,
-                    alignment = top.yukonga.miuix.kmp.basic.PopupPositionProvider.Align.End,
-                    onDismissRequest = { showPopup.value = false },
-                ) {
-                    val dismiss = LocalWindowListPopupState.current
-                    ListPopupColumn {
-                        DropdownImpl(
-                            text = "播放列表",
-                            optionSize = 2,
-                            isSelected = false,
-                            onSelectedIndexChange = {
-                                playlistPanelController.show()
-                                dismiss()
-                            },
-                            index = 0,
-                        )
-                        DropdownImpl(
-                            text = "查看详情",
-                            optionSize = 2,
-                            isSelected = false,
-                            onSelectedIndexChange = {
-                                dismiss()
-                            },
-                            index = 1,
-                        )
-                    }
-                }
-            }
+            // 占位符，保持布局对称
+            Spacer(modifier = Modifier.size(48.dp))
         }
     }
 }
@@ -391,6 +360,7 @@ private fun PageIndicator(
 private fun CurrentPlaylistPage(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
+    backgroundState: HazeState,
 ) {
     val panelViewModel: CurrentPlaylistPanelViewModel = koinViewModel()
     val currentPlaylist by viewModel.currentPlaylist.collectAsStateWithLifecycle()
@@ -418,25 +388,26 @@ private fun CurrentPlaylistPage(
     Column(
         modifier =
             modifier
-                .padding(horizontal = 16.dp)
-                .navigationBarsPadding(),
+                .padding(horizontal = 16.dp),
     ) {
         // 顶部标题和操作
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .animateContentSize()
                     .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                text = if (isMultiSelectMode) "已选择 $selectedCount 项" else "播放列表 (${currentPlaylist.size})",
-                style = MiuixTheme.textStyles.title3,
-                color = MiuixTheme.colorScheme.onSurface,
-            )
-
-            if (isMultiSelectMode) {
+            AnimatedContent(isMultiSelectMode) { isMultiSelectMode ->
+                Text(
+                    text = if (isMultiSelectMode) "已选择 $selectedCount 项" else "播放列表 (${currentPlaylist.size})",
+                    style = MiuixTheme.textStyles.title3,
+                    color = MiuixTheme.colorScheme.onSurface,
+                )
+            }
+            AnimatedVisibility(isMultiSelectMode) {
                 TextButton(
                     text = "取消",
                     onClick = {
@@ -477,6 +448,7 @@ private fun CurrentPlaylistPage(
             LazyColumn(
                 modifier =
                     Modifier
+                        .animateContentSize()
                         .fillMaxWidth()
                         .overScrollVertical()
                         .weight(1f),
@@ -486,10 +458,11 @@ private fun CurrentPlaylistPage(
                     ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(currentPlaylist, key = { it.mediaId }) { item ->
+                itemsIndexed(currentPlaylist, key = { index, song -> song.mediaId }) { index, item ->
                     val isSelected = selectedMediaIds.contains(item.mediaId)
                     val isPlaying = currentMediaItem?.mediaId == item.mediaId
                     PlaylistItemRow(
+                        index = index,
                         modifier = Modifier.animateItem(),
                         item = item,
                         isPlaying = isPlaying,
@@ -506,6 +479,7 @@ private fun CurrentPlaylistPage(
                                 viewModel.playById(item.mediaId)
                             }
                         },
+                        backgroundState = backgroundState,
                         onLongClick = {
                             if (!isMultiSelectMode) {
                                 isMultiSelectMode = true
@@ -627,6 +601,7 @@ private fun CurrentPlaylistPage(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PlaylistItemRow(
+    index: Int,
     item: MediaItem,
     isPlaying: Boolean,
     isMultiSelectMode: Boolean,
@@ -634,24 +609,35 @@ private fun PlaylistItemRow(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier,
+    backgroundState: HazeState,
 ) {
     val metadata = item.mediaMetadata
     val title = metadata.title?.toString() ?: "未知歌曲"
     val artist = metadata.artist?.toString() ?: "未知艺术家"
     val artworkUri = metadata.artworkUri
 
+    val modifier1 =
+        if (isPlaying) {
+            modifier
+                .clip(
+                    RoundedCornerShape(12.dp),
+                ).hazeEffect(
+                    state = backgroundState,
+                    HazeMaterials.ultraThin(
+                        MiuixTheme.colorScheme.tertiaryContainer,
+                    ),
+                )
+        } else {
+            modifier.clip(
+                RoundedCornerShape(12.dp),
+            )
+        }
+
     Box(
         modifier =
-            modifier
+            modifier1
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(
-                    if (isPlaying) {
-                        MiuixTheme.colorScheme.secondaryContainer
-                    } else {
-                        MiuixTheme.colorScheme.surfaceContainer
-                    },
-                ).combinedClickable(
+                .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
                 ).padding(12.dp),
@@ -660,13 +646,48 @@ private fun PlaylistItemRow(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            Text(
+                text = "${index + 1}",
+                style = MiuixTheme.textStyles.title4,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier.width(30.dp),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.size(12.dp))
             AudioCover(
                 uri = artworkUri,
                 modifier =
                     Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.tertiaryContainer,
+                                        MiuixTheme.colorScheme.surfaceContainerHigh,
+                                    ),
+                            ),
+                        ),
+                placeHolder = {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.MusicNote,
+                            contentDescription = "封面占位符",
+                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            modifier =
+                                Modifier
+                                    .size(24.dp)
+                                    .align(
+                                        Alignment.Center,
+                                    ),
+                        )
+                    }
+                },
             )
 
             Spacer(modifier = Modifier.size(12.dp))
@@ -688,7 +709,22 @@ private fun PlaylistItemRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-
+            Spacer(modifier = Modifier.size(12.dp))
+            AnimatedContent(isPlaying) { isPlaying ->
+                Text(
+                    text = if (isPlaying) "正在播放" else formatTime(item.mediaMetadata.durationMs ?: 0L),
+                    style = MiuixTheme.textStyles.body2,
+                    color =
+                        if (
+                            isPlaying
+                        ) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.onSurfaceVariantSummary
+                        },
+                )
+            }
+            Spacer(modifier = Modifier.size(12.dp))
             if (isMultiSelectMode) {
                 Icon(
                     imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,

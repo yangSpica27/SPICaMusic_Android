@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -49,13 +49,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
@@ -138,6 +138,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                         playlist?.let { pl ->
                             PlaylistHeader(
                                 playlist = pl,
+                                songs = songs,
                                 songCount = songs.size,
                                 modifier = Modifier.fillMaxWidth(),
                             )
@@ -204,8 +205,9 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(songs, key = { it.songId ?: -1 }) { song ->
+                    itemsIndexed(songs, key = { index, song -> song.songId ?: -1 }) { index, song ->
                         SongItemCard(
+                            index = index,
                             song = song,
                             isMultiSelectMode = isMultiSelectMode,
                             isSelected = selectedSongs.contains(song.songId),
@@ -236,6 +238,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
 @Composable
 private fun PlaylistHeader(
     playlist: Playlist,
+    songs: List<Song>,
     songCount: Int,
     modifier: Modifier = Modifier,
 ) {
@@ -244,31 +247,14 @@ private fun PlaylistHeader(
         modifier,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // 封面
-        Box(
+        // Grid 组合封面
+        PlaylistGridCover(
+            songs = songs,
             modifier =
                 Modifier
                     .size(120.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MiuixTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (playlist.cover.isNullOrBlank()) {
-                Icon(
-                    imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
-                )
-            } else {
-                AsyncImage(
-                    model = playlist.cover,
-                    contentDescription = playlist.playlistName,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
-        }
+                    .clip(RoundedCornerShape(12.dp)),
+        )
 
         // 歌单信息
         Column(
@@ -451,6 +437,7 @@ private fun SongItemCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    index: Int = 0,
 ) {
     val cardColor =
         animateColorAsState(
@@ -483,34 +470,16 @@ private fun SongItemCard(
                     .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 选中状态图标
-            AnimatedVisibility(
-                visible = isMultiSelectMode,
-            ) {
-                Icon(
-                    imageVector =
-                        if (isSelected) {
-                            Icons.Default.CheckCircle
-                        } else {
-                            Icons.Default.RadioButtonUnchecked
-                        },
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint =
-                        if (isSelected) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f)
-                        },
-                )
-            }
+            Text(
+                text = "${index + 1}",
+                style = MiuixTheme.textStyles.title4,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.9f),
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.width(30.dp),
+                textAlign = TextAlign.Center,
+            )
 
-            AnimatedVisibility(
-                visible = isMultiSelectMode,
-            ) {
-                Spacer(modifier = Modifier.width(12.dp))
-            }
-
+            Spacer(modifier = Modifier.width(12.dp))
             // 封面
             Box(
                 modifier =
@@ -566,6 +535,34 @@ private fun SongItemCard(
                     color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            AnimatedVisibility(
+                visible = isMultiSelectMode,
+            ) {
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+
+            // 选中状态图标
+            AnimatedVisibility(
+                visible = isMultiSelectMode,
+            ) {
+                Icon(
+                    imageVector =
+                        if (isSelected) {
+                            Icons.Default.CheckCircle
+                        } else {
+                            Icons.Default.RadioButtonUnchecked
+                        },
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint =
+                        if (isSelected) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f)
+                        },
                 )
             }
         }
@@ -655,4 +652,139 @@ private fun RenamePlaylistDialog(
             }
         }
     }
+}
+
+/**
+ * 歌单 Grid 组合封面
+ * 显示歌单内最多4首歌曲的封面，排列为2x2网格
+ */
+@Composable
+private fun PlaylistGridCover(
+    songs: List<Song>,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.background(MiuixTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (songs.isEmpty()) {
+            // 空歌单默认封面
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
+            )
+        } else {
+            // 2x2 网格布局显示前4首歌曲封面
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
+                val displaySongs = songs.take(4)
+
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    // 第一行第一个
+                    GridCoverItem(
+                        song = displaySongs.getOrNull(0),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxSize(),
+                    )
+                    // 第一行第二个
+                    GridCoverItem(
+                        song = displaySongs.getOrNull(1),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxSize(),
+                    )
+                }
+
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    // 第二行第一个
+                    GridCoverItem(
+                        song = displaySongs.getOrNull(2),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxSize(),
+                    )
+                    // 第二行第二个
+                    GridCoverItem(
+                        song = displaySongs.getOrNull(3),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxSize(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Grid 封面单个项
+ */
+@Composable
+private fun GridCoverItem(
+    song: Song?,
+    modifier: Modifier = Modifier,
+) {
+    AudioCover(
+        uri = song?.getCoverUri(),
+        modifier = modifier,
+        placeHolder = {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.tertiaryContainer,
+                                        MiuixTheme.colorScheme.surfaceContainerHigh,
+                                    ),
+                            ),
+                        ),
+            ) {
+                if (song != null) {
+                    Text(
+                        text = song.displayName.take(1),
+                        style = MiuixTheme.textStyles.title3,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
+                        modifier =
+                            Modifier.align(
+                                Alignment.Center,
+                            ),
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.MusicNote,
+                        contentDescription = null,
+                        modifier =
+                            Modifier
+                                .size(24.dp)
+                                .align(Alignment.Center),
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
+                    )
+                }
+            }
+        },
+    )
 }

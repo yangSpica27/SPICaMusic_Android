@@ -49,6 +49,7 @@ fun BottomPlayerBar(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
     onExpand: () -> Unit,
+    onExpandToPlaylist: () -> Unit = {}, // 展开到播放列表页面
     onDragStart: () -> Unit = {},
     onDragEnd: () -> Unit = {},
     onDragCancel: () -> Unit = {},
@@ -59,7 +60,6 @@ fun BottomPlayerBar(
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val currentPosition = viewModel.currentPosition.collectAsStateWithLifecycle().value
     val currentDuration by viewModel.currentDuration.collectAsStateWithLifecycle()
-    val playlistPanelController = LocalPlaylistPanelController.current
 
     LaunchedEffect(currentPosition, currentDuration) {
         Timber
@@ -182,9 +182,7 @@ fun BottomPlayerBar(
 
                 // 播放列表按钮
                 IconButton(
-                    onClick = {
-                        playlistPanelController.show()
-                    },
+                    onClick = onExpandToPlaylist,
                     modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
