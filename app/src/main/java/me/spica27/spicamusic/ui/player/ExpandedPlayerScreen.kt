@@ -12,7 +12,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -76,6 +75,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -197,7 +197,7 @@ fun ExpandedPlayerScreen(
                     .fillMaxSize(),
             coverColor = coverColor,
             enabled = true,
-            isDarkMode = isSystemInDarkTheme(),
+            isDarkMode = MiuixTheme.colorScheme.surface.luminance() < 0.5f,
         )
 
         // 内容层
@@ -400,7 +400,12 @@ private fun CurrentPlaylistPage(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            AnimatedContent(isMultiSelectMode) { isMultiSelectMode ->
+            AnimatedContent(
+                isMultiSelectMode,
+                modifier =
+                    Modifier
+                        .animateContentSize(),
+            ) { isMultiSelectMode ->
                 Text(
                     text = if (isMultiSelectMode) "已选择 $selectedCount 项" else "播放列表 (${currentPlaylist.size})",
                     style = MiuixTheme.textStyles.title3,
@@ -414,6 +419,7 @@ private fun CurrentPlaylistPage(
                         isMultiSelectMode = false
                         selectedMediaIds.clear()
                     },
+                    insideMargin = PaddingValues(vertical = 4.dp, horizontal = 8.dp),
                 )
             }
         }

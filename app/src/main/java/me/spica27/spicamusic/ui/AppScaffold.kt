@@ -3,6 +3,7 @@ package me.spica27.spicamusic.ui
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +23,8 @@ import me.spica27.spicamusic.ui.player.LocalPlaylistPanelController
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.player.PlaylistPanelController
 import me.spica27.spicamusic.ui.theme.SPICaMusicTheme
+import me.spica27.spicamusic.utils.PreferencesManager
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
@@ -30,7 +33,14 @@ import org.koin.compose.viewmodel.koinActivityViewModel
  */
 @Composable
 fun AppScaffold() {
-    SPICaMusicTheme {
+    val preferencesManager = koinInject<PreferencesManager>()
+
+    val isDarkMode =
+        preferencesManager.getBoolean(PreferencesManager.Keys.DARK_MODE).collectAsState(false)
+
+    SPICaMusicTheme(
+        darkTheme = isDarkMode.value,
+    ) {
         val backStack = remember { mutableStateListOf<Screen>(Screen.Home) }
 
         // Activity 级别的 PlayerViewModel，全局共享
