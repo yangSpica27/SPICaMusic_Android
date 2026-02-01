@@ -59,24 +59,31 @@ class AudioEffectsViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
+        // 应用启动时加载并应用保存的音效设置
+        // 为每个 Flow 启动独立的收集协程，统一管理音效应用逻辑
+
+        // 监听 EQ 开关变化
         viewModelScope.launch {
             eqEnabled.collect { enabled ->
                 player.setEQEnabled(enabled)
             }
         }
 
+        // 监听 EQ 频段变化
         viewModelScope.launch {
             eqBands.collect { bands ->
                 player.setAllEQBands(bands.toFloatArray())
             }
         }
 
+        // 监听混响开关变化
         viewModelScope.launch {
             reverbEnabled.collect { enabled ->
                 player.setReverbEnabled(enabled)
             }
         }
 
+        // 监听混响参数变化（使用 combine 组合两个 Flow）
         viewModelScope.launch {
             combine(reverbLevel, reverbRoomSize) { level, roomSize ->
                 Pair(level, roomSize)
@@ -88,11 +95,11 @@ class AudioEffectsViewModel(
 
     /**
      * 设置 EQ 开关
+     * 只更新 DataStore，通过 Flow 监听自动应用到播放器
      */
     fun setEqEnabled(enabled: Boolean) {
         viewModelScope.launch {
             preferencesManager.setBoolean(PreferencesManager.Keys.EQ_ENABLED, enabled)
-            player.setEQEnabled(enabled)
         }
     }
 
@@ -111,7 +118,6 @@ class AudioEffectsViewModel(
             val newBands = eqBands.value.toMutableList()
             newBands[band] = gainDb.coerceIn(-12f, 12f)
             preferencesManager.setFloatList(PreferencesManager.Keys.EQ_BANDS, newBands)
-            player.setEQBandGain(band, gainDb)
         }
     }
 
@@ -124,7 +130,6 @@ class AudioEffectsViewModel(
         viewModelScope.launch {
             val clampedBands = bands.map { it.coerceIn(-12f, 12f) }
             preferencesManager.setFloatList(PreferencesManager.Keys.EQ_BANDS, clampedBands)
-            player.setAllEQBands(clampedBands.toFloatArray())
         }
     }
 
@@ -150,7 +155,6 @@ class AudioEffectsViewModel(
     fun setReverbEnabled(enabled: Boolean) {
         viewModelScope.launch {
             preferencesManager.setBoolean(PreferencesManager.Keys.REVERB_ENABLED, enabled)
-            player.setReverbEnabled(enabled)
         }
     }
 
@@ -161,7 +165,6 @@ class AudioEffectsViewModel(
         viewModelScope.launch {
             val clampedLevel = level.coerceIn(0f, 1f)
             preferencesManager.setFloat(PreferencesManager.Keys.REVERB_LEVEL, clampedLevel)
-            player.setReverb(clampedLevel, reverbRoomSize.value)
         }
     }
 
@@ -172,7 +175,6 @@ class AudioEffectsViewModel(
         viewModelScope.launch {
             val clampedSize = roomSize.coerceIn(0f, 1f)
             preferencesManager.setFloat(PreferencesManager.Keys.REVERB_ROOM_SIZE, clampedSize)
-            player.setReverb(reverbLevel.value, clampedSize)
         }
     }
 
