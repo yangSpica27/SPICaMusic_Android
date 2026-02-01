@@ -23,8 +23,10 @@ import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
+import me.spica27.spicamusic.player.impl.dsp.EqualizerAudioProcessor
 import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessor
 import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessorWrapper
+import me.spica27.spicamusic.player.impl.dsp.ReverbAudioProcessor
 import me.spica27.spicamusic.player.impl.utils.MediaLibrary
 import me.spica27.spicamusic.player.impl.utils.PlayerKVUtils
 import me.spica27.spicamusic.player.impl.utils.toMediaItem
@@ -62,6 +64,10 @@ class SpicaPlayer(
   private val _fftAudioProcessorWrapper = FFTAudioProcessorWrapper(_fftProcessor)
   override val fftAudioProcessor: AudioProcessor =
     _fftAudioProcessorWrapper
+
+  // 音效处理器
+  private val _equalizerProcessor = EqualizerAudioProcessor()
+  private val _reverbProcessor = ReverbAudioProcessor()
 
   private var browserInstance: MediaBrowser? = null
   private val browserFuture by lazy {
@@ -369,5 +375,39 @@ class SpicaPlayer(
         browser.shuffleModeEnabled = true
       }
     }
+  }
+
+  // ==================== 音效控制实现 ====================
+
+  override fun setEQEnabled(enabled: Boolean) {
+    _equalizerProcessor.setEnabled(enabled)
+  }
+
+  override fun setEQBandGain(band: Int, gainDb: Float) {
+    _equalizerProcessor.setBandGain(band, gainDb)
+  }
+
+  override fun setAllEQBands(gains: FloatArray) {
+    _equalizerProcessor.setAllBands(gains)
+  }
+
+  override fun setReverbEnabled(enabled: Boolean) {
+    _reverbProcessor.setEnabled(enabled)
+  }
+
+  override fun setReverb(level: Float, roomSize: Float) {
+    _reverbProcessor.setReverb(level, roomSize)
+  }
+
+  /**
+   * 获取音效处理器数组
+   * 用于在 PlaybackService 中配置 ExoPlayer
+   */
+  fun getAudioProcessors(): Array<AudioProcessor> {
+    return arrayOf(
+      _fftAudioProcessorWrapper,
+      _equalizerProcessor,
+      _reverbProcessor,
+    )
   }
 }

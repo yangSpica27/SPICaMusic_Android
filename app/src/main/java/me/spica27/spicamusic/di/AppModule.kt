@@ -8,6 +8,7 @@ import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
+import me.spica27.spicamusic.ui.audioeffects.AudioEffectsViewModel
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.pages.SearchViewModel
 import me.spica27.spicamusic.ui.library.AllSongsViewModel
@@ -130,6 +131,14 @@ object AppModule {
                 PlaylistDetailViewModel(
                     playlistId = parameters.get<Long>(),
                     playlistRepository = get<IPlaylistRepository>(),
+                    player = get<IMusicPlayer>(),
+                )
+            }
+
+            // 音效配置页面 ViewModel
+            viewModel {
+                AudioEffectsViewModel(
+                    preferencesManager = get<PreferencesManager>(),
                     player = get<IMusicPlayer>(),
                 )
             }

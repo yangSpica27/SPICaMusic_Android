@@ -23,6 +23,13 @@ class PreferencesManager(
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
         val DYNAMIC_SPECTRUM_BACKGROUND = stringPreferencesKey("dynamic_spectrum_background")
+
+        // 音效设置
+        val EQ_ENABLED = booleanPreferencesKey("eq_enabled")
+        val EQ_BANDS = stringPreferencesKey("eq_bands") // JSON 序列化的 Float 数组
+        val REVERB_ENABLED = booleanPreferencesKey("reverb_enabled")
+        val REVERB_LEVEL = stringPreferencesKey("reverb_level") // Float as String
+        val REVERB_ROOM_SIZE = stringPreferencesKey("reverb_room_size") // Float as String
     }
 
     /**
@@ -68,6 +75,61 @@ class PreferencesManager(
     ) {
         context.dataStore.edit { preferences ->
             preferences[key] = value
+        }
+    }
+
+    /**
+     * 获取浮点数设置项
+     */
+    fun getFloat(
+        key: Preferences.Key<String>,
+        defaultValue: Float = 0f,
+    ): Flow<Float> =
+        context.dataStore.data.map { preferences ->
+            preferences[key]?.toFloatOrNull() ?: defaultValue
+        }
+
+    /**
+     * 设置浮点数设置项
+     */
+    suspend fun setFloat(
+        key: Preferences.Key<String>,
+        value: Float,
+    ) {
+        context.dataStore.edit { preferences ->
+            preferences[key] = value.toString()
+        }
+    }
+
+    /**
+     * 获取 Float 列表设置项
+     */
+    fun getFloatList(
+        key: Preferences.Key<String>,
+        defaultValue: List<Float> = emptyList(),
+    ): Flow<List<Float>> =
+        context.dataStore.data.map { preferences ->
+            val jsonString = preferences[key]
+            if (jsonString.isNullOrEmpty()) {
+                defaultValue
+            } else {
+                try {
+                    jsonString.split(",").mapNotNull { it.toFloatOrNull() }
+                } catch (e: Exception) {
+                    defaultValue
+                }
+            }
+        }
+
+    /**
+     * 设置 Float 列表设置项
+     */
+    suspend fun setFloatList(
+        key: Preferences.Key<String>,
+        value: List<Float>,
+    ) {
+        context.dataStore.edit { preferences ->
+            preferences[key] = value.joinToString(",")
         }
     }
 }

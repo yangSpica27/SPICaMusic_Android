@@ -88,4 +88,36 @@ interface IMusicPlayer {
      * 释放播放器资源
      */
     fun release()
+
+    // ==================== 音效控制 ====================
+
+    /**
+     * 设置均衡器开关
+     */
+    fun setEQEnabled(enabled: Boolean)
+
+    /**
+     * 设置均衡器频段增益
+     * @param band 频段索引 (0-9)
+     * @param gainDb 增益值 (-12.0 to +12.0 dB)
+     */
+    fun setEQBandGain(band: Int, gainDb: Float)
+
+    /**
+     * 设置所有均衡器频段
+     * @param gains 10个频段的增益数组
+     */
+    fun setAllEQBands(gains: FloatArray)
+
+    /**
+     * 设置混响开关
+     */
+    fun setReverbEnabled(enabled: Boolean)
+
+    /**
+     * 设置混响参数
+     * @param level 混响强度 (0.0 - 1.0)
+     * @param roomSize 房间大小 (0.0 - 1.0)
+     */
+    fun setReverb(level: Float, roomSize: Float)
 }

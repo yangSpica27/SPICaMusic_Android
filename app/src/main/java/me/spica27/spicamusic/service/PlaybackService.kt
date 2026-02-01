@@ -33,7 +33,7 @@ class PlaybackService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
 
-        // 创建自定义渲染器工厂，添加 FFT 音频处理器
+        // 创建自定义渲染器工厂，添加音频处理器（FFT、EQ、混响）
         val renderersFactory =
             object : DefaultRenderersFactory(this) {
                 override fun buildAudioSink(
@@ -46,10 +46,10 @@ class PlaybackService : MediaLibraryService() {
                         .setEnableFloatOutput(enableFloatOutput)
                         .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                         .setAudioProcessors(
-                            arrayOf(
-                                // 仅保留 FFT 音频处理器用于频谱分析
-                                player.fftAudioProcessor,
-                            ),
+                            // 音频处理链: FFT -> EQ -> Reverb
+                            (player as? me.spica27.spicamusic.player.impl.SpicaPlayer)
+                                ?.getAudioProcessors()
+                                ?: arrayOf(player.fftAudioProcessor),
                         ).build()
             }
 

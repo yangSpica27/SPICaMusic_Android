@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.rounded.GraphicEq
@@ -59,6 +60,21 @@ fun SettingsPage(modifier: Modifier = Modifier) {
 
                 // 播放设置
                 add(SettingsItem.GroupHeader(title = "播放"))
+                add(
+                    SettingsItem.NavigationItem(
+                        title = "音效",
+                        subtitle = "均衡器、混响等音效设置",
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.GraphicEq,
+                                contentDescription = null,
+                            )
+                        },
+                        onClick = {
+                            backStack.add(Screen.AudioEffects)
+                        },
+                    ),
+                )
                 add(
                     SettingsItem.SwitchItem(
                         title = "屏幕常亮",

@@ -55,4 +55,7 @@ sealed interface Screen : NavKey {
     // 设置相关路由
     @Serializable
     data object MediaLibrarySource : Screen
+
+    @Serializable
+    data object AudioEffects : Screen
 }
