@@ -25,6 +25,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 
@@ -50,6 +51,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                             Icon(
                                 imageVector = Icons.Rounded.Light,
                                 contentDescription = null,
+                                tint = MiuixTheme.colorScheme.onSurface,
                             )
                         },
                         key = "dark_mode",
@@ -68,6 +70,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                             Icon(
                                 imageVector = Icons.Default.GraphicEq,
                                 contentDescription = null,
+                                tint = MiuixTheme.colorScheme.onSurface,
                             )
                         },
                         onClick = {
@@ -83,6 +86,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                             Icon(
                                 imageVector = Icons.Default.Lightbulb,
                                 contentDescription = null,
+                                tint = MiuixTheme.colorScheme.onSurface,
                             )
                         },
                         key = "keep_screen_on",
@@ -98,6 +102,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                             Icon(
                                 imageVector = Icons.Rounded.GraphicEq,
                                 contentDescription = null,
+                                tint = MiuixTheme.colorScheme.onSurface,
                             )
                         },
                         key = "dynamic_spectrum_background",
@@ -121,6 +126,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                         subtitle = "管理音乐扫描路径",
                         icon = {
                             Icon(
+                                tint = MiuixTheme.colorScheme.onSurface,
                                 imageVector = Icons.Default.LibraryMusic,
                                 contentDescription = null,
                             )

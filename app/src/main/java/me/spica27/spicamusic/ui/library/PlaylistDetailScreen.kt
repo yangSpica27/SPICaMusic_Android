@@ -373,6 +373,7 @@ private fun ActionBar(
                     imageVector = Icons.Default.Checklist,
                     contentDescription = "多选",
                     modifier = Modifier.size(24.dp),
+                    tint = MiuixTheme.colorScheme.onSurface,
                 )
             }
         }
@@ -398,6 +399,7 @@ private fun ActionBar(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "菜单",
                         modifier = Modifier.size(24.dp),
+                        tint = MiuixTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -408,7 +410,7 @@ private fun ActionBar(
                 onDismissRequest = { showMenu = false },
             ) {
                 DropdownMenuItem(
-                    text = { Text("重命名") },
+                    text = { Text("重命名", style = MiuixTheme.textStyles.body1) },
                     onClick = {
                         showMenu = false
                         onShowMenu()

@@ -205,12 +205,14 @@ fun CurrentPlaylistPage(
 
                                 // 获取第一个可见项的偏移量
                                 val firstVisibleItemIndex = scrollState.firstVisibleItemIndex
-                                val firstVisibleItemScrollOffset = scrollState.firstVisibleItemScrollOffset.toFloat()
+                                val firstVisibleItemScrollOffset =
+                                    scrollState.firstVisibleItemScrollOffset.toFloat()
 
                                 // 计算背景的实际位置（考虑滚动偏移）
                                 val itemPositionInList = animatedPlayingIndex * (itemHeight + spacing)
                                 val firstItemPosition = firstVisibleItemIndex * (itemHeight + spacing)
-                                val backgroundTop = topPadding + itemPositionInList - firstItemPosition - firstVisibleItemScrollOffset
+                                val backgroundTop =
+                                    topPadding + itemPositionInList - firstItemPosition - firstVisibleItemScrollOffset
 
                                 // 绘制圆角矩形背景
                                 drawRoundRect(
@@ -295,9 +297,13 @@ fun CurrentPlaylistPage(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "删除",
+                        tint = MiuixTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(6.dp))
-                    Text(text = "批量删除")
+                    Text(
+                        text = "批量删除",
+                        style = MiuixTheme.textStyles.body1,
+                    )
                 }
 
                 Button(
@@ -308,9 +314,10 @@ fun CurrentPlaylistPage(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                         contentDescription = "创建歌单",
+                        tint = MiuixTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(6.dp))
-                    Text(text = "创建歌单")
+                    Text(text = "创建歌单", style = MiuixTheme.textStyles.body1)
                 }
             }
         }

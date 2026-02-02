@@ -545,6 +545,7 @@ private fun DeletePlaylistDialog(
                         imageVector = Icons.Default.Delete,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
+                        tint = MiuixTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text("删除")
