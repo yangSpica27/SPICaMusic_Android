@@ -414,8 +414,6 @@ private fun wordProgress(
     if (time == Long.MIN_VALUE) return 0f
     val duration = (word.endTime - word.startTime).coerceAtLeast(1L)
     return when {
-        time <= word.startTime -> 0f
-        time >= word.endTime -> 1f
         else -> ((time - word.startTime).toFloat() / duration).coerceIn(0f, 1f)
     }
 }
@@ -719,6 +717,11 @@ private suspend fun LazyListState.slowScrollToIndex(
 ) {
     if (viewportHeightPx <= 0 || targetIndex < 0) return
     val layoutInfoSnapshot = layoutInfo
+    val totalItemCount = layoutInfoSnapshot.totalItemsCount
+
+    // 如果目标索引超出范围，直接返回
+    if (targetIndex >= totalItemCount) return
+
     val averageItemSize =
         layoutInfoSnapshot.visibleItemsInfo
             .takeIf { it.isNotEmpty() }
@@ -729,9 +732,22 @@ private suspend fun LazyListState.slowScrollToIndex(
 
     val currentOffsetPx = firstVisibleItemIndex * averageItemSize + firstVisibleItemScrollOffset
     val targetOffsetPx = targetIndex * averageItemSize
+
+    // 计算期望的偏移位置（将目标项放在视口中心偏上）
     val desiredOffsetPx =
         targetOffsetPx + viewportHeightPx * LyricUIConstants.SCROLL_VIEWPORT_OFFSET_RATIO
-    val distance = desiredOffsetPx - currentOffsetPx
+
+    // 计算内容的总高度（不包括 padding）
+    val totalContentHeightPx = totalItemCount * averageItemSize
+
+    // 计算最大可滚动偏移（考虑底部 padding）
+    // 由于有 vertical padding = viewportHeightPx / 2，最后一项应该能居中显示
+    val maxScrollOffsetPx = totalContentHeightPx - viewportHeightPx / 2
+
+    // 限制滚动偏移，避免滚动超出内容范围
+    val clampedDesiredOffsetPx = desiredOffsetPx.coerceAtMost(maxScrollOffsetPx)
+
+    val distance = clampedDesiredOffsetPx - currentOffsetPx
 
     if (abs(distance) < 0.5f) return
     animateScrollBy(

@@ -3,7 +3,6 @@ package me.spica27.spicamusic.ui.player
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,7 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,11 +49,6 @@ fun BottomPlayerBar(
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
     onExpand: () -> Unit,
     onExpandToPlaylist: () -> Unit = {}, // 展开到播放列表页面
-    onDragStart: () -> Unit = {},
-    onDragEnd: () -> Unit = {},
-    onDragCancel: () -> Unit = {},
-    onDrag: (Float) -> Unit = {},
-    progress: Float = 0f, // 展开进度，用于视觉效果
 ) {
     val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
@@ -75,40 +69,18 @@ fun BottomPlayerBar(
     Box(
         modifier =
             modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .clip(ContinuousRoundedRectangle(12.dp))
                 .hazeEffect(
                     LocalSurfaceHazeState.current,
-                    HazeMaterials.thick(
-                        MiuixTheme.colorScheme.surfaceContainer,
+                    HazeMaterials.thin(
+                        MiuixTheme.colorScheme.primaryContainer,
                     ),
                 ).fillMaxWidth()
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures(
-                        onDragStart = { onDragStart() },
-                        onDragEnd = { onDragEnd() },
-                        onDragCancel = { onDragCancel() },
-                        onVerticalDrag = { _, dragAmount -> onDrag(dragAmount) },
-                    )
-                }.clickable {
-                    onExpand()
-                },
+                .clickable { onExpand() },
     ) {
         Column {
             // 进度条
-            if (currentDuration > 0) {
-                LinearProgressIndicator(
-                    colors =
-                        ProgressIndicatorDefaults.progressIndicatorColors().copy(
-                            backgroundColor = MiuixTheme.colorScheme.secondaryContainerVariant,
-                            foregroundColor = MiuixTheme.colorScheme.primary,
-                        ),
-                    progress = (currentPosition.toFloat() / currentDuration).coerceIn(0f, 1f),
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(2.dp),
-                )
-            }
-
             Row(
                 modifier =
                     Modifier
@@ -156,11 +128,12 @@ fun BottomPlayerBar(
                         style = MiuixTheme.textStyles.body1,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        color = MiuixTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
                         text = artist,
                         style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        color = MiuixTheme.colorScheme.onPrimaryContainer,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -176,7 +149,7 @@ fun BottomPlayerBar(
                     Icon(
                         imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         contentDescription = if (isPlaying) "暂停" else "播放",
-                        tint = MiuixTheme.colorScheme.onSurface,
+                        tint = MiuixTheme.colorScheme.onPrimaryContainer,
                     )
                 }
 
@@ -188,10 +161,26 @@ fun BottomPlayerBar(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                         contentDescription = "播放列表",
-                        tint = MiuixTheme.colorScheme.onSurface,
+                        tint = MiuixTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }
+            LinearProgressIndicator(
+                colors =
+                    ProgressIndicatorDefaults.progressIndicatorColors().copy(
+                        backgroundColor = Color.Transparent,
+                        foregroundColor = MiuixTheme.colorScheme.primary,
+                    ),
+                progress =
+                    (currentPosition.toFloat() / currentDuration.coerceAtLeast(1)).coerceIn(
+                        0f,
+                        1f,
+                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(2.dp),
+            )
         }
     }
 }

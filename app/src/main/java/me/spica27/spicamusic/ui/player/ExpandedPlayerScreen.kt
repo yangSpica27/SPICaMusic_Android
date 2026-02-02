@@ -1,48 +1,31 @@
 package me.spica27.spicamusic.ui.player
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.MusicNote
@@ -53,18 +36,12 @@ import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -72,53 +49,40 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.spcia.lyric_core.ApiClient
-import me.spcia.lyric_core.parser.YrcParser
 import me.spica27.spicamusic.App
-import me.spica27.spicamusic.common.entity.LyricItem
-import me.spica27.spicamusic.common.utils.LrcParser
 import me.spica27.spicamusic.player.api.PlayMode
+import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
+import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
-import me.spica27.spicamusic.ui.widget.LyricsUI
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinActivityViewModel
-import org.koin.compose.viewmodel.koinViewModel
-import timber.log.Timber
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.extra.WindowDialog
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.overScrollVertical
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -130,7 +94,7 @@ import java.util.concurrent.TimeUnit
 private const val COVER_FADE_THRESHOLD = 0.8f
 private const val CONTROLS_FADE_THRESHOLD = 0.5f
 private const val PAGE_COUNT = 3
-public const val DEFAULT_PAGE = 1
+const val DEFAULT_PAGE = 1
 
 // ============================================
 // 主屏幕组件
@@ -144,10 +108,6 @@ fun ExpandedPlayerScreen(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
     onCollapse: () -> Unit,
-    onDragStart: () -> Unit = {},
-    onDragEnd: () -> Unit = {},
-    onDragCancel: () -> Unit = {},
-    onDrag: (Float) -> Unit = {},
     progress: Float = 1f, // 展开进度，用于视觉效果
     initialPage: Int = DEFAULT_PAGE, // 初始页面索引
 ) {
@@ -155,6 +115,16 @@ fun ExpandedPlayerScreen(
     val playMode by viewModel.playMode.collectAsStateWithLifecycle()
     val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
     val duration by viewModel.currentDuration.collectAsStateWithLifecycle()
+
+    // 监听应用生命周期状态
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsStateWithLifecycle()
+
+    // 判断应用是否在前台（可见状态）
+    val isAppInForeground =
+        remember(lifecycleState) {
+            lifecycleState.isAtLeast(Lifecycle.State.STARTED)
+        }
 
     // 当前播放位置（定时更新）
     var seekValueState by remember { mutableFloatStateOf(0f) }
@@ -184,24 +154,16 @@ fun ExpandedPlayerScreen(
         modifier =
             modifier
                 .background(MiuixTheme.colorScheme.background)
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures(
-                        onDragStart = { onDragStart() },
-                        onDragEnd = { onDragEnd() },
-                        onDragCancel = { onDragCancel() },
-                        onVerticalDrag = { _, dragAmount -> onDrag(dragAmount) },
-                    )
-                },
+                .fillMaxSize(),
     ) {
-        // 流动背景
+        // 流动背景（仅前台时启用，节省电量）
         FluidMusicBackground(
             modifier =
                 Modifier
                     .hazeSource(backgroundState)
                     .fillMaxSize(),
             coverColor = coverColor,
-            enabled = true,
+            enabled = isAppInForeground,
             isDarkMode = MiuixTheme.colorScheme.surface.luminance() < 0.5f,
         )
 
@@ -349,529 +311,6 @@ private fun PageIndicator(
                         .background(MiuixTheme.colorScheme.onSurface.copy(alpha = alpha)),
             )
         }
-    }
-}
-
-// ============================================
-// 页面内容组件
-// ============================================
-
-// ---------- 播放列表页面 ----------
-
-/**
- * 当前播放列表页面
- */
-@Composable
-private fun CurrentPlaylistPage(
-    modifier: Modifier = Modifier,
-    viewModel: PlayerViewModel = LocalPlayerViewModel.current,
-    backgroundState: HazeState,
-) {
-    val panelViewModel: CurrentPlaylistPanelViewModel = koinViewModel()
-    val currentPlaylist by viewModel.currentPlaylist.collectAsStateWithLifecycle()
-    val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
-
-    var isMultiSelectMode by remember { mutableStateOf(false) }
-    val selectedMediaIds = remember { mutableStateListOf<String>() }
-    var showCreateDialog by remember { mutableStateOf(false) }
-
-    val selectedCount by remember { derivedStateOf { selectedMediaIds.size } }
-
-    BackHandler(enabled = isMultiSelectMode) {
-        isMultiSelectMode = false
-        selectedMediaIds.clear()
-    }
-
-    LaunchedEffect(currentPlaylist) {
-        val validIds = currentPlaylist.map { it.mediaId }.toSet()
-        selectedMediaIds.removeAll { it !in validIds }
-        if (selectedMediaIds.isEmpty()) {
-            isMultiSelectMode = false
-        }
-    }
-
-    Column(
-        modifier =
-            modifier
-                .padding(horizontal = 16.dp),
-    ) {
-        // 顶部标题和操作
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .animateContentSize()
-                    .padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            AnimatedContent(
-                isMultiSelectMode,
-                modifier =
-                    Modifier
-                        .animateContentSize(),
-            ) { isMultiSelectMode ->
-                Text(
-                    text = if (isMultiSelectMode) "已选择 $selectedCount 项" else "播放列表 (${currentPlaylist.size})",
-                    style = MiuixTheme.textStyles.title3,
-                    color = MiuixTheme.colorScheme.onSurface,
-                )
-            }
-            AnimatedVisibility(isMultiSelectMode) {
-                TextButton(
-                    text = "取消",
-                    onClick = {
-                        isMultiSelectMode = false
-                        selectedMediaIds.clear()
-                    },
-                    insideMargin = PaddingValues(vertical = 4.dp, horizontal = 8.dp),
-                )
-            }
-        }
-
-        if (currentPlaylist.isEmpty()) {
-            // 空状态
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LibraryMusic,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier.size(48.dp),
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "播放列表为空",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier =
-                    Modifier
-                        .animateContentSize()
-                        .fillMaxWidth()
-                        .overScrollVertical()
-                        .weight(1f),
-                contentPadding =
-                    PaddingValues(
-                        vertical = 8.dp,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                itemsIndexed(currentPlaylist, key = { index, song -> song.mediaId }) { index, item ->
-                    val isSelected = selectedMediaIds.contains(item.mediaId)
-                    val isPlaying = currentMediaItem?.mediaId == item.mediaId
-                    PlaylistItemRow(
-                        index = index,
-                        modifier = Modifier.animateItem(),
-                        item = item,
-                        isPlaying = isPlaying,
-                        isMultiSelectMode = isMultiSelectMode,
-                        isSelected = isSelected,
-                        onClick = {
-                            if (isMultiSelectMode) {
-                                if (isSelected) {
-                                    selectedMediaIds.remove(item.mediaId)
-                                } else {
-                                    selectedMediaIds.add(item.mediaId)
-                                }
-                            } else {
-                                viewModel.playById(item.mediaId)
-                            }
-                        },
-                        backgroundState = backgroundState,
-                        onLongClick = {
-                            if (!isMultiSelectMode) {
-                                isMultiSelectMode = true
-                            }
-                            if (selectedMediaIds.contains(item.mediaId)) {
-                                selectedMediaIds.remove(item.mediaId)
-                            } else {
-                                selectedMediaIds.add(item.mediaId)
-                            }
-                        },
-                    )
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(if (isMultiSelectMode) 72.dp else 16.dp))
-                }
-            }
-        }
-
-        AnimatedVisibility(visible = isMultiSelectMode) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Button(
-                    onClick = {
-                        val toRemove = selectedMediaIds.toList()
-                        toRemove.forEach { mediaId ->
-                            viewModel.removeFromPlaylist(mediaId)
-                        }
-                        selectedMediaIds.clear()
-                        isMultiSelectMode = false
-                    },
-                    enabled = selectedCount > 0,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "删除",
-                    )
-                    Spacer(modifier = Modifier.size(6.dp))
-                    Text(text = "批量删除")
-                }
-
-                Button(
-                    onClick = { showCreateDialog = true },
-                    enabled = selectedCount > 0,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
-                        contentDescription = "创建歌单",
-                    )
-                    Spacer(modifier = Modifier.size(6.dp))
-                    Text(text = "创建歌单")
-                }
-            }
-        }
-    }
-
-    if (showCreateDialog) {
-        var playlistName by remember { mutableStateOf("") }
-        val showState = remember { mutableStateOf(true) }
-
-        WindowDialog(
-            title = "创建歌单",
-            onDismissRequest = { showCreateDialog = false },
-            show = showState,
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            ) {
-                TextField(
-                    value = playlistName,
-                    onValueChange = { playlistName = it },
-                    label = "请输入歌单名称",
-                    modifier = Modifier.fillMaxWidth(),
-                    useLabelAsPlaceholder = true,
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(
-                        text = "取消",
-                        onClick = { showCreateDialog = false },
-                    )
-                    Spacer(modifier = Modifier.size(12.dp))
-                    TextButton(
-                        text = "创建",
-                        onClick = {
-                            if (playlistName.isNotBlank()) {
-                                panelViewModel.createPlaylistWithMediaIds(
-                                    name = playlistName,
-                                    mediaIds = selectedMediaIds.toList(),
-                                ) { success ->
-                                    if (success) {
-                                        selectedMediaIds.clear()
-                                        isMultiSelectMode = false
-                                        showCreateDialog = false
-                                    }
-                                }
-                            }
-                        },
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * 播放列表项
- */
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun PlaylistItemRow(
-    index: Int,
-    item: MediaItem,
-    isPlaying: Boolean,
-    isMultiSelectMode: Boolean,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    modifier: Modifier,
-    backgroundState: HazeState,
-) {
-    val metadata = item.mediaMetadata
-    val title = metadata.title?.toString() ?: "未知歌曲"
-    val artist = metadata.artist?.toString() ?: "未知艺术家"
-    val artworkUri = metadata.artworkUri
-
-    val modifier1 =
-        if (isPlaying) {
-            modifier
-                .clip(
-                    RoundedCornerShape(12.dp),
-                ).hazeEffect(
-                    state = backgroundState,
-                    HazeMaterials.ultraThin(
-                        MiuixTheme.colorScheme.tertiaryContainer,
-                    ),
-                )
-        } else {
-            modifier.clip(
-                RoundedCornerShape(12.dp),
-            )
-        }
-
-    Box(
-        modifier =
-            modifier1
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick,
-                ).padding(12.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "${index + 1}",
-                style = MiuixTheme.textStyles.title4,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.width(30.dp),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.size(12.dp))
-            AudioCover(
-                uri = artworkUri,
-                modifier =
-                    Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        MiuixTheme.colorScheme.tertiaryContainer,
-                                        MiuixTheme.colorScheme.surfaceContainerHigh,
-                                    ),
-                            ),
-                        ),
-                placeHolder = {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize(),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.MusicNote,
-                            contentDescription = "封面占位符",
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier =
-                                Modifier
-                                    .size(24.dp)
-                                    .align(
-                                        Alignment.Center,
-                                    ),
-                        )
-                    }
-                },
-            )
-
-            Spacer(modifier = Modifier.size(12.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.body1,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = artist,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Spacer(modifier = Modifier.size(12.dp))
-            AnimatedContent(isPlaying) { isPlaying ->
-                Text(
-                    text = if (isPlaying) "正在播放" else formatTime(item.mediaMetadata.durationMs ?: 0L),
-                    style = MiuixTheme.textStyles.body2,
-                    color =
-                        if (
-                            isPlaying
-                        ) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        },
-                )
-            }
-            Spacer(modifier = Modifier.size(12.dp))
-            if (isMultiSelectMode) {
-                Icon(
-                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                    contentDescription = null,
-                    tint = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-        }
-    }
-}
-
-// ---------- 歌曲详情页面 ----------
-
-/**
- * 歌曲详情页面
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun SongDetailPage(
-    currentMediaItem: MediaItem?,
-    modifier: Modifier = Modifier,
-) {
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier =
-            modifier
-                .verticalScroll(scrollState)
-                .overScrollVertical()
-                .padding(horizontal = 15.dp, vertical = 24.dp)
-                .navigationBarsPadding(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // 顶部封面
-        val artworkUri = currentMediaItem?.mediaMetadata?.artworkUri
-        val songTitle = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲"
-
-        AudioCover(
-            uri = artworkUri,
-            modifier =
-                Modifier
-                    .height(200.dp)
-                    .aspectRatio(1f)
-                    .shadow(
-                        elevation = 8.dp,
-                        shape = ContinuousRoundedRectangle(8.dp),
-                        clip = false,
-                    ).clip(ContinuousRoundedRectangle(8.dp)),
-            placeHolder = {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(ContinuousRoundedRectangle(8.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.MusicNote,
-                        contentDescription = "封面占位符",
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        modifier =
-                            Modifier
-                                .size(64.dp)
-                                .align(
-                                    Alignment.Center,
-                                ),
-                    )
-                }
-            },
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 歌曲名称
-        Text(
-            text = songTitle,
-            style = MiuixTheme.textStyles.headline1,
-            fontWeight = FontWeight.Bold,
-            color = MiuixTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 音频格式标签
-        AudioQualityTags(
-            currentMediaItem = currentMediaItem,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 基础信息卡片
-        InfoCard(title = "基础信息") {
-            InfoRow(
-                label = "文件名",
-                value =
-                    currentMediaItem?.mediaMetadata?.displayTitle?.toString()
-                        ?: currentMediaItem?.mediaId ?: "未知",
-            )
-
-            InfoRow(
-                label = "URI",
-                value = currentMediaItem?.requestMetadata?.mediaUri?.toString() ?: "N/A",
-            )
-
-            InfoRow(
-                label = "歌曲名称",
-                value = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲",
-            )
-
-            InfoRow(
-                label = "艺术家",
-                value = currentMediaItem?.mediaMetadata?.artist?.toString() ?: "未知艺术家",
-            )
-
-            InfoRow(
-                label = "专辑",
-                value = currentMediaItem?.mediaMetadata?.albumTitle?.toString() ?: "未知专辑",
-            )
-
-            InfoRow(
-                label = "时长",
-                value = formatTime(currentMediaItem?.mediaMetadata?.durationMs ?: 0L),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 音频信息卡片
-        AudioInfoCard(currentMediaItem = currentMediaItem)
-
-        Spacer(modifier = Modifier.height(48.dp))
     }
 }
 
@@ -1263,158 +702,6 @@ private fun PlayerPage(
             onPlayModeClick = onPlayModeClick,
             onFavoriteClick = onFavoriteClick,
         )
-    }
-}
-
-// ---------- 歌词页面 ----------
-
-/**
- * 全屏歌词页面（占位）
- */
-@Composable
-private fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
-    val playerViewModel = koinActivityViewModel<PlayerViewModel>()
-    val apiClient: ApiClient = koinInject()
-
-    // 状态管理
-    var currentTime by remember { mutableLongStateOf(0L) }
-    var lyric by remember { mutableStateOf<List<LyricItem>?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    // 观察当前歌曲变化
-    val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
-
-    // 歌曲变化时自动搜索歌词
-    LaunchedEffect(currentMediaItem?.mediaId) {
-        val mediaItem = currentMediaItem
-        if (mediaItem == null) {
-            lyric = null
-            errorMessage = null
-            return@LaunchedEffect
-        }
-
-        isLoading = true
-        errorMessage = null
-
-        try {
-            // 从 MediaMetadata 提取歌曲信息
-            val title = mediaItem.mediaMetadata.title?.toString() ?: ""
-            val artist = mediaItem.mediaMetadata.artist?.toString() ?: ""
-
-            if (title.isBlank()) {
-                errorMessage = "歌曲信息缺失"
-                lyric = null
-                return@LaunchedEffect
-            }
-
-            // 调用 EAPI 获取歌词（带自动 YRC/LRC 回退）
-            val extraInfo = apiClient.fetchExtInfo(title, artist)
-
-            Timber.d("获取到的歌词信息: extraInfo=$extraInfo")
-            Timber.d("歌词内容长度: ${extraInfo?.lyrics?.length}")
-            Timber.d("歌词前100字符: ${extraInfo?.lyrics?.take(100)}")
-
-            if (extraInfo?.lyrics.isNullOrBlank()) {
-                errorMessage = "暂无歌词"
-                lyric = null
-            } else {
-                val lyricsText = extraInfo!!.lyrics!!
-
-                Timber.d("歌词全文: $lyricsText")
-
-                // 检测 YRC 格式（包含字级时间戳）
-                val isYrcFormat =
-                    lyricsText.contains("](") &&
-                        lyricsText.contains("[") &&
-                        lyricsText.matches(Regex(".*\\[\\d+.*\\]\\(\\d+.*\\).*"))
-
-                Timber.d("检测到歌词格式: ${if (isYrcFormat) "YRC" else "LRC"}")
-
-                lyric =
-                    if (isYrcFormat) {
-                        // YRC 格式 - 使用新解析器转换为 LRC
-                        try {
-                            val yrcLines = YrcParser.parse(lyricsText)
-                            LrcParser.parse(YrcParser.toLrc(yrcLines))
-                        } catch (e: Exception) {
-                            // YRC 解析失败，回退到标准 LRC
-                            Timber.w(e, "YRC parse failed, fallback to LRC")
-                            LrcParser.parse(lyricsText)
-                        }
-                    } else {
-                        // 标准 LRC 格式
-                        LrcParser.parse(lyricsText)
-                    }
-
-                Timber.d("解析后的歌词条数: ${lyric?.size}")
-
-                if (lyric.isNullOrEmpty()) {
-                    errorMessage = "歌词解析失败"
-                    lyric = null
-                } else {
-                    errorMessage = null
-                }
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to fetch lyrics")
-            errorMessage = "加载歌词失败: ${e.message ?: "未知错误"}"
-            lyric = null
-        } finally {
-            isLoading = false
-        }
-    }
-
-    // 持续更新播放时间
-    LaunchedEffect(Unit) {
-        while (true) {
-            awaitFrame()
-            currentTime = playerViewModel.getCurrentPositionMs()
-        }
-    }
-
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        when {
-            isLoading -> {
-                // 加载状态
-                CircularProgressIndicator(
-                    modifier = Modifier.size(48.dp),
-                    color = MiuixTheme.colorScheme.primary,
-                )
-            }
-            errorMessage != null -> {
-                // 错误或无歌词状态
-                Text(
-                    text = errorMessage!!,
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    textAlign = TextAlign.Center,
-                )
-            }
-            lyric != null -> {
-                // 歌词显示
-                LyricsUI(
-                    modifier = Modifier.fillMaxSize(),
-                    lyric = lyric!!,
-                    currentTime = currentTime,
-                    onSeekToTime = {
-                        playerViewModel.seekTo(it)
-                    },
-                )
-            }
-            else -> {
-                // 初始状态
-                Text(
-                    text = "等待播放",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
     }
 }
 
