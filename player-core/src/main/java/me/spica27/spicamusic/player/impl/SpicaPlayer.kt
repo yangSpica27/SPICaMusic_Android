@@ -406,8 +406,8 @@ class SpicaPlayer(
   fun getAudioProcessors(): Array<AudioProcessor> {
     return arrayOf(
       _fftAudioProcessorWrapper,
-      _equalizerProcessor,
-      _reverbProcessor,
+//      _equalizerProcessor,
+//      _reverbProcessor,
     )
   }
 }

@@ -1,5 +1,7 @@
 package me.spica27.spicamusic.service
 
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
@@ -32,7 +34,9 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onCreate() {
         super.onCreate()
-
+        setMediaNotificationProvider(
+            SpicaNotificationProvider(this),
+        )
         // 创建自定义渲染器工厂，添加音频处理器（FFT、EQ、混响）
         val renderersFactory =
             object : DefaultRenderersFactory(this) {
@@ -44,19 +48,33 @@ class PlaybackService : MediaLibraryService() {
                     DefaultAudioSink
                         .Builder(context)
                         .setEnableFloatOutput(enableFloatOutput)
-                        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                        .setEnableAudioOutputPlaybackParameters(enableAudioTrackPlaybackParams)
                         .setAudioProcessors(
                             // 音频处理链: FFT -> EQ -> Reverb
                             (player as? me.spica27.spicamusic.player.impl.SpicaPlayer)
                                 ?.getAudioProcessors()
                                 ?: arrayOf(player.fftAudioProcessor),
                         ).build()
+                        .apply {
+                            setExtensionRendererMode(EXTENSION_RENDERER_MODE_PREFER)
+                        }
             }
 
         exoPlayer =
             ExoPlayer
                 .Builder(this, renderersFactory)
-                .setHandleAudioBecomingNoisy(true)
+                .setWakeMode(C.WAKE_MODE_LOCAL)
+                .setMaxSeekToPreviousPositionMs(Long.MAX_VALUE)
+                .setAudioAttributes(
+                    AudioAttributes
+                        .Builder()
+                        .setUsage(C.USAGE_MEDIA)
+                        .setSpatializationBehavior(C.SPATIALIZATION_BEHAVIOR_AUTO)
+                        .setAllowedCapturePolicy(C.ALLOW_CAPTURE_BY_ALL)
+                        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                        .build(),
+                    true,
+                ).setUsePlatformDiagnostics(false)
                 .build()
 
         mediaSession =
