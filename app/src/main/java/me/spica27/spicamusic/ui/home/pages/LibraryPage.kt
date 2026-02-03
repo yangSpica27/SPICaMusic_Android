@@ -1,11 +1,20 @@
 package me.spica27.spicamusic.ui.home.pages
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
@@ -16,11 +25,14 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
@@ -32,14 +44,20 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
+import kotlin.random.Random
 
 /**
  * 媒体库页面
@@ -124,7 +142,15 @@ private fun LibraryContent(
                 bottom = paddingValues.calculateBottomPadding(),
             ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        item(
+            span = { GridItemSpan(2) },
+        ) {
+            SmallTitle(
+                text = "快速浏览",
+            )
+        }
         items(libraryItems) { item ->
             LibraryItemCard(
                 title = item.title,
@@ -147,27 +173,86 @@ private fun LibraryItemCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.padding(vertical = 6.dp),
-        onClick = onClick,
+    val delayMillis = remember(title, icon) { Random.nextInt(0, 220) }
+    val durationMillis = remember(title, icon) { Random.nextInt(260, 720) }
+
+    val animationSpec =
+        remember(delayMillis, durationMillis) {
+            tween<Float>(
+                durationMillis = durationMillis,
+                delayMillis = delayMillis,
+            )
+        }
+
+    ShowOnIdleContent(
+        true,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(80.dp),
+        enter =
+            fadeIn(
+                animationSpec = animationSpec,
+            ) + scaleIn(animationSpec = animationSpec, initialScale = 0f),
+        exit = fadeOut(),
     ) {
-        Row(
+        Card(
+            onClick = onClick,
+            pressFeedbackType = PressFeedbackType.Tilt,
+            cornerRadius = 10.dp,
             modifier =
-                Modifier
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                modifier
+                    .fillMaxSize(),
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                modifier = Modifier.padding(end = 16.dp),
-                tint = MiuixTheme.colorScheme.onSurfaceContainer,
-            )
-            Text(
-                text = title,
-                modifier = Modifier.weight(1f),
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-            )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize(),
+            ) {
+                Text(
+                    text = title,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                16.dp,
+                            ),
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    style = MiuixTheme.textStyles.body2,
+                )
+
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(64.dp)
+                            .rotate(45f)
+                            .graphicsLayer {
+                                translationX = 16.dp.toPx()
+                                translationY = 10.dp.toPx()
+                            }.background(
+                                Brush.radialGradient(
+                                    colors =
+                                        listOf(
+                                            MiuixTheme.colorScheme.primaryVariant,
+                                            MiuixTheme.colorScheme.primary,
+                                            MiuixTheme.colorScheme.primaryContainer,
+                                        ),
+                                ),
+                                shape = Shapes.SmallCornerBasedShape,
+                            ),
+                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onSurface,
+                        modifier =
+                            Modifier
+                                .size(32.dp),
+                    )
+                }
+            }
         }
     }
 }

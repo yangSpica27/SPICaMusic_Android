@@ -5,8 +5,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.defaultTextStyles
@@ -17,6 +19,14 @@ private val LightColorScheme = lightColorScheme()
 
 // 暗色主题
 private val DarkColorScheme = darkColorScheme()
+
+object Shapes {
+    val ExtraLargeCornerBasedShape = ContinuousRoundedRectangle(20.dp)
+    val LargeCornerBasedShape = ContinuousRoundedRectangle(16.dp)
+    val MediumCornerBasedShape = ContinuousRoundedRectangle(12.dp)
+    val SmallCornerBasedShape = ContinuousRoundedRectangle(8.dp)
+    val ExtraSmallCornerBasedShape = ContinuousRoundedRectangle(4.dp)
+}
 
 @Composable
 fun SPICaMusicTheme(
