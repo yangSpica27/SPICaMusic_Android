@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.CheckCircle
@@ -62,6 +61,7 @@ import dev.chrisbanes.haze.HazeState
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
+import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
@@ -424,7 +424,7 @@ private fun PlaylistItemRow(
                 modifier =
                     Modifier
                         .size(44.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(Shapes.SmallCornerBasedShape)
                         .background(
                             Brush.verticalGradient(
                                 colors =

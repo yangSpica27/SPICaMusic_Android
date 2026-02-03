@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.navigation.LocalNavBackStack
+import me.spica27.spicamusic.ui.theme.Shapes
 import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -238,7 +238,7 @@ private fun EqualizerBar(
                 Modifier
                     .width(16.dp)
                     .height(barHeight)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(Shapes.SmallCornerBasedShape)
                     .background(MiuixTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.BottomCenter,
         ) {

@@ -29,7 +29,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.runtime.Composable
@@ -63,6 +62,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.findPlayingIndex
+import me.spica27.spicamusic.ui.theme.Shapes
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -364,7 +364,7 @@ private fun LyricLine(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(LyricUIConstants.LYRIC_CORNER_RADIUS.dp))
+                .clip(Shapes.ExtraLarge2CornerBasedShape)
                 .hazeEffect { this.blurRadius = blurRadius }
                 .graphicsLayer {
                     this.alpha = alpha
@@ -506,7 +506,7 @@ private fun WordsLyricLine(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(LyricUIConstants.LYRIC_CORNER_RADIUS.dp))
+                .clip(Shapes.ExtraLarge2CornerBasedShape)
                 .hazeEffect { this.blurRadius = blurRadius }
                 .graphicsLayer {
                     scaleX = scale
@@ -676,7 +676,7 @@ private fun SeekPreview(
         Box(
             modifier =
                 Modifier
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(Shapes.ExtraLarge1CornerBasedShape)
                     .background(MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f))
                     .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {

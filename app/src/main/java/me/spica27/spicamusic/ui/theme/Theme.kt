@@ -21,6 +21,8 @@ private val LightColorScheme = lightColorScheme()
 private val DarkColorScheme = darkColorScheme()
 
 object Shapes {
+    val ExtraLarge2CornerBasedShape = ContinuousRoundedRectangle(32.dp)
+    val ExtraLarge1CornerBasedShape = ContinuousRoundedRectangle(24.dp)
     val ExtraLargeCornerBasedShape = ContinuousRoundedRectangle(20.dp)
     val LargeCornerBasedShape = ContinuousRoundedRectangle(16.dp)
     val MediumCornerBasedShape = ContinuousRoundedRectangle(12.dp)

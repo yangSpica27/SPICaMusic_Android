@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
@@ -62,6 +61,7 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
+import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.MainTopBar
 import org.koin.androidx.compose.koinViewModel
@@ -253,7 +253,7 @@ private fun PlaylistHeader(
             modifier =
                 Modifier
                     .size(120.dp)
-                    .clip(RoundedCornerShape(12.dp)),
+                    .clip(Shapes.MediumCornerBasedShape),
         )
 
         // 歌单信息

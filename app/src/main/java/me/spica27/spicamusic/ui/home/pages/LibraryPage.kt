@@ -246,7 +246,7 @@ private fun LibraryItemCard(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurface,
+                        tint = MiuixTheme.colorScheme.onPrimaryContainer,
                         modifier =
                             Modifier
                                 .size(32.dp),

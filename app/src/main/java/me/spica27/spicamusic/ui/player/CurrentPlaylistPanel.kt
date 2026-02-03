@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.CheckCircle
@@ -47,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
+import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
@@ -317,7 +317,7 @@ private fun PlaylistMediaItemRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(Shapes.MediumCornerBasedShape)
                 .background(
                     if (isPlaying) {
                         MiuixTheme.colorScheme.secondaryContainer
@@ -338,7 +338,7 @@ private fun PlaylistMediaItemRow(
                 modifier =
                     Modifier
                         .size(44.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(Shapes.SmallCornerBasedShape)
                         .background(MiuixTheme.colorScheme.surfaceContainerHigh),
             )
 
