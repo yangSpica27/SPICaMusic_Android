@@ -1,10 +1,8 @@
 package me.spica27.spicamusic.ui
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,7 +15,6 @@ import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelHost
 import me.spica27.spicamusic.ui.player.DraggablePlayerSheet
-import me.spica27.spicamusic.ui.player.LocalBottomPaddingState
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.LocalPlaylistPanelController
 import me.spica27.spicamusic.ui.player.PlayerViewModel
@@ -49,11 +46,6 @@ fun AppScaffold() {
                 key = "PlayerViewModel",
             )
 
-        // 全局底部 padding 状态，供各页面动态设置
-        val bottomPaddingState = remember { mutableFloatStateOf(0f) }
-
-        val bottomPaddingAnimValue = animateFloatAsState(bottomPaddingState.floatValue).value
-
         val playlistPanelVisible = remember { mutableStateOf(false) }
         val playlistPanelController = remember { PlaylistPanelController(playlistPanelVisible) }
 
@@ -62,7 +54,6 @@ fun AppScaffold() {
         CompositionLocalProvider(
             LocalNavBackStack provides backStack,
             LocalPlayerViewModel provides playerViewModel,
-            LocalBottomPaddingState provides bottomPaddingState,
             LocalSurfaceHazeState provides surfaceHazeState,
             LocalPlaylistPanelController provides playlistPanelController,
         ) {
@@ -71,9 +62,7 @@ fun AppScaffold() {
                 onVisibleChange = { playlistPanelVisible.value = it },
             ) {
                 // 全局播放器层包裹整个导航
-                DraggablePlayerSheet(
-                    bottomPadding = bottomPaddingAnimValue,
-                ) {
+                DraggablePlayerSheet {
                     AppNavGraph(
                         modifier = Modifier,
                     )

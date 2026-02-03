@@ -52,7 +52,6 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
-import me.spica27.spicamusic.ui.player.LocalBottomPaddingState
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
@@ -75,16 +74,11 @@ import top.yukonga.miuix.kmp.utils.pressable
  */
 @Composable
 fun PlaylistsScreen(modifier: Modifier = Modifier) {
-    val bottomPaddingState = LocalBottomPaddingState.current
     val viewModel: PlaylistViewModel = koinViewModel()
     val playlists by viewModel.playlists.collectAsState()
     val showCreateDialog by viewModel.showCreateDialog.collectAsState()
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val backStack = LocalNavBackStack.current
-
-    LaunchedEffect(Unit) {
-        bottomPaddingState.floatValue = -300f
-    }
 
     val scrollerBehavior = MiuixScrollBehavior()
 

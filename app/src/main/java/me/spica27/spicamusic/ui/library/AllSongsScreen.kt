@@ -40,7 +40,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,7 +60,6 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.ui.player.LocalBottomPaddingState
 import me.spica27.spicamusic.ui.theme.Shapes
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Card
@@ -86,8 +84,6 @@ fun AllSongsScreen(
 
     val scrollBehavior = MiuixScrollBehavior()
 
-    val playerBottomPadding = LocalBottomPaddingState.current
-
     var showMultipleSelectMenu by remember { mutableStateOf(false) }
 
     val hazeSource = rememberHazeState()
@@ -98,10 +94,6 @@ fun AllSongsScreen(
         } else if (isMultiSelectMode) {
             viewModel.exitMultiSelectMode()
         }
-    }
-
-    LaunchedEffect(Unit) {
-        playerBottomPadding.floatValue = -400f
     }
 
     Scaffold(

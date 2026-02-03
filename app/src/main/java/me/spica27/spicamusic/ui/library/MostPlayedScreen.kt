@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import me.spica27.spicamusic.ui.player.ResetBottomPadding
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -16,8 +15,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
  */
 @Composable
 fun MostPlayedScreen(modifier: Modifier = Modifier) {
-    ResetBottomPadding()
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {

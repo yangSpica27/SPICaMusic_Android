@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.storage.api.ScanResult
-import me.spica27.spicamusic.ui.player.ResetBottomPadding
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -78,8 +77,6 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
                 viewModel.startMediaStoreScan()
             }
         }
-
-    ResetBottomPadding()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),

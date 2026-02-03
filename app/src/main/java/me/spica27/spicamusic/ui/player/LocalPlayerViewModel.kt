@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui.player
 
-import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.staticCompositionLocalOf
 
 /**
@@ -11,22 +10,4 @@ import androidx.compose.runtime.staticCompositionLocalOf
 val LocalPlayerViewModel =
     staticCompositionLocalOf<PlayerViewModel> {
         error("PlayerViewModel not provided")
-    }
-
-/**
- * 全局底部 Padding 状态
- * 用于各页面动态设置底部间距（如有 NavigationBar 时）
- *
- * 使用方式：
- * 1. 在有 NavigationBar 的页面：
- *    val bottomPaddingState = LocalBottomPaddingState.current
- *    NavigationBar(modifier = Modifier.onSizeChanged { bottomPaddingState.floatValue = it.height.toFloat() })
- *
- * 2. 在没有 NavigationBar 的页面：
- *    val bottomPaddingState = LocalBottomPaddingState.current
- *    LaunchedEffect(Unit) { bottomPaddingState.floatValue = 0f }
- */
-val LocalBottomPaddingState =
-    staticCompositionLocalOf<MutableFloatState> {
-        error("BottomPaddingState not provided")
     }
