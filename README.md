@@ -1,84 +1,126 @@
-## 柠檬音乐【Compose版】
+<div align="center">
+
+# 🍋 柠檬音乐 (SPICa Music)
+
+**现代化 Android 音乐播放器 | Jetpack Compose + Media3 + Koin**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Android](https://img.shields.io/badge/Android-29+-green.svg)](https://developer.android.com)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.0+-purple.svg)](https://kotlinlang.org)
+
+</div>
+
+## ✨ 预览
+
+### 亮色主题
 
 <p align="center">
-
-<img src="/img/Screenshot_20251004_163459.png" width="20%"/>
-<img src="/img/Screenshot_20251004_163651.png" width="20%"/>
-<img src="/img/Screenshot_20251004_163810.png" width="20%"/>
-<img src="/img/Screenshot_20251004_163917.png" width="20%"/>
+<img src="/img/light1.png" width="22%"/>
+<img src="/img/light2.png" width="22%"/>
+<img src="/img/light3.png" width="22%"/>
+<img src="/img/light4.png" width="22%"/>
 </p>
+
+### 暗色主题
 
 <p align="center">
-<img src="/img/Screenshot_20251004_164645.png" width="20%"/>
-<img src="/img/Screenshot_20251004_164037.png" width="20%"/>
-<img src="/img/Screenshot_20251004_164029.png" width="20%"/>
-<img src="/img/Screenshot_20251004_164106.png" width="20%">
+<img src="/img/night1.png" width="22%"/>
+<img src="/img/night2.png" width="22%"/>
+<img src="/img/night3.png" width="22%"/>
+<img src="/img/night4.png" width="22%"/>
 </p>
 
-## 项目简介
+## 📖 项目简介
 
-柠檬音乐是一款基于 EXOPlayer 和 Jetpack Compose 精心打造的现代化安卓音乐播放器。
-本项目致力于为用户提供功能丰富、界面美观且高度可定制的音乐播放体验。
-通过整合最新的 Android 开发技术，柠檬音乐不仅支持多种常见的音频格式，
-还提供了歌词显示、EQ调节、歌单管理等一系列实用功能，旨在成为您安卓设备上的理想音乐伴侣。
+柠檬音乐是一款基于 **Media3 ExoPlayer** 和 **Jetpack Compose** 精心打造的现代化 Android 音乐播放器。
 
->[!TIP]
->Master正在进行重构，如有需要请回滚至Oct 20, 2025的提交
+采用**模块化架构**设计，核心逻辑与 UI 完全解耦，面向接口编程。支持多种高品质音频格式 (FLAC/ALAC/Opus 等)，提供歌词显示、EQ 调节、歌单管理等丰富功能。
 
-## 功能特性
+## 🏗️ 架构设计
 
-| 功能类别     | 具体特性                                                                  |
-|--------------|---------------------------------------------------------------------------|
-| 音频格式支持 | vorbis, opus, flac, alac, pcm_mulaw, pcm_alaw, mp3, aac, ac3, eac3, dca, mlp, truehd 等常见格式 |
-| 歌单管理     | 新增/编辑/删除歌单                                                        |
-| 主题切换     | 亮色/暗色模式切换                                                         |
-| 歌词功能     | 歌词搜索/显示                                                             |
-| 音效调节     | EQ调节                                                                    |
-| 其他特性     | 支持 16kb                |
+```
+SPICaMusic_Android/
+├── app/           # UI层 - Compose界面、导航、主题、ViewModels
+├── common/        # 共享模块 - 通用实体类和工具
+├── storage-core/  # 存储模块 - Room数据库、Repository接口与实现
+├── player-core/   # 播放器模块 - Media3封装、播放控制、音频处理
+└── lyric-core/    # 歌词模块 - 网络API、歌词搜索服务
+```
 
-## 计划修复&未完成功能
+## 🎵 功能特性
 
-- [ ] 歌词组件无法滑动调整播放位置
-- [ ] 歌词搜索服务可能超时
-- [ ] 目前仅使用MediaStore搜索歌曲，无手动指定目录/全局扫描功能
-- [x] ~~ALAC格式不能被正确识别~~
-- [ ] 歌单内批量编辑功能
+| 功能类别 | 具体特性 |
+|----------|----------|
+| 🎧 音频格式 | FLAC, ALAC, Opus, Vorbis, MP3, AAC, WAV, AC3, EAC3, DCA, MLP, TrueHD 等 |
+| 📝 歌单管理 | 新增 / 编辑 / 删除歌单，智能分类 |
+| 🎨 主题切换 | 亮色 / 暗色模式，动态取色 |
+| 🎤 歌词功能 | 在线歌词搜索与同步显示 |
+| 🎛️ 音效调节 | 自定义 EQ 均衡器，频谱可视化 |
+| 📊 音频分析 | FFT 频谱分析，振幅波形显示 |
+| 🔄 播放模式 | 顺序 / 随机 / 单曲循环 |
 
-## 项目指南
+## 🚧 待完成功能
 
-1. 拉取源代码
-2. Android Studio打开
-3. just run
+- [ ] 歌单相关功能
+- [ ] 播放队列管理
+- [ ] 指定文件夹扫描
+- [ ] 最常播放/播放历史/等智能歌单功能
+- [ ] 新的EQ和音效增强功能
+- [ ] 更多在线歌词源支持
+- [ ] 主题和界面自定义功能
+- [ ] 其他一些UI和交互细节优化
 
-## 注意
+## 🚀 快速开始
 
-本仓库遵循MIT协议。然而，WAV、ALAC等格式的软解码依赖于ffmpeg，并需要单独的许可证。有需要请自行编译拓展插件后引入
+```bash
+# 1. 克隆仓库
+git clone https://github.com/spica27/SPICaMusic_Android.git
+
+# 2. Android Studio 打开项目
+
+# 3. 构建运行
+./gradlew assembleDebug
+```
+
+**环境要求**:
+- Android Studio Narwhal 2025.1.1+
+- JDK 21+
+- Android SDK 29+ (minSdk 29, targetSdk 36)
+
+## ⚠️ 注意事项
+
+本仓库遵循 **MIT 协议**。
+
+WAV、ALAC 等格式的软解码依赖于 FFmpeg，需单独许可证。如需自行编译，请参考:
 [decoder_ffmpeg](https://github.com/androidx/media/tree/release/libraries/decoder_ffmpeg)
 
+## 📚 技术栈
 
-## 开发环境
+| 类别 | 技术 |
+|------|------|
+| **UI 框架** | [Jetpack Compose](https://developer.android.com/compose) - 声明式 UI |
+| **媒体播放** | [Media3 ExoPlayer](https://github.com/androidx/media) - 音视频播放 |
+| **组件库** | [MIUIX](https://github.com/compose-miuix-ui/miuix) - 仿MIUI组件库 |
+| **依赖注入** | [Koin](https://github.com/InsertKoinIO/koin) - 轻量级 DI 框架 |
+| **网络请求** | [Retrofit](https://github.com/square/retrofit) + [OkHttp](https://github.com/square/okhttp) |
+| **JSON 解析** | [Moshi](https://github.com/square/moshi) |
+| **图片加载** | [Coil3](https://github.com/coil-kt/coil) |
+| **音频分析** | [Amplituda](https://github.com/lincollincol/Amplituda) + [TarsosDSP](https://github.com/JorenSix/TarsosDSP) |
+| **视觉效果** | [AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) - 液态玻璃效果 |
+| **解码器** | [FFmpeg](https://github.com/FFmpeg/FFmpeg) - 多格式音频解码 |
 
+## 📄 License
 
-| 类型     | 描述 |
-| ----------- | ----------- |
-| 操作系统      | Windows 10 IoT 企业版 LTSC       |
-| Android Studio   | Android Studio Narwhal | 2025.1.1 |
-| JDK | JBR 21.0.6 | 
+```
+MIT License
 
-## 库
+Copyright (c) 2025 SPICa27
+```
 
-- [Retrofit](https://github.com/square/retrofit): Android/Java平台类型安全的HTTP请求库
-- [OkHTTP](https://github.com/square/okhttp): 一个高效的HTTP和HTTP/2客户端
-- [Jetpack Compose](https://developer.android.com/compose): Jetpack Compose 是一个现代化的工具包，用于构建原生
-  Android 应用的用户界面。它简化了 UI 开发，使您能够更快地构建应用。
-- [Media3](https://github.com/androidx/media): Media3 是一个用于播放音频和视频的库，它提供了一个用于播放媒体的
-  API，和一组用于管理媒体会话的类。
-- [Amplituda](https://github.com/lincollincol/Amplituda): 一个用于分析音频的库，它提供了一种简单的方法来获取音频的振幅。
-- [TarsosDSP](https://github.com/paramsen/noise): TarsosDSP旨在通过提供一套简易接口，让开发者能够轻松访问和运用音乐处理算法。
-- [FFMPEG](https://github.com/FFmpeg/FFmpeg):FFmpeg 是用于处理音频、视频、字幕和相关元数据等多媒体内容的库和工具的集合。
-- [Koin](https://github.com/InsertKoinIO/koin):Koin 是一个面向 Kotlin 开发人员的实用、轻量级依赖注入框架。
-- [AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass):Jetpack Compose液态玻璃效果实现。
-- [Coil3](https://github.com/coil-kt/coil): 适用于 Android 和 Compose Multiplatform 的图像加载库。
-- [Moshi](https://github.com/square/moshi): 一个开源的JSON解析库。
+---
 
-最近要开始找工作了，更新随缘🌈
+<div align="center">
+
+**如果这个项目对你有帮助，欢迎给个 ⭐ Star！**
+
+</div>
