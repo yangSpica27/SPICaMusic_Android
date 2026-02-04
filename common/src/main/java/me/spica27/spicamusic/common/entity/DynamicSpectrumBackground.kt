@@ -16,46 +16,6 @@ sealed class DynamicSpectrumBackground(
     "液态极光",
   )
 
-  object BubblePulse : DynamicSpectrumBackground(
-    "bubble_pulse",
-    "浮泡律动",
-  )
-
-  object NeonGrid : DynamicSpectrumBackground(
-    "neon_grid",
-    "霓虹栅格",
-  )
-
-  object ParticleStarfield : DynamicSpectrumBackground(
-    "particle_starfield",
-    "粒子星空",
-  )
-
-  object RippleWave : DynamicSpectrumBackground(
-    "ripple_wave",
-    "波纹涟漪",
-  )
-
-  object SpectrumHelix : DynamicSpectrumBackground(
-    "spectrum_helix",
-    "光谱螺旋",
-  )
-
-  object EnergyPulse : DynamicSpectrumBackground(
-    "energy_pulse",
-    "能量脉冲",
-  )
-
-  object FluidVortex : DynamicSpectrumBackground(
-    "fluid_vortex",
-    "流体漩涡",
-  )
-
-  object TunnelShader : DynamicSpectrumBackground(
-    "tunnel_shader",
-    "隧道隧道",
-  )
-
   object EffectShader : DynamicSpectrumBackground(
     "effect_shader",
     "流体效果",
@@ -71,14 +31,6 @@ sealed class DynamicSpectrumBackground(
     return when (this) {
       is TopGlow -> "顶部流光"
       is LiquidAurora -> "液态极光"
-      is BubblePulse -> "浮泡律动"
-      is NeonGrid -> "霓虹栅格"
-      is ParticleStarfield -> "粒子星空"
-      is RippleWave -> "波纹涟漪"
-      is SpectrumHelix -> "光谱螺旋"
-      is EnergyPulse -> "能量脉冲"
-      is FluidVortex -> "流体漩涡"
-      is TunnelShader -> "隧道隧道"
       is EffectShader -> "流体效果"
       is OFF -> "关闭"
     }
@@ -89,14 +41,6 @@ sealed class DynamicSpectrumBackground(
       return when (value) {
         TopGlow.value -> TopGlow
         LiquidAurora.value -> LiquidAurora
-        BubblePulse.value -> BubblePulse
-        NeonGrid.value -> NeonGrid
-        ParticleStarfield.value -> ParticleStarfield
-        RippleWave.value -> RippleWave
-        SpectrumHelix.value -> SpectrumHelix
-        EnergyPulse.value -> EnergyPulse
-        FluidVortex.value -> FluidVortex
-        TunnelShader.value -> TunnelShader
         EffectShader.value -> EffectShader
         OFF.value -> OFF
         else -> OFF
@@ -104,7 +48,7 @@ sealed class DynamicSpectrumBackground(
     }
 
     val presets: List<DynamicSpectrumBackground>
-      get() = listOf(TopGlow, LiquidAurora, BubblePulse, EnergyPulse,EffectShader, OFF)
+      get() = listOf(TopGlow, LiquidAurora,EffectShader, OFF)
   }
 
 }

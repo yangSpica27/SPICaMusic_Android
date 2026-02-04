@@ -1,12 +1,15 @@
 package me.spica27.spicamusic.ui.player
 
+import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,7 +51,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
@@ -73,13 +75,16 @@ import me.spica27.spicamusic.App
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
+import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.AudioVisualizer3D
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -532,6 +537,18 @@ private fun PlayerPage(
     modifier: Modifier = Modifier,
     isSeekingState: Boolean = false,
 ) {
+    // 翻转动画状态
+    var isCoverFlipped by remember { mutableStateOf(false) }
+    val animDuration = 600
+    val cameraDistance = 12f
+
+    // Y轴旋转角度动画
+    val rotateY by animateFloatAsState(
+        targetValue = if (isCoverFlipped) 180f else 0f,
+        animationSpec = tween(durationMillis = animDuration, easing = EaseInOut),
+        label = "coverRotation",
+    )
+
     Column(
         modifier =
             modifier.padding(
@@ -540,52 +557,94 @@ private fun PlayerPage(
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 封面
-        AnimatedContent(
-            currentMediaItem,
-            transitionSpec = {
-                fadeIn() togetherWith fadeOut()
-            },
+        // 封面（带翻转动画）
+        Box(
             modifier =
                 Modifier
-                    .graphicsLayer {
-                        alpha = calculateFadeAlpha(progress, COVER_FADE_THRESHOLD)
-                    }.weight(1f, fill = false)
+                    .weight(1f, fill = false)
                     .aspectRatio(1f)
-                    .shadow(
-                        elevation = 8.dp,
-                        shape = ContinuousRoundedRectangle(8.dp),
-                        clip = false,
-                    ).clip(ContinuousRoundedRectangle(8.dp)),
-        ) { currentMediaItem ->
-            AudioCover(
-                uri = currentMediaItem?.mediaMetadata?.artworkUri,
-                placeHolder = {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .clip(ContinuousRoundedRectangle(8.dp))
-                                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.MusicNote,
-                            contentDescription = "封面占位符",
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    .graphicsLayer {
+                        rotationY = rotateY
+                        this.cameraDistance = cameraDistance * density
+                    }.clickable { isCoverFlipped = !isCoverFlipped },
+        ) {
+            // 根据旋转角度显示正面或背面
+            if (rotateY <= 90f) {
+                // 正面：封面
+                AudioCover(
+                    uri = currentMediaItem?.mediaMetadata?.artworkUri,
+                    placeHolder = {
+                        Box(
                             modifier =
                                 Modifier
-                                    .size(64.dp)
-                                    .align(
-                                        Alignment.Center,
-                                    ),
+                                    .fillMaxSize()
+                                    .clip(Shapes.SmallCornerBasedShape)
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.MusicNote,
+                                contentDescription = "封面占位符",
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier =
+                                    Modifier
+                                        .size(64.dp)
+                                        .align(Alignment.Center),
+                            )
+                        }
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clip(Shapes.SmallCornerBasedShape),
+                )
+            } else {
+                // 背面：3D 音频可视化器
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                alpha = calculateFadeAlpha(progress, COVER_FADE_THRESHOLD)
+                                rotationY = 180f // 翻转背面使其正向显示
+                            }.clip(Shapes.SmallCornerBasedShape),
+                ) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        // Android 13+ 使用 AGSL 3D 可视化器
+
+                        val playerViewModel = koinActivityViewModel<PlayerViewModel>()
+
+                        val fftBands = playerViewModel.fftDrawData.collectAsStateWithLifecycle().value
+
+                        val coverColor =
+                            rememberDominantColorFromUri(
+                                uri = currentMediaItem?.mediaMetadata?.artworkUri,
+                                fallbackColor = MiuixTheme.colorScheme.primary,
+                            )
+
+                        AudioVisualizer3D(
+                            modifier = Modifier.fillMaxSize(),
+                            fftBands = fftBands,
+                            baseColor = coverColor,
                         )
+                    } else {
+                        // Android 13 以下显示占位
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "需要 Android 13+\n才能显示 3D 可视化",
+                                style = MiuixTheme.textStyles.body1,
+                                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
-                },
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .clip(ContinuousRoundedRectangle(8.dp)),
-            )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -670,7 +729,7 @@ private fun PlayerPage(
                         Modifier
                             .background(
                                 MiuixTheme.colorScheme.primaryVariant,
-                                shape = ContinuousRoundedRectangle(8.dp),
+                                shape = Shapes.SmallCornerBasedShape,
                             ).padding(vertical = 4.dp, horizontal = 8.dp),
                     text = formatTime(seekPosition.toLong()),
                     style = MiuixTheme.textStyles.body1,

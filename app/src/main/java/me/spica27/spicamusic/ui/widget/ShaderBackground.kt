@@ -19,11 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import dev.chrisbanes.haze.hazeEffect
 import org.intellij.lang.annotations.Language
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.max
 
 /**
  * 隧道效果着色器背景
@@ -162,7 +159,7 @@ fun EffectShaderBackground(
 ) {
     val context = LocalContext.current
 
-    // 简化的流体效果着色器
+    // 增强的流体效果着色器 - 支持频谱响应
     @Language("AGSL")
     val shaderSource =
         """
@@ -170,6 +167,8 @@ fun EffectShaderBackground(
         uniform float uAnimTime;
         uniform float uMusicLevel;
         uniform float uBeat;
+        uniform float uMidFreq;
+        uniform float uHighFreq;
         uniform vec4 uColor;
         uniform float uIsDarkMode;
         
@@ -203,47 +202,96 @@ fun EffectShaderBackground(
             return 130.0 * dot(m, g);
         }
         
+        // RGB转HSV
+        vec3 rgb2hsv(vec3 c) {
+            vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+            vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+            vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+            float d = q.x - min(q.w, q.y);
+            float e = 1.0e-10;
+            return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+        }
+        
+        // HSV转RGB
+        vec3 hsv2rgb(vec3 c) {
+            vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+            vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+            return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+        }
+        
         vec4 main(vec2 fragCoord) {
             vec2 uv = fragCoord / uResolution.xy;
             vec2 p = uv * 2.0 - 1.0;
             p.x *= uResolution.x / uResolution.y;
             
             float time = uAnimTime * 0.1;
+            float dist = length(p);
             
-            // 多层噪声 - 创建涟漪效果
-            float n1 = snoise(p * 2.0 + time * 0.5);
-            float n2 = snoise(p * 3.0 - time * 0.3 + vec2(n1));
-            float n3 = snoise(p * 4.0 + time * 0.4 + vec2(n2));
+            // 多层噪声 - 响应不同频段
+            // 低频影响大尺度运动
+            vec2 offset1 = vec2(time * 0.5 * (1.0 + uBeat * 0.3), time * 0.3);
+            float n1 = snoise(p * (2.0 + uBeat * 0.3) + offset1);
             
-            // 音乐响应 - 涟漪强度（增强节拍影响）
-            float pulse = 1.0 + uBeat * 2.0;  // 从0.5增加到2.0
-            float ripple = (n1 * 0.5 + n2 * 0.3 + n3 * 0.2) * pulse;
+            // 中频影响中等尺度纹理
+            vec2 offset2 = vec2(-time * 0.3, time * 0.4 * (1.0 + uMidFreq * 0.2));
+            float n2 = snoise(p * (3.0 + uMidFreq * 0.5) + offset2 + vec2(n1 * 0.5));
+            
+            // 高频影响细节和闪烁
+            vec2 offset3 = vec2(time * 0.4, -time * 0.35);
+            float n3 = snoise(p * (4.0 + uHighFreq * 0.7) + offset3 + vec2(n2 * 0.3));
+            
+            // 组合噪声层 - 各频段贡献
+            float ripple = n1 * (0.5 + uBeat * 0.12) + 
+                          n2 * (0.3 + uMidFreq * 0.08) + 
+                          n3 * (0.2 + uHighFreq * 0.05);
             
             // 归一化涟漪值到 0-1
             float rippleNormalized = (ripple + 1.0) * 0.5;
             
-            // 根据音乐动态调整涟漪强度（增强变化范围）
-            float rippleStrength = 0.2 + uMusicLevel * 0.7 + uBeat * 0.3;  // 从0.3-0.7增加到0.2-1.2
+            // 动态涟漪强度 - 综合音频响应
+            float rippleStrength = 0.15 + uMusicLevel * 0.3 + uBeat * 0.15 + uMidFreq * 0.08;
+            
+            // 根据音频动态调整色相
+            vec3 hsv = rgb2hsv(uColor.rgb);
+            float hueShift = (uBeat * 0.06 + uMidFreq * 0.04 + uHighFreq * 0.03) * 
+                            sin(time * 0.5 + dist * 2.0);
+            hsv.x = fract(hsv.x + hueShift);
+            hsv.y = clamp(hsv.y + uMusicLevel * 0.12, 0.3, 1.0); // 增强饱和度
+            vec3 dynamicColor = hsv2rgb(hsv);
             
             vec3 col;
             if (uIsDarkMode > 0.5) {
-                // 暗色模式：深色背景 + 封面色涟漪
-                vec3 darkBg = vec3(0.141, 0.141, 0.141); // #FF242424
-                // 涟漪使用固定封面色
-                vec3 rippleColor = uColor.rgb;
-                // 混合背景和涟漪（音乐响应体现在强度上）
+                // 暗色模式：深色背景 + 动态涟漪
+                vec3 darkBg = vec3(0.08, 0.08, 0.08);
+                
+                // 径向渐变效果（节拍响应）
+                float radialGrad = 1.0 - smoothstep(0.0, 1.2, dist);
+                vec3 rippleColor = mix(dynamicColor, uColor.rgb, 0.5);
+                
+                // 混合背景和涟漪
                 col = mix(darkBg, rippleColor, rippleNormalized * rippleStrength);
                 
-                // 中心高光效果（音乐响应）
-                float centerGlow = 1.0 - smoothstep(0.0, 0.8, length(p));
-                col += uColor.rgb * centerGlow * (0.2 * uMusicLevel + 0.3 * uBeat);
+                // 中心高光（低频节拍）
+                float centerGlow = radialGrad * radialGrad;
+                col += dynamicColor * centerGlow * (0.15 + uBeat * 0.25);
+                
+                // 高频闪烁效果
+                float sparkle = pow(max(0.0, n3), 3.0) * uHighFreq;
+                col += vec3(1.0, 0.9, 0.8) * sparkle * 0.18;
+                
             } else {
-                // 亮色模式：浅色背景 + 封面色涟漪
-                vec3 lightBg = vec3(1.0, 1.0, 1.0); // #FFFFFFFF
-                // 涟漪使用固定封面色
-                vec3 rippleColor = uColor.rgb;
-                // 混合背景和涟漪（音乐响应体现在强度上）
-                col = mix(lightBg, rippleColor, rippleNormalized * rippleStrength * 0.7);
+                // 亮色模式：浅色背景 + 柔和涟漪
+                vec3 lightBg = vec3(0.98, 0.98, 0.98);
+                
+                // 柔化颜色
+                vec3 softColor = mix(lightBg, dynamicColor, 0.6);
+                
+                // 混合背景和涟漪
+                col = mix(lightBg, softColor, rippleNormalized * rippleStrength * 0.5);
+                
+                // 中心柔光（节拍响应）
+                float centerGlow = 1.0 - smoothstep(0.0, 1.0, dist);
+                col = mix(col, softColor, centerGlow * (0.1 + uBeat * 0.12));
             }
             
             return vec4(col, 1.0);
@@ -253,7 +301,7 @@ fun EffectShaderBackground(
     val infiniteTransition = rememberInfiniteTransition(label = "effect_time")
     val time by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 10000f,
+        targetValue = 20_000f,
         animationSpec =
             infiniteRepeatable(
                 animation = tween(1_000 * 60 * 60, easing = LinearEasing),
@@ -262,14 +310,15 @@ fun EffectShaderBackground(
         label = "time",
     )
 
-    // 计算音频驱动参数（放大响应度）
+    // 增强的音频驱动参数 - 分析不同频段
     val musicLevel =
         remember(fftDrawData) {
             if (fftDrawData.isEmpty()) {
                 0f
             } else {
-                // 放大平均值并限制范围
-                (fftDrawData.average().toFloat() * 2.5f).coerceIn(0f, 1f)
+                // 整体音量响应（使用RMS计算更准确）
+                val rms = kotlin.math.sqrt(fftDrawData.map { it * it }.average()).toFloat()
+                (rms * 1.2f).coerceIn(0f, 1f)
             }
         }
 
@@ -278,9 +327,43 @@ fun EffectShaderBackground(
             if (fftDrawData.isEmpty()) {
                 0f
             } else {
-                // 使用低频部分计算节拍，放大响应
-                val lowFreq = fftDrawData.take(fftDrawData.size / 4)
-                (max(0f, lowFreq.maxOrNull() ?: 0f) * 1.5f).coerceIn(0f, 1f)
+                // 低频（20-250Hz）- 节拍和低音
+                val lowFreqCount = (fftDrawData.size * 0.2f).toInt().coerceAtLeast(1)
+                val lowFreq = fftDrawData.take(lowFreqCount)
+                (lowFreq.average().toFloat() * 1.5f).coerceIn(0f, 1f)
+            }
+        }
+
+    val midFreq =
+        remember(fftDrawData) {
+            if (fftDrawData.isEmpty()) {
+                0f
+            } else {
+                // 中频（250Hz-4kHz）- 人声和主要乐器
+                val startIdx = (fftDrawData.size * 0.2f).toInt()
+                val endIdx = (fftDrawData.size * 0.6f).toInt().coerceAtMost(fftDrawData.size)
+                if (startIdx >= endIdx) {
+                    0f
+                } else {
+                    val midFreqBand = fftDrawData.slice(startIdx until endIdx)
+                    (midFreqBand.average().toFloat() * 1.3f).coerceIn(0f, 1f)
+                }
+            }
+        }
+
+    val highFreq =
+        remember(fftDrawData) {
+            if (fftDrawData.isEmpty()) {
+                0f
+            } else {
+                // 高频（4kHz+）- 镲片、气息音等细节
+                val startIdx = (fftDrawData.size * 0.6f).toInt()
+                if (startIdx >= fftDrawData.size) {
+                    0f
+                } else {
+                    val highFreqBand = fftDrawData.slice(startIdx until fftDrawData.size)
+                    (highFreqBand.average().toFloat() * 1.2f).coerceIn(0f, 1f)
+                }
             }
         }
 
@@ -293,13 +376,13 @@ fun EffectShaderBackground(
     Box(
         modifier =
             modifier
-                .hazeEffect {
-                    blurRadius = 12.dp
-                }.drawWithCache {
+                .drawWithCache {
                     shader.setFloatUniform("uResolution", size.width, size.height)
                     shader.setFloatUniform("uAnimTime", time)
                     shader.setFloatUniform("uMusicLevel", musicLevel)
                     shader.setFloatUniform("uBeat", beat)
+                    shader.setFloatUniform("uMidFreq", midFreq)
+                    shader.setFloatUniform("uHighFreq", highFreq)
                     shader.setFloatUniform("uIsDarkMode", if (effectiveIsDarkMode) 1f else 0f)
                     // 设置颜色为 vec4 (RGBA)
                     shader.setFloatUniform(
