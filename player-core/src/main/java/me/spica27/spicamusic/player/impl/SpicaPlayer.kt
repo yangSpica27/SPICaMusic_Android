@@ -13,6 +13,7 @@ import androidx.media3.session.SessionToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -281,8 +282,15 @@ class SpicaPlayer(
   }
 
   override fun release() {
+    // 1. 移除监听器
+    browserInstance?.removeListener(this)
+    // 2. 释放 MediaBrowser
     browserInstance?.release()
     browserInstance = null
+    // 3. 释放 FFT 处理器（取消线程池）
+    _fftProcessor.release()
+    // 4. 取消协程
+    coroutineContext.cancelChildren()
   }
 
   override fun onIsPlayingChanged(isPlaying: Boolean) {

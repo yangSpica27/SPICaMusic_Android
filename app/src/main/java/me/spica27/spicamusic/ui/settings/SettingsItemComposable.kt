@@ -9,10 +9,10 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Switch
@@ -58,7 +58,7 @@ private fun SwitchSettingsItem(
     item: SettingsItem.SwitchItem,
     modifier: Modifier = Modifier,
 ) {
-    val currentValue by item.valueFlow.collectAsState()
+    val currentValue by item.valueFlow.collectAsStateWithLifecycle()
     BasicComponent(
         modifier = modifier,
         startAction = {
@@ -90,7 +90,7 @@ private fun SelectSettingsItem(
     item: SettingsItem.SelectItem,
     modifier: Modifier = Modifier,
 ) {
-    val currentValue by item.valueFlow.collectAsState()
+    val currentValue by item.valueFlow.collectAsStateWithLifecycle()
 
     WindowDropdown(
         modifier = modifier,

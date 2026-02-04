@@ -41,6 +41,13 @@ interface SongDao {
     @Query("SELECT * FROM song WHERE mediaStoreId == :id AND (isIgnore == 0)")
     fun getSongFlowWithMediaStoreId(id: Long): Flow<SongEntity?>
 
+    /**
+     * 批量根据 MediaStore ID 获取歌曲
+     * 用于解决 N+1 查询问题
+     */
+    @Query("SELECT * FROM song WHERE mediaStoreId IN (:ids) AND (isIgnore == 0)")
+    suspend fun getSongsByMediaStoreIds(ids: List<Long>): List<SongEntity>
+
     @Query("SELECT * FROM song WHERE songId == :id")
     fun getSongFlowWithId(id: Long): Flow<SongEntity?>
 

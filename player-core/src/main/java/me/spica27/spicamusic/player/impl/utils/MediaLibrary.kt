@@ -1,14 +1,18 @@
 package me.spica27.spicamusic.player.impl.utils
 
-import androidx.annotation.WorkerThread
 import androidx.media3.common.MediaItem
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.storage.api.ISongRepository
 import org.koin.java.KoinJavaComponent.getKoin
 import timber.log.Timber
 
+/**
+ * 媒体库工具类
+ * 提供歌曲 ID 到 MediaItem 的转换功能
+ * 
+ * 注意：所有方法都是 suspend 函数，必须在协程中调用
+ */
 object MediaLibrary {
     private const val TAG = "MediaLibrary"
     const val ROOT = "root"
@@ -16,12 +20,14 @@ object MediaLibrary {
 
     private val songRepository = getKoin().get<ISongRepository>()
 
-    @WorkerThread
-    fun getItem(mediaId: String): MediaItem? = runBlocking {
+    /**
+     * 根据 mediaId 获取单个 MediaItem
+     */
+    suspend fun getItem(mediaId: String): MediaItem? = withContext(Dispatchers.IO) {
         val mediaStoreId = mediaId.toLongOrNull()
         if (mediaStoreId == null) {
             Timber.tag(TAG).e("Invalid mediaId: $mediaId (not a valid Long)")
-            return@runBlocking null
+            return@withContext null
         }
         
         Timber.tag(TAG).d("getItem: mediaId=$mediaId, mediaStoreId=$mediaStoreId")
@@ -29,12 +35,6 @@ object MediaLibrary {
         val song = songRepository.getSongByMediaStoreId(mediaStoreId)
         if (song == null) {
             Timber.tag(TAG).e("Song not found for mediaStoreId=$mediaStoreId")
-            // 调试：检查数据库中是否有歌曲
-            val allSongs = songRepository.getAllSongs()
-            Timber.tag(TAG).e("Total songs in DB: ${allSongs.size}")
-            if (allSongs.isNotEmpty()) {
-                Timber.tag(TAG).e("Sample mediaStoreIds: ${allSongs.take(3).map { it.mediaStoreId }}")
-            }
         } else {
             Timber.tag(TAG).d("✓ Found: ${song.displayName}")
         }
@@ -42,15 +42,30 @@ object MediaLibrary {
         song?.toMediaItem()
     }
 
-    fun mediaIdToMediaItems(mediaIds: List<String>): List<MediaItem> = runBlocking {
-        mediaIds.mapNotNull {
-            songRepository.getSongByMediaStoreId(it.toLongOrNull() ?: -1)?.toMediaItem()
-        }
+    /**
+     * 批量将 mediaId 转换为 MediaItem
+     * 使用批量查询优化，避免 N+1 问题
+     */
+    suspend fun mediaIdToMediaItems(mediaIds: List<String>): List<MediaItem> = withContext(Dispatchers.IO) {
+        if (mediaIds.isEmpty()) return@withContext emptyList()
+        
+        val ids = mediaIds.mapNotNull { it.toLongOrNull() }
+        if (ids.isEmpty()) return@withContext emptyList()
+        
+        // 使用批量查询而非循环单独查询
+        val songs = songRepository.getSongsByMediaStoreIds(ids)
+        
+        // 按原始顺序返回结果
+        val songMap = songs.associateBy { it.mediaStoreId }
+        ids.mapNotNull { id -> songMap[id]?.toMediaItem() }
     }
 
-    fun getChildren(parentId: String): List<MediaItem> = runBlocking {
+    /**
+     * 获取指定父节点的子项
+     */
+    suspend fun getChildren(parentId: String): List<MediaItem> = withContext(Dispatchers.IO) {
         if (parentId == ALL_SONGS) {
-            return@runBlocking songRepository.getAllSongs().map { it.toMediaItem() }
+            return@withContext songRepository.getAllSongs().map { it.toMediaItem() }
         }
         emptyList()
     }

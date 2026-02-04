@@ -54,6 +54,12 @@ interface ISongRepository {
     suspend fun getSongByMediaStoreId(mediaStoreId: Long): Song?
 
     /**
+     * 批量根据 MediaStore ID 获取歌曲
+     * 用于解决 N+1 查询问题，一次性加载多首歌曲
+     */
+    suspend fun getSongsByMediaStoreIds(ids: List<Long>): List<Song>
+
+    /**
      * 获取不在指定歌单中的歌曲
      */
     fun getSongsNotInPlaylistFlow(playlistId: Long): Flow<List<Song>>

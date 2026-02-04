@@ -15,6 +15,11 @@ import androidx.media3.session.SessionError
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.guava.future
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.impl.utils.MediaLibrary
 import org.koin.android.ext.android.inject
@@ -31,6 +36,9 @@ class PlaybackService : MediaLibraryService() {
 
     private var mediaSession: MediaLibrarySession? = null
     private lateinit var exoPlayer: ExoPlayer
+
+    // 服务级别的协程作用域
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
@@ -104,13 +112,15 @@ class PlaybackService : MediaLibraryService() {
                             mediaId: String,
                         ): ListenableFuture<LibraryResult<MediaItem>> {
                             Timber.tag("PlaybackService").d("onGetItem: mediaId=$mediaId")
-                            val item = MediaLibrary.getItem(mediaId)
-                            return if (item != null) {
-                                Timber.tag("PlaybackService").d("onGetItem: Found item ${item.mediaMetadata.title}")
-                                Futures.immediateFuture(LibraryResult.ofItem(item, null))
-                            } else {
-                                Timber.tag("PlaybackService").e("onGetItem: Item not found for mediaId=$mediaId")
-                                Futures.immediateFuture(LibraryResult.ofError(SessionError.ERROR_BAD_VALUE))
+                            return serviceScope.future {
+                                val item = MediaLibrary.getItem(mediaId)
+                                if (item != null) {
+                                    Timber.tag("PlaybackService").d("onGetItem: Found item ${item.mediaMetadata.title}")
+                                    LibraryResult.ofItem(item, null)
+                                } else {
+                                    Timber.tag("PlaybackService").e("onGetItem: Item not found for mediaId=$mediaId")
+                                    LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
+                                }
                             }
                         }
 
@@ -121,12 +131,11 @@ class PlaybackService : MediaLibraryService() {
                             page: Int,
                             pageSize: Int,
                             params: LibraryParams?,
-                        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
-                            val children = MediaLibrary.getChildren(parentId)
-                            return Futures.immediateFuture(
-                                LibraryResult.ofItemList(children, params),
-                            )
-                        }
+                        ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> =
+                            serviceScope.future {
+                                val children = MediaLibrary.getChildren(parentId)
+                                LibraryResult.ofItemList(children, params)
+                            }
 
 //                        override fun onPlaybackResumption(
 //                            session: MediaSession,
@@ -150,6 +159,7 @@ class PlaybackService : MediaLibraryService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaSession
 
     override fun onDestroy() {
+        serviceScope.cancel()
         mediaSession?.run {
             exoPlayer.release()
             release()

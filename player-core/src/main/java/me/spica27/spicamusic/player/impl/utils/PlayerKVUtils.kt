@@ -34,11 +34,22 @@ class PlayerKVUtils(
         sharedPreferences.edit { putString("history_ids", ids.joinToString(",")) }
     }
 
+    /**
+     * 获取历史播放歌曲列表
+     * 使用批量查询优化，避免 N+1 问题
+     */
     @WorkerThread
-    suspend fun getHistoryItems(): List<Song> =
-        getHistoryIds().mapNotNull {
-            songRepository.getSongByMediaStoreId(it)
-        }
+    suspend fun getHistoryItems(): List<Song> {
+        val ids = getHistoryIds()
+        if (ids.isEmpty()) return emptyList()
+        
+        // 使用批量查询而非循环单独查询
+        val songs = songRepository.getSongsByMediaStoreIds(ids)
+        
+        // 按历史顺序返回结果
+        val songMap = songs.associateBy { it.mediaStoreId }
+        return ids.mapNotNull { songMap[it] }
+    }
 
     /**
      * 获取历史播放的id
@@ -87,7 +98,7 @@ class PlayerKVUtils(
             }
             sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
             awaitClose { sharedPreferences.unregisterOnSharedPreferenceChangeListener(listener) }
-        }.buffer(Channel.UNLIMITED)
+        }.buffer(Channel.CONFLATED)  // 使用 CONFLATED 替代 UNLIMITED，只保留最新值
 
     private fun parsePlayMode(mode: String): PlayMode =
         when (mode) {

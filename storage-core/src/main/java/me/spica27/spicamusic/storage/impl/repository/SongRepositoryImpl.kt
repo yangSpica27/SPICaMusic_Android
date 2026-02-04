@@ -42,6 +42,11 @@ class SongRepositoryImpl(
         songDao.getSongWithMediaStoreId(mediaStoreId)?.toCommon()
     }
 
+    override suspend fun getSongsByMediaStoreIds(ids: List<Long>): List<Song> = withContext(Dispatchers.IO) {
+        if (ids.isEmpty()) return@withContext emptyList()
+        songDao.getSongsByMediaStoreIds(ids).map { it.toCommon() }
+    }
+
     override fun getSongsNotInPlaylistFlow(playlistId: Long): Flow<List<Song>> = 
         songDao.getSongsNotInPlayListFlow(playlistId).map { list -> list.map { it.toCommon() } }
 

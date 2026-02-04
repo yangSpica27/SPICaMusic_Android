@@ -24,7 +24,8 @@ val storageModule = module {
       AppDatabase::class.java,
       "spica_music.db",
     )
-      .fallbackToDestructiveMigration(false)
+      // 开发阶段允许破坏性迁移，发布时应添加正式的 Migration
+      .fallbackToDestructiveMigration(true)
       .build()
   }
 

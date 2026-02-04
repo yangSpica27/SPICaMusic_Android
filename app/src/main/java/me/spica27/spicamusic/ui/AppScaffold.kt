@@ -2,12 +2,12 @@ package me.spica27.spicamusic.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.navigation.AppNavGraph
@@ -33,7 +33,7 @@ fun AppScaffold() {
     val preferencesManager = koinInject<PreferencesManager>()
 
     val isDarkMode =
-        preferencesManager.getBoolean(PreferencesManager.Keys.DARK_MODE).collectAsState(false)
+        preferencesManager.getBoolean(PreferencesManager.Keys.DARK_MODE).collectAsStateWithLifecycle(false)
 
     SPICaMusicTheme(
         darkTheme = isDarkMode.value,

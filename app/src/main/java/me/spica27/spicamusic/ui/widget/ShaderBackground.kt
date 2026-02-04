@@ -330,7 +330,7 @@ fun EffectShaderBackground(
                 // 低频（20-250Hz）- 节拍和低音
                 val lowFreqCount = (fftDrawData.size * 0.2f).toInt().coerceAtLeast(1)
                 val lowFreq = fftDrawData.take(lowFreqCount)
-                (lowFreq.average().toFloat() * 1.5f).coerceIn(0f, 1f)
+                (lowFreq.average().toFloat() * 0.1f).coerceIn(0f, 1f)
             }
         }
 

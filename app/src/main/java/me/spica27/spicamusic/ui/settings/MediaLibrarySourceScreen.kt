@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.storage.api.ScanResult
 import org.koin.androidx.compose.koinViewModel
@@ -58,7 +58,7 @@ import top.yukonga.miuix.kmp.utils.pressable
 fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
     val viewModel = koinViewModel<MediaLibrarySourceViewModel>()
-    val scanState by viewModel.scanState.collectAsState()
+    val scanState by viewModel.scanState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // 权限状态
