@@ -1,19 +1,27 @@
 package me.spica27.spicamusic.ui.home.pages
 
+import android.annotation.SuppressLint
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -36,14 +44,17 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
@@ -51,8 +62,10 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.SongGroup
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.DropdownImpl
@@ -60,6 +73,7 @@ import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -88,12 +102,6 @@ fun SearchPage(
     }
 
     val scrollBehavior = MiuixScrollBehavior()
-
-    fun LazyListState.isSticking(index: Int): State<Boolean> =
-        derivedStateOf {
-            val firstVisible = layoutInfo.visibleItemsInfo.firstOrNull()
-            firstVisible?.index == index && firstVisible.offset == -layoutInfo.beforeContentPadding
-        }
 
     val listHazeSource = rememberHazeState()
 
@@ -132,53 +140,209 @@ fun SearchPage(
             }
         },
     ) { paddingValues ->
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize(),
-        ) {
-            // 歌曲列表
-            LazyColumn(
-                state = listState,
-                contentPadding = paddingValues,
-                modifier =
-                    Modifier
-                        .hazeSource(state = listHazeSource)
-                        .fillMaxSize()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .overScrollVertical(),
-            ) {
-                searchResults.forEach { (title, songs) ->
-                    stickyHeader(
-                        key = title.hashCode(),
-                    ) { headerIndex ->
-
-                        val isSticking by listState.isSticking(headerIndex)
-
-                        val titleTextColor =
-                            animateColorAsState(
-                                targetValue = if (isSticking) Color.Transparent else MiuixTheme.colorScheme.onSurface,
-                            )
-
-                        SmallTitle(
-                            text = title,
-                            textColor = titleTextColor.value,
-                        )
-                    }
-                    items(songs, key = { it.songId ?: -1 }) {
-                        SongItemCard(
-                            song = it,
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .animateItem(),
-                        )
-                    }
-                }
-                item {
-                    Spacer(modifier = Modifier.size(150.dp))
+        AnimatedContent(
+            searchKeyword.isEmpty(),
+        ) { isEmptyKeyword ->
+            if (isEmptyKeyword) {
+                // 欢迎提示
+                WelcomeHolder(
+                    modifier =
+                        Modifier
+                            .fillMaxSize(),
+                    paddingValues = paddingValues,
+                )
+            } else {
+                if (searchResults.isEmpty()) {
+                    // 空提示
+                    EmptyHolder(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(paddingValues)
+                                .padding(top = 22.dp)
+                                .padding(horizontal = 16.dp),
+                        inputText = searchKeyword,
+                    )
+                } else if (searchKeyword.isNotEmpty() && searchResults.isNotEmpty()) {
+                    // 搜索结果列表
+                    SearchResultHolder(
+                        searchResults = searchResults,
+                        listState = listState,
+                        paddingValues = paddingValues,
+                        scrollBehavior = scrollBehavior,
+                        listHazeSource = listHazeSource,
+                    )
                 }
             }
+        }
+    }
+}
+
+/**
+ * 空提示组件
+ */
+@Composable
+private fun EmptyHolder(
+    modifier: Modifier = Modifier,
+    inputText: String,
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Text(
+            text =
+                buildAnnotatedString {
+                    append("未找到与 ")
+                    withStyle(
+                        style =
+                            MiuixTheme.textStyles.body1
+                                .copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = MiuixTheme.colorScheme.primary,
+                                ).toSpanStyle(),
+                    ) {
+                        append("\"$inputText\"")
+                    }
+                    append(" 相关的歌曲或艺术家")
+                },
+            style = MiuixTheme.textStyles.body1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        )
+    }
+}
+
+/**
+ * 欢迎提示组件
+ */
+@Composable
+private fun WelcomeHolder(
+    modifier: Modifier = Modifier,
+    paddingValues: PaddingValues,
+) {
+    LazyVerticalGrid(
+        modifier = modifier.overScrollVertical(),
+        columns = GridCells.Fixed(2),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding =
+            PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                top = paddingValues.calculateTopPadding() + 8.dp,
+                bottom = paddingValues.calculateBottomPadding(),
+            ),
+    ) {
+        item(
+            span = { GridItemSpan(2) },
+        ) {
+            Text(
+                "开始浏览",
+                style = MiuixTheme.textStyles.headline1,
+                modifier = Modifier,
+            )
+        }
+        item {
+            WelcomeItem(title = "最近播放", onClick = {}) {
+            }
+        }
+        item {
+            WelcomeItem(title = "我喜欢的音乐")
+        }
+        item {
+            WelcomeItem(title = "本地音乐")
+        }
+        item {
+            WelcomeItem(title = "歌单")
+        }
+    }
+}
+
+@Composable
+fun WelcomeItem(
+    title: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+    icon: @Composable BoxScope.() -> Unit = {},
+) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(shape = Shapes.SmallCornerBasedShape)
+                .background(
+                    MiuixTheme.colorScheme.surfaceContainer,
+                ).clickable { onClick() }
+                .aspectRatio(1f),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.body1,
+            color = MiuixTheme.colorScheme.onSurface,
+            modifier =
+                Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp),
+        )
+        icon()
+    }
+}
+
+private fun LazyListState.isSticking(index: Int): State<Boolean> =
+    derivedStateOf {
+        val firstVisible = layoutInfo.visibleItemsInfo.firstOrNull()
+        firstVisible?.index == index && firstVisible.offset == -layoutInfo.beforeContentPadding
+    }
+
+@Composable
+private fun SearchResultHolder(
+    searchResults: List<SongGroup>,
+    listState: LazyListState,
+    paddingValues: PaddingValues,
+    scrollBehavior: ScrollBehavior,
+    listHazeSource: HazeState,
+) {
+    // 歌曲列表
+    LazyColumn(
+        state = listState,
+        contentPadding = paddingValues,
+        modifier =
+            Modifier
+                .hazeSource(state = listHazeSource)
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .overScrollVertical(),
+    ) {
+        searchResults.forEach { (title, songs) ->
+            stickyHeader(
+                key = title.hashCode(),
+            ) { headerIndex ->
+
+                val isSticking by listState.isSticking(headerIndex)
+
+                val titleTextColor =
+                    animateColorAsState(
+                        targetValue = if (isSticking) Color.Transparent else MiuixTheme.colorScheme.onSurface,
+                    )
+
+                SmallTitle(
+                    text = title,
+                    textColor = titleTextColor.value,
+                )
+            }
+            items(songs, key = { it.songId ?: -1 }) {
+                SongItemCard(
+                    song = it,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .animateItem(),
+                )
+            }
+        }
+        item {
+            Spacer(modifier = Modifier.size(150.dp))
         }
     }
 }
@@ -340,6 +504,7 @@ private fun SongItemCard(
                                     // 立刻播放
                                     playerViewModel.playSong(song)
                                 }
+
                                 1 -> {
                                     // 加入播放列表：添加到队列末尾
                                     val currentIds = currentPlaylist.map { it.mediaId }.toMutableList()
@@ -353,10 +518,12 @@ private fun SongItemCard(
                                         )
                                     }
                                 }
+
                                 2 -> {
                                     // 下一首播放
                                     playerViewModel.addSongToNext(song)
                                 }
+
                                 3 -> {
                                     // 全部播放：播放搜索结果中该歌曲所在分组的所有歌曲
                                     val songGroup =
@@ -371,6 +538,7 @@ private fun SongItemCard(
                                         )
                                     }
                                 }
+
                                 4 -> {
                                     // 查看详情
                                 }
@@ -388,6 +556,7 @@ private fun SongItemCard(
 /**
  * 格式化时长（毫秒 -> mm:ss）
  */
+@SuppressLint("DefaultLocale")
 private fun formatDuration(durationMs: Long): String {
     val seconds = (durationMs / 1000).toInt()
     val minutes = seconds / 60
