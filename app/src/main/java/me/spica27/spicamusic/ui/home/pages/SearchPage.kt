@@ -7,8 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -255,7 +255,7 @@ fun WelcomeItem(
     title: String,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
-    icon: @Composable BoxScope.() -> Unit = {},
+    bottom: @Composable ColumnScope.() -> Unit = {},
 ) {
     // 入场动画
     val appearAnim =
@@ -279,7 +279,7 @@ fun WelcomeItem(
             }
     }
 
-    Box(
+    Column(
         modifier =
             modifier
                 .fillMaxWidth()
@@ -292,18 +292,17 @@ fun WelcomeItem(
                     MiuixTheme.colorScheme.surfaceContainer,
                 ).clickable { onClick() }
                 .aspectRatio(1f),
-        contentAlignment = Alignment.Center,
     ) {
+        // 标题文字
         Text(
             text = title,
             style = MiuixTheme.textStyles.body1,
             color = MiuixTheme.colorScheme.onSurface,
             modifier =
                 Modifier
-                    .align(Alignment.TopStart)
                     .padding(16.dp),
         )
-        icon()
+        bottom()
     }
 }
 
