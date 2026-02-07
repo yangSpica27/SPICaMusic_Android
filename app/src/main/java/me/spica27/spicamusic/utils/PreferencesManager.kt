@@ -23,6 +23,7 @@ class PreferencesManager(
         val DARK_MODE = booleanPreferencesKey("dark_mode")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
         val DYNAMIC_SPECTRUM_BACKGROUND = stringPreferencesKey("dynamic_spectrum_background")
+        val DYNAMIC_COVER_TYPE = stringPreferencesKey("dynamic_cover_type")
 
         // 音效设置
         val EQ_ENABLED = booleanPreferencesKey("eq_enabled")

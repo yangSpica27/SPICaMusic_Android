@@ -72,6 +72,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
+import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
@@ -82,6 +83,7 @@ import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
+import me.spica27.spicamusic.utils.PreferencesManager
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -537,10 +539,28 @@ private fun PlayerPage(
     modifier: Modifier = Modifier,
     isSeekingState: Boolean = false,
 ) {
+    // 读取动态封面设置
+    val preferencesManager: PreferencesManager = koinInject()
+    val dynamicCoverTypeValue by preferencesManager
+        .getString(PreferencesManager.Keys.DYNAMIC_COVER_TYPE, DynamicCoverType.DynamicGrid.value)
+        .collectAsStateWithLifecycle(initialValue = DynamicCoverType.DynamicGrid.value)
+    val dynamicCoverType =
+        remember(dynamicCoverTypeValue) {
+            DynamicCoverType.fromString(dynamicCoverTypeValue)
+        }
+    val isCoverFlipEnabled = dynamicCoverType !is DynamicCoverType.OFF
+
     // 翻转动画状态
     var isCoverFlipped by remember { mutableStateOf(false) }
     val animDuration = 600
     val cameraDistance = 12f
+
+    // 当设置关闭时，自动重置翻转状态
+    LaunchedEffect(isCoverFlipEnabled) {
+        if (!isCoverFlipEnabled) {
+            isCoverFlipped = false
+        }
+    }
 
     // Y轴旋转角度动画
     val rotateY by animateFloatAsState(
@@ -566,7 +586,13 @@ private fun PlayerPage(
                     .graphicsLayer {
                         rotationY = rotateY
                         this.cameraDistance = cameraDistance * density
-                    }.clickable { isCoverFlipped = !isCoverFlipped },
+                    }.then(
+                        if (isCoverFlipEnabled) {
+                            Modifier.clickable { isCoverFlipped = !isCoverFlipped }
+                        } else {
+                            Modifier
+                        },
+                    ),
         ) {
             // 根据旋转角度显示正面或背面
             if (rotateY <= 90f) {

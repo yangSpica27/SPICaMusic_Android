@@ -346,7 +346,7 @@ fun EffectShaderBackground(
                     0f
                 } else {
                     val midFreqBand = fftDrawData.slice(startIdx until endIdx)
-                    (midFreqBand.average().toFloat() * 1.7f).coerceIn(0f, 1f)
+                    (midFreqBand.average().toFloat() * 1.5f).coerceIn(0f, 1f)
                 }
             }
         }

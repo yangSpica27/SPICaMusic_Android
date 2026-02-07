@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.utils.PreferencesManager
 
@@ -49,6 +50,20 @@ class SettingsViewModel(
     fun setDynamicSpectrumBackground(value: String) {
         viewModelScope.launch {
             preferencesManager.setString(PreferencesManager.Keys.DYNAMIC_SPECTRUM_BACKGROUND, value)
+        }
+    }
+
+    // 动态封面
+    val dynamicCoverType =
+        preferencesManager
+            .getString(
+                PreferencesManager.Keys.DYNAMIC_COVER_TYPE,
+                DynamicCoverType.DynamicGrid.value,
+            ).stateIn(viewModelScope, SharingStarted.Eagerly, DynamicCoverType.DynamicGrid.value)
+
+    fun setDynamicCoverType(value: String) {
+        viewModelScope.launch {
+            preferencesManager.setString(PreferencesManager.Keys.DYNAMIC_COVER_TYPE, value)
         }
     }
 }

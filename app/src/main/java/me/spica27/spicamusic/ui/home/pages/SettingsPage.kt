@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
@@ -115,6 +116,29 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                             },
                         valueFlow = viewModel.dynamicSpectrumBackground,
                         onValueChange = { viewModel.setDynamicSpectrumBackground(it) },
+                    ),
+                )
+                add(
+                    SettingsItem.SelectItem(
+                        title = "动态封面",
+                        subtitle = "播放器封面点击翻转后的背面效果",
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Rounded.GraphicEq,
+                                contentDescription = null,
+                                tint = MiuixTheme.colorScheme.onSurface,
+                            )
+                        },
+                        key = "dynamic_cover_type",
+                        options =
+                            DynamicCoverType.presets.map {
+                                SelectOption(
+                                    label = it.name,
+                                    value = it.value,
+                                )
+                            },
+                        valueFlow = viewModel.dynamicCoverType,
+                        onValueChange = { viewModel.setDynamicCoverType(it) },
                     ),
                 )
 
