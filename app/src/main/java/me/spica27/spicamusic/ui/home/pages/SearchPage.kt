@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -42,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
@@ -82,6 +82,7 @@ import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
 import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
+import kotlin.random.Random
 
 /**
  * 搜索页面
@@ -233,15 +234,6 @@ private fun WelcomeHolder(
                 bottom = paddingValues.calculateBottomPadding(),
             ),
     ) {
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Text(
-                "开始浏览",
-                style = MiuixTheme.textStyles.headline1,
-                modifier = Modifier,
-            )
-        }
         item {
             WelcomeItem(title = "最近播放", onClick = {}) {
             }
@@ -265,11 +257,37 @@ fun WelcomeItem(
     onClick: () -> Unit = {},
     icon: @Composable BoxScope.() -> Unit = {},
 ) {
+    // 入场动画
+    val appearAnim =
+        remember(title) {
+            androidx.compose.animation.core
+                .Animatable(0f)
+        }
+    val delayMillis = remember(title) { Random.nextInt(0, 200) }
+    val durationMillis = remember(title) { Random.nextInt(260, 520) }
+
+    LaunchedEffect(Unit) {
+        androidx.compose.animation.core
+            .tween<Float>(
+                durationMillis = durationMillis,
+                delayMillis = delayMillis,
+            ).let { tween ->
+                appearAnim.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween,
+                )
+            }
+    }
+
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(shape = Shapes.SmallCornerBasedShape)
+                .graphicsLayer {
+                    alpha = appearAnim.value
+                    scaleX = appearAnim.value
+                    scaleY = appearAnim.value
+                }.clip(shape = Shapes.SmallCornerBasedShape)
                 .background(
                     MiuixTheme.colorScheme.surfaceContainer,
                 ).clickable { onClick() }
