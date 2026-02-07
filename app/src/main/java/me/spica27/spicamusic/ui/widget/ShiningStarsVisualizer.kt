@@ -101,7 +101,7 @@ fun ShiningStarsVisualizer(
             float2 uv = (fragCoord * 2.0 - u_resolution.xy) / u_resolution.y;
 
             // 缓慢旋转，音频增大时加速
-            float rotSpeed = 0.15 + u_volume * 0.15;
+            float rotSpeed = 0.15 + u_volume * 0.015;
             uv = rotate(uv, u_time * rotSpeed);
 
             float2 uv0 = uv;
