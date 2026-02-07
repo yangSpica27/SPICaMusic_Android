@@ -287,7 +287,7 @@ fun EffectShaderBackground(
                 vec3 softColor = mix(lightBg, dynamicColor, 0.6);
                 
                 // 混合背景和涟漪
-                col = mix(lightBg, softColor, rippleNormalized * rippleStrength * 0.5);
+                col = mix(lightBg, softColor, rippleNormalized * rippleStrength * 0.65);
                 
                 // 中心柔光（节拍响应）
                 float centerGlow = 1.0 - smoothstep(0.0, 1.0, dist);
@@ -346,7 +346,7 @@ fun EffectShaderBackground(
                     0f
                 } else {
                     val midFreqBand = fftDrawData.slice(startIdx until endIdx)
-                    (midFreqBand.average().toFloat() * 1.3f).coerceIn(0f, 1f)
+                    (midFreqBand.average().toFloat() * 1.7f).coerceIn(0f, 1f)
                 }
             }
         }
