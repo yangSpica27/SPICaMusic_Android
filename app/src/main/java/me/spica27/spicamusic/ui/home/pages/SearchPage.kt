@@ -7,12 +7,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,6 +26,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -236,16 +241,64 @@ private fun WelcomeHolder(
     ) {
         item {
             WelcomeItem(title = "最近播放", onClick = {}) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.History,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
             }
         }
         item {
-            WelcomeItem(title = "我喜欢的音乐")
+            WelcomeItem(title = "我喜欢的音乐") {
+                // 喜欢插画：多个心形叠加
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.15f),
+                        modifier =
+                            Modifier
+                                .size(52.dp)
+                                .graphicsLayer {
+                                    translationX = (-8).dp.toPx()
+                                    translationY = 6.dp.toPx()
+                                },
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(38.dp),
+                    )
+                }
+            }
         }
         item {
-            WelcomeItem(title = "本地音乐")
+            WelcomeItem(title = "本地音乐") {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.LibraryMusic,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+            }
         }
         item {
-            WelcomeItem(title = "歌单")
+            WelcomeItem(title = "歌单") {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.QueueMusic,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+            }
         }
     }
 }
@@ -255,7 +308,7 @@ fun WelcomeItem(
     title: String,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
-    bottom: @Composable ColumnScope.() -> Unit = {},
+    bottom: @Composable BoxScope.() -> Unit = {},
 ) {
     // 入场动画
     val appearAnim =
@@ -279,7 +332,7 @@ fun WelcomeItem(
             }
     }
 
-    Column(
+    Box(
         modifier =
             modifier
                 .fillMaxWidth()
@@ -291,8 +344,28 @@ fun WelcomeItem(
                 .background(
                     MiuixTheme.colorScheme.surfaceContainer,
                 ).clickable { onClick() }
-                .aspectRatio(1f),
+                .aspectRatio(2.15f),
     ) {
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight(.72f)
+                    .aspectRatio(1f)
+                    .graphicsLayer {
+                        rotationZ = 45f
+                        translationY = 16.dp.toPx()
+                        translationX = 12.dp.toPx()
+                    }.background(
+                        MiuixTheme.colorScheme.tertiaryContainerVariant,
+                        shape = Shapes.SmallCornerBasedShape,
+                    ).padding(
+                        12.dp,
+                    ),
+            contentAlignment = Alignment.BottomEnd,
+        ) {
+            bottom()
+        }
         // 标题文字
         Text(
             text = title,
@@ -302,7 +375,6 @@ fun WelcomeItem(
                 Modifier
                     .padding(16.dp),
         )
-        bottom()
     }
 }
 
