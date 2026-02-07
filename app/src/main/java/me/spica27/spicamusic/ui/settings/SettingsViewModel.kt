@@ -58,8 +58,8 @@ class SettingsViewModel(
         preferencesManager
             .getString(
                 PreferencesManager.Keys.DYNAMIC_COVER_TYPE,
-                DynamicCoverType.DynamicGrid.value,
-            ).stateIn(viewModelScope, SharingStarted.Eagerly, DynamicCoverType.DynamicGrid.value)
+                DynamicCoverType.ShiningStars.value,
+            ).stateIn(viewModelScope, SharingStarted.Eagerly, DynamicCoverType.ShiningStars.value)
 
     fun setDynamicCoverType(value: String) {
         viewModelScope.launch {

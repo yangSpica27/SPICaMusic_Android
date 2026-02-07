@@ -42,11 +42,13 @@ import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,8 +79,8 @@ import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
 import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.widget.AudioCityVisualizer
 import me.spica27.spicamusic.ui.widget.AudioCover
-import me.spica27.spicamusic.ui.widget.AudioVisualizer3D
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.ShiningStarsVisualizer
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
@@ -543,8 +545,8 @@ private fun PlayerPage(
     // 读取动态封面设置
     val preferencesManager: PreferencesManager = koinInject()
     val dynamicCoverTypeValue by preferencesManager
-        .getString(PreferencesManager.Keys.DYNAMIC_COVER_TYPE, DynamicCoverType.DynamicGrid.value)
-        .collectAsStateWithLifecycle(initialValue = DynamicCoverType.DynamicGrid.value)
+        .getString(PreferencesManager.Keys.DYNAMIC_COVER_TYPE, DynamicCoverType.ShiningStars.value)
+        .collectAsStateWithLifecycle(initialValue = DynamicCoverType.ShiningStars.value)
     val dynamicCoverType =
         remember(dynamicCoverTypeValue) {
             DynamicCoverType.fromString(dynamicCoverTypeValue)
@@ -639,6 +641,21 @@ private fun PlayerPage(
                         // Android 13+ 使用 AGSL 可视化器
 
                         val playerViewModel = koinActivityViewModel<PlayerViewModel>()
+                        val scope = rememberCoroutineScope()
+
+                        // 订阅 FFT 绘制数据
+                        LaunchedEffect(Unit) {
+                            withContext(Dispatchers.Default) {
+                                playerViewModel.subscribeFFTDrawData()
+                            }
+                        }
+                        DisposableEffect(Unit) {
+                            onDispose {
+                                scope.launch(Dispatchers.Default) {
+                                    playerViewModel.unsubscribeFFTDrawData()
+                                }
+                            }
+                        }
 
                         val fftBands = playerViewModel.fftDrawData.collectAsStateWithLifecycle().value
 
@@ -649,15 +666,15 @@ private fun PlayerPage(
                             )
 
                         when (dynamicCoverType) {
-                            is DynamicCoverType.ShiningStars -> {
-                                ShiningStarsVisualizer(
+                            is DynamicCoverType.AudioCity -> {
+                                AudioCityVisualizer(
                                     modifier = Modifier.fillMaxSize(),
                                     fftBands = fftBands,
                                     baseColor = coverColor,
                                 )
                             }
                             else -> {
-                                AudioVisualizer3D(
+                                ShiningStarsVisualizer(
                                     modifier = Modifier.fillMaxSize(),
                                     fftBands = fftBands,
                                     baseColor = coverColor,
