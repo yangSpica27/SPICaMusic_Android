@@ -2,12 +2,14 @@ package me.spica27.spicamusic.ui.player.pages
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,10 +23,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.android.awaitFrame
 import me.spcia.lyric_core.ApiClient
+import me.spcia.lyric_core.entity.SongLyrics
 import me.spcia.lyric_core.parser.YrcParser
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.utils.LrcParser
 import me.spica27.spicamusic.ui.player.PlayerViewModel
+import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsUI
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -53,86 +57,82 @@ fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // 歌词偏移量（毫秒）
+    var lyricsOffsetMs by remember { mutableLongStateOf(0L) }
+
+    // 多歌词源管理
+    var allLyricSources by remember { mutableStateOf<List<SongLyrics>>(emptyList()) }
+    var currentSourceIndex by remember { mutableIntStateOf(0) }
+
     // 观察当前歌曲变化
     val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
 
-    // 歌曲变化时自动搜索歌词
+    // 歌曲变化时搜索所有歌词源
     LaunchedEffect(currentMediaItem?.mediaId) {
         val mediaItem = currentMediaItem
         if (mediaItem == null) {
             lyric = null
             errorMessage = null
+            allLyricSources = emptyList()
+            currentSourceIndex = 0
+            lyricsOffsetMs = 0L
             return@LaunchedEffect
         }
 
         isLoading = true
         errorMessage = null
+        lyricsOffsetMs = 0L
 
         try {
-            // 从 MediaMetadata 提取歌曲信息
             val title = mediaItem.mediaMetadata.title?.toString() ?: ""
-            val artist = mediaItem.mediaMetadata.artist?.toString() ?: ""
 
             if (title.isBlank()) {
                 errorMessage = "歌曲信息缺失"
                 lyric = null
+                allLyricSources = emptyList()
                 return@LaunchedEffect
             }
 
-            // 调用 EAPI 获取歌词（带自动 YRC/LRC 回退）
-            val extraInfo = apiClient.fetchExtInfo(title, artist)
+            // 搜索所有歌词源
+            val results = apiClient.searchAllLyrics(title)
+            allLyricSources = results
+            currentSourceIndex = 0
 
-            Timber.d("获取到的歌词信息: extraInfo=$extraInfo")
-            Timber.d("歌词内容长度: ${extraInfo?.lyrics?.length}")
-            Timber.d("歌词前100字符: ${extraInfo?.lyrics?.take(100)}")
-
-            if (extraInfo?.lyrics.isNullOrBlank()) {
+            if (results.isEmpty()) {
                 errorMessage = "暂无歌词"
                 lyric = null
             } else {
-                val lyricsText = extraInfo!!.lyrics!!
-
-                Timber.d("歌词全文: $lyricsText")
-
-                // 检测 YRC 格式（包含字级时间戳）
-                val isYrcFormat =
-                    lyricsText.contains("](") &&
-                        lyricsText.contains("[") &&
-                        lyricsText.matches(Regex(".*\\[\\d+.*\\]\\(\\d+.*\\).*"))
-
-                Timber.d("检测到歌词格式: ${if (isYrcFormat) "YRC" else "LRC"}")
-
-                lyric =
-                    if (isYrcFormat) {
-                        // YRC 格式 - 使用新解析器转换为 LRC
-                        try {
-                            val yrcLines = YrcParser.parse(lyricsText)
-                            LrcParser.parse(YrcParser.toLrc(yrcLines))
-                        } catch (e: Exception) {
-                            // YRC 解析失败，回退到标准 LRC
-                            Timber.w(e, "YRC parse failed, fallback to LRC")
-                            LrcParser.parse(lyricsText)
-                        }
-                    } else {
-                        // 标准 LRC 格式
-                        LrcParser.parse(lyricsText)
-                    }
-
-                Timber.d("解析后的歌词条数: ${lyric?.size}")
-
+                lyric = parseLyrics(results.first().lyrics)
                 if (lyric.isNullOrEmpty()) {
                     errorMessage = "歌词解析失败"
                     lyric = null
-                } else {
-                    errorMessage = null
                 }
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to fetch lyrics")
             errorMessage = "加载歌词失败: ${e.message ?: "未知错误"}"
             lyric = null
+            allLyricSources = emptyList()
         } finally {
             isLoading = false
+        }
+    }
+
+    // 切换歌词源时重新解析
+    LaunchedEffect(currentSourceIndex) {
+        if (allLyricSources.isEmpty()) return@LaunchedEffect
+        val index = currentSourceIndex.coerceIn(0, allLyricSources.lastIndex)
+        val source = allLyricSources[index]
+
+        Timber.d("切换到歌词源 ${index + 1}/${allLyricSources.size}: ${source.name} - ${source.artist}")
+
+        val parsed = parseLyrics(source.lyrics)
+        if (parsed.isNullOrEmpty()) {
+            errorMessage = "歌词解析失败"
+            lyric = null
+        } else {
+            errorMessage = null
+            lyric = parsed
         }
     }
 
@@ -152,14 +152,12 @@ fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
     ) {
         when {
             isLoading -> {
-                // 加载状态
                 CircularProgressIndicator(
                     modifier = Modifier.size(48.dp),
                     color = MiuixTheme.colorScheme.primary,
                 )
             }
             errorMessage != null -> {
-                // 错误或无歌词状态
                 Text(
                     text = errorMessage!!,
                     style = MiuixTheme.textStyles.body1,
@@ -168,18 +166,17 @@ fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
                 )
             }
             lyric != null -> {
-                // 歌词显示
+                // 歌词显示（应用偏移量）
                 LyricsUI(
                     modifier = Modifier.fillMaxSize(),
                     lyric = lyric!!,
-                    currentTime = currentTime,
+                    currentTime = currentTime + lyricsOffsetMs,
                     onSeekToTime = {
-                        playerViewModel.seekTo(it)
+                        playerViewModel.seekTo(it - lyricsOffsetMs)
                     },
                 )
             }
             else -> {
-                // 初始状态
                 Text(
                     text = "等待播放",
                     style = MiuixTheme.textStyles.body1,
@@ -188,5 +185,53 @@ fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
                 )
             }
         }
+
+        // 浮动工具栏（右下角）
+        if (lyric != null || errorMessage != null) {
+            FloatingLyricsToolbar(
+                offsetMs = lyricsOffsetMs,
+                onOffsetChange = { lyricsOffsetMs = it },
+                onSwitchLyrics = {
+                    if (allLyricSources.isNotEmpty()) {
+                        currentSourceIndex = (currentSourceIndex + 1) % allLyricSources.size
+                    }
+                },
+                currentLyricIndex = currentSourceIndex,
+                totalLyricSources = allLyricSources.size,
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 24.dp),
+            )
+        }
+    }
+}
+
+/**
+ * 解析歌词文本为 LyricItem 列表
+ */
+private fun parseLyrics(lyricsText: String): List<LyricItem>? {
+    if (lyricsText.isBlank()) return null
+
+    Timber.d("歌词前100字符: ${lyricsText.take(100)}")
+
+    // 检测 YRC 格式（包含字级时间戳）
+    val isYrcFormat =
+        lyricsText.contains("](") &&
+            lyricsText.contains("[") &&
+            lyricsText.matches(Regex(".*\\[\\d+.*\\]\\(\\d+.*\\).*"))
+
+    Timber.d("检测到歌词格式: ${if (isYrcFormat) "YRC" else "LRC"}")
+
+    return if (isYrcFormat) {
+        try {
+            val yrcLines = YrcParser.parse(lyricsText)
+            LrcParser.parse(YrcParser.toLrc(yrcLines))
+        } catch (e: Exception) {
+            Timber.w(e, "YRC parse failed, fallback to LRC")
+            LrcParser.parse(lyricsText)
+        }
+    } else {
+        LrcParser.parse(lyricsText)
     }
 }
