@@ -2,19 +2,31 @@ package me.spica27.spicamusic.storage.impl.scanner
 
 import android.content.ContentResolver
 import android.content.Context
+import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import androidx.core.net.toUri
 import com.ibm.icu.text.Transliterator
 import com.kyant.taglib.AudioPropertiesReadStyle
 import com.kyant.taglib.TagLib
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.storage.api.IMusicScanService
+import me.spica27.spicamusic.storage.api.MediaStoreChangeEvent
+import me.spica27.spicamusic.storage.api.MediaStoreChangeType
 import me.spica27.spicamusic.storage.api.ScanProgress
 import me.spica27.spicamusic.storage.api.ScanResult
 import me.spica27.spicamusic.storage.impl.dao.SongDao
@@ -23,6 +35,7 @@ import timber.log.Timber
 
 /**
  * 音乐扫描服务实现 - 基于 MediaStore 和文件系统扫描
+ * 支持自动监听系统媒体库变更
  */
 class MusicScanService(
   private val context: Context,
@@ -32,6 +45,21 @@ class MusicScanService(
   private val _scanProgress = MutableStateFlow<ScanProgress?>(null)
   private val _isScanning = MutableStateFlow(false)
   private var isCancelled = false
+
+  // MediaStore 变更事件流
+  private val _mediaStoreChanges = MutableSharedFlow<MediaStoreChangeEvent>(replay = 0, extraBufferCapacity = 10)
+  
+  // 协程作用域用于处理去抖动扫描
+  private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+  
+  // 去抖动任务
+  private var debounceJob: Job? = null
+  
+  // MediaStore 内容观察者
+  private var mediaStoreObserver: ContentObserver? = null
+  
+  // 去抖动延迟时间（毫秒）- 避免频繁变更触发多次扫描
+  private val debounceDelayMs = 2000L
 
   companion object {
     private const val TAG = "MusicScanService"
@@ -56,6 +84,82 @@ class MusicScanService(
 
   override fun cancelScan() {
     isCancelled = true
+  }
+
+  override fun getMediaStoreChanges(): Flow<MediaStoreChangeEvent> = _mediaStoreChanges.asSharedFlow()
+
+  /**
+   * 启动 MediaStore 变更监听
+   * 监听音频文件的新增、修改、删除事件
+   */
+  override fun startMediaStoreObserver() {
+    if (mediaStoreObserver != null) {
+      Timber.tag(TAG).w("MediaStore 观察者已在运行中")
+      return
+    }
+
+    val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+    } else {
+      MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+    }
+
+    mediaStoreObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+      override fun onChange(selfChange: Boolean) {
+        onChange(selfChange, null)
+      }
+
+      override fun onChange(selfChange: Boolean, uri: Uri?) {
+        onChange(selfChange, uri, 0)
+      }
+
+      override fun onChange(selfChange: Boolean, uri: Uri?, flags: Int) {
+        Timber.tag(TAG).d("MediaStore 变更检测: uri=$uri, flags=$flags, selfChange=$selfChange")
+        
+        // 确定变更类型
+        val changeType = when {
+          flags and ContentResolver.NOTIFY_DELETE != 0 -> MediaStoreChangeType.CONTENT_DELETED
+          flags and ContentResolver.NOTIFY_INSERT != 0 -> MediaStoreChangeType.CONTENT_CHANGED
+          flags and ContentResolver.NOTIFY_UPDATE != 0 -> MediaStoreChangeType.CONTENT_CHANGED
+          else -> MediaStoreChangeType.UNKNOWN
+        }
+
+        // 发送变更事件
+        serviceScope.launch {
+          _mediaStoreChanges.emit(MediaStoreChangeEvent(changeType))
+        }
+
+        // 去抖动：取消之前的任务，延迟执行扫描
+        debounceJob?.cancel()
+        debounceJob = serviceScope.launch {
+          delay(debounceDelayMs)
+          Timber.tag(TAG).i("去抖动完成，开始增量扫描...")
+          scanMediaStore()
+        }
+      }
+    }
+
+    // 注册观察者，notifyForDescendants=true 监听子路径变化
+    context.contentResolver.registerContentObserver(
+      uri,
+      true, // notifyForDescendants
+      mediaStoreObserver!!
+    )
+
+    Timber.tag(TAG).i("MediaStore 观察者已启动，监听: $uri")
+  }
+
+  /**
+   * 停止 MediaStore 变更监听
+   */
+  override fun stopMediaStoreObserver() {
+    mediaStoreObserver?.let {
+      context.contentResolver.unregisterContentObserver(it)
+      mediaStoreObserver = null
+      Timber.tag(TAG).i("MediaStore 观察者已停止")
+    }
+    debounceJob?.cancel()
+    debounceJob = null
   }
 
   override suspend fun scanMediaStore(): ScanResult = withContext(Dispatchers.IO) {

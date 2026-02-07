@@ -132,6 +132,7 @@ object AppModule {
                     playlistId = parameters.get<Long>(),
                     playlistRepository = get<IPlaylistRepository>(),
                     player = get<IMusicPlayer>(),
+                    songRepository = get<ISongRepository>(),
                 )
             }
 

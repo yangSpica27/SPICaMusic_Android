@@ -59,4 +59,41 @@ interface IMusicScanService {
      * 取消当前扫描
      */
     fun cancelScan()
+
+    /**
+     * 启动 MediaStore 变更监听
+     * 当系统媒体库发生变化时自动触发增量扫描
+     */
+    fun startMediaStoreObserver()
+
+    /**
+     * 停止 MediaStore 变更监听
+     */
+    fun stopMediaStoreObserver()
+
+    /**
+     * 媒体库变更事件 Flow
+     * 当监听到变更时发出事件
+     */
+    fun getMediaStoreChanges(): Flow<MediaStoreChangeEvent>
 }
+
+/**
+ * MediaStore 变更事件类型
+ */
+enum class MediaStoreChangeType {
+    /** 有新文件添加或文件被修改 */
+    CONTENT_CHANGED,
+    /** 文件被删除 */
+    CONTENT_DELETED,
+    /** 未知变更 */
+    UNKNOWN
+}
+
+/**
+ * MediaStore 变更事件
+ */
+data class MediaStoreChangeEvent(
+    val type: MediaStoreChangeType,
+    val timestamp: Long = System.currentTimeMillis()
+)

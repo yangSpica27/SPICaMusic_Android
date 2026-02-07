@@ -13,6 +13,7 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
+import me.spica27.spicamusic.storage.api.ISongRepository
 import timber.log.Timber
 
 /**
@@ -22,6 +23,7 @@ class PlaylistDetailViewModel(
     private val playlistId: Long,
     private val playlistRepository: IPlaylistRepository,
     private val player: IMusicPlayer,
+    private val songRepository: ISongRepository,
 ) : ViewModel() {
     // 歌单信息
     val playlist: StateFlow<Playlist?> =
@@ -39,6 +41,14 @@ class PlaylistDetailViewModel(
             initialValue = emptyList(),
         )
 
+    // 所有歌曲（用于歌曲选择器）
+    val allSongs: StateFlow<List<Song>> =
+        songRepository.getAllSongsFlow().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList(),
+        )
+
     // 多选模式
     private val _isMultiSelectMode = MutableStateFlow(false)
     val isMultiSelectMode = _isMultiSelectMode.asStateFlow()
@@ -50,6 +60,10 @@ class PlaylistDetailViewModel(
     // 是否显示重命名对话框
     private val _showRenameDialog = MutableStateFlow(false)
     val showRenameDialog = _showRenameDialog.asStateFlow()
+
+    // 是否显示添加歌曲选择器
+    private val _showAddSongsSheet = MutableStateFlow(false)
+    val showAddSongsSheet = _showAddSongsSheet.asStateFlow()
 
     /**
      * 播放歌单所有歌曲
@@ -179,6 +193,37 @@ class PlaylistDetailViewModel(
                 hideRenameDialog()
             } catch (e: Exception) {
                 Timber.e(e, "重命名歌单失败")
+            }
+        }
+    }
+
+    /**
+     * 显示添加歌曲选择器
+     */
+    fun showAddSongsSheet() {
+        _showAddSongsSheet.value = true
+    }
+
+    /**
+     * 隐藏添加歌曲选择器
+     */
+    fun hideAddSongsSheet() {
+        _showAddSongsSheet.value = false
+    }
+
+    /**
+     * 批量添加歌曲到歌单
+     */
+    fun addSongsToPlaylist(songIds: List<Long>) {
+        if (songIds.isEmpty()) return
+
+        viewModelScope.launch {
+            try {
+                playlistRepository.addSongsToPlaylist(playlistId, songIds)
+                Timber.d("成功添加 ${songIds.size} 首歌曲到歌单")
+                hideAddSongsSheet()
+            } catch (e: Exception) {
+                Timber.e(e, "添加歌曲到歌单失败")
             }
         }
     }

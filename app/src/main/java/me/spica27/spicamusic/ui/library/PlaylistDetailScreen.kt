@@ -26,18 +26,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Checklist
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
@@ -64,17 +59,24 @@ import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.MainTopBar
+import me.spica27.spicamusic.ui.widget.SongPickerSheet
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
 import top.yukonga.miuix.kmp.extra.SuperDialog
+import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.utils.SinkFeedback
@@ -104,6 +106,21 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsState()
     val selectedSongs by viewModel.selectedSongs.collectAsState()
     val showRenameDialog by viewModel.showRenameDialog.collectAsState()
+    val showAddSongsSheet by viewModel.showAddSongsSheet.collectAsState()
+    val allSongs by viewModel.allSongs.collectAsState()
+
+    // 添加歌曲选择器
+    if (showAddSongsSheet) {
+        SongPickerSheet(
+            allSongs = allSongs,
+            ignoreSongIds = songs.mapNotNull { it.songId }.toSet(),
+            onDismiss = { viewModel.hideAddSongsSheet() },
+            onConfirm = { selectedSongIds ->
+                viewModel.addSongsToPlaylist(selectedSongIds)
+            },
+            title = "添加歌曲到歌单",
+        )
+    }
 
     // 处理返回键
     BackHandler(enabled = isMultiSelectMode) {
@@ -151,6 +168,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                             onPlayAll = { viewModel.playAll() },
                             onToggleMultiSelect = { viewModel.toggleMultiSelectMode() },
                             onShowMenu = { viewModel.showRenameDialog() },
+                            onAddSongs = { viewModel.showAddSongsSheet() },
                             modifier =
                                 Modifier
                                     .fillMaxWidth(),
@@ -169,11 +187,24 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                 actions = {
                     if (isMultiSelectMode && selectedSongs.isNotEmpty()) {
                         // 多选模式下显示删除按钮
-                        IconButton(onClick = { viewModel.removeSelectedSongs() }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "删除",
-                                tint = MiuixTheme.colorScheme.onSurface,
+                        Row {
+                            TextButton(
+                                onClick = { viewModel.removeSelectedSongs() },
+                                text = "移除${selectedSongs.size}首",
+                                cornerRadius = 8.dp,
+                                colors =
+                                    ButtonDefaults.textButtonColors().copy(
+                                        textColor = MiuixTheme.colorScheme.onError,
+                                        color = MiuixTheme.colorScheme.error,
+                                    ),
+                                insideMargin =
+                                    PaddingValues(
+                                        horizontal = 8.dp,
+                                        vertical = 4.dp,
+                                    ),
+                            )
+                            Spacer(
+                                modifier = Modifier.width(16.dp),
                             )
                         }
                     }
@@ -207,6 +238,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                 ) {
                     itemsIndexed(songs, key = { index, song -> song.songId ?: -1 }) { index, song ->
                         SongItemCard(
+                            modifier = Modifier.animateItem(),
                             index = index,
                             song = song,
                             isMultiSelectMode = isMultiSelectMode,
@@ -296,9 +328,10 @@ private fun ActionBar(
     onPlayAll: () -> Unit,
     onToggleMultiSelect: () -> Unit,
     onShowMenu: () -> Unit,
+    onAddSongs: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var showMenu by remember { mutableStateOf(false) }
+    val showMenu = remember { mutableStateOf(false) }
 
     Row(
         modifier = modifier,
@@ -381,13 +414,15 @@ private fun ActionBar(
         // 菜单按钮
         Box {
             Card(
-                onClick = { showMenu = true },
+                onClick = { showMenu.value = true },
                 colors =
                     CardDefaults.defaultColors(
                         color = MiuixTheme.colorScheme.surfaceVariant,
                         contentColor = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     ),
+                modifier = Modifier.size(48.dp),
             ) {
+                // 下拉菜单
                 Box(
                     modifier =
                         Modifier
@@ -397,31 +432,48 @@ private fun ActionBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = "菜单",
-                        modifier = Modifier.size(24.dp),
+                        contentDescription = null,
                         tint = MiuixTheme.colorScheme.onSurface,
                     )
-                }
-            }
+                    WindowListPopup(
+                        show = showMenu,
+                        alignment = PopupPositionProvider.Align.End,
+                        onDismissRequest = { showMenu.value = false },
+                    ) {
+                        val dismiss = LocalWindowListPopupState.current
 
-            // 下拉菜单
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false },
-            ) {
-                DropdownMenuItem(
-                    text = { Text("重命名", style = MiuixTheme.textStyles.body1) },
-                    onClick = {
-                        showMenu = false
-                        onShowMenu()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = null,
-                        )
-                    },
-                )
+                        ListPopupColumn {
+                            TextButton(
+                                cornerRadius = 0.dp,
+                                text = "添加歌曲",
+                                onClick = {
+                                    dismiss()
+                                    onAddSongs()
+                                },
+                            )
+                            TextButton(
+                                cornerRadius = 0.dp,
+                                text = "重命名歌单",
+                                onClick = {
+                                    dismiss()
+                                    onShowMenu()
+                                },
+                            )
+                            TextButton(
+                                cornerRadius = 0.dp,
+                                text = "删除歌单",
+                                colors =
+                                    ButtonDefaults.textButtonColors().copy(
+                                        textColor = MiuixTheme.colorScheme.error,
+                                    ),
+                                onClick = {
+                                    dismiss()
+                                    // 删除歌单逻辑
+                                },
+                            )
+                        }
+                    }
+                }
             }
         }
     }
