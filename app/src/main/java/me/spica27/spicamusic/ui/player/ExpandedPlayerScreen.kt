@@ -80,6 +80,7 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.AudioVisualizer3D
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
+import me.spica27.spicamusic.ui.widget.ShiningStarsVisualizer
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
@@ -635,7 +636,7 @@ private fun PlayerPage(
                             }.clip(Shapes.SmallCornerBasedShape),
                 ) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        // Android 13+ 使用 AGSL 3D 可视化器
+                        // Android 13+ 使用 AGSL 可视化器
 
                         val playerViewModel = koinActivityViewModel<PlayerViewModel>()
 
@@ -647,11 +648,22 @@ private fun PlayerPage(
                                 fallbackColor = MiuixTheme.colorScheme.primary,
                             )
 
-                        AudioVisualizer3D(
-                            modifier = Modifier.fillMaxSize(),
-                            fftBands = fftBands,
-                            baseColor = coverColor,
-                        )
+                        when (dynamicCoverType) {
+                            is DynamicCoverType.ShiningStars -> {
+                                ShiningStarsVisualizer(
+                                    modifier = Modifier.fillMaxSize(),
+                                    fftBands = fftBands,
+                                    baseColor = coverColor,
+                                )
+                            }
+                            else -> {
+                                AudioVisualizer3D(
+                                    modifier = Modifier.fillMaxSize(),
+                                    fftBands = fftBands,
+                                    baseColor = coverColor,
+                                )
+                            }
+                        }
                     } else {
                         // Android 13 以下显示占位
                         Box(

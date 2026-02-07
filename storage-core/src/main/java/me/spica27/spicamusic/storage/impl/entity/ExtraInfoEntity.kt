@@ -10,5 +10,6 @@ data class ExtraInfoEntity(
     var mediaId: Long = 0,
     var lyrics: String = "", // 歌词内容
     var cover: String = "", // 歌词封面
-    var delay: Long = 0,// 歌词延迟
+    var delay: Long = 0, // 歌词延迟(ms)
+    var lyricSourceName: String = "", // 歌词源名称 (如 "歌手 - 歌名")
 )

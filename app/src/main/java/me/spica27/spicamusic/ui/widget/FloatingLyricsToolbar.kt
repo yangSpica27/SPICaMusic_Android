@@ -42,22 +42,20 @@ import java.util.Locale
 /**
  * 歌词页浮动工具栏
  *
- * 提供歌词偏移量调节和切换歌词功能
+ * 提供歌词偏移量调节和打开歌词切换面板功能
  *
  * @param offsetMs 当前歌词偏移量（毫秒）
  * @param onOffsetChange 偏移量变化回调
- * @param onSwitchLyrics 切换歌词回调
- * @param currentLyricIndex 当前歌词源索引（从0开始）
- * @param totalLyricSources 歌词源总数
+ * @param onOpenLyricsSwitcher 打开歌词切换面板回调
+ * @param hasMultipleSources 是否有多个歌词源可切换
  * @param modifier Modifier
  */
 @Composable
 fun FloatingLyricsToolbar(
     offsetMs: Long,
     onOffsetChange: (Long) -> Unit,
-    onSwitchLyrics: () -> Unit,
-    currentLyricIndex: Int,
-    totalLyricSources: Int,
+    onOpenLyricsSwitcher: () -> Unit,
+    hasMultipleSources: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
@@ -94,11 +92,12 @@ fun FloatingLyricsToolbar(
                 )
 
                 // 切换歌词按钮
-                if (totalLyricSources > 1) {
+                if (hasMultipleSources) {
                     SwitchLyricsButton(
-                        currentIndex = currentLyricIndex,
-                        total = totalLyricSources,
-                        onClick = onSwitchLyrics,
+                        onClick = {
+                            isExpanded = false
+                            onOpenLyricsSwitcher()
+                        },
                     )
                 }
             }
@@ -189,8 +188,6 @@ private fun OffsetAdjustBar(
  */
 @Composable
 private fun SwitchLyricsButton(
-    currentIndex: Int,
-    total: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -211,7 +208,7 @@ private fun SwitchLyricsButton(
             modifier = Modifier.size(18.dp),
         )
         Text(
-            text = "切换歌词 ${currentIndex + 1}/$total",
+            text = "切换歌词",
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium,
