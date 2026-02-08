@@ -550,6 +550,11 @@ private fun WordsLyricLine(
 
 /**
  * 渐进式单词文本显示（带发光效果和进度控制）
+ *
+ * 渲染管线设计：
+ * - 文本测量（textMeasurer.measure）仅在 text/style 变化时执行，结果缓存
+ * - 每词进度（progressProvider）在绘制阶段内联计算，不触发 recomposition
+ * - Canvas 绘制层处理渐变高亮 + 发光 + 弹跳位移，全部在 draw phase 完成
  */
 @Composable
 private fun ProgressiveWordsText(
@@ -559,7 +564,7 @@ private fun ProgressiveWordsText(
     baseStyle: TextStyle,
     activeStyle: TextStyle,
     modifier: Modifier = Modifier,
-    lineProgress: Float,
+    @Suppress("UNUSED_PARAMETER") lineProgress: Float, // 保留参数兼容，不再用作缓存 key
 ) {
     if (wordRanges.isEmpty()) {
         Text(
@@ -572,68 +577,75 @@ private fun ProgressiveWordsText(
 
     val textMeasurer = rememberTextMeasurer()
 
-    val textLayoutResults =
-        remember(text, wordRanges, lineProgress) {
+    // ── 测量缓存：仅依赖文本内容和样式，不随进度变化 ──
+    val measuredWords =
+        remember(text, wordRanges, baseStyle) {
             wordRanges.map { range ->
                 val layoutResult = textMeasurer.measure(text = range.word.content, style = baseStyle)
-                // 对单词文本使用从 0 开始的索引
                 val boundingBox = wordBoundingBox(layoutResult, 0, range.word.content.length)
-                Pair(layoutResult, boundingBox)
+                MeasuredWord(layoutResult, boundingBox)
             }
         }
 
-    val progresses =
-        remember(text, wordRanges, lineProgress) {
-            wordRanges.associateWith { range -> progressProvider(range) }
-        }
-
     val density = LocalDensity.current
+    val activeColor = activeStyle.color
+    val baseColor = baseStyle.color
+    val wordTranslationYPx = with(density) { LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx() }
 
     FlowRow(
         modifier = modifier,
     ) {
-        textLayoutResults.forEachIndexed { index, pair ->
-            val progress = progresses[wordRanges[index]] ?: 0f
-            val extraY = (progress * LyricUIConstants.WORD_TRANSLATION_Y).dp
+        measuredWords.forEachIndexed { index, measured ->
+            val range = wordRanges[index]
+
             Canvas(
                 modifier =
                     Modifier
                         .graphicsLayer {
-                            translationY = extraY.toPx()
+                            // 进度驱动的弹跳位移，在 graphics layer 中读取以减少 recomposition
+                            val progress = progressProvider(range)
+                            translationY = progress * wordTranslationYPx
                         }.size(
                             with(density) {
                                 Size(
-                                    width = pair.second.width,
-                                    height = pair.second.height - LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx(),
+                                    width = measured.box.width,
+                                    height = measured.box.height - wordTranslationYPx,
                                 ).toDpSize()
                             },
                         ),
             ) {
-                val fadeCenter = pair.second.left + pair.second.width * progress
+                // ── 绘制阶段：每帧仅执行 draw 操作，无测量 ──
+                val progress = progressProvider(range)
 
-                val fadeWidth = pair.second.width * 0.25f
-                val fadeStart = (fadeCenter - fadeWidth / 2 - pair.second.left) / pair.second.width
-                val fadeEnd = (fadeCenter + fadeWidth / 2 - pair.second.left) / pair.second.width
+                val fadeCenter = measured.box.left + measured.box.width * progress
+                val fadeWidth = measured.box.width * 0.25f
+                val fadeStart =
+                    ((fadeCenter - fadeWidth / 2 - measured.box.left) / measured.box.width)
+                        .coerceIn(0f, 1f)
+                val fadeEnd =
+                    ((fadeCenter + fadeWidth / 2 - measured.box.left) / measured.box.width)
+                        .coerceIn(0f, 1f)
 
                 val colorStops =
                     arrayOf(
-                        0.0f to activeStyle.color,
-                        fadeStart.coerceIn(0f, 1f) to activeStyle.color,
-                        fadeEnd.coerceIn(0f, 1f) to baseStyle.color,
-                        1.0f to baseStyle.color,
+                        0.0f to activeColor,
+                        fadeStart to activeColor,
+                        fadeEnd to baseColor,
+                        1.0f to baseColor,
                     )
 
-                drawText(
-                    pair.first,
-                )
+                // 底层文字（base color，已包含在 layoutResult 样式中）
+                drawText(measured.layout)
+
+                // 高亮层（渐变 + 发光）
                 clipRect(
-                    pair.second.left,
-                    pair.second.top + LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx(),
+                    measured.box.left,
+                    measured.box.top + wordTranslationYPx,
                     size.width,
-                    pair.second.bottom + LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx(),
+                    measured.box.bottom + wordTranslationYPx,
                 ) {
                     drawText(
-                        pair.first,
+                        measured.layout,
                         brush =
                             Brush.horizontalGradient(
                                 colorStops = colorStops,
@@ -642,14 +654,10 @@ private fun ProgressiveWordsText(
                             ),
                         shadow =
                             Shadow(
-                                color =
-                                    activeStyle.color
-                                        .copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA * (progress)),
+                                color = activeColor.copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA * progress),
                                 blurRadius =
                                     LyricUIConstants.WORD_GLOW_BLUR_RADIUS *
-                                        EaseOutBounce.transform(
-                                            progress,
-                                        ),
+                                        EaseOutBounce.transform(progress),
                             ),
                     )
                 }
@@ -657,6 +665,14 @@ private fun ProgressiveWordsText(
         }
     }
 }
+
+/**
+ * 预测量的单词数据（不可变，可安全跨帧复用）
+ */
+private data class MeasuredWord(
+    val layout: TextLayoutResult,
+    val box: androidx.compose.ui.geometry.Rect,
+)
 
 // ==================== UI 辅助组件 ====================
 
