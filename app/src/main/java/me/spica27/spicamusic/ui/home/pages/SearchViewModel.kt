@@ -53,17 +53,17 @@ class SearchViewModel(
     val searchPagingResults: Flow<PagingData<SearchListItem>> =
         _searchKeyword
             .debounce(300)
-            .flatMapLatest<String, PagingData<SearchListItem>> { keyword ->
+            .flatMapLatest { keyword ->
                 if (keyword.isBlank()) {
                     // 空关键词 → 不查询，返回空 PagingData
                     flowOf(PagingData.empty<SearchListItem>())
                 } else {
                     songRepository
                         .getSongsBySortNamePagingFlow(keyword)
-                        .map<PagingData<Song>, PagingData<SearchListItem>> { pagingData ->
+                        .map { pagingData ->
                             pagingData
                                 .map<Song, SearchListItem> { song -> SearchListItem.SongItem(song) }
-                                .insertSeparators<SearchListItem, SearchListItem> { before, after ->
+                                .insertSeparators { before, after ->
                                     val beforeSort = (before as? SearchListItem.SongItem)?.song?.sortName
                                     val afterSort = (after as? SearchListItem.SongItem)?.song?.sortName
                                     if (afterSort != null && beforeSort != afterSort) {

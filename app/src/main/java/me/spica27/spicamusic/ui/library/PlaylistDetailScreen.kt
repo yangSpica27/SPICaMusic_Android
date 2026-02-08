@@ -196,7 +196,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                             TextButton(
                                 onClick = { viewModel.removeSelectedSongs() },
                                 text = "移除${selectedSongs.size}首",
-                                cornerRadius = 8.dp,
+                                cornerRadius = 16.dp,
                                 colors =
                                     ButtonDefaults.textButtonColors().copy(
                                         textColor = MiuixTheme.colorScheme.onError,
@@ -356,6 +356,7 @@ private fun ActionBar(
                     color = MiuixTheme.colorScheme.primary,
                     contentColor = MiuixTheme.colorScheme.primary,
                 ),
+            cornerRadius = 16.dp,
         ) {
             Row(
                 modifier =
@@ -384,6 +385,7 @@ private fun ActionBar(
         // 多选模式按钮
         Card(
             onClick = onToggleMultiSelect,
+            cornerRadius = 16.dp,
             colors =
                 CardDefaults.defaultColors(
                     color =
@@ -419,6 +421,7 @@ private fun ActionBar(
         // 菜单按钮
         Box {
             Card(
+                cornerRadius = 16.dp,
                 onClick = { showMenu.value = true },
                 colors =
                     CardDefaults.defaultColors(

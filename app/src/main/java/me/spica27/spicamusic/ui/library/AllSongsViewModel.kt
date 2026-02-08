@@ -87,6 +87,11 @@ class AllSongsViewModel(
         _searchKeyword.value = ""
     }
 
+    fun playAllSongs() {
+        viewModelScope.launch {
+        }
+    }
+
     /**
      * 进入多选模式
      */

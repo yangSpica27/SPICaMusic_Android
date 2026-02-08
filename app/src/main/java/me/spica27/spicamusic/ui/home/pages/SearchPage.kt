@@ -448,6 +448,7 @@ private fun SearchBar(
 ) {
     TextField(
         value = keyword,
+        cornerRadius = 12.dp,
         onValueChange = onKeywordChange,
         modifier = modifier,
         borderColor = MiuixTheme.colorScheme.surfaceContainer,

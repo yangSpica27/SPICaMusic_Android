@@ -157,9 +157,15 @@ fun SongPickerSheet(
                         imageVector = Icons.Default.Search,
                         contentDescription = null,
                         tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                        modifier = Modifier.size(20.dp),
+                        modifier =
+                            Modifier
+                                .padding(
+                                    vertical = 10.dp,
+                                    horizontal = 14.dp,
+                                ).size(20.dp),
                     )
                 },
+                cornerRadius = 4.dp,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -189,6 +195,12 @@ fun SongPickerSheet(
                     // 全选 / 取消全选
                     TextButton(
                         text = if (isAllSelected) "取消全选" else "全选",
+                        cornerRadius = 4.dp,
+                        insideMargin =
+                            PaddingValues(
+                                horizontal = 12.dp,
+                                vertical = 4.dp,
+                            ),
                         onClick = {
                             if (isAllSelected) {
                                 selectedIds.clear()
@@ -256,15 +268,27 @@ fun SongPickerSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(
+                    insideMargin =
+                        PaddingValues(
+                            horizontal = 12.dp,
+                            vertical = 4.dp,
+                        ),
                     text = "取消",
                     onClick = onDismiss,
+                    cornerRadius = 4.dp,
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Button(
+                    insideMargin =
+                        PaddingValues(
+                            horizontal = 12.dp,
+                            vertical = 4.dp,
+                        ),
                     onClick = {
                         onConfirm(selectedIds.toList())
                     },
                     enabled = selectedIds.isNotEmpty(),
+                    cornerRadius = 4.dp,
                 ) {
                     Text(
                         text =

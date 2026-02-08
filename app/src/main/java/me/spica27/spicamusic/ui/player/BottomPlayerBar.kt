@@ -30,6 +30,7 @@ import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.HazeMaterials
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
+import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Icon
@@ -70,7 +71,7 @@ fun BottomPlayerBar(
         modifier =
             modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clip(ContinuousRoundedRectangle(12.dp))
+                .clip(Shapes.SmallCornerBasedShape)
                 .hazeEffect(
                     LocalSurfaceHazeState.current,
                     HazeMaterials.thin(
