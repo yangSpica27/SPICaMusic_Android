@@ -103,7 +103,7 @@ private object LyricUIConstants {
     const val ACTIVE_TRANSLATION_ALPHA = 0.85f
     const val INACTIVE_TRANSLATION_ALPHA = 0.8f
 
-    const val WORD_GLOW_ALPHA = 0.4f
+    const val WORD_GLOW_ALPHA = 0.3f
     const val WORD_GLOW_BLUR_RADIUS = 10f
     const val WORD_TRANSLATION_Y = -1.5f
 }
