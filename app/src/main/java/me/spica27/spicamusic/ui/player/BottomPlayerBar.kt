@@ -17,7 +17,6 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +31,6 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
-import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
@@ -55,12 +53,6 @@ fun BottomPlayerBar(
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val currentPosition = viewModel.currentPosition.collectAsStateWithLifecycle().value
     val currentDuration by viewModel.currentDuration.collectAsStateWithLifecycle()
-
-    LaunchedEffect(currentPosition, currentDuration) {
-        Timber
-            .tag("BottomPlayerBar")
-            .d("currentPosition: $currentPosition, currentDuration: $currentDuration")
-    }
 
     val metadata = currentMediaItem?.mediaMetadata
     val title = metadata?.title?.toString() ?: "未知歌曲"
