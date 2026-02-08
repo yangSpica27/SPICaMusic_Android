@@ -137,8 +137,10 @@ fun ExpandedPlayerScreen(
         }
 
     // 当前播放位置（定时更新）
-    var seekValueState by remember { mutableFloatStateOf(0f) }
-    var isSeekingState by remember { mutableStateOf(false) }
+    // 使用 currentMediaItem?.mediaId 作为 key，切歌时自动重置 seek 状态
+    val mediaId = currentMediaItem?.mediaId
+    var seekValueState by remember(mediaId) { mutableFloatStateOf(0f) }
+    var isSeekingState by remember(mediaId) { mutableStateOf(false) }
 
     val trueTimePosition = viewModel.currentPosition.collectAsStateWithLifecycle()
 
@@ -743,7 +745,7 @@ private fun PlayerPage(
 
         // 进度条
         AudioWaveSlider(
-            progress = if (duration > 0) seekPosition / duration else 0f,
+            progress = if (duration > 0) (seekPosition / duration).coerceIn(0f, 1f) else 0f,
             amplitudes = ampState,
             onProgressChange = {
                 onValueChange.invoke(it)

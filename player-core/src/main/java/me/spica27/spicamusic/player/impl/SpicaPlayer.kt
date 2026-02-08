@@ -319,6 +319,15 @@ class SpicaPlayer(
   ) {
     Timber.e("onMediaItemTransition $mediaItem $reason")
     _currentMediaItem.value = mediaItem
+    // 切歌时立即重置 duration，避免旧时长污染新歌曲的进度计算
+    _currentDuration.value = 0L
+    // 尝试从 browser 实例获取新歌曲的时长（可能此时已就绪）
+    browserInstance?.let { browser ->
+      val dur = browser.duration
+      if (dur > 0) {
+        _currentDuration.value = dur
+      }
+    }
     if (_pauseWhenCompletion.value) {
       browserInstance?.pause()
       _pauseWhenCompletion.value = false
@@ -329,8 +338,15 @@ class SpicaPlayer(
     Timber.e("onMediaMetadataChanged $mediaMetadata")
     _currentMediaItem.value = browserInstance?.currentMediaItem
     _currentMediaMetadata.value = mediaMetadata
-    _currentDuration.value = mediaMetadata.durationMs ?: browserInstance?.duration ?: 0L
-    // TODO 此处获取到的duration仍然可能是上一首歌曲的时长
+    // 优先使用 metadata 中的 durationMs，其次从 browser 实例取当前 duration
+    val metaDuration = mediaMetadata.durationMs ?: 0L
+    val browserDuration = browserInstance?.duration ?: 0L
+    // 取有效值（> 0），优先 metaDuration
+    _currentDuration.value = when {
+      metaDuration > 0 -> metaDuration
+      browserDuration > 0 -> browserDuration
+      else -> 0L
+    }
   }
 
   override fun onPlaylistMetadataChanged(mediaMetadata: MediaMetadata) {
