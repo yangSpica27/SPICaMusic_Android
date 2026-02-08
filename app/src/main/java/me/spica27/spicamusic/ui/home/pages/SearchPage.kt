@@ -2,7 +2,6 @@ package me.spica27.spicamusic.ui.home.pages
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +21,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
@@ -35,8 +33,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +54,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
@@ -68,7 +67,6 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.SongGroup
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -100,7 +98,8 @@ fun SearchPage(
     viewModel: SearchViewModel = koinViewModel(),
 ) {
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
-    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
+    val searchPagingItems = viewModel.searchPagingResults.collectAsLazyPagingItems()
+    val searchResultCount by viewModel.searchResultCount.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -159,7 +158,7 @@ fun SearchPage(
                     paddingValues = paddingValues,
                 )
             } else {
-                if (searchResults.isEmpty()) {
+                if (searchResultCount == 0) {
                     // 空提示
                     EmptyHolder(
                         modifier =
@@ -170,10 +169,10 @@ fun SearchPage(
                                 .padding(horizontal = 16.dp),
                         inputText = searchKeyword,
                     )
-                } else if (searchKeyword.isNotEmpty() && searchResults.isNotEmpty()) {
+                } else if (searchKeyword.isNotEmpty() && searchResultCount > 0) {
                     // 搜索结果列表
                     SearchResultHolder(
-                        searchResults = searchResults,
+                        searchPagingItems = searchPagingItems,
                         listState = listState,
                         paddingValues = paddingValues,
                         scrollBehavior = scrollBehavior,
@@ -379,15 +378,9 @@ fun WelcomeItem(
     }
 }
 
-private fun LazyListState.isSticking(index: Int): State<Boolean> =
-    derivedStateOf {
-        val firstVisible = layoutInfo.visibleItemsInfo.firstOrNull()
-        firstVisible?.index == index && firstVisible.offset == -layoutInfo.beforeContentPadding
-    }
-
 @Composable
 private fun SearchResultHolder(
-    searchResults: List<SongGroup>,
+    searchPagingItems: LazyPagingItems<SearchListItem>,
     listState: LazyListState,
     paddingValues: PaddingValues,
     scrollBehavior: ScrollBehavior,
@@ -407,33 +400,34 @@ private fun SearchResultHolder(
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .overScrollVertical(),
     ) {
-        searchResults.forEach { (title, songs) ->
-            stickyHeader(
-                key = title.hashCode(),
-            ) { headerIndex ->
-
-                val isSticking by listState.isSticking(headerIndex)
-
-                val titleTextColor =
-                    animateColorAsState(
-                        targetValue = if (isSticking) Color.Transparent else MiuixTheme.colorScheme.onSurface,
+        items(
+            count = searchPagingItems.itemCount,
+            key =
+                searchPagingItems.itemKey { item ->
+                    when (item) {
+                        is SearchListItem.Header -> "header_${item.title}"
+                        is SearchListItem.SongItem -> item.song.songId ?: item.song.mediaStoreId
+                    }
+                },
+        ) { index ->
+            when (val item = searchPagingItems[index]) {
+                is SearchListItem.Header -> {
+                    SmallTitle(
+                        text = item.title,
+                        textColor = MiuixTheme.colorScheme.onSurface,
                     )
-
-                SmallTitle(
-                    text = title,
-                    textColor = titleTextColor.value,
-                )
-            }
-            items(songs, key = { it.songId ?: it.mediaStoreId }) {
-                SongItemCard(
-                    song = it,
-                    searchResults = searchResults,
-                    currentPlaylist = currentPlaylist,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .animateItem(),
-                )
+                }
+                is SearchListItem.SongItem -> {
+                    SongItemCard(
+                        song = item.song,
+                        currentPlaylist = currentPlaylist,
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .animateItem(),
+                    )
+                }
+                null -> { /* placeholder */ }
             }
         }
         item {
@@ -495,14 +489,13 @@ private fun SearchBar(
 @Composable
 private fun SongItemCard(
     song: Song,
-    searchResults: List<SongGroup>,
     currentPlaylist: List<MediaItem>,
     modifier: Modifier = Modifier,
 ) {
     val playerViewModel = LocalPlayerViewModel.current
 
     val showPopup = remember { mutableStateOf(false) }
-    val items = listOf("立刻播放", "加入播放列表", "下一首播放", "全部播放", "查看详情")
+    val items = listOf("立刻播放", "加入播放列表", "下一首播放", "查看详情")
 
     Box(
         modifier =
@@ -619,21 +612,6 @@ private fun SongItemCard(
                                 }
 
                                 3 -> {
-                                    // 全部播放：播放搜索结果中该歌曲所在分组的所有歌曲
-                                    val songGroup =
-                                        searchResults.find { group ->
-                                            group.songs.any { it.songId == song.songId }
-                                        }
-                                    songGroup?.let { group ->
-                                        playerViewModel.updatePlaylistWithSongs(
-                                            songs = group.songs,
-                                            startSong = song,
-                                            autoStart = true,
-                                        )
-                                    }
-                                }
-
-                                4 -> {
                                     // 查看详情
                                 }
                             }

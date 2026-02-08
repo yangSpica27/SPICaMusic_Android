@@ -107,14 +107,19 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
     val selectedSongs by viewModel.selectedSongs.collectAsStateWithLifecycle()
     val showRenameDialog by viewModel.showRenameDialog.collectAsStateWithLifecycle()
     val showAddSongsSheet by viewModel.showAddSongsSheet.collectAsStateWithLifecycle()
-    val allSongs by viewModel.allSongs.collectAsStateWithLifecycle()
+    val pickerSongCount by viewModel.pickerSongCount.collectAsStateWithLifecycle()
 
     // 添加歌曲选择器
     if (showAddSongsSheet) {
         SongPickerSheet(
-            allSongs = allSongs,
-            ignoreSongIds = songs.mapNotNull { it.songId }.toSet(),
-            onDismiss = { viewModel.hideAddSongsSheet() },
+            songsPagingFlow = viewModel.pickerSongsPaging,
+            songCount = pickerSongCount,
+            onKeywordChange = viewModel::updatePickerKeyword,
+            onSelectAll = viewModel::getPickerSongIds,
+            onDismiss = {
+                viewModel.updatePickerKeyword("")
+                viewModel.hideAddSongsSheet()
+            },
             onConfirm = { selectedSongIds ->
                 viewModel.addSongsToPlaylist(selectedSongIds)
             },

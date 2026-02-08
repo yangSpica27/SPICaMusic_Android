@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.storage.api
 
+import androidx.paging.PagingData
 import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.SongGroup
@@ -131,4 +132,54 @@ interface ISongRepository {
      * @return 分组后的歌曲列表
      */
     suspend fun getSongsGroupedBySortName(keyword: String? = null): List<SongGroup>
+
+    // ===== 分页 API =====
+
+    /**
+     * 分页获取歌曲（支持关键词过滤）
+     * 用于 AllSongsScreen、SongPickerSheet 等大列表场景
+     */
+    fun getFilteredSongsPagingFlow(keyword: String? = null): Flow<PagingData<Song>>
+
+    /**
+     * 分页获取歌曲（按 sortName 排序，用于 SearchPage 分组）
+     */
+    fun getSongsBySortNamePagingFlow(keyword: String? = null): Flow<PagingData<Song>>
+
+    /**
+     * 获取符合条件的歌曲总数 Flow（用于 UI 显示）
+     */
+    fun countFilteredSongsFlow(keyword: String? = null): Flow<Int>
+
+    /**
+     * 获取所有符合条件的歌曲 ID（用于全选功能）
+     */
+    suspend fun getFilteredSongIds(keyword: String? = null): List<Long>
+
+    // ===== 歌曲选择器分页 API =====
+
+    /**
+     * 分页获取不在指定歌单中的歌曲（支持关键词过滤）
+     * 用于 SongPickerSheet
+     */
+    fun getSongsNotInPlaylistPagingFlow(
+        playlistId: Long,
+        keyword: String? = null,
+    ): Flow<PagingData<Song>>
+
+    /**
+     * 获取不在指定歌单中的符合条件歌曲总数
+     */
+    fun countSongsNotInPlaylistFlow(
+        playlistId: Long,
+        keyword: String? = null,
+    ): Flow<Int>
+
+    /**
+     * 获取不在指定歌单中的所有符合条件歌曲 ID（用于全选）
+     */
+    suspend fun getSongIdsNotInPlaylist(
+        playlistId: Long,
+        keyword: String? = null,
+    ): List<Long>
 }

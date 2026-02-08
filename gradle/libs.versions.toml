@@ -28,6 +28,7 @@ materialIconsCoreVersion = "1.7.8"
 media3ExoplayerVersion = "1.9.1"
 mediaVersion = "1.7.1"
 okhttpVersion = "5.3.2"
+pagingVersion = "3.3.6"
 pinyin4jVersion = "2.5.1"
 prettytimeVersion = "5.0.8.Final"
 retrofitVersion = "3.0.0"
@@ -114,8 +115,11 @@ moshi-kotlin-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", ver
 
 
 androidx-media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3SessionVersion" }
+androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "pagingVersion" }
+androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "pagingVersion" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
+androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "roomVersion" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
 
 [plugins]

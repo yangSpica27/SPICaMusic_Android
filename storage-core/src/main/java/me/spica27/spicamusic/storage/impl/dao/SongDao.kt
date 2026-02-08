@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
+import androidx.paging.PagingSource
 import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
 
@@ -246,4 +247,129 @@ interface SongDao {
             displayName COLLATE NOCASE ASC
     """)
     suspend fun getSongsGroupedBySortNameSync(keyword: String? = null): List<SongEntity>
+
+    // ===== 分页查询 =====
+
+    /**
+     * 分页获取歌曲（支持关键词过滤）
+     * 用于 AllSongsScreen 和 SongPickerSheet
+     */
+    @Query("""
+        SELECT * FROM song 
+        WHERE isIgnore == 0
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%' 
+            OR artist LIKE '%' || :keyword || '%'
+        )
+        ORDER BY displayName COLLATE NOCASE ASC
+    """)
+    fun getFilteredSongsPaging(keyword: String? = null): PagingSource<Int, SongEntity>
+
+    /**
+     * 分页获取歌曲（按 sortName 排序，用于 SearchPage 分组）
+     */
+    @Query("""
+        SELECT * FROM song 
+        WHERE isIgnore == 0
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%' 
+            OR artist LIKE '%' || :keyword || '%'
+        )
+        ORDER BY 
+            CASE 
+                WHEN sortName = '#' THEN 1
+                ELSE 0
+            END,
+            sortName ASC,
+            displayName COLLATE NOCASE ASC
+    """)
+    fun getSongsBySortNamePaging(keyword: String? = null): PagingSource<Int, SongEntity>
+
+    /**
+     * 获取符合条件的歌曲总数（用于 UI 显示总数）
+     */
+    @Query("""
+        SELECT COUNT(*) FROM song 
+        WHERE isIgnore == 0
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%' 
+            OR artist LIKE '%' || :keyword || '%'
+        )
+    """)
+    fun countFilteredSongs(keyword: String? = null): Flow<Int>
+
+    /**
+     * 获取所有符合条件的歌曲 ID（用于全选功能）
+     */
+    @Query("""
+        SELECT songId FROM song 
+        WHERE isIgnore == 0
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%' 
+            OR artist LIKE '%' || :keyword || '%'
+        )
+    """)
+    suspend fun getFilteredSongIds(keyword: String? = null): List<Long>
+
+    // ===== 歌曲选择器分页查询（排除指定歌单已有歌曲） =====
+
+    /**
+     * 分页获取不在指定歌单中的歌曲（支持关键词过滤）
+     * 用于 SongPickerSheet
+     */
+    @Query("""
+        SELECT * FROM song 
+        WHERE isIgnore == 0
+        AND songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId)
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%' 
+            OR artist LIKE '%' || :keyword || '%'
+        )
+        ORDER BY displayName COLLATE NOCASE ASC
+    """)
+    fun getSongsNotInPlaylistPaging(
+        playlistId: Long,
+        keyword: String? = null,
+    ): PagingSource<Int, SongEntity>
+
+    /**
+     * 获取不在指定歌单中的符合条件歌曲总数
+     */
+    @Query("""
+        SELECT COUNT(*) FROM song 
+        WHERE isIgnore == 0
+        AND songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId)
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%' 
+            OR artist LIKE '%' || :keyword || '%'
+        )
+    """)
+    fun countSongsNotInPlaylist(
+        playlistId: Long,
+        keyword: String? = null,
+    ): Flow<Int>
+
+    /**
+     * 获取不在指定歌单中的所有符合条件歌曲 ID（用于全选）
+     */
+    @Query("""
+        SELECT songId FROM song 
+        WHERE isIgnore == 0
+        AND songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId)
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%' 
+            OR artist LIKE '%' || :keyword || '%'
+        )
+    """)
+    suspend fun getSongIdsNotInPlaylist(
+        playlistId: Long,
+        keyword: String? = null,
+    ): List<Long>
 }

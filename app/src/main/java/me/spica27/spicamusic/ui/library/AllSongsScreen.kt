@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Check
@@ -54,6 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
@@ -78,7 +80,8 @@ fun AllSongsScreen(
     modifier: Modifier = Modifier,
     viewModel: AllSongsViewModel = koinViewModel(),
 ) {
-    val filteredSongs by viewModel.filteredSongs.collectAsStateWithLifecycle()
+    val filteredSongs: LazyPagingItems<Song> = viewModel.filteredSongs.collectAsLazyPagingItems()
+    val songCount by viewModel.songCount.collectAsStateWithLifecycle()
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedSongIds by viewModel.selectedSongIds.collectAsStateWithLifecycle()
 
@@ -122,13 +125,13 @@ fun AllSongsScreen(
                         if (isMultiSelectMode) {
                             "已选择 ${selectedSongIds.size} 首"
                         } else {
-                            "所有歌曲 (${filteredSongs.size})"
+                            "所有歌曲 ($songCount)"
                         },
                     actions = {
                         if (isMultiSelectMode) {
                             // 全选按钮
                             IconButton(onClick = {
-                                if (selectedSongIds.size == filteredSongs.size) {
+                                if (selectedSongIds.size == songCount) {
                                     viewModel.deselectAll()
                                 } else {
                                     viewModel.selectAll()
@@ -160,7 +163,7 @@ fun AllSongsScreen(
                 // 功能按钮组
                 AnimatedVisibility(!isMultiSelectMode) {
                     FunctionButtonGroup(
-                        songCount = filteredSongs.size,
+                        songCount = songCount,
                         onPlayAll = { /* TODO: 实现播放全部 */ },
                         onMultiSelect = { viewModel.enterMultiSelectMode() },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -190,9 +193,10 @@ fun AllSongsScreen(
                             .weight(1f),
                 ) {
                     items(
-                        items = filteredSongs,
-                        key = { it.songId ?: it.mediaStoreId },
-                    ) { song ->
+                        count = filteredSongs.itemCount,
+                        key = filteredSongs.itemKey { it.songId ?: it.mediaStoreId },
+                    ) { index ->
+                        val song = filteredSongs[index] ?: return@items
                         SongItemCard(
                             song = song,
                             isMultiSelectMode = isMultiSelectMode,

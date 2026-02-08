@@ -133,6 +133,7 @@ dependencies {
 
   implementation libs.timber
   implementation(libs.accompanist.permissions)
+  implementation(libs.androidx.paging.compose)
 
   //  implementation project(":decoder_flac")
   implementation libs.kotlinx.serialization.core

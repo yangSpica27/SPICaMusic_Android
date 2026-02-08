@@ -2,10 +2,15 @@ package me.spica27.spicamusic.ui.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Playlist
@@ -41,13 +46,47 @@ class PlaylistDetailViewModel(
             initialValue = emptyList(),
         )
 
-    // 所有歌曲（用于歌曲选择器）
-    val allSongs: StateFlow<List<Song>> =
-        songRepository.getAllSongsFlow().stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList(),
-        )
+    // ===== 歌曲选择器（SongPickerSheet）分页支持 =====
+
+    /** SongPickerSheet 内部的搜索关键词 */
+    private val _pickerKeyword = MutableStateFlow("")
+
+    /** 更新选择器搜索关键词 */
+    fun updatePickerKeyword(keyword: String) {
+        _pickerKeyword.value = keyword
+    }
+
+    /** 分页获取不在当前歌单中的歌曲（支持关键词过滤） */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val pickerSongsPaging: Flow<PagingData<Song>> =
+        _pickerKeyword
+            .flatMapLatest { keyword ->
+                songRepository.getSongsNotInPlaylistPagingFlow(
+                    playlistId = playlistId,
+                    keyword = keyword.ifBlank { null },
+                )
+            }.cachedIn(viewModelScope)
+
+    /** 不在歌单中的符合条件歌曲总数 */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val pickerSongCount: StateFlow<Int> =
+        _pickerKeyword
+            .flatMapLatest { keyword ->
+                songRepository.countSongsNotInPlaylistFlow(
+                    playlistId = playlistId,
+                    keyword = keyword.ifBlank { null },
+                )
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = 0,
+            )
+
+    /** 获取不在歌单中的所有符合条件歌曲 ID（用于全选） */
+    suspend fun getPickerSongIds(): List<Long> {
+        val keyword = _pickerKeyword.value.ifBlank { null }
+        return songRepository.getSongIdsNotInPlaylist(playlistId, keyword)
+    }
 
     // 多选模式
     private val _isMultiSelectMode = MutableStateFlow(false)

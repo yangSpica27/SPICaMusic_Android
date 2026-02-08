@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -31,11 +30,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +43,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.paging.PagingData
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import top.yukonga.miuix.kmp.basic.Button
@@ -57,16 +62,17 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 通用歌曲选择器 BottomSheet
+ * 通用歌曲选择器 BottomSheet（分页版本）
  *
  * 独立封装的歌曲多选组件，支持：
- * - 关键字搜索筛选（歌名 / 艺术家）
+ * - 关键字搜索筛选（歌名 / 艺术家），过滤在数据库层面完成
  * - 全选 / 全不选 快捷操作
- * - 传入 ignoreSongIds 忽略已存在的歌曲（如歌单中已有的歌曲）
  * - 确认回调返回选中歌曲 ID 列表
  *
- * @param allSongs 全部可选歌曲列表
- * @param ignoreSongIds 需要忽略/隐藏的歌曲 ID 集合
+ * @param songsPagingFlow 分页歌曲数据流（由 ViewModel 提供，已排除歌单中已有歌曲）
+ * @param songCount 当前筛选结果歌曲总数
+ * @param onKeywordChange 搜索关键词变更回调（通知 ViewModel 更新分页查询）
+ * @param onSelectAll 全选回调，返回所有符合条件的歌曲 ID
  * @param onDismiss 关闭回调
  * @param onConfirm 确认选择回调，返回选中的歌曲 songId 列表
  * @param title 标题文本
@@ -74,43 +80,28 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SongPickerSheet(
-    allSongs: List<Song>,
-    ignoreSongIds: Set<Long> = emptySet(),
+    songsPagingFlow: Flow<PagingData<Song>>,
+    songCount: Int,
+    onKeywordChange: (String) -> Unit,
+    onSelectAll: suspend () -> List<Long>,
     onDismiss: () -> Unit,
     onConfirm: (List<Long>) -> Unit,
     title: String = "添加歌曲",
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
 
-    // 搜索关键字
+    // 搜索关键字（本地 UI 状态）
     var keyword by remember { mutableStateOf("") }
+
+    // 分页数据
+    val pagingItems: LazyPagingItems<Song> = songsPagingFlow.collectAsLazyPagingItems()
 
     // 选中的歌曲 songId 集合
     val selectedIds = remember { mutableStateListOf<Long>() }
 
-    // 过滤后的可选歌曲列表（排除忽略 + 关键字筛选）
-    val filteredSongs by remember(allSongs, ignoreSongIds, keyword) {
-        derivedStateOf {
-            allSongs
-                .filter { song -> song.songId != null && song.songId !in ignoreSongIds }
-                .filter { song ->
-                    if (keyword.isBlank()) {
-                        true
-                    } else {
-                        val kw = keyword.trim().lowercase()
-                        song.displayName.lowercase().contains(kw) ||
-                            song.artist.lowercase().contains(kw)
-                    }
-                }
-        }
-    }
-
     // 当前筛选结果是否全部被选中
-    val isAllSelected by remember(filteredSongs, selectedIds.size) {
-        derivedStateOf {
-            filteredSongs.isNotEmpty() && filteredSongs.all { it.songId in selectedIds }
-        }
-    }
+    val isAllSelected = songCount > 0 && selectedIds.size >= songCount
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -151,7 +142,10 @@ fun SongPickerSheet(
             // ── 搜索输入框 ──
             TextField(
                 value = keyword,
-                onValueChange = { keyword = it },
+                onValueChange = {
+                    keyword = it
+                    onKeywordChange(it)
+                },
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -183,7 +177,7 @@ fun SongPickerSheet(
                 Text(
                     text =
                         if (selectedIds.isEmpty()) {
-                            "共 ${filteredSongs.size} 首可选"
+                            "共 $songCount 首可选"
                         } else {
                             "已选 ${selectedIds.size} 首"
                         },
@@ -197,13 +191,11 @@ fun SongPickerSheet(
                         text = if (isAllSelected) "取消全选" else "全选",
                         onClick = {
                             if (isAllSelected) {
-                                // 取消当前筛选结果中的选中
-                                val filteredIds = filteredSongs.mapNotNull { it.songId }.toSet()
-                                selectedIds.removeAll(filteredIds)
+                                selectedIds.clear()
                             } else {
-                                // 选中当前筛选结果
-                                filteredSongs.forEach { song ->
-                                    song.songId?.let { id ->
+                                coroutineScope.launch {
+                                    val allIds = onSelectAll()
+                                    allIds.forEach { id ->
                                         if (id !in selectedIds) {
                                             selectedIds.add(id)
                                         }
@@ -227,9 +219,10 @@ fun SongPickerSheet(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 items(
-                    items = filteredSongs,
-                    key = { it.songId ?: it.mediaStoreId },
-                ) { song ->
+                    count = pagingItems.itemCount,
+                    key = pagingItems.itemKey { it.songId ?: it.mediaStoreId },
+                ) { index ->
+                    val song = pagingItems[index] ?: return@items
                     val isSelected = song.songId in selectedIds
                     PickerSongItem(
                         song = song,

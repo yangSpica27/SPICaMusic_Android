@@ -1,5 +1,9 @@
 package me.spica27.spicamusic.storage.impl.repository
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -188,5 +192,67 @@ class SongRepositoryImpl(
                 .groupBy { it.sortName }
                 .map { (key, songs) -> SongGroup(key, songs) }
         }
-}
 
+    // ===== 分页 API 实现 =====
+
+    companion object {
+        private const val PAGE_SIZE = 30
+        private const val PREFETCH_DISTANCE = 10
+    }
+
+    override fun getFilteredSongsPagingFlow(keyword: String?): Flow<PagingData<Song>> =
+        Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                prefetchDistance = PREFETCH_DISTANCE,
+                enablePlaceholders = false,
+            ),
+            pagingSourceFactory = { songDao.getFilteredSongsPaging(keyword) }
+        ).flow.map { pagingData -> pagingData.map { it.toCommon() } }
+
+    override fun getSongsBySortNamePagingFlow(keyword: String?): Flow<PagingData<Song>> =
+        Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                prefetchDistance = PREFETCH_DISTANCE,
+                enablePlaceholders = false,
+            ),
+            pagingSourceFactory = { songDao.getSongsBySortNamePaging(keyword) }
+        ).flow.map { pagingData -> pagingData.map { it.toCommon() } }
+
+    override fun countFilteredSongsFlow(keyword: String?): Flow<Int> =
+        songDao.countFilteredSongs(keyword)
+
+    override suspend fun getFilteredSongIds(keyword: String?): List<Long> =
+        withContext(Dispatchers.IO) {
+            songDao.getFilteredSongIds(keyword)
+        }
+
+    // ===== 歌曲选择器分页 API 实现 =====
+
+    override fun getSongsNotInPlaylistPagingFlow(
+        playlistId: Long,
+        keyword: String?,
+    ): Flow<PagingData<Song>> =
+        Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                prefetchDistance = PREFETCH_DISTANCE,
+                enablePlaceholders = false,
+            ),
+            pagingSourceFactory = { songDao.getSongsNotInPlaylistPaging(playlistId, keyword) }
+        ).flow.map { pagingData -> pagingData.map { it.toCommon() } }
+
+    override fun countSongsNotInPlaylistFlow(
+        playlistId: Long,
+        keyword: String?,
+    ): Flow<Int> =
+        songDao.countSongsNotInPlaylist(playlistId, keyword)
+
+    override suspend fun getSongIdsNotInPlaylist(
+        playlistId: Long,
+        keyword: String?,
+    ): List<Long> = withContext(Dispatchers.IO) {
+        songDao.getSongIdsNotInPlaylist(playlistId, keyword)
+    }
+}
