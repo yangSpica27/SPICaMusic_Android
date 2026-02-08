@@ -52,10 +52,12 @@ class ReverbAudioProcessor : AudioProcessor {
         return inputAudioFormat
     }
 
-    override fun isActive(): Boolean = enabled
+    // 始终保持活跃（已配置即纳入管线），enabled 判断在 queueInput 内部处理
+    // 这样切换开关可以即时生效，无需等待 ExoPlayer 重新 configure
+    override fun isActive(): Boolean = inputAudioFormat != AudioProcessor.AudioFormat.NOT_SET
 
     override fun queueInput(inputBuffer: ByteBuffer) {
-        if (!isActive()) {
+        if (!enabled) {
             outputBuffer = inputBuffer
             return
         }
