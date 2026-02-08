@@ -35,7 +35,6 @@ class PlayHistoryRepositoryImpl(
     }
 
     override suspend fun deletePlayHistory(songId: Long) = withContext(Dispatchers.IO) {
-        val histories = playHistoryDao.getPlayHistory(songId)
-        histories.forEach { playHistoryDao.delete(it) }
+        playHistoryDao.deleteByMediaId(songId)
     }
 }

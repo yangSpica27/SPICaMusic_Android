@@ -40,7 +40,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +53,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
@@ -78,9 +78,9 @@ fun AllSongsScreen(
     modifier: Modifier = Modifier,
     viewModel: AllSongsViewModel = koinViewModel(),
 ) {
-    val filteredSongs by viewModel.filteredSongs.collectAsState()
-    val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsState()
-    val selectedSongIds by viewModel.selectedSongIds.collectAsState()
+    val filteredSongs by viewModel.filteredSongs.collectAsStateWithLifecycle()
+    val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
+    val selectedSongIds by viewModel.selectedSongIds.collectAsStateWithLifecycle()
 
     val scrollBehavior = MiuixScrollBehavior()
 
@@ -191,7 +191,7 @@ fun AllSongsScreen(
                 ) {
                     items(
                         items = filteredSongs,
-                        key = { it.songId ?: -1 },
+                        key = { it.songId ?: it.mediaStoreId },
                     ) { song ->
                         SongItemCard(
                             song = song,

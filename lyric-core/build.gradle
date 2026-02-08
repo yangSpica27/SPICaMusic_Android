@@ -10,7 +10,7 @@ android {
   compileSdk = 36
 
   defaultConfig {
-    minSdk 24
+    minSdk 29
     targetSdk 36
 
     testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -60,7 +60,6 @@ dependencies {
   implementation libs.moshi.kotlin
   implementation libs.logging.interceptor
   ksp libs.moshi.kotlin.codegen
-  implementation libs.sandwich.retrofit
 
   // Koin
   api libs.koin.androidx.compose

@@ -1,9 +1,16 @@
 package me.spica27.spicamusic.storage.impl.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "PlayHistory")
+@Entity(
+    tableName = "PlayHistory",
+    indices = [
+        Index("mediaId"),
+        Index("time"),
+    ],
+)
 data class PlayHistoryEntity(
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0,

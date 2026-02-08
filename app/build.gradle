@@ -1,7 +1,6 @@
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.android)
-  id 'kotlin-android'
   id 'kotlin-parcelize'
   id 'com.google.devtools.ksp'
   alias(libs.plugins.jetbrains.kotlin.serialization)
@@ -51,7 +50,7 @@ android {
     }
   }
 
-  lintOptions {
+  lint {
     checkReleaseBuilds false
     abortOnError false
   }
@@ -77,18 +76,12 @@ android {
   }
   buildFeatures {
     compose true
-  }
-  buildFeatures {
-    //    aidl=true
     buildConfig = true
   }
   sourceSets {
     main {
       jniLibs.srcDirs = ['libs']
     }
-  }
-  composeOptions {
-    kotlinCompilerExtensionVersion '1.5.7'
   }
   //  kapt {
   //    correctErrorTypes = true

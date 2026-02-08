@@ -11,8 +11,7 @@ converterMoshiVersion = "3.0.0"
 datastorePreferencesVersion = "1.2.0"
 dynamicanimationKtxVersion = "1.1.0"
 hazeVersion = "1.7.1"
-hiltAndroidVersion = "2.56.2"
-hiltNavigationComposeVersion = "1.3.0-beta01"
+
 koinAndroidxComposeVersion = "4.1.1"
 kotlin = "2.2.21"
 coreKtx = "1.16.0"
@@ -38,15 +37,12 @@ timberVersion = "5.0.1"
 nav3Core = "1.0.0"
 material3AdaptiveNav3 = "1.1.0"
 lifecycleViewmodelNav3 = "2.10.0"
-kotlinSerialization = "2.2.0"
+kotlinSerialization = "2.2.21"
 kotlinxSerializationCore = "1.9.0"
 moshiKotlin = "1.15.2"
-wavySliderVersion = "2.1.0"
-appcompatVersion = "1.7.1"
-materialVersion = "1.13.0"
+
 paletteVersion = "1.0.0"
-workRuntimeKtxVersion = "2.10.3"
-media3ExoplayerDashVersion = "1.9.1"
+
 media3SessionVersion = "1.9.1"
 ksp = "2.2.21-2.0.4"
 roomVersion = "2.7.2"
@@ -69,7 +65,7 @@ androidx-dynamicanimation-ktx = { module = "androidx.dynamicanimation:dynamicani
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-media = { module = "androidx.media:media", version.ref = "mediaVersion" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3ExoplayerVersion" }
-androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtxVersion" }
+
 capsule-android = { module = "com.mocharealm.gaze:capsule-android", version.ref = "capsuleAndroidVersion" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "converterMoshiVersion" }
@@ -115,10 +111,8 @@ androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecy
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerializationCore" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
 moshi-kotlin-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", version.ref = "moshiKotlin" }
-wavy-slider = { module = "ir.mahozad.multiplatform:wavy-slider", version.ref = "wavySliderVersion" }
-androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompatVersion" }
-material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
-androidx-media3-exoplayer-dash = { group = "androidx.media3", name = "media3-exoplayer-dash", version.ref = "media3ExoplayerDashVersion" }
+
+
 androidx-media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3SessionVersion" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }

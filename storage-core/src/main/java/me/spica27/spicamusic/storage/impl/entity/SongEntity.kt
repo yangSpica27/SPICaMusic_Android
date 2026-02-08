@@ -10,6 +10,8 @@ import androidx.room.PrimaryKey
     indices = [
         Index("displayName"),
         Index("mediaStoreId", unique = true),
+        Index("isIgnore"),
+        Index("sortName"),
     ],
 )
 data class SongEntity(
@@ -32,4 +34,6 @@ data class SongEntity(
     var channels: Int,
     var digit: Int,
     var isIgnore: Boolean,
+    /** MediaStore 的 DATE_MODIFIED，用于增量扫描判断文件是否变更 */
+    var dateModified: Long = 0,
 )

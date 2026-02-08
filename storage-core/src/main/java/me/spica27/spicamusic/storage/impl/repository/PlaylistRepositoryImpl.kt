@@ -6,11 +6,13 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import androidx.room.withTransaction
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.PlaylistWithSongs
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import me.spica27.spicamusic.storage.impl.dao.PlaylistDao
+import me.spica27.spicamusic.storage.impl.db.AppDatabase
 import me.spica27.spicamusic.storage.impl.entity.PlaylistEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistSongCrossRefEntity
 import me.spica27.spicamusic.storage.impl.mapper.toCommon
@@ -18,6 +20,7 @@ import me.spica27.spicamusic.storage.impl.mapper.toEntity
 
 class PlaylistRepositoryImpl(
     private val playlistDao: PlaylistDao,
+    private val database: AppDatabase,
 ) : IPlaylistRepository {
     override fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<Song>> = 
         playlistDao.getSongsByPlaylistIdFlow(playlistId).map { list -> list.map { it.toCommon() } }
@@ -57,17 +60,23 @@ class PlaylistRepositoryImpl(
     }
 
     override suspend fun addSongToPlaylist(playlistId: Long, songId: Long) = withContext(Dispatchers.IO) {
-        playlistDao.insertListItem(PlaylistSongCrossRefEntity(playlistId, songId))
-        playlistDao.setNeedUpdate(playlistId)
+        database.withTransaction {
+            playlistDao.insertListItem(PlaylistSongCrossRefEntity(playlistId, songId))
+            playlistDao.setNeedUpdate(playlistId)
+        }
     }
 
     override suspend fun removeSongFromPlaylist(playlistId: Long, songId: Long) = withContext(Dispatchers.IO) {
-        playlistDao.deleteListItem(PlaylistSongCrossRefEntity(playlistId, songId))
-        playlistDao.setNeedUpdate(playlistId)
+        database.withTransaction {
+            playlistDao.deleteListItem(PlaylistSongCrossRefEntity(playlistId, songId))
+            playlistDao.setNeedUpdate(playlistId)
+        }
     }
 
     override suspend fun addSongsToPlaylist(playlistId: Long, songIds: List<Long>) = withContext(Dispatchers.IO) {
-        playlistDao.insertListItems(songIds.map { PlaylistSongCrossRefEntity(playlistId, it) })
-        playlistDao.setNeedUpdate(playlistId)
+        database.withTransaction {
+            playlistDao.insertListItems(songIds.map { PlaylistSongCrossRefEntity(playlistId, it) })
+            playlistDao.setNeedUpdate(playlistId)
+        }
     }
 }

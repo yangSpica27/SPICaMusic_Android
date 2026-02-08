@@ -35,7 +35,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
@@ -101,13 +101,13 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
             parametersOf(playlistId)
         }
 
-    val playlist by viewModel.playlist.collectAsState()
-    val songs by viewModel.songs.collectAsState()
-    val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsState()
-    val selectedSongs by viewModel.selectedSongs.collectAsState()
-    val showRenameDialog by viewModel.showRenameDialog.collectAsState()
-    val showAddSongsSheet by viewModel.showAddSongsSheet.collectAsState()
-    val allSongs by viewModel.allSongs.collectAsState()
+    val playlist by viewModel.playlist.collectAsStateWithLifecycle()
+    val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
+    val selectedSongs by viewModel.selectedSongs.collectAsStateWithLifecycle()
+    val showRenameDialog by viewModel.showRenameDialog.collectAsStateWithLifecycle()
+    val showAddSongsSheet by viewModel.showAddSongsSheet.collectAsStateWithLifecycle()
+    val allSongs by viewModel.allSongs.collectAsStateWithLifecycle()
 
     // 添加歌曲选择器
     if (showAddSongsSheet) {
@@ -236,7 +236,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    itemsIndexed(songs, key = { index, song -> song.songId ?: -1 }) { index, song ->
+                    itemsIndexed(songs, key = { index, song -> song.songId ?: song.mediaStoreId }) { index, song ->
                         SongItemCard(
                             modifier = Modifier.animateItem(),
                             index = index,

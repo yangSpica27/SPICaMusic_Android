@@ -23,6 +23,9 @@ interface PlayHistoryDao {
     @Query("SELECT * FROM playhistory WHERE mediaId == :mediaId ORDER BY time DESC LIMIT 1,1")
     fun getLasePlayHistory(mediaId: Long): PlayHistoryEntity?
 
+    @Query("DELETE FROM PlayHistory WHERE mediaId = :mediaId")
+    fun deleteByMediaId(mediaId: Long)
+
     @Query("DELETE FROM PlayHistory")
     fun deleteAll()
 }

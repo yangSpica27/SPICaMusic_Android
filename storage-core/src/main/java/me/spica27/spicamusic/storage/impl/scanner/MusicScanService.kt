@@ -175,10 +175,13 @@ class MusicScanService(
     var updated = 0
 
     try {
-      val scannedSongs = mutableListOf<SongEntity>()
       val contentResolver = context.contentResolver
 
-      // 查询 MediaStore
+      // 1. 从 DB 加载现有歌曲的摘要信息，构建 HashMap（O(1) 查找）
+      val existingScanInfoMap: Map<Long, SongDao.SongScanInfo> =
+        songDao.getAllScanInfo().associateBy { it.mediaStoreId }
+
+      // 2. 查询 MediaStore（包含 DATE_MODIFIED 用于增量判断）
       val projection = arrayOf(
         MediaStore.Audio.Media._ID,
         MediaStore.Audio.Media.DISPLAY_NAME,
@@ -188,6 +191,7 @@ class MusicScanService(
         MediaStore.Audio.Media.MIME_TYPE,
         MediaStore.Audio.Media.ALBUM_ID,
         MediaStore.Audio.Media.DATA,
+        MediaStore.Audio.Media.DATE_MODIFIED,
       )
 
       val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
@@ -198,6 +202,11 @@ class MusicScanService(
       } else {
         MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
       }
+
+      // 需要 TagLib 深度扫描的歌曲列表（新增或修改的）
+      val songsToScan = mutableListOf<SongEntity>()
+      // 本次 MediaStore 中所有可见的 mediaStoreId
+      val currentMediaStoreIds = mutableSetOf<Long>()
 
       contentResolver.query(
         uri,
@@ -214,9 +223,10 @@ class MusicScanService(
         val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
         val albumIdColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
         val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+        val dateModifiedColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
 
         val totalCount = cursor.count
-        Timber.tag(TAG).d("开始扫描 MediaStore，共 $totalCount 个音频文件")
+        Timber.tag(TAG).d("开始增量扫描 MediaStore，共 $totalCount 个音频文件")
 
         while (cursor.moveToNext() && !isCancelled) {
           val mediaStoreId = cursor.getLong(idColumn)
@@ -227,6 +237,7 @@ class MusicScanService(
           val mimeType = cursor.getString(mimeTypeColumn) ?: ""
           val albumId = cursor.getLong(albumIdColumn)
           val path = cursor.getString(dataColumn) ?: ""
+          val dateModified = cursor.getLong(dateModifiedColumn)
 
           // 过滤不支持的格式
           if (!SUPPORTED_MIME_TYPES.contains(mimeType)) {
@@ -239,6 +250,7 @@ class MusicScanService(
           }
 
           totalScanned++
+          currentMediaStoreIds.add(mediaStoreId)
 
           // 更新进度
           _scanProgress.value = ScanProgress(
@@ -247,41 +259,51 @@ class MusicScanService(
             currentFile = displayName
           )
 
-          // 使用 Taglib 读取音频详细信息（采样率、比特率等）
+          val existingInfo = existingScanInfoMap[mediaStoreId]
+
+          if (existingInfo != null && existingInfo.dateModified == dateModified && dateModified != 0L) {
+            // 文件未变更 → 跳过 TagLib 扫描，不做任何处理
+            continue
+          }
+
+          // 需要 TagLib 扫描：新增歌曲或文件已修改
           val audioInfo = extractAudioInfoWithTaglib(
             contentResolver = contentResolver,
             mediaStoreId = mediaStoreId,
             fallbackDuration = duration
           )
 
-          // 使用 Taglib 读取的元数据优先，回退到 MediaStore 数据
           val finalDisplayName = audioInfo.title ?: displayName
           val finalArtist = audioInfo.artist ?: artist
-
-          // 生成排序名称
           val sortName = generateSortName(finalDisplayName)
 
           val song = SongEntity(
-            songId = null, // 让 Room 自动生成
+            songId = existingInfo?.songId, // 保留已有主键，Upsert 会更新而非插入
             mediaStoreId = mediaStoreId,
             path = path,
             displayName = finalDisplayName,
             artist = finalArtist,
             size = size,
-            like = false, // 新歌曲默认不喜欢
+            like = existingInfo?.like ?: false,
             duration = audioInfo.duration.takeIf { it > 0 } ?: duration,
-            sort = 0,
+            sort = existingInfo?.sort ?: 0,
             mimeType = mimeType,
             albumId = albumId,
             sampleRate = audioInfo.sampleRate,
             bitRate = audioInfo.bitRate,
             channels = audioInfo.channels,
             digit = audioInfo.digit,
-            isIgnore = false,
-            sortName = sortName
+            isIgnore = existingInfo?.isIgnore ?: false,
+            sortName = sortName,
+            dateModified = dateModified,
           )
 
-          scannedSongs.add(song)
+          songsToScan.add(song)
+          if (existingInfo != null) {
+            updated++
+          } else {
+            newAdded++
+          }
         }
       }
 
@@ -290,35 +312,20 @@ class MusicScanService(
         return@withContext ScanResult(totalScanned, 0, 0, 0)
       }
 
-      // 获取数据库中现有的歌曲
-      val existingSongs = songDao.getAllSync()
-      val existingMediaStoreIds = existingSongs.map { it.mediaStoreId }.toSet()
-      val scannedMediaStoreIds = scannedSongs.map { it.mediaStoreId }.toSet()
+      // 3. 计算已从 MediaStore 中移除的歌曲
+      val removedMediaStoreIds = existingScanInfoMap.keys - currentMediaStoreIds
 
-      // 计算新增和更新
-      scannedSongs.forEach { song ->
-        if (song.mediaStoreId in existingMediaStoreIds) {
-          // 保留已有歌曲的 like 和 isIgnore 状态
-          val existingSong = existingSongs.find { it.mediaStoreId == song.mediaStoreId }
-          if (existingSong != null) {
-            song.like = existingSong.like
-            song.isIgnore = existingSong.isIgnore
-            song.sort = existingSong.sort
-          }
-          updated++
-        } else {
-          newAdded++
-        }
-      }
+      // 4. 一次事务完成：删除已移除 + upsert 变更
+      songDao.incrementalUpdateSongs(
+        removedMediaStoreIds = removedMediaStoreIds.toList(),
+        changedSongs = songsToScan,
+      )
 
-      // 更新数据库（会自动删除不在列表中的歌曲）
-      songDao.updateSongs(scannedSongs)
-
-      // 计算删除的数量
-      val removed = existingSongs.size - (scannedSongs.size - newAdded)
+      val removed = removedMediaStoreIds.size
 
       Timber.tag(TAG).i(
-        "扫描完成: 总计=$totalScanned, 新增=$newAdded, 更新=$updated, 删除=$removed"
+        "增量扫描完成: 总计=$totalScanned, 新增=$newAdded, 更新=$updated, 删除=$removed, " +
+          "跳过=${totalScanned - newAdded - updated}"
       )
 
       ScanResult(
@@ -350,6 +357,7 @@ class MusicScanService(
 
   /**
    * 使用 Taglib 提取音频详细信息（优先使用）
+   * 优化：只打开一次 FileDescriptor，通过 dup() 复制给两个 TagLib 调用
    */
   private fun extractAudioInfoWithTaglib(
     contentResolver: ContentResolver,
@@ -367,44 +375,43 @@ class MusicScanService(
     try {
       val uri = "content://media/external/audio/media/$mediaStoreId".toUri()
 
-      // 打开文件描述符
+      // 只打开一次 FileDescriptor，通过 dup() 复制给两个 TagLib 调用
       contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
         try {
-
-          val fd = pfd.detachFd()
+          val dupPfd = pfd.dup()
+          val fdForMetadata = pfd.detachFd()      // int fd，所有权转移给 TagLib
+          val fdForAudioProps = dupPfd.detachFd()  // int fd（复制），所有权转移给 TagLib
 
           // 读取元数据（标题和艺术家）
-          val metadata = TagLib.getMetadata(
-            fd = fd,
-            readPictures = false // 扫描时不读取图片以提高速度
-          )
-
-          if (metadata != null) {
-            title = metadata.propertyMap["TITLE"]?.firstOrNull()
-            artist = metadata.propertyMap["ARTIST"]?.firstOrNull()
+          try {
+            val metadata = TagLib.getMetadata(
+              fd = fdForMetadata,
+              readPictures = false
+            )
+            if (metadata != null) {
+              title = metadata.propertyMap["TITLE"]?.firstOrNull()
+              artist = metadata.propertyMap["ARTIST"]?.firstOrNull()
+            }
+          } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "Taglib 元数据读取失败")
           }
 
-        } catch (e: Exception) {
-          Timber.tag(TAG).w(e, "Taglib 读取失败，回退到默认值")
-        }
-      }
-
-
-      contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-        try {
-
-          TagLib.getAudioProperties(
-            pfd.detachFd(),
-            readStyle = AudioPropertiesReadStyle.Accurate
-          )?.let {
-            duration = (it.length).toLong()
-            sampleRate = it.sampleRate
-            bitRate = it.bitrate * 1000 // kbps 转 bps
-            channels = it.channels
+          // 读取音频属性（采样率、比特率等）
+          try {
+            TagLib.getAudioProperties(
+              fdForAudioProps,
+              readStyle = AudioPropertiesReadStyle.Accurate
+            )?.let {
+              duration = it.length.toLong()
+              sampleRate = it.sampleRate
+              bitRate = it.bitrate * 1000 // kbps 转 bps
+              channels = it.channels
+            }
+          } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "Taglib 音频属性读取失败")
           }
-
         } catch (e: Exception) {
-          Timber.tag(TAG).w(e, "Taglib 读取失败，回退到默认值")
+          Timber.tag(TAG).w(e, "Taglib FD 操作失败，回退到默认值")
         }
       }
 
@@ -428,7 +435,6 @@ class MusicScanService(
           if (cursor.moveToFirst()) {
             val bitRateColumn = cursor.getColumnIndex(MediaStore.Audio.Media.BITRATE)
             if (bitRateColumn != -1) {
-              // MediaStore 返回的是 bps
               bitRate = cursor.getInt(bitRateColumn)
             }
           }
@@ -436,13 +442,12 @@ class MusicScanService(
       }
 
       // 使用默认值填充缺失的信息
-      if (sampleRate == 0) sampleRate = 44100 // 默认 44.1kHz
-      if (channels == 0) channels = 2 // 默认立体声
-      if (digit == 0) digit = 16 // 默认 16-bit
+      if (sampleRate == 0) sampleRate = 44100
+      if (channels == 0) channels = 2
+      if (digit == 0) digit = 16
 
     } catch (e: Exception) {
       Timber.tag(TAG).w(e, "提取音频信息失败: $mediaStoreId")
-      // 返回默认值
       duration = fallbackDuration
       sampleRate = 44100
       channels = 2

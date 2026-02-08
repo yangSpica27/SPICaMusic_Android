@@ -1,9 +1,15 @@
 package me.spica27.spicamusic.storage.impl.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "extra_info")
+@Entity(
+    tableName = "extra_info",
+    indices = [
+        Index("mediaId", unique = true),
+    ],
+)
 data class ExtraInfoEntity(
     @PrimaryKey(autoGenerate = true)
     var id: Long = 0,

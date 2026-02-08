@@ -24,6 +24,7 @@ val storageModule = module {
       AppDatabase::class.java,
       "spica_music.db",
     )
+      .addMigrations(AppDatabase.MIGRATION_5_6)
       // 开发阶段允许破坏性迁移，发布时应添加正式的 Migration
       .fallbackToDestructiveMigration(true)
       .build()
@@ -37,7 +38,7 @@ val storageModule = module {
 
   // Repositories - 通过接口暴露
   single<ISongRepository> { SongRepositoryImpl(get()) }
-  single<IPlaylistRepository> { PlaylistRepositoryImpl(get()) }
+  single<IPlaylistRepository> { PlaylistRepositoryImpl(get(), get()) }
   single<IPlayHistoryRepository> { PlayHistoryRepositoryImpl(get()) }
 
   // 扫描服务

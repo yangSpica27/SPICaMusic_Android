@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.MediaItem
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
@@ -392,6 +393,9 @@ private fun SearchResultHolder(
     scrollBehavior: ScrollBehavior,
     listHazeSource: HazeState,
 ) {
+    val playerViewModel = LocalPlayerViewModel.current
+    val currentPlaylist by playerViewModel.currentPlaylist.collectAsStateWithLifecycle()
+
     // 歌曲列表
     LazyColumn(
         state = listState,
@@ -420,9 +424,11 @@ private fun SearchResultHolder(
                     textColor = titleTextColor.value,
                 )
             }
-            items(songs, key = { it.songId ?: -1 }) {
+            items(songs, key = { it.songId ?: it.mediaStoreId }) {
                 SongItemCard(
                     song = it,
+                    searchResults = searchResults,
+                    currentPlaylist = currentPlaylist,
                     modifier =
                         Modifier
                             .fillMaxSize()
@@ -489,12 +495,11 @@ private fun SearchBar(
 @Composable
 private fun SongItemCard(
     song: Song,
+    searchResults: List<SongGroup>,
+    currentPlaylist: List<MediaItem>,
     modifier: Modifier = Modifier,
-    viewModel: SearchViewModel = koinViewModel(),
 ) {
     val playerViewModel = LocalPlayerViewModel.current
-    val searchResults by viewModel.searchResults.collectAsStateWithLifecycle()
-    val currentPlaylist by playerViewModel.currentPlaylist.collectAsStateWithLifecycle()
 
     val showPopup = remember { mutableStateOf(false) }
     val items = listOf("立刻播放", "加入播放列表", "下一首播放", "全部播放", "查看详情")

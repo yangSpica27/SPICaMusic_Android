@@ -12,7 +12,9 @@ import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +37,7 @@ import org.koin.android.ext.koin.androidApplication
 import org.koin.dsl.module
 import org.koin.java.KoinJavaComponent.getKoin
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -50,7 +53,7 @@ class SpicaPlayer(
 
   private val playerKVUtils = getKoin().get<PlayerKVUtils>()
 
-  override val coroutineContext: CoroutineContext = Dispatchers.IO
+  override val coroutineContext: CoroutineContext = Dispatchers.IO + SupervisorJob()
 
   private val sessionToken by lazy {
     SessionToken(context, ComponentName(context, playbackServiceClass))
@@ -69,6 +72,8 @@ class SpicaPlayer(
   // 音效处理器
   private val _equalizerProcessor = EqualizerAudioProcessor()
   private val _reverbProcessor = ReverbAudioProcessor()
+
+  private val _initializing = AtomicBoolean(false)
 
   private var browserInstance: MediaBrowser? = null
   private val browserFuture by lazy {
@@ -114,10 +119,12 @@ class SpicaPlayer(
    */
   override fun init() {
     if (browserInstance != null) return
+    if (!_initializing.compareAndSet(false, true)) return
     launch(Dispatchers.Main) {
-      val browser = browserFuture.await()
-      browserInstance = browser
-      browser.addListener(this@SpicaPlayer)
+      try {
+        val browser = browserFuture.await()
+        browserInstance = browser
+        browser.addListener(this@SpicaPlayer)
 
       val items = withContext(Dispatchers.IO) {
         playerKVUtils.getHistoryItems().map { it.toMediaItem() }
@@ -135,6 +142,10 @@ class SpicaPlayer(
       browser.playWhenReady = false
       browser.setMediaItems(items)
       browser.prepare()
+      } catch (e: Exception) {
+        Timber.tag(TAG).e(e, "Failed to initialize player")
+        _initializing.set(false)
+      }
     }
   }
 
@@ -290,7 +301,7 @@ class SpicaPlayer(
     // 3. 释放 FFT 处理器（取消线程池）
     _fftProcessor.release()
     // 4. 取消协程
-    coroutineContext.cancelChildren()
+    coroutineContext.cancel()
   }
 
   override fun onIsPlayingChanged(isPlaying: Boolean) {

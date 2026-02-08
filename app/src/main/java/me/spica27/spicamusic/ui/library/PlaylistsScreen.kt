@@ -26,7 +26,6 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -75,9 +74,9 @@ import top.yukonga.miuix.kmp.utils.pressable
 @Composable
 fun PlaylistsScreen(modifier: Modifier = Modifier) {
     val viewModel: PlaylistViewModel = koinViewModel()
-    val playlists by viewModel.playlists.collectAsState()
-    val showCreateDialog by viewModel.showCreateDialog.collectAsState()
-    val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val showCreateDialog by viewModel.showCreateDialog.collectAsStateWithLifecycle()
+    val showDeleteDialog by viewModel.showDeleteDialog.collectAsStateWithLifecycle()
     val backStack = LocalNavBackStack.current
 
     val scrollerBehavior = MiuixScrollBehavior()

@@ -200,19 +200,6 @@ fun AudioCityVisualizer(
         label = "time",
     )
 
-    // 整体音量
-    val volume =
-        remember(fftBands) {
-            if (fftBands.isEmpty()) 0f else fftBands.average().toFloat().coerceIn(0f, 1f)
-        }
-
-    // 从 31 个频段中均匀采样 16 个代表性值
-    val sampledBands =
-        remember(fftBands) {
-            val src = if (fftBands.size >= 31) fftBands else FloatArray(31)
-            FloatArray(16) { i -> src[(i * 30f / 15f).toInt().coerceAtMost(30)] }
-        }
-
     val shader = remember { RuntimeShader(shaderSource) }
     val shaderBrush = remember(shader) { ShaderBrush(shader) }
 
@@ -221,6 +208,10 @@ fun AudioCityVisualizer(
             modifier
                 .fillMaxSize()
                 .drawWithCache {
+                    val src = if (fftBands.size >= 31) fftBands else FloatArray(31)
+                    val volume = if (src.isEmpty()) 0f else src.average().toFloat().coerceIn(0f, 1f)
+                    val b = FloatArray(16) { i -> src[(i * 30f / 15f).toInt().coerceAtMost(30)] }
+
                     shader.setFloatUniform("u_time", time)
                     shader.setFloatUniform("u_resolution", size.width, size.height)
                     shader.setFloatUniform(
@@ -231,7 +222,6 @@ fun AudioCityVisualizer(
                     )
                     shader.setFloatUniform("u_volume", volume)
 
-                    val b = sampledBands
                     shader.setFloatUniform("u_bands0", b[0], b[1], b[2], b[3])
                     shader.setFloatUniform("u_bands1", b[4], b[5], b[6], b[7])
                     shader.setFloatUniform("u_bands2", b[8], b[9], b[10], b[11])

@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
 
@@ -110,6 +111,59 @@ interface SongDao {
         val songIds = songs.map { it.mediaStoreId }
         deleteSongsNotInList(songIds)
         insert(songs)
+    }
+
+    // ===== 增量扫描相关方法 =====
+
+    /**
+     * 轻量级数据类，仅包含增量扫描判断所需的最少字段
+     */
+    data class SongScanInfo(
+        val songId: Long,
+        val mediaStoreId: Long,
+        val dateModified: Long,
+        val like: Boolean,
+        val isIgnore: Boolean,
+        val sort: Int,
+    )
+
+    /**
+     * 获取所有歌曲的扫描摘要信息（用于增量比较）
+     * 只查询必要列，避免全量加载
+     */
+    @Query("SELECT songId, mediaStoreId, dateModified, `like`, isIgnore, sort FROM song")
+    suspend fun getAllScanInfo(): List<SongScanInfo>
+
+    /**
+     * 使用 Upsert 策略批量插入或更新歌曲
+     * 基于 mediaStoreId 唯一索引决定 INSERT 或 UPDATE
+     */
+    @Upsert
+    suspend fun upsertSongs(songs: List<SongEntity>)
+
+    /**
+     * 根据 mediaStoreId 列表批量删除歌曲（已从 MediaStore 中移除的）
+     */
+    @Query("DELETE FROM song WHERE mediaStoreId IN (:mediaStoreIds)")
+    suspend fun deleteSongsByMediaStoreIds(mediaStoreIds: List<Long>)
+
+    /**
+     * 增量更新入口：删除已移除的歌曲 + upsert 变更的歌曲
+     */
+    @Transaction
+    suspend fun incrementalUpdateSongs(
+        removedMediaStoreIds: List<Long>,
+        changedSongs: List<SongEntity>,
+    ) {
+        if (removedMediaStoreIds.isNotEmpty()) {
+            // Room IN 参数上限 999，分批删除
+            removedMediaStoreIds.chunked(500).forEach { chunk ->
+                deleteSongsByMediaStoreIds(chunk)
+            }
+        }
+        if (changedSongs.isNotEmpty()) {
+            upsertSongs(changedSongs)
+        }
     }
 
     @Query("SELECT * FROM song WHERE songId IN (SELECT songId FROM song ORDER BY RANDOM() LIMIT 15) AND (isIgnore == 0)")
