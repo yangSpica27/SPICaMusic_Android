@@ -116,6 +116,20 @@ private fun TopGlowBackground(
     fftDrawData: FloatArray,
     coverColor: Color,
 ) {
+    // 预计算渐变画笔：仅依赖 coverColor，避免每帧为每个频段重复创建 Brush + shiftHue
+    val barBrush =
+        remember(coverColor) {
+            val luminance = calculateLuminance(coverColor)
+            val hueShift = if (luminance < 0.5f) 24f else -24f
+            Brush.linearGradient(
+                colors =
+                    listOf(
+                        shiftHue(coverColor, hueShift).copy(alpha = 0.85f),
+                        shiftHue(coverColor, hueShift * 1.6f).copy(alpha = 0.2f),
+                    ),
+            )
+        }
+
     Canvas(
         modifier =
             modifier.hazeEffect {
@@ -123,20 +137,11 @@ private fun TopGlowBackground(
             },
     ) {
         val bandWidth = if (fftDrawData.isNotEmpty()) size.width / fftDrawData.size else size.width
-        val luminance = calculateLuminance(coverColor)
-        val hueShift = if (luminance < 0.5f) 24f else -24f
         fftDrawData.forEachIndexed { index, magnitude ->
             val energy = magnitude.coerceIn(0f, 1f)
             val barHeight = size.height * 0.8f * energy + size.height * 0.08f
             drawRect(
-                brush =
-                    Brush.linearGradient(
-                        colors =
-                            listOf(
-                                shiftHue(coverColor, hueShift).copy(alpha = 0.85f),
-                                shiftHue(coverColor, hueShift * 1.6f).copy(alpha = 0.2f),
-                            ),
-                    ),
+                brush = barBrush,
                 topLeft = Offset(x = index * bandWidth, y = 0f),
                 size = Size(width = max(1f, bandWidth * 0.9f), height = barHeight),
             )
@@ -163,6 +168,27 @@ private fun LiquidAuroraBackground(
         label = "aurora-anim",
     )
 
+    // 预分配 3 个 Path 对象，每帧通过 reset() 复用，避免每帧 new Path() × 3
+    val paths = remember { Array(3) { Path() } }
+
+    // 预计算每层颜色列表：仅在 coverColor/isDarkMode 变化时重新计算
+    // 避免每帧 6 次 shiftHue + 6 次 Color.copy
+    val layerColorLists =
+        remember(coverColor, isDarkMode) {
+            val alpha = if (isDarkMode == true) 0.9f else 0.75f
+            Array(3) { layer ->
+                val colorA = shiftHue(coverColor, layer * 18f + 120f)
+                val colorB = shiftHue(coverColor, layer * -14f - 116f)
+                val alpha1 = alpha - layer * 0.2f
+                val alpha2 = (alpha - layer * 0.3f).coerceAtLeast(0.1f)
+                listOf(
+                    colorA.copy(alpha = alpha1),
+                    colorB.copy(alpha = alpha2),
+                    colorB.copy(alpha = alpha2),
+                )
+            }
+        }
+
     Canvas(
         modifier =
             modifier.hazeEffect {
@@ -171,12 +197,15 @@ private fun LiquidAuroraBackground(
     ) {
         val layers = 3
         val chunkSize = (fftDrawData.size / layers).coerceAtLeast(1)
-        val baseAlpha = if (isDarkMode == true) 0.9f else 0.75f
         repeat(layers) { layer ->
             val startIndex = layer * chunkSize
             val endIndex = min(fftDrawData.size, startIndex + chunkSize)
             if (startIndex >= endIndex) return@repeat
-            val path = Path().apply { moveTo(0f, 0f) }
+
+            val path = paths[layer]
+            path.reset()
+            path.moveTo(0f, 0f)
+
             val steps = endIndex - startIndex
             val amplitude = size.height * (0.28f - layer * 0.05f)
             val phaseShift = (phase + layer * 45f) * (PI / 180f)
@@ -186,29 +215,18 @@ private fun LiquidAuroraBackground(
                 val wave = sin(progress * 6f + phaseShift).toFloat()
                 val y = size.height * 0.35f - amplitude * energy - amplitude * 0.2f * wave
                 val x = progress * size.width
-                if (i == 0) {
-                    path.lineTo(x, y)
-                } else {
-                    path.lineTo(x, y)
-                }
+                path.lineTo(x, y)
             }
             path.lineTo(size.width, 0f)
             path.close()
 
-            val colorA = shiftHue(coverColor, layer * 18f + 120f)
-            val colorB = shiftHue(coverColor, layer * -14f - 116f)
             drawPath(
                 path = path,
                 brush =
                     Brush.verticalGradient(
                         startY = 0f,
                         endY = size.height * 0.5f,
-                        colors =
-                            listOf(
-                                colorA.copy(alpha = baseAlpha - layer * 0.2f),
-                                colorB.copy(alpha = (baseAlpha - layer * 0.3f).coerceAtLeast(0.1f)),
-                                colorB.copy(alpha = (baseAlpha - layer * 0.3f).coerceAtLeast(0.1f)),
-                            ),
+                        colors = layerColorLists[layer],
                     ),
             )
         }
