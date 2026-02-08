@@ -118,8 +118,13 @@ class PlaylistDetailViewModel(
             try {
                 // 增加播放次数
                 playlistRepository.incrementPlaylistPlayTime(playlistId)
-                // 播放第一首歌曲
-                player.doAction(PlayerAction.PlayById(songList.first().mediaStoreId.toString()))
+                // 发送播放指令
+                player.doAction(
+                    PlayerAction.UpdateList(
+                        songList.map { it.mediaStoreId.toString() },
+                        start = true,
+                    ),
+                )
                 Timber.d("开始播放歌单")
             } catch (e: Exception) {
                 Timber.e(e, "播放歌单失败")
@@ -130,10 +135,17 @@ class PlaylistDetailViewModel(
     /**
      * 播放指定歌曲
      */
-    fun playSong(song: Song) {
+    fun playSongInList(song: Song) {
+        val songList = songs.value
         viewModelScope.launch {
             try {
-                player.doAction(PlayerAction.PlayById(song.mediaStoreId.toString()))
+                player.doAction(
+                    PlayerAction.UpdateList(
+                        songList.map { it.mediaStoreId.toString() },
+                        mediaId = song.mediaStoreId.toString(),
+                        start = true,
+                    ),
+                )
                 Timber.d("播放歌曲: ${song.displayName}")
             } catch (e: Exception) {
                 Timber.e(e, "播放歌曲失败")

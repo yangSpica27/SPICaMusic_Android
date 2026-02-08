@@ -252,7 +252,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                                 if (isMultiSelectMode) {
                                     viewModel.toggleSongSelection(song.songId)
                                 } else {
-                                    viewModel.playSong(song)
+                                    viewModel.playSongInList(song)
                                 }
                             },
                             onLongClick = {
