@@ -179,7 +179,10 @@ fun AllSongsScreen(
                             value = keyword,
                             cornerRadius = 12.dp,
                             onValueChange = { viewModel.updateSearchKeyword(it) },
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
                             borderColor = MiuixTheme.colorScheme.surfaceContainer,
                             backgroundColor =
                                 MiuixTheme.colorScheme.surfaceContainer.copy(
@@ -285,12 +288,30 @@ fun AllSongsScreen(
             ) {
                 MultiSelectBottomMenu(
                     selectedCount = selectedSongIds.size,
-                    onFavorite = { /* TODO: 收藏选中歌曲 */ },
-                    onUnfavorite = { /* TODO: 取消收藏 */ },
-                    onAddToQueue = { /* TODO: 加入播放队列 */ },
-                    onPlayNext = { /* TODO: 下一首播放 */ },
-                    onCreatePlaylist = { /* TODO: 创建歌单 */ },
-                    onHide = { /* TODO: 隐藏歌曲 */ },
+                    onFavorite = {
+                        // TODO: 收藏选中歌曲
+                        showMultipleSelectMenu = false
+                    },
+                    onUnfavorite = {
+                        // TODO: 取消收藏
+                        showMultipleSelectMenu = false
+                    },
+                    onAddToQueue = {
+                        // TODO: 加入播放队列
+                        showMultipleSelectMenu = false
+                    },
+                    onPlayNext = {
+                        // TODO: 下一首播放
+                        showMultipleSelectMenu = false
+                    },
+                    onCreatePlaylist = {
+                        // TODO: 创建歌单
+                        showMultipleSelectMenu = false
+                    },
+                    onHide = {
+                        // TODO: 隐藏歌曲
+                        showMultipleSelectMenu = false
+                    },
                     modifier =
                         Modifier
                             .padding(16.dp)

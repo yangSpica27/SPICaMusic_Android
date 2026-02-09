@@ -4,11 +4,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Light
+import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -101,7 +102,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                         subtitle = null,
                         icon = {
                             Icon(
-                                imageVector = Icons.Rounded.GraphicEq,
+                                imageVector = Icons.Default.Equalizer,
                                 contentDescription = null,
                                 tint = MiuixTheme.colorScheme.onSurface,
                             )
@@ -124,7 +125,7 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                         subtitle = "播放器封面点击翻转后的背面效果",
                         icon = {
                             Icon(
-                                imageVector = Icons.Rounded.GraphicEq,
+                                imageVector = Icons.Rounded.PictureInPictureAlt,
                                 contentDescription = null,
                                 tint = MiuixTheme.colorScheme.onSurface,
                             )
