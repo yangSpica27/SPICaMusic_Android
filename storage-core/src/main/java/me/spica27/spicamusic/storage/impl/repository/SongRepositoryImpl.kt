@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.SongGroup
 import me.spica27.spicamusic.common.entity.SongFilter
+import me.spica27.spicamusic.common.entity.SongGroup
 import me.spica27.spicamusic.common.entity.SongSortOrder
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.storage.impl.dao.SongDao
@@ -228,7 +228,13 @@ class SongRepositoryImpl(
             songDao.getFilteredSongIds(keyword)
         }
 
-    // ===== 歌曲选择器分页 API 实现 =====
+  override suspend fun getFilteredMediaStoreIds(keyword: String?): List<Long> {
+    return withContext(Dispatchers.IO) {
+      songDao.getFilteredMediaStoreIds(keyword)
+    }
+  }
+
+  // ===== 歌曲选择器分页 API 实现 =====
 
     override fun getSongsNotInPlaylistPagingFlow(
         playlistId: Long,

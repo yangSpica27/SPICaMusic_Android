@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.storage.impl.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -7,7 +8,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
-import androidx.paging.PagingSource
 import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
 
@@ -314,6 +314,20 @@ interface SongDao {
         )
     """)
     suspend fun getFilteredSongIds(keyword: String? = null): List<Long>
+
+  /**
+   * 获取所有符合条件的歌曲 ID（用于全选功能）
+   */
+  @Query("""
+        SELECT mediaStoreId FROM song 
+        WHERE isIgnore == 0
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%' 
+            OR artist LIKE '%' || :keyword || '%'
+        )
+    """)
+  suspend fun getFilteredMediaStoreIds(keyword: String? = null): List<Long>
 
     // ===== 歌曲选择器分页查询（排除指定歌单已有歌曲） =====
 

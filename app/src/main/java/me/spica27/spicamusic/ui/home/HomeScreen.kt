@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
@@ -42,6 +43,8 @@ fun HomeScreen(
     // 当前选中的页面索引
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     val hazeState = rememberHazeState()
 
     // Scaffold 布局
@@ -67,7 +70,11 @@ fun HomeScreen(
                         NavigationItem("设置", Icons.Outlined.Menu),
                     ),
                 selected = selectedIndex,
-                onClick = { index -> selectedIndex = index },
+                onClick = { index ->
+                    selectedIndex = index
+                    // 收起键盘
+                    keyboardController?.hide()
+                },
             )
         },
     ) { paddingValues ->

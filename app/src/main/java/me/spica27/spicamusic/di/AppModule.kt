@@ -116,6 +116,7 @@ object AppModule {
             viewModel {
                 AllSongsViewModel(
                     songRepository = get<ISongRepository>(),
+                    player = get<IMusicPlayer>(),
                 )
             }
 

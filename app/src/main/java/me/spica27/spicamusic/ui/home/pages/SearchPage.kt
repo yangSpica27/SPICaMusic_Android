@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -498,10 +499,13 @@ private fun SongItemCard(
     val showPopup = remember { mutableStateOf(false) }
     val items = listOf("立刻播放", "加入播放列表", "下一首播放", "查看详情")
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     Box(
         modifier =
             modifier.clickable {
                 showPopup.value = true
+                keyboardController?.hide()
             },
     ) {
         Row(

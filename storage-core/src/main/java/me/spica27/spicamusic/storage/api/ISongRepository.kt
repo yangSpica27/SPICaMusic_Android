@@ -3,10 +3,8 @@ package me.spica27.spicamusic.storage.api
 import androidx.paging.PagingData
 import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.SongGroup
-import me.spica27.spicamusic.common.entity.Playlist
-import me.spica27.spicamusic.common.entity.PlaylistWithSongs
 import me.spica27.spicamusic.common.entity.SongFilter
+import me.spica27.spicamusic.common.entity.SongGroup
 import me.spica27.spicamusic.common.entity.SongSortOrder
 
 /**
@@ -155,6 +153,11 @@ interface ISongRepository {
      * 获取所有符合条件的歌曲 ID（用于全选功能）
      */
     suspend fun getFilteredSongIds(keyword: String? = null): List<Long>
+
+    /**
+     * 获取所有符合条件的媒体库 ID（用于与媒体库同步）
+     */
+    suspend fun getFilteredMediaStoreIds(keyword: String? = null): List<Long>
 
     // ===== 歌曲选择器分页 API =====
 

@@ -28,15 +28,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,9 +68,11 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -100,9 +104,7 @@ fun AllSongsScreen(
     }
 
     Scaffold(
-        modifier =
-            modifier
-                .fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         topBar = {
             Column(
                 modifier =
@@ -162,20 +164,68 @@ fun AllSongsScreen(
                 )
                 // 功能按钮组
                 AnimatedVisibility(!isMultiSelectMode) {
-                    FunctionButtonGroup(
-                        songCount = songCount,
-                        onPlayAll = { /* TODO: 实现播放全部 */ },
-                        onMultiSelect = { viewModel.enterMultiSelectMode() },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        val keyword = viewModel.searchKeyword.collectAsStateWithLifecycle().value
+
+                        Spacer(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(12.dp),
+                        )
+                        TextField(
+                            value = keyword,
+                            cornerRadius = 12.dp,
+                            onValueChange = { viewModel.updateSearchKeyword(it) },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            borderColor = MiuixTheme.colorScheme.surfaceContainer,
+                            backgroundColor =
+                                MiuixTheme.colorScheme.surfaceContainer.copy(
+                                    alpha = 0.6f,
+                                ),
+                            insideMargin = DpSize(22.dp, 16.dp),
+                            label = "搜索歌曲或艺术家",
+                            maxLines = 1,
+                            useLabelAsPlaceholder = true,
+                            leadingIcon = {
+                                IconButton(onClick = {}) {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = "搜索",
+                                        tint = MiuixTheme.colorScheme.onSurfaceContainer,
+                                    )
+                                }
+                            },
+                            trailingIcon = {
+                                if (keyword.isNotEmpty()) {
+                                    IconButton(onClick = { viewModel.clearSearch() }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = "清空",
+                                            tint = MiuixTheme.colorScheme.onSurfaceContainer,
+                                        )
+                                    }
+                                }
+                            },
+                            singleLine = true,
+                        )
+                        FunctionButtonGroup(
+                            songCount = songCount,
+                            onPlayAll = {
+                                viewModel.playAllSongs()
+                            },
+                            onMultiSelect = { viewModel.enterMultiSelectMode() },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
+                    }
                 }
             }
         },
     ) { paddingValues ->
         Box(
-            modifier =
-                Modifier
-                    .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 // 歌曲列表
@@ -205,7 +255,7 @@ fun AllSongsScreen(
                                 if (isMultiSelectMode) {
                                     song.songId?.let { viewModel.toggleSongSelection(it) }
                                 } else {
-                                    // TODO: 播放歌曲
+                                    viewModel.playAllSongs(song.mediaStoreId)
                                 }
                             },
                             onItemLongClick = {

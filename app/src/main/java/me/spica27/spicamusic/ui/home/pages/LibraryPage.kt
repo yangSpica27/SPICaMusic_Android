@@ -149,6 +149,7 @@ private fun LibraryContent(
         ) {
             SmallTitle(
                 text = "快速浏览",
+                insideMargin = PaddingValues(start = 16.dp, top = 8.dp),
             )
         }
         items(libraryItems) { item ->

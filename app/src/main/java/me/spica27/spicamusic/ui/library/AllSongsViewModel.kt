@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.storage.api.ISongRepository
 
 /**
@@ -24,6 +26,7 @@ import me.spica27.spicamusic.storage.api.ISongRepository
  */
 class AllSongsViewModel(
     private val songRepository: ISongRepository,
+    private val player: IMusicPlayer,
 ) : ViewModel() {
     // 搜索关键词
     private val _searchKeyword = MutableStateFlow("")
@@ -87,8 +90,20 @@ class AllSongsViewModel(
         _searchKeyword.value = ""
     }
 
-    fun playAllSongs() {
+    fun playAllSongs(mediaId: Long? = null) {
         viewModelScope.launch {
+            val allSongIds =
+                songRepository.getFilteredMediaStoreIds(_searchKeyword.value).map {
+                    it.toString()
+                }
+            player.doAction(
+                action =
+                    PlayerAction.UpdateList(
+                        mediaIds = allSongIds,
+                        mediaId = mediaId?.toString(),
+                        start = true,
+                    ),
+            )
         }
     }
 
