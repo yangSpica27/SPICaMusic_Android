@@ -17,3 +17,4 @@ local.properties
 /player-core/build/
 /storage-core/build/
 /docs/
+/.kotlin/
