@@ -174,14 +174,12 @@ private fun LibraryItemCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val delayMillis = remember(title, icon) { Random.nextInt(0, 220) }
     val durationMillis = remember(title, icon) { Random.nextInt(260, 720) }
 
     val animationSpec =
-        remember(delayMillis, durationMillis) {
+        remember(durationMillis) {
             tween<Float>(
                 durationMillis = durationMillis,
-                delayMillis = delayMillis,
             )
         }
 
