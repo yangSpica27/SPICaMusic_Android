@@ -16,8 +16,17 @@ interface SongDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(song: SongEntity)
 
-    @Query("UPDATE song SET `like` = (CASE WHEN`LIKE` == 1 THEN 0 ELSE 1 END)  WHERE( songId == :id)")
+    @Query("UPDATE song SET `like` = (CASE WHEN `like` == 1 THEN 0 ELSE 1 END) WHERE (songId == :id)")
     suspend fun toggleLike(id: Long)
+
+    @Query("UPDATE song SET `like` = (CASE WHEN `like` == 1 THEN 0 ELSE 1 END) WHERE (mediaStoreId == :mediaStoreId)")
+    suspend fun toggleLikeByMediaStoreId(mediaStoreId: Long)
+
+    @Query("UPDATE song SET `like` = :like WHERE( songId == :id)")
+    suspend fun likeSongs(id: Long, like: Boolean)
+
+    @Query("UPDATE song SET `like` = :like WHERE( songId IN (:ids))")
+    suspend fun likeSongs(ids: List<Long>, like: Boolean)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(songs: List<SongEntity>)
@@ -39,6 +48,9 @@ interface SongDao {
 
     @Query("SELECT * FROM song WHERE mediaStoreId == :id")
     fun getSongWithMediaStoreId(id: Long): SongEntity?
+
+    @Query("SELECT COALESCE(`like`, 0) FROM song WHERE mediaStoreId == :mediaStoreId")
+    fun getSongLikeFlowWithMediaId(mediaStoreId: Long): Flow<Int>
 
     @Query("SELECT * FROM song WHERE mediaStoreId == :id AND (isIgnore == 0)")
     fun getSongFlowWithMediaStoreId(id: Long): Flow<SongEntity?>
@@ -86,17 +98,20 @@ interface SongDao {
     @Delete
     suspend fun delete(song: List<SongEntity>)
 
-    @Query("""
+    @Query(
+        """
         SELECT s.*, COUNT(ph.mediaId) as play_count 
         FROM song s
         LEFT JOIN PlayHistory ph ON s.mediaStoreId = ph.mediaId
         WHERE s.isIgnore == 0
         GROUP BY s.songId
         ORDER BY play_count DESC
-    """)
+    """
+    )
     fun getOftenListenSongs(): Flow<List<SongEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT s.*, COUNT(ph.mediaId) as play_count 
         FROM song s
         LEFT JOIN PlayHistory ph ON s.mediaStoreId = ph.mediaId
@@ -104,7 +119,8 @@ interface SongDao {
         GROUP BY s.songId
         ORDER BY play_count DESC
         LIMIT 10
-    """)
+    """
+    )
     fun getOftenListenSong10(): Flow<List<SongEntity>>
 
     @Transaction
@@ -183,24 +199,28 @@ interface SongDao {
      * 搜索歌曲（关键词匹配）
      * 注意：排序需要在应用层处理
      */
-    @Query("""
+    @Query(
+        """
         SELECT * FROM song 
         WHERE (displayName LIKE '%' || :keyword || '%' OR artist LIKE '%' || :keyword || '%')
         AND (:excludeIgnored = 0 OR isIgnore == 0)
         AND (:onlyLiked = 0 OR `like` == 1)
-    """)
+    """
+    )
     fun searchSongs(
         keyword: String,
         onlyLiked: Int = 0,
         excludeIgnored: Int = 1
     ): Flow<List<SongEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM song 
         WHERE (displayName LIKE '%' || :keyword || '%' OR artist LIKE '%' || :keyword || '%')
         AND (:excludeIgnored = 0 OR isIgnore == 0)
         AND (:onlyLiked = 0 OR `like` == 1)
-    """)
+    """
+    )
     fun searchSongsSync(
         keyword: String,
         onlyLiked: Int = 0,
@@ -212,7 +232,8 @@ interface SongDao {
      * 在数据库层面按 sortName 分组并排序
      * @param keyword 模糊查询关键字（可选），搜索歌曲名称、艺术家
      */
-    @Query("""
+    @Query(
+        """
         SELECT * FROM song 
         WHERE isIgnore == 0
         AND (
@@ -227,10 +248,12 @@ interface SongDao {
             END,
             sortName ASC,
             displayName COLLATE NOCASE ASC
-    """)
+    """
+    )
     fun getSongsGroupedBySortName(keyword: String? = null): Flow<List<SongEntity>>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM song 
         WHERE isIgnore == 0
         AND (
@@ -245,7 +268,8 @@ interface SongDao {
             END,
             sortName ASC,
             displayName COLLATE NOCASE ASC
-    """)
+    """
+    )
     suspend fun getSongsGroupedBySortNameSync(keyword: String? = null): List<SongEntity>
 
     // ===== 分页查询 =====
@@ -254,7 +278,8 @@ interface SongDao {
      * 分页获取歌曲（支持关键词过滤）
      * 用于 AllSongsScreen 和 SongPickerSheet
      */
-    @Query("""
+    @Query(
+        """
         SELECT * FROM song 
         WHERE isIgnore == 0
         AND (
@@ -263,13 +288,15 @@ interface SongDao {
             OR artist LIKE '%' || :keyword || '%'
         )
         ORDER BY displayName COLLATE NOCASE ASC
-    """)
+    """
+    )
     fun getFilteredSongsPaging(keyword: String? = null): PagingSource<Int, SongEntity>
 
     /**
      * 分页获取歌曲（按 sortName 排序，用于 SearchPage 分组）
      */
-    @Query("""
+    @Query(
+        """
         SELECT * FROM song 
         WHERE isIgnore == 0
         AND (
@@ -284,13 +311,15 @@ interface SongDao {
             END,
             sortName ASC,
             displayName COLLATE NOCASE ASC
-    """)
+    """
+    )
     fun getSongsBySortNamePaging(keyword: String? = null): PagingSource<Int, SongEntity>
 
     /**
      * 获取符合条件的歌曲总数（用于 UI 显示总数）
      */
-    @Query("""
+    @Query(
+        """
         SELECT COUNT(*) FROM song 
         WHERE isIgnore == 0
         AND (
@@ -298,13 +327,15 @@ interface SongDao {
             OR displayName LIKE '%' || :keyword || '%' 
             OR artist LIKE '%' || :keyword || '%'
         )
-    """)
+    """
+    )
     fun countFilteredSongs(keyword: String? = null): Flow<Int>
 
     /**
      * 获取所有符合条件的歌曲 ID（用于全选功能）
      */
-    @Query("""
+    @Query(
+        """
         SELECT songId FROM song 
         WHERE isIgnore == 0
         AND (
@@ -312,13 +343,15 @@ interface SongDao {
             OR displayName LIKE '%' || :keyword || '%' 
             OR artist LIKE '%' || :keyword || '%'
         )
-    """)
+    """
+    )
     suspend fun getFilteredSongIds(keyword: String? = null): List<Long>
 
-  /**
-   * 获取所有符合条件的歌曲 ID（用于全选功能）
-   */
-  @Query("""
+    /**
+     * 获取所有符合条件的歌曲 ID（用于全选功能）
+     */
+    @Query(
+        """
         SELECT mediaStoreId FROM song 
         WHERE isIgnore == 0
         AND (
@@ -326,8 +359,9 @@ interface SongDao {
             OR displayName LIKE '%' || :keyword || '%' 
             OR artist LIKE '%' || :keyword || '%'
         )
-    """)
-  suspend fun getFilteredMediaStoreIds(keyword: String? = null): List<Long>
+    """
+    )
+    suspend fun getFilteredMediaStoreIds(keyword: String? = null): List<Long>
 
     // ===== 歌曲选择器分页查询（排除指定歌单已有歌曲） =====
 
@@ -335,7 +369,8 @@ interface SongDao {
      * 分页获取不在指定歌单中的歌曲（支持关键词过滤）
      * 用于 SongPickerSheet
      */
-    @Query("""
+    @Query(
+        """
         SELECT * FROM song 
         WHERE isIgnore == 0
         AND songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId)
@@ -345,7 +380,8 @@ interface SongDao {
             OR artist LIKE '%' || :keyword || '%'
         )
         ORDER BY displayName COLLATE NOCASE ASC
-    """)
+    """
+    )
     fun getSongsNotInPlaylistPaging(
         playlistId: Long,
         keyword: String? = null,
@@ -354,7 +390,8 @@ interface SongDao {
     /**
      * 获取不在指定歌单中的符合条件歌曲总数
      */
-    @Query("""
+    @Query(
+        """
         SELECT COUNT(*) FROM song 
         WHERE isIgnore == 0
         AND songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId)
@@ -363,7 +400,8 @@ interface SongDao {
             OR displayName LIKE '%' || :keyword || '%' 
             OR artist LIKE '%' || :keyword || '%'
         )
-    """)
+    """
+    )
     fun countSongsNotInPlaylist(
         playlistId: Long,
         keyword: String? = null,
@@ -372,7 +410,8 @@ interface SongDao {
     /**
      * 获取不在指定歌单中的所有符合条件歌曲 ID（用于全选）
      */
-    @Query("""
+    @Query(
+        """
         SELECT songId FROM song 
         WHERE isIgnore == 0
         AND songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId)
@@ -381,7 +420,8 @@ interface SongDao {
             OR displayName LIKE '%' || :keyword || '%' 
             OR artist LIKE '%' || :keyword || '%'
         )
-    """)
+    """
+    )
     suspend fun getSongIdsNotInPlaylist(
         playlistId: Long,
         keyword: String? = null,

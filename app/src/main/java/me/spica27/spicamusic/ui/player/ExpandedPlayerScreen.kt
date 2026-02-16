@@ -29,6 +29,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.MusicNote
@@ -90,10 +91,11 @@ import me.spica27.spicamusic.utils.PreferencesManager
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
+import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.util.*
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 // ============================================
@@ -142,11 +144,17 @@ fun ExpandedPlayerScreen(
     var seekValueState by remember(mediaId) { mutableFloatStateOf(0f) }
     var isSeekingState by remember(mediaId) { mutableStateOf(false) }
 
-    val trueTimePosition = viewModel.currentPosition.collectAsStateWithLifecycle()
+    val trueTimePosition by viewModel.currentPosition.collectAsStateWithLifecycle()
 
-    LaunchedEffect(trueTimePosition.value) {
+    val songLikeState by viewModel.currentSongIsLike.collectAsStateWithLifecycle()
+
+    LaunchedEffect(songLikeState) {
+        Timber.tag("ExpandedPlayerScreen").d("当前歌曲收藏状态: $songLikeState")
+    }
+
+    LaunchedEffect(trueTimePosition) {
         if (!isSeekingState) {
-            seekValueState = trueTimePosition.value.toFloat()
+            seekValueState = trueTimePosition.toFloat()
         }
     }
 
@@ -213,10 +221,11 @@ fun ExpandedPlayerScreen(
                         PlayerPage(
                             isSeekingState = isSeekingState,
                             currentMediaItem = currentMediaItem,
-                            realPosition = trueTimePosition.value.toFloat(),
+                            realPosition = trueTimePosition.toFloat(),
                             seekPosition = seekValueState,
                             duration = duration,
                             isPlaying = isPlaying,
+                            isLike = songLikeState,
                             playMode = playMode,
                             onValueChange = {
                                 isSeekingState = true
@@ -230,7 +239,9 @@ fun ExpandedPlayerScreen(
                             onPreviousClick = { viewModel.skipToPrevious() },
                             onNextClick = { viewModel.skipToNext() },
                             onPlayModeClick = { viewModel.togglePlayMode() },
-                            onFavoriteClick = { /* TODO: 收藏功能 */ },
+                            onFavoriteClick = {
+                                viewModel.toggleLikeCurrentSong()
+                            },
                             progress = progress,
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -532,6 +543,7 @@ private fun PlayerPage(
     realPosition: Float,
     duration: Long,
     isPlaying: Boolean,
+    isLike: Boolean,
     playMode: PlayMode,
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit,
@@ -812,6 +824,7 @@ private fun PlayerPage(
                 },
             isPlaying = isPlaying,
             playMode = playMode,
+            isLike = isLike,
             onPlayPauseClick = onPlayPauseClick,
             onPreviousClick = onPreviousClick,
             onNextClick = onNextClick,
@@ -885,6 +898,7 @@ private fun PlayerControls(
     modifier: Modifier,
     isPlaying: Boolean,
     playMode: PlayMode,
+    isLike: Boolean,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -975,9 +989,19 @@ private fun PlayerControls(
             // 收藏
             IconButton(onClick = onFavoriteClick) {
                 Icon(
-                    imageVector = Icons.Rounded.FavoriteBorder, // TODO: 根据状态切换 Favorite
+                    imageVector =
+                        if (isLike) {
+                            Icons.Rounded.Favorite
+                        } else {
+                            Icons.Rounded.FavoriteBorder
+                        },
                     contentDescription = "收藏",
-                    tint = MiuixTheme.colorScheme.onSurface,
+                    tint =
+                        if (isLike) {
+                            Color.Red
+                        } else {
+                            MiuixTheme.colorScheme.onSurface
+                        },
                     modifier = Modifier.size(28.dp),
                 )
             }

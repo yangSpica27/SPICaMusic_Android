@@ -72,6 +72,7 @@ object AppModule {
             viewModel {
                 PlayerViewModel(
                     player = get<IMusicPlayer>(),
+                    songRepository = get<ISongRepository>(),
                 )
             }
 

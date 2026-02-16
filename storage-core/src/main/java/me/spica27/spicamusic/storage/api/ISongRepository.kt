@@ -16,7 +16,7 @@ interface ISongRepository {
      * 获取所有歌曲的 Flow
      */
     fun getAllSongsFlow(): Flow<List<Song>>
-    
+
     /**
      * 获取所有歌曲（同步）
      */
@@ -52,6 +52,12 @@ interface ISongRepository {
      */
     suspend fun getSongByMediaStoreId(mediaStoreId: Long): Song?
 
+
+    /*
+     * 根据 MediaStore ID 获取歌曲 Flow
+     */
+    suspend fun getSongFlowByMediaStoreId(mediaStoreId: Long): Flow<Song?>
+
     /**
      * 批量根据 MediaStore ID 获取歌曲
      * 用于解决 N+1 查询问题，一次性加载多首歌曲
@@ -69,6 +75,26 @@ interface ISongRepository {
     suspend fun toggleLike(id: Long)
 
     /**
+     * 根据 MediaStore ID 切换歌曲的喜欢状态
+     */
+    suspend fun toggleLikeByMediaStoreId(mediaStoreId: Long)
+
+
+    /**
+     * 设置歌曲的喜欢状态
+     * @param id 歌曲ID
+     * @param isLike 是否喜欢
+     */
+    suspend fun likeSong(id: Long, isLike: Boolean)
+
+    /**
+     * 批量设置歌曲的喜欢状态
+     * @param ids 歌曲ID列表
+     * @param isLike 是否喜欢
+     */
+    suspend fun likeSongs(ids: List<Long>, isLike: Boolean)
+
+    /**
      * 设置歌曲忽略状态
      */
     suspend fun setIgnoreStatus(id: Long, isIgnore: Boolean)
@@ -77,6 +103,11 @@ interface ISongRepository {
      * 获取歌曲的喜欢状态 Flow
      */
     fun getSongLikeStatusFlow(id: Long): Flow<Boolean>
+
+    /**
+     * 根据 MediaStore ID 获取歌曲的喜欢状态 Flow
+     */
+    fun getSongLikeStatusFlowByMediaStoreId(mediaStoreId: Long): Flow<Boolean>
 
     /**
      * 获取被忽略的歌曲列表 Flow
@@ -90,8 +121,7 @@ interface ISongRepository {
      * @return 歌曲列表 Flow
      */
     fun getSongsFlow(
-        sortOrder: SongSortOrder = SongSortOrder.DEFAULT,
-        filter: SongFilter = SongFilter.EMPTY
+        sortOrder: SongSortOrder = SongSortOrder.DEFAULT, filter: SongFilter = SongFilter.EMPTY
     ): Flow<List<Song>>
 
     /**
@@ -101,8 +131,7 @@ interface ISongRepository {
      * @return 歌曲列表
      */
     suspend fun getSongs(
-        sortOrder: SongSortOrder = SongSortOrder.DEFAULT,
-        filter: SongFilter = SongFilter.EMPTY
+        sortOrder: SongSortOrder = SongSortOrder.DEFAULT, filter: SongFilter = SongFilter.EMPTY
     ): List<Song>
 
     /**
@@ -112,8 +141,7 @@ interface ISongRepository {
      * @return 匹配的歌曲列表 Flow
      */
     fun searchSongsFlow(
-        keyword: String,
-        sortOrder: SongSortOrder = SongSortOrder.DEFAULT
+        keyword: String, sortOrder: SongSortOrder = SongSortOrder.DEFAULT
     ): Flow<List<Song>>
 
     /**
@@ -185,4 +213,9 @@ interface ISongRepository {
         playlistId: Long,
         keyword: String? = null,
     ): List<Long>
+
+    /**
+     * 根据 MediaStore ID 获取歌曲喜欢状态
+     */
+    fun getSongLikeWithMediaId(mediaStoreId: Long): Flow<Boolean>
 }

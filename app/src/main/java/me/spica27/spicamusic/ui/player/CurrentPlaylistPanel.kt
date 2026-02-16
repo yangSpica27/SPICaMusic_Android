@@ -219,7 +219,7 @@ private fun CurrentPlaylistPanelContent(
                             if (isMultiSelectMode) {
                                 toggleSelection(selectedMediaIds, item.mediaId)
                             } else {
-                                playerViewModel.playById(item.mediaId)
+                                playerViewModel.playByMediaStoreId(item.mediaId)
                             }
                         },
                         onLongClick = {

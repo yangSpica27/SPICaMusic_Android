@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.SharingStarted
@@ -12,16 +13,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.player.api.FFTListener
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
+import me.spica27.spicamusic.storage.api.ISongRepository
+import timber.log.Timber
 
 /**
  * 播放器 ViewModel
@@ -30,6 +36,7 @@ import me.spica27.spicamusic.player.api.PlayerAction
  */
 class PlayerViewModel(
     private val player: IMusicPlayer,
+    private val songRepository: ISongRepository,
 ) : ViewModel() {
     // ==================== 播放状态 ====================
 
@@ -59,6 +66,27 @@ class PlayerViewModel(
      * 当前播放的媒体项
      */
     val currentMediaItem: StateFlow<MediaItem?> = player.currentMediaItem
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val currentSongIsLike: StateFlow<Boolean> =
+        player.currentMediaItem
+            .flatMapLatest { item ->
+                val mediaStoreId = item?.mediaId?.toLongOrNull() ?: -1L
+                if (mediaStoreId == -1L) {
+                    Timber.tag("PlayerViewModel").d("当前媒体项无效，无法获取喜欢状态")
+                    kotlinx.coroutines.flow.flowOf(false)
+                } else {
+                    Timber.tag("PlayerViewModel").d("订阅喜欢状态 Flow: mediaStoreId=$mediaStoreId")
+                    songRepository
+                        .getSongLikeStatusFlowByMediaStoreId(mediaStoreId)
+                        .distinctUntilChanged()
+                        .flowOn(Dispatchers.IO)
+                        .map { isLike ->
+                            Timber.tag("PlayerViewModel").d("收到喜欢状态更新: mediaStoreId=$mediaStoreId, isLike=$isLike")
+                            isLike
+                        }
+                }
+            }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     /**
      * 当前媒体元数据
@@ -210,7 +238,7 @@ class PlayerViewModel(
     /**
      * 根据 ID 播放歌曲
      */
-    fun playById(mediaId: String) {
+    fun playByMediaStoreId(mediaId: String) {
         player.doAction(PlayerAction.PlayById(mediaId))
     }
 
@@ -219,7 +247,7 @@ class PlayerViewModel(
      */
     fun playSong(song: Song) {
         song.mediaStoreId.toString().let { id ->
-            playById(id)
+            playByMediaStoreId(id)
         }
     }
 
@@ -360,4 +388,17 @@ class PlayerViewModel(
     val frequencyBands: FloatArray = IFFTProcessor.FREQUENCY_BANDS
 
     fun getCurrentPositionMs(): Long = player.currentPosition
+
+    /**
+     * 切换当前歌曲的喜欢状态
+     */
+    fun toggleLikeCurrentSong() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val mediaStoreId = currentMediaItem.value?.mediaId?.toLongOrNull() ?: return@launch
+            Timber
+                .tag("PlayerViewModel")
+                .d("切换喜欢状态: mediaStoreId=$mediaStoreId")
+            songRepository.toggleLikeByMediaStoreId(mediaStoreId)
+        }
+    }
 }

@@ -251,7 +251,7 @@ fun CurrentPlaylistPage(
                                     selectedMediaIds.add(item.mediaId)
                                 }
                             } else {
-                                viewModel.playById(item.mediaId)
+                                viewModel.playByMediaStoreId(item.mediaId)
                             }
                         },
                         backgroundState = backgroundState,

@@ -20,53 +20,80 @@ import me.spica27.spicamusic.storage.impl.mapper.toCommon
 class SongRepositoryImpl(
     private val songDao: SongDao,
 ) : ISongRepository {
-    override fun getAllSongsFlow(): Flow<List<Song>> = 
+    override fun getAllSongsFlow(): Flow<List<Song>> =
         songDao.getAll().map { list -> list.map { it.toCommon() } }
-    
+
     override suspend fun getAllSongs(): List<Song> = withContext(Dispatchers.IO) {
         songDao.getAllSync().map { it.toCommon() }
     }
 
-    override fun getAllLikeSongsFlow(): Flow<List<Song>> = 
+    override fun getAllLikeSongsFlow(): Flow<List<Song>> =
         songDao.getAllLikeSong().map { list -> list.map { it.toCommon() } }
 
-    override fun getOftenListenSong10Flow(): Flow<List<Song>> = 
+    override fun getOftenListenSong10Flow(): Flow<List<Song>> =
         songDao.getOftenListenSong10().map { list -> list.map { it.toCommon() } }
 
-    override fun getOftenListenSongsFlow(): Flow<List<Song>> = 
+    override fun getOftenListenSongsFlow(): Flow<List<Song>> =
         songDao.getOftenListenSongs().map { list -> list.map { it.toCommon() } }
 
-    override fun getRandomSongFlow(): Flow<List<Song>> = 
+    override fun getRandomSongFlow(): Flow<List<Song>> =
         songDao.randomSong().map { list -> list.map { it.toCommon() } }
 
-    override fun getSongFlowById(id: Long): Flow<Song?> = 
+    override fun getSongFlowById(id: Long): Flow<Song?> =
         songDao.getSongFlowWithId(id).map { it?.toCommon() }
 
-    override suspend fun getSongByMediaStoreId(mediaStoreId: Long): Song? = withContext(Dispatchers.IO) {
-        songDao.getSongWithMediaStoreId(mediaStoreId)?.toCommon()
+    override suspend fun getSongByMediaStoreId(mediaStoreId: Long): Song? =
+        withContext(Dispatchers.IO) {
+            songDao.getSongWithMediaStoreId(mediaStoreId)?.toCommon()
+        }
+
+    override suspend fun getSongFlowByMediaStoreId(mediaStoreId: Long): Flow<Song?> {
+        return songDao.getSongFlowWithMediaStoreId(mediaStoreId).map { it?.toCommon() }
     }
 
-    override suspend fun getSongsByMediaStoreIds(ids: List<Long>): List<Song> = withContext(Dispatchers.IO) {
-        if (ids.isEmpty()) return@withContext emptyList()
-        songDao.getSongsByMediaStoreIds(ids).map { it.toCommon() }
-    }
+    override suspend fun getSongsByMediaStoreIds(ids: List<Long>): List<Song> =
+        withContext(Dispatchers.IO) {
+            if (ids.isEmpty()) return@withContext emptyList()
+            songDao.getSongsByMediaStoreIds(ids).map { it.toCommon() }
+        }
 
-    override fun getSongsNotInPlaylistFlow(playlistId: Long): Flow<List<Song>> = 
+    override fun getSongsNotInPlaylistFlow(playlistId: Long): Flow<List<Song>> =
         songDao.getSongsNotInPlayListFlow(playlistId).map { list -> list.map { it.toCommon() } }
 
     override suspend fun toggleLike(id: Long) = withContext(Dispatchers.IO) {
         songDao.toggleLike(id)
     }
 
-    override suspend fun setIgnoreStatus(id: Long, isIgnore: Boolean) = withContext(Dispatchers.IO) {
-        songDao.ignore(id, isIgnore)
+    override suspend fun toggleLikeByMediaStoreId(mediaStoreId: Long) = withContext(Dispatchers.IO) {
+        songDao.toggleLikeByMediaStoreId(mediaStoreId)
     }
 
-    override fun getSongLikeStatusFlow(id: Long): Flow<Boolean> = 
+    override suspend fun likeSong(id: Long, isLike: Boolean) = withContext(Dispatchers.IO) {
+        songDao.likeSongs(id, isLike)
+    }
+
+    override suspend fun likeSongs(
+        ids: List<Long>,
+        isLike: Boolean
+    ) = withContext(Dispatchers.IO) {
+        songDao.likeSongs(ids, isLike)
+    }
+
+    override suspend fun setIgnoreStatus(id: Long, isIgnore: Boolean) =
+        withContext(Dispatchers.IO) {
+            songDao.ignore(id, isIgnore)
+        }
+
+    override fun getSongLikeStatusFlowByMediaStoreId(mediaStoreId: Long): Flow<Boolean> {
+        return songDao.getSongLikeFlowWithMediaId(mediaStoreId).map { it == 1 }
+    }
+
+    override fun getSongLikeStatusFlow(id: Long): Flow<Boolean> =
         songDao.getSongIsLikeFlowWithId(id).distinctUntilChanged().map { it == 1 }
 
-    override fun getIgnoreSongsFlow(): Flow<List<Song>> = 
-        songDao.getIgnoreSongsFlow().distinctUntilChanged().map { list -> list.map { it.toCommon() } }
+    override fun getIgnoreSongsFlow(): Flow<List<Song>> =
+        songDao.getIgnoreSongsFlow().distinctUntilChanged()
+            .map { list -> list.map { it.toCommon() } }
 
     override fun getSongsFlow(sortOrder: SongSortOrder, filter: SongFilter): Flow<List<Song>> {
         val keyword = filter.keyword
@@ -81,7 +108,7 @@ class SongRepositoryImpl(
         }
     }
 
-    override suspend fun getSongs(sortOrder: SongSortOrder, filter: SongFilter): List<Song> = 
+    override suspend fun getSongs(sortOrder: SongSortOrder, filter: SongFilter): List<Song> =
         withContext(Dispatchers.IO) {
             val keyword = filter.keyword
             val songs = if (keyword.isNullOrEmpty()) {
@@ -96,12 +123,12 @@ class SongRepositoryImpl(
             applySortAndFilter(songs, sortOrder, filter)
         }
 
-    override fun searchSongsFlow(keyword: String, sortOrder: SongSortOrder): Flow<List<Song>> = 
+    override fun searchSongsFlow(keyword: String, sortOrder: SongSortOrder): Flow<List<Song>> =
         songDao.searchSongs(
             keyword = keyword,
             onlyLiked = 0,
             excludeIgnored = 1
-        ).map { list -> 
+        ).map { list ->
             val songs = list.map { it.toCommon() }
             applySorting(songs, sortOrder)
         }
@@ -131,7 +158,7 @@ class SongRepositoryImpl(
         }
         filter.artists?.let { artistList ->
             if (artistList.isNotEmpty()) {
-                result = result.filter { song -> 
+                result = result.filter { song ->
                     artistList.any { it.equals(song.artist, ignoreCase = true) }
                 }
             }
@@ -177,14 +204,14 @@ class SongRepositoryImpl(
 
     override fun getSongsGroupedBySortNameFlow(keyword: String?): Flow<List<SongGroup>> =
         songDao.getSongsGroupedBySortName(keyword)
-            .map { entities -> 
+            .map { entities ->
                 // 数据库已按 sortName 排序，直接分组即可
                 entities.map { it.toCommon() }
                     .groupBy { it.sortName }
                     .map { (key, songs) -> SongGroup(key, songs) }
             }
 
-    override suspend fun getSongsGroupedBySortName(keyword: String?): List<SongGroup> = 
+    override suspend fun getSongsGroupedBySortName(keyword: String?): List<SongGroup> =
         withContext(Dispatchers.IO) {
             // 数据库已按 sortName 排序，直接分组即可
             songDao.getSongsGroupedBySortNameSync(keyword)
@@ -228,13 +255,13 @@ class SongRepositoryImpl(
             songDao.getFilteredSongIds(keyword)
         }
 
-  override suspend fun getFilteredMediaStoreIds(keyword: String?): List<Long> {
-    return withContext(Dispatchers.IO) {
-      songDao.getFilteredMediaStoreIds(keyword)
+    override suspend fun getFilteredMediaStoreIds(keyword: String?): List<Long> {
+        return withContext(Dispatchers.IO) {
+            songDao.getFilteredMediaStoreIds(keyword)
+        }
     }
-  }
 
-  // ===== 歌曲选择器分页 API 实现 =====
+    // ===== 歌曲选择器分页 API 实现 =====
 
     override fun getSongsNotInPlaylistPagingFlow(
         playlistId: Long,
@@ -261,4 +288,10 @@ class SongRepositoryImpl(
     ): List<Long> = withContext(Dispatchers.IO) {
         songDao.getSongIdsNotInPlaylist(playlistId, keyword)
     }
+
+    override fun getSongLikeWithMediaId(mediaStoreId: Long): Flow<Boolean> {
+        return songDao.getSongLikeFlowWithMediaId(mediaStoreId).map { i -> i == 1 }
+    }
+
+
 }
