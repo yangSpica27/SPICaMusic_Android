@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -73,18 +72,12 @@ class PlayerViewModel(
             .flatMapLatest { item ->
                 val mediaStoreId = item?.mediaId?.toLongOrNull() ?: -1L
                 if (mediaStoreId == -1L) {
-                    Timber.tag("PlayerViewModel").d("当前媒体项无效，无法获取喜欢状态")
                     kotlinx.coroutines.flow.flowOf(false)
                 } else {
-                    Timber.tag("PlayerViewModel").d("订阅喜欢状态 Flow: mediaStoreId=$mediaStoreId")
                     songRepository
                         .getSongLikeStatusFlowByMediaStoreId(mediaStoreId)
                         .distinctUntilChanged()
                         .flowOn(Dispatchers.IO)
-                        .map { isLike ->
-                            Timber.tag("PlayerViewModel").d("收到喜欢状态更新: mediaStoreId=$mediaStoreId, isLike=$isLike")
-                            isLike
-                        }
                 }
             }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 

@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -68,6 +70,8 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.navigation.LocalNavBackStack
+import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -86,7 +90,9 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
 import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.utils.pressable
 import kotlin.random.Random
 
 /**
@@ -227,6 +233,8 @@ private fun WelcomeHolder(
     modifier: Modifier = Modifier,
     paddingValues: PaddingValues,
 ) {
+    val backStack = LocalNavBackStack.current
+
     LazyVerticalGrid(
         modifier = modifier.overScrollVertical(),
         columns = GridCells.Fixed(2),
@@ -241,7 +249,9 @@ private fun WelcomeHolder(
             ),
     ) {
         item {
-            WelcomeItem(title = "最近播放", onClick = {}) {
+            WelcomeItem(title = "经常播放", onClick = {
+                backStack.add(Screen.MostPlayed)
+            }) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.History,
@@ -253,7 +263,12 @@ private fun WelcomeHolder(
             }
         }
         item {
-            WelcomeItem(title = "我喜欢的音乐") {
+            WelcomeItem(
+                title = "所有歌曲",
+                onClick = {
+                    backStack.add(Screen.AllSongs)
+                },
+            ) {
                 // 喜欢插画：多个心形叠加
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
@@ -278,7 +293,9 @@ private fun WelcomeHolder(
             }
         }
         item {
-            WelcomeItem(title = "本地音乐") {
+            WelcomeItem(title = "我的歌单", onClick = {
+                backStack.add(Screen.Playlists)
+            }) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.LibraryMusic,
@@ -290,7 +307,7 @@ private fun WelcomeHolder(
             }
         }
         item {
-            WelcomeItem(title = "歌单") {
+            WelcomeItem(title = "我喜爱的音乐", onClick = {}) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.QueueMusic,
@@ -333,19 +350,25 @@ fun WelcomeItem(
             }
     }
 
+    val interactionSource = remember { MutableInteractionSource() }
+
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .graphicsLayer {
+                .clip(shape = Shapes.SmallCornerBasedShape)
+                .pressable(interactionSource = interactionSource, indication = SinkFeedback())
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ).graphicsLayer {
                     alpha = appearAnim.value
                     scaleX = appearAnim.value
                     scaleY = appearAnim.value
-                }.clip(shape = Shapes.SmallCornerBasedShape)
-                .background(
+                }.background(
                     MiuixTheme.colorScheme.surfaceContainer,
-                ).clickable { onClick() }
-                .aspectRatio(2.15f),
+                ).aspectRatio(2.15f),
     ) {
         Box(
             modifier =
@@ -418,6 +441,7 @@ private fun SearchResultHolder(
                         textColor = MiuixTheme.colorScheme.onSurface,
                     )
                 }
+
                 is SearchListItem.SongItem -> {
                     SongItemCard(
                         song = item.song,
@@ -428,7 +452,9 @@ private fun SearchResultHolder(
                                 .animateItem(),
                     )
                 }
-                null -> { /* placeholder */ }
+
+                null -> { // placeholder
+                }
             }
         }
         item {
@@ -599,7 +625,8 @@ private fun SongItemCard(
 
                                 1 -> {
                                     // 加入播放列表：添加到队列末尾
-                                    val currentIds = currentPlaylist.map { it.mediaId }.toMutableList()
+                                    val currentIds =
+                                        currentPlaylist.map { it.mediaId }.toMutableList()
                                     val mediaId = song.mediaStoreId.toString()
                                     if (!currentIds.contains(mediaId)) {
                                         currentIds.add(mediaId)
