@@ -31,6 +31,8 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.LocationSearching
+import androidx.compose.material.icons.filled.PlaylistRemove
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.Icon
@@ -42,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import dev.chrisbanes.haze.HazeState
+import kotlinx.coroutines.launch
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
@@ -65,6 +69,7 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.extra.WindowDialog
@@ -119,6 +124,10 @@ fun CurrentPlaylistPage(
         }
     }
 
+    val scrollState = rememberLazyListState()
+
+    val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier =
             modifier
@@ -137,8 +146,7 @@ fun CurrentPlaylistPage(
             AnimatedContent(
                 isMultiSelectMode,
                 modifier =
-                    Modifier
-                        .animateContentSize(),
+                Modifier,
             ) { isMultiSelectMode ->
                 Text(
                     text = if (isMultiSelectMode) "已选择 $selectedCount 项" else "播放列表 (${currentPlaylist.size})",
@@ -146,15 +154,52 @@ fun CurrentPlaylistPage(
                     color = MiuixTheme.colorScheme.onSurface,
                 )
             }
-            AnimatedVisibility(isMultiSelectMode) {
-                TextButton(
-                    text = "取消",
-                    onClick = {
-                        isMultiSelectMode = false
-                        selectedMediaIds.clear()
-                    },
-                    insideMargin = PaddingValues(vertical = 4.dp, horizontal = 8.dp),
-                )
+            AnimatedContent(isMultiSelectMode) { selectMode ->
+                if (selectMode) {
+                    TextButton(
+                        text = "取消",
+                        onClick = {
+                            isMultiSelectMode = false
+                            selectedMediaIds.clear()
+                        },
+                        insideMargin = PaddingValues(vertical = 4.dp, horizontal = 8.dp),
+                    )
+                } else {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    scrollState.animateScrollToItem(
+                                        index = currentPlayingIndex,
+                                        scrollOffset = -scrollState.layoutInfo.viewportSize.height / 2,
+                                    )
+                                }
+                            },
+                            modifier = Modifier.size(24.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationSearching,
+                                contentDescription = "跳转到正在播放",
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                viewModel.pause()
+                                viewModel.updatePlaylist(emptyList())
+                            },
+                            modifier = Modifier.size(24.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlaylistRemove,
+                                contentDescription = "清空播放列表",
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -186,7 +231,7 @@ fun CurrentPlaylistPage(
             }
         } else {
             val selectItemBackgroundColor = MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.2f)
-            val scrollState = rememberLazyListState()
+
             LazyColumn(
                 state = scrollState,
                 modifier =
@@ -209,8 +254,10 @@ fun CurrentPlaylistPage(
                                     scrollState.firstVisibleItemScrollOffset.toFloat()
 
                                 // 计算背景的实际位置（考虑滚动偏移）
-                                val itemPositionInList = animatedPlayingIndex * (itemHeight + spacing)
-                                val firstItemPosition = firstVisibleItemIndex * (itemHeight + spacing)
+                                val itemPositionInList =
+                                    animatedPlayingIndex * (itemHeight + spacing)
+                                val firstItemPosition =
+                                    firstVisibleItemIndex * (itemHeight + spacing)
                                 val backgroundTop =
                                     topPadding + itemPositionInList - firstItemPosition - firstVisibleItemScrollOffset
 
@@ -233,7 +280,10 @@ fun CurrentPlaylistPage(
                     ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                itemsIndexed(currentPlaylist, key = { index, song -> song.mediaId }) { index, item ->
+                itemsIndexed(
+                    currentPlaylist,
+                    key = { index, song -> song.mediaId },
+                ) { index, item ->
                     val isSelected = selectedMediaIds.contains(item.mediaId)
                     val isPlaying = currentMediaItem?.mediaId == item.mediaId
                     PlaylistItemRow(
@@ -415,10 +465,10 @@ private fun PlaylistItemRow(
                 text = "${index + 1}",
                 style = MiuixTheme.textStyles.title4,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.width(30.dp),
+                modifier = Modifier.width(44.dp),
                 textAlign = TextAlign.Center,
             )
-            Spacer(modifier = Modifier.size(12.dp))
+            Spacer(modifier = Modifier.size(6.dp))
             AudioCover(
                 uri = artworkUri,
                 modifier =
@@ -477,7 +527,14 @@ private fun PlaylistItemRow(
             Spacer(modifier = Modifier.size(12.dp))
             AnimatedContent(isPlaying) { isPlaying ->
                 Text(
-                    text = if (isPlaying) "正在播放" else formatTime(item.mediaMetadata.durationMs ?: 0L),
+                    text =
+                        if (isPlaying) {
+                            "正在播放"
+                        } else {
+                            formatTime(
+                                item.mediaMetadata.durationMs ?: 0L,
+                            )
+                        },
                     style = MiuixTheme.textStyles.body2,
                     color =
                         if (

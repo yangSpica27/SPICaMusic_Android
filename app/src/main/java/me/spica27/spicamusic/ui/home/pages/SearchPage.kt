@@ -307,7 +307,7 @@ private fun WelcomeHolder(
             }
         }
         item {
-            WelcomeItem(title = "我喜爱的音乐", onClick = {}) {
+            WelcomeItem(title = "喜欢的音乐", onClick = {}) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.QueueMusic,
