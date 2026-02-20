@@ -36,4 +36,5 @@ data class SongEntity(
     var isIgnore: Boolean,
     /** MediaStore 的 DATE_MODIFIED，用于增量扫描判断文件是否变更 */
     var dateModified: Long = 0,
+    var codec: String,
 )

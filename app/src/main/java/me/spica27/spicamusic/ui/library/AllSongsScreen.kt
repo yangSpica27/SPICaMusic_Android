@@ -65,6 +65,7 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.widget.AudioQualityBadges
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -504,6 +505,7 @@ private fun SongItemCard(
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     if (song.like) {
                         Icon(
@@ -513,6 +515,7 @@ private fun SongItemCard(
                             modifier = Modifier.size(14.dp),
                         )
                     }
+                    AudioQualityBadges(song)
                     Text(
                         text = song.artist,
                         fontSize = 14.sp,
@@ -523,7 +526,7 @@ private fun SongItemCard(
                                 MiuixTheme.colorScheme.onSurfaceVariantSummary
                             },
                         maxLines = 1,
-                        modifier = Modifier.padding(start = if (song.like) 4.dp else 0.dp),
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
