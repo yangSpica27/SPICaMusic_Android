@@ -60,6 +60,14 @@ sealed class PlayerAction {
     data class RemoveWithMediaId(val mediaId: String) : PlayerAction()
 
     /**
+     * 添加到队列末尾
+     */
+    data class AddToQueue(
+        val mediaIds: List<String>,
+    )
+
+
+    /**
      * 更新播放列表
      */
     data class UpdateList(

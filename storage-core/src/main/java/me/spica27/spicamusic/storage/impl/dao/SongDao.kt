@@ -195,6 +195,9 @@ interface SongDao {
     @Query("UPDATE song SET isIgnore = :isIgnore WHERE songId == :id")
     fun ignore(id: Long, isIgnore: Boolean)
 
+    @Query("UPDATE song SET isIgnore = :isIgnore WHERE songId IN (:ids)")
+    fun ignoreSongs(ids: List<Long>,isIgnore: Boolean)
+
     /**
      * 搜索歌曲（关键词匹配）
      * 注意：排序需要在应用层处理

@@ -218,4 +218,9 @@ interface ISongRepository {
      * 根据 MediaStore ID 获取歌曲喜欢状态
      */
     fun getSongLikeWithMediaId(mediaStoreId: Long): Flow<Boolean>
+
+    /**
+     * 隐藏歌曲（将歌曲标记为隐藏，通常用于删除或忽略）
+     */
+    suspend fun ignoreSongs(ids: List<Long>, ignore: Boolean = true)
 }

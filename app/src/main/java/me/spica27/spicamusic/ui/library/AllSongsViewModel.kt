@@ -19,6 +19,7 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.storage.api.ISongRepository
+import timber.log.Timber
 
 /**
  * 所有歌曲页面 ViewModel
@@ -159,4 +160,67 @@ class AllSongsViewModel(
      * 检查歌曲是否被选中
      */
     fun isSongSelected(songId: Long): Boolean = _selectedSongIds.value.contains(songId)
+
+    /**
+     * 对已选中的歌曲执行喜欢/不喜欢操作（异步更新数据库）
+     */
+    fun likeSelectedSongs() {
+        viewModelScope.launch {
+            val selectedIds = _selectedSongIds.value.toList()
+            songRepository.likeSongs(selectedIds, true)
+        }
+    }
+
+    /**
+     * 对已选中的歌曲执行喜欢/不喜欢操作（异步更新数据库）
+     */
+    fun dislikeSelectedSongs() {
+        viewModelScope.launch {
+            val selectedIds = _selectedSongIds.value.toList()
+            songRepository.likeSongs(selectedIds, false)
+        }
+    }
+
+    /**
+     * 对已选中的歌曲执行播放操作
+     */
+    fun playSelectedSongs() {
+        viewModelScope.launch {
+//            val selectedIds = _selectedSongIds.value.toList()
+//            if (selectedIds.isNotEmpty()) {
+//                player.doAction(
+//                    action =
+//                        PlayerAction.UpdateList(
+//                            mediaIds = selectedIds.map { it.toString() },
+//                            mediaId = selectedIds.first().toString(),
+//                            start = true,
+//                        ),
+//                )
+//            }
+        }
+    }
+
+    /**
+     * 对已选中的歌曲执行添加到队列操作
+     */
+    fun addToQueueSelectedSongs() {
+        viewModelScope.launch {
+            val selectedIds = _selectedSongIds.value.toList()
+            if (selectedIds.isNotEmpty()) {
+                Timber.tag("AllSongsViewModel").d("Adding to queue: $selectedIds 未实现")
+            }
+        }
+    }
+
+    /*
+     * 对已选中的歌曲执行隐藏操作（异步更新数据库），隐藏后自动退出多选模式
+     */
+    fun hideSelectedSongs() {
+        viewModelScope.launch {
+            val selectedIds = _selectedSongIds.value.toList()
+            if (selectedIds.isNotEmpty()) {
+                songRepository.ignoreSongs(selectedIds)
+            }
+        }
+    }
 }

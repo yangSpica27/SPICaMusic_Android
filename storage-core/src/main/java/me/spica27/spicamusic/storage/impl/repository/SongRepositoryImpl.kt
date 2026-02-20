@@ -64,9 +64,10 @@ class SongRepositoryImpl(
         songDao.toggleLike(id)
     }
 
-    override suspend fun toggleLikeByMediaStoreId(mediaStoreId: Long) = withContext(Dispatchers.IO) {
-        songDao.toggleLikeByMediaStoreId(mediaStoreId)
-    }
+    override suspend fun toggleLikeByMediaStoreId(mediaStoreId: Long) =
+        withContext(Dispatchers.IO) {
+            songDao.toggleLikeByMediaStoreId(mediaStoreId)
+        }
 
     override suspend fun likeSong(id: Long, isLike: Boolean) = withContext(Dispatchers.IO) {
         songDao.likeSongs(id, isLike)
@@ -293,5 +294,9 @@ class SongRepositoryImpl(
         return songDao.getSongLikeFlowWithMediaId(mediaStoreId).map { i -> i == 1 }
     }
 
+    override suspend fun ignoreSongs(ids: List<Long>, ignore: Boolean) =
+        withContext(Dispatchers.IO) {
+            songDao.ignoreSongs(ids, ignore)
+        }
 
 }

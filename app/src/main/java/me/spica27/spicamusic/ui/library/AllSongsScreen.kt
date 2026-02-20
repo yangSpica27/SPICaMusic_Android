@@ -289,28 +289,33 @@ fun AllSongsScreen(
                 MultiSelectBottomMenu(
                     selectedCount = selectedSongIds.size,
                     onFavorite = {
-                        // TODO: 收藏选中歌曲
-                        showMultipleSelectMenu = false
+                        //  收藏选中歌曲
+                        viewModel.likeSelectedSongs()
+                        viewModel.exitMultiSelectMode()
                     },
                     onUnfavorite = {
-                        // TODO: 取消收藏
-                        showMultipleSelectMenu = false
+                        //  取消收藏
+                        viewModel.dislikeSelectedSongs()
+                        viewModel.exitMultiSelectMode()
                     },
-                    onAddToQueue = {
-                        // TODO: 加入播放队列
-                        showMultipleSelectMenu = false
+                    onPlayAll = {
+                        //  全部播放
+                        viewModel.playSelectedSongs()
+                        viewModel.exitMultiSelectMode()
                     },
-                    onPlayNext = {
-                        // TODO: 下一首播放
-                        showMultipleSelectMenu = false
+                    onAddToQueen = {
+                        //  下一首播放
+                        viewModel.addToQueueSelectedSongs()
+                        viewModel.exitMultiSelectMode()
                     },
                     onCreatePlaylist = {
-                        // TODO: 创建歌单
-                        showMultipleSelectMenu = false
+                        // 创建歌单
+                        viewModel.exitMultiSelectMode()
                     },
                     onHide = {
-                        // TODO: 隐藏歌曲
-                        showMultipleSelectMenu = false
+                        // 隐藏歌曲
+                        viewModel.hideSelectedSongs()
+                        viewModel.exitMultiSelectMode()
                     },
                     modifier =
                         Modifier
@@ -547,8 +552,8 @@ private fun MultiSelectBottomMenu(
     selectedCount: Int,
     onFavorite: () -> Unit,
     onUnfavorite: () -> Unit,
-    onAddToQueue: () -> Unit,
-    onPlayNext: () -> Unit,
+    onPlayAll: () -> Unit,
+    onAddToQueen: () -> Unit,
     onCreatePlaylist: () -> Unit,
     onHide: () -> Unit,
     modifier: Modifier = Modifier,
@@ -578,8 +583,8 @@ private fun MultiSelectBottomMenu(
                 )
                 MenuActionItem(
                     icon = Icons.Default.QueueMusic,
-                    label = "播放队列",
-                    onClick = onAddToQueue,
+                    label = "播放全部",
+                    onClick = onPlayAll,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -592,8 +597,8 @@ private fun MultiSelectBottomMenu(
             ) {
                 MenuActionItem(
                     icon = Icons.Default.SkipNext,
-                    label = "下一首播放",
-                    onClick = onPlayNext,
+                    label = "添加到播放列表",
+                    onClick = onAddToQueen,
                     modifier = Modifier.weight(1f),
                 )
                 MenuActionItem(
