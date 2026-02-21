@@ -5,12 +5,14 @@ import com.skydoves.sandwich.retrofit.adapters.ApiResponseCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.storage.api.IAlbumRepository
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.ui.audioeffects.AudioEffectsViewModel
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.pages.SearchViewModel
+import me.spica27.spicamusic.ui.library.AlbumViewModel
 import me.spica27.spicamusic.ui.library.AllSongsViewModel
 import me.spica27.spicamusic.ui.library.PlaylistDetailViewModel
 import me.spica27.spicamusic.ui.library.PlaylistViewModel
@@ -135,6 +137,12 @@ object AppModule {
                     playlistRepository = get<IPlaylistRepository>(),
                     player = get<IMusicPlayer>(),
                     songRepository = get<ISongRepository>(),
+                )
+            }
+
+            viewModel {
+                AlbumViewModel(
+                    albumRepository = get<IAlbumRepository>(),
                 )
             }
 

@@ -4,10 +4,12 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import me.spica27.spicamusic.storage.impl.dao.AlbumDao
 import me.spica27.spicamusic.storage.impl.dao.ExtraInfoDao
 import me.spica27.spicamusic.storage.impl.dao.PlayHistoryDao
 import me.spica27.spicamusic.storage.impl.dao.PlaylistDao
 import me.spica27.spicamusic.storage.impl.dao.SongDao
+import me.spica27.spicamusic.storage.impl.entity.AlbumEntity
 import me.spica27.spicamusic.storage.impl.entity.ExtraInfoEntity
 import me.spica27.spicamusic.storage.impl.entity.PlayHistoryEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistEntity
@@ -15,9 +17,9 @@ import me.spica27.spicamusic.storage.impl.entity.PlaylistSongCrossRefEntity
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
 
 @Database(
-    entities = [SongEntity::class, PlaylistEntity::class, PlaylistSongCrossRefEntity::class, 
-                ExtraInfoEntity::class, PlayHistoryEntity::class],
-    version = 7,
+    entities = [SongEntity::class, PlaylistEntity::class, PlaylistSongCrossRefEntity::class,
+        ExtraInfoEntity::class, PlayHistoryEntity::class, AlbumEntity::class],
+    version = 8,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -25,6 +27,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun playlistDao(): PlaylistDao
     abstract fun lyricDao(): ExtraInfoDao
     abstract fun playHistoryDao(): PlayHistoryDao
+
+    abstract fun albumDao(): AlbumDao
 
     companion object {
         /** v5 → v6: Song 表新增 dateModified 列，用于增量扫描 */

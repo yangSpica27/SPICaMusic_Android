@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.storage.impl.scanner
 
 import android.content.ContentResolver
+import android.content.ContentUris
 import android.content.Context
 import android.database.ContentObserver
 import android.net.Uri
@@ -29,7 +30,9 @@ import me.spica27.spicamusic.storage.api.MediaStoreChangeEvent
 import me.spica27.spicamusic.storage.api.MediaStoreChangeType
 import me.spica27.spicamusic.storage.api.ScanProgress
 import me.spica27.spicamusic.storage.api.ScanResult
+import me.spica27.spicamusic.storage.impl.dao.AlbumDao
 import me.spica27.spicamusic.storage.impl.dao.SongDao
+import me.spica27.spicamusic.storage.impl.entity.AlbumEntity
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
 import timber.log.Timber
 
@@ -40,6 +43,7 @@ import timber.log.Timber
 class MusicScanService(
     private val context: Context,
     private val songDao: SongDao,
+    private val albumDao: AlbumDao
 ) : IMusicScanService {
 
     private val _scanProgress = MutableStateFlow<ScanProgress?>(null)
@@ -177,6 +181,16 @@ class MusicScanService(
         var newAdded = 0
         var updated = 0
 
+
+        try {
+            val albums = loadAlbums()
+            albumDao.replaceAll(albums)
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "扫描失败")
+            _isScanning.value = false
+            return@withContext ScanResult(0, 0, 0, 0)
+        }
+
         try {
             val contentResolver = context.contentResolver
 
@@ -197,8 +211,9 @@ class MusicScanService(
                 MediaStore.Audio.Media.DATE_MODIFIED,
             )
 
-            val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
-            val sortOrder = "${MediaStore.Audio.Media.DISPLAY_NAME} ASC"
+            val selection =
+                "${MediaStore.Audio.Media.IS_MUSIC} = 1 AND ${MediaStore.Audio.Media.DURATION} > 10000"
+            val sortOrder = "${MediaStore.Audio.Media.DATE_ADDED} DESC"
 
             val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
@@ -551,4 +566,60 @@ class MusicScanService(
         val channels: Int,
         val digit: Int,
     )
+
+
+    private suspend fun loadAlbums(): List<AlbumEntity> = withContext(Dispatchers.IO) {
+        val albums = mutableListOf<AlbumEntity>()
+        val collection = MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI
+
+        val projection = arrayOf(
+            MediaStore.Audio.Albums._ID,
+            MediaStore.Audio.Albums.ALBUM,
+            MediaStore.Audio.Albums.ARTIST,
+            MediaStore.Audio.Albums.NUMBER_OF_SONGS,
+            MediaStore.Audio.Albums.FIRST_YEAR
+        )
+
+        val sortOrder = "${MediaStore.Audio.Albums.ALBUM} ASC"
+
+        context.contentResolver.query(
+            collection,
+            projection,
+            null,
+            null,
+            sortOrder
+        )?.use { cursor ->
+            // Cache column indices
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums._ID)
+            val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.ALBUM)
+            val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.ARTIST)
+            val songsCountColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.NUMBER_OF_SONGS)
+            val yearColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.FIRST_YEAR)
+
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idColumn)
+                val title = cursor.getString(albumColumn) ?: continue // Skip if null
+                val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
+                val songsCount = cursor.getInt(songsCountColumn)
+                val year = cursor.getInt(yearColumn)
+                val albumArtUri = ContentUris.withAppendedId(
+                    MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
+                    id
+                ).toString()
+                val album = AlbumEntity(
+                    id = id.toString(),
+                    title = title,
+                    artist = artist,
+                    artworkUri = albumArtUri,
+                    year = year,
+                    numberOfSongs = songsCount,
+                )
+                albums.add(album)
+            }
+        }
+
+        albums
+    }
+
 }

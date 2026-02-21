@@ -293,30 +293,36 @@ fun AllSongsScreen(
                         //  收藏选中歌曲
                         viewModel.likeSelectedSongs()
                         viewModel.exitMultiSelectMode()
+                        showMultipleSelectMenu = false
                     },
                     onUnfavorite = {
                         //  取消收藏
                         viewModel.dislikeSelectedSongs()
                         viewModel.exitMultiSelectMode()
+                        showMultipleSelectMenu = false
                     },
                     onPlayAll = {
                         //  全部播放
                         viewModel.playSelectedSongs()
                         viewModel.exitMultiSelectMode()
+                        showMultipleSelectMenu = false
                     },
                     onAddToQueen = {
                         //  下一首播放
                         viewModel.addToQueueSelectedSongs()
                         viewModel.exitMultiSelectMode()
+                        showMultipleSelectMenu = false
                     },
                     onCreatePlaylist = {
                         // 创建歌单
                         viewModel.exitMultiSelectMode()
+                        showMultipleSelectMenu = false
                     },
                     onHide = {
                         // 隐藏歌曲
                         viewModel.hideSelectedSongs()
                         viewModel.exitMultiSelectMode()
+                        showMultipleSelectMenu = false
                     },
                     modifier =
                         Modifier

@@ -1,12 +1,14 @@
 package me.spica27.spicamusic.common.entity
 
 import android.os.Parcelable
+import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 /**
  * 歌曲实体 - 通用数据类
  */
+@Immutable
 @Parcelize
 @Serializable
 data class Song(

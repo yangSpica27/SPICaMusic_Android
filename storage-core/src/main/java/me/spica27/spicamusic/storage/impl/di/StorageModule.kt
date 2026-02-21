@@ -2,11 +2,13 @@ package me.spica27.spicamusic.storage.impl.di
 
 import android.app.Application
 import androidx.room.Room
+import me.spica27.spicamusic.storage.api.IAlbumRepository
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.storage.impl.db.AppDatabase
+import me.spica27.spicamusic.storage.impl.repository.AlbumRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.PlayHistoryRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.PlaylistRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.SongRepositoryImpl
@@ -17,30 +19,30 @@ import org.koin.dsl.module
  * 存储模块的 Koin 依赖注入配置
  */
 val storageModule = module {
-  // Database
-  single<AppDatabase> {
-    Room.databaseBuilder(
-      get<Application>(),
-      AppDatabase::class.java,
-      "spica_music.db",
-    )
-      .addMigrations(AppDatabase.MIGRATION_5_6)
-      // 开发阶段允许破坏性迁移，发布时应添加正式的 Migration
-      .fallbackToDestructiveMigration(true)
-      .build()
-  }
+    // Database
+    single<AppDatabase> {
+        Room.databaseBuilder(
+            get<Application>(),
+            AppDatabase::class.java,
+            "spica_music.db",
+        ).addMigrations(AppDatabase.MIGRATION_5_6)
+            // 开发阶段允许破坏性迁移，发布时应添加正式的 Migration
+            .fallbackToDestructiveMigration(true).build()
+    }
 
-  // DAOs
-  single { get<AppDatabase>().songDao() }
-  single { get<AppDatabase>().playlistDao() }
-  single { get<AppDatabase>().lyricDao() }
-  single { get<AppDatabase>().playHistoryDao() }
+    // DAOs
+    single { get<AppDatabase>().songDao() }
+    single { get<AppDatabase>().playlistDao() }
+    single { get<AppDatabase>().lyricDao() }
+    single { get<AppDatabase>().playHistoryDao() }
+    single { get<AppDatabase>().albumDao() }
 
-  // Repositories - 通过接口暴露
-  single<ISongRepository> { SongRepositoryImpl(get()) }
-  single<IPlaylistRepository> { PlaylistRepositoryImpl(get(), get()) }
-  single<IPlayHistoryRepository> { PlayHistoryRepositoryImpl(get()) }
+    // Repositories - 通过接口暴露
+    single<ISongRepository> { SongRepositoryImpl(get()) }
+    single<IPlaylistRepository> { PlaylistRepositoryImpl(get(), get()) }
+    single<IPlayHistoryRepository> { PlayHistoryRepositoryImpl(get()) }
+    single<IAlbumRepository> { AlbumRepositoryImpl(get()) }
 
-  // 扫描服务
-  single<IMusicScanService> { MusicScanService(get(), get())}
+    // 扫描服务
+    single<IMusicScanService> { MusicScanService(get(), get(), get()) }
 }
