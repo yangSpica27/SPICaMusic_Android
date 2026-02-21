@@ -51,8 +51,10 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
+import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -119,6 +121,7 @@ private fun LibraryContent(
     scrollBehavior: ScrollBehavior,
     paddingValues: PaddingValues,
     hazeState: HazeState,
+    viewModel: LibraryPageViewModel = koinActivityViewModel(),
 ) {
     val backStack = LocalNavBackStack.current
 
