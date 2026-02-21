@@ -14,12 +14,12 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
  * 播放历史页面
  */
 @Composable
-fun PlayHistoryScreen(modifier: Modifier = Modifier) {
+fun FavoriteScreen(modifier: Modifier = Modifier) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = "播放列表",
+                title = "我喜爱的",
             )
         },
     ) { paddingValues ->
@@ -30,7 +30,7 @@ fun PlayHistoryScreen(modifier: Modifier = Modifier) {
                     .padding(paddingValues),
             contentAlignment = Alignment.Center,
         ) {
-            Text(text = "播放历史")
+            Text(text = "我喜爱的页面")
         }
     }
 }

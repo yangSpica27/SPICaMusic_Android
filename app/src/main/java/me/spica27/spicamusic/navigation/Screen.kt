@@ -41,7 +41,7 @@ sealed interface Screen : NavKey {
     data object MostPlayed : Screen
 
     @Serializable
-    data object PlayHistory : Screen
+    data object Favorite : Screen
 
     @Serializable
     data object Folders : Screen

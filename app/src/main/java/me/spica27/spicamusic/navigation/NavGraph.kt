@@ -11,9 +11,9 @@ import me.spica27.spicamusic.ui.home.HomeScreen
 import me.spica27.spicamusic.ui.library.AlbumsScreen
 import me.spica27.spicamusic.ui.library.AllSongsScreen
 import me.spica27.spicamusic.ui.library.ArtistsScreen
+import me.spica27.spicamusic.ui.library.FavoriteScreen
 import me.spica27.spicamusic.ui.library.FoldersScreen
 import me.spica27.spicamusic.ui.library.MostPlayedScreen
-import me.spica27.spicamusic.ui.library.PlayHistoryScreen
 import me.spica27.spicamusic.ui.library.PlaylistDetailScreen
 import me.spica27.spicamusic.ui.library.PlaylistsScreen
 import me.spica27.spicamusic.ui.library.RecentlyAddedScreen
@@ -59,8 +59,8 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                     MostPlayedScreen()
                 }
 
-                entry<Screen.PlayHistory> {
-                    PlayHistoryScreen()
+                entry<Screen.Favorite> {
+                    FavoriteScreen()
                 }
 
                 entry<Screen.Folders> {

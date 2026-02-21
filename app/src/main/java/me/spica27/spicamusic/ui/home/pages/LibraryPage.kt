@@ -131,7 +131,7 @@ private fun LibraryContent(
             LibraryItem("艺术家", Icons.Default.Person, Screen.Artists),
             LibraryItem("最近添加", Icons.Default.Add, Screen.RecentlyAdded),
             LibraryItem("最常播放", Icons.Default.AllInbox, Screen.MostPlayed),
-            LibraryItem("我喜爱的", Icons.Default.Favorite, Screen.PlayHistory),
+            LibraryItem("我喜爱的", Icons.Default.Favorite, Screen.Favorite),
             LibraryItem("文件夹", Icons.Default.Home, Screen.Folders),
         )
 
@@ -150,6 +150,49 @@ private fun LibraryContent(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        item(
+            span = { GridItemSpan(2) },
+        ) {
+            Title(
+                text = "歌单",
+                summary = "浏览你创建的歌单",
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .clip(
+                                Shapes.LargeCornerBasedShape,
+                            ).clickable {
+                                backStack.add(Screen.Playlists)
+                            }.padding(
+                                horizontal = 10.dp,
+                                vertical = 8.dp,
+                            ),
+                ) {
+                    Text(
+                        "查看全部",
+                        color = MiuixTheme.colorScheme.onTertiaryContainer,
+                        style = MiuixTheme.textStyles.subtitle,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = MiuixIcons.Basic.ArrowRight,
+                        contentDescription = "more",
+                        tint = MiuixTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
+        }
+        item(
+            span = { GridItemSpan(2) },
+        ) {
+            Text(
+                "（歌单列表暂未实现，敬请期待）",
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                style = MiuixTheme.textStyles.subtitle,
+                modifier = Modifier.padding(horizontal = 22.dp),
+            )
+        }
         item(
             span = { GridItemSpan(2) },
         ) {

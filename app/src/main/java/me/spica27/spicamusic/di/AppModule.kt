@@ -7,6 +7,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.storage.api.IAlbumRepository
 import me.spica27.spicamusic.storage.api.IMusicScanService
+import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.ui.audioeffects.AudioEffectsViewModel
@@ -14,6 +15,7 @@ import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.pages.SearchViewModel
 import me.spica27.spicamusic.ui.library.AlbumViewModel
 import me.spica27.spicamusic.ui.library.AllSongsViewModel
+import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.library.PlaylistDetailViewModel
 import me.spica27.spicamusic.ui.library.PlaylistViewModel
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
@@ -140,6 +142,17 @@ object AppModule {
                 )
             }
 
+            // 媒体库
+            viewModel {
+                LibraryPageViewModel(
+                    songRepositoryImpl = get<ISongRepository>(),
+                    albumRepositoryImpl = get<IAlbumRepository>(),
+                    playlistRepositoryImpl = get<IPlaylistRepository>(),
+                    historyRepository = get<IPlayHistoryRepository>(),
+                )
+            }
+
+            // 专辑页面 ViewModel
             viewModel {
                 AlbumViewModel(
                     albumRepository = get<IAlbumRepository>(),
