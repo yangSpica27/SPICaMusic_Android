@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,17 +49,21 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.compose.collectAsLazyPagingItems
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
+import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.Card
@@ -145,6 +150,7 @@ private fun LibraryContent(
 ) {
     val backStack = LocalNavBackStack.current
     val playlists by viewModel.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
+    val albumsItems = viewModel.albumList.collectAsLazyPagingItems()
 
     LazyVerticalGrid(
         modifier =
@@ -209,12 +215,41 @@ private fun LibraryContent(
                 }
             }
         }
-        librarySection(
-            title = "专辑",
-            summary = "浏览你的专辑收藏",
-            placeholderText = "（专辑列表暂未实现，敬请期待）",
-            rightWidget = { ViewAllButton { backStack.add(Screen.Albums) } },
-        )
+        // 专辑分区：展示最多 4 张专辑预览或占位提示去重新扫描
+        item(span = { GridItemSpan(2) }) {
+            Title(
+                text = "专辑",
+                summary = "浏览你的专辑收藏",
+                rightWidget = { ViewAllButton { backStack.add(Screen.Albums) } },
+            )
+        }
+
+        if (albumsItems.itemCount == 0) {
+            item(span = { GridItemSpan(2) }) {
+                EmptyAlbumCard(
+                    onRescan = { backStack.add(Screen.MediaLibrarySource) },
+                    modifier = Modifier.padding(horizontal = 10.dp),
+                )
+            }
+        } else {
+            val displayCount = minOf(albumsItems.itemCount, 4)
+            items(displayCount) { index ->
+                val album = albumsItems[index]
+                if (album != null) {
+                    AlbumMiniCard(
+                        modifier =
+                            Modifier.padding(
+                                start = if (index % 2 == 0) 16.dp else 0.dp,
+                                end = if (index % 2 == 0) 0.dp else 16.dp,
+                            ),
+                        album = album,
+                        onClick = { backStack.add(Screen.Albums) },
+                    )
+                } else {
+                    AlbumMiniPlaceholder()
+                }
+            }
+        }
         librarySection(
             title = "为你推荐",
             summary = "基于你的听歌习惯推荐的歌单和专辑",
@@ -259,14 +294,13 @@ private fun LibraryContent(
         }
         items(libraryItems.size) { index ->
             LibraryItemCard(
-                modifier =
-                    Modifier.padding(
-                        start = ((1 - index % 2) * 16).dp, // 左边距偶数项为0，奇数项为10dp
-                        end = ((index % 2) * 16).dp, // 右边距偶数项为10dp，奇数项为0
-                    ),
                 title = libraryItems[index].title,
                 icon = libraryItems[index].icon,
                 onClick = { backStack.add(libraryItems[index].screen) },
+                Modifier.padding(
+                    start = if (index % 2 == 0) 16.dp else 0.dp,
+                    end = if (index % 2 == 0) 0.dp else 16.dp,
+                ),
             )
         }
         item {
@@ -424,14 +458,180 @@ private fun PlaylistMiniCard(
 }
 
 /**
+ * 专辑占位卡片 - 当没有专辑时显示
+ */
+@Composable
+private fun EmptyAlbumCard(
+    onRescan: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        onClick = onRescan,
+        pressFeedbackType = PressFeedbackType.Tilt,
+        cornerRadius = 10.dp,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(160.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Refresh,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "没有专辑",
+                style = MiuixTheme.textStyles.title4,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "试试重新扫描媒体库",
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AlbumMiniCard(
+    modifier: Modifier,
+    album: Album,
+    onClick: () -> Unit,
+) {
+    Card(
+        onClick = onClick,
+        pressFeedbackType = PressFeedbackType.Tilt,
+        cornerRadius = 10.dp,
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .size(120.dp)
+                        .clip(Shapes.SmallCornerBasedShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                AudioCover(
+                    uri = album.artworkUri?.toUri(),
+                    modifier = Modifier.fillMaxSize(),
+                    placeHolder = {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colors =
+                                                listOf(
+                                                    MiuixTheme.colorScheme.tertiaryContainer,
+                                                    MiuixTheme.colorScheme.surfaceContainerHigh,
+                                                ),
+                                        ),
+                                    ).padding(
+                                        12.dp,
+                                    ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = album.title,
+                                style = MiuixTheme.textStyles.headline1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
+                            )
+                        }
+                    },
+                )
+            }
+            Spacer(
+                modifier = Modifier.height(8.dp),
+            )
+            Text(
+                text = album.title,
+                style = MiuixTheme.textStyles.body1,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+            )
+            Spacer(
+                modifier = Modifier.height(4.dp),
+            )
+            Text(
+                text = album.artist,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                maxLines = 1,
+                modifier = Modifier.padding(horizontal = 12.dp),
+            )
+            Spacer(
+                modifier = Modifier.height(10.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AlbumMiniPlaceholder() {
+    Card(
+        pressFeedbackType = PressFeedbackType.Tilt,
+        cornerRadius = 10.dp,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .size(120.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.surfaceContainer,
+                                        MiuixTheme.colorScheme.surfaceContainerHigh,
+                                    ),
+                            ),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+/**
  * 媒体库列表项卡片
  */
 @Composable
 private fun LibraryItemCard(
-    modifier: Modifier,
     title: String,
     icon: ImageVector,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val durationMillis = remember(title, icon) { Random.nextInt(260, 720) }
 
