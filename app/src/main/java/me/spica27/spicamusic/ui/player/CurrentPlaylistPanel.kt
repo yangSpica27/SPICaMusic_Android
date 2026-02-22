@@ -350,6 +350,7 @@ private fun PlaylistMediaItemRow(
                 Text(
                     text = title,
                     style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalHazeMaterialsApi::class)
+
 package me.spica27.spicamusic.ui.home.pages
 
 import androidx.compose.animation.core.tween
@@ -21,7 +23,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -42,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -56,16 +58,21 @@ import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.player.api.PlayerAction
+import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import org.koin.compose.viewmodel.koinActivityViewModel
+import org.koin.java.KoinJavaComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -250,44 +257,190 @@ private fun LibraryContent(
                 }
             }
         }
-        librarySection(
-            title = "为你推荐",
-            summary = "基于你的听歌习惯推荐的歌单和专辑",
-            placeholderText = "（推荐功能暂未实现，敬请期待）",
-            rightWidget = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+        item(
+            span = { GridItemSpan(2) },
+        ) {
+            Title(
+                text = "歌曲推荐",
+                summary = "基于你的听歌习惯推荐",
+                rightWidget = {
+                    val recommended by viewModel.recommendedSongs.collectAsStateWithLifecycle(
+                        initialValue = emptyList(),
+                    )
+                    val player: me.spica27.spicamusic.player.api.IMusicPlayer =
+                        org.koin.java.KoinJavaComponent
+                            .getKoin()
+                            .get()
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier =
+                            Modifier
+                                .clip(Shapes.LargeCornerBasedShape)
+                                .background(
+                                    MiuixTheme.colorScheme.primaryContainer,
+                                ).clickable(onClick = {
+                                    // 播放全部推荐，从第一个开始
+                                    val mediaIds = recommended.map { it.mediaStoreId.toString() }
+                                    if (mediaIds.isNotEmpty()) {
+                                        player.doAction(
+                                            PlayerAction.UpdateList(
+                                                mediaIds = mediaIds,
+                                                mediaId = mediaIds.first(),
+                                                start = true,
+                                            ),
+                                        )
+                                    }
+                                })
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "播放推荐",
+                            tint = MiuixTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "播放",
+                            color = MiuixTheme.colorScheme.onPrimaryContainer,
+                            style = MiuixTheme.textStyles.subtitle,
+                        )
+                    }
+                },
+            )
+        }
+        // 推荐歌曲列表
+        item(span = { GridItemSpan(2) }) {
+            val recommended by viewModel.recommendedSongs.collectAsStateWithLifecycle(initialValue = emptyList())
+            if (recommended.isEmpty()) {
+                Text(
+                    "暂无推荐",
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    style = MiuixTheme.textStyles.subtitle,
+                    modifier = Modifier.padding(horizontal = 10.dp),
+                )
+            } else {
+                val player: IMusicPlayer =
+                    KoinJavaComponent
+                        .getKoin()
+                        .get()
+                LazyRow(
                     modifier =
                         Modifier
-                            .background(
-                                MiuixTheme.colorScheme.primaryContainer,
-                                shape = Shapes.LargeCornerBasedShape,
-                            ).padding(horizontal = 10.dp, vertical = 8.dp),
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "播放推荐",
-                        tint = MiuixTheme.colorScheme.onPrimaryContainer,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "播放",
-                        color = MiuixTheme.colorScheme.onPrimaryContainer,
-                        style = MiuixTheme.textStyles.subtitle,
-                    )
+                    items(recommended) { song ->
+                        Card(
+                            onClick = {
+                                // 点击某一项，从该项开始播放整个推荐列表
+                                val mediaIds = recommended.map { it.mediaStoreId.toString() }
+                                player.doAction(
+                                    PlayerAction.UpdateList(
+                                        mediaIds = mediaIds,
+                                        mediaId = song.mediaStoreId.toString(),
+                                        start = true,
+                                    ),
+                                )
+                            },
+                            pressFeedbackType = PressFeedbackType.Sink,
+                            cornerRadius = 10.dp,
+                            modifier = Modifier.size(width = 180.dp, height = 100.dp),
+                        ) {
+                            Box(
+                                Modifier.fillMaxSize(),
+                            ) {
+                                AudioCover(
+                                    uri = song.getCoverUri(),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxSize()
+                                            .hazeEffect(
+                                                style =
+                                                    HazeMaterials.ultraThick(
+                                                        MiuixTheme.colorScheme.surface,
+                                                    ),
+                                            ) {
+                                                progressive =
+                                                    HazeProgressive.LinearGradient(
+                                                        startIntensity = 0.45f,
+                                                        endIntensity = 0f,
+                                                    )
+                                            },
+                                    placeHolder = {
+                                        Box(
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxSize()
+                                                    .background(
+                                                        Brush.verticalGradient(
+                                                            colors =
+                                                                listOf(
+                                                                    MiuixTheme.colorScheme.tertiaryContainer,
+                                                                    MiuixTheme.colorScheme.surfaceContainerHigh,
+                                                                ),
+                                                        ),
+                                                    ),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Text(
+                                                text = song.displayName,
+                                                style = MiuixTheme.textStyles.headline1,
+                                                color =
+                                                    MiuixTheme.colorScheme.onSurfaceVariantActions.copy(
+                                                        alpha = 0.3f,
+                                                    ),
+                                                modifier =
+                                                    Modifier
+                                                        .padding(12.dp)
+                                                        .scale(2f)
+                                                        .rotate(-45f),
+                                            )
+                                        }
+                                    },
+                                )
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = song.displayName,
+                                        style = MiuixTheme.textStyles.body1,
+                                        maxLines = 2,
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = song.artist,
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                                        maxLines = 1,
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
-            },
-        )
-        librarySection(
-            title = "听歌统计",
-            summary = "查看你的听歌习惯和历史数据",
-            placeholderText = "（听歌统计功能暂未实现，敬请期待）",
-            rightWidget = { ViewAllButton { } },
-        )
+            }
+        }
+        item(
+            span = { GridItemSpan(2) },
+        ) {
+            Title(
+                text = "听歌统计",
+                summary = "查看你的听歌数据和习惯",
+                rightWidget = { ViewAllButton { } },
+            )
+        }
+        // 本周听歌统计卡片：展示本周听歌总时长、播放次数和听过的歌曲数
+        item(span = { GridItemSpan(2) }) {
+            val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle(initialValue = null)
+            WeeklyStatsCard(
+                weeklyStats = weeklyStats,
+                onRefresh = { viewModel.refreshWeeklyStats() },
+            )
+        }
         item(span = { GridItemSpan(2) }) {
             Text(
                 "快捷入口",
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                color = MiuixTheme.colorScheme.onSurface,
                 style = MiuixTheme.textStyles.subtitle,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
@@ -306,28 +459,6 @@ private fun LibraryContent(
         item {
             Spacer(modifier = Modifier.height(280.dp))
         }
-    }
-}
-
-/**
- * 通用 section 扩展：包含标题行和占位提示文本
- */
-private fun LazyGridScope.librarySection(
-    title: String,
-    summary: String,
-    placeholderText: String,
-    rightWidget: @Composable () -> Unit = {},
-) {
-    item(span = { GridItemSpan(2) }) {
-        Title(text = title, summary = summary, rightWidget = rightWidget)
-    }
-    item(span = { GridItemSpan(2) }) {
-        Text(
-            placeholderText,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            style = MiuixTheme.textStyles.subtitle,
-            modifier = Modifier.padding(horizontal = 10.dp),
-        )
     }
 }
 
@@ -367,7 +498,7 @@ private fun EmptyPlaylistCard(
 ) {
     Card(
         onClick = onClick,
-        pressFeedbackType = PressFeedbackType.Tilt,
+        pressFeedbackType = PressFeedbackType.Sink,
         cornerRadius = 10.dp,
         modifier =
             modifier
@@ -414,7 +545,7 @@ private fun PlaylistMiniCard(
 ) {
     Card(
         onClick = onClick,
-        pressFeedbackType = PressFeedbackType.Tilt,
+        pressFeedbackType = PressFeedbackType.Sink,
         cornerRadius = 10.dp,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -467,7 +598,7 @@ private fun EmptyAlbumCard(
 ) {
     Card(
         onClick = onRescan,
-        pressFeedbackType = PressFeedbackType.Tilt,
+        pressFeedbackType = PressFeedbackType.Sink,
         cornerRadius = 10.dp,
         modifier =
             modifier
@@ -512,7 +643,7 @@ private fun AlbumMiniCard(
 ) {
     Card(
         onClick = onClick,
-        pressFeedbackType = PressFeedbackType.Tilt,
+        pressFeedbackType = PressFeedbackType.Sink,
         cornerRadius = 10.dp,
         modifier = modifier,
     ) {
@@ -590,7 +721,7 @@ private fun AlbumMiniCard(
 @Composable
 private fun AlbumMiniPlaceholder() {
     Card(
-        pressFeedbackType = PressFeedbackType.Tilt,
+        pressFeedbackType = PressFeedbackType.Sink,
         cornerRadius = 10.dp,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -656,7 +787,7 @@ private fun LibraryItemCard(
     ) {
         Card(
             onClick = onClick,
-            pressFeedbackType = PressFeedbackType.Tilt,
+            pressFeedbackType = PressFeedbackType.Sink,
             cornerRadius = 10.dp,
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -697,7 +828,7 @@ private fun LibraryItemCard(
                                 ),
                                 shape = Shapes.SmallCornerBasedShape,
                             ),
-                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = icon,
@@ -752,6 +883,108 @@ private fun Title(
 /**
  * 媒体库列表项数据类
  */
+@Composable
+private fun WeeklyStatsCard(
+    weeklyStats: me.spica27.spicamusic.common.entity.PlayStats?,
+    onRefresh: () -> Unit,
+) {
+    Card(
+        onClick = {},
+        pressFeedbackType = PressFeedbackType.None,
+        cornerRadius = 10.dp,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        weeklyStats?.let { formatDuration(it.totalPlayedDuration) } ?: "—",
+                        style = MiuixTheme.textStyles.title1,
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        "本周听歌时长",
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        weeklyStats?.playEventCount?.toString() ?: "—",
+                        style = MiuixTheme.textStyles.title1,
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        "播放次数",
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        weeklyStats?.uniqueSongCount?.toString() ?: "—",
+                        style = MiuixTheme.textStyles.title1,
+                        color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    )
+                    Text(
+                        "听过歌曲数",
+                        style = MiuixTheme.textStyles.body2,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                Text(
+                    "刷新",
+                    color = MiuixTheme.colorScheme.primary,
+                    style = MiuixTheme.textStyles.body2,
+                    modifier =
+                        Modifier
+                            .clip(Shapes.MediumCornerBasedShape)
+                            .clickable(onClick = onRefresh)
+                            .padding(8.dp),
+                )
+            }
+        }
+    }
+}
+
+private fun formatDuration(ms: Long): String {
+    val totalSec = (ms / 1000)
+    val hours = totalSec / 3600
+    val minutes = (totalSec % 3600) / 60
+    return when {
+        hours > 0 -> "${hours}h ${minutes}m"
+        minutes > 0 -> "${minutes}m"
+        else -> "0m"
+    }
+}
+
 private data class LibraryItem(
     val title: String,
     val icon: ImageVector,

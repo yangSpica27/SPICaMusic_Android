@@ -35,6 +35,8 @@ import me.spica27.spicamusic.player.impl.utils.toMediaItem
 import org.koin.android.ext.koin.androidApplication
 import org.koin.dsl.module
 import org.koin.java.KoinJavaComponent.getKoin
+import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
+import me.spica27.spicamusic.common.entity.PlayHistory
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
@@ -51,6 +53,9 @@ class SpicaPlayer(
     private val TAG = "SpicaPlayer"
 
     private val playerKVUtils = getKoin().get<PlayerKVUtils>()
+
+    // 播放历史仓库（延迟获取，避免循环依赖问题）
+    private val playHistoryRepository by lazy { getKoin().get<IPlayHistoryRepository>() }
 
     override val coroutineContext: CoroutineContext = Dispatchers.IO + SupervisorJob()
 
@@ -102,6 +107,12 @@ class SpicaPlayer(
 
     private val _currentTimelineItems = MutableStateFlow<List<MediaItem>>(emptyList())
     override val currentTimelineItems: StateFlow<List<MediaItem>> = _currentTimelineItems
+
+    // 记录当前播放会话的开始信息，用于计算 playedDuration
+    private var playSessionMediaId: String? = null
+    private var playStartPosition: Long = 0L
+    private var playStartTimeMs: Long = 0L
+    private var isRecordingPlay: Boolean = false
 
     override val currentPosition: Long
         get() = runCatching { if (browserFuture.isDone) browserFuture.get()?.currentPosition else null }.getOrNull()
@@ -312,6 +323,51 @@ class SpicaPlayer(
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         this@SpicaPlayer._isPlaying.value = isPlaying
+        if (isPlaying) {
+            // 开始记录播放会话
+            playSessionMediaId = _currentMediaItem.value?.mediaId
+            playStartPosition = browserInstance?.currentPosition ?: 0L
+            playStartTimeMs = System.currentTimeMillis()
+            isRecordingPlay = true
+        } else {
+            // 停止或暂停时记录一次播放事件
+            if (isRecordingPlay) {
+                val mediaId = playSessionMediaId
+                val currentPos = browserInstance?.currentPosition ?: 0L
+                val playedDuration = (currentPos - playStartPosition).coerceAtLeast(0L)
+                val dur = _currentDuration.value
+                val completed = dur > 0 && playedDuration >= (dur * 0.9)
+                if (mediaId != null) {
+                    val extra = buildExtraFromMetadata(_currentMediaMetadata.value)
+                    val ph = PlayHistory(
+                        songId = mediaId.toLongOrNull() ?: 0L,
+                        playTime = System.currentTimeMillis(),
+                        playCount = 1,
+                        userId = null,
+                        sessionId = null,
+                        deviceId = null,
+                        duration = dur,
+                        playedDuration = playedDuration,
+                        position = currentPos,
+                        actionType = if (completed) 3 else 1,
+                        contextType = _currentPlaylistMetadata.value?.title?.toString() ?: "",
+                        contextId = null,
+                        isCompleted = completed,
+                        source = "",
+                        extra = extra,
+                    )
+                    launch(Dispatchers.IO) {
+                        try {
+                            playHistoryRepository.addPlayHistory(ph)
+                        } catch (e: Exception) {
+                            Timber.e(e)
+                        }
+                    }
+                }
+            }
+            isRecordingPlay = false
+            playSessionMediaId = null
+        }
     }
 
     override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
@@ -323,6 +379,40 @@ class SpicaPlayer(
         mediaItem: MediaItem?,
         reason: Int,
     ) {
+        // 记录上一首歌的播放信息（在切歌且仍在播放的情况下）
+        val previousMediaId = _currentMediaItem.value?.mediaId
+        if (previousMediaId != null && isRecordingPlay) {
+            val now = System.currentTimeMillis()
+            val playedDuration = (now - playStartTimeMs).coerceAtLeast(0L)
+            val dur = _currentDuration.value
+            val completed = dur > 0 && playedDuration >= (dur * 0.9)
+            val extra = buildExtraFromMetadata(_currentMediaMetadata.value)
+            val ph = PlayHistory(
+                songId = previousMediaId.toLongOrNull() ?: 0L,
+                playTime = now,
+                playCount = 1,
+                userId = null,
+                sessionId = null,
+                deviceId = null,
+                duration = dur,
+                playedDuration = playedDuration,
+                position = playStartPosition,
+                actionType = if (completed) 3 else 2,
+                contextType = _currentPlaylistMetadata.value?.title?.toString() ?: "",
+                contextId = null,
+                isCompleted = completed,
+                source = "",
+                extra = extra,
+            )
+            launch(Dispatchers.IO) {
+                try {
+                    playHistoryRepository.addPlayHistory(ph)
+                } catch (e: Exception) {
+                    Timber.e(e)
+                }
+            }
+        }
+
         Timber.e("onMediaItemTransition $mediaItem $reason")
         _currentMediaItem.value = mediaItem
         // 切歌时立即重置 duration，避免旧时长污染新歌曲的进度计算
@@ -337,6 +427,14 @@ class SpicaPlayer(
         if (_pauseWhenCompletion.value) {
             browserInstance?.pause()
             _pauseWhenCompletion.value = false
+        }
+
+        // 如果仍在播放则开始记录新会话
+        if (_isPlaying.value) {
+            playSessionMediaId = _currentMediaItem.value?.mediaId
+            playStartPosition = browserInstance?.currentPosition ?: 0L
+            playStartTimeMs = System.currentTimeMillis()
+            isRecordingPlay = true
         }
     }
 
@@ -452,5 +550,12 @@ class SpicaPlayer(
             _equalizerProcessor,
             _reverbProcessor,
         )
+    }
+
+    private fun buildExtraFromMetadata(metadata: MediaMetadata?): String {
+        val title = metadata?.title?.toString() ?: metadata?.displayTitle?.toString() ?: ""
+        val artist = metadata?.artist ?: ""
+        val album = metadata?.albumTitle ?: ""
+        return "{\"title\":\"$title\",\"artist\":\"$artist\",\"album\":\"$album\"}"
     }
 }

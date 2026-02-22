@@ -98,10 +98,23 @@ fun Lyric.toEntity() = ExtraInfoEntity(
 )
 
 fun PlayHistoryEntity.toCommon() = PlayHistory(
-    id = id,
+    id = if (id == 0L) null else id,
     songId = mediaId,
     playTime = time,
     playCount = 1,
+
+    userId = null,
+    sessionId = if (sessionId.isBlank()) null else sessionId,
+    deviceId = if (deviceId.isBlank()) null else deviceId,
+    duration = duration,
+    playedDuration = playedDuration,
+    position = position,
+    actionType = actionType,
+    contextType = contextType,
+    contextId = if (contextId == 0L) null else contextId,
+    isCompleted = isCompleted,
+    source = source,
+    extra = extra,
 )
 
 fun PlayHistory.toEntity() = PlayHistoryEntity(
@@ -110,6 +123,17 @@ fun PlayHistory.toEntity() = PlayHistoryEntity(
     title = "",
     artist = "",
     album = "",
+    duration = duration,
+    playedDuration = playedDuration,
+    position = position,
+    actionType = actionType,
+    contextType = contextType,
+    contextId = contextId ?: 0,
+    sessionId = sessionId ?: "",
+    deviceId = deviceId ?: "",
+    source = source,
+    isCompleted = isCompleted,
+    extra = extra,
     time = playTime,
 )
 
