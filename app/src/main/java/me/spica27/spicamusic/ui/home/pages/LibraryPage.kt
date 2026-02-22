@@ -252,7 +252,7 @@ private fun LibraryContent(
                                 end = if (index % 2 == 0) 0.dp else 16.dp,
                             ),
                         album = album,
-                        onClick = { backStack.add(Screen.Albums) },
+                        onClick = { backStack.add(Screen.AlbumDetail(album)) },
                     )
                 } else {
                     AlbumMiniPlaceholder()
@@ -280,7 +280,8 @@ private fun LibraryContent(
                                 .clip(Shapes.LargeCornerBasedShape)
                                 .background(
                                     MiuixTheme.colorScheme.primaryContainer,
-                                ).clickable(onClick = {
+                                )
+                                .clickable(onClick = {
                                     // 播放全部推荐，从第一个开始
                                     val mediaIds = recommended.map { it.mediaStoreId.toString() }
                                     if (mediaIds.isNotEmpty()) {
@@ -676,7 +677,8 @@ private fun AlbumMiniCard(
                                                     MiuixTheme.colorScheme.surfaceContainerHigh,
                                                 ),
                                         ),
-                                    ).padding(
+                                    )
+                                    .padding(
                                         12.dp,
                                     ),
                             contentAlignment = Alignment.Center,
@@ -819,7 +821,8 @@ private fun LibraryItemCard(
                             .graphicsLayer {
                                 translationX = 16.dp.toPx()
                                 translationY = 10.dp.toPx()
-                            }.background(
+                            }
+                            .background(
                                 Brush.radialGradient(
                                     colors =
                                         listOf(
