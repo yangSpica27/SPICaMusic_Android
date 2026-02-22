@@ -514,6 +514,7 @@ private fun PlaylistItemRow(
                     text = title,
                     style = MiuixTheme.textStyles.body1,
                     maxLines = 1,
+                    color = MiuixTheme.colorScheme.onSurface,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
