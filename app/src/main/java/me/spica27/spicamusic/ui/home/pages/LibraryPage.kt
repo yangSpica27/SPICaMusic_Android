@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -68,6 +69,19 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import kotlin.random.Random
+
+// 媒体库快捷入口列表（静态数据，提取到顶层避免每次重组重建）
+private val libraryItems =
+    listOf(
+        LibraryItem("所有歌曲", Icons.Default.Home, Screen.AllSongs),
+        LibraryItem("歌单", Icons.AutoMirrored.Filled.List, Screen.Playlists),
+        LibraryItem("专辑", Icons.Default.Star, Screen.Albums),
+        LibraryItem("艺术家", Icons.Default.Person, Screen.Artists),
+        LibraryItem("最近添加", Icons.Default.Add, Screen.RecentlyAdded),
+        LibraryItem("最常播放", Icons.Default.AllInbox, Screen.MostPlayed),
+        LibraryItem("我喜爱的", Icons.Default.Favorite, Screen.Favorite),
+        LibraryItem("文件夹", Icons.Default.Home, Screen.Folders),
+    )
 
 /**
  * 媒体库页面
@@ -125,19 +139,6 @@ private fun LibraryContent(
 ) {
     val backStack = LocalNavBackStack.current
 
-    // 媒体库列表项数据
-    val libraryItems =
-        listOf(
-            LibraryItem("所有歌曲", Icons.Default.Home, Screen.AllSongs),
-            LibraryItem("歌单", Icons.AutoMirrored.Filled.List, Screen.Playlists),
-            LibraryItem("专辑", Icons.Default.Star, Screen.Albums),
-            LibraryItem("艺术家", Icons.Default.Person, Screen.Artists),
-            LibraryItem("最近添加", Icons.Default.Add, Screen.RecentlyAdded),
-            LibraryItem("最常播放", Icons.Default.AllInbox, Screen.MostPlayed),
-            LibraryItem("我喜爱的", Icons.Default.Favorite, Screen.Favorite),
-            LibraryItem("文件夹", Icons.Default.Home, Screen.Folders),
-        )
-
     LazyVerticalGrid(
         modifier =
             modifier
@@ -149,103 +150,29 @@ private fun LibraryContent(
             PaddingValues(
                 top = paddingValues.calculateTopPadding(),
                 bottom = paddingValues.calculateBottomPadding(),
+                start = 12.dp,
+                end = 12.dp,
             ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Title(
-                text = "歌单",
-                summary = "浏览你创建的歌单",
-            ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .clip(
-                                Shapes.LargeCornerBasedShape,
-                            ).clickable {
-                                backStack.add(Screen.Playlists)
-                            }.padding(
-                                horizontal = 10.dp,
-                                vertical = 8.dp,
-                            ),
-                ) {
-                    Text(
-                        "查看全部",
-                        color = MiuixTheme.colorScheme.onTertiaryContainer,
-                        style = MiuixTheme.textStyles.subtitle,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = MiuixIcons.Basic.ArrowRight,
-                        contentDescription = "more",
-                        tint = MiuixTheme.colorScheme.onTertiaryContainer,
-                    )
-                }
-            }
-        }
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Text(
-                "（歌单列表暂未实现，敬请期待）",
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                style = MiuixTheme.textStyles.subtitle,
-                modifier = Modifier.padding(horizontal = 22.dp),
-            )
-        }
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Title(
-                text = "专辑",
-                summary = "浏览你的专辑收藏",
-            ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .clip(
-                                Shapes.LargeCornerBasedShape,
-                            ).clickable {
-                                backStack.add(Screen.Albums)
-                            }.padding(
-                                horizontal = 10.dp,
-                                vertical = 8.dp,
-                            ),
-                ) {
-                    Text(
-                        "查看全部",
-                        color = MiuixTheme.colorScheme.onTertiaryContainer,
-                        style = MiuixTheme.textStyles.subtitle,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = MiuixIcons.Basic.ArrowRight,
-                        contentDescription = "more",
-                        tint = MiuixTheme.colorScheme.onTertiaryContainer,
-                    )
-                }
-            }
-        }
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Text(
-                "（专辑列表暂未实现，敬请期待）",
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                style = MiuixTheme.textStyles.subtitle,
-                modifier = Modifier.padding(horizontal = 22.dp),
-            )
-        }
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Title(
-                text = "为你推荐",
-                summary = "基于你的听歌习惯推荐的歌单和专辑",
-            ) {
+        librarySection(
+            title = "歌单",
+            summary = "浏览你创建的歌单",
+            placeholderText = "（歌单列表暂未实现，敬请期待）",
+            rightWidget = { ViewAllButton { backStack.add(Screen.Playlists) } },
+        )
+        librarySection(
+            title = "专辑",
+            summary = "浏览你的专辑收藏",
+            placeholderText = "（专辑列表暂未实现，敬请期待）",
+            rightWidget = { ViewAllButton { backStack.add(Screen.Albums) } },
+        )
+        librarySection(
+            title = "为你推荐",
+            summary = "基于你的听歌习惯推荐的歌单和专辑",
+            placeholderText = "（推荐功能暂未实现，敬请期待）",
+            rightWidget = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier =
@@ -253,10 +180,7 @@ private fun LibraryContent(
                             .background(
                                 MiuixTheme.colorScheme.primaryContainer,
                                 shape = Shapes.LargeCornerBasedShape,
-                            ).padding(
-                                horizontal = 10.dp,
-                                vertical = 8.dp,
-                            ),
+                            ).padding(horizontal = 10.dp, vertical = 8.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
@@ -270,78 +194,80 @@ private fun LibraryContent(
                         style = MiuixTheme.textStyles.subtitle,
                     )
                 }
-            }
-        }
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Text(
-                "（推荐功能暂未实现，敬请期待）",
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                style = MiuixTheme.textStyles.subtitle,
-                modifier = Modifier.padding(horizontal = 22.dp),
-            )
-        }
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Title(
-                text = "听歌统计",
-                summary = "查看你的听歌习惯和历史数据",
-            ) {
-                Row {
-                    Text(
-                        "查看全部",
-                        color = MiuixTheme.colorScheme.onTertiaryContainer,
-                        style = MiuixTheme.textStyles.subtitle,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = MiuixIcons.Basic.ArrowRight,
-                        contentDescription = "more",
-                        tint = MiuixTheme.colorScheme.onTertiaryContainer,
-                    )
-                }
-            }
-        }
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Text(
-                "（听歌统计功能暂未实现，敬请期待）",
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                style = MiuixTheme.textStyles.subtitle,
-                modifier = Modifier.padding(horizontal = 22.dp),
-            )
-        }
-        item(
-            span = { GridItemSpan(2) },
-        ) {
+            },
+        )
+        librarySection(
+            title = "听歌统计",
+            summary = "查看你的听歌习惯和历史数据",
+            placeholderText = "（听歌统计功能暂未实现，敬请期待）",
+            rightWidget = { ViewAllButton { } },
+        )
+        item(span = { GridItemSpan(2) }) {
             Text(
                 "快捷入口",
                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                 style = MiuixTheme.textStyles.subtitle,
-                modifier = Modifier.padding(horizontal = 22.dp),
+                modifier = Modifier.padding(horizontal = 10.dp),
             )
         }
         items(libraryItems.size) { index ->
-            val item = libraryItems[index]
             LibraryItemCard(
-                title = item.title,
-                icon = item.icon,
-                onClick = {
-                    backStack.add(item.screen)
-                },
-                modifier =
-                    Modifier.padding(
-                        start = if (index % 2 == 0) 12.dp else 0.dp,
-                        end = if (index % 2 == 1) 12.dp else 0.dp,
-                    ),
+                title = libraryItems[index].title,
+                icon = libraryItems[index].icon,
+                onClick = { backStack.add(libraryItems[index].screen) },
             )
         }
         item {
             Spacer(modifier = Modifier.height(280.dp))
         }
+    }
+}
+
+/**
+ * 通用 section 扩展：包含标题行和占位提示文本
+ */
+private fun LazyGridScope.librarySection(
+    title: String,
+    summary: String,
+    placeholderText: String,
+    rightWidget: @Composable () -> Unit = {},
+) {
+    item(span = { GridItemSpan(2) }) {
+        Title(text = title, summary = summary, rightWidget = rightWidget)
+    }
+    item(span = { GridItemSpan(2) }) {
+        Text(
+            placeholderText,
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            style = MiuixTheme.textStyles.subtitle,
+            modifier = Modifier.padding(horizontal = 10.dp),
+        )
+    }
+}
+
+/**
+ * 通用"查看全部"按钮
+ */
+@Composable
+private fun ViewAllButton(onClick: () -> Unit) {
+    Row(
+        modifier =
+            Modifier
+                .clip(Shapes.LargeCornerBasedShape)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+    ) {
+        Text(
+            "查看全部",
+            color = MiuixTheme.colorScheme.onTertiaryContainer,
+            style = MiuixTheme.textStyles.subtitle,
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Icon(
+            imageVector = MiuixIcons.Basic.ArrowRight,
+            contentDescription = "more",
+            tint = MiuixTheme.colorScheme.onTertiaryContainer,
+        )
     }
 }
 
@@ -353,7 +279,6 @@ private fun LibraryItemCard(
     title: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val durationMillis = remember(title, icon) { Random.nextInt(260, 720) }
 
@@ -367,7 +292,7 @@ private fun LibraryItemCard(
     ShowOnIdleContent(
         true,
         modifier =
-            modifier
+            Modifier
                 .fillMaxWidth()
                 .height(80.dp),
         enter =
@@ -380,9 +305,7 @@ private fun LibraryItemCard(
             onClick = onClick,
             pressFeedbackType = PressFeedbackType.Tilt,
             cornerRadius = 10.dp,
-            modifier =
-                modifier
-                    .fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
         ) {
             Box(
                 modifier =
@@ -457,15 +380,18 @@ private fun Title(
             Text(
                 text = text,
                 color = MiuixTheme.colorScheme.onSurfaceContainer,
-                style = MiuixTheme.textStyles.title4,
+                style = MiuixTheme.textStyles.body1,
                 fontWeight = FontWeight.W600,
             )
             Text(
                 text = summary,
                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                style = MiuixTheme.textStyles.subtitle,
+                style = MiuixTheme.textStyles.body2,
             )
         }
+        Spacer(
+            modifier = Modifier.width(8.dp),
+        )
         rightWidget()
     }
 }
