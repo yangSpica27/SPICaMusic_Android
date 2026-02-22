@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -61,6 +62,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
@@ -177,7 +179,7 @@ private fun LibraryContent(
         // 歌单分区：显示已有歌单或引导创建
         item(span = { GridItemSpan(2) }) {
             Title(
-                text = "歌单",
+                text = stringResource(R.string.title_playlist),
                 summary = "浏览你创建的歌单",
                 rightWidget = { ViewAllButton { backStack.add(Screen.Playlists) } },
             )
@@ -225,7 +227,7 @@ private fun LibraryContent(
         // 专辑分区：展示最多 4 张专辑预览或占位提示去重新扫描
         item(span = { GridItemSpan(2) }) {
             Title(
-                text = "专辑",
+                text = stringResource(R.string.albums_title),
                 summary = "浏览你的专辑收藏",
                 rightWidget = { ViewAllButton { backStack.add(Screen.Albums) } },
             )
@@ -295,12 +297,12 @@ private fun LibraryContent(
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "播放推荐",
+                            contentDescription = stringResource(R.string.play_recommendation),
                             tint = MiuixTheme.colorScheme.onPrimaryContainer,
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            "播放",
+                            text = stringResource(R.string.play),
                             color = MiuixTheme.colorScheme.onPrimaryContainer,
                             style = MiuixTheme.textStyles.subtitle,
                         )
@@ -313,7 +315,7 @@ private fun LibraryContent(
             val recommended by viewModel.recommendedSongs.collectAsStateWithLifecycle(initialValue = emptyList())
             if (recommended.isEmpty()) {
                 Text(
-                    "暂无推荐",
+                    text = stringResource(R.string.no_recommendations),
                     color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     style = MiuixTheme.textStyles.subtitle,
                     modifier = Modifier.padding(horizontal = 10.dp),
@@ -424,7 +426,7 @@ private fun LibraryContent(
             span = { GridItemSpan(2) },
         ) {
             Title(
-                text = "听歌统计",
+                text = stringResource(R.string.listening_stats),
                 summary = "查看你的听歌数据和习惯",
                 rightWidget = { ViewAllButton { } },
             )
@@ -439,7 +441,7 @@ private fun LibraryContent(
         }
         item(span = { GridItemSpan(2) }) {
             Text(
-                "快捷入口",
+                text = stringResource(R.string.quick_action),
                 color = MiuixTheme.colorScheme.onSurface,
                 style = MiuixTheme.textStyles.subtitle,
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -475,7 +477,7 @@ private fun ViewAllButton(onClick: () -> Unit) {
                 .padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
         Text(
-            "查看全部",
+            text = stringResource(R.string.view_all),
             color = MiuixTheme.colorScheme.onTertiaryContainer,
             style = MiuixTheme.textStyles.subtitle,
         )
@@ -521,13 +523,13 @@ private fun EmptyPlaylistCard(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "还没有歌单",
+                text = stringResource(R.string.no_playlists),
                 style = MiuixTheme.textStyles.title4,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "创建您的第一个歌单",
+                text = stringResource(R.string.create_first_playlist),
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
             )
@@ -621,13 +623,13 @@ private fun EmptyAlbumCard(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "没有专辑",
+                text = stringResource(R.string.no_albums),
                 style = MiuixTheme.textStyles.title4,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "试试重新扫描媒体库",
+                text = stringResource(R.string.try_rescan_media_library),
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
             )

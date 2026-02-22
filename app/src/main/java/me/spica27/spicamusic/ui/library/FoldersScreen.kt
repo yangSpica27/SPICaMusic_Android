@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import me.spica27.spicamusic.R
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -19,7 +21,7 @@ fun FoldersScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = "文件夹",
+                title = stringResource(R.string.folders_title),
             )
         },
     ) { paddingValues ->
@@ -30,7 +32,7 @@ fun FoldersScreen(modifier: Modifier = Modifier) {
                     .padding(paddingValues),
             contentAlignment = Alignment.Center,
         ) {
-            Text(text = "文件夹列表")
+            Text(text = stringResource(R.string.folders_list))
         }
     }
 }

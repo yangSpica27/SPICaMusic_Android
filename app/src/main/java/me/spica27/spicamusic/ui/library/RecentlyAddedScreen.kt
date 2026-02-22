@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import me.spica27.spicamusic.R
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -19,7 +21,7 @@ fun RecentlyAddedScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = "最近添加",
+                title = stringResource(R.string.recently_added_title),
             )
         },
     ) { paddingValues ->
@@ -30,7 +32,7 @@ fun RecentlyAddedScreen(modifier: Modifier = Modifier) {
                     .padding(paddingValues),
             contentAlignment = Alignment.Center,
         ) {
-            Text(text = "最近添加歌曲")
+            Text(text = stringResource(R.string.recently_added_songs))
         }
     }
 }

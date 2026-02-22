@@ -15,9 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.QualityType
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getQualityType
@@ -53,7 +55,7 @@ fun AudioQualityBadges(
             when (audioQuality) {
                 QualityType.HI_RES_STUDIO_MASTER -> {
                     QualityBadge(
-                        text = "HI-RES",
+                        text = stringResource(R.string.quality_hi_res),
                         icon = Icons.Rounded.HighQuality,
                         qualityLevel = QualityLevel.EXCELLENT,
                     )
@@ -88,7 +90,7 @@ fun AudioQualityBadges(
 
                 QualityType.HI_RES_LOSSLESS -> {
                     QualityBadge(
-                        text = "HI-RES",
+                        text = stringResource(R.string.quality_hi_res),
                         icon = Icons.Rounded.HighQuality,
                         qualityLevel = QualityLevel.GOOD,
                     )
@@ -104,7 +106,7 @@ fun AudioQualityBadges(
 
                 QualityType.LOSSY_COMPRESSED -> {
                     QualityBadge(
-                        text = "320K",
+                        text = stringResource(R.string.quality_320k),
                         icon = Icons.Rounded.HighQuality,
                         qualityLevel = QualityLevel.STANDARD,
                     )

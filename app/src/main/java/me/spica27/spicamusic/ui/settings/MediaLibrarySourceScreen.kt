@@ -29,10 +29,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.storage.api.ScanResult
 import org.koin.androidx.compose.koinViewModel
@@ -82,7 +84,7 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = "媒体库来源",
+                title = stringResource(R.string.media_library_source_title),
             )
         },
     ) { paddingValues ->
@@ -111,7 +113,7 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
             when (val state = scanState) {
                 is ScanState.Idle -> {
                     InfoCard(
-                        title = "扫描说明",
+                        title = stringResource(R.string.scan_instructions_title),
                         message =
                             "点击上方按钮开始扫描设备中的音乐文件\n\n" +
                                 "• 支持格式: MP3, FLAC, WAV, M4A, OGG, OPUS\n" +
@@ -163,12 +165,12 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "自定义文件夹扫描功能",
+                        text = stringResource(R.string.custom_folder_scan),
                         style = MiuixTheme.textStyles.title4,
                         color = MiuixTheme.colorScheme.onTertiaryContainer,
                     )
                     Text(
-                        text = "即将推出，敬请期待",
+                        text = stringResource(R.string.coming_soon),
                         style = MiuixTheme.textStyles.body1,
                         color = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
                     )
@@ -198,7 +200,7 @@ private fun ScanSourceCard(
                     .padding(16.dp),
         ) {
             Text(
-                text = "扫描媒体库",
+                text = stringResource(R.string.scan_media_library),
                 style = MiuixTheme.textStyles.title4,
                 color = MiuixTheme.colorScheme.onPrimaryContainer,
             )
@@ -206,9 +208,9 @@ private fun ScanSourceCard(
             Text(
                 text =
                     if (hasPermission) {
-                        "扫描设备中的所有音乐文件"
+                        stringResource(R.string.scan_all_music_files)
                     } else {
-                        "需要音频文件访问权限才能扫描设备中的音乐文件"
+                        stringResource(R.string.need_audio_permission_to_scan)
                     },
                 style = MiuixTheme.textStyles.body1,
                 color = MiuixTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
@@ -227,7 +229,7 @@ private fun ScanSourceCard(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (hasPermission) "开始扫描" else "授予权限并扫描")
+                Text(if (hasPermission) stringResource(R.string.start_scanner) else stringResource(R.string.grant_permission_and_scan))
             }
         }
     }
@@ -257,7 +259,7 @@ private fun ScanningCard(progress: me.spica27.spicamusic.storage.api.ScanProgres
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "正在扫描...",
+                    text = stringResource(R.string.scanning),
                     style = MiuixTheme.textStyles.title4,
                     color = MiuixTheme.colorScheme.onSecondaryContainer,
                 )
@@ -327,7 +329,7 @@ private fun ScanResultCard(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "扫描完成",
+                    text = stringResource(R.string.scan_completed),
                     style = MiuixTheme.textStyles.title4,
                     color = MiuixTheme.colorScheme.onTertiaryContainer,
                 )
@@ -335,14 +337,14 @@ private fun ScanResultCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            ResultRow("总计扫描", "${result.totalScanned} 首")
-            ResultRow("新增歌曲", "${result.newAdded} 首")
-            ResultRow("更新歌曲", "${result.updated} 首")
-            ResultRow("删除歌曲", "${result.removed} 首")
+            ResultRow(stringResource(R.string.total_scanned), stringResource(R.string.songs_count_format, result.totalScanned))
+            ResultRow(stringResource(R.string.new_added), stringResource(R.string.songs_count_format, result.newAdded))
+            ResultRow(stringResource(R.string.updated), stringResource(R.string.songs_count_format, result.updated))
+            ResultRow(stringResource(R.string.removed), stringResource(R.string.songs_count_format, result.removed))
 
             Spacer(modifier = Modifier.height(12.dp))
             TextButton(
-                text = "确定",
+                text = stringResource(R.string.btn_sure),
                 onClick = onDismiss,
                 modifier =
                     Modifier
@@ -396,7 +398,7 @@ private fun ErrorCard(
                     .padding(16.dp),
         ) {
             Text(
-                text = "扫描失败",
+                text = stringResource(R.string.scan_failed),
                 style = MiuixTheme.textStyles.body1,
                 color = MiuixTheme.colorScheme.onErrorContainer,
             )
@@ -412,11 +414,11 @@ private fun ErrorCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 TextButton(
-                    text = "取消",
+                    text = stringResource(R.string.cancel),
                     onClick = onDismiss,
                 )
                 Button(onClick = onRetry) {
-                    Text("重试")
+                    Text(stringResource(R.string.retry))
                 }
             }
         }

@@ -28,11 +28,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.spcia.lyric_core.entity.SongLyrics
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricItem
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -90,14 +92,14 @@ fun LyricsSwitcherSheet(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "选择歌词",
+                        text = stringResource(R.string.choose_lyrics),
                         style = MiuixTheme.textStyles.title2,
                         fontWeight = FontWeight.Bold,
                         color = MiuixTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "左右滑动预览，选择最合适的歌词版本",
+                        text = stringResource(R.string.lyrics_preview_instruction),
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         fontSize = 13.sp,
@@ -159,7 +161,7 @@ fun LyricsSwitcherSheet(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = "歌词解析失败",
+                            text = stringResource(R.string.lyrics_parse_failed),
                             style = MiuixTheme.textStyles.body1,
                             color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         )
@@ -227,7 +229,7 @@ private fun SourceInfoBar(
                     .padding(horizontal = 10.dp, vertical = 4.dp),
         ) {
             Text(
-                text = "${currentPage + 1}/${sources.size}",
+                text = stringResource(R.string.pager_format, currentPage + 1, sources.size),
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,

@@ -42,10 +42,12 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.compose.viewmodel.koinViewModel
@@ -164,14 +166,14 @@ private fun CurrentPlaylistPanelContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = if (isMultiSelectMode) "已选择 $selectedCount 项" else "当前播放列表",
+                text = if (isMultiSelectMode) "已选择 $selectedCount 项" else stringResource(R.string.now_playinglist),
                 style = MiuixTheme.textStyles.title3,
                 modifier = Modifier.weight(1f),
             )
 
             if (isMultiSelectMode) {
                 TextButton(
-                    text = "取消",
+                    text = stringResource(R.string.cancel),
                     onClick = {
                         isMultiSelectMode = false
                         selectedMediaIds.clear()
@@ -291,7 +293,7 @@ private fun EmptyPlaylistState(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "播放列表为空",
+            text = stringResource(R.string.playlist_empty),
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
         )
@@ -396,7 +398,7 @@ private fun MultiSelectActionBar(
                 contentDescription = "删除",
             )
             Spacer(modifier = Modifier.size(6.dp))
-            Text(text = "批量删除")
+            Text(text = stringResource(R.string.batch_delete))
         }
 
         Button(
@@ -409,7 +411,7 @@ private fun MultiSelectActionBar(
                 contentDescription = "创建歌单",
             )
             Spacer(modifier = Modifier.size(6.dp))
-            Text(text = "创建歌单")
+            Text(text = stringResource(R.string.create_playlist))
         }
     }
 }

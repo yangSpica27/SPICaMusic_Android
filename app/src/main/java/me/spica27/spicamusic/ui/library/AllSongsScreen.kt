@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -63,6 +64,7 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioQualityBadges
@@ -381,7 +383,7 @@ private fun FunctionButtonGroup(
                     modifier = Modifier.size(24.dp),
                 )
                 Text(
-                    text = "播放全部",
+                    text = stringResource(R.string.play_all),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = MiuixTheme.colorScheme.onPrimary,
@@ -415,7 +417,7 @@ private fun FunctionButtonGroup(
                     tint = MiuixTheme.colorScheme.onTertiaryContainer,
                 )
                 Text(
-                    text = "多选",
+                    text = stringResource(R.string.multi_select),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(start = 8.dp),

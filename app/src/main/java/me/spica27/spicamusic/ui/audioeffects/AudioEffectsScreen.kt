@@ -26,10 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.ui.theme.Shapes
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -170,7 +172,7 @@ private fun EqualizerCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "10段均衡器",
+                    text = stringResource(R.string.equalizer_10_band),
                     style = MiuixTheme.textStyles.title3,
                     fontWeight = FontWeight.Bold,
                 )
@@ -296,7 +298,7 @@ private fun EqualizerSlider(
             modifier = Modifier.width(8.dp),
         )
         Text(
-            text = "${value.roundToInt()}dB",
+            text = stringResource(R.string.db_value_format, value.roundToInt()),
             style = MiuixTheme.textStyles.body2,
             modifier = Modifier.width(50.dp),
             color = if (value >= 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.error,
@@ -330,12 +332,12 @@ private fun ReverbCard(
             ) {
                 Column {
                     Text(
-                        text = "空间混响",
+                        text = stringResource(R.string.reverb_spatial),
                         style = MiuixTheme.textStyles.title3,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "模拟音乐厅、教堂等空间效果",
+                        text = stringResource(R.string.reverb_spatial_desc),
                         style = MiuixTheme.textStyles.body2,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
@@ -356,7 +358,7 @@ private fun ReverbCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "混响强度",
+                            text = stringResource(R.string.reverb_intensity),
                             style = MiuixTheme.textStyles.body2,
                             modifier = Modifier.width(70.dp),
                         )
@@ -367,7 +369,7 @@ private fun ReverbCard(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
-                            text = "${(level * 100).roundToInt()}%",
+                            text = stringResource(R.string.percent_value_format, (level * 100).roundToInt()),
                             style = MiuixTheme.textStyles.body2,
                             modifier = Modifier.width(50.dp),
                             textAlign = TextAlign.End,
@@ -382,7 +384,7 @@ private fun ReverbCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "房间大小",
+                            text = stringResource(R.string.room_size),
                             style = MiuixTheme.textStyles.body2,
                             modifier = Modifier.width(70.dp),
                         )
@@ -393,7 +395,7 @@ private fun ReverbCard(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
-                            text = "${(roomSize * 100).roundToInt()}%",
+                            text = stringResource(R.string.percent_value_format, (roomSize * 100).roundToInt()),
                             style = MiuixTheme.textStyles.body2,
                             modifier = Modifier.width(50.dp),
                             textAlign = TextAlign.End,
@@ -418,7 +420,7 @@ private fun PresetsSection(
             modifier = Modifier.padding(16.dp),
         ) {
             Text(
-                text = "预设方案",
+                text = stringResource(R.string.presets_title),
                 style = MiuixTheme.textStyles.title3,
                 fontWeight = FontWeight.Bold,
             )
@@ -427,16 +429,16 @@ private fun PresetsSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                PresetButton("流行", onPresetSelect, Modifier.weight(1f))
-                PresetButton("摇滚", onPresetSelect, Modifier.weight(1f))
+                PresetButton(stringResource(R.string.preset_pop), onPresetSelect, Modifier.weight(1f))
+                PresetButton(stringResource(R.string.preset_rock), onPresetSelect, Modifier.weight(1f))
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                PresetButton("古典", onPresetSelect, Modifier.weight(1f))
-                PresetButton("爵士", onPresetSelect, Modifier.weight(1f))
+                PresetButton(stringResource(R.string.preset_classical), onPresetSelect, Modifier.weight(1f))
+                PresetButton(stringResource(R.string.preset_jazz), onPresetSelect, Modifier.weight(1f))
             }
         }
     }

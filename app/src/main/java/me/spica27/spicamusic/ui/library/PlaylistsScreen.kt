@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,6 +47,7 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
@@ -102,7 +104,7 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
                                 endIntensity = 0f,
                             )
                     },
-                title = "歌单",
+                title = stringResource(R.string.title_playlist),
                 actions = {
                     // 新增歌单按钮
                     IconButton(
@@ -110,7 +112,7 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "新增歌单",
+                            contentDescription = stringResource(R.string.create_playlist),
                             tint = MiuixTheme.colorScheme.onSurface,
                         )
                     }
@@ -405,13 +407,13 @@ private fun EmptyPlaylistState(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "暂无歌单",
+            text = stringResource(R.string.no_playlists),
             style = MiuixTheme.textStyles.title4,
             color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "创建您的第一个歌单",
+            text = stringResource(R.string.create_first_playlist),
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
         )
@@ -427,7 +429,7 @@ private fun EmptyPlaylistState(
                 tint = MiuixTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.size(8.dp))
-            Text("创建歌单")
+            Text(stringResource(R.string.create_playlist))
         }
     }
 }
@@ -450,7 +452,7 @@ private fun CreatePlaylistDialog(
     }
 
     SuperDialog(
-        title = "创建歌单",
+        title = stringResource(R.string.create_playlist),
         onDismissRequest = onDismiss,
         show = showState,
     ) {
@@ -460,7 +462,7 @@ private fun CreatePlaylistDialog(
             TextField(
                 value = playlistName,
                 onValueChange = { playlistName = it },
-                label = "请输入歌单名称",
+                label = stringResource(R.string.hint_input_playlist_name),
                 modifier = Modifier.fillMaxWidth(),
                 useLabelAsPlaceholder = true,
             )
@@ -470,7 +472,7 @@ private fun CreatePlaylistDialog(
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(
-                    text = "取消",
+                    text = stringResource(R.string.cancel),
                     onClick = onDismiss,
                     modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
                 )
@@ -484,7 +486,7 @@ private fun CreatePlaylistDialog(
                     modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
                     enabled = playlistName.isNotBlank(),
                 ) {
-                    Text("创建")
+                    Text(stringResource(R.string.create))
                 }
             }
         }
@@ -508,7 +510,7 @@ private fun DeletePlaylistDialog(
     }
 
     SuperDialog(
-        title = "删除歌单",
+        title = stringResource(R.string.delete_playlist_title),
         onDismissRequest = onDismiss,
         show = showState,
     ) {
@@ -516,7 +518,7 @@ private fun DeletePlaylistDialog(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
         ) {
             Text(
-                text = "确定要删除歌单 \"$playlistName\" 吗？",
+                text = stringResource(R.string.confirm_delete_playlist, playlistName),
                 style = MiuixTheme.textStyles.body1,
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -525,7 +527,7 @@ private fun DeletePlaylistDialog(
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(
-                    text = "取消",
+                    text = stringResource(R.string.cancel),
                     onClick = onDismiss,
                     modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
                 )
@@ -541,7 +543,7 @@ private fun DeletePlaylistDialog(
                         tint = MiuixTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(8.dp))
-                    Text("删除")
+                    Text(stringResource(R.string.delete))
                 }
             }
         }

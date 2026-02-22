@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
@@ -123,7 +125,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
             onConfirm = { selectedSongIds ->
                 viewModel.addSongsToPlaylist(selectedSongIds)
             },
-            title = "添加歌曲到歌单",
+            title = stringResource(R.string.add_songs_to_playlist),
         )
     }
 
@@ -142,7 +144,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                 scrollBehavior = scrollBehavior,
                 title = {
                     Text(
-                        playlist?.playlistName ?: "歌单详情",
+                        playlist?.playlistName ?: stringResource(R.string.playlist_detail_title),
                         maxLines = 1,
                         style = MiuixTheme.textStyles.title2,
                         overflow = TextOverflow.Ellipsis,
@@ -195,7 +197,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                         Row {
                             TextButton(
                                 onClick = { viewModel.removeSelectedSongs() },
-                                text = "移除${selectedSongs.size}首",
+                                text = stringResource(R.string.remove_songs_format, selectedSongs.size),
                                 cornerRadius = 16.dp,
                                 colors =
                                     ButtonDefaults.textButtonColors().copy(
@@ -307,14 +309,14 @@ private fun PlaylistHeader(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "$songCount 首歌曲",
+                text = stringResource(R.string.songs_count_format, songCount),
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
             )
             if (playlist.playTimes > 0) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "播放 ${playlist.playTimes} 次",
+                    text = stringResource(R.string.play_count_format, playlist.playTimes),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
                 )
@@ -374,7 +376,7 @@ private fun ActionBar(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "播放全部",
+                    text = stringResource(R.string.play_all),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = MiuixTheme.colorScheme.onPrimary,
@@ -411,7 +413,7 @@ private fun ActionBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Checklist,
-                    contentDescription = "多选",
+                    contentDescription = stringResource(R.string.multi_select),
                     modifier = Modifier.size(24.dp),
                     tint = MiuixTheme.colorScheme.onSurface,
                 )
@@ -453,7 +455,7 @@ private fun ActionBar(
                         ListPopupColumn {
                             TextButton(
                                 cornerRadius = 0.dp,
-                                text = "添加歌曲",
+                                text = stringResource(R.string.add_songs),
                                 onClick = {
                                     dismiss()
                                     onAddSongs()
@@ -649,13 +651,13 @@ private fun EmptySongList(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "歌单为空",
+            text = stringResource(R.string.playlist_empty),
             style = MiuixTheme.textStyles.title4,
             color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "快去添加歌曲吧",
+            text = stringResource(R.string.playlist_empty_hint),
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
         )
@@ -675,7 +677,7 @@ private fun RenamePlaylistDialog(
     var newName by remember { mutableStateOf(currentName) }
 
     SuperDialog(
-        title = "重命名歌单",
+        title = stringResource(R.string.rename),
         onDismissRequest = onDismiss,
         show = show,
     ) {
@@ -685,7 +687,7 @@ private fun RenamePlaylistDialog(
             TextField(
                 value = newName,
                 onValueChange = { newName = it },
-                label = "请输入歌单名称",
+                label = stringResource(R.string.hint_input_playlist_name),
                 modifier = Modifier.fillMaxWidth(),
                 useLabelAsPlaceholder = true,
             )
@@ -695,7 +697,7 @@ private fun RenamePlaylistDialog(
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(
-                    text = "取消",
+                    text = stringResource(R.string.cancel),
                     onClick = onDismiss,
                     modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
                 )
