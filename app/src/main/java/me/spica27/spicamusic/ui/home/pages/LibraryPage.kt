@@ -157,8 +157,6 @@ private fun LibraryContent(
             PaddingValues(
                 top = paddingValues.calculateTopPadding(),
                 bottom = paddingValues.calculateBottomPadding(),
-                start = 12.dp,
-                end = 12.dp,
             ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -256,11 +254,16 @@ private fun LibraryContent(
                 "快捷入口",
                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                 style = MiuixTheme.textStyles.subtitle,
-                modifier = Modifier.padding(horizontal = 10.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
         items(libraryItems.size) { index ->
             LibraryItemCard(
+                modifier =
+                    Modifier.padding(
+                        start = ((1 - index % 2) * 16).dp, // 左边距偶数项为0，奇数项为10dp
+                        end = ((index % 2) * 16).dp, // 右边距偶数项为10dp，奇数项为0
+                    ),
                 title = libraryItems[index].title,
                 icon = libraryItems[index].icon,
                 onClick = { backStack.add(libraryItems[index].screen) },
@@ -425,6 +428,7 @@ private fun PlaylistMiniCard(
  */
 @Composable
 private fun LibraryItemCard(
+    modifier: Modifier,
     title: String,
     icon: ImageVector,
     onClick: () -> Unit,
@@ -441,7 +445,7 @@ private fun LibraryItemCard(
     ShowOnIdleContent(
         true,
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .height(80.dp),
         enter =
