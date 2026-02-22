@@ -2,6 +2,7 @@ package me.spica27.spicamusic.navigation
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
+import me.spica27.spicamusic.common.entity.Album
 
 /**
  * 应用路由定义 (Navigation 3)
@@ -50,6 +51,12 @@ sealed interface Screen : NavKey {
     @Serializable
     data class PlaylistDetail(
         val playlistId: Long,
+    ) : Screen
+
+    // 专辑详情路由
+    @Serializable
+    data class AlbumDetail(
+        val album: Album,
     ) : Screen
 
     // 设置相关路由

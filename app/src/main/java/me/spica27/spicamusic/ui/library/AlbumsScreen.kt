@@ -50,6 +50,7 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.navigation.LocalNavBackStack
+import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Icon
@@ -241,11 +242,13 @@ private fun AlbumItem(
     album: Album,
     modifier: Modifier,
 ) {
+    val backStack = LocalNavBackStack.current
     Column(
         modifier =
             modifier
                 .clip(me.spica27.spicamusic.ui.theme.Shapes.SmallCornerBasedShape)
                 .clickable {
+                    backStack.add(Screen.AlbumDetail(album))
                 },
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {

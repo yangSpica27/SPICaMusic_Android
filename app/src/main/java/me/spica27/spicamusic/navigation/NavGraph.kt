@@ -6,6 +6,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.NavDisplay
 import dev.chrisbanes.haze.hazeSource
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
+import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScreen
 import me.spica27.spicamusic.ui.audioeffects.AudioEffectsScreen
 import me.spica27.spicamusic.ui.home.HomeScreen
 import me.spica27.spicamusic.ui.library.AlbumsScreen
@@ -69,6 +70,10 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
 
                 entry<Screen.PlaylistDetail> {
                     PlaylistDetailScreen()
+                }
+
+                entry<Screen.AlbumDetail> {
+                    AlbumDetailScreen()
                 }
 
                 // 设置相关路由
