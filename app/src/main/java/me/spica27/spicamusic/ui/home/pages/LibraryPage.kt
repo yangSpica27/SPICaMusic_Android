@@ -18,20 +18,24 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AllInbox
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +48,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
@@ -67,6 +72,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
+import top.yukonga.miuix.kmp.utils.overScrollHorizontal
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import kotlin.random.Random
 
@@ -138,6 +144,7 @@ private fun LibraryContent(
     viewModel: LibraryPageViewModel = koinActivityViewModel(),
 ) {
     val backStack = LocalNavBackStack.current
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
 
     LazyVerticalGrid(
         modifier =
@@ -156,12 +163,54 @@ private fun LibraryContent(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        librarySection(
-            title = "歌单",
-            summary = "浏览你创建的歌单",
-            placeholderText = "（歌单列表暂未实现，敬请期待）",
-            rightWidget = { ViewAllButton { backStack.add(Screen.Playlists) } },
-        )
+        // 歌单分区：显示已有歌单或引导创建
+        item(span = { GridItemSpan(2) }) {
+            Title(
+                text = "歌单",
+                summary = "浏览你创建的歌单",
+                rightWidget = { ViewAllButton { backStack.add(Screen.Playlists) } },
+            )
+        }
+
+        if (playlists.isEmpty()) {
+            // 未创建歌单时展示占位卡片，点击进入歌单页面去创建
+            item(span = { GridItemSpan(2) }) {
+                EmptyPlaylistCard(
+                    onClick = { backStack.add(Screen.Playlists) },
+                    modifier = Modifier.padding(horizontal = 10.dp),
+                )
+            }
+        } else {
+            item(
+                span = { GridItemSpan(2) },
+            ) {
+                LazyRow(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .overScrollHorizontal(),
+                    contentPadding = PaddingValues(horizontal = 22.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    // 显示最多 4 个歌单作为预览
+                    val display = playlists.take(4)
+                    this@LazyRow.items(display, key = { it.playlistId ?: 0L }) { playlist ->
+                        PlaylistMiniCard(
+                            playlist = playlist,
+                            onClick = {
+                                playlist.playlistId?.let { id ->
+                                    backStack.add(
+                                        Screen.PlaylistDetail(
+                                            id,
+                                        ),
+                                    )
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+        }
         librarySection(
             title = "专辑",
             summary = "浏览你的专辑收藏",
@@ -268,6 +317,106 @@ private fun ViewAllButton(onClick: () -> Unit) {
             contentDescription = "more",
             tint = MiuixTheme.colorScheme.onTertiaryContainer,
         )
+    }
+}
+
+/**
+ * 歌单占位卡片 - 当用户没有歌单时显示
+ */
+@Composable
+private fun EmptyPlaylistCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        onClick = onClick,
+        pressFeedbackType = PressFeedbackType.Tilt,
+        cornerRadius = 10.dp,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(160.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.MusicNote,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "还没有歌单",
+                style = MiuixTheme.textStyles.title4,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "创建您的第一个歌单",
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
+            )
+        }
+    }
+}
+
+/**
+ * 小型歌单卡片 (用于 LibraryPage 列表展示)
+ */
+@Composable
+private fun PlaylistMiniCard(
+    playlist: me.spica27.spicamusic.common.entity.Playlist,
+    onClick: () -> Unit,
+) {
+    Card(
+        onClick = onClick,
+        pressFeedbackType = PressFeedbackType.Tilt,
+        cornerRadius = 10.dp,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .size(120.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.tertiaryContainer,
+                                        MiuixTheme.colorScheme.surfaceContainerHigh,
+                                    ),
+                            ),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
+                )
+            }
+
+            Text(
+                text = playlist.playlistName,
+                style = MiuixTheme.textStyles.body1,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+        }
     }
 }
 
