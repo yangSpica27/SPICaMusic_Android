@@ -421,6 +421,7 @@ private fun SharedTransitionScope.InlineBar(
         if (hasStandaloneTab) {
             InlineStandaloneTab(
                 standaloneTab = standaloneTab,
+                selectedTabKey = selectedTabKey,
                 shapes = shapes,
                 colors = colors,
                 elevations = elevations,
@@ -463,7 +464,7 @@ private fun SharedTransitionScope.InlineTab(
                     shape = shapes.tabBarShape,
                     elevation = elevations.inlineElevation,
                 ).background(
-                    color = colors.backgroundColor,
+                    color = colors.selectedTabBackgroundColor,
                     shape = shapes.tabBarShape,
                 ).clip(shapes.tabBarShape)
                 .then(tabBarContentModifier)
@@ -479,11 +480,12 @@ private fun SharedTransitionScope.InlineTab(
         Tab(
             icon = {
                 Box(
-                    Modifier.sharedElement(
-                        sharedContentState = rememberSharedContentState("tab#${inlineTab.key}-icon"),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        zIndexInOverlay = 1f,
-                    ),
+                    Modifier
+                        .sharedElement(
+                            sharedContentState = rememberSharedContentState("tab#${inlineTab.key}-icon"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            zIndexInOverlay = 1f,
+                        ),
                 ) {
                     inlineTab.icon()
                 }
@@ -497,6 +499,7 @@ private fun SharedTransitionScope.InlineTab(
 @Composable
 private fun SharedTransitionScope.InlineStandaloneTab(
     standaloneTab: FloatingTabBarTab,
+    selectedTabKey: Any?,
     shapes: FloatingTabBarShapes,
     colors: FloatingTabBarColors,
     elevations: FloatingTabBarElevations,
@@ -504,6 +507,7 @@ private fun SharedTransitionScope.InlineStandaloneTab(
     modifier: Modifier,
     tabBarContentModifier: Modifier,
 ) {
+    val isSelected = standaloneTab.key == selectedTabKey
     Tab(
         icon = standaloneTab.icon,
         title = standaloneTab.title,
@@ -519,7 +523,7 @@ private fun SharedTransitionScope.InlineStandaloneTab(
                     shape = shapes.standaloneTabShape,
                     elevation = elevations.inlineElevation,
                 ).background(
-                    color = colors.backgroundColor,
+                    color = if (isSelected) colors.selectedTabBackgroundColor else colors.backgroundColor,
                     shape = shapes.standaloneTabShape,
                 ).clip(shapes.standaloneTabShape)
                 .then(tabBarContentModifier)
@@ -641,6 +645,7 @@ private fun SharedTransitionScope.ExpandedBar(
         if (hasStandaloneTab) {
             ExpandedStandaloneTab(
                 standaloneTab = standaloneTab,
+                selectedTabKey = selectedTabKey,
                 shapes = shapes,
                 colors = colors,
                 elevations = elevations,
@@ -771,7 +776,10 @@ private fun SharedTransitionScope.ExpandedTabs(
                     Modifier
                         .skipToLookaheadSize()
                         .clip(shapes.tabShape)
-                        .clickable(
+                        .background(
+                            if (tab.key == selectedTabKey) colors.selectedTabBackgroundColor else Color.Transparent,
+                            shapes.tabShape,
+                        ).clickable(
                             onClick = tab.onClick,
                             indication = tab.indication?.invoke(),
                             interactionSource = remember { MutableInteractionSource() },
@@ -784,6 +792,7 @@ private fun SharedTransitionScope.ExpandedTabs(
 @Composable
 private fun SharedTransitionScope.ExpandedStandaloneTab(
     standaloneTab: FloatingTabBarTab,
+    selectedTabKey: Any?,
     shapes: FloatingTabBarShapes,
     colors: FloatingTabBarColors,
     elevations: FloatingTabBarElevations,
@@ -791,6 +800,7 @@ private fun SharedTransitionScope.ExpandedStandaloneTab(
     modifier: Modifier,
     tabBarContentModifier: Modifier,
 ) {
+    val isSelected = standaloneTab.key == selectedTabKey
     Tab(
         icon = standaloneTab.icon,
         title = standaloneTab.title,
@@ -806,7 +816,7 @@ private fun SharedTransitionScope.ExpandedStandaloneTab(
                     shape = shapes.standaloneTabShape,
                     elevation = elevations.expandedElevation,
                 ).background(
-                    color = colors.backgroundColor,
+                    color = if (isSelected) colors.selectedTabBackgroundColor else colors.backgroundColor,
                     shape = shapes.standaloneTabShape,
                 ).clip(shapes.standaloneTabShape)
                 .then(tabBarContentModifier)
@@ -829,7 +839,8 @@ private fun Tab(
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier,
+        modifier =
+        modifier,
     ) {
         icon()
         if (!isStandalone && !isInline) {
@@ -995,6 +1006,8 @@ private data class FloatingTabBarTab(
 data class FloatingTabBarColors(
     val backgroundColor: Color,
     val accessoryBackgroundColor: Color,
+    val selectedTabBackgroundColor: Color,
+    val selectedContentColor: Color,
 )
 
 /**
@@ -1043,10 +1056,14 @@ object FloatingTabBarDefaults {
     fun colors(
         backgroundColor: Color = MiuixTheme.colorScheme.surfaceContainerHigh,
         accessoryBackgroundColor: Color = MiuixTheme.colorScheme.surfaceContainerHigh,
+        selectedTabBackgroundColor: Color = MiuixTheme.colorScheme.tertiaryContainer,
+        selectedContentColor: Color = MiuixTheme.colorScheme.onTertiaryContainer,
     ): FloatingTabBarColors =
         FloatingTabBarColors(
             backgroundColor = backgroundColor,
             accessoryBackgroundColor = accessoryBackgroundColor,
+            selectedTabBackgroundColor = selectedTabBackgroundColor,
+            selectedContentColor = selectedContentColor,
         )
 
     /**
@@ -1108,8 +1125,8 @@ object FloatingTabBarDefaults {
      */
     @Composable
     fun elevations(
-        inlineElevation: Dp = 6.dp,
-        expandedElevation: Dp = 12.dp,
+        inlineElevation: Dp = 1.dp,
+        expandedElevation: Dp = 2.dp,
     ): FloatingTabBarElevations =
         FloatingTabBarElevations(
             inlineElevation = inlineElevation,

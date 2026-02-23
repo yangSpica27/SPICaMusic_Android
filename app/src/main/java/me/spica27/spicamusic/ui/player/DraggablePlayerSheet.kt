@@ -31,19 +31,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.HazeMaterials
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
 import me.spica27.spicamusic.ui.widget.FloatingTabBar
-import me.spica27.spicamusic.ui.widget.FloatingTabBarColors
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -183,23 +182,21 @@ fun DraggablePlayerSheet(content: @Composable BoxScope.() -> Unit) {
                                     .padding(horizontal = 16.dp),
                             isInline = false,
                             selectedTabKey = LocalNavBackStack.current.last(),
-                            tabBarContentModifier = Modifier.hazeEffect(LocalSurfaceHazeState.current),
+                            tabBarContentModifier =
+                                Modifier.hazeEffect(
+                                    LocalSurfaceHazeState.current,
+                                    style =
+                                        HazeMaterials.ultraThin(
+                                            MiuixTheme.colorScheme.surfaceContainer,
+                                        ),
+                                ),
                             inlineAccessory = { modifier, animatedVisibilityScope ->
                             },
                             expandedAccessory = { modifier, animatedVisibilityScope ->
                             },
-                            colors =
-                                FloatingTabBarColors(
-                                    backgroundColor = MiuixTheme.colorScheme.surfaceContainer,
-                                    accessoryBackgroundColor = MiuixTheme.colorScheme.secondaryContainer,
-                                ),
                         ) {
                             val tabTint = @Composable { isSelected: Boolean ->
                                 if (isSelected) MiuixTheme.colorScheme.onTertiaryContainer else MiuixTheme.colorScheme.onSurface
-                            }
-
-                            val backgroundTint = @Composable { isSelected: Boolean ->
-                                if (isSelected) MiuixTheme.colorScheme.tertiaryContainer else Color.Transparent
                             }
 
                             tab(
@@ -226,6 +223,9 @@ fun DraggablePlayerSheet(content: @Composable BoxScope.() -> Unit) {
                                 },
                                 onClick = {
                                     backStack.add(Screen.Library)
+                                    backStack.removeAt(
+                                        backStack.lastIndexOf(Screen.Library) - 1,
+                                    )
                                 },
                             )
 
@@ -251,14 +251,33 @@ fun DraggablePlayerSheet(content: @Composable BoxScope.() -> Unit) {
                                         contentDescription = null,
                                     )
                                 },
-                                onClick = { backStack.add(Screen.Settings) },
+                                onClick = {
+                                    backStack.add(Screen.Settings)
+                                    backStack.removeAt(
+                                        backStack.lastIndexOf(Screen.Settings) - 1,
+                                    )
+                                },
                             )
 
                             // Standalone tab
                             standaloneTab(
                                 key = Screen.Search,
-                                icon = { Icon(Icons.Default.Search, contentDescription = null) },
-                                onClick = { backStack.add(Screen.Search) },
+                                icon = {
+                                    Icon(
+                                        Icons.Default.Search,
+                                        tint =
+                                            tabTint(
+                                                LocalNavBackStack.current.last() == Screen.Search,
+                                            ),
+                                        contentDescription = null,
+                                    )
+                                },
+                                onClick = {
+                                    backStack.add(Screen.Search)
+                                    backStack.removeAt(
+                                        backStack.lastIndexOf(Screen.Search) - 1,
+                                    )
+                                },
                             )
                         }
                         Spacer(
