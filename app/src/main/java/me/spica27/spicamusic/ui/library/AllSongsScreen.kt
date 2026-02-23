@@ -66,6 +66,7 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioQualityBadges
 import org.koin.androidx.compose.koinViewModel
@@ -245,6 +246,7 @@ fun AllSongsScreen(
                     modifier =
                         Modifier
                             .hazeSource(hazeSource)
+                            .nestedScroll(LocalFloatingTabBarScrollConnection.current)
                             .nestedScroll(scrollBehavior.nestedScrollConnection)
                             .weight(1f),
                 ) {

@@ -51,6 +51,7 @@ import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Icon
@@ -204,6 +205,7 @@ private fun ListPage(
             modifier
                 .scrollEndHaptic()
                 .overScrollVertical()
+                .nestedScroll(LocalFloatingTabBarScrollConnection.current)
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
         columns = GridCells.Fixed(2),
         state = listState,

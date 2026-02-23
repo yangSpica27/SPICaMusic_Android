@@ -22,6 +22,7 @@ import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -176,6 +177,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 Modifier
                     .fillMaxSize()
                     .overScrollVertical()
+                    .nestedScroll(LocalFloatingTabBarScrollConnection.current)
                     .nestedScroll(scrollerBehavior.nestedScrollConnection),
             contentPadding = paddingValues,
         ) {

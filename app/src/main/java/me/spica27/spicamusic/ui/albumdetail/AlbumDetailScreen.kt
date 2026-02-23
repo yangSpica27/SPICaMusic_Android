@@ -31,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -45,6 +46,7 @@ import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.androidx.compose.koinViewModel
@@ -126,6 +128,7 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
                     Modifier
                         .fillMaxSize()
                         .scrollEndHaptic()
+                        .nestedScroll(LocalFloatingTabBarScrollConnection.current)
                         .overScrollVertical(),
             ) {
                 item {
@@ -157,7 +160,7 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
                     }
                 }
                 item {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(160.dp))
                 }
             }
         }

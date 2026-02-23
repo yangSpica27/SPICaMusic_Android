@@ -75,6 +75,7 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
+import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -238,7 +239,8 @@ private fun WelcomeHolder(
     val backStack = LocalNavBackStack.current
 
     LazyVerticalGrid(
-        modifier = modifier.overScrollVertical(),
+        modifier = modifier
+            .overScrollVertical(),
         columns = GridCells.Fixed(2),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -421,6 +423,7 @@ private fun SearchResultHolder(
             Modifier
                 .hazeSource(state = listHazeSource)
                 .fillMaxSize()
+                .nestedScroll(LocalFloatingTabBarScrollConnection.current)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .overScrollVertical(),
     ) {

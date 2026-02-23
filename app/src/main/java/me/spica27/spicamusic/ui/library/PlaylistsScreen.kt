@@ -53,6 +53,7 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
+import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
@@ -128,6 +129,7 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
                 Modifier
                     .hazeSource(hazeState)
                     .fillMaxSize()
+                    .nestedScroll(LocalFloatingTabBarScrollConnection.current)
                     .nestedScroll(scrollerBehavior.nestedScrollConnection)
                     .overScrollOutOfBound(),
             contentPadding =
