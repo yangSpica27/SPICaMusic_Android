@@ -25,6 +25,8 @@ import me.spica27.spicamusic.ui.player.LocalPlaylistPanelController
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.player.PlaylistPanelController
 import me.spica27.spicamusic.ui.theme.SPICaMusicTheme
+import me.spica27.spicamusic.ui.widget.FloatingTabBarScrollConnection
+import me.spica27.spicamusic.ui.widget.rememberFloatingTabBarScrollConnection
 import me.spica27.spicamusic.utils.PreferencesManager
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -62,6 +64,7 @@ fun AppScaffold() {
                 LocalSurfaceHazeState provides surfaceHazeState,
                 LocalPlaylistPanelController provides playlistPanelController,
                 LocalNavSharedTransitionScope provides this@SharedTransitionLayout,
+                LocalFloatingTabBarScrollConnection provides rememberFloatingTabBarScrollConnection(),
             ) {
                 CurrentPlaylistPanelHost(
                     visible = playlistPanelVisible.value,
@@ -80,6 +83,11 @@ fun AppScaffold() {
 }
 
 val LocalSurfaceHazeState = staticCompositionLocalOf<HazeState> { error("HazeState not provided") }
+
+val LocalFloatingTabBarScrollConnection =
+    staticCompositionLocalOf<FloatingTabBarScrollConnection> {
+        error("FloatingTabBarScrollConnection not provided")
+    }
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 val LocalNavSharedTransitionScope: ProvidableCompositionLocal<SharedTransitionScope> =

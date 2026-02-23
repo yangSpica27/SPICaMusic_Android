@@ -73,6 +73,7 @@ import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
+import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -166,12 +167,12 @@ private fun LibraryContent(
     val albumsItems = viewModel.albumList.collectAsLazyPagingItems()
     val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
     val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
-
     LazyVerticalGrid(
         modifier =
             modifier
                 .hazeSource(hazeState)
                 .overScrollVertical()
+                .nestedScroll(LocalFloatingTabBarScrollConnection.current)
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
         columns = GridCells.Fixed(2),
         contentPadding =

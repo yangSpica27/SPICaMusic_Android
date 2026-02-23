@@ -287,6 +287,9 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                                 },
                             )
                         }
+                        item {
+                            Spacer(modifier = Modifier.height(160.dp))
+                        }
                     }
                 }
             }
@@ -554,7 +557,12 @@ private fun SongItemCard(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                    .padding(
+                        top = 10.dp,
+                        bottom = 10.dp,
+                        start = 0.dp,
+                        end = 12.dp,
+                    ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -562,7 +570,7 @@ private fun SongItemCard(
                 style = MiuixTheme.textStyles.title4,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.9f),
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.width(30.dp),
+                modifier = Modifier.width(55.dp),
                 textAlign = TextAlign.Center,
             )
 

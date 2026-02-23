@@ -40,6 +40,7 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
 import me.spica27.spicamusic.ui.widget.FloatingTabBar
@@ -127,15 +128,6 @@ fun DraggablePlayerSheet(content: @Composable BoxScope.() -> Unit) {
                                 .fillMaxSize()
                                 .renderInSharedTransitionScopeOverlay(
                                     zIndexInOverlay = 11f,
-                                ).sharedBounds(
-                                    sharedContentState = rememberSharedContentState(key = "player_container"),
-                                    animatedVisibilityScope = this@AnimatedContent,
-                                    boundsTransform = { _, _ ->
-                                        spring(
-                                            dampingRatio = 0.9f,
-                                            stiffness = 380f,
-                                        )
-                                    },
                                 ),
                     ) {
                         ExpandedPlayerScreen(
@@ -150,37 +142,19 @@ fun DraggablePlayerSheet(content: @Composable BoxScope.() -> Unit) {
                     Column(
                         modifier =
                             Modifier
-                                .fillMaxWidth()
+                                .renderInSharedTransitionScopeOverlay(
+                                    zIndexInOverlay = 11f,
+                                ).fillMaxWidth()
                                 .align(Alignment.BottomCenter)
                                 .navigationBarsPadding(),
                     ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 10f)
-                                    .sharedBounds(
-                                        sharedContentState = rememberSharedContentState(key = "player_container"),
-                                        animatedVisibilityScope = this@AnimatedContent,
-                                        boundsTransform = { _, _ ->
-                                            spring(
-                                                dampingRatio = 0.9f,
-                                                stiffness = 380f,
-                                            )
-                                        },
-                                    ),
-                        ) {
-                            BottomPlayerBar(
-                                onExpand = { expandPlayer(DEFAULT_PAGE) },
-                                onExpandToPlaylist = { expandPlayer(0) },
-                            )
-                        }
                         // TabBar
                         FloatingTabBar(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
-                            isInline = false,
+                            scrollConnection = LocalFloatingTabBarScrollConnection.current,
                             selectedTabKey = LocalNavBackStack.current.last(),
                             tabBarContentModifier =
                                 Modifier.hazeEffect(
@@ -191,8 +165,42 @@ fun DraggablePlayerSheet(content: @Composable BoxScope.() -> Unit) {
                                         ),
                                 ),
                             inlineAccessory = { modifier, animatedVisibilityScope ->
+                                SmallBottomPlayerBar(
+                                    modifier =
+                                        modifier.sharedBounds(
+                                            sharedContentState = rememberSharedContentState(key = "player_bar"),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            boundsTransform = { _, _ ->
+                                                spring(
+                                                    dampingRatio = 0.9f,
+                                                    stiffness = 380f,
+                                                )
+                                            },
+                                        ),
+                                )
                             },
                             expandedAccessory = { modifier, animatedVisibilityScope ->
+                                Box(
+                                    modifier =
+                                        modifier
+                                            .renderInSharedTransitionScopeOverlay(
+                                                zIndexInOverlay = 10f,
+                                            ).sharedBounds(
+                                                sharedContentState = rememberSharedContentState(key = "player_bar"),
+                                                animatedVisibilityScope = animatedVisibilityScope,
+                                                boundsTransform = { _, _ ->
+                                                    spring(
+                                                        dampingRatio = 0.9f,
+                                                        stiffness = 380f,
+                                                    )
+                                                },
+                                            ),
+                                ) {
+                                    LargeBottomPlayerBar(
+                                        onExpand = { expandPlayer(DEFAULT_PAGE) },
+                                        onExpandToPlaylist = { expandPlayer(0) },
+                                    )
+                                }
                             },
                         ) {
                             val tabTint = @Composable { isSelected: Boolean ->
