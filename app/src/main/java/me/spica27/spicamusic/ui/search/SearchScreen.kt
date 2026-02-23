@@ -1,7 +1,9 @@
-package me.spica27.spicamusic.ui.home.pages
+package me.spica27.spicamusic.ui.search
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -100,7 +102,7 @@ import kotlin.random.Random
  */
 @OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
-fun SearchPage(
+fun SearchScreen(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = koinViewModel(),
 ) {
@@ -331,23 +333,21 @@ fun WelcomeItem(
     // 入场动画
     val appearAnim =
         remember(title) {
-            androidx.compose.animation.core
-                .Animatable(0f)
+            Animatable(0f)
         }
     val delayMillis = remember(title) { Random.nextInt(0, 200) }
     val durationMillis = remember(title) { Random.nextInt(260, 520) }
 
     LaunchedEffect(Unit) {
-        androidx.compose.animation.core
-            .tween<Float>(
-                durationMillis = durationMillis,
-                delayMillis = delayMillis,
-            ).let { tween ->
-                appearAnim.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween,
-                )
-            }
+        tween<Float>(
+            durationMillis = durationMillis,
+            delayMillis = delayMillis,
+        ).let { tween ->
+            appearAnim.animateTo(
+                targetValue = 1f,
+                animationSpec = tween,
+            )
+        }
     }
 
     val interactionSource = remember { MutableInteractionSource() }

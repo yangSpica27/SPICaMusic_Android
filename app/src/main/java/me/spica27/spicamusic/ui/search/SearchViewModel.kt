@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui.home.pages
+package me.spica27.spicamusic.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

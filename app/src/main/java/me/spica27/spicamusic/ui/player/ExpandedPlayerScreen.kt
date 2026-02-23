@@ -90,7 +90,6 @@ import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.utils.PreferencesManager
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinActivityViewModel
 import timber.log.Timber
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
@@ -654,7 +653,7 @@ private fun PlayerPage(
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         // Android 13+ 使用 AGSL 可视化器
 
-                        val playerViewModel = koinActivityViewModel<PlayerViewModel>()
+                        val playerViewModel = LocalPlayerViewModel.current
                         val scope = rememberCoroutineScope()
 
                         // 订阅 FFT 绘制数据

@@ -274,10 +274,8 @@ fun AllSongsScreen(
                     }
 
                     // 底部占位，避免被浮动菜单遮挡
-                    if (isMultiSelectMode) {
-                        item {
-                            Spacer(modifier = Modifier.height(80.dp))
-                        }
+                    item {
+                        Spacer(modifier = Modifier.height(150.dp))
                     }
                 }
             }

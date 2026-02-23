@@ -21,9 +21,9 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
-import me.spica27.spicamusic.ui.home.pages.LibraryPage
-import me.spica27.spicamusic.ui.home.pages.SearchPage
-import me.spica27.spicamusic.ui.home.pages.SettingsPage
+import me.spica27.spicamusic.ui.library.LibraryScreen
+import me.spica27.spicamusic.ui.search.SearchScreen
+import me.spica27.spicamusic.ui.settings.SettingsScreen
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -97,9 +97,9 @@ fun HomeScreen(
                 materialSharedAxisZIn(true) togetherWith materialSharedAxisZOut(true)
             }) {
                 when (it) {
-                    0 -> LibraryPage()
-                    1 -> SearchPage()
-                    2 -> SettingsPage()
+                    0 -> LibraryScreen()
+                    1 -> SearchScreen()
+                    2 -> SettingsScreen()
                 }
             }
         }

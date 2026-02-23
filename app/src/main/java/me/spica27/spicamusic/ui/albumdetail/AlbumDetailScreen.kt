@@ -1,5 +1,8 @@
 package me.spica27.spicamusic.ui.albumdetail
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
 import me.spica27.spicamusic.R
@@ -41,6 +45,7 @@ import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -71,73 +76,89 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
 
     val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = "专辑详情",
-                largeTitle = "",
-                color = Color.Transparent,
-                navigationIcon = {
-                    IconButton(
-                        modifier =
-                            Modifier
-                                .padding(start = 16.dp)
-                                .background(
-                                    MiuixTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(50),
-                                ),
-                        onClick = {
-                            backStack.removeLastOrNull()
-                        },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBackIosNew,
-                            contentDescription = "返回",
-                        )
-                    }
-                },
-            )
-        },
-    ) { _ ->
+    val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
 
-        LazyColumn(
+    val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
+
+    with(localNavSharedTransitionScope) {
+        Scaffold(
             modifier =
-                Modifier
+                modifier
                     .fillMaxSize()
-                    .scrollEndHaptic()
-                    .overScrollVertical(),
-        ) {
-            item {
-                Header(album, viewModel)
-            }
-            items(count = songs.size) { index ->
-                val song = songs[index]
-                Column {
-                    if (index == 0) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 10.dp),
-                        )
-                    }
-                    SongItemCard(
-                        song = song,
-                        onClick = { viewModel.playSongInList(song) },
-                        index = index,
-                    )
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState(album),
+                        animatedVisibilityScope = localNavAnimatedContentScope,
+                        exit =
+                            scaleOut(
+                                animationSpec = tween(durationMillis = 850),
+                            ) + fadeOut(),
+                    ),
+            topBar = {
+                TopAppBar(
+                    title = "专辑详情",
+                    largeTitle = "",
+                    color = Color.Transparent,
+                    navigationIcon = {
+                        IconButton(
+                            modifier =
+                                Modifier
+                                    .padding(start = 16.dp)
+                                    .background(
+                                        MiuixTheme.colorScheme.surface,
+                                        shape = RoundedCornerShape(50),
+                                    ),
+                            onClick = {
+                                backStack.removeLastOrNull()
+                            },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBackIosNew,
+                                contentDescription = "返回",
+                            )
+                        }
+                    },
+                )
+            },
+        ) { _ ->
 
-                    if (index != songs.size - 1) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 12.dp),
+            LazyColumn(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .scrollEndHaptic()
+                        .overScrollVertical(),
+            ) {
+                item {
+                    Header(album, viewModel)
+                }
+                items(count = songs.size) { index ->
+                    val song = songs[index]
+                    Column {
+                        if (index == 0) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 10.dp),
+                            )
+                        }
+                        SongItemCard(
+                            song = song,
+                            onClick = { viewModel.playSongInList(song) },
+                            index = index,
                         )
-                    } else {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 10.dp),
-                        )
+
+                        if (index != songs.size - 1) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                            )
+                        } else {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 10.dp),
+                            )
+                        }
                     }
                 }
-            }
-            item {
-                Spacer(modifier = Modifier.height(80.dp))
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
+                }
             }
         }
     }

@@ -168,6 +168,11 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
                     },
                 )
             }
+            item(
+                span = { GridItemSpan(2) },
+            ) {
+                Spacer(modifier = Modifier.height(150.dp))
+            }
         }
     }
 

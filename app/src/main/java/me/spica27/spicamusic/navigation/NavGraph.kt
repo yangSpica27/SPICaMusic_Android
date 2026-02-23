@@ -1,10 +1,15 @@
 package me.spica27.spicamusic.navigation
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import dev.chrisbanes.haze.hazeSource
+import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScreen
 import me.spica27.spicamusic.ui.audioeffects.AudioEffectsScreen
@@ -14,11 +19,17 @@ import me.spica27.spicamusic.ui.library.AllSongsScreen
 import me.spica27.spicamusic.ui.library.ArtistsScreen
 import me.spica27.spicamusic.ui.library.FavoriteScreen
 import me.spica27.spicamusic.ui.library.FoldersScreen
+import me.spica27.spicamusic.ui.library.LibraryScreen
 import me.spica27.spicamusic.ui.library.MostPlayedScreen
 import me.spica27.spicamusic.ui.library.PlaylistDetailScreen
 import me.spica27.spicamusic.ui.library.PlaylistsScreen
 import me.spica27.spicamusic.ui.library.RecentlyAddedScreen
+import me.spica27.spicamusic.ui.search.SearchScreen
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceScreen
+import me.spica27.spicamusic.ui.settings.SettingsScreen
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 应用导航图 (Navigation 3)
@@ -26,9 +37,29 @@ import me.spica27.spicamusic.ui.settings.MediaLibrarySourceScreen
 @Composable
 fun AppNavGraph(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
+
     NavDisplay(
         backStack = backStack,
-        modifier = modifier.hazeSource(LocalSurfaceHazeState.current),
+        sharedTransitionScope = LocalNavSharedTransitionScope.current,
+        onBack = {
+            backStack.removeLastOrNull()
+        },
+        entryDecorators =
+            listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            ),
+        modifier =
+            modifier
+                .background(MiuixTheme.colorScheme.surface)
+                .hazeSource(LocalSurfaceHazeState.current),
+        transitionSpec = {
+            materialSharedAxisZIn(true) togetherWith materialSharedAxisZOut(true)
+        },
+        popTransitionSpec = {
+            materialSharedAxisZIn(true) togetherWith
+                materialSharedAxisZOut(true)
+        },
         entryProvider =
             entryProvider {
                 entry<Screen.Home> {
@@ -83,6 +114,16 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
 
                 entry<Screen.AudioEffects> {
                     AudioEffectsScreen()
+                }
+
+                entry<Screen.Library> {
+                    LibraryScreen()
+                }
+                entry<Screen.Search> {
+                    SearchScreen()
+                }
+                entry<Screen.Settings> {
+                    SettingsScreen()
                 }
             },
     )

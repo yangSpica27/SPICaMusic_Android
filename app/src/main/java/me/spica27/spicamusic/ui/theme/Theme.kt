@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +40,6 @@ fun SPICaMusicTheme(
         } else {
             LightColorScheme
         }
-    MaterialTheme.typography.bodyLarge
     MiuixTheme(
         colors = colorScheme,
         content = content,

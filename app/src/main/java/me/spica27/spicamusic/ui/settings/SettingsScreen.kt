@@ -1,6 +1,8 @@
-package me.spica27.spicamusic.ui.home.pages
+package me.spica27.spicamusic.ui.settings
 
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -15,14 +17,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
-import me.spica27.spicamusic.ui.settings.SelectOption
-import me.spica27.spicamusic.ui.settings.SettingsItem
-import me.spica27.spicamusic.ui.settings.SettingsItemView
-import me.spica27.spicamusic.ui.settings.SettingsViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -35,7 +34,7 @@ import top.yukonga.miuix.kmp.utils.overScrollVertical
  * 设置页面
  */
 @Composable
-fun SettingsPage(modifier: Modifier = Modifier) {
+fun SettingsScreen(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
     val viewModel: SettingsViewModel = koinViewModel()
 
@@ -192,6 +191,9 @@ fun SettingsPage(modifier: Modifier = Modifier) {
                 },
             ) { item ->
                 SettingsItemView(item = item)
+            }
+            item {
+                Spacer(modifier = Modifier.height(150.dp))
             }
         }
     }

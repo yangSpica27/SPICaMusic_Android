@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
@@ -58,6 +59,7 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
+import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.MainTopBar
@@ -136,134 +138,155 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
 
     val scrollBehavior = MiuixScrollBehavior()
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        popupHost = { MiuixPopupHost() },
-        topBar = {
-            MainTopBar(
-                scrollBehavior = scrollBehavior,
-                title = {
-                    Text(
-                        playlist?.playlistName ?: stringResource(R.string.playlist_detail_title),
-                        maxLines = 1,
-                        style = MiuixTheme.textStyles.title2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                largeTitle = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Spacer(
-                            modifier = Modifier.height(44.dp),
-                        )
-                        // Header - 歌单信息
-                        playlist?.let { pl ->
-                            PlaylistHeader(
-                                playlist = pl,
-                                songs = songs,
-                                songCount = songs.size,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
+    val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
 
-                        // 操作按钮栏
-                        ActionBar(
-                            songCount = songs.size,
-                            isMultiSelectMode = isMultiSelectMode,
-                            onPlayAll = { viewModel.playAll() },
-                            onToggleMultiSelect = { viewModel.toggleMultiSelectMode() },
-                            onShowMenu = { viewModel.showRenameDialog() },
-                            onAddSongs = { viewModel.showAddSongsSheet() },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth(),
+    val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
+
+    with(localNavSharedTransitionScope) {
+        Scaffold(
+            modifier =
+                modifier
+                    .sharedBounds(
+                        rememberSharedContentState(playlist ?: ""),
+                        animatedVisibilityScope = localNavAnimatedContentScope,
+                    ).fillMaxSize(),
+            popupHost = { MiuixPopupHost() },
+            topBar = {
+                MainTopBar(
+                    scrollBehavior = scrollBehavior,
+                    title = {
+                        Text(
+                            playlist?.playlistName
+                                ?: stringResource(R.string.playlist_detail_title),
+                            maxLines = 1,
+                            style = MiuixTheme.textStyles.title2,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { backStack.removeLastOrNull() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
-                            tint = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
-                },
-                actions = {
-                    if (isMultiSelectMode && selectedSongs.isNotEmpty()) {
-                        // 多选模式下显示删除按钮
-                        Row {
-                            TextButton(
-                                onClick = { viewModel.removeSelectedSongs() },
-                                text = stringResource(R.string.remove_songs_format, selectedSongs.size),
-                                cornerRadius = 16.dp,
-                                colors =
-                                    ButtonDefaults.textButtonColors().copy(
-                                        textColor = MiuixTheme.colorScheme.onError,
-                                        color = MiuixTheme.colorScheme.error,
-                                    ),
-                                insideMargin =
-                                    PaddingValues(
-                                        horizontal = 8.dp,
-                                        vertical = 4.dp,
-                                    ),
-                            )
+                    },
+                    largeTitle = {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
                             Spacer(
-                                modifier = Modifier.width(16.dp),
+                                modifier = Modifier.height(44.dp),
+                            )
+                            // Header - 歌单信息
+                            playlist?.let { pl ->
+                                PlaylistHeader(
+                                    playlist = pl,
+                                    songs = songs,
+                                    songCount = songs.size,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+
+                            // 操作按钮栏
+                            ActionBar(
+                                songCount = songs.size,
+                                isMultiSelectMode = isMultiSelectMode,
+                                onPlayAll = { viewModel.playAll() },
+                                onToggleMultiSelect = { viewModel.toggleMultiSelectMode() },
+                                onShowMenu = { viewModel.showRenameDialog() },
+                                onAddSongs = { viewModel.showAddSongsSheet() },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth(),
                             )
                         }
-                    }
-                },
-            )
-        },
-    ) { paddingValues ->
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-        ) {
-            // 歌曲列表
-            if (songs.isEmpty()) {
-                EmptySongList(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { backStack.removeLastOrNull() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "返回",
+                                tint = MiuixTheme.colorScheme.onSurface,
+                            )
+                        }
+                    },
+                    actions = {
+                        if (isMultiSelectMode && selectedSongs.isNotEmpty()) {
+                            // 多选模式下显示删除按钮
+                            Row {
+                                TextButton(
+                                    onClick = { viewModel.removeSelectedSongs() },
+                                    text =
+                                        stringResource(
+                                            R.string.remove_songs_format,
+                                            selectedSongs.size,
+                                        ),
+                                    cornerRadius = 16.dp,
+                                    colors =
+                                        ButtonDefaults.textButtonColors().copy(
+                                            textColor = MiuixTheme.colorScheme.onError,
+                                            color = MiuixTheme.colorScheme.error,
+                                        ),
+                                    insideMargin =
+                                        PaddingValues(
+                                            horizontal = 8.dp,
+                                            vertical = 4.dp,
+                                        ),
+                                )
+                                Spacer(
+                                    modifier = Modifier.width(16.dp),
+                                )
+                            }
+                        }
+                    },
                 )
-            } else {
-                LazyColumn(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .nestedScroll(scrollBehavior.nestedScrollConnection)
-                            .overScrollOutOfBound(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    itemsIndexed(songs, key = { index, song -> song.songId ?: song.mediaStoreId }) { index, song ->
-                        SongItemCard(
-                            modifier = Modifier.animateItem(),
-                            index = index,
-                            song = song,
-                            isMultiSelectMode = isMultiSelectMode,
-                            isSelected = selectedSongs.contains(song.songId),
-                            onClick = {
-                                if (isMultiSelectMode) {
+            },
+        ) { paddingValues ->
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+            ) {
+                // 歌曲列表
+                if (songs.isEmpty()) {
+                    EmptySongList(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                    )
+                } else {
+                    LazyColumn(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                                .overScrollOutOfBound(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        itemsIndexed(
+                            songs,
+                            key = { index, song ->
+                                song.songId ?: song.mediaStoreId
+                            },
+                        ) { index, song ->
+                            SongItemCard(
+                                modifier = Modifier.animateItem(),
+                                index = index,
+                                song = song,
+                                isMultiSelectMode = isMultiSelectMode,
+                                isSelected = selectedSongs.contains(song.songId),
+                                onClick = {
+                                    if (isMultiSelectMode) {
+                                        viewModel.toggleSongSelection(song.songId)
+                                    } else {
+                                        viewModel.playSongInList(song)
+                                    }
+                                },
+                                onLongClick = {
+                                    if (!isMultiSelectMode) {
+                                        viewModel.toggleMultiSelectMode()
+                                    }
                                     viewModel.toggleSongSelection(song.songId)
-                                } else {
-                                    viewModel.playSongInList(song)
-                                }
-                            },
-                            onLongClick = {
-                                if (!isMultiSelectMode) {
-                                    viewModel.toggleMultiSelectMode()
-                                }
-                                viewModel.toggleSongSelection(song.songId)
-                            },
-                        )
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -699,7 +722,11 @@ private fun RenamePlaylistDialog(
                 TextButton(
                     text = stringResource(R.string.cancel),
                     onClick = onDismiss,
-                    modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
+                    modifier =
+                        Modifier.pressable(
+                            interactionSource = null,
+                            indication = SinkFeedback(),
+                        ),
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Button(
@@ -708,7 +735,11 @@ private fun RenamePlaylistDialog(
                             onRename(newName)
                         }
                     },
-                    modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
+                    modifier =
+                        Modifier.pressable(
+                            interactionSource = null,
+                            indication = SinkFeedback(),
+                        ),
                     enabled = newName.isNotBlank() && newName != currentName,
                 ) {
                     Text("确定")

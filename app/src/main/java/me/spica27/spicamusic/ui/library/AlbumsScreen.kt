@@ -234,6 +234,11 @@ private fun ListPage(
                 AlbumItem(album, modifier = Modifier.animateItem())
             }
         }
+        item(
+            span = { GridItemSpan(2) },
+        ) {
+            Spacer(modifier = Modifier.height(150.dp))
+        }
     }
 }
 

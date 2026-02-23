@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalHazeMaterialsApi::class)
 
-package me.spica27.spicamusic.ui.home.pages
+package me.spica27.spicamusic.ui.library
 
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.paging.compose.collectAsLazyPagingItems
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
@@ -64,12 +66,14 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
+import me.spica27.spicamusic.common.entity.PlayStats
+import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
-import me.spica27.spicamusic.ui.library.LibraryPageViewModel
+import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
@@ -107,7 +111,7 @@ private val libraryItems =
  * 媒体库页面
  */
 @Composable
-fun LibraryPage(modifier: Modifier = Modifier) {
+fun LibraryScreen(modifier: Modifier = Modifier) {
     val scrollBehavior = MiuixScrollBehavior()
     val hazeState = rememberHazeState()
     Scaffold(
@@ -160,6 +164,8 @@ private fun LibraryContent(
     val backStack = LocalNavBackStack.current
     val playlists by viewModel.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
     val albumsItems = viewModel.albumList.collectAsLazyPagingItems()
+    val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
+    val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
 
     LazyVerticalGrid(
         modifier =
@@ -175,6 +181,7 @@ private fun LibraryContent(
             ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        state = rememberLazyGridState(),
     ) {
         // 歌单分区：显示已有歌单或引导创建
         item(span = { GridItemSpan(2) }) {
@@ -208,18 +215,28 @@ private fun LibraryContent(
                     // 显示最多 4 个歌单作为预览
                     val display = playlists.take(4)
                     this@LazyRow.items(display, key = { it.playlistId ?: 0L }) { playlist ->
-                        PlaylistMiniCard(
-                            playlist = playlist,
-                            onClick = {
-                                playlist.playlistId?.let { id ->
-                                    backStack.add(
-                                        Screen.PlaylistDetail(
-                                            id,
-                                        ),
-                                    )
-                                }
-                            },
-                        )
+                        with(localNavSharedTransitionScope) {
+                            PlaylistMiniCard(
+                                modifier =
+                                    Modifier.sharedBounds(
+                                        sharedContentState =
+                                            rememberSharedContentState(
+                                                playlist,
+                                            ),
+                                        animatedVisibilityScope = localNavAnimatedContentScope,
+                                    ),
+                                playlist = playlist,
+                                onClick = {
+                                    playlist.playlistId?.let { id ->
+                                        backStack.add(
+                                            Screen.PlaylistDetail(
+                                                id,
+                                            ),
+                                        )
+                                    }
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -245,15 +262,24 @@ private fun LibraryContent(
             items(displayCount) { index ->
                 val album = albumsItems[index]
                 if (album != null) {
-                    AlbumMiniCard(
-                        modifier =
-                            Modifier.padding(
-                                start = if (index % 2 == 0) 16.dp else 0.dp,
-                                end = if (index % 2 == 0) 0.dp else 16.dp,
-                            ),
-                        album = album,
-                        onClick = { backStack.add(Screen.AlbumDetail(album)) },
-                    )
+                    with(localNavSharedTransitionScope) {
+                        AlbumMiniCard(
+                            modifier =
+                                Modifier
+                                    .padding(
+                                        start = if (index % 2 == 0) 16.dp else 0.dp,
+                                        end = if (index % 2 == 0) 0.dp else 16.dp,
+                                    ).sharedBounds(
+                                        sharedContentState =
+                                            rememberSharedContentState(
+                                                album,
+                                            ),
+                                        animatedVisibilityScope = localNavAnimatedContentScope,
+                                    ),
+                            album = album,
+                            onClick = { backStack.add(Screen.AlbumDetail(album)) },
+                        )
+                    }
                 } else {
                     AlbumMiniPlaceholder()
                 }
@@ -269,8 +295,8 @@ private fun LibraryContent(
                     val recommended by viewModel.recommendedSongs.collectAsStateWithLifecycle(
                         initialValue = emptyList(),
                     )
-                    val player: me.spica27.spicamusic.player.api.IMusicPlayer =
-                        org.koin.java.KoinJavaComponent
+                    val player: IMusicPlayer =
+                        KoinJavaComponent
                             .getKoin()
                             .get()
                     Row(
@@ -280,8 +306,7 @@ private fun LibraryContent(
                                 .clip(Shapes.LargeCornerBasedShape)
                                 .background(
                                     MiuixTheme.colorScheme.primaryContainer,
-                                )
-                                .clickable(onClick = {
+                                ).clickable(onClick = {
                                     // 播放全部推荐，从第一个开始
                                     val mediaIds = recommended.map { it.mediaStoreId.toString() }
                                     if (mediaIds.isNotEmpty()) {
@@ -543,14 +568,15 @@ private fun EmptyPlaylistCard(
  */
 @Composable
 private fun PlaylistMiniCard(
-    playlist: me.spica27.spicamusic.common.entity.Playlist,
+    modifier: Modifier,
+    playlist: Playlist,
     onClick: () -> Unit,
 ) {
     Card(
         onClick = onClick,
         pressFeedbackType = PressFeedbackType.Sink,
         cornerRadius = 10.dp,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column {
             Box(
@@ -677,8 +703,7 @@ private fun AlbumMiniCard(
                                                     MiuixTheme.colorScheme.surfaceContainerHigh,
                                                 ),
                                         ),
-                                    )
-                                    .padding(
+                                    ).padding(
                                         12.dp,
                                     ),
                             contentAlignment = Alignment.Center,
@@ -821,8 +846,7 @@ private fun LibraryItemCard(
                             .graphicsLayer {
                                 translationX = 16.dp.toPx()
                                 translationY = 10.dp.toPx()
-                            }
-                            .background(
+                            }.background(
                                 Brush.radialGradient(
                                     colors =
                                         listOf(
@@ -890,7 +914,7 @@ private fun Title(
  */
 @Composable
 private fun WeeklyStatsCard(
-    weeklyStats: me.spica27.spicamusic.common.entity.PlayStats?,
+    weeklyStats: PlayStats?,
     onRefresh: () -> Unit,
 ) {
     Card(

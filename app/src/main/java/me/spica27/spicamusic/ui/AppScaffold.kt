@@ -1,13 +1,18 @@
 package me.spica27.spicamusic.ui
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.runtime.rememberNavBackStack
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.navigation.AppNavGraph
@@ -33,46 +38,55 @@ fun AppScaffold() {
     val preferencesManager = koinInject<PreferencesManager>()
 
     val isDarkMode =
-        preferencesManager.getBoolean(PreferencesManager.Keys.DARK_MODE).collectAsStateWithLifecycle(false)
+        preferencesManager
+            .getBoolean(PreferencesManager.Keys.DARK_MODE)
+            .collectAsStateWithLifecycle(false)
 
     SPICaMusicTheme(
         darkTheme = isDarkMode.value,
     ) {
-        val backStack = remember { mutableStateListOf<Screen>(Screen.Home) }
+        val backStack = rememberNavBackStack(Screen.Library)
 
         // Activity 级别的 PlayerViewModel，全局共享
-        val playerViewModel: PlayerViewModel =
-            koinActivityViewModel(
-                key = "PlayerViewModel",
-            )
+        val playerViewModel: PlayerViewModel = koinActivityViewModel(key = "PlayerViewModel")
 
         val playlistPanelVisible = remember { mutableStateOf(false) }
         val playlistPanelController = remember { PlaylistPanelController(playlistPanelVisible) }
 
         val surfaceHazeState = rememberHazeState()
 
-        CompositionLocalProvider(
-            LocalNavBackStack provides backStack,
-            LocalPlayerViewModel provides playerViewModel,
-            LocalSurfaceHazeState provides surfaceHazeState,
-            LocalPlaylistPanelController provides playlistPanelController,
-        ) {
-            CurrentPlaylistPanelHost(
-                visible = playlistPanelVisible.value,
-                onVisibleChange = { playlistPanelVisible.value = it },
+        SharedTransitionLayout {
+            CompositionLocalProvider(
+                LocalNavBackStack provides backStack,
+                LocalPlayerViewModel provides playerViewModel,
+                LocalSurfaceHazeState provides surfaceHazeState,
+                LocalPlaylistPanelController provides playlistPanelController,
+                LocalNavSharedTransitionScope provides this@SharedTransitionLayout,
             ) {
-                // 全局播放器层包裹整个导航
-                DraggablePlayerSheet {
-                    AppNavGraph(
-                        modifier = Modifier,
-                    )
+                CurrentPlaylistPanelHost(
+                    visible = playlistPanelVisible.value,
+                    onVisibleChange = { playlistPanelVisible.value = it },
+                ) {
+                    // 全局播放器层包裹整个导航
+                    DraggablePlayerSheet {
+                        AppNavGraph(
+                            modifier = Modifier,
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-val LocalSurfaceHazeState =
-    staticCompositionLocalOf<HazeState> {
-        error("HazeState not provided")
+val LocalSurfaceHazeState = staticCompositionLocalOf<HazeState> { error("HazeState not provided") }
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+val LocalNavSharedTransitionScope: ProvidableCompositionLocal<SharedTransitionScope> =
+    compositionLocalOf {
+        throw IllegalStateException(
+            "Unexpected access to LocalNavSharedTransitionScope. You must provide a " +
+                "SharedTransitionScope from a call to SharedTransitionLayout() or " +
+                "SharedTransitionScope()",
+        )
     }

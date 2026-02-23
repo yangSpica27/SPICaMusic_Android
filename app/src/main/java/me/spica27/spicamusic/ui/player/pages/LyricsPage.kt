@@ -31,12 +31,11 @@ import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.utils.LrcParser
 import me.spica27.spicamusic.storage.impl.dao.ExtraInfoDao
 import me.spica27.spicamusic.storage.impl.entity.ExtraInfoEntity
-import me.spica27.spicamusic.ui.player.PlayerViewModel
+import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsSwitcherSheet
 import me.spica27.spicamusic.ui.widget.LyricsUI
 import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinActivityViewModel
 import timber.log.Timber
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -50,7 +49,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  */
 @Composable
 fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
-    val playerViewModel = koinActivityViewModel<PlayerViewModel>()
+    val playerViewModel = LocalPlayerViewModel.current
     val apiClient: ApiClient = koinInject()
     val extraInfoDao: ExtraInfoDao = koinInject()
 
