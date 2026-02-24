@@ -1,8 +1,16 @@
 package me.spica27.spicamusic.ui.library
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,20 +27,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlaylistRemove
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -43,6 +55,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -53,26 +67,32 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
+import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
-import me.spica27.spicamusic.ui.widget.MainTopBar
 import me.spica27.spicamusic.ui.widget.SongPickerSheet
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonColors
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -136,11 +156,11 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
         viewModel.toggleMultiSelectMode()
     }
 
-    val scrollBehavior = MiuixScrollBehavior()
-
     val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
 
     val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
+
+    val hazeState = rememberHazeState()
 
     with(localNavSharedTransitionScope) {
         Scaffold(
@@ -152,95 +172,65 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                     ).fillMaxSize(),
             popupHost = { MiuixPopupHost() },
             topBar = {
-                MainTopBar(
-                    scrollBehavior = scrollBehavior,
-                    title = {
-                        Text(
-                            playlist?.playlistName
-                                ?: stringResource(R.string.playlist_detail_title),
-                            maxLines = 1,
-                            style = MiuixTheme.textStyles.title2,
-                            overflow = TextOverflow.Ellipsis,
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(
+                                horizontal = 16.dp,
+                                vertical = 12.dp,
+                            ),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        TopBarIconButton(
+                            hazeState = hazeState,
+                            imageVector = Icons.Default.ArrowBackIosNew,
+                            contentDescription = "返回",
+                            onClick = { backStack.removeLastOrNull() },
                         )
-                    },
-                    largeTitle = {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Spacer(
-                                modifier = Modifier.height(44.dp),
-                            )
-                            // Header - 歌单信息
-                            playlist?.let { pl ->
-                                PlaylistHeader(
-                                    playlist = pl,
-                                    songs = songs,
-                                    songCount = songs.size,
-                                    modifier = Modifier.fillMaxWidth(),
+                        Spacer(
+                            modifier = Modifier.weight(1f),
+                        )
+                        AnimatedContent(
+                            isMultiSelectMode,
+                            contentKey = { it },
+                            transitionSpec = {
+                                fadeIn() +
+                                    slideIntoContainer(
+                                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                        animationSpec = tween(300),
+                                    ) togetherWith fadeOut() +
+                                    slideOutOfContainer(
+                                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                        animationSpec = tween(300),
+                                    )
+                            },
+                        ) { isMultiSelectMode ->
+                            if (isMultiSelectMode) {
+                                MultiSelectRightIcons(
+                                    viewModel = viewModel,
+                                    hazeState = hazeState,
                                 )
-                            }
-
-                            // 操作按钮栏
-                            ActionBar(
-                                songCount = songs.size,
-                                isMultiSelectMode = isMultiSelectMode,
-                                onPlayAll = { viewModel.playAll() },
-                                onToggleMultiSelect = { viewModel.toggleMultiSelectMode() },
-                                onShowMenu = { viewModel.showRenameDialog() },
-                                onAddSongs = { viewModel.showAddSongsSheet() },
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth(),
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { backStack.removeLastOrNull() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回",
-                                tint = MiuixTheme.colorScheme.onSurface,
-                            )
-                        }
-                    },
-                    actions = {
-                        if (isMultiSelectMode && selectedSongs.isNotEmpty()) {
-                            // 多选模式下显示删除按钮
-                            Row {
-                                TextButton(
-                                    onClick = { viewModel.removeSelectedSongs() },
-                                    text =
-                                        stringResource(
-                                            R.string.remove_songs_format,
-                                            selectedSongs.size,
-                                        ),
-                                    cornerRadius = 16.dp,
-                                    colors =
-                                        ButtonDefaults.textButtonColors().copy(
-                                            textColor = MiuixTheme.colorScheme.onError,
-                                            color = MiuixTheme.colorScheme.error,
-                                        ),
-                                    insideMargin =
-                                        PaddingValues(
-                                            horizontal = 8.dp,
-                                            vertical = 4.dp,
-                                        ),
-                                )
-                                Spacer(
-                                    modifier = Modifier.width(16.dp),
+                            } else {
+                                NormalRightIcons(
+                                    viewModel = viewModel,
+                                    hazeState = hazeState,
                                 )
                             }
                         }
-                    },
-                )
+                    }
+                }
             },
         ) { paddingValues ->
             Column(
                 modifier =
                     Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
+                        .hazeSource(hazeState)
+                        .fillMaxSize(),
             ) {
                 // 歌曲列表
                 if (songs.isEmpty()) {
@@ -255,11 +245,29 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                                .nestedScroll(LocalFloatingTabBarScrollConnection.current)
                                 .overScrollOutOfBound(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        contentPadding =
+                            PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                bottom = 180.dp,
+                            ),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
+                        item {
+                            PlaylistHeader(
+                                playlist = playlist ?: return@item,
+                                songs = songs,
+                                songCount = songs.size,
+                                modifier =
+                                    Modifier.padding(
+                                        top = paddingValues.calculateTopPadding(),
+                                        bottom = 16.dp,
+                                    ),
+                                viewModel = viewModel,
+                            )
+                        }
                         itemsIndexed(
                             songs,
                             key = { index, song ->
@@ -287,9 +295,6 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                                 },
                             )
                         }
-                        item {
-                            Spacer(modifier = Modifier.height(160.dp))
-                        }
                     }
                 }
             }
@@ -306,6 +311,7 @@ private fun PlaylistHeader(
     songs: List<Song>,
     songCount: Int,
     modifier: Modifier = Modifier,
+    viewModel: PlaylistDetailViewModel,
 ) {
     Row(
         modifier =
@@ -345,6 +351,34 @@ private fun PlaylistHeader(
                     text = stringResource(R.string.play_count_format, playlist.playTimes),
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { viewModel.playAll() },
+                insideMargin =
+                    PaddingValues(
+                        horizontal = 12.dp,
+                        vertical = 6.dp,
+                    ),
+                colors =
+                    ButtonColors(
+                        MiuixTheme.colorScheme.primaryContainer,
+                        MiuixTheme.colorScheme.primaryContainer,
+                    ),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MiuixTheme.colorScheme.onPrimary,
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.play_all),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MiuixTheme.colorScheme.onPrimary,
                 )
             }
         }
@@ -642,6 +676,8 @@ private fun SongItemCard(
             // 选中状态图标
             AnimatedVisibility(
                 visible = isMultiSelectMode,
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut(),
             ) {
                 Icon(
                     imageVector =
@@ -661,6 +697,89 @@ private fun SongItemCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun NormalRightIcons(
+    viewModel: PlaylistDetailViewModel,
+    hazeState: HazeState,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        TopBarIconButton(
+            hazeState = hazeState,
+            imageVector = Icons.Default.Add,
+            contentDescription = stringResource(R.string.add_songs),
+            onClick = { viewModel.showAddSongsSheet() },
+        )
+        TopBarIconButton(
+            hazeState = hazeState,
+            imageVector = Icons.Default.MoreVert,
+            contentDescription = stringResource(R.string.more),
+            onClick = { /* TODO: 显示更多操作菜单 */ },
+        )
+    }
+}
+
+@Composable
+private fun TopBarIconButton(
+    hazeState: HazeState,
+    imageVector: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    tintColor: Color = MiuixTheme.colorScheme.onSurface,
+    contentColor: Color = MiuixTheme.colorScheme.surface,
+) {
+    IconButton(
+        onClick = {
+            onClick.invoke()
+        },
+        modifier =
+            modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .hazeEffect(
+                    hazeState,
+                    HazeMaterials.ultraThin(
+                        containerColor = contentColor,
+                    ),
+                ),
+    ) {
+        Icon(
+            imageVector = imageVector,
+            contentDescription = contentDescription,
+            tint = tintColor,
+        )
+    }
+}
+
+@Composable
+fun MultiSelectRightIcons(
+    viewModel: PlaylistDetailViewModel,
+    hazeState: HazeState,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        TopBarIconButton(
+            hazeState = hazeState,
+            imageVector = Icons.Default.SelectAll,
+            contentDescription = stringResource(R.string.play_all),
+            onClick = { viewModel.selectAll() },
+        )
+        TopBarIconButton(
+            hazeState = hazeState,
+            imageVector = Icons.Default.PlaylistRemove,
+            contentDescription = null,
+            onClick = {
+                viewModel.removeSelectedSongs()
+            },
+            contentColor = MiuixTheme.colorScheme.error,
+            tintColor = MiuixTheme.colorScheme.onError,
+        )
     }
 }
 

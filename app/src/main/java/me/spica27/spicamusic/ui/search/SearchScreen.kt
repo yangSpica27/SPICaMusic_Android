@@ -239,8 +239,9 @@ private fun WelcomeHolder(
     val backStack = LocalNavBackStack.current
 
     LazyVerticalGrid(
-        modifier = modifier
-            .overScrollVertical(),
+        modifier =
+            modifier
+                .overScrollVertical(),
         columns = GridCells.Fixed(2),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
