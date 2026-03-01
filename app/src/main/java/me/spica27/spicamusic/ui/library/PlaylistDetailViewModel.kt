@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -38,13 +39,51 @@ class PlaylistDetailViewModel(
             initialValue = null,
         )
 
-    // 歌单中的歌曲列表
+    // 歌单中的歌曲列表（完整，供播放器使用）
     val songs: StateFlow<List<Song>> =
         playlistRepository.getSongsByPlaylistIdFlow(playlistId).stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList(),
         )
+
+    // ===== 搜索功能 =====
+
+    private val _isSearchMode = MutableStateFlow(false)
+    val isSearchMode = _isSearchMode.asStateFlow()
+
+    private val _searchKeyword = MutableStateFlow("")
+    val searchKeyword = _searchKeyword.asStateFlow()
+
+    /** 展示用歌曲列表：搜索模式+关键字非空时返回过滤结果，否则返回完整列表 */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val displayedSongs: StateFlow<List<Song>> =
+        combine(_isSearchMode, _searchKeyword) { isSearch, keyword -> isSearch to keyword }
+            .flatMapLatest { (isSearch, keyword) ->
+                if (isSearch && keyword.isNotBlank()) {
+                    playlistRepository.searchSongsByPlaylistId(playlistId, keyword)
+                } else {
+                    playlistRepository.getSongsByPlaylistIdFlow(playlistId)
+                }
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
+            )
+
+    fun enterSearchMode() {
+        _isSearchMode.value = true
+    }
+
+    /** 退出搜索模式，同时清空关键字 */
+    fun exitSearchMode() {
+        _isSearchMode.value = false
+        _searchKeyword.value = ""
+    }
+
+    fun updateSearchKeyword(keyword: String) {
+        _searchKeyword.value = keyword
+    }
 
     // ===== 歌曲选择器（SongPickerSheet）分页支持 =====
 

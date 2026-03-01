@@ -1,8 +1,5 @@
 package me.spica27.spicamusic.ui.albumdetail
 
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +22,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,7 +65,10 @@ import java.util.Locale
 @Composable
 fun AlbumDetailScreen(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
-    val album = (backStack.lastOrNull() as? Screen.AlbumDetail)?.album ?: return
+    // 用 remember 固定 album 引用：Navigation3 在 pop 动画开始前就从 backStack 移除条目，
+    // 若直接读 backStack.lastOrNull() 会因转型失败触发 ?: return，导致 sharedBounds
+    // 在退出动画播放期间被移出 Composition，共享容器动画因此中断。
+    val album = remember { (backStack.lastOrNull() as? Screen.AlbumDetail)?.album } ?: return
 
     val viewModel: AlbumDetailViewModel =
         koinViewModel(key = "AlbumDetailViewModel_${album.id}") {
@@ -86,15 +87,10 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
         Scaffold(
             modifier =
                 modifier
-                    .fillMaxSize()
                     .sharedBounds(
                         sharedContentState = rememberSharedContentState(album),
                         animatedVisibilityScope = localNavAnimatedContentScope,
-                        exit =
-                            scaleOut(
-                                animationSpec = tween(durationMillis = 850),
-                            ) + fadeOut(),
-                    ),
+                    ).fillMaxSize(),
             topBar = {
                 TopAppBar(
                     title = "专辑详情",

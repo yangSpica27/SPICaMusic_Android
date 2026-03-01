@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.storage.impl.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -86,4 +87,19 @@ interface PlaylistDao {
     @Transaction
     @Delete
     suspend fun deleteListItems(songs: List<PlaylistSongCrossRefEntity>)
+
+    /** 所有歌单分页查询，按创建时间倒序 */
+    @Query("SELECT * FROM Playlist ORDER BY createTimestamp DESC")
+    fun getAllPaging(): PagingSource<Int, PlaylistEntity>
+
+    /** 在指定歌单内按关键字（曲名 / 艺术家）过滤歌曲，按加入时间倒序 */
+    @Query(
+        """SELECT s.* FROM Song AS s
+           JOIN PlaylistSongCrossRef AS psc ON s.songId = psc.songId
+           WHERE psc.playlistId = :playlistId
+             AND (s.displayName LIKE '%' || :keyword || '%'
+                  OR s.artist LIKE '%' || :keyword || '%')
+           ORDER BY psc.insertTime DESC"""
+    )
+    fun searchSongsByPlaylistId(playlistId: Long, keyword: String): Flow<List<SongEntity>>
 }

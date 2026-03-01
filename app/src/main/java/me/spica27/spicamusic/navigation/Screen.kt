@@ -65,6 +65,10 @@ sealed interface Screen : NavKey {
         val album: Album,
     ) : Screen
 
+    // 听歌统计路由
+    @Serializable
+    data object ListeningStats : Screen
+
     // 设置相关路由
     @Serializable
     data object MediaLibrarySource : Screen

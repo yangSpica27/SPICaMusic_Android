@@ -10,6 +10,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -21,10 +23,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -32,20 +36,26 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistRemove
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,12 +64,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -72,6 +88,7 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
@@ -127,6 +144,9 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
 
     val playlist by viewModel.playlist.collectAsStateWithLifecycle()
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val displayedSongs by viewModel.displayedSongs.collectAsStateWithLifecycle()
+    val isSearchMode by viewModel.isSearchMode.collectAsStateWithLifecycle()
+    val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedSongs by viewModel.selectedSongs.collectAsStateWithLifecycle()
     val showRenameDialog by viewModel.showRenameDialog.collectAsStateWithLifecycle()
@@ -154,6 +174,27 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
     // 处理返回键
     BackHandler(enabled = isMultiSelectMode) {
         viewModel.toggleMultiSelectMode()
+    }
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val density = LocalDensity.current
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
+
+    // 搜索模式 BackHandler（注册在后 = 优先级更高）：
+    //   键盘可见 → 先收键盘；键盘已收 → 退出搜索并清空关键字
+    BackHandler(enabled = isSearchMode && imeVisible) {
+        keyboardController?.hide()
+    }
+    BackHandler(enabled = isSearchMode && !imeVisible) {
+        viewModel.exitSearchMode()
+    }
+
+    val searchFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(isSearchMode) {
+        if (isSearchMode) {
+            delay(150) // 等待 AnimatedContent 动画开始后再请求焦点
+            searchFocusRequester.requestFocus()
+        }
     }
 
     val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
@@ -185,6 +226,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         TopBarIconButton(
                             hazeState = hazeState,
@@ -192,34 +234,62 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                             contentDescription = "返回",
                             onClick = { backStack.removeLastOrNull() },
                         )
-                        Spacer(
-                            modifier = Modifier.weight(1f),
-                        )
+                        // 右侧区域：普通按钮 ↔ 搜索栏 切换动画
                         AnimatedContent(
-                            isMultiSelectMode,
-                            contentKey = { it },
+                            targetState = isSearchMode && !isMultiSelectMode,
+                            modifier = Modifier.weight(1f),
                             transitionSpec = {
-                                fadeIn() +
-                                    slideIntoContainer(
-                                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                        animationSpec = tween(300),
-                                    ) togetherWith fadeOut() +
-                                    slideOutOfContainer(
-                                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                        animationSpec = tween(300),
-                                    )
+                                if (targetState) {
+                                    (fadeIn() + slideInHorizontally { it / 2 }) togetherWith
+                                        (fadeOut() + slideOutHorizontally { -it / 2 })
+                                } else {
+                                    (fadeIn() + slideInHorizontally { -it / 2 }) togetherWith
+                                        (fadeOut() + slideOutHorizontally { it / 2 })
+                                }
                             },
-                        ) { isMultiSelectMode ->
-                            if (isMultiSelectMode) {
-                                MultiSelectRightIcons(
-                                    viewModel = viewModel,
+                            contentKey = { it },
+                        ) { searchMode ->
+                            if (searchMode) {
+                                SearchBarField(
+                                    keyword = searchKeyword,
+                                    onKeywordChange = viewModel::updateSearchKeyword,
+                                    focusRequester = searchFocusRequester,
                                     hazeState = hazeState,
                                 )
                             } else {
-                                NormalRightIcons(
-                                    viewModel = viewModel,
-                                    hazeState = hazeState,
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End,
+                                ) {
+                                    AnimatedContent(
+                                        isMultiSelectMode,
+                                        contentKey = { it },
+                                        transitionSpec = {
+                                            fadeIn() +
+                                                slideIntoContainer(
+                                                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                                    animationSpec = tween(300),
+                                                ) togetherWith fadeOut() +
+                                                slideOutOfContainer(
+                                                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                                    animationSpec = tween(300),
+                                                )
+                                        },
+                                    ) { isMultiSelectMode ->
+                                        if (isMultiSelectMode) {
+                                            MultiSelectRightIcons(
+                                                viewModel = viewModel,
+                                                hazeState = hazeState,
+                                            )
+                                        } else {
+                                            NormalRightIcons(
+                                                viewModel = viewModel,
+                                                hazeState = hazeState,
+                                                onSearchClick = viewModel::enterSearchMode,
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -232,7 +302,6 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                         .hazeSource(hazeState)
                         .fillMaxSize(),
             ) {
-                // 歌曲列表
                 if (songs.isEmpty()) {
                     EmptySongList(
                         modifier =
@@ -268,32 +337,45 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                                 viewModel = viewModel,
                             )
                         }
-                        itemsIndexed(
-                            songs,
-                            key = { index, song ->
-                                song.songId ?: song.mediaStoreId
-                            },
-                        ) { index, song ->
-                            SongItemCard(
-                                modifier = Modifier.animateItem(),
-                                index = index,
-                                song = song,
-                                isMultiSelectMode = isMultiSelectMode,
-                                isSelected = selectedSongs.contains(song.songId),
-                                onClick = {
-                                    if (isMultiSelectMode) {
+                        if (isSearchMode && displayedSongs.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "没有找到「$searchKeyword」相关的歌曲",
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
+                                    )
+                                }
+                            }
+                        } else {
+                            itemsIndexed(
+                                displayedSongs,
+                                key = { _, song -> song.songId ?: song.mediaStoreId },
+                            ) { index, song ->
+                                SongItemCard(
+                                    modifier = Modifier.animateItem(),
+                                    index = index,
+                                    song = song,
+                                    isMultiSelectMode = isMultiSelectMode,
+                                    isSelected = selectedSongs.contains(song.songId),
+                                    onClick = {
+                                        if (isMultiSelectMode) {
+                                            viewModel.toggleSongSelection(song.songId)
+                                        } else {
+                                            viewModel.playSongInList(song)
+                                        }
+                                    },
+                                    onLongClick = {
+                                        if (!isMultiSelectMode) {
+                                            viewModel.toggleMultiSelectMode()
+                                        }
                                         viewModel.toggleSongSelection(song.songId)
-                                    } else {
-                                        viewModel.playSongInList(song)
-                                    }
-                                },
-                                onLongClick = {
-                                    if (!isMultiSelectMode) {
-                                        viewModel.toggleMultiSelectMode()
-                                    }
-                                    viewModel.toggleSongSelection(song.songId)
-                                },
-                            )
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -704,10 +786,17 @@ private fun SongItemCard(
 private fun NormalRightIcons(
     viewModel: PlaylistDetailViewModel,
     hazeState: HazeState,
+    onSearchClick: () -> Unit,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        TopBarIconButton(
+            hazeState = hazeState,
+            imageVector = Icons.Default.Search,
+            contentDescription = "搜索歌曲",
+            onClick = onSearchClick,
+        )
         TopBarIconButton(
             hazeState = hazeState,
             imageVector = Icons.Default.Add,
@@ -720,6 +809,81 @@ private fun NormalRightIcons(
             contentDescription = stringResource(R.string.more),
             onClick = { /* TODO: 显示更多操作菜单 */ },
         )
+    }
+}
+
+/** 顶栏内联搜索框 */
+@Composable
+private fun SearchBarField(
+    keyword: String,
+    onKeywordChange: (String) -> Unit,
+    focusRequester: FocusRequester,
+    hazeState: HazeState,
+    modifier: Modifier = Modifier,
+) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    Row(
+        modifier =
+            modifier
+                .height(48.dp)
+                .clip(CircleShape)
+                .hazeEffect(
+                    hazeState,
+                    HazeMaterials.ultraThin(containerColor = MiuixTheme.colorScheme.surface),
+                ).padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        BasicTextField(
+            value = keyword,
+            onValueChange = onKeywordChange,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester),
+            singleLine = true,
+            textStyle =
+                MiuixTheme.textStyles.body1.copy(
+                    color = MiuixTheme.colorScheme.onSurface,
+                ),
+            cursorBrush = SolidColor(MiuixTheme.colorScheme.primary),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
+            decorationBox = { innerTextField ->
+                Box(contentAlignment = Alignment.CenterStart) {
+                    if (keyword.isEmpty()) {
+                        Text(
+                            text = "搜索歌曲",
+                            style = MiuixTheme.textStyles.body1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.4f),
+                        )
+                    }
+                    innerTextField()
+                }
+            },
+        )
+        AnimatedVisibility(
+            visible = keyword.isNotEmpty(),
+            enter = fadeIn() + scaleIn(initialScale = 0.7f),
+            exit = fadeOut() + scaleOut(targetScale = 0.7f),
+        ) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "清除搜索",
+                modifier =
+                    Modifier
+                        .size(18.dp)
+                        .clickable { onKeywordChange("") },
+                tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
+            )
+        }
     }
 }
 

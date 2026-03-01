@@ -16,6 +16,7 @@ import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.library.AlbumViewModel
 import me.spica27.spicamusic.ui.library.AllSongsViewModel
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
+import me.spica27.spicamusic.ui.library.ListeningStatsViewModel
 import me.spica27.spicamusic.ui.library.PlaylistDetailViewModel
 import me.spica27.spicamusic.ui.library.PlaylistViewModel
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
@@ -174,6 +175,14 @@ object AppModule {
                 AudioEffectsViewModel(
                     preferencesManager = get<PreferencesManager>(),
                     player = get<IMusicPlayer>(),
+                )
+            }
+
+            // 听歌统计页面 ViewModel
+            viewModel {
+                ListeningStatsViewModel(
+                    historyRepository = get<IPlayHistoryRepository>(),
+                    songRepository = get<ISongRepository>(),
                 )
             }
         }

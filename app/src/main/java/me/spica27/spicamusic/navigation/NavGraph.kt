@@ -20,6 +20,7 @@ import me.spica27.spicamusic.ui.library.ArtistsScreen
 import me.spica27.spicamusic.ui.library.FavoriteScreen
 import me.spica27.spicamusic.ui.library.FoldersScreen
 import me.spica27.spicamusic.ui.library.LibraryScreen
+import me.spica27.spicamusic.ui.library.ListeningStatsScreen
 import me.spica27.spicamusic.ui.library.MostPlayedScreen
 import me.spica27.spicamusic.ui.library.PlaylistDetailScreen
 import me.spica27.spicamusic.ui.library.PlaylistsScreen
@@ -105,6 +106,10 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
 
                 entry<Screen.AlbumDetail> {
                     AlbumDetailScreen()
+                }
+
+                entry<Screen.ListeningStats> {
+                    ListeningStatsScreen()
                 }
 
                 // 设置相关路由

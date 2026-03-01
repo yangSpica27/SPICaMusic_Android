@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.storage.api
 
+import androidx.paging.PagingData
 import kotlinx.coroutines.flow.Flow
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.PlaylistWithSongs
@@ -10,6 +11,16 @@ import me.spica27.spicamusic.common.entity.Song
  * 提供歌单数据的增删改查操作
  */
 interface IPlaylistRepository {
+    /**
+     * 获取所有歌单（分页），按创建时间倒序
+     */
+    fun getAllPlaylistsPagingFlow(): Flow<PagingData<Playlist>>
+
+    /**
+     * 在指定歌单内按关键字过滤歌曲（曲名 / 艺术家），预备用于歌单详情快速搜索
+     */
+    fun searchSongsByPlaylistId(playlistId: Long, keyword: String): Flow<List<Song>>
+
     /**
      * 根据歌单ID获取歌曲列表 Flow
      */

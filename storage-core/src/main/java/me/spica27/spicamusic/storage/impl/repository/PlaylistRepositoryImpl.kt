@@ -1,5 +1,9 @@
 package me.spica27.spicamusic.storage.impl.repository
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -22,7 +26,29 @@ class PlaylistRepositoryImpl(
     private val playlistDao: PlaylistDao,
     private val database: AppDatabase,
 ) : IPlaylistRepository {
-    override fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<Song>> = 
+
+    companion object {
+        private const val PAGE_SIZE = 30
+        private const val PREFETCH_DISTANCE = 10
+    }
+
+    override fun getAllPlaylistsPagingFlow(): Flow<PagingData<Playlist>> = Pager(
+        config = PagingConfig(
+            pageSize = PAGE_SIZE,
+            prefetchDistance = PREFETCH_DISTANCE,
+            enablePlaceholders = false,
+        ),
+        pagingSourceFactory = { playlistDao.getAllPaging() }
+    ).flow.map { pagingData ->
+        pagingData.map { it.toCommon() }
+    }
+
+    override fun searchSongsByPlaylistId(playlistId: Long, keyword: String): Flow<List<Song>> =
+        playlistDao.searchSongsByPlaylistId(playlistId, keyword)
+            .map { list -> list.map { it.toCommon() } }
+            .flowOn(Dispatchers.IO)
+
+    override fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<Song>> =
         playlistDao.getSongsByPlaylistIdFlow(playlistId).map { list -> list.map { it.toCommon() } }
 
     override fun getPlaylistByIdFlow(playlistId: Long): Flow<Playlist?> = 

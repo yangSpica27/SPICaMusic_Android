@@ -455,7 +455,7 @@ private fun LibraryContent(
             Title(
                 text = stringResource(R.string.listening_stats),
                 summary = "查看你的听歌数据和习惯",
-                rightWidget = { ViewAllButton { } },
+                rightWidget = { ViewAllButton { backStack.add(Screen.ListeningStats) } },
             )
         }
         // 本周听歌统计卡片：展示本周听歌总时长、播放次数和听过的歌曲数
