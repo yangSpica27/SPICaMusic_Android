@@ -577,7 +577,7 @@ private fun PlaylistMiniCard(
         onClick = onClick,
         pressFeedbackType = PressFeedbackType.Sink,
         cornerRadius = 10.dp,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.width(120.dp),
     ) {
         Column {
             Box(
@@ -608,7 +608,7 @@ private fun PlaylistMiniCard(
                 text = playlist.playlistName,
                 style = MiuixTheme.textStyles.body1,
                 fontWeight = FontWeight.Medium,
-                maxLines = 2,
+                maxLines = 1,
                 modifier =
                     Modifier
                         .fillMaxWidth()

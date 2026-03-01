@@ -82,4 +82,8 @@ class PlayHistoryRepositoryImpl(
     override suspend fun getTopSongsByDuration(limit: Int): List<TopSong> = withContext(Dispatchers.IO) {
         playHistoryDao.topSongsAllTime(limit).map { TopSong(it.mediaId, it.totalDuration, it.playCount) }
     }
+
+    override suspend fun getTopSongsByDurationInRange(from: Long, to: Long, limit: Int): List<TopSong> = withContext(Dispatchers.IO) {
+        playHistoryDao.topSongsRange(from, to, limit).map { TopSong(it.mediaId, it.totalDuration, it.playCount) }
+    }
 }

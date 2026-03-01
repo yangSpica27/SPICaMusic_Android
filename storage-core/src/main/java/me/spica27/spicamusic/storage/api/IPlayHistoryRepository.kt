@@ -60,4 +60,9 @@ interface IPlayHistoryRepository {
      * 时长最长的歌曲（按时长排序）
      */
     suspend fun getTopSongsByDuration(limit: Int = 10): List<TopSong>
+
+    /**
+     * 指定时间范围内时长最长的歌曲（按时长排序）
+     */
+    suspend fun getTopSongsByDurationInRange(from: Long, to: Long, limit: Int = 50): List<TopSong>
 }

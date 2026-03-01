@@ -50,6 +50,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -377,11 +378,11 @@ private fun AudioQualityTags(
     val mimeType = extras?.getString("mimeType") ?: ""
     val isLossless =
         mimeType.contains("flac", ignoreCase = true) ||
-            mimeType.contains(
-                "alac",
-                ignoreCase = true,
-            ) ||
-            mimeType.contains("wav", ignoreCase = true)
+                mimeType.contains(
+                    "alac",
+                    ignoreCase = true,
+                ) ||
+                mimeType.contains("wav", ignoreCase = true)
 
     FlowRow(
         modifier = modifier,
@@ -567,7 +568,7 @@ private fun PlayerPage(
     val isCoverFlipEnabled = dynamicCoverType !is DynamicCoverType.OFF
 
     // 翻转动画状态
-    var isCoverFlipped by remember { mutableStateOf(false) }
+    var isCoverFlipped by rememberSaveable { mutableStateOf(false) }
     val animDuration = 600
     val cameraDistance = 12f
 
@@ -602,7 +603,8 @@ private fun PlayerPage(
                     .graphicsLayer {
                         rotationY = rotateY
                         this.cameraDistance = cameraDistance * density
-                    }.then(
+                    }
+                    .then(
                         if (isCoverFlipEnabled) {
                             Modifier.clickable { isCoverFlipped = !isCoverFlipped }
                         } else {
@@ -648,7 +650,8 @@ private fun PlayerPage(
                             .graphicsLayer {
                                 alpha = calculateFadeAlpha(progress, COVER_FADE_THRESHOLD)
                                 rotationY = 180f // 翻转背面使其正向显示
-                            }.clip(Shapes.SmallCornerBasedShape),
+                            }
+                            .clip(Shapes.SmallCornerBasedShape),
                 ) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         // Android 13+ 使用 AGSL 可视化器
@@ -670,7 +673,8 @@ private fun PlayerPage(
                             }
                         }
 
-                        val fftBands = playerViewModel.fftDrawData.collectAsStateWithLifecycle().value
+                        val fftBands =
+                            playerViewModel.fftDrawData.collectAsStateWithLifecycle().value
 
                         val coverColor =
                             rememberDominantColorFromUri(
@@ -686,6 +690,7 @@ private fun PlayerPage(
                                     baseColor = coverColor,
                                 )
                             }
+
                             else -> {
                                 ShiningStarsVisualizer(
                                     modifier = Modifier.fillMaxSize(),
@@ -798,7 +803,8 @@ private fun PlayerPage(
                             .background(
                                 MiuixTheme.colorScheme.primaryVariant,
                                 shape = Shapes.SmallCornerBasedShape,
-                            ).padding(vertical = 4.dp, horizontal = 8.dp),
+                            )
+                            .padding(vertical = 4.dp, horizontal = 8.dp),
                     text = formatTime(seekPosition.toLong()),
                     style = MiuixTheme.textStyles.body1,
                     color = MiuixTheme.colorScheme.onPrimaryVariant,

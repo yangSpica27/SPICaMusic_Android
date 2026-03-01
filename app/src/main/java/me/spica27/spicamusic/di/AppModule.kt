@@ -17,6 +17,7 @@ import me.spica27.spicamusic.ui.library.AlbumViewModel
 import me.spica27.spicamusic.ui.library.AllSongsViewModel
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.library.ListeningStatsViewModel
+import me.spica27.spicamusic.ui.library.MostPlayedViewModel
 import me.spica27.spicamusic.ui.library.PlaylistDetailViewModel
 import me.spica27.spicamusic.ui.library.PlaylistViewModel
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
@@ -183,6 +184,16 @@ object AppModule {
                 ListeningStatsViewModel(
                     historyRepository = get<IPlayHistoryRepository>(),
                     songRepository = get<ISongRepository>(),
+                )
+            }
+
+            // 最常播放页面 ViewModel
+            viewModel {
+                MostPlayedViewModel(
+                    historyRepository = get<IPlayHistoryRepository>(),
+                    songRepository = get<ISongRepository>(),
+                    playlistRepository = get<IPlaylistRepository>(),
+                    player = get<IMusicPlayer>(),
                 )
             }
         }
