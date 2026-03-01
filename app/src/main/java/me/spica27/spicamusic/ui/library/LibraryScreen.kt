@@ -959,7 +959,7 @@ private fun WeeklyStatsCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        weeklyStats?.playEventCount?.toString() ?: "—",
+                        weeklyStats?.let { formatCount(it.playEventCount) } ?: "—",
                         style = MiuixTheme.textStyles.title1,
                         color = MiuixTheme.colorScheme.onSurfaceContainer,
                     )
@@ -975,7 +975,7 @@ private fun WeeklyStatsCard(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        weeklyStats?.uniqueSongCount?.toString() ?: "—",
+                        weeklyStats?.let { formatCount(it.uniqueSongCount) } ?: "—",
                         style = MiuixTheme.textStyles.title1,
                         color = MiuixTheme.colorScheme.onSurfaceContainer,
                     )
@@ -1003,6 +1003,13 @@ private fun WeeklyStatsCard(
         }
     }
 }
+
+private fun formatCount(count: Long): String =
+    when {
+        count >= 1_000_000L -> String.format("%.1fm", count / 1_000_000.0).trimEnd('0').trimEnd('.')
+        count >= 1_000L -> String.format("%.1fk", count / 1_000.0).trimEnd('0').trimEnd('.')
+        else -> count.toString()
+    }
 
 private fun formatDuration(ms: Long): String {
     val totalSec = (ms / 1000)

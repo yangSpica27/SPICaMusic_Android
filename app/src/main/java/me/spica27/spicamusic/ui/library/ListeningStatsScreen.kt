@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.library
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +53,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import java.util.Locale
 
 /**
  * 听歌统计页面
@@ -203,11 +205,11 @@ private fun StatsCard(
                 label = "听歌时长",
             )
             StatItem(
-                value = stats?.playEventCount?.toString() ?: "—",
+                value = stats?.let { formatCount(it.playEventCount) } ?: "—",
                 label = "播放次数",
             )
             StatItem(
-                value = stats?.uniqueSongCount?.toString() ?: "—",
+                value = stats?.let { formatCount(it.uniqueSongCount) } ?: "—",
                 label = "听过歌曲",
             )
         }
@@ -282,7 +284,9 @@ private fun TopSongRow(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .clip(Shapes.SmallCornerBasedShape),
+                            .background(
+                                MiuixTheme.colorScheme.surfaceContainer,
+                            ).clip(Shapes.SmallCornerBasedShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -325,7 +329,7 @@ private fun TopSongRow(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "${item.playCount}次",
+                text = "${formatCount(item.playCount)}次",
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                 fontSize = 11.sp,
@@ -333,6 +337,23 @@ private fun TopSongRow(
         }
     }
 }
+
+private fun formatCount(count: Long): String =
+    when {
+        count >= 1_000_000L ->
+            String
+                .format(Locale.getDefault(), "%.1fm", count / 1_000_000.0)
+                .trimEnd('0')
+                .trimEnd('.')
+
+        count >= 1_000L ->
+            String
+                .format(Locale.getDefault(), "%.1fk", count / 1_000.0)
+                .trimEnd('0')
+                .trimEnd('.')
+
+        else -> count.toString()
+    }
 
 private fun statsFormatDuration(ms: Long): String {
     val totalSec = ms / 1000
