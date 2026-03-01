@@ -378,11 +378,11 @@ private fun AudioQualityTags(
     val mimeType = extras?.getString("mimeType") ?: ""
     val isLossless =
         mimeType.contains("flac", ignoreCase = true) ||
-                mimeType.contains(
-                    "alac",
-                    ignoreCase = true,
-                ) ||
-                mimeType.contains("wav", ignoreCase = true)
+            mimeType.contains(
+                "alac",
+                ignoreCase = true,
+            ) ||
+            mimeType.contains("wav", ignoreCase = true)
 
     FlowRow(
         modifier = modifier,
@@ -603,8 +603,7 @@ private fun PlayerPage(
                     .graphicsLayer {
                         rotationY = rotateY
                         this.cameraDistance = cameraDistance * density
-                    }
-                    .then(
+                    }.then(
                         if (isCoverFlipEnabled) {
                             Modifier.clickable { isCoverFlipped = !isCoverFlipped }
                         } else {
@@ -650,8 +649,7 @@ private fun PlayerPage(
                             .graphicsLayer {
                                 alpha = calculateFadeAlpha(progress, COVER_FADE_THRESHOLD)
                                 rotationY = 180f // 翻转背面使其正向显示
-                            }
-                            .clip(Shapes.SmallCornerBasedShape),
+                            }.clip(Shapes.SmallCornerBasedShape),
                 ) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         // Android 13+ 使用 AGSL 可视化器
@@ -803,8 +801,7 @@ private fun PlayerPage(
                             .background(
                                 MiuixTheme.colorScheme.primaryVariant,
                                 shape = Shapes.SmallCornerBasedShape,
-                            )
-                            .padding(vertical = 4.dp, horizontal = 8.dp),
+                            ).padding(vertical = 4.dp, horizontal = 8.dp),
                     text = formatTime(seekPosition.toLong()),
                     style = MiuixTheme.textStyles.body1,
                     color = MiuixTheme.colorScheme.onPrimaryVariant,
