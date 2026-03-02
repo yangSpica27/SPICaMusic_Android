@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
@@ -54,6 +55,7 @@ import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
+import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
@@ -215,46 +217,54 @@ private fun PlaylistCard(
         .getPlaylistSongs(playlist.playlistId ?: 0L)
         .collectAsStateWithLifecycle(initialValue = emptyList())
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(
-                    ContinuousRoundedRectangle(
-                        12.dp,
-                    ),
-                ).pressable(null)
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick,
-                ),
-    ) {
-        // Grid 组合封面
-        PlaylistGridCover(
-            songs = songs,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(
-                        ContinuousRoundedRectangle(
-                            8.dp,
-                        ),
-                    ),
-        )
+    val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
+    val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
 
-        // 歌单名称
-        Text(
-            text = playlist.playlistName,
-            style = MiuixTheme.textStyles.body1,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+    with(localNavSharedTransitionScope) {
+        Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-        )
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState(key = playlist),
+                        animatedVisibilityScope = localNavAnimatedContentScope,
+                    ).clip(
+                        ContinuousRoundedRectangle(
+                            12.dp,
+                        ),
+                    ).pressable(null)
+                    .combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                    ),
+        ) {
+            // Grid 组合封面
+            PlaylistGridCover(
+                songs = songs,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(
+                            ContinuousRoundedRectangle(
+                                8.dp,
+                            ),
+                        ),
+            )
+
+            // 歌单名称
+            Text(
+                text = playlist.playlistName,
+                style = MiuixTheme.textStyles.body1,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+        }
     }
 }
 
