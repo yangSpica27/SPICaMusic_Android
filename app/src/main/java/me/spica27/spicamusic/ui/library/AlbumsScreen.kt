@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
@@ -52,8 +54,9 @@ import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
+import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.widget.AudioCover
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -72,7 +75,8 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 @Composable
 fun AlbumsScreen(
     modifier: Modifier = Modifier,
-    viewModel: AlbumViewModel = koinViewModel(),
+    // 避免每次都加载导致列表更新不及时
+    viewModel: AlbumViewModel = koinActivityViewModel(),
 ) {
     val backStack = LocalNavBackStack.current
 
@@ -93,6 +97,12 @@ fun AlbumsScreen(
 
     LaunchedEffect(searchKeyword) {
         listState.animateScrollToItem(0)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clearSearch()
+        }
     }
 
     val scrollBehavior = MiuixScrollBehavior()
@@ -250,84 +260,97 @@ private fun AlbumItem(
     modifier: Modifier,
 ) {
     val backStack = LocalNavBackStack.current
-    Column(
-        modifier =
-            modifier
-                .clip(me.spica27.spicamusic.ui.theme.Shapes.SmallCornerBasedShape)
-                .clickable {
-                    backStack.add(Screen.AlbumDetail(album))
-                },
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        AudioCover(
-            uri = album.artworkUri.toString().toUri(),
+    val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
+    val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
+    with(localNavSharedTransitionScope) {
+        Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(me.spica27.spicamusic.ui.theme.Shapes.SmallCornerBasedShape),
-            placeHolder = {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(
-                                MiuixTheme.colorScheme.surfaceContainer,
-                            ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = album.title,
-                        style =
-                            MiuixTheme.textStyles.headline1,
-                        maxLines = 1,
-                        modifier =
-                            Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                        color = MiuixTheme.colorScheme.onSurfaceContainer,
-                        fontWeight = FontWeight.Black,
-                    )
-                    Spacer(
-                        modifier = Modifier.height(4.dp),
-                    )
-                    Text(
-                        fontWeight = FontWeight.Black,
-                        text = album.title,
-                        style =
-                            MiuixTheme.textStyles.headline1.copy(
-                                brush =
-                                    Brush.verticalGradient(
-                                        colors =
-                                            listOf(
-                                                MiuixTheme.colorScheme.onSurfaceContainer.copy(alpha = 0.2f),
-                                                MiuixTheme.colorScheme.onSurfaceContainer.copy(alpha = 0.4f),
-                                                MiuixTheme.colorScheme.onSurfaceContainer.copy(alpha = 0.5f),
-                                            ),
-                                    ),
-                            ),
-                        maxLines = 1,
+                modifier
+                    .sharedBounds(
+                        rememberSharedContentState(album),
+                        localNavAnimatedContentScope,
+                    ).clip(me.spica27.spicamusic.ui.theme.Shapes.SmallCornerBasedShape)
+                    .clickable {
+                        backStack.add(Screen.AlbumDetail(album))
+                    },
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            AudioCover(
+                uri = album.artworkUri.toString().toUri(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(me.spica27.spicamusic.ui.theme.Shapes.SmallCornerBasedShape),
+                placeHolder = {
+                    Column(
                         modifier =
                             Modifier
-                                .fillMaxWidth()
-                                .scale(1f, -1f),
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            },
-        )
-        Text(
-            text = album.title,
-            style = MiuixTheme.textStyles.subtitle,
-            color = MiuixTheme.colorScheme.onSurfaceContainer,
-            maxLines = 1,
-        )
-        Text(
-            text = album.artist,
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-            maxLines = 1,
-        )
+                                .fillMaxSize()
+                                .background(
+                                    MiuixTheme.colorScheme.surfaceContainer,
+                                ),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Text(
+                            text = album.title,
+                            style =
+                                MiuixTheme.textStyles.headline1,
+                            maxLines = 1,
+                            modifier =
+                                Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                            color = MiuixTheme.colorScheme.onSurfaceContainer,
+                            fontWeight = FontWeight.Black,
+                        )
+                        Spacer(
+                            modifier = Modifier.height(4.dp),
+                        )
+                        Text(
+                            fontWeight = FontWeight.Black,
+                            text = album.title,
+                            style =
+                                MiuixTheme.textStyles.headline1.copy(
+                                    brush =
+                                        Brush.verticalGradient(
+                                            colors =
+                                                listOf(
+                                                    MiuixTheme.colorScheme.onSurfaceContainer.copy(
+                                                        alpha = 0.2f,
+                                                    ),
+                                                    MiuixTheme.colorScheme.onSurfaceContainer.copy(
+                                                        alpha = 0.4f,
+                                                    ),
+                                                    MiuixTheme.colorScheme.onSurfaceContainer.copy(
+                                                        alpha = 0.5f,
+                                                    ),
+                                                ),
+                                        ),
+                                ),
+                            maxLines = 1,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .scale(1f, -1f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                },
+            )
+            Text(
+                text = album.title,
+                style = MiuixTheme.textStyles.subtitle,
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
+                maxLines = 1,
+            )
+            Text(
+                text = album.artist,
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                maxLines = 1,
+            )
+        }
     }
 }
 
