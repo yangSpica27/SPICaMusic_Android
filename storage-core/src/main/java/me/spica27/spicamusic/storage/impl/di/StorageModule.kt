@@ -6,11 +6,13 @@ import me.spica27.spicamusic.storage.api.IAlbumRepository
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
+import me.spica27.spicamusic.storage.api.IScanFolderRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.storage.impl.db.AppDatabase
 import me.spica27.spicamusic.storage.impl.repository.AlbumRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.PlayHistoryRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.PlaylistRepositoryImpl
+import me.spica27.spicamusic.storage.impl.repository.ScanFolderRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.SongRepositoryImpl
 import me.spica27.spicamusic.storage.impl.scanner.MusicScanService
 import org.koin.dsl.module
@@ -25,7 +27,7 @@ val storageModule = module {
             get<Application>(),
             AppDatabase::class.java,
             "spica_music.db",
-        ).addMigrations(AppDatabase.MIGRATION_5_6)
+        ).addMigrations(AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_9_10)
             // 开发阶段允许破坏性迁移，发布时应添加正式的 Migration
             .fallbackToDestructiveMigration(true).build()
     }
@@ -36,13 +38,15 @@ val storageModule = module {
     single { get<AppDatabase>().lyricDao() }
     single { get<AppDatabase>().playHistoryDao() }
     single { get<AppDatabase>().albumDao() }
+    single { get<AppDatabase>().scanFolderDao() }
 
     // Repositories - 通过接口暴露
     single<ISongRepository> { SongRepositoryImpl(get()) }
     single<IPlaylistRepository> { PlaylistRepositoryImpl(get(), get()) }
     single<IPlayHistoryRepository> { PlayHistoryRepositoryImpl(get()) }
     single<IAlbumRepository> { AlbumRepositoryImpl(get()) }
+    single<IScanFolderRepository> { ScanFolderRepositoryImpl(get()) }
 
     // 扫描服务
-    single<IMusicScanService> { MusicScanService(get(), get(), get()) }
+    single<IMusicScanService> { MusicScanService(get(), get(), get(), get()) }
 }

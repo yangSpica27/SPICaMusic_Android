@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.library
 
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,14 +21,12 @@ class LibraryPageViewModel(
     private val historyRepository: IPlayHistoryRepository,
 ) : ViewModel() {
     val albumList = albumRepositoryImpl.getAllPagingFlow()
-
     val playlists = playlistRepositoryImpl.getAllPlaylistsFlow()
-
     private val _weeklyStats = MutableStateFlow<PlayStats?>(null)
     val weeklyStats: StateFlow<PlayStats?> = _weeklyStats.asStateFlow()
-
     private val _recommendedSongs = MutableStateFlow<List<Song>>(emptyList())
     val recommendedSongs: StateFlow<List<Song>> = _recommendedSongs.asStateFlow()
+    val lazyGridState = LazyGridState()
 
     init {
         refreshWeeklyStats()
@@ -62,7 +61,10 @@ class LibraryPageViewModel(
                 val filler =
                     if (need > 0) {
                         val all = songRepositoryImpl.getAllSongs()
-                        all.filter { s -> topIds.none { it == s.mediaStoreId } }.shuffled().take(need)
+                        all
+                            .filter { s -> topIds.none { it == s.mediaStoreId } }
+                            .shuffled()
+                            .take(need)
                     } else {
                         emptyList()
                     }

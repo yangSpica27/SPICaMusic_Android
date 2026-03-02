@@ -9,6 +9,7 @@ import me.spica27.spicamusic.storage.api.IAlbumRepository
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
+import me.spica27.spicamusic.storage.api.IScanFolderRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailViewModel
 import me.spica27.spicamusic.ui.audioeffects.AudioEffectsViewModel
@@ -117,6 +118,7 @@ object AppModule {
             viewModel {
                 MediaLibrarySourceViewModel(
                     scanService = get<IMusicScanService>(),
+                    folderRepository = get<IScanFolderRepository>(),
                 )
             }
 

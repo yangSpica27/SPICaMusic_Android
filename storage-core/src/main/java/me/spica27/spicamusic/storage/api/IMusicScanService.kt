@@ -32,16 +32,21 @@ interface IMusicScanService {
     suspend fun scanMediaStore(): ScanResult
 
     /**
-     * 扫描指定文件夹（预留接口，用于后续扩展）
-     * @param folderPath 文件夹路径
+     * 扫描用户添加的所有额外文件夹（基于 SAF tree URI）
+     * - 会自动跳过权限已失效的文件夹并标记 isAccessible=false
+     * - 会跳过路径匹配"忽略文件夹"的文件
+     * - 未被 MediaStore 收录的音频文件将通过 MediaScannerConnection 注册后入库
      * @return 扫描结果
+     */
+    suspend fun scanExtraFolders(): ScanResult
+
+    /**
+     * 扫描指定文件夹（预留接口，用于后续扩展）
      */
     suspend fun scanFolder(folderPath: String): ScanResult
 
     /**
      * 扫描多个文件夹
-     * @param folderPaths 文件夹路径列表
-     * @return 扫描结果
      */
     suspend fun scanFolders(folderPaths: List<String>): ScanResult
 

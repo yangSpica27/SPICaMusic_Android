@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
@@ -182,7 +181,7 @@ private fun LibraryContent(
             ),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        state = rememberLazyGridState(),
+        state = viewModel.lazyGridState,
     ) {
         // 歌单分区：显示已有歌单或引导创建
         item(span = { GridItemSpan(2) }) {

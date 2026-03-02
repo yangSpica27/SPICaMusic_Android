@@ -6,6 +6,19 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,10 +29,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FolderOff
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,11 +51,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
+import me.spica27.spicamusic.storage.api.ScanFolder
 import me.spica27.spicamusic.storage.api.ScanResult
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
@@ -43,6 +65,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -61,6 +84,8 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
     val viewModel = koinViewModel<MediaLibrarySourceViewModel>()
     val scanState by viewModel.scanState.collectAsStateWithLifecycle()
+    val extraFolders by viewModel.extraFolders.collectAsStateWithLifecycle()
+    val ignoreFolders by viewModel.ignoreFolders.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // 权限状态
@@ -75,9 +100,42 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
         ) { isGranted ->
             hasPermission = isGranted
             if (isGranted) {
-                // 权限授予后自动开始扫描
-                viewModel.startMediaStoreScan()
+                viewModel.startFullScan()
             }
+        }
+
+    // 额外扫描文件夹选择器
+    val extraFolderPicker =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocumentTree(),
+        ) { uri ->
+            uri?.let { viewModel.addExtraFolder(context, it) }
+        }
+
+    // 忽略文件夹选择器
+    val ignoreFolderPicker =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocumentTree(),
+        ) { uri ->
+            uri?.let { viewModel.addIgnoreFolder(context, it) }
+        }
+
+    // 重新授权选择器（点击失效文件夹时使用）
+    var pendingReAuthFolderId by remember { mutableStateOf<Long?>(null) }
+    val reAuthPicker =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocumentTree(),
+        ) { uri ->
+            uri?.let {
+                pendingReAuthFolderId?.let { folderId ->
+                    context.contentResolver.takePersistableUriPermission(
+                        it,
+                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                    viewModel.reAuthorizeFolder(folderId, it)
+                }
+            }
+            pendingReAuthFolderId = null
         }
 
     Scaffold(
@@ -88,102 +146,144 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
             )
         },
     ) { paddingValues ->
-        Column(
+        LazyColumn(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // 扫描来源卡片
-            ScanSourceCard(
-                hasPermission = hasPermission,
-                onScanMediaStore = {
-                    if (hasPermission) {
-                        viewModel.startMediaStoreScan()
-                    } else {
-                        // 请求权限
-                        permissionLauncher.launch(getAudioPermission())
-                    }
-                },
-            )
-
-            // 扫描状态显示
-            when (val state = scanState) {
-                is ScanState.Idle -> {
-                    InfoCard(
-                        title = stringResource(R.string.scan_instructions_title),
-                        message =
-                            "点击上方按钮开始扫描设备中的音乐文件\n\n" +
-                                "• 支持格式: MP3, FLAC, WAV, M4A, OGG, OPUS\n" +
-                                "• 自动过滤小于 10 秒的音频\n" +
-                                "• 扫描完成后会自动更新媒体库",
-                    )
-                }
-
-                is ScanState.Scanning -> {
-                    ScanningCard(progress = state.progress)
-                }
-
-                is ScanState.Success -> {
-                    ScanResultCard(
-                        result = state.result,
-                        onDismiss = { viewModel.resetState() },
-                    )
-                }
-
-                is ScanState.Error -> {
-                    ErrorCard(
-                        message = state.message,
-                        onRetry = { viewModel.startMediaStoreScan() },
-                        onDismiss = { viewModel.resetState() },
-                    )
-                }
-            }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors =
-                    CardDefaults.defaultColors().copy(
-                        contentColor = MiuixTheme.colorScheme.tertiaryContainer,
-                        color = MiuixTheme.colorScheme.tertiaryContainer,
-                    ),
-            ) {
-                Column(
+            item {
+                Spacer(
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.size(32.dp),
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.custom_folder_scan),
-                        style = MiuixTheme.textStyles.title4,
-                        color = MiuixTheme.colorScheme.onTertiaryContainer,
-                    )
-                    Text(
-                        text = stringResource(R.string.coming_soon),
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                            .height(4.dp),
+                )
+            }
+
+            // MediaStore 扫描卡片
+            item {
+                MediaStoreScanCard(
+                    hasPermission = hasPermission,
+                    onScanClick = {
+                        if (hasPermission) {
+                            viewModel.startFullScan()
+                        } else {
+                            permissionLauncher.launch(getAudioPermission())
+                        }
+                    },
+                )
+            }
+
+            // 扫描状态显示（带动画）
+            item {
+                AnimatedContent(
+                    targetState = scanState,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(300)) +
+                            slideInVertically(
+                                animationSpec = tween(300),
+                                initialOffsetY = { it / 4 },
+                            ) togetherWith fadeOut(animationSpec = tween(300)) +
+                            slideOutVertically(
+                                animationSpec = tween(300),
+                                targetOffsetY = { -it / 4 },
+                            )
+                    },
+                    label = "ScanStateAnimation",
+                ) { state ->
+                    when (state) {
+                        is ScanState.Idle -> {
+                            InfoCard(
+                                title = stringResource(R.string.scan_instructions_title),
+                                message = stringResource(R.string.scan_instructions_message),
+                            )
+                        }
+
+                        is ScanState.Scanning -> {
+                            ScanningCard(progress = state.progress)
+                        }
+
+                        is ScanState.Success -> {
+                            ScanResultCard(
+                                result = state.result,
+                                onDismiss = { viewModel.resetState() },
+                            )
+                        }
+
+                        is ScanState.Error -> {
+                            ErrorCard(
+                                message = state.message,
+                                onRetry = { viewModel.startFullScan() },
+                                onDismiss = { viewModel.resetState() },
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 额外扫描文件夹区域
+            item {
+                FolderSectionHeader(
+                    title = stringResource(R.string.extra_folders_title),
+                    description = stringResource(R.string.extra_folders_desc),
+                    onAddClick = { extraFolderPicker.launch(null) },
+                )
+            }
+
+            if (extraFolders.isEmpty()) {
+                item(key = "empty_extra") {
+                    EmptyFoldersCard(message = stringResource(R.string.no_extra_folders))
+                }
+            } else {
+                items(extraFolders, key = { it.id }) { folder ->
+                    FolderItemCard(
+                        folder = folder,
+                        isIgnoreType = false,
+                        onReAuthClick = {
+                            pendingReAuthFolderId = folder.id
+                            reAuthPicker.launch(null)
+                        },
+                        onDeleteClick = { viewModel.removeFolder(folder.id) },
                     )
                 }
             }
+
+            // 忽略文件夹区域
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+                FolderSectionHeader(
+                    title = stringResource(R.string.ignore_folders_title),
+                    description = stringResource(R.string.ignore_folders_desc),
+                    onAddClick = { ignoreFolderPicker.launch(null) },
+                )
+            }
+
+            if (ignoreFolders.isEmpty()) {
+                item(key = "empty_ignore") {
+                    EmptyFoldersCard(message = stringResource(R.string.no_ignore_folders))
+                }
+            } else {
+                items(ignoreFolders, key = { it.id }) { folder ->
+                    FolderItemCard(
+                        folder = folder,
+                        isIgnoreType = true,
+                        onReAuthClick = {},
+                        onDeleteClick = { viewModel.removeFolder(folder.id) },
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(160.dp)) }
         }
     }
 }
 
 @Composable
-private fun ScanSourceCard(
+private fun MediaStoreScanCard(
     hasPermission: Boolean,
-    onScanMediaStore: () -> Unit,
+    onScanClick: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -199,16 +299,25 @@ private fun ScanSourceCard(
                     .fillMaxWidth()
                     .padding(16.dp),
         ) {
-            Text(
-                text = stringResource(R.string.scan_media_library),
-                style = MiuixTheme.textStyles.title4,
-                color = MiuixTheme.colorScheme.onPrimaryContainer,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(24.dp),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = stringResource(R.string.full_scan),
+                    style = MiuixTheme.textStyles.title4,
+                    color = MiuixTheme.colorScheme.onPrimaryContainer,
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text =
                     if (hasPermission) {
-                        stringResource(R.string.scan_all_music_files)
+                        stringResource(R.string.full_scan_desc)
                     } else {
                         stringResource(R.string.need_audio_permission_to_scan)
                     },
@@ -217,20 +326,245 @@ private fun ScanSourceCard(
             )
             Spacer(modifier = Modifier.height(12.dp))
             Button(
-                onClick = onScanMediaStore,
+                onClick = onScanClick,
                 modifier =
                     Modifier
                         .pressable(interactionSource = null, indication = SinkFeedback())
                         .align(Alignment.End),
             ) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
+                Text(
+                    if (hasPermission) {
+                        stringResource(R.string.start_scanner)
+                    } else {
+                        stringResource(R.string.grant_permission_and_scan)
+                    },
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(if (hasPermission) stringResource(R.string.start_scanner) else stringResource(R.string.grant_permission_and_scan))
             }
+        }
+    }
+}
+
+@Composable
+private fun FolderSectionHeader(
+    title: String,
+    description: String,
+    onAddClick: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.title3,
+                color = MiuixTheme.colorScheme.onSurface,
+            )
+            IconButton(
+                onClick = onAddClick,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.primary,
+                )
+            }
+        }
+        Text(
+            text = description,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.7f),
+        )
+    }
+}
+
+@Composable
+private fun FolderItemCard(
+    folder: ScanFolder,
+    isIgnoreType: Boolean,
+    onReAuthClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .animateContentSize(
+                    animationSpec =
+                        spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium,
+                        ),
+                ),
+        colors =
+            CardDefaults.defaultColors(
+                contentColor =
+                    if (isIgnoreType) {
+                        MiuixTheme.colorScheme.errorContainer
+                    } else {
+                        MiuixTheme.colorScheme.secondaryContainer
+                    },
+                color =
+                    if (isIgnoreType) {
+                        MiuixTheme.colorScheme.errorContainer
+                    } else {
+                        MiuixTheme.colorScheme.secondaryContainer
+                    },
+            ),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector =
+                    if (isIgnoreType) {
+                        Icons.Default.FolderOff
+                    } else {
+                        Icons.Default.FolderOpen
+                    },
+                contentDescription = null,
+                tint =
+                    if (isIgnoreType) {
+                        MiuixTheme.colorScheme.onErrorContainer
+                    } else {
+                        MiuixTheme.colorScheme.onSecondaryContainer
+                    },
+                modifier = Modifier.size(32.dp),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = folder.displayName,
+                    style = MiuixTheme.textStyles.body1,
+                    color =
+                        if (isIgnoreType) {
+                            MiuixTheme.colorScheme.onErrorContainer
+                        } else {
+                            MiuixTheme.colorScheme.onSecondaryContainer
+                        },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                // 警告信息（带动画）
+                AnimatedVisibility(
+                    visible = !folder.isAccessible && !isIgnoreType,
+                    enter =
+                        fadeIn(animationSpec = tween(200)) +
+                            slideInVertically(
+                                animationSpec = tween(200),
+                                initialOffsetY = { -it / 2 },
+                            ),
+                    exit =
+                        fadeOut(animationSpec = tween(200)) +
+                            slideOutVertically(
+                                animationSpec = tween(200),
+                                targetOffsetY = { -it / 2 },
+                            ),
+                ) {
+                    Column {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MiuixTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = stringResource(R.string.folder_inaccessible),
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+
+                if (folder.pathPrefix != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = folder.pathPrefix.toString(),
+                        style = MiuixTheme.textStyles.body2,
+                        color =
+                            if (isIgnoreType) {
+                                MiuixTheme.colorScheme.onErrorContainer.copy(alpha = 0.6f)
+                            } else {
+                                MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
+                            },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            // 重新授权按钮（带动画）
+            AnimatedVisibility(
+                visible = !folder.isAccessible && !isIgnoreType,
+                enter = fadeIn(animationSpec = tween(200)) + scaleIn(animationSpec = tween(200)),
+                exit = fadeOut(animationSpec = tween(200)) + scaleOut(animationSpec = tween(200)),
+            ) {
+                TextButton(
+                    text = stringResource(R.string.reauthorize_folder),
+                    onClick = onReAuthClick,
+                    modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
+                )
+            }
+            IconButton(
+                onClick = onDeleteClick,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.remove_folder),
+                    tint =
+                        if (isIgnoreType) {
+                            MiuixTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f)
+                        } else {
+                            MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                        },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyFoldersCard(message: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.defaultColors(
+                contentColor = MiuixTheme.colorScheme.surfaceVariant,
+            ),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
+                modifier = Modifier.size(32.dp),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = message,
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }

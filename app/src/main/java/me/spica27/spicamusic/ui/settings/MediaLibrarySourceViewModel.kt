@@ -1,12 +1,24 @@
 package me.spica27.spicamusic.ui.settings
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Environment
+import android.provider.DocumentsContract
+import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.storage.api.FolderType
 import me.spica27.spicamusic.storage.api.IMusicScanService
+import me.spica27.spicamusic.storage.api.IScanFolderRepository
+import me.spica27.spicamusic.storage.api.ScanFolder
 import me.spica27.spicamusic.storage.api.ScanProgress
 import me.spica27.spicamusic.storage.api.ScanResult
 
@@ -34,9 +46,20 @@ sealed class ScanState {
  */
 class MediaLibrarySourceViewModel(
     private val scanService: IMusicScanService,
+    private val folderRepository: IScanFolderRepository,
 ) : ViewModel() {
     private val _scanState = MutableStateFlow<ScanState>(ScanState.Idle)
     val scanState: StateFlow<ScanState> = _scanState.asStateFlow()
+
+    val extraFolders: StateFlow<List<ScanFolder>> =
+        folderRepository
+            .getExtraFoldersFlow()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val ignoreFolders: StateFlow<List<ScanFolder>> =
+        folderRepository
+            .getIgnoreFoldersFlow()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         // 监听扫描进度
@@ -55,10 +78,7 @@ class MediaLibrarySourceViewModel(
     fun startMediaStoreScan() {
         viewModelScope.launch {
             try {
-                _scanState.value =
-                    ScanState.Scanning(
-                        ScanProgress(0, 0, "准备扫描..."),
-                    )
+                _scanState.value = ScanState.Scanning(ScanProgress(0, 0, "准备扫描..."))
                 val result = scanService.scanMediaStore()
                 _scanState.value = ScanState.Success(result)
             } catch (e: Exception) {
@@ -68,17 +88,137 @@ class MediaLibrarySourceViewModel(
     }
 
     /**
-     * 取消扫描
+     * 全量扫描：MediaStore + 额外文件夹（串行）
      */
+    fun startFullScan() {
+        viewModelScope.launch {
+            try {
+                _scanState.value = ScanState.Scanning(ScanProgress(0, 0, "准备扫描..."))
+                val r1 = scanService.scanMediaStore()
+                val r2 = scanService.scanExtraFolders()
+                _scanState.value =
+                    ScanState.Success(
+                        ScanResult(
+                            totalScanned = r1.totalScanned + r2.totalScanned,
+                            newAdded = r1.newAdded + r2.newAdded,
+                            updated = r1.updated + r2.updated,
+                            removed = r1.removed + r2.removed,
+                        ),
+                    )
+            } catch (e: Exception) {
+                _scanState.value = ScanState.Error(e.message ?: "扫描失败")
+            }
+        }
+    }
+
+    /**
+     * 添加额外扫描文件夹（后台线程安全）
+     * 自动处理 SAF 权限申请 + DisplayName 解析
+     */
+    fun addExtraFolder(
+        context: Context,
+        uri: Uri,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // 申请持久 URI 权限
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+
+                // 解析显示名称（IO 操作）
+                val displayName =
+                    DocumentFile.fromTreeUri(context, uri)?.name
+                        ?: uri.lastPathSegment
+                        ?: "Unknown"
+
+                // 添加到数据库
+                folderRepository.addFolder(
+                    uriString = uri.toString(),
+                    displayName = displayName,
+                    folderType = FolderType.EXTRA,
+                    pathPrefix = resolvePathPrefix(uri),
+                )
+            } catch (e: Exception) {
+                // 权限申请失败或 IO 错误，静默处理
+                timber.log.Timber.w(e, "Failed to add extra folder")
+            }
+        }
+    }
+
+    /**
+     * 添加忽略文件夹（后台线程安全）
+     * 不需要 SAF 权限，仅存储路径做过滤
+     */
+    fun addIgnoreFolder(
+        context: Context,
+        uri: Uri,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // 解析显示名称（IO 操作）
+                val displayName =
+                    DocumentFile.fromTreeUri(context, uri)?.name
+                        ?: uri.lastPathSegment
+                        ?: "Unknown"
+
+                // 添加到数据库
+                folderRepository.addFolder(
+                    uriString = uri.toString(),
+                    displayName = displayName,
+                    folderType = FolderType.IGNORE,
+                    pathPrefix = resolvePathPrefix(uri),
+                )
+            } catch (e: Exception) {
+                timber.log.Timber.w(e, "Failed to add ignore folder")
+            }
+        }
+    }
+
+    /** 重新授权失效的 EXTRA 文件夹（用新 URI 替换旧记录） */
+    fun reAuthorizeFolder(
+        id: Long,
+        newUri: Uri,
+    ) {
+        viewModelScope.launch {
+            folderRepository.reAuthorize(id, newUri.toString())
+        }
+    }
+
+    fun removeFolder(id: Long) {
+        viewModelScope.launch {
+            folderRepository.removeFolder(id)
+        }
+    }
+
     fun cancelScan() {
         scanService.cancelScan()
         _scanState.value = ScanState.Idle
     }
 
-    /**
-     * 重置状态
-     */
     fun resetState() {
         _scanState.value = ScanState.Idle
+    }
+
+    /**
+     * 从 SAF tree URI 解析绝对路径前缀
+     * 主存储：primary:relative/path → /storage/emulated/0/relative/path
+     * 外置存储：XXXX-XXXX:relative/path → /storage/XXXX-XXXX/relative/path
+     */
+    private fun resolvePathPrefix(treeUri: Uri): String? {
+        return try {
+            val docId = DocumentsContract.getTreeDocumentId(treeUri)
+            val parts = docId.split(":", limit = 2)
+            if (parts.size != 2) return null
+            val (volume, relative) = parts
+            if (volume.equals("primary", ignoreCase = true)) {
+                "${Environment.getExternalStorageDirectory()}/$relative"
+            } else {
+                "/storage/$volume/$relative"
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
 }

@@ -4,10 +4,13 @@ import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
 import android.database.ContentObserver
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import androidx.core.net.toUri
 import com.ibm.icu.text.Transliterator
@@ -24,8 +27,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.storage.api.IMusicScanService
+import me.spica27.spicamusic.storage.api.IScanFolderRepository
 import me.spica27.spicamusic.storage.api.MediaStoreChangeEvent
 import me.spica27.spicamusic.storage.api.MediaStoreChangeType
 import me.spica27.spicamusic.storage.api.ScanProgress
@@ -35,6 +40,7 @@ import me.spica27.spicamusic.storage.impl.dao.SongDao
 import me.spica27.spicamusic.storage.impl.entity.AlbumEntity
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
 import timber.log.Timber
+import kotlin.coroutines.resume
 
 /**
  * 音乐扫描服务实现 - 基于 MediaStore 和文件系统扫描
@@ -43,7 +49,8 @@ import timber.log.Timber
 class MusicScanService(
     private val context: Context,
     private val songDao: SongDao,
-    private val albumDao: AlbumDao
+    private val albumDao: AlbumDao,
+    private val scanFolderRepository: IScanFolderRepository,
 ) : IMusicScanService {
 
     private val _scanProgress = MutableStateFlow<ScanProgress?>(null)
@@ -68,6 +75,7 @@ class MusicScanService(
 
     companion object {
         private const val TAG = "MusicScanService"
+        private const val MAX_FOLDER_DEPTH = 20
 
         // 支持的音频格式
         private val SUPPORTED_MIME_TYPES = setOf(
@@ -80,6 +88,11 @@ class MusicScanService(
             "audio/x-flac",    // FLAC
             "audio/aac",       // AAC
             "audio/opus",      // OPUS
+        )
+
+        // 文件系统遍历时的音频扩展名过滤
+        private val SUPPORTED_EXTENSIONS = setOf(
+            "mp3", "m4a", "flac", "ogg", "wav", "aac", "opus"
         )
     }
 
@@ -181,6 +194,14 @@ class MusicScanService(
         var newAdded = 0
         var updated = 0
 
+        // 加载忽略文件夹路径前缀（MediaStore 扫描时过滤用）
+        val ignorePrefixes: List<String> = try {
+            scanFolderRepository.getIgnoreFoldersSync()
+                .mapNotNull { it.pathPrefix }
+                .map { if (it.endsWith("/")) it else "$it/" }
+        } catch (e: Exception) {
+            emptyList()
+        }
 
         try {
             val albums = loadAlbums()
@@ -265,6 +286,11 @@ class MusicScanService(
 
                     // 过滤太短的音频（小于 10 秒）
                     if (duration < 10000) {
+                        continue
+                    }
+
+                    // 跳过忽略文件夹中的文件
+                    if (path.isNotEmpty() && ignorePrefixes.any { path.startsWith(it) }) {
                         continue
                     }
 
@@ -381,16 +407,282 @@ class MusicScanService(
     }
 
     override suspend fun scanFolder(folderPath: String): ScanResult {
-        // TODO: 实现文件夹扫描（预留接口）
-        Timber.tag(TAG).w("文件夹扫描功能尚未实现: $folderPath")
+        Timber.tag(TAG).w("scanFolder 已废弃，请使用 scanExtraFolders()")
         return ScanResult(0, 0, 0, 0)
     }
 
     override suspend fun scanFolders(folderPaths: List<String>): ScanResult {
-        // TODO: 实现多文件夹扫描（预留接口）
-        Timber.tag(TAG).w("多文件夹扫描功能尚未实现")
+        Timber.tag(TAG).w("scanFolders 已废弃，请使用 scanExtraFolders()")
         return ScanResult(0, 0, 0, 0)
     }
+
+    override suspend fun scanExtraFolders(): ScanResult = withContext(Dispatchers.IO) {
+        val extraFolders = try {
+            scanFolderRepository.getExtraFoldersSync()
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "加载额外扫描文件夹失败")
+            return@withContext ScanResult(0, 0, 0, 0)
+        }
+        if (extraFolders.isEmpty()) return@withContext ScanResult(0, 0, 0, 0)
+
+        // 加载忽略路径前缀
+        val ignorePrefixes: List<String> = try {
+            scanFolderRepository.getIgnoreFoldersSync()
+                .mapNotNull { it.pathPrefix }
+                .map { if (it.endsWith("/")) it else "$it/" }
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+        // 第一层防御：预校验 persistedUriPermissions
+        val validUris = context.contentResolver.persistedUriPermissions
+            .filter { it.isReadPermission }
+            .map { it.uri }
+            .toHashSet()
+
+        val (foldersToScan, lostFolders) = extraFolders.partition { Uri.parse(it.uriString) in validUris }
+        lostFolders.forEach {
+            Timber.tag(TAG).w("SAF 权限预校验失效: ${it.displayName}")
+            try { scanFolderRepository.markInaccessible(it.id) } catch (_: Exception) {}
+        }
+
+        // 构建现有路径集合（避免重复注册进 MediaStore）
+        val existingPaths = buildExistingPathsSet()
+
+        var totalScanned = 0
+        var newAdded = 0
+
+        for (folder in foldersToScan) {
+            if (isCancelled) break
+            try {
+                // 第二层防御：每个文件夹独立 try-catch
+                val treeUri = Uri.parse(folder.uriString)
+                val audioFiles = walkDocumentTree(treeUri, ignorePrefixes)
+
+                for (fileInfo in audioFiles) {
+                    if (isCancelled) break
+                    totalScanned++
+
+                    // 已在 MediaStore 中则跳过注册
+                    val filePath = fileInfo.absolutePath ?: continue
+                    if (existingPaths.contains(filePath)) continue
+
+                    _scanProgress.value = ScanProgress(
+                        current = totalScanned,
+                        total = totalScanned,
+                        currentFile = fileInfo.displayName
+                    )
+
+                    // 注册到 MediaStore，获取 mediaId
+                    val mediaId = registerFileInMediaStore(filePath) ?: continue
+
+                    // 使用 TagLib 读取元数据
+                    val audioInfo = extractAudioInfoWithTaglib(
+                        contentResolver = context.contentResolver,
+                        mediaStoreId = mediaId,
+                        fallbackDuration = fileInfo.duration,
+                    )
+
+                    val finalDisplayName = audioInfo.title ?: fileInfo.displayName
+                    val finalArtist = audioInfo.artist ?: "Unknown Artist"
+                    val sortName = generateSortName(finalDisplayName)
+                    val mimeType = fileInfo.mimeType
+                    var codec = when {
+                        mimeType.contains("mp3", ignoreCase = true) -> "MP3"
+                        mimeType.contains("aac", ignoreCase = true) -> "AAC"
+                        mimeType.contains("flac", ignoreCase = true) -> "FLAC"
+                        mimeType.contains("alac", ignoreCase = true) -> "ALAC"
+                        mimeType.contains("opus", ignoreCase = true) -> "Opus"
+                        mimeType.contains("vorbis", ignoreCase = true) -> "Vorbis"
+                        mimeType.contains("wav", ignoreCase = true) -> "WAV"
+                        mimeType.contains("m4a", ignoreCase = true) -> "M4A"
+                        else -> mimeType.substringAfter("/").uppercase()
+                    }
+                    if (codec == "M4A" && audioInfo.bitRate >= 700000) codec = "ALAC"
+
+                    val song = SongEntity(
+                        mediaStoreId = mediaId,
+                        path = filePath,
+                        displayName = finalDisplayName,
+                        artist = finalArtist,
+                        size = fileInfo.size,
+                        like = false,
+                        duration = audioInfo.duration.takeIf { it > 0 } ?: fileInfo.duration,
+                        sort = 0,
+                        sortName = sortName,
+                        mimeType = mimeType,
+                        albumId = 0L,
+                        sampleRate = audioInfo.sampleRate,
+                        bitRate = audioInfo.bitRate,
+                        channels = audioInfo.channels,
+                        digit = audioInfo.digit,
+                        isIgnore = false,
+                        codec = codec,
+                        dateModified = 0L,
+                    )
+                    songDao.upsertSongs(listOf(song))
+                    existingPaths.add(filePath) // 防止同次扫描重复处理
+                    newAdded++
+                }
+            } catch (e: SecurityException) {
+                // 第二层防御：权限在遍历中被撤销
+                Timber.tag(TAG).w("SAF 权限在扫描中失效: ${folder.displayName}")
+                try { scanFolderRepository.markInaccessible(folder.id) } catch (_: Exception) {}
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "额外文件夹扫描失败: ${folder.displayName}")
+            }
+        }
+
+        Timber.tag(TAG).i("额外文件夹扫描完成: 总计=$totalScanned, 新增=$newAdded")
+        ScanResult(totalScanned = totalScanned, newAdded = newAdded, updated = 0, removed = 0)
+    }
+
+    /** 从 MediaStore 构建现有文件路径的可变集合 */
+    private suspend fun buildExistingPathsSet(): MutableSet<String> = withContext(Dispatchers.IO) {
+        val paths = mutableSetOf<String>()
+        val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        } else {
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        }
+        context.contentResolver.query(
+            uri,
+            arrayOf(MediaStore.Audio.Media.DATA),
+            null, null, null
+        )?.use { cursor ->
+            val dataCol = cursor.getColumnIndex(MediaStore.Audio.Media.DATA)
+            if (dataCol >= 0) {
+                while (cursor.moveToNext()) {
+                    val path = cursor.getString(dataCol)
+                    if (!path.isNullOrEmpty()) paths.add(path)
+                }
+            }
+        }
+        paths
+    }
+
+    /**
+     * 递归遍历 SAF 目录树，收集所有音频文件信息
+     * @param treeUri  SAF tree URI
+     * @param ignorePrefixes 忽略文件夹的绝对路径前缀列表（以 "/" 结尾）
+     * @param parentDocId  当前递归层级的 document ID，首次调用传 null 使用 tree root
+     * @param depth  当前递归深度，超过 MAX_FOLDER_DEPTH 时停止
+     */
+    private fun walkDocumentTree(
+        treeUri: Uri,
+        ignorePrefixes: List<String>,
+        parentDocId: String? = null,
+        depth: Int = 0,
+    ): List<DocumentFileInfo> {
+        if (depth > MAX_FOLDER_DEPTH) return emptyList()
+
+        val docId = parentDocId ?: DocumentsContract.getTreeDocumentId(treeUri)
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
+
+        val results = mutableListOf<DocumentFileInfo>()
+
+        context.contentResolver.query(
+            childrenUri,
+            arrayOf(
+                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                DocumentsContract.Document.COLUMN_MIME_TYPE,
+                DocumentsContract.Document.COLUMN_SIZE,
+                DocumentsContract.Document.COLUMN_LAST_MODIFIED,
+            ),
+            null, null, null
+        )?.use { cursor ->
+            val idCol = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+            val nameCol = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+            val mimeCol = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_MIME_TYPE)
+            val sizeCol = cursor.getColumnIndexOrThrow(DocumentsContract.Document.COLUMN_SIZE)
+
+            while (cursor.moveToNext() && !isCancelled) {
+                val childDocId = cursor.getString(idCol) ?: continue
+                val displayName = cursor.getString(nameCol) ?: continue
+                val mimeType = cursor.getString(mimeCol) ?: continue
+                val size = cursor.getLong(sizeCol)
+
+                // 解析绝对路径（用于忽略文件夹匹配）
+                val absolutePath = resolveAbsolutePath(childDocId)
+
+                if (mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
+                    // 是目录：检查是否需要忽略，再递归
+                    val folderPath = if (absolutePath != null) {
+                        if (absolutePath.endsWith("/")) absolutePath else "$absolutePath/"
+                    } else null
+
+                    if (folderPath != null && ignorePrefixes.any { folderPath.startsWith(it) || it.startsWith(folderPath) }) {
+                        continue // 跳过此子目录整棵树
+                    }
+                    results.addAll(walkDocumentTree(treeUri, ignorePrefixes, childDocId, depth + 1))
+                } else {
+                    // 是文件：按扩展名过滤
+                    val ext = displayName.substringAfterLast('.', "").lowercase()
+                    if (ext !in SUPPORTED_EXTENSIONS) continue
+
+                    // 忽略文件夹过滤
+                    if (absolutePath != null && ignorePrefixes.any { absolutePath.startsWith(it) }) continue
+
+                    results.add(
+                        DocumentFileInfo(
+                            displayName = displayName,
+                            mimeType = if (mimeType == "application/octet-stream") "audio/$ext" else mimeType,
+                            size = size,
+                            absolutePath = absolutePath,
+                            duration = 0L,
+                        )
+                    )
+                }
+            }
+        }
+        return results
+    }
+
+    /**
+     * 从 SAF document ID 解析绝对文件路径
+     * - 主存储：`primary:relative/path` → `/storage/emulated/0/relative/path`
+     * - 外置存储：`XXXX-XXXX:relative/path` → `/storage/XXXX-XXXX/relative/path`
+     */
+    private fun resolveAbsolutePath(documentId: String): String? {
+        val parts = documentId.split(":", limit = 2)
+        if (parts.size != 2) return null
+        val (volume, relativePath) = parts
+        return if (volume.equals("primary", ignoreCase = true)) {
+            "${Environment.getExternalStorageDirectory()}/$relativePath"
+        } else {
+            "/storage/$volume/$relativePath"
+        }
+    }
+
+    /**
+     * 通过 MediaScannerConnection 将文件注册进 MediaStore，返回获得的 mediaStoreId
+     * 回调在主线程触发，通过 suspendCancellableCoroutine 桥接到协程
+     */
+    private suspend fun registerFileInMediaStore(filePath: String): Long? =
+        suspendCancellableCoroutine { cont ->
+            MediaScannerConnection.scanFile(
+                context,
+                arrayOf(filePath),
+                null
+            ) { _, uri ->
+                if (uri != null) {
+                    val mediaId = uri.lastPathSegment?.toLongOrNull()
+                    cont.resume(mediaId)
+                } else {
+                    cont.resume(null)
+                }
+            }
+        }
+
+    /** SAF 文件信息 */
+    private data class DocumentFileInfo(
+        val displayName: String,
+        val mimeType: String,
+        val size: Long,
+        val absolutePath: String?,
+        val duration: Long,
+    )
 
     /**
      * 使用 Taglib 提取音频详细信息（优先使用）
