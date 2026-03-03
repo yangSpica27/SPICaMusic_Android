@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
 import me.spica27.spicamusic.R
@@ -45,8 +44,8 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
-import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import top.yukonga.miuix.kmp.basic.Button
@@ -79,89 +78,84 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
 
     val scrollBehavior = MiuixScrollBehavior()
 
-    val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
-
-    val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
-
-    with(localNavSharedTransitionScope) {
-        Scaffold(
-            modifier =
-                modifier
-                    .sharedBounds(
-                        sharedContentState = rememberSharedContentState(album),
-                        animatedVisibilityScope = localNavAnimatedContentScope,
-                    ).fillMaxSize(),
-            topBar = {
-                TopAppBar(
-                    title = stringResource(R.string.album_details),
-                    largeTitle = "",
-                    color = Color.Transparent,
-                    navigationIcon = {
-                        IconButton(
-                            modifier =
-                                Modifier
-                                    .padding(start = 16.dp)
-                                    .background(
-                                        MiuixTheme.colorScheme.surface,
-                                        shape = RoundedCornerShape(50),
-                                    ),
-                            onClick = {
-                                backStack.removeLastOrNull()
-                            },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBackIosNew,
-                                contentDescription = stringResource(R.string.back),
-                            )
-                        }
-                    },
+    Scaffold(
+        modifier =
+            modifier
+                .navSharedBounds(
+                    album
                 )
-            },
-        ) { _ ->
-
-            LazyColumn(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .scrollEndHaptic()
-                        .nestedScroll(LocalFloatingTabBarScrollConnection.current)
-                        .overScrollVertical(),
-            ) {
-                item {
-                    Header(album, viewModel)
-                }
-                items(count = songs.size) { index ->
-                    val song = songs[index]
-                    Column {
-                        if (index == 0) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 10.dp),
-                            )
-                        }
-                        SongItemCard(
-                            song = song,
-                            onClick = { viewModel.playSongInList(song) },
-                            index = index,
+                .fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = stringResource(R.string.album_details),
+                largeTitle = "",
+                color = Color.Transparent,
+                navigationIcon = {
+                    IconButton(
+                        modifier =
+                            Modifier
+                                .padding(start = 16.dp)
+                                .background(
+                                    MiuixTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(50),
+                                ),
+                        onClick = {
+                            backStack.removeLastOrNull()
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBackIosNew,
+                            contentDescription = stringResource(R.string.back),
                         )
+                    }
+                },
+            )
+        },
+    ) { _ ->
 
-                        if (index != songs.size - 1) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 12.dp),
-                            )
-                        } else {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(horizontal = 10.dp),
-                            )
-                        }
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .scrollEndHaptic()
+                    .nestedScroll(LocalFloatingTabBarScrollConnection.current)
+                    .overScrollVertical(),
+        ) {
+            item {
+                Header(album, viewModel)
+            }
+            items(count = songs.size) { index ->
+                val song = songs[index]
+                Column {
+                    if (index == 0) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 10.dp),
+                        )
+                    }
+                    SongItemCard(
+                        song = song,
+                        onClick = { viewModel.playSongInList(song) },
+                        index = index,
+                    )
+
+                    if (index != songs.size - 1) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                        )
+                    } else {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 10.dp),
+                        )
                     }
                 }
-                item {
-                    Spacer(modifier = Modifier.height(160.dp))
-                }
+            }
+            item {
+                Spacer(modifier = Modifier.height(160.dp))
             }
         }
     }
 }
+
 
 @Composable
 private fun Header(
@@ -181,7 +175,8 @@ private fun Header(
                     .fillMaxSize()
                     .clip(
                         RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
-                    ).hazeEffect {
+                    )
+                    .hazeEffect {
                         progressive =
                             HazeProgressive.verticalGradient(
                                 startY = .5f,
@@ -235,10 +230,12 @@ private fun Header(
                                         MiuixTheme.colorScheme.surface.copy(alpha = 1f),
                                     ),
                             ),
-                    ).padding(
+                    )
+                    .padding(
                         horizontal = 16.dp,
                         vertical = 12.dp,
-                    ).padding(top = 25.dp),
+                    )
+                    .padding(top = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -255,7 +252,11 @@ private fun Header(
                 fontWeight = FontWeight.Normal,
             )
             Text(
-                text = stringResource(R.string.album_year_songs_format, album.year, album.numberOfSongs),
+                text = stringResource(
+                    R.string.album_year_songs_format,
+                    album.year,
+                    album.numberOfSongs
+                ),
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
             )
@@ -295,10 +296,10 @@ private fun Header(
 
 @Composable
 private fun SongItemCard(
+    modifier: Modifier = Modifier,
     song: Song,
     isSelected: Boolean = false,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
     index: Int = 0,
 ) {
     Box(
