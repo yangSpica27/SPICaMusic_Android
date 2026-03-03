@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -92,8 +94,8 @@ fun MostPlayedScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = "最常播放",
-                largeTitle = "最常播放",
+                title = stringResource(R.string.most_played_title),
+                largeTitle = stringResource(R.string.most_played_title),
                 scrollBehavior = scrollBehavior,
                 color = Color.Transparent,
                 modifier =
@@ -114,7 +116,7 @@ fun MostPlayedScreen(
                     IconButton(onClick = { backStack.removeLastOrNull() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBackIosNew,
-                            contentDescription = "返回",
+                            contentDescription = stringResource(R.string.back),
                             tint = MiuixTheme.colorScheme.onSurface,
                         )
                     }
@@ -123,7 +125,7 @@ fun MostPlayedScreen(
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "刷新",
+                            contentDescription = stringResource(R.string.refresh),
                             tint = MiuixTheme.colorScheme.onSurface,
                         )
                     }
@@ -154,7 +156,7 @@ fun MostPlayedScreen(
                     ) {
                         items(MostPlayedRange.entries) { range ->
                             RangeChip(
-                                label = range.label,
+                                label = stringResource(range.labelRes),
                                 selected = range == selectedRange,
                                 onClick = { viewModel.selectRange(range) },
                             )
@@ -185,7 +187,7 @@ fun MostPlayedScreen(
                                     modifier = Modifier.size(16.dp),
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = "播放全部", color = MiuixTheme.colorScheme.onPrimary)
+                                Text(text = stringResource(R.string.play_all), color = MiuixTheme.colorScheme.onPrimary)
                             }
                             Button(
                                 onClick = { viewModel.saveAsPlaylist() },
@@ -203,7 +205,7 @@ fun MostPlayedScreen(
                                     modifier = Modifier.size(16.dp),
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = "保存为歌单", color = MiuixTheme.colorScheme.onSecondaryContainer)
+                                Text(text = stringResource(R.string.save_as_playlist), color = MiuixTheme.colorScheme.onSecondaryContainer)
                             }
                         }
                     }

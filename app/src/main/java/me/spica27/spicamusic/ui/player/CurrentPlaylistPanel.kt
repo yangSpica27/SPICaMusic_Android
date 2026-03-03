@@ -166,7 +166,15 @@ private fun CurrentPlaylistPanelContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = if (isMultiSelectMode) "已选择 $selectedCount 项" else stringResource(R.string.now_playinglist),
+                text =
+                    if (isMultiSelectMode) {
+                        stringResource(
+                            R.string.multi_select_count_format,
+                            selectedCount,
+                        )
+                    } else {
+                        stringResource(R.string.now_playinglist)
+                    },
                 style = MiuixTheme.textStyles.title3,
                 modifier = Modifier.weight(1f),
             )
@@ -184,7 +192,7 @@ private fun CurrentPlaylistPanelContent(
             IconButton(onClick = onDismiss) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "关闭",
+                    contentDescription = stringResource(R.string.close),
                 )
             }
         }
@@ -311,8 +319,8 @@ private fun PlaylistMediaItemRow(
     onLongClick: () -> Unit,
 ) {
     val metadata = item.mediaMetadata
-    val title = metadata.title?.toString() ?: "未知歌曲"
-    val artist = metadata.artist?.toString() ?: "未知艺术家"
+    val title = metadata.title?.toString() ?: stringResource(R.string.unknown_song)
+    val artist = metadata.artist?.toString() ?: stringResource(R.string.unknown_artist)
     val artworkUri = metadata.artworkUri
 
     Box(
@@ -395,7 +403,7 @@ private fun MultiSelectActionBar(
         ) {
             Icon(
                 imageVector = Icons.Default.Delete,
-                contentDescription = "删除",
+                contentDescription = stringResource(R.string.delete),
             )
             Spacer(modifier = Modifier.size(6.dp))
             Text(text = stringResource(R.string.batch_delete))
@@ -408,7 +416,7 @@ private fun MultiSelectActionBar(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
-                contentDescription = "创建歌单",
+                contentDescription = stringResource(R.string.create_playlist),
             )
             Spacer(modifier = Modifier.size(6.dp))
             Text(text = stringResource(R.string.create_playlist))
@@ -425,7 +433,7 @@ private fun CreatePlaylistDialog(
     val showState = remember { mutableStateOf(true) }
 
     WindowDialog(
-        title = "创建歌单",
+        title = stringResource(R.string.create_playlist),
         onDismissRequest = onDismiss,
         show = showState,
     ) {
@@ -435,7 +443,7 @@ private fun CreatePlaylistDialog(
             TextField(
                 value = playlistName,
                 onValueChange = { playlistName = it },
-                label = "请输入歌单名称",
+                label = stringResource(R.string.hint_input_playlist_name),
                 modifier = Modifier.fillMaxWidth(),
                 useLabelAsPlaceholder = true,
             )
@@ -445,12 +453,12 @@ private fun CreatePlaylistDialog(
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(
-                    text = "取消",
+                    text = stringResource(R.string.cancel),
                     onClick = onDismiss,
                 )
                 Spacer(modifier = Modifier.size(12.dp))
                 TextButton(
-                    text = "创建",
+                    text = stringResource(R.string.create),
                     onClick = {
                         if (playlistName.isNotBlank()) {
                             onCreate(playlistName)

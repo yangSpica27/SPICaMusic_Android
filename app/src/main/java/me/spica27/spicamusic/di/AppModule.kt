@@ -29,6 +29,7 @@ import me.spica27.spicamusic.ui.settings.SettingsViewModel
 import me.spica27.spicamusic.utils.PreferencesManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -117,6 +118,7 @@ object AppModule {
             // 媒体库来源页面 ViewModel
             viewModel {
                 MediaLibrarySourceViewModel(
+                    app = androidApplication(),
                     scanService = get<IMusicScanService>(),
                     folderRepository = get<IScanFolderRepository>(),
                 )
@@ -192,6 +194,7 @@ object AppModule {
             // 最常播放页面 ViewModel
             viewModel {
                 MostPlayedViewModel(
+                    app = androidApplication(),
                     historyRepository = get<IPlayHistoryRepository>(),
                     songRepository = get<ISongRepository>(),
                     playlistRepository = get<IPlaylistRepository>(),

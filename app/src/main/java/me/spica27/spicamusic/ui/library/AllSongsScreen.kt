@@ -159,7 +159,7 @@ fun AllSongsScreen(
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Check,
-                                    contentDescription = "确定",
+                                    contentDescription = stringResource(R.string.confirm),
                                     tint = MiuixTheme.colorScheme.onSurface,
                                 )
                             }
@@ -582,19 +582,19 @@ private fun MultiSelectBottomMenu(
             ) {
                 MenuActionItem(
                     icon = Icons.Default.Favorite,
-                    label = "收藏",
+                    label = stringResource(R.string.favorite),
                     onClick = onFavorite,
                     modifier = Modifier.weight(1f),
                 )
                 MenuActionItem(
                     icon = Icons.Default.FavoriteBorder,
-                    label = "取消收藏",
+                    label = stringResource(R.string.remove_from_favorites),
                     onClick = onUnfavorite,
                     modifier = Modifier.weight(1f),
                 )
                 MenuActionItem(
                     icon = Icons.Default.QueueMusic,
-                    label = "播放全部",
+                    label = stringResource(R.string.play_all),
                     onClick = onPlayAll,
                     modifier = Modifier.weight(1f),
                 )
@@ -608,19 +608,19 @@ private fun MultiSelectBottomMenu(
             ) {
                 MenuActionItem(
                     icon = Icons.Default.SkipNext,
-                    label = "添加到播放列表",
+                    label = stringResource(R.string.add_to_queue),
                     onClick = onAddToQueen,
                     modifier = Modifier.weight(1f),
                 )
                 MenuActionItem(
                     icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                    label = "创建歌单",
+                    label = stringResource(R.string.create_playlist),
                     onClick = onCreatePlaylist,
                     modifier = Modifier.weight(1f),
                 )
                 MenuActionItem(
                     icon = Icons.Default.VisibilityOff,
-                    label = "隐藏",
+                    label = stringResource(R.string.hide),
                     onClick = onHide,
                     modifier = Modifier.weight(1f),
                 )

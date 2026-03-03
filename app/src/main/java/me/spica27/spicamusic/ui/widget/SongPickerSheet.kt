@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,6 +51,7 @@ import androidx.paging.compose.itemKey
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import top.yukonga.miuix.kmp.basic.Button
@@ -86,7 +88,7 @@ fun SongPickerSheet(
     onSelectAll: suspend () -> List<Long>,
     onDismiss: () -> Unit,
     onConfirm: (List<Long>) -> Unit,
-    title: String = "添加歌曲",
+    title: String? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
@@ -125,7 +127,7 @@ fun SongPickerSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = title,
+                    text = title ?: stringResource(R.string.add_songs_title),
                     style = MiuixTheme.textStyles.title3,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
@@ -133,7 +135,7 @@ fun SongPickerSheet(
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "关闭",
+                        contentDescription = stringResource(R.string.close),
                         tint = MiuixTheme.colorScheme.onSurface,
                     )
                 }
@@ -150,7 +152,7 @@ fun SongPickerSheet(
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                label = "搜索歌名或艺术家",
+                label = stringResource(R.string.search_song_or_artist),
                 useLabelAsPlaceholder = true,
                 leadingIcon = {
                     Icon(
@@ -183,9 +185,9 @@ fun SongPickerSheet(
                 Text(
                     text =
                         if (selectedIds.isEmpty()) {
-                            "共 $songCount 首可选"
+                            stringResource(R.string.songs_available_format, songCount)
                         } else {
-                            "已选 ${selectedIds.size} 首"
+                            stringResource(R.string.songs_selected_format, selectedIds.size)
                         },
                     style = MiuixTheme.textStyles.body2,
                     color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.7f),
@@ -194,7 +196,7 @@ fun SongPickerSheet(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     // 全选 / 取消全选
                     TextButton(
-                        text = if (isAllSelected) "取消全选" else "全选",
+                        text = if (isAllSelected) stringResource(R.string.deselect_all) else stringResource(R.string.select_all),
                         cornerRadius = 4.dp,
                         insideMargin =
                             PaddingValues(
@@ -273,7 +275,7 @@ fun SongPickerSheet(
                             horizontal = 12.dp,
                             vertical = 4.dp,
                         ),
-                    text = "取消",
+                    text = stringResource(R.string.cancel),
                     onClick = onDismiss,
                     cornerRadius = 4.dp,
                 )
@@ -293,9 +295,9 @@ fun SongPickerSheet(
                     Text(
                         text =
                             if (selectedIds.isEmpty()) {
-                                "确认添加"
+                                stringResource(R.string.confirm_add)
                             } else {
-                                "确认添加 (${selectedIds.size})"
+                                stringResource(R.string.confirm_add_format, selectedIds.size)
                             },
                     )
                 }

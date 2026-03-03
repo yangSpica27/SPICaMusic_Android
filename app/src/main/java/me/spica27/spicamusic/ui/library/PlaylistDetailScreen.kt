@@ -1033,7 +1033,7 @@ private fun RenamePlaylistDialog(
                         ),
                     enabled = newName.isNotBlank() && newName != currentName,
                 ) {
-                    Text("确定")
+                    Text(stringResource(R.string.confirm))
                 }
             }
         }

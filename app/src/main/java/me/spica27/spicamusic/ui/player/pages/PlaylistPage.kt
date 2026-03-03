@@ -55,6 +55,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -62,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
@@ -149,7 +151,15 @@ fun CurrentPlaylistPage(
                 Modifier,
             ) { isMultiSelectMode ->
                 Text(
-                    text = if (isMultiSelectMode) "已选择 $selectedCount 项" else "播放列表 (${currentPlaylist.size})",
+                    text =
+                        if (isMultiSelectMode) {
+                            stringResource(
+                                R.string.multi_select_count_format,
+                                selectedCount,
+                            )
+                        } else {
+                            stringResource(R.string.playlist_count_format, currentPlaylist.size)
+                        },
                     style = MiuixTheme.textStyles.title3,
                     color = MiuixTheme.colorScheme.onSurface,
                 )
@@ -157,7 +167,7 @@ fun CurrentPlaylistPage(
             AnimatedContent(isMultiSelectMode) { selectMode ->
                 if (selectMode) {
                     TextButton(
-                        text = "取消",
+                        text = stringResource(R.string.cancel),
                         onClick = {
                             isMultiSelectMode = false
                             selectedMediaIds.clear()
@@ -181,7 +191,7 @@ fun CurrentPlaylistPage(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.LocationSearching,
-                                contentDescription = "跳转到正在播放",
+                                contentDescription = stringResource(R.string.jump_to_playing),
                                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
                         }
@@ -194,7 +204,7 @@ fun CurrentPlaylistPage(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.PlaylistRemove,
-                                contentDescription = "清空播放列表",
+                                contentDescription = stringResource(R.string.clear_playlist),
                                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
                         }
@@ -223,7 +233,7 @@ fun CurrentPlaylistPage(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "播放列表为空",
+                        text = stringResource(R.string.playlist_empty),
                         style = MiuixTheme.textStyles.body1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
@@ -346,12 +356,12 @@ fun CurrentPlaylistPage(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "删除",
+                        contentDescription = stringResource(R.string.delete),
                         tint = MiuixTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(6.dp))
                     Text(
-                        text = "批量删除",
+                        text = stringResource(R.string.batch_delete),
                         style = MiuixTheme.textStyles.body1,
                     )
                 }
@@ -363,11 +373,11 @@ fun CurrentPlaylistPage(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
-                        contentDescription = "创建歌单",
+                        contentDescription = stringResource(R.string.create_playlist),
                         tint = MiuixTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(6.dp))
-                    Text(text = "创建歌单", style = MiuixTheme.textStyles.body1)
+                    Text(text = stringResource(R.string.create_playlist), style = MiuixTheme.textStyles.body1)
                 }
             }
         }
@@ -378,7 +388,7 @@ fun CurrentPlaylistPage(
         val showState = remember { mutableStateOf(true) }
 
         WindowDialog(
-            title = "创建歌单",
+            title = stringResource(R.string.create_playlist),
             onDismissRequest = { showCreateDialog = false },
             show = showState,
         ) {
@@ -388,7 +398,7 @@ fun CurrentPlaylistPage(
                 TextField(
                     value = playlistName,
                     onValueChange = { playlistName = it },
-                    label = "请输入歌单名称",
+                    label = stringResource(R.string.hint_input_playlist_name),
                     modifier = Modifier.fillMaxWidth(),
                     useLabelAsPlaceholder = true,
                 )
@@ -398,12 +408,12 @@ fun CurrentPlaylistPage(
                     horizontalArrangement = Arrangement.End,
                 ) {
                     TextButton(
-                        text = "取消",
+                        text = stringResource(R.string.cancel),
                         onClick = { showCreateDialog = false },
                     )
                     Spacer(modifier = Modifier.size(12.dp))
                     TextButton(
-                        text = "创建",
+                        text = stringResource(R.string.create),
                         onClick = {
                             if (playlistName.isNotBlank()) {
                                 panelViewModel.createPlaylistWithMediaIds(
@@ -442,8 +452,8 @@ private fun PlaylistItemRow(
     backgroundState: HazeState,
 ) {
     val metadata = item.mediaMetadata
-    val title = metadata.title?.toString() ?: "未知歌曲"
-    val artist = metadata.artist?.toString() ?: "未知艺术家"
+    val title = metadata.title?.toString() ?: stringResource(R.string.unknown_song)
+    val artist = metadata.artist?.toString() ?: stringResource(R.string.unknown_artist)
     val artworkUri = metadata.artworkUri
 
     Box(
@@ -492,7 +502,7 @@ private fun PlaylistItemRow(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.MusicNote,
-                            contentDescription = "封面占位符",
+                            contentDescription = stringResource(R.string.cover_placeholder),
                             tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             modifier =
                                 Modifier
@@ -530,7 +540,7 @@ private fun PlaylistItemRow(
                 Text(
                     text =
                         if (isPlaying) {
-                            "正在播放"
+                            stringResource(R.string.now_playing_indicator)
                         } else {
                             formatTime(
                                 item.mediaMetadata.durationMs ?: 0L,

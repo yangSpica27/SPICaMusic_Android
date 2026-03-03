@@ -211,7 +211,7 @@ fun DraggablePlayerSheet(content: @Composable BoxScope.() -> Unit) {
                                 key = Screen.Library,
                                 title = {
                                     Text(
-                                        "媒体库",
+                                        stringResource(R.string.nav_library),
                                         style = MiuixTheme.textStyles.button,
                                         color =
                                             tabTint(

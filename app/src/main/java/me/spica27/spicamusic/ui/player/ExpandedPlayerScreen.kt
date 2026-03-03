@@ -59,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +77,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
@@ -286,7 +288,7 @@ private fun TopBar(
             IconButton(onClick = onCollapse) {
                 Icon(
                     imageVector = Icons.Rounded.KeyboardArrowDown,
-                    contentDescription = "收起",
+                    contentDescription = stringResource(R.string.collapse),
                     tint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(32.dp),
                 )
@@ -411,7 +413,7 @@ private fun AudioQualityTags(
         // 无损标签
         if (isLossless) {
             AudioTag(
-                text = "无损",
+                text = stringResource(R.string.lossless),
                 color = Color(0xFFFF9800),
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -420,7 +422,7 @@ private fun AudioQualityTags(
         // 高品质标签
         if (bitRate >= 320000 && !isLossless) {
             AudioTag(
-                text = "高品质",
+                text = stringResource(R.string.high_quality),
                 color = Color(0xFF9C27B0),
             )
         }
@@ -439,21 +441,21 @@ private fun AudioInfoCard(
     val sampleRate = extras?.getInt("sampleRate") ?: 0
     val bitRate = extras?.getInt("bitRate") ?: 0
     val channels = extras?.getInt("channels") ?: 0
-    val mimeType = currentMediaItem?.localConfiguration?.mimeType ?: "未知格式"
+    val mimeType = currentMediaItem?.localConfiguration?.mimeType ?: stringResource(R.string.unknown_format)
 
-    InfoCard(title = "音频信息", modifier = modifier) {
-        InfoRow(label = "格式", value = mimeType)
+    InfoCard(title = stringResource(R.string.audio_info), modifier = modifier) {
+        InfoRow(label = stringResource(R.string.audio_format_label), value = mimeType)
 
         if (sampleRate > 0) {
             InfoRow(
-                label = "采样率",
+                label = stringResource(R.string.sample_rate_label),
                 value = "${sampleRate}Hz (${sampleRate / 1000}kHz)",
             )
         }
 
         if (bitRate > 0) {
             InfoRow(
-                label = "比特率",
+                label = stringResource(R.string.bitrate_label),
                 value = "${bitRate / 1000}kbps",
             )
         }
@@ -461,11 +463,11 @@ private fun AudioInfoCard(
         if (channels > 0) {
             val channelName =
                 when (channels) {
-                    1 -> "单声道"
-                    2 -> "立体声"
-                    else -> "$channels 声道"
+                    1 -> stringResource(R.string.mono)
+                    2 -> stringResource(R.string.stereo)
+                    else -> stringResource(R.string.channels_format, channels)
                 }
-            InfoRow(label = "声道数", value = channelName)
+            InfoRow(label = stringResource(R.string.channel_count_label), value = channelName)
         }
     }
 }
@@ -626,7 +628,7 @@ private fun PlayerPage(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.MusicNote,
-                                contentDescription = "封面占位符",
+                                contentDescription = stringResource(R.string.cover_placeholder),
                                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier =
                                     Modifier
@@ -707,7 +709,7 @@ private fun PlayerPage(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = "需要 Android 13+\n才能显示 3D 可视化",
+                                text = stringResource(R.string.visualization_requires_android13),
                                 style = MiuixTheme.textStyles.body1,
                                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 textAlign = TextAlign.Center,
@@ -722,8 +724,8 @@ private fun PlayerPage(
 
         // 歌曲信息
         SongInfo(
-            title = currentMediaItem?.mediaMetadata?.title?.toString() ?: "未知歌曲",
-            artist = currentMediaItem?.mediaMetadata?.artist?.toString() ?: "未知艺术家",
+            title = currentMediaItem?.mediaMetadata?.title?.toString() ?: stringResource(R.string.unknown_song),
+            artist = currentMediaItem?.mediaMetadata?.artist?.toString() ?: stringResource(R.string.unknown_artist),
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -924,7 +926,7 @@ private fun PlayerControls(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.SkipPrevious,
-                    contentDescription = "上一首",
+                    contentDescription = stringResource(R.string.previous_track),
                     tint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(40.dp),
                 )
@@ -943,7 +945,7 @@ private fun PlayerControls(
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    contentDescription = if (isPlaying) "暂停" else "播放",
+                    contentDescription = if (isPlaying) stringResource(R.string.pause) else stringResource(R.string.play),
                     tint = MiuixTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(48.dp),
                 )
@@ -958,7 +960,7 @@ private fun PlayerControls(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.SkipNext,
-                    contentDescription = "下一首",
+                    contentDescription = stringResource(R.string.next_track),
                     tint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(40.dp),
                 )
@@ -982,7 +984,7 @@ private fun PlayerControls(
                             PlayMode.LIST -> Icons.Rounded.RepeatOne
                             PlayMode.SHUFFLE -> Icons.Rounded.Shuffle
                         },
-                    contentDescription = "播放模式",
+                    contentDescription = stringResource(R.string.play_mode),
                     tint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(28.dp),
                 )
@@ -997,7 +999,7 @@ private fun PlayerControls(
                         } else {
                             Icons.Rounded.FavoriteBorder
                         },
-                    contentDescription = "收藏",
+                    contentDescription = stringResource(R.string.favorite),
                     tint =
                         if (isLike) {
                             Color.Red

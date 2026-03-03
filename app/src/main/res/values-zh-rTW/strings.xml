@@ -237,4 +237,89 @@
   <string name="add_songs">添加歌曲</string>
   <string name="playlist_detail_title">歌单详情</string>
   <string name="play_count_format">%d 次播放</string>
+
+  <!-- Navigation -->
+  <string name="nav_library">媒體庫</string>
+
+  <!-- Common UI actions -->
+  <string name="confirm">確定</string>
+  <string name="close">關閉</string>
+  <string name="back">返回</string>
+  <string name="refresh">重新整理</string>
+  <string name="hide">隱藏</string>
+  <string name="collapse">收起</string>
+
+  <!-- Player controls -->
+  <string name="pause">暫停</string>
+  <string name="previous_track">上一首</string>
+  <string name="next_track">下一首</string>
+  <string name="play_mode">播放模式</string>
+  <string name="favorite">收藏</string>
+  <string name="remove_from_favorites">取消收藏</string>
+  <string name="add_to_queue">新增至播放清單</string>
+  <string name="now_playing_indicator">正在播放</string>
+  <string name="multi_select_count_format">已選取 %d 項</string>
+  <string name="playlist_count_format">播放清單 (%d)</string>
+  <string name="jump_to_playing">跳轉到正在播放</string>
+  <string name="clear_playlist">清空播放清單</string>
+
+  <!-- Metadata fallbacks -->
+  <string name="unknown_song">未知歌曲</string>
+  <string name="unknown_artist">未知藝術家</string>
+  <string name="unknown_format">未知格式</string>
+  <string name="cover_placeholder">封面佔位符</string>
+
+  <!-- Audio info card -->
+  <string name="audio_info">音訊資訊</string>
+  <string name="audio_format_label">格式</string>
+  <string name="sample_rate_label">取樣率</string>
+  <string name="bitrate_label">位元率</string>
+  <string name="mono">單聲道</string>
+  <string name="stereo">立體聲</string>
+  <string name="channels_format">%d 聲道</string>
+  <string name="channel_count_label">聲道數</string>
+
+  <!-- Album -->
+  <string name="album_details">專輯詳情</string>
+  <string name="album_year_songs_format">%1$s · %2$d 首</string>
+
+  <!-- Playlist save operations -->
+  <string name="save_as_playlist">儲存為播放清單</string>
+  <string name="saved_as_playlist_format">已儲存為播放清單「%s」</string>
+  <string name="save_failed">儲存失敗</string>
+
+  <!-- Song picker sheet -->
+  <string name="add_songs_title">新增歌曲</string>
+  <string name="search_song_or_artist">搜尋歌名或藝術家</string>
+  <string name="songs_available_format">共 %d 首可選</string>
+  <string name="songs_selected_format">已選 %d 首</string>
+  <string name="deselect_all">取消全選</string>
+  <string name="confirm_add">確認新增</string>
+  <string name="confirm_add_format">確認新增 (%d)</string>
+
+  <!-- Lyrics toolbar -->
+  <string name="lyrics_tool">歌詞工具</string>
+  <string name="advance_half_second">提前 0.5 秒</string>
+  <string name="delay_half_second">延遲 0.5 秒</string>
+
+  <!-- Scan -->
+  <string name="preparing_scan">準備掃描...</string>
+
+  <!-- Settings screen sections -->
+  <string name="settings_appearance">外觀</string>
+  <string name="settings_dark_mode_subtitle">啟用深色主題</string>
+  <string name="settings_playback">播放</string>
+  <string name="settings_sound_effects_subtitle">均衡器、混響等音效設定</string>
+  <string name="settings_keep_screen_on">螢幕常亮</string>
+  <string name="settings_keep_screen_on_subtitle">播放時保持螢幕常亮</string>
+  <string name="settings_dynamic_spectrum">動態頻譜背景</string>
+  <string name="settings_dynamic_cover">動態封面</string>
+  <string name="settings_dynamic_cover_subtitle">播放器封面點擊翻轉後的背面效果</string>
+  <string name="settings_media_library">媒體庫</string>
+  <string name="settings_media_library_source_subtitle">管理音樂掃描路徑</string>
+
+  <!-- Most played time range chips -->
+  <string name="range_week">本週</string>
+  <string name="range_year">本年</string>
+  <string name="range_all_time">全部</string>
 </resources>

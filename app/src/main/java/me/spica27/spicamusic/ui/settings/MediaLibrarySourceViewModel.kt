@@ -1,12 +1,13 @@
 package me.spica27.spicamusic.ui.settings
 
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.provider.DocumentsContract
 import androidx.documentfile.provider.DocumentFile
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.storage.api.FolderType
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IScanFolderRepository
@@ -45,9 +47,10 @@ sealed class ScanState {
  * 媒体库来源 ViewModel
  */
 class MediaLibrarySourceViewModel(
+    private val app: Application,
     private val scanService: IMusicScanService,
     private val folderRepository: IScanFolderRepository,
-) : ViewModel() {
+) : AndroidViewModel(app) {
     private val _scanState = MutableStateFlow<ScanState>(ScanState.Idle)
     val scanState: StateFlow<ScanState> = _scanState.asStateFlow()
 
@@ -78,11 +81,11 @@ class MediaLibrarySourceViewModel(
     fun startMediaStoreScan() {
         viewModelScope.launch {
             try {
-                _scanState.value = ScanState.Scanning(ScanProgress(0, 0, "准备扫描..."))
+                _scanState.value = ScanState.Scanning(ScanProgress(0, 0, app.getString(R.string.preparing_scan)))
                 val result = scanService.scanMediaStore()
                 _scanState.value = ScanState.Success(result)
             } catch (e: Exception) {
-                _scanState.value = ScanState.Error(e.message ?: "扫描失败")
+                _scanState.value = ScanState.Error(e.message ?: app.getString(R.string.scan_failed))
             }
         }
     }
@@ -93,7 +96,7 @@ class MediaLibrarySourceViewModel(
     fun startFullScan() {
         viewModelScope.launch {
             try {
-                _scanState.value = ScanState.Scanning(ScanProgress(0, 0, "准备扫描..."))
+                _scanState.value = ScanState.Scanning(ScanProgress(0, 0, app.getString(R.string.preparing_scan)))
                 val r1 = scanService.scanMediaStore()
                 val r2 = scanService.scanExtraFolders()
                 _scanState.value =
@@ -106,7 +109,7 @@ class MediaLibrarySourceViewModel(
                         ),
                     )
             } catch (e: Exception) {
-                _scanState.value = ScanState.Error(e.message ?: "扫描失败")
+                _scanState.value = ScanState.Error(e.message ?: app.getString(R.string.scan_failed))
             }
         }
     }

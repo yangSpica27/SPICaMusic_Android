@@ -16,11 +16,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.util.fastForEachIndexed
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.library.LibraryScreen
 import me.spica27.spicamusic.ui.search.SearchScreen
 import me.spica27.spicamusic.ui.settings.SettingsScreen
@@ -67,9 +69,9 @@ fun HomeScreen(
                         ),
                 content = {
                     listOf(
-                        NavigationItem("媒体库", Icons.Outlined.Home),
-                        NavigationItem("搜索", Icons.Outlined.Search),
-                        NavigationItem("设置", Icons.Outlined.Menu),
+                        NavigationItem(stringResource(R.string.nav_library), Icons.Outlined.Home),
+                        NavigationItem(stringResource(R.string.search), Icons.Outlined.Search),
+                        NavigationItem(stringResource(R.string.settings), Icons.Outlined.Menu),
                     ).fastForEachIndexed { i, item ->
                         NavigationBarItem(
                             icon = item.icon,

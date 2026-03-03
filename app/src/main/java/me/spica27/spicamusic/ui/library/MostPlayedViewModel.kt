@@ -1,11 +1,13 @@
 package me.spica27.spicamusic.ui.library
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
@@ -15,19 +17,20 @@ import timber.log.Timber
 import java.util.Calendar
 
 enum class MostPlayedRange(
-    val label: String,
+    @androidx.annotation.StringRes val labelRes: Int,
 ) {
-    WEEK("本周"),
-    YEAR("本年"),
-    ALL_TIME("全部"),
+    WEEK(R.string.range_week),
+    YEAR(R.string.range_year),
+    ALL_TIME(R.string.range_all_time),
 }
 
 class MostPlayedViewModel(
+    private val app: Application,
     private val historyRepository: IPlayHistoryRepository,
     private val songRepository: ISongRepository,
     private val playlistRepository: IPlaylistRepository,
     private val player: IMusicPlayer,
-) : ViewModel() {
+) : AndroidViewModel(app) {
     private val _selectedRange = MutableStateFlow(MostPlayedRange.ALL_TIME)
     val selectedRange: StateFlow<MostPlayedRange> = _selectedRange.asStateFlow()
 
@@ -133,10 +136,10 @@ class MostPlayedViewModel(
                 val playlistId = playlistRepository.createPlaylist(name)
                 val songIds = list.mapNotNull { it.song?.songId }
                 playlistRepository.addSongsToPlaylist(playlistId, songIds)
-                _snackbarMessage.value = "已保存为歌单「$name」"
+                _snackbarMessage.value = app.getString(R.string.saved_as_playlist_format, name)
             } catch (e: Exception) {
                 Timber.e(e, "保存歌单失败")
-                _snackbarMessage.value = "保存失败"
+                _snackbarMessage.value = app.getString(R.string.save_failed)
             }
         }
     }

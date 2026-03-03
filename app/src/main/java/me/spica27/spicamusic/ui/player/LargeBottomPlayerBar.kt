@@ -28,11 +28,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.HazeMaterials
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.LocalSurfaceHazeState
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -60,8 +62,8 @@ fun LargeBottomPlayerBar(
     val currentDuration by viewModel.currentDuration.collectAsStateWithLifecycle()
 
     val metadata = currentMediaItem?.mediaMetadata
-    val title = metadata?.title?.toString() ?: "未知歌曲"
-    val artist = metadata?.artist?.toString() ?: "未知艺术家"
+    val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
+    val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
     val artworkUri = metadata?.artworkUri
 
     Box(
@@ -144,7 +146,7 @@ fun LargeBottomPlayerBar(
                 ) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (isPlaying) "暂停" else "播放",
+                        contentDescription = if (isPlaying) stringResource(R.string.pause) else stringResource(R.string.play),
                         tint = MiuixTheme.colorScheme.onPrimaryContainer,
                     )
                 }
@@ -156,7 +158,7 @@ fun LargeBottomPlayerBar(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
-                        contentDescription = "播放列表",
+                        contentDescription = stringResource(R.string.queue),
                         tint = MiuixTheme.colorScheme.onPrimaryContainer,
                     )
                 }
@@ -192,8 +194,8 @@ fun SmallBottomPlayerBar(
     val currentDuration by viewModel.currentDuration.collectAsStateWithLifecycle()
 
     val metadata = currentMediaItem?.mediaMetadata
-    val title = metadata?.title?.toString() ?: "未知歌曲"
-    val artist = metadata?.artist?.toString() ?: "未知艺术家"
+    val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
+    val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
     val artworkUri = metadata?.artworkUri
 
     val localFloatingTabBarScrollConnection = LocalFloatingTabBarScrollConnection.current
@@ -276,7 +278,7 @@ fun SmallBottomPlayerBar(
         Spacer(modifier = Modifier.width(12.dp))
         Icon(
             imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-            contentDescription = if (isPlaying) "暂停" else "播放",
+            contentDescription = if (isPlaying) stringResource(R.string.pause) else stringResource(R.string.play),
             tint = MiuixTheme.colorScheme.onPrimaryContainer,
         )
     }

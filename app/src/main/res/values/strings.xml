@@ -238,4 +238,89 @@
   <string name="add_songs">Add songs</string>
   <string name="playlist_detail_title">Playlist Details</string>
   <string name="play_count_format">%d plays</string>
+
+  <!-- Navigation -->
+  <string name="nav_library">Media Library</string>
+
+  <!-- Common UI actions -->
+  <string name="confirm">Confirm</string>
+  <string name="close">Close</string>
+  <string name="back">Back</string>
+  <string name="refresh">Refresh</string>
+  <string name="hide">Hide</string>
+  <string name="collapse">Collapse</string>
+
+  <!-- Player controls -->
+  <string name="pause">Pause</string>
+  <string name="previous_track">Previous track</string>
+  <string name="next_track">Next track</string>
+  <string name="play_mode">Play Mode</string>
+  <string name="favorite">Favorite</string>
+  <string name="remove_from_favorites">Remove from Favorites</string>
+  <string name="add_to_queue">Add to Queue</string>
+  <string name="now_playing_indicator">Now Playing</string>
+  <string name="multi_select_count_format">%d selected</string>
+  <string name="playlist_count_format">Playlist (%d)</string>
+  <string name="jump_to_playing">Jump to playing</string>
+  <string name="clear_playlist">Clear playlist</string>
+
+  <!-- Metadata fallbacks -->
+  <string name="unknown_song">Unknown Song</string>
+  <string name="unknown_artist">Unknown Artist</string>
+  <string name="unknown_format">Unknown format</string>
+  <string name="cover_placeholder">Cover placeholder</string>
+
+  <!-- Audio info card -->
+  <string name="audio_info">Audio Info</string>
+  <string name="audio_format_label">Format</string>
+  <string name="sample_rate_label">Sample Rate</string>
+  <string name="bitrate_label">Bitrate</string>
+  <string name="mono">Mono</string>
+  <string name="stereo">Stereo</string>
+  <string name="channels_format">%d channels</string>
+  <string name="channel_count_label">Channels</string>
+
+  <!-- Album -->
+  <string name="album_details">Album Details</string>
+  <string name="album_year_songs_format">%1$s · %2$d songs</string>
+
+  <!-- Playlist save operations -->
+  <string name="save_as_playlist">Save as Playlist</string>
+  <string name="saved_as_playlist_format">Saved as playlist \"%s\"</string>
+  <string name="save_failed">Save failed</string>
+
+  <!-- Song picker sheet -->
+  <string name="add_songs_title">Add Songs</string>
+  <string name="search_song_or_artist">Search song or artist</string>
+  <string name="songs_available_format">%d songs available</string>
+  <string name="songs_selected_format">%d songs selected</string>
+  <string name="deselect_all">Deselect All</string>
+  <string name="confirm_add">Confirm Add</string>
+  <string name="confirm_add_format">Confirm Add (%d)</string>
+
+  <!-- Lyrics toolbar -->
+  <string name="lyrics_tool">Lyrics Tool</string>
+  <string name="advance_half_second">Advance 0.5s</string>
+  <string name="delay_half_second">Delay 0.5s</string>
+
+  <!-- Scan -->
+  <string name="preparing_scan">Preparing scan…</string>
+
+  <!-- Settings screen sections -->
+  <string name="settings_appearance">Appearance</string>
+  <string name="settings_dark_mode_subtitle">Enable dark theme</string>
+  <string name="settings_playback">Playback</string>
+  <string name="settings_sound_effects_subtitle">Equalizer, reverb and other effects</string>
+  <string name="settings_keep_screen_on">Keep Screen On</string>
+  <string name="settings_keep_screen_on_subtitle">Keep screen on during playback</string>
+  <string name="settings_dynamic_spectrum">Dynamic Spectrum Background</string>
+  <string name="settings_dynamic_cover">Dynamic Cover</string>
+  <string name="settings_dynamic_cover_subtitle">Flip effect on back of player cover</string>
+  <string name="settings_media_library">Media Library</string>
+  <string name="settings_media_library_source_subtitle">Manage music scan paths</string>
+
+  <!-- Most played time range chips -->
+  <string name="range_week">This Week</string>
+  <string name="range_year">This Year</string>
+  <string name="range_all_time">All Time</string>
 </resources>

@@ -93,7 +93,7 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
                     ).fillMaxSize(),
             topBar = {
                 TopAppBar(
-                    title = "专辑详情",
+                    title = stringResource(R.string.album_details),
                     largeTitle = "",
                     color = Color.Transparent,
                     navigationIcon = {
@@ -111,7 +111,7 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBackIosNew,
-                                contentDescription = "返回",
+                                contentDescription = stringResource(R.string.back),
                             )
                         }
                     },
@@ -255,7 +255,7 @@ private fun Header(
                 fontWeight = FontWeight.Normal,
             )
             Text(
-                text = "${album.year} · ${album.numberOfSongs}首",
+                text = stringResource(R.string.album_year_songs_format, album.year, album.numberOfSongs),
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
             )

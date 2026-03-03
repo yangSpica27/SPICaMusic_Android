@@ -14,10 +14,11 @@ import androidx.compose.material.icons.rounded.Light
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.navigation.LocalNavBackStack
@@ -39,136 +40,134 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     val backStack = LocalNavBackStack.current
     val viewModel: SettingsViewModel = koinViewModel()
 
-    // 定义设置项列表 - 只构建一次，每个项目通过 StateFlow.collectAsState() 响应变化
+    // 定义设置项列表，每次 recompose 时重建以支持语言切换
     val settingsItems =
-        remember {
-            buildList {
-                // 外观设置
-                add(SettingsItem.GroupHeader(title = "外观"))
-                add(
-                    SettingsItem.SwitchItem(
-                        title = "暗色模式",
-                        subtitle = "启用深色主题",
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Rounded.Light,
-                                contentDescription = null,
-                                tint = MiuixTheme.colorScheme.onSurface,
-                            )
-                        },
-                        key = "dark_mode",
-                        valueFlow = viewModel.darkMode,
-                        onValueChange = { viewModel.setDarkMode(it) },
-                    ),
-                )
+        buildList {
+            // 外观设置
+            add(SettingsItem.GroupHeader(title = stringResource(R.string.settings_appearance)))
+            add(
+                SettingsItem.SwitchItem(
+                    title = stringResource(R.string.setting_dark_mode),
+                    subtitle = stringResource(R.string.settings_dark_mode_subtitle),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Light,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.onSurface,
+                        )
+                    },
+                    key = "dark_mode",
+                    valueFlow = viewModel.darkMode,
+                    onValueChange = { viewModel.setDarkMode(it) },
+                ),
+            )
 
-                // 播放设置
-                add(SettingsItem.GroupHeader(title = "播放"))
-                add(
-                    SettingsItem.NavigationItem(
-                        title = "音效",
-                        subtitle = "均衡器、混响等音效设置",
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Default.GraphicEq,
-                                contentDescription = null,
-                                tint = MiuixTheme.colorScheme.onSurface,
+            // 播放设置
+            add(SettingsItem.GroupHeader(title = stringResource(R.string.settings_playback)))
+            add(
+                SettingsItem.NavigationItem(
+                    title = stringResource(R.string.setting_eq),
+                    subtitle = stringResource(R.string.settings_sound_effects_subtitle),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.GraphicEq,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.onSurface,
+                        )
+                    },
+                    onClick = {
+                        backStack.add(Screen.AudioEffects)
+                    },
+                ),
+            )
+            add(
+                SettingsItem.SwitchItem(
+                    title = stringResource(R.string.settings_keep_screen_on),
+                    subtitle = stringResource(R.string.settings_keep_screen_on_subtitle),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Lightbulb,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.onSurface,
+                        )
+                    },
+                    key = "keep_screen_on",
+                    valueFlow = viewModel.keepScreenOn,
+                    onValueChange = { viewModel.setKeepScreenOn(it) },
+                ),
+            )
+            add(
+                SettingsItem.SelectItem(
+                    title = stringResource(R.string.settings_dynamic_spectrum),
+                    subtitle = null,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Equalizer,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.onSurface,
+                        )
+                    },
+                    key = "dynamic_spectrum_background",
+                    options =
+                        DynamicSpectrumBackground.presets.map {
+                            SelectOption(
+                                label = it.name,
+                                value = it.value,
                             )
                         },
-                        onClick = {
-                            backStack.add(Screen.AudioEffects)
-                        },
-                    ),
-                )
-                add(
-                    SettingsItem.SwitchItem(
-                        title = "屏幕常亮",
-                        subtitle = "播放时保持屏幕常亮",
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Default.Lightbulb,
-                                contentDescription = null,
-                                tint = MiuixTheme.colorScheme.onSurface,
+                    valueFlow = viewModel.dynamicSpectrumBackground,
+                    onValueChange = { viewModel.setDynamicSpectrumBackground(it) },
+                ),
+            )
+            add(
+                SettingsItem.SelectItem(
+                    title = stringResource(R.string.settings_dynamic_cover),
+                    subtitle = stringResource(R.string.settings_dynamic_cover_subtitle),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Rounded.PictureInPictureAlt,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.onSurface,
+                        )
+                    },
+                    key = "dynamic_cover_type",
+                    options =
+                        DynamicCoverType.presets.map {
+                            SelectOption(
+                                label = it.name,
+                                value = it.value,
                             )
                         },
-                        key = "keep_screen_on",
-                        valueFlow = viewModel.keepScreenOn,
-                        onValueChange = { viewModel.setKeepScreenOn(it) },
-                    ),
-                )
-                add(
-                    SettingsItem.SelectItem(
-                        title = "动态频谱背景",
-                        subtitle = null,
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Default.Equalizer,
-                                contentDescription = null,
-                                tint = MiuixTheme.colorScheme.onSurface,
-                            )
-                        },
-                        key = "dynamic_spectrum_background",
-                        options =
-                            DynamicSpectrumBackground.presets.map {
-                                SelectOption(
-                                    label = it.name,
-                                    value = it.value,
-                                )
-                            },
-                        valueFlow = viewModel.dynamicSpectrumBackground,
-                        onValueChange = { viewModel.setDynamicSpectrumBackground(it) },
-                    ),
-                )
-                add(
-                    SettingsItem.SelectItem(
-                        title = "动态封面",
-                        subtitle = "播放器封面点击翻转后的背面效果",
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Rounded.PictureInPictureAlt,
-                                contentDescription = null,
-                                tint = MiuixTheme.colorScheme.onSurface,
-                            )
-                        },
-                        key = "dynamic_cover_type",
-                        options =
-                            DynamicCoverType.presets.map {
-                                SelectOption(
-                                    label = it.name,
-                                    value = it.value,
-                                )
-                            },
-                        valueFlow = viewModel.dynamicCoverType,
-                        onValueChange = { viewModel.setDynamicCoverType(it) },
-                    ),
-                )
+                    valueFlow = viewModel.dynamicCoverType,
+                    onValueChange = { viewModel.setDynamicCoverType(it) },
+                ),
+            )
 
-                // 媒体库设置
-                add(SettingsItem.GroupHeader(title = "媒体库"))
-                add(
-                    SettingsItem.NavigationItem(
-                        title = "媒体库来源",
-                        subtitle = "管理音乐扫描路径",
-                        icon = {
-                            Icon(
-                                tint = MiuixTheme.colorScheme.onSurface,
-                                imageVector = Icons.Default.LibraryMusic,
-                                contentDescription = null,
-                            )
-                        },
-                        onClick = {
-                            backStack.add(Screen.MediaLibrarySource)
-                        },
-                    ),
-                )
-            }
+            // 媒体库设置
+            add(SettingsItem.GroupHeader(title = stringResource(R.string.settings_media_library)))
+            add(
+                SettingsItem.NavigationItem(
+                    title = stringResource(R.string.media_library_source_title),
+                    subtitle = stringResource(R.string.settings_media_library_source_subtitle),
+                    icon = {
+                        Icon(
+                            tint = MiuixTheme.colorScheme.onSurface,
+                            imageVector = Icons.Default.LibraryMusic,
+                            contentDescription = null,
+                        )
+                    },
+                    onClick = {
+                        backStack.add(Screen.MediaLibrarySource)
+                    },
+                ),
+            )
         }
 
     val scrollerBehavior = MiuixScrollBehavior()
 
     Scaffold(modifier = modifier.fillMaxSize(), popupHost = { MiuixPopupHost() }, topBar = {
         TopAppBar(
-            title = "设置",
+            title = stringResource(R.string.title_settings),
             scrollBehavior = scrollerBehavior,
         )
     }) { paddingValues ->

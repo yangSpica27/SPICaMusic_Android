@@ -31,10 +31,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
+import me.spica27.spicamusic.R
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
@@ -116,7 +118,7 @@ fun FloatingLyricsToolbar(
         ) {
             Icon(
                 imageVector = if (isExpanded) Icons.Rounded.Close else Icons.Rounded.Tune,
-                contentDescription = if (isExpanded) "收起" else "歌词工具",
+                contentDescription = if (isExpanded) stringResource(R.string.collapse) else stringResource(R.string.lyrics_tool),
                 tint = MiuixTheme.colorScheme.onSurface,
                 modifier = Modifier.size(22.dp),
             )
@@ -148,7 +150,7 @@ private fun OffsetAdjustBar(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Remove,
-                contentDescription = "提前 0.5 秒",
+                contentDescription = stringResource(R.string.advance_half_second),
                 tint = MiuixTheme.colorScheme.onSurface,
                 modifier = Modifier.size(18.dp),
             )
@@ -175,7 +177,7 @@ private fun OffsetAdjustBar(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Add,
-                contentDescription = "延迟 0.5 秒",
+                contentDescription = stringResource(R.string.delay_half_second),
                 tint = MiuixTheme.colorScheme.onSurface,
                 modifier = Modifier.size(18.dp),
             )
@@ -208,7 +210,7 @@ private fun SwitchLyricsButton(
             modifier = Modifier.size(18.dp),
         )
         Text(
-            text = "切换歌词",
+            text = stringResource(R.string.toggle_lyrics),
             style = MiuixTheme.textStyles.body2,
             color = MiuixTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium,
