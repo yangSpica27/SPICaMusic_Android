@@ -8,6 +8,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.utils.navSharedBounds
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -18,7 +20,11 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 @Composable
 fun RecentlyAddedScreen(modifier: Modifier = Modifier) {
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .navSharedBounds(
+                    Screen.RecentlyAdded,
+                ).fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = stringResource(R.string.recently_added_title),

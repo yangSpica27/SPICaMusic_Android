@@ -47,9 +47,11 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
+import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonColors
@@ -91,7 +93,10 @@ fun MostPlayedScreen(
     }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .navSharedBounds(Screen.MostPlayed)
+                .fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = stringResource(R.string.most_played_title),

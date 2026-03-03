@@ -41,7 +41,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
@@ -55,8 +54,8 @@ import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
-import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -66,7 +65,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.extra.SuperDialog
+import top.yukonga.miuix.kmp.extra.WindowDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.utils.SinkFeedback
@@ -89,7 +88,11 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
     val hazeState = rememberHazeState()
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .navSharedBounds(
+                    Screen.Playlists,
+                ).fillMaxSize(),
         popupHost = { MiuixPopupHost() },
         topBar = {
             TopAppBar(
@@ -217,54 +220,48 @@ private fun PlaylistCard(
         .getPlaylistSongs(playlist.playlistId ?: 0L)
         .collectAsStateWithLifecycle(initialValue = emptyList())
 
-    val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
-    val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
-
-    with(localNavSharedTransitionScope) {
-        Column(
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .navSharedBounds(
+                    playlist,
+                ).clip(
+                    ContinuousRoundedRectangle(
+                        12.dp,
+                    ),
+                ).pressable(null)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                ),
+    ) {
+        // Grid 组合封面
+        PlaylistGridCover(
+            songs = songs,
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .sharedBounds(
-                        sharedContentState = rememberSharedContentState(key = playlist),
-                        animatedVisibilityScope = localNavAnimatedContentScope,
-                    ).clip(
+                    .aspectRatio(1f)
+                    .clip(
                         ContinuousRoundedRectangle(
-                            12.dp,
+                            8.dp,
                         ),
-                    ).pressable(null)
-                    .combinedClickable(
-                        onClick = onClick,
-                        onLongClick = onLongClick,
                     ),
-        ) {
-            // Grid 组合封面
-            PlaylistGridCover(
-                songs = songs,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(
-                            ContinuousRoundedRectangle(
-                                8.dp,
-                            ),
-                        ),
-            )
+        )
 
-            // 歌单名称
-            Text(
-                text = playlist.playlistName,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-            )
-        }
+        // 歌单名称
+        Text(
+            text = playlist.playlistName,
+            style = MiuixTheme.textStyles.body1,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+        )
     }
 }
 
@@ -468,7 +465,7 @@ private fun CreatePlaylistDialog(
         showState.value = show
     }
 
-    SuperDialog(
+    WindowDialog(
         title = stringResource(R.string.create_playlist),
         onDismissRequest = onDismiss,
         show = showState,
@@ -491,7 +488,11 @@ private fun CreatePlaylistDialog(
                 TextButton(
                     text = stringResource(R.string.cancel),
                     onClick = onDismiss,
-                    modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
+                    modifier =
+                        Modifier.pressable(
+                            interactionSource = null,
+                            indication = SinkFeedback(),
+                        ),
                 )
                 Spacer(modifier = Modifier.size(12.dp))
                 Button(
@@ -500,7 +501,11 @@ private fun CreatePlaylistDialog(
                             onCreate(playlistName)
                         }
                     },
-                    modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
+                    modifier =
+                        Modifier.pressable(
+                            interactionSource = null,
+                            indication = SinkFeedback(),
+                        ),
                     enabled = playlistName.isNotBlank(),
                 ) {
                     Text(stringResource(R.string.create))
@@ -526,7 +531,7 @@ private fun DeletePlaylistDialog(
         showState.value = show
     }
 
-    SuperDialog(
+    WindowDialog(
         title = stringResource(R.string.delete_playlist_title),
         onDismissRequest = onDismiss,
         show = showState,
@@ -546,12 +551,20 @@ private fun DeletePlaylistDialog(
                 TextButton(
                     text = stringResource(R.string.cancel),
                     onClick = onDismiss,
-                    modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
+                    modifier =
+                        Modifier.pressable(
+                            interactionSource = null,
+                            indication = SinkFeedback(),
+                        ),
                 )
                 Spacer(modifier = Modifier.size(12.dp))
                 Button(
                     onClick = onConfirm,
-                    modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
+                    modifier =
+                        Modifier.pressable(
+                            interactionSource = null,
+                            indication = SinkFeedback(),
+                        ),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,

@@ -66,9 +66,11 @@ import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioQualityBadges
+import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -108,7 +110,10 @@ fun AllSongsScreen(
     }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .navSharedBounds(Screen.AllSongs)
+                .fillMaxSize(),
         topBar = {
             Column(
                 modifier =

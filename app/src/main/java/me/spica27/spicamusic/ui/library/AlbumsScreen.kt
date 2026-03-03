@@ -56,6 +56,7 @@ import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -108,7 +109,11 @@ fun AlbumsScreen(
     val scrollBehavior = MiuixScrollBehavior()
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .navSharedBounds(
+                    Screen.Albums,
+                ).fillMaxSize(),
         topBar = {
             Column(
                 modifier =

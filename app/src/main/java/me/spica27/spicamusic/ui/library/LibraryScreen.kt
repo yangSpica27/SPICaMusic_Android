@@ -2,10 +2,6 @@
 
 package me.spica27.spicamusic.ui.library
 
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +34,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,7 +71,7 @@ import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
-import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
+import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.compose.viewmodel.koinActivityViewModel
 import org.koin.java.KoinJavaComponent
 import top.yukonga.miuix.kmp.basic.Card
@@ -92,7 +87,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollHorizontal
 import top.yukonga.miuix.kmp.utils.overScrollVertical
-import kotlin.random.Random
 
 // 媒体库快捷入口列表（静态数据，提取到顶层避免每次重组重建）
 private val libraryItems =
@@ -164,8 +158,6 @@ private fun LibraryContent(
     val backStack = LocalNavBackStack.current
     val playlists by viewModel.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
     val albumsItems = viewModel.albumList.collectAsLazyPagingItems()
-    val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
-    val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
     LazyVerticalGrid(
         modifier =
             modifier
@@ -197,7 +189,11 @@ private fun LibraryContent(
             item(span = { GridItemSpan(2) }) {
                 EmptyPlaylistCard(
                     onClick = { backStack.add(Screen.Playlists) },
-                    modifier = Modifier.padding(horizontal = 10.dp),
+                    modifier =
+                        Modifier
+                            .navSharedBounds(
+                                Screen.Playlists,
+                            ).padding(horizontal = 10.dp),
                 )
             }
         } else {
@@ -215,28 +211,20 @@ private fun LibraryContent(
                     // 显示最多 4 个歌单作为预览
                     val display = playlists.take(4)
                     this@LazyRow.items(display, key = { it.playlistId ?: 0L }) { playlist ->
-                        with(localNavSharedTransitionScope) {
-                            PlaylistMiniCard(
-                                modifier =
-                                    Modifier.sharedBounds(
-                                        sharedContentState =
-                                            rememberSharedContentState(
-                                                playlist,
-                                            ),
-                                        animatedVisibilityScope = localNavAnimatedContentScope,
-                                    ),
-                                playlist = playlist,
-                                onClick = {
-                                    playlist.playlistId?.let { id ->
-                                        backStack.add(
-                                            Screen.PlaylistDetail(
-                                                id,
-                                            ),
-                                        )
-                                    }
-                                },
-                            )
-                        }
+                        PlaylistMiniCard(
+                            modifier =
+                                Modifier.navSharedBounds(playlist),
+                            playlist = playlist,
+                            onClick = {
+                                playlist.playlistId?.let { id ->
+                                    backStack.add(
+                                        Screen.PlaylistDetail(
+                                            id,
+                                        ),
+                                    )
+                                }
+                            },
+                        )
                     }
                 }
             }
@@ -262,24 +250,16 @@ private fun LibraryContent(
             items(displayCount) { index ->
                 val album = albumsItems[index]
                 if (album != null) {
-                    with(localNavSharedTransitionScope) {
-                        AlbumMiniCard(
-                            modifier =
-                                Modifier
-                                    .padding(
-                                        start = if (index % 2 == 0) 16.dp else 0.dp,
-                                        end = if (index % 2 == 0) 0.dp else 16.dp,
-                                    ).sharedBounds(
-                                        sharedContentState =
-                                            rememberSharedContentState(
-                                                album,
-                                            ),
-                                        animatedVisibilityScope = localNavAnimatedContentScope,
-                                    ),
-                            album = album,
-                            onClick = { backStack.add(Screen.AlbumDetail(album)) },
-                        )
-                    }
+                    AlbumMiniCard(
+                        modifier =
+                            Modifier
+                                .padding(
+                                    start = if (index % 2 == 0) 16.dp else 0.dp,
+                                    end = if (index % 2 == 0) 0.dp else 16.dp,
+                                ).navSharedBounds(album),
+                        album = album,
+                        onClick = { backStack.add(Screen.AlbumDetail(album)) },
+                    )
                 } else {
                     AlbumMiniPlaceholder()
                 }
@@ -482,6 +462,7 @@ private fun LibraryContent(
                     start = if (index % 2 == 0) 16.dp else 0.dp,
                     end = if (index % 2 == 0) 0.dp else 16.dp,
                 ),
+                route = libraryItems[index].screen,
             )
         }
         item {
@@ -792,82 +773,68 @@ private fun LibraryItemCard(
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    route: Screen,
 ) {
-    val durationMillis = remember(title, icon) { Random.nextInt(260, 720) }
-
-    val animationSpec =
-        remember(durationMillis) {
-            tween<Float>(
-                durationMillis = durationMillis,
-            )
-        }
-
-    ShowOnIdleContent(
-        true,
+    Card(
+        onClick = onClick,
+        pressFeedbackType = PressFeedbackType.Sink,
+        cornerRadius = 10.dp,
         modifier =
             modifier
-                .fillMaxWidth()
-                .height(80.dp),
-        enter =
-            fadeIn(
-                animationSpec = animationSpec,
-            ) + scaleIn(animationSpec = animationSpec, initialScale = 0f),
-        exit = fadeOut(),
+                .navSharedBounds(
+                    key = route,
+                ).fillMaxWidth()
+                .height(
+                    80.dp,
+                ),
     ) {
-        Card(
-            onClick = onClick,
-            pressFeedbackType = PressFeedbackType.Sink,
-            cornerRadius = 10.dp,
-            modifier = Modifier.fillMaxSize(),
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize(),
         ) {
+            Text(
+                text = title,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            16.dp,
+                        ),
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
+                style = MiuixTheme.textStyles.body2,
+            )
+
             Box(
                 modifier =
                     Modifier
-                        .fillMaxSize(),
+                        .align(Alignment.CenterEnd)
+                        .size(64.dp)
+                        .rotate(45f)
+                        .graphicsLayer {
+                            translationX = 16.dp.toPx()
+                            translationY = 10.dp.toPx()
+                        }.background(
+                            Brush.radialGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.primaryVariant,
+                                        MiuixTheme.colorScheme.primary,
+                                        MiuixTheme.colorScheme.primaryContainer,
+                                    ),
+                            ),
+                            shape = Shapes.SmallCornerBasedShape,
+                        ),
+                contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = title,
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MiuixTheme.colorScheme.onPrimaryContainer,
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                16.dp,
-                            ),
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                    style = MiuixTheme.textStyles.body2,
+                            .size(32.dp),
                 )
-
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.CenterEnd)
-                            .size(64.dp)
-                            .rotate(45f)
-                            .graphicsLayer {
-                                translationX = 16.dp.toPx()
-                                translationY = 10.dp.toPx()
-                            }.background(
-                                Brush.radialGradient(
-                                    colors =
-                                        listOf(
-                                            MiuixTheme.colorScheme.primaryVariant,
-                                            MiuixTheme.colorScheme.primary,
-                                            MiuixTheme.colorScheme.primaryContainer,
-                                        ),
-                                ),
-                                shape = Shapes.SmallCornerBasedShape,
-                            ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onPrimaryContainer,
-                        modifier =
-                            Modifier
-                                .size(32.dp),
-                    )
-                }
             }
         }
     }
@@ -879,33 +846,42 @@ private fun Title(
     summary: String,
     rightWidget: @Composable () -> Unit,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 22.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+    val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
+    val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
+    with(localNavSharedTransitionScope) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 22.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = text,
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.W600,
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    modifier =
+                        Modifier.sharedElement(
+                            sharedContentState = rememberSharedContentState(text),
+                            animatedVisibilityScope = localNavAnimatedContentScope,
+                        ),
+                    text = text,
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    style = MiuixTheme.textStyles.body1,
+                    fontWeight = FontWeight.W600,
+                )
+                Text(
+                    text = summary,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    style = MiuixTheme.textStyles.body2,
+                )
+            }
+            Spacer(
+                modifier = Modifier.width(8.dp),
             )
-            Text(
-                text = summary,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                style = MiuixTheme.textStyles.body2,
-            )
+            rightWidget()
         }
-        Spacer(
-            modifier = Modifier.width(8.dp),
-        )
-        rightWidget()
     }
 }
 

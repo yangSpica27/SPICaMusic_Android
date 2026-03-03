@@ -116,7 +116,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
-import top.yukonga.miuix.kmp.extra.SuperDialog
+import top.yukonga.miuix.kmp.extra.WindowDialog
 import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
@@ -990,7 +990,7 @@ private fun RenamePlaylistDialog(
 ) {
     var newName by remember { mutableStateOf(currentName) }
 
-    SuperDialog(
+    WindowDialog(
         title = stringResource(R.string.rename),
         onDismissRequest = onDismiss,
         show = show,

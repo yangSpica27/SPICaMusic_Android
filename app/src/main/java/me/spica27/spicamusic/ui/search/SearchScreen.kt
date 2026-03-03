@@ -2,8 +2,6 @@ package me.spica27.spicamusic.ui.search
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -79,6 +77,7 @@ import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
@@ -96,7 +95,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.pressable
-import kotlin.random.Random
 
 /**
  * 搜索页面
@@ -254,9 +252,13 @@ private fun WelcomeHolder(
             ),
     ) {
         item {
-            WelcomeItem(title = "经常播放", onClick = {
-                backStack.add(Screen.MostPlayed)
-            }) {
+            WelcomeItem(
+                title = "经常播放",
+                key = Screen.MostPlayed,
+                onClick = {
+                    backStack.add(Screen.MostPlayed)
+                },
+            ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.History,
@@ -270,6 +272,7 @@ private fun WelcomeHolder(
         item {
             WelcomeItem(
                 title = "所有歌曲",
+                key = Screen.AllSongs,
                 onClick = {
                     backStack.add(Screen.AllSongs)
                 },
@@ -298,9 +301,13 @@ private fun WelcomeHolder(
             }
         }
         item {
-            WelcomeItem(title = "我的歌单", onClick = {
-                backStack.add(Screen.Playlists)
-            }) {
+            WelcomeItem(
+                title = "我的歌单",
+                key = Screen.Playlists,
+                onClick = {
+                    backStack.add(Screen.Playlists)
+                },
+            ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.LibraryMusic,
@@ -312,7 +319,13 @@ private fun WelcomeHolder(
             }
         }
         item {
-            WelcomeItem(title = "喜欢的音乐", onClick = {}) {
+            WelcomeItem(
+                title = "喜欢的音乐",
+                key = Screen.Favorite,
+                onClick = {
+                    backStack.add(Screen.Favorite)
+                },
+            ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.QueueMusic,
@@ -328,36 +341,18 @@ private fun WelcomeHolder(
 
 @Composable
 fun WelcomeItem(
-    title: String,
     modifier: Modifier = Modifier,
+    title: String,
+    key: Any = title,
     onClick: () -> Unit = {},
     bottom: @Composable BoxScope.() -> Unit = {},
 ) {
-    // 入场动画
-    val appearAnim =
-        remember(title) {
-            Animatable(0f)
-        }
-    val delayMillis = remember(title) { Random.nextInt(0, 200) }
-    val durationMillis = remember(title) { Random.nextInt(260, 520) }
-
-    LaunchedEffect(Unit) {
-        tween<Float>(
-            durationMillis = durationMillis,
-            delayMillis = delayMillis,
-        ).let { tween ->
-            appearAnim.animateTo(
-                targetValue = 1f,
-                animationSpec = tween,
-            )
-        }
-    }
-
     val interactionSource = remember { MutableInteractionSource() }
 
     Box(
         modifier =
             modifier
+                .navSharedBounds(key)
                 .fillMaxWidth()
                 .clip(shape = Shapes.SmallCornerBasedShape)
                 .pressable(interactionSource = interactionSource, indication = SinkFeedback())
@@ -365,11 +360,7 @@ fun WelcomeItem(
                     interactionSource = interactionSource,
                     indication = null,
                     onClick = onClick,
-                ).graphicsLayer {
-                    alpha = appearAnim.value
-                    scaleX = appearAnim.value
-                    scaleY = appearAnim.value
-                }.background(
+                ).background(
                     MiuixTheme.colorScheme.surfaceContainer,
                 ).aspectRatio(2.15f),
     ) {
