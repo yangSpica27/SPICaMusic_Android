@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.common.entity.PlayHistory
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayMode
@@ -32,11 +33,10 @@ import me.spica27.spicamusic.player.impl.dsp.ReverbAudioProcessor
 import me.spica27.spicamusic.player.impl.utils.MediaLibrary
 import me.spica27.spicamusic.player.impl.utils.PlayerKVUtils
 import me.spica27.spicamusic.player.impl.utils.toMediaItem
+import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
 import org.koin.android.ext.koin.androidApplication
 import org.koin.dsl.module
 import org.koin.java.KoinJavaComponent.getKoin
-import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
-import me.spica27.spicamusic.common.entity.PlayHistory
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
@@ -301,7 +301,15 @@ class SpicaPlayer(
                         // TODO: 实现重新加载并播放逻辑
                     }
 
-
+                    is PlayerAction.AddToQueue -> {
+                        Timber.tag(TAG).w("AddToQueue  not implemented yet")
+                        val items = async(Dispatchers.IO) {
+                            MediaLibrary.mediaIdToMediaItems(action.mediaIds)
+                        }.await()
+                        launch(Dispatchers.Main) {
+                            browser.addMediaItems(items)
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Error executing action: ${action.javaClass.simpleName}")

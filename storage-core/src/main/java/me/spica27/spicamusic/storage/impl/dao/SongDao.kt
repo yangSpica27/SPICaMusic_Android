@@ -429,4 +429,72 @@ interface SongDao {
         playlistId: Long,
         keyword: String? = null,
     ): List<Long>
+
+    // ===== 收藏歌曲分页查询 =====
+
+    /**
+     * 分页获取喜欢的歌曲（支持关键词过滤）
+     */
+    @Query(
+        """
+        SELECT * FROM song
+        WHERE `like` == 1
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%'
+            OR artist LIKE '%' || :keyword || '%'
+        )
+        ORDER BY displayName COLLATE NOCASE ASC
+    """
+    )
+    fun getLikeSongsPaging(keyword: String? = null): PagingSource<Int, SongEntity>
+
+    /**
+     * 获取喜欢的歌曲总数（支持关键词过滤）
+     */
+    @Query(
+        """
+        SELECT COUNT(*) FROM song
+        WHERE `like` == 1
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%'
+            OR artist LIKE '%' || :keyword || '%'
+        )
+    """
+    )
+    fun countLikeSongs(keyword: String? = null): Flow<Int>
+
+    /**
+     * 获取所有喜欢的歌曲 ID（用于全选）
+     */
+    @Query(
+        """
+        SELECT songId FROM song
+        WHERE `like` == 1
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%'
+            OR artist LIKE '%' || :keyword || '%'
+        )
+    """
+    )
+    suspend fun getLikeSongIds(keyword: String? = null): List<Long>
+
+    /**
+     * 获取所有喜欢的歌曲 mediaStoreId（用于播放）
+     */
+    @Query(
+        """
+        SELECT mediaStoreId FROM song
+        WHERE `like` == 1
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR displayName LIKE '%' || :keyword || '%'
+            OR artist LIKE '%' || :keyword || '%'
+        )
+        ORDER BY displayName COLLATE NOCASE ASC
+    """
+    )
+    suspend fun getLikeMediaStoreIds(keyword: String? = null): List<Long>
 }

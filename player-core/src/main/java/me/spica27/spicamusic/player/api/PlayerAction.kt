@@ -64,7 +64,7 @@ sealed class PlayerAction {
      */
     data class AddToQueue(
         val mediaIds: List<String>,
-    )
+    ): PlayerAction()
 
 
     /**

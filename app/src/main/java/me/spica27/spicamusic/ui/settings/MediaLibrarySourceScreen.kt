@@ -57,8 +57,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
+import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.storage.api.ScanFolder
 import me.spica27.spicamusic.storage.api.ScanResult
+import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -139,7 +141,11 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
         }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .navSharedBounds(
+                    Screen.MediaLibrarySource,
+                ).fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = stringResource(R.string.media_library_source_title),
@@ -514,7 +520,11 @@ private fun FolderItemCard(
                 TextButton(
                     text = stringResource(R.string.reauthorize_folder),
                     onClick = onReAuthClick,
-                    modifier = Modifier.pressable(interactionSource = null, indication = SinkFeedback()),
+                    modifier =
+                        Modifier.pressable(
+                            interactionSource = null,
+                            indication = SinkFeedback(),
+                        ),
                 )
             }
             IconButton(
@@ -671,10 +681,22 @@ private fun ScanResultCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            ResultRow(stringResource(R.string.total_scanned), stringResource(R.string.songs_count_format, result.totalScanned))
-            ResultRow(stringResource(R.string.new_added), stringResource(R.string.songs_count_format, result.newAdded))
-            ResultRow(stringResource(R.string.updated), stringResource(R.string.songs_count_format, result.updated))
-            ResultRow(stringResource(R.string.removed), stringResource(R.string.songs_count_format, result.removed))
+            ResultRow(
+                stringResource(R.string.total_scanned),
+                stringResource(R.string.songs_count_format, result.totalScanned),
+            )
+            ResultRow(
+                stringResource(R.string.new_added),
+                stringResource(R.string.songs_count_format, result.newAdded),
+            )
+            ResultRow(
+                stringResource(R.string.updated),
+                stringResource(R.string.songs_count_format, result.updated),
+            )
+            ResultRow(
+                stringResource(R.string.removed),
+                stringResource(R.string.songs_count_format, result.removed),
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
             TextButton(

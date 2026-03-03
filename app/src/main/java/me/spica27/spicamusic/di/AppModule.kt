@@ -16,6 +16,7 @@ import me.spica27.spicamusic.ui.audioeffects.AudioEffectsViewModel
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.library.AlbumViewModel
 import me.spica27.spicamusic.ui.library.AllSongsViewModel
+import me.spica27.spicamusic.ui.library.FavoriteViewModel
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.library.ListeningStatsViewModel
 import me.spica27.spicamusic.ui.library.MostPlayedViewModel
@@ -199,6 +200,16 @@ object AppModule {
                     songRepository = get<ISongRepository>(),
                     playlistRepository = get<IPlaylistRepository>(),
                     player = get<IMusicPlayer>(),
+                )
+            }
+
+            // 我的收藏页面 ViewModel
+            viewModel {
+                FavoriteViewModel(
+                    app = androidApplication(),
+                    songRepository = get<ISongRepository>(),
+                    player = get<IMusicPlayer>(),
+                    playlistRepository = get<IPlaylistRepository>(),
                 )
             }
         }

@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -40,6 +41,7 @@ sealed class SettingsItem {
      * 跳转类设置项
      */
     data class NavigationItem(
+        val modifier: Modifier = Modifier,
         override val title: String,
         override val subtitle: String? = null,
         override val icon: (@Composable () -> Unit)? = null,

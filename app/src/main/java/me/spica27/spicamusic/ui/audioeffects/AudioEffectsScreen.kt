@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
+import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -69,7 +71,11 @@ fun AudioEffectsScreen(
     val scrollBehavior = MiuixScrollBehavior()
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .navSharedBounds(
+                    Screen.AudioEffects,
+                ).fillMaxSize(),
         popupHost = { MiuixPopupUtils.MiuixPopupHost() },
         topBar = {
             TopAppBar(
@@ -369,7 +375,11 @@ private fun ReverbCard(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
-                            text = stringResource(R.string.percent_value_format, (level * 100).roundToInt()),
+                            text =
+                                stringResource(
+                                    R.string.percent_value_format,
+                                    (level * 100).roundToInt(),
+                                ),
                             style = MiuixTheme.textStyles.body2,
                             modifier = Modifier.width(50.dp),
                             textAlign = TextAlign.End,
@@ -395,7 +405,11 @@ private fun ReverbCard(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
-                            text = stringResource(R.string.percent_value_format, (roomSize * 100).roundToInt()),
+                            text =
+                                stringResource(
+                                    R.string.percent_value_format,
+                                    (roomSize * 100).roundToInt(),
+                                ),
                             style = MiuixTheme.textStyles.body2,
                             modifier = Modifier.width(50.dp),
                             textAlign = TextAlign.End,
@@ -429,16 +443,32 @@ private fun PresetsSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                PresetButton(stringResource(R.string.preset_pop), onPresetSelect, Modifier.weight(1f))
-                PresetButton(stringResource(R.string.preset_rock), onPresetSelect, Modifier.weight(1f))
+                PresetButton(
+                    stringResource(R.string.preset_pop),
+                    onPresetSelect,
+                    Modifier.weight(1f),
+                )
+                PresetButton(
+                    stringResource(R.string.preset_rock),
+                    onPresetSelect,
+                    Modifier.weight(1f),
+                )
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                PresetButton(stringResource(R.string.preset_classical), onPresetSelect, Modifier.weight(1f))
-                PresetButton(stringResource(R.string.preset_jazz), onPresetSelect, Modifier.weight(1f))
+                PresetButton(
+                    stringResource(R.string.preset_classical),
+                    onPresetSelect,
+                    Modifier.weight(1f),
+                )
+                PresetButton(
+                    stringResource(R.string.preset_jazz),
+                    onPresetSelect,
+                    Modifier.weight(1f),
+                )
             }
         }
     }

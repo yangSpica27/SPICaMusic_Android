@@ -45,7 +45,7 @@ fun SettingsItemView(
         }
 
         is SettingsItem.NavigationItem -> {
-            NavigationSettingsItem(item = item, modifier = modifier)
+            NavigationSettingsItem(item = item, modifier = item.modifier)
         }
     }
 }

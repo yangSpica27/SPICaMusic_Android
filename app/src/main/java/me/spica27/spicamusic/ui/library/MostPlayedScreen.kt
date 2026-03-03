@@ -65,6 +65,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import java.util.Locale
 
 /**
  * 最常播放页面
@@ -420,7 +421,7 @@ private fun mostPlayedFormatDuration(ms: Long): String {
 
 private fun formatCount(count: Long): String =
     when {
-        count >= 1_000_000L -> String.format("%.1fm", count / 1_000_000.0).trimEnd('0').trimEnd('.')
-        count >= 1_000L -> String.format("%.1fk", count / 1_000.0).trimEnd('0').trimEnd('.')
+        count >= 1_000_000L -> String.format(Locale.getDefault(), "%.1fm", count / 1_000_000.0).trimEnd('0').trimEnd('.')
+        count >= 1_000L -> String.format(Locale.getDefault(), "%.1fk", count / 1_000.0).trimEnd('0').trimEnd('.')
         else -> count.toString()
     }

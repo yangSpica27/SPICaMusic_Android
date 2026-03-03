@@ -95,6 +95,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.pressable
+import java.util.Locale
 
 /**
  * 搜索页面
@@ -660,5 +661,5 @@ private fun formatDuration(durationMs: Long): String {
     val seconds = (durationMs / 1000).toInt()
     val minutes = seconds / 60
     val remainingSeconds = seconds % 60
-    return String.format("%02d:%02d", minutes, remainingSeconds)
+    return String.format(Locale.getDefault(), "%02d:%02d", minutes, remainingSeconds)
 }

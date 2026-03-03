@@ -299,4 +299,29 @@ class SongRepositoryImpl(
             songDao.ignoreSongs(ids, ignore)
         }
 
+    // ===== 收藏歌曲分页 API 实现 =====
+
+    override fun getLikeSongsPagingFlow(keyword: String?): Flow<PagingData<Song>> =
+        Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                prefetchDistance = PREFETCH_DISTANCE,
+                enablePlaceholders = false,
+            ),
+            pagingSourceFactory = { songDao.getLikeSongsPaging(keyword) }
+        ).flow.map { pagingData -> pagingData.map { it.toCommon() } }
+
+    override fun countLikeSongsFlow(keyword: String?): Flow<Int> =
+        songDao.countLikeSongs(keyword)
+
+    override suspend fun getLikeSongIds(keyword: String?): List<Long> =
+        withContext(Dispatchers.IO) {
+            songDao.getLikeSongIds(keyword)
+        }
+
+    override suspend fun getLikeMediaStoreIds(keyword: String?): List<Long> =
+        withContext(Dispatchers.IO) {
+            songDao.getLikeMediaStoreIds(keyword)
+        }
+
 }

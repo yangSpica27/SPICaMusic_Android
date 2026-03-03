@@ -24,6 +24,7 @@ import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
+import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -66,6 +67,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             add(SettingsItem.GroupHeader(title = stringResource(R.string.settings_playback)))
             add(
                 SettingsItem.NavigationItem(
+                    modifier = Modifier.navSharedBounds(Screen.AudioEffects),
                     title = stringResource(R.string.setting_eq),
                     subtitle = stringResource(R.string.settings_sound_effects_subtitle),
                     icon = {
@@ -147,6 +149,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             add(SettingsItem.GroupHeader(title = stringResource(R.string.settings_media_library)))
             add(
                 SettingsItem.NavigationItem(
+                    modifier = Modifier.navSharedBounds(Screen.MediaLibrarySource),
                     title = stringResource(R.string.media_library_source_title),
                     subtitle = stringResource(R.string.settings_media_library_source_subtitle),
                     icon = {

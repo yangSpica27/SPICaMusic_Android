@@ -223,4 +223,26 @@ interface ISongRepository {
      * 隐藏歌曲（将歌曲标记为隐藏，通常用于删除或忽略）
      */
     suspend fun ignoreSongs(ids: List<Long>, ignore: Boolean = true)
+
+    // ===== 收藏歌曲分页 API =====
+
+    /**
+     * 分页获取喜欢的歌曲（支持关键词过滤）
+     */
+    fun getLikeSongsPagingFlow(keyword: String? = null): Flow<PagingData<Song>>
+
+    /**
+     * 获取喜欢的歌曲总数 Flow
+     */
+    fun countLikeSongsFlow(keyword: String? = null): Flow<Int>
+
+    /**
+     * 获取所有喜欢的歌曲 ID（用于全选）
+     */
+    suspend fun getLikeSongIds(keyword: String? = null): List<Long>
+
+    /**
+     * 获取所有喜欢的歌曲 mediaStoreId（用于播放）
+     */
+    suspend fun getLikeMediaStoreIds(keyword: String? = null): List<Long>
 }
