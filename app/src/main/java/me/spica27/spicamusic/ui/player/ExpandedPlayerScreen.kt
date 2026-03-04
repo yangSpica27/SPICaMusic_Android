@@ -448,7 +448,8 @@ private fun AudioInfoCard(
     val sampleRate = extras?.getInt("sampleRate") ?: 0
     val bitRate = extras?.getInt("bitRate") ?: 0
     val channels = extras?.getInt("channels") ?: 0
-    val mimeType = currentMediaItem?.localConfiguration?.mimeType ?: stringResource(R.string.unknown_format)
+    val mimeType =
+        currentMediaItem?.localConfiguration?.mimeType ?: stringResource(R.string.unknown_format)
 
     InfoCard(title = stringResource(R.string.audio_info), modifier = modifier) {
         InfoRow(label = stringResource(R.string.audio_format_label), value = mimeType)
@@ -612,7 +613,8 @@ private fun PlayerPage(
                     .graphicsLayer {
                         rotationY = rotateY
                         this.cameraDistance = cameraDistance * density
-                    }.then(
+                    }.clip(Shapes.LargeCornerBasedShape)
+                    .then(
                         if (isCoverFlipEnabled) {
                             Modifier.clickable { isCoverFlipped = !isCoverFlipped }
                         } else {
@@ -630,7 +632,7 @@ private fun PlayerPage(
                             modifier =
                                 Modifier
                                     .fillMaxSize()
-                                    .clip(Shapes.SmallCornerBasedShape)
+                                    .clip(Shapes.LargeCornerBasedShape)
                                     .background(MiuixTheme.colorScheme.surfaceContainerHigh),
                         ) {
                             Icon(
@@ -647,7 +649,7 @@ private fun PlayerPage(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .clip(Shapes.SmallCornerBasedShape),
+                            .clip(Shapes.LargeCornerBasedShape),
                 )
             } else {
                 // 背面：3D 音频可视化器
@@ -658,7 +660,7 @@ private fun PlayerPage(
                             .graphicsLayer {
                                 alpha = calculateFadeAlpha(progress, COVER_FADE_THRESHOLD)
                                 rotationY = 180f // 翻转背面使其正向显示
-                            }.clip(Shapes.SmallCornerBasedShape),
+                            }.clip(Shapes.LargeCornerBasedShape),
                 ) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         // Android 13+ 使用 AGSL 可视化器
@@ -731,8 +733,12 @@ private fun PlayerPage(
 
         // 歌曲信息
         SongInfo(
-            title = currentMediaItem?.mediaMetadata?.title?.toString() ?: stringResource(R.string.unknown_song),
-            artist = currentMediaItem?.mediaMetadata?.artist?.toString() ?: stringResource(R.string.unknown_artist),
+            title =
+                currentMediaItem?.mediaMetadata?.title?.toString()
+                    ?: stringResource(R.string.unknown_song),
+            artist =
+                currentMediaItem?.mediaMetadata?.artist?.toString()
+                    ?: stringResource(R.string.unknown_artist),
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -952,7 +958,14 @@ private fun PlayerControls(
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    contentDescription = if (isPlaying) stringResource(R.string.pause) else stringResource(R.string.play),
+                    contentDescription =
+                        if (isPlaying) {
+                            stringResource(R.string.pause)
+                        } else {
+                            stringResource(
+                                R.string.play,
+                            )
+                        },
                     tint = MiuixTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(48.dp),
                 )

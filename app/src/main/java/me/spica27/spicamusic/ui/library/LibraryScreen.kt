@@ -31,7 +31,9 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -76,11 +78,12 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 import org.koin.java.KoinJavaComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -109,14 +112,14 @@ private val libraryItems =
 fun LibraryScreen(modifier: Modifier = Modifier) {
     val scrollBehavior = MiuixScrollBehavior()
     val hazeState = rememberHazeState()
+    val backStack = LocalNavBackStack.current
     Scaffold(
         modifier =
             modifier
                 .fillMaxSize(),
         topBar = {
-            TopAppBar(
+            SmallTopAppBar(
                 title = "媒体库",
-                largeTitle = "媒体库", // If not specified, title value will be used
                 scrollBehavior = scrollBehavior,
                 color = Color.Transparent,
                 modifier =
@@ -133,6 +136,22 @@ fun LibraryScreen(modifier: Modifier = Modifier) {
                                 endIntensity = 0f,
                             )
                     },
+                navigationIcon = {
+                    IconButton(
+                        onClick = {
+                            backStack.add(Screen.Settings)
+                        },
+                        modifier =
+                            Modifier
+                                .padding(start = 16.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Settings,
+                            contentDescription = stringResource(R.string.settings),
+                            tint = MiuixTheme.colorScheme.onSurfaceContainer,
+                        )
+                    }
+                },
             )
         },
     ) { paddingValues ->
@@ -178,6 +197,39 @@ private fun LibraryContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         state = viewModel.lazyGridState,
     ) {
+        item(span = { GridItemSpan(2) }) {
+            Row(
+                modifier =
+                    Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .background(
+                            MiuixTheme.colorScheme.surfaceContainer,
+                            Shapes.MediumCornerBasedShape,
+                        )
+                        .navSharedBounds(Screen.Search)
+                        .clickable {
+                            backStack.add(Screen.Search)
+                        }
+                        .padding(
+                            horizontal = 16.dp,
+                            vertical = 12.dp,
+                        ),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = stringResource(R.string.search),
+                    tint = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                )
+                Text(
+                    text = stringResource(R.string.search_song_or_artist),
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    style = MiuixTheme.textStyles.body1,
+                )
+            }
+        }
+
         // 歌单分区：显示已有歌单或引导创建
         item(span = { GridItemSpan(2) }) {
             Title(
@@ -196,7 +248,8 @@ private fun LibraryContent(
                         Modifier
                             .navSharedBounds(
                                 Screen.Playlists,
-                            ).padding(horizontal = 10.dp),
+                            )
+                            .padding(horizontal = 10.dp),
                 )
             }
         } else {
@@ -259,7 +312,8 @@ private fun LibraryContent(
                                 .padding(
                                     start = if (index % 2 == 0) 16.dp else 0.dp,
                                     end = if (index % 2 == 0) 0.dp else 16.dp,
-                                ).navSharedBounds(album),
+                                )
+                                .navSharedBounds(album),
                         album = album,
                         onClick = { backStack.add(Screen.AlbumDetail(album)) },
                     )
@@ -289,7 +343,8 @@ private fun LibraryContent(
                                 .clip(Shapes.LargeCornerBasedShape)
                                 .background(
                                     MiuixTheme.colorScheme.primaryContainer,
-                                ).clickable(onClick = {
+                                )
+                                .clickable(onClick = {
                                     // 播放全部推荐，从第一个开始
                                     val mediaIds = recommended.map { it.mediaStoreId.toString() }
                                     if (mediaIds.isNotEmpty()) {
@@ -687,7 +742,8 @@ private fun AlbumMiniCard(
                                                     MiuixTheme.colorScheme.surfaceContainerHigh,
                                                 ),
                                         ),
-                                    ).padding(
+                                    )
+                                    .padding(
                                         12.dp,
                                     ),
                             contentAlignment = Alignment.Center,
@@ -786,7 +842,8 @@ private fun LibraryItemCard(
             modifier
                 .navSharedBounds(
                     key = route,
-                ).fillMaxWidth()
+                )
+                .fillMaxWidth()
                 .height(
                     80.dp,
                 ),
@@ -817,7 +874,8 @@ private fun LibraryItemCard(
                         .graphicsLayer {
                             translationX = 16.dp.toPx()
                             translationY = 10.dp.toPx()
-                        }.background(
+                        }
+                        .background(
                             Brush.radialGradient(
                                 colors =
                                     listOf(
@@ -984,8 +1042,18 @@ private fun WeeklyStatsCard(
 
 private fun formatCount(count: Long): String =
     when {
-        count >= 1_000_000L -> String.format(Locale.getDefault(), "%.1fm", count / 1_000_000.0).trimEnd('0').trimEnd('.')
-        count >= 1_000L -> String.format(Locale.getDefault(), "%.1fk", count / 1_000.0).trimEnd('0').trimEnd('.')
+        count >= 1_000_000L ->
+            String
+                .format(Locale.getDefault(), "%.1fm", count / 1_000_000.0)
+                .trimEnd('0')
+                .trimEnd('.')
+
+        count >= 1_000L ->
+            String
+                .format(Locale.getDefault(), "%.1fk", count / 1_000.0)
+                .trimEnd('0')
+                .trimEnd('.')
+
         else -> count.toString()
     }
 

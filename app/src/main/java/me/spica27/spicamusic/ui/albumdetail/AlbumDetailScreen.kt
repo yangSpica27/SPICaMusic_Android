@@ -82,9 +82,8 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
         modifier =
             modifier
                 .navSharedBounds(
-                    album
-                )
-                .fillMaxSize(),
+                    album,
+                ).fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = stringResource(R.string.album_details),
@@ -156,7 +155,6 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
     }
 }
 
-
 @Composable
 private fun Header(
     album: Album,
@@ -175,8 +173,7 @@ private fun Header(
                     .fillMaxSize()
                     .clip(
                         RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
-                    )
-                    .hazeEffect {
+                    ).hazeEffect {
                         progressive =
                             HazeProgressive.verticalGradient(
                                 startY = .5f,
@@ -230,12 +227,10 @@ private fun Header(
                                         MiuixTheme.colorScheme.surface.copy(alpha = 1f),
                                     ),
                             ),
-                    )
-                    .padding(
+                    ).padding(
                         horizontal = 16.dp,
                         vertical = 12.dp,
-                    )
-                    .padding(top = 25.dp),
+                    ).padding(top = 25.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -252,11 +247,12 @@ private fun Header(
                 fontWeight = FontWeight.Normal,
             )
             Text(
-                text = stringResource(
-                    R.string.album_year_songs_format,
-                    album.year,
-                    album.numberOfSongs
-                ),
+                text =
+                    stringResource(
+                        R.string.album_year_songs_format,
+                        album.year,
+                        album.numberOfSongs,
+                    ),
                 style = MiuixTheme.textStyles.body2,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
             )
