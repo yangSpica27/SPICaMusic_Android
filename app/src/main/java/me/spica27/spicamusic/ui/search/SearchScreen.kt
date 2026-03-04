@@ -149,6 +149,7 @@ fun SearchScreen(
                     onClear = viewModel::clearSearch,
                     modifier =
                         Modifier
+                            .navSharedBounds(Screen.Search)
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                 )

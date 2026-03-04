@@ -201,16 +201,14 @@ private fun LibraryContent(
             Row(
                 modifier =
                     Modifier
+                        .navSharedBounds(Screen.Search)
                         .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .clip(Shapes.MediumCornerBasedShape)
                         .background(
                             MiuixTheme.colorScheme.surfaceContainer,
-                            Shapes.MediumCornerBasedShape,
-                        )
-                        .navSharedBounds(Screen.Search)
-                        .clickable {
+                        ).clickable {
                             backStack.add(Screen.Search)
-                        }
-                        .padding(
+                        }.padding(
                             horizontal = 16.dp,
                             vertical = 12.dp,
                         ),
@@ -248,8 +246,7 @@ private fun LibraryContent(
                         Modifier
                             .navSharedBounds(
                                 Screen.Playlists,
-                            )
-                            .padding(horizontal = 10.dp),
+                            ).padding(horizontal = 10.dp),
                 )
             }
         } else {
@@ -312,8 +309,7 @@ private fun LibraryContent(
                                 .padding(
                                     start = if (index % 2 == 0) 16.dp else 0.dp,
                                     end = if (index % 2 == 0) 0.dp else 16.dp,
-                                )
-                                .navSharedBounds(album),
+                                ).navSharedBounds(album),
                         album = album,
                         onClick = { backStack.add(Screen.AlbumDetail(album)) },
                     )
@@ -343,8 +339,7 @@ private fun LibraryContent(
                                 .clip(Shapes.LargeCornerBasedShape)
                                 .background(
                                     MiuixTheme.colorScheme.primaryContainer,
-                                )
-                                .clickable(onClick = {
+                                ).clickable(onClick = {
                                     // 播放全部推荐，从第一个开始
                                     val mediaIds = recommended.map { it.mediaStoreId.toString() }
                                     if (mediaIds.isNotEmpty()) {
@@ -742,8 +737,7 @@ private fun AlbumMiniCard(
                                                     MiuixTheme.colorScheme.surfaceContainerHigh,
                                                 ),
                                         ),
-                                    )
-                                    .padding(
+                                    ).padding(
                                         12.dp,
                                     ),
                             contentAlignment = Alignment.Center,
@@ -842,8 +836,7 @@ private fun LibraryItemCard(
             modifier
                 .navSharedBounds(
                     key = route,
-                )
-                .fillMaxWidth()
+                ).fillMaxWidth()
                 .height(
                     80.dp,
                 ),
@@ -874,8 +867,7 @@ private fun LibraryItemCard(
                         .graphicsLayer {
                             translationX = 16.dp.toPx()
                             translationY = 10.dp.toPx()
-                        }
-                        .background(
+                        }.background(
                             Brush.radialGradient(
                                 colors =
                                     listOf(
