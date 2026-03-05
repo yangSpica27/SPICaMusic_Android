@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui.library
+package me.spica27.spicamusic.ui.album
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
@@ -55,6 +55,7 @@ import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
+import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -274,7 +275,7 @@ private fun AlbumItem(
                     .sharedBounds(
                         rememberSharedContentState(album),
                         localNavAnimatedContentScope,
-                    ).clip(me.spica27.spicamusic.ui.theme.Shapes.SmallCornerBasedShape)
+                    ).clip(Shapes.SmallCornerBasedShape)
                     .clickable {
                         backStack.add(Screen.AlbumDetail(album))
                     },
@@ -286,7 +287,7 @@ private fun AlbumItem(
                     Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .clip(me.spica27.spicamusic.ui.theme.Shapes.SmallCornerBasedShape),
+                        .clip(Shapes.SmallCornerBasedShape),
                 placeHolder = {
                     Column(
                         modifier =

@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.AllInbox
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -98,11 +97,11 @@ private val libraryItems =
         LibraryItem("所有歌曲", Icons.Default.Home, Screen.AllSongs),
         LibraryItem("歌单", Icons.AutoMirrored.Filled.List, Screen.Playlists),
         LibraryItem("专辑", Icons.Default.Star, Screen.Albums),
-        LibraryItem("艺术家", Icons.Default.Person, Screen.Artists),
+//        LibraryItem("艺术家", Icons.Default.Person, Screen.Artists),
         LibraryItem("最近添加", Icons.Default.Add, Screen.RecentlyAdded),
         LibraryItem("最常播放", Icons.Default.AllInbox, Screen.MostPlayed),
         LibraryItem("我喜爱的", Icons.Default.Favorite, Screen.Favorite),
-        LibraryItem("文件夹", Icons.Default.Home, Screen.Folders),
+//        LibraryItem("文件夹", Icons.Default.Home, Screen.Folders),
     )
 
 /**

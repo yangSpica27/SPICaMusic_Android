@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui.library
+package me.spica27.spicamusic.ui.playlistdetail
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent

@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui.library
+package me.spica27.spicamusic.ui.favorite
 
 import android.app.Application
 import androidx.lifecycle.ViewModel

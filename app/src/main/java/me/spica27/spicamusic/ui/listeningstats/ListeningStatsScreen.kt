@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui.library
+package me.spica27.spicamusic.ui.listeningstats
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

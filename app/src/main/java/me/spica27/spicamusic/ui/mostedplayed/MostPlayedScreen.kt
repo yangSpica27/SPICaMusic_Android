@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui.library
+package me.spica27.spicamusic.ui.mostedplayed
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -45,10 +45,12 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
+import me.spica27.spicamusic.ui.listeningstats.TopSongDisplayItem
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.utils.navSharedBounds
@@ -88,7 +90,7 @@ fun MostPlayedScreen(
     // 消费 snackbar 消息（简单展示后清除）
     LaunchedEffect(snackbarMessage) {
         if (snackbarMessage != null) {
-            kotlinx.coroutines.delay(2500)
+            delay(2500)
             viewModel.clearSnackbar()
         }
     }

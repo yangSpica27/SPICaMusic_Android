@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui.library
+package me.spica27.spicamusic.ui.allsong
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

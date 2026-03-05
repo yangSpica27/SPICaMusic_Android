@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
@@ -229,57 +228,57 @@ fun MediaLibrarySourceScreen(modifier: Modifier = Modifier) {
                 }
             }
 
-            // 额外扫描文件夹区域
-            item {
-                FolderSectionHeader(
-                    title = stringResource(R.string.extra_folders_title),
-                    description = stringResource(R.string.extra_folders_desc),
-                    onAddClick = { extraFolderPicker.launch(null) },
-                )
-            }
-
-            if (extraFolders.isEmpty()) {
-                item(key = "empty_extra") {
-                    EmptyFoldersCard(message = stringResource(R.string.no_extra_folders))
-                }
-            } else {
-                items(extraFolders, key = { it.id }) { folder ->
-                    FolderItemCard(
-                        folder = folder,
-                        isIgnoreType = false,
-                        onReAuthClick = {
-                            pendingReAuthFolderId = folder.id
-                            reAuthPicker.launch(null)
-                        },
-                        onDeleteClick = { viewModel.removeFolder(folder.id) },
-                    )
-                }
-            }
-
-            // 忽略文件夹区域
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                FolderSectionHeader(
-                    title = stringResource(R.string.ignore_folders_title),
-                    description = stringResource(R.string.ignore_folders_desc),
-                    onAddClick = { ignoreFolderPicker.launch(null) },
-                )
-            }
-
-            if (ignoreFolders.isEmpty()) {
-                item(key = "empty_ignore") {
-                    EmptyFoldersCard(message = stringResource(R.string.no_ignore_folders))
-                }
-            } else {
-                items(ignoreFolders, key = { it.id }) { folder ->
-                    FolderItemCard(
-                        folder = folder,
-                        isIgnoreType = true,
-                        onReAuthClick = {},
-                        onDeleteClick = { viewModel.removeFolder(folder.id) },
-                    )
-                }
-            }
+//            // 额外扫描文件夹区域
+//            item {
+//                FolderSectionHeader(
+//                    title = stringResource(R.string.extra_folders_title),
+//                    description = stringResource(R.string.extra_folders_desc),
+//                    onAddClick = { extraFolderPicker.launch(null) },
+//                )
+//            }
+//
+//            if (extraFolders.isEmpty()) {
+//                item(key = "empty_extra") {
+//                    EmptyFoldersCard(message = stringResource(R.string.no_extra_folders))
+//                }
+//            } else {
+//                items(extraFolders, key = { it.id }) { folder ->
+//                    FolderItemCard(
+//                        folder = folder,
+//                        isIgnoreType = false,
+//                        onReAuthClick = {
+//                            pendingReAuthFolderId = folder.id
+//                            reAuthPicker.launch(null)
+//                        },
+//                        onDeleteClick = { viewModel.removeFolder(folder.id) },
+//                    )
+//                }
+//            }
+//
+//            // 忽略文件夹区域
+//            item {
+//                Spacer(modifier = Modifier.height(8.dp))
+//                FolderSectionHeader(
+//                    title = stringResource(R.string.ignore_folders_title),
+//                    description = stringResource(R.string.ignore_folders_desc),
+//                    onAddClick = { ignoreFolderPicker.launch(null) },
+//                )
+//            }
+//
+//            if (ignoreFolders.isEmpty()) {
+//                item(key = "empty_ignore") {
+//                    EmptyFoldersCard(message = stringResource(R.string.no_ignore_folders))
+//                }
+//            } else {
+//                items(ignoreFolders, key = { it.id }) { folder ->
+//                    FolderItemCard(
+//                        folder = folder,
+//                        isIgnoreType = true,
+//                        onReAuthClick = {},
+//                        onDeleteClick = { viewModel.removeFolder(folder.id) },
+//                    )
+//                }
+//            }
 
             item { Spacer(modifier = Modifier.height(160.dp)) }
         }

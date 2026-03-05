@@ -1,10 +1,9 @@
-package me.spica27.spicamusic.ui.library
+package me.spica27.spicamusic.ui.favorite
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -32,14 +31,12 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,8 +59,10 @@ import androidx.paging.compose.itemKey
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.navigation.Screen
@@ -72,48 +71,61 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioQualityBadges
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.extra.WindowDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
 
 /**
- * 所有歌曲页面
+ * 我的收藏页面
  */
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
-fun AllSongsScreen(
+fun FavoriteScreen(
     modifier: Modifier = Modifier,
-    viewModel: AllSongsViewModel = koinViewModel(),
+    viewModel: FavoriteViewModel = koinViewModel(),
 ) {
-    val filteredSongs: LazyPagingItems<Song> = viewModel.filteredSongs.collectAsLazyPagingItems()
+    val favoriteSongs: LazyPagingItems<Song> = viewModel.favoriteSongs.collectAsLazyPagingItems()
     val songCount by viewModel.songCount.collectAsStateWithLifecycle()
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedSongIds by viewModel.selectedSongIds.collectAsStateWithLifecycle()
+    val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
+    val snackbarMessage by viewModel.snackbarMessage.collectAsStateWithLifecycle()
 
     val scrollBehavior = MiuixScrollBehavior()
-
-    var showMultipleSelectMenu by remember { mutableStateOf(false) }
-
     val hazeSource = rememberHazeState()
+    var showMultipleSelectMenu by remember { mutableStateOf(false) }
+    var showCreatePlaylistDialog by remember { mutableStateOf(false) }
 
-    BackHandler(isMultiSelectMode || showMultipleSelectMenu) {
-        if (showMultipleSelectMenu) {
-            showMultipleSelectMenu = false
-        } else if (isMultiSelectMode) {
-            viewModel.exitMultiSelectMode()
+    BackHandler(isMultiSelectMode || showMultipleSelectMenu || showCreatePlaylistDialog) {
+        when {
+            showCreatePlaylistDialog -> showCreatePlaylistDialog = false
+            showMultipleSelectMenu -> showMultipleSelectMenu = false
+            isMultiSelectMode -> viewModel.exitMultiSelectMode()
+        }
+    }
+
+    LaunchedEffect(snackbarMessage) {
+        if (snackbarMessage != null) {
+            delay(2500)
+            viewModel.clearSnackbar()
         }
     }
 
     Scaffold(
         modifier =
             modifier
-                .navSharedBounds(Screen.AllSongs)
+                .navSharedBounds(Screen.Favorite)
                 .fillMaxSize(),
         topBar = {
             Column(
@@ -135,34 +147,36 @@ fun AllSongsScreen(
                     color = Color.Transparent,
                     title =
                         if (isMultiSelectMode) {
-                            "已选择 ${selectedSongIds.size} 首"
+                            stringResource(R.string.songs_selected_format, selectedSongIds.size)
                         } else {
-                            "所有歌曲 ($songCount)"
+                            "${stringResource(R.string.my_favorites)} ($songCount)"
                         },
                     actions = {
                         if (isMultiSelectMode) {
-                            // 全选按钮
-                            IconButton(onClick = {
-                                if (selectedSongIds.size == songCount) {
-                                    viewModel.deselectAll()
-                                } else {
-                                    viewModel.selectAll()
-                                }
-                            }) {
+                            IconButton(
+                                onClick = {
+                                    if (selectedSongIds.size == songCount) {
+                                        viewModel.deselectAll()
+                                    } else {
+                                        viewModel.selectAll()
+                                    }
+                                },
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.SelectAll,
-                                    contentDescription = "全选",
+                                    contentDescription = stringResource(R.string.select_all),
                                     tint = MiuixTheme.colorScheme.onSurface,
                                 )
                             }
-                            // 确定按钮
-                            IconButton(onClick = {
-                                if (selectedSongIds.isNotEmpty()) {
-                                    showMultipleSelectMenu = true
-                                } else {
-                                    viewModel.exitMultiSelectMode()
-                                }
-                            }) {
+                            IconButton(
+                                onClick = {
+                                    if (selectedSongIds.isNotEmpty()) {
+                                        showMultipleSelectMenu = true
+                                    } else {
+                                        viewModel.exitMultiSelectMode()
+                                    }
+                                },
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.Check,
                                     contentDescription = stringResource(R.string.confirm),
@@ -172,13 +186,9 @@ fun AllSongsScreen(
                         }
                     },
                 )
-                // 功能按钮组
-                AnimatedVisibility(!isMultiSelectMode) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        val keyword = viewModel.searchKeyword.collectAsStateWithLifecycle().value
 
+                AnimatedVisibility(!isMultiSelectMode) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Spacer(
                             modifier =
                                 Modifier
@@ -186,37 +196,34 @@ fun AllSongsScreen(
                                     .height(12.dp),
                         )
                         TextField(
-                            value = keyword,
+                            value = searchKeyword,
                             cornerRadius = 12.dp,
-                            onValueChange = { viewModel.updateSearchKeyword(it) },
+                            onValueChange = viewModel::updateSearchKeyword,
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
                             borderColor = MiuixTheme.colorScheme.surfaceContainer,
-                            backgroundColor =
-                                MiuixTheme.colorScheme.surfaceContainer.copy(
-                                    alpha = 0.6f,
-                                ),
+                            backgroundColor = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.6f),
                             insideMargin = DpSize(22.dp, 16.dp),
-                            label = "搜索歌曲或艺术家",
+                            label = stringResource(R.string.search_song_or_artist),
                             maxLines = 1,
                             useLabelAsPlaceholder = true,
                             leadingIcon = {
                                 IconButton(onClick = {}) {
                                     Icon(
                                         imageVector = Icons.Default.Search,
-                                        contentDescription = "搜索",
+                                        contentDescription = stringResource(R.string.search),
                                         tint = MiuixTheme.colorScheme.onSurfaceContainer,
                                     )
                                 }
                             },
                             trailingIcon = {
-                                if (keyword.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.clearSearch() }) {
+                                if (searchKeyword.isNotEmpty()) {
+                                    IconButton(onClick = viewModel::clearSearch) {
                                         Icon(
                                             imageVector = Icons.Default.Clear,
-                                            contentDescription = "清空",
+                                            contentDescription = null,
                                             tint = MiuixTheme.colorScheme.onSurfaceContainer,
                                         )
                                     }
@@ -224,11 +231,8 @@ fun AllSongsScreen(
                             },
                             singleLine = true,
                         )
-                        FunctionButtonGroup(
-                            songCount = songCount,
-                            onPlayAll = {
-                                viewModel.playAllSongs()
-                            },
+                        FavoriteActionButtons(
+                            onPlayAll = { viewModel.playAllSongs() },
                             onMultiSelect = { viewModel.enterMultiSelectMode() },
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         )
@@ -240,97 +244,63 @@ fun AllSongsScreen(
         Box(
             modifier = Modifier.fillMaxSize(),
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // 歌曲列表
-                LazyColumn(
-                    contentPadding =
-                        PaddingValues(
-                            horizontal = 16.dp,
-                            vertical = paddingValues.calculateTopPadding(),
-                        ),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier =
-                        Modifier
-                            .hazeSource(hazeSource)
-                            .nestedScroll(LocalFloatingTabBarScrollConnection.current)
-                            .nestedScroll(scrollBehavior.nestedScrollConnection)
-                            .weight(1f),
-                ) {
-                    items(
-                        count = filteredSongs.itemCount,
-                        key = filteredSongs.itemKey { it.songId ?: it.mediaStoreId },
-                    ) { index ->
-                        val song = filteredSongs[index] ?: return@items
-                        SongItemCard(
-                            song = song,
-                            isMultiSelectMode = isMultiSelectMode,
-                            isSelected = selectedSongIds.contains(song.songId),
-                            onItemClick = {
-                                if (isMultiSelectMode) {
-                                    song.songId?.let { viewModel.toggleSongSelection(it) }
-                                } else {
-                                    viewModel.playAllSongs(song.mediaStoreId)
-                                }
-                            },
-                            onItemLongClick = {
-                                if (!isMultiSelectMode) {
-                                    song.songId?.let { viewModel.enterMultiSelectMode(it) }
-                                }
-                            },
-                            modifier = Modifier.animateItem(),
-                        )
-                    }
-
-                    // 底部占位，避免被浮动菜单遮挡
-                    item {
-                        Spacer(modifier = Modifier.height(150.dp))
-                    }
+            LazyColumn(
+                contentPadding =
+                    PaddingValues(
+                        horizontal = 16.dp,
+                        vertical = paddingValues.calculateTopPadding(),
+                    ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier =
+                    Modifier
+                        .hazeSource(hazeSource)
+                        .nestedScroll(LocalFloatingTabBarScrollConnection.current)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .fillMaxSize(),
+            ) {
+                items(
+                    count = favoriteSongs.itemCount,
+                    key = favoriteSongs.itemKey { it.songId ?: it.mediaStoreId },
+                ) { index ->
+                    val song = favoriteSongs[index] ?: return@items
+                    SongItemCard(
+                        song = song,
+                        isMultiSelectMode = isMultiSelectMode,
+                        isSelected = selectedSongIds.contains(song.songId),
+                        onItemClick = {
+                            if (isMultiSelectMode) {
+                                song.songId?.let(viewModel::toggleSongSelection)
+                            } else {
+                                viewModel.playAllSongs(song.mediaStoreId)
+                            }
+                        },
+                        onItemLongClick = {
+                            if (!isMultiSelectMode) {
+                                song.songId?.let(viewModel::enterMultiSelectMode)
+                            }
+                        },
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(150.dp))
                 }
             }
 
-            // 多选模式底部浮动菜单
             AnimatedVisibility(
                 visible = showMultipleSelectMenu,
                 enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                modifier = Modifier.align(Alignment.BottomCenter),
+                modifier = Modifier.align(Alignment.Center),
             ) {
-                MultiSelectBottomMenu(
-                    selectedCount = selectedSongIds.size,
-                    onFavorite = {
-                        //  收藏选中歌曲
-                        viewModel.likeSelectedSongs()
-                        viewModel.exitMultiSelectMode()
-                        showMultipleSelectMenu = false
-                    },
+                FavoriteMultiSelectMenu(
                     onUnfavorite = {
-                        //  取消收藏
                         viewModel.dislikeSelectedSongs()
                         viewModel.exitMultiSelectMode()
                         showMultipleSelectMenu = false
                     },
-                    onPlayAll = {
-                        //  全部播放
-                        viewModel.playSelectedSongs()
-                        viewModel.exitMultiSelectMode()
-                        showMultipleSelectMenu = false
-                    },
-                    onAddToQueen = {
-                        //  下一首播放
-                        viewModel.addToQueueSelectedSongs()
-                        viewModel.exitMultiSelectMode()
-                        showMultipleSelectMenu = false
-                    },
                     onCreatePlaylist = {
-                        // 创建歌单
-                        viewModel.exitMultiSelectMode()
                         showMultipleSelectMenu = false
-                    },
-                    onHide = {
-                        // 隐藏歌曲
-                        viewModel.hideSelectedSongs()
-                        viewModel.exitMultiSelectMode()
-                        showMultipleSelectMenu = false
+                        showCreatePlaylistDialog = true
                     },
                     modifier =
                         Modifier
@@ -338,24 +308,52 @@ fun AllSongsScreen(
                             .clip(Shapes.SmallCornerBasedShape)
                             .hazeEffect(
                                 hazeSource,
-                                HazeMaterials.thin(
-                                    MiuixTheme.colorScheme.primaryContainer,
-                                ),
+                                HazeMaterials.thin(MiuixTheme.colorScheme.primaryContainer),
                             ) {
                                 blurRadius = 20.dp
                             }.fillMaxWidth(),
                 )
             }
+
+            AnimatedVisibility(
+                visible = snackbarMessage != null,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = paddingValues.calculateBottomPadding() + 16.dp),
+            ) {
+                Surface(
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    shape = Shapes.ExtraLarge1CornerBasedShape,
+                    color = MiuixTheme.colorScheme.onSurface,
+                ) {
+                    Text(
+                        text = snackbarMessage ?: "",
+                        color = MiuixTheme.colorScheme.surface,
+                        style = MiuixTheme.textStyles.body2,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    )
+                }
+            }
         }
+    }
+
+    if (showCreatePlaylistDialog) {
+        CreatePlaylistDialog(
+            onDismiss = { showCreatePlaylistDialog = false },
+            onCreate = { playlistName ->
+                viewModel.createPlaylistFromSelected(playlistName)
+                viewModel.exitMultiSelectMode()
+                showCreatePlaylistDialog = false
+            },
+        )
     }
 }
 
-/**
- * 功能按钮组（播放全部、多选模式）
- */
 @Composable
-private fun FunctionButtonGroup(
-    songCount: Int,
+private fun FavoriteActionButtons(
     onPlayAll: () -> Unit,
     onMultiSelect: () -> Unit,
     modifier: Modifier = Modifier,
@@ -364,7 +362,6 @@ private fun FunctionButtonGroup(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // 播放全部按钮
         Card(
             onClick = onPlayAll,
             modifier = Modifier.weight(1f),
@@ -398,7 +395,6 @@ private fun FunctionButtonGroup(
             }
         }
 
-        // 多选模式按钮
         Card(
             onClick = onMultiSelect,
             modifier = Modifier.weight(1f),
@@ -434,9 +430,6 @@ private fun FunctionButtonGroup(
     }
 }
 
-/**
- * 歌曲列表项卡片
- */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SongItemCard(
@@ -445,7 +438,6 @@ private fun SongItemCard(
     isSelected: Boolean,
     onItemClick: () -> Unit,
     onItemLongClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val backgroundColor by animateColorAsState(
         targetValue =
@@ -456,13 +448,9 @@ private fun SongItemCard(
             },
     )
 
-    val borderWidth by animateDpAsState(
-        targetValue = if (isSelected) 2.dp else 0.dp,
-    )
-
     Card(
         modifier =
-            modifier
+            Modifier
                 .fillMaxWidth()
                 .animateContentSize()
                 .combinedClickable(
@@ -471,11 +459,7 @@ private fun SongItemCard(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
                 ),
-        colors =
-            CardDefaults.defaultColors(
-                backgroundColor,
-                backgroundColor,
-            ),
+        colors = CardDefaults.defaultColors(backgroundColor, backgroundColor),
     ) {
         Row(
             modifier =
@@ -484,17 +468,11 @@ private fun SongItemCard(
                     .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 多选模式下的选中图标
             if (isMultiSelectMode) {
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
-                    tint =
-                        if (isSelected) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            Color.Transparent
-                        },
+                    tint = if (isSelected) MiuixTheme.colorScheme.primary else Color.Transparent,
                     modifier =
                         Modifier
                             .size(28.dp)
@@ -502,19 +480,13 @@ private fun SongItemCard(
                 )
             }
 
-            // 歌曲信息
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = song.displayName,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
-                    color =
-                        if (isSelected) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            MiuixTheme.colorScheme.onSurface
-                        },
+                    color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
                 )
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
@@ -545,7 +517,6 @@ private fun SongItemCard(
                 }
             }
 
-            // 时长
             Text(
                 text = formatDuration(song.duration),
                 fontSize = 14.sp,
@@ -561,83 +532,33 @@ private fun SongItemCard(
     }
 }
 
-/**
- * 多选模式底部浮动菜单
- */
 @Composable
-private fun MultiSelectBottomMenu(
-    selectedCount: Int,
-    onFavorite: () -> Unit,
+private fun FavoriteMultiSelectMenu(
     onUnfavorite: () -> Unit,
-    onPlayAll: () -> Unit,
-    onAddToQueen: () -> Unit,
     onCreatePlaylist: () -> Unit,
-    onHide: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier,
+    Row(
+        modifier =
+            modifier
+                .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-        ) {
-            // 菜单项分两行显示
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                MenuActionItem(
-                    icon = Icons.Default.Favorite,
-                    label = stringResource(R.string.favorite),
-                    onClick = onFavorite,
-                    modifier = Modifier.weight(1f),
-                )
-                MenuActionItem(
-                    icon = Icons.Default.FavoriteBorder,
-                    label = stringResource(R.string.remove_from_favorites),
-                    onClick = onUnfavorite,
-                    modifier = Modifier.weight(1f),
-                )
-                MenuActionItem(
-                    icon = Icons.Default.QueueMusic,
-                    label = stringResource(R.string.play_all),
-                    onClick = onPlayAll,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                MenuActionItem(
-                    icon = Icons.Default.SkipNext,
-                    label = stringResource(R.string.add_to_queue),
-                    onClick = onAddToQueen,
-                    modifier = Modifier.weight(1f),
-                )
-                MenuActionItem(
-                    icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                    label = stringResource(R.string.create_playlist),
-                    onClick = onCreatePlaylist,
-                    modifier = Modifier.weight(1f),
-                )
-                MenuActionItem(
-                    icon = Icons.Default.VisibilityOff,
-                    label = stringResource(R.string.hide),
-                    onClick = onHide,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
+        MenuActionItem(
+            icon = Icons.Default.FavoriteBorder,
+            label = stringResource(R.string.remove_from_favorites),
+            onClick = onUnfavorite,
+            modifier = Modifier.weight(1f),
+        )
+        MenuActionItem(
+            icon = Icons.AutoMirrored.Filled.PlaylistAdd,
+            label = stringResource(R.string.create_playlist),
+            onClick = onCreatePlaylist,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
-/**
- * 菜单操作项
- */
 @Composable
 private fun MenuActionItem(
     icon: ImageVector,
@@ -671,9 +592,54 @@ private fun MenuActionItem(
     }
 }
 
-/**
- * 格式化时长（毫秒 -> mm:ss）
- */
+@Composable
+private fun CreatePlaylistDialog(
+    onDismiss: () -> Unit,
+    onCreate: (String) -> Unit,
+) {
+    var playlistName by remember { mutableStateOf("") }
+    val showState = remember { mutableStateOf(true) }
+
+    WindowDialog(
+        title = stringResource(R.string.create_playlist),
+        onDismissRequest = onDismiss,
+        show = showState,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            TextField(
+                value = playlistName,
+                onValueChange = { playlistName = it },
+                label = stringResource(R.string.hint_input_playlist_name),
+                modifier = Modifier.fillMaxWidth(),
+                useLabelAsPlaceholder = true,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(
+                    text = stringResource(R.string.cancel),
+                    onClick = onDismiss,
+                )
+                Spacer(modifier = Modifier.size(12.dp))
+                Button(
+                    onClick = {
+                        if (playlistName.isNotBlank()) {
+                            onCreate(playlistName.trim())
+                        }
+                    },
+                    enabled = playlistName.isNotBlank(),
+                ) {
+                    Text(stringResource(R.string.create))
+                }
+            }
+        }
+    }
+}
+
 private fun formatDuration(durationMs: Long): String {
     val seconds = (durationMs / 1000).toInt()
     val minutes = seconds / 60
