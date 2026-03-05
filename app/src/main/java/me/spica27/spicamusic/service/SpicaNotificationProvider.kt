@@ -25,7 +25,6 @@ import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaNotification.Provider.Callback
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaStyleNotificationHelper
-import androidx.media3.session.R
 import androidx.media3.session.SessionCommand
 import coil3.request.ImageRequest
 import coil3.toBitmap
@@ -33,7 +32,8 @@ import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import java.util.*
+import me.spica27.spicamusic.R
+import java.util.Arrays
 import kotlin.coroutines.CoroutineContext
 
 @UnstableApi
