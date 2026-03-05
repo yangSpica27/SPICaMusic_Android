@@ -153,8 +153,7 @@ class PlaybackService : MediaLibraryService() {
 //                            )
 //                        }
                     },
-                )
-                .setSessionActivity(
+                ).setSessionActivity(
                     android.app.PendingIntent.getActivity(
                         this,
                         0,
