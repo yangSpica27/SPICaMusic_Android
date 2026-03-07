@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui.allsong
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -9,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -52,10 +54,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
@@ -95,6 +99,8 @@ fun AllSongsScreen(
     val songCount by viewModel.songCount.collectAsStateWithLifecycle()
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedSongIds by viewModel.selectedSongIds.collectAsStateWithLifecycle()
+    val currentPlayingMediaStoreId by viewModel.currentPlayingMediaStoreId.collectAsStateWithLifecycle()
+    val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
 
     val scrollBehavior = MiuixScrollBehavior()
 
@@ -130,55 +136,61 @@ fun AllSongsScreen(
                                 )
                         }.fillMaxWidth(),
             ) {
-                TopAppBar(
-                    scrollBehavior = scrollBehavior,
-                    color = Color.Transparent,
-                    title =
-                        if (isMultiSelectMode) {
-                            "已选择 ${selectedSongIds.size} 首"
-                        } else {
-                            "所有歌曲 ($songCount)"
-                        },
-                    actions = {
-                        if (isMultiSelectMode) {
-                            // 全选按钮
-                            IconButton(onClick = {
-                                if (selectedSongIds.size == songCount) {
-                                    viewModel.deselectAll()
-                                } else {
-                                    viewModel.selectAll()
-                                }
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.SelectAll,
-                                    contentDescription = "全选",
-                                    tint = MiuixTheme.colorScheme.onSurface,
-                                )
-                            }
-                            // 确定按钮
-                            IconButton(onClick = {
-                                if (selectedSongIds.isNotEmpty()) {
-                                    showMultipleSelectMenu = true
-                                } else {
-                                    viewModel.exitMultiSelectMode()
-                                }
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = stringResource(R.string.confirm),
-                                    tint = MiuixTheme.colorScheme.onSurface,
-                                )
-                            }
-                        }
+                AnimatedContent(
+                    targetState = isMultiSelectMode,
+                    transitionSpec = {
+                        (slideInVertically { -it } + fadeIn()) togetherWith (slideOutVertically { it } + fadeOut())
                     },
-                )
+                    label = "topbar_mode",
+                ) { inMultiSelect ->
+                    if (inMultiSelect) {
+                        TopAppBar(
+                            color = Color.Transparent,
+                            title = "已选择 ${selectedSongIds.size} 首",
+                            actions = {
+                                // 全选按钮
+                                IconButton(onClick = {
+                                    if (selectedSongIds.size == songCount) {
+                                        viewModel.deselectAll()
+                                    } else {
+                                        viewModel.selectAll()
+                                    }
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.SelectAll,
+                                        contentDescription = "全选",
+                                        tint = MiuixTheme.colorScheme.onSurface,
+                                    )
+                                }
+                                // 确定按钮
+                                IconButton(onClick = {
+                                    if (selectedSongIds.isNotEmpty()) {
+                                        showMultipleSelectMenu = true
+                                    } else {
+                                        viewModel.exitMultiSelectMode()
+                                    }
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = stringResource(R.string.confirm),
+                                        tint = MiuixTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            },
+                        )
+                    } else {
+                        TopAppBar(
+                            scrollBehavior = scrollBehavior,
+                            color = Color.Transparent,
+                            title = "所有歌曲 ($songCount)",
+                        )
+                    }
+                }
                 // 功能按钮组
                 AnimatedVisibility(!isMultiSelectMode) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        val keyword = viewModel.searchKeyword.collectAsStateWithLifecycle().value
-
                         Spacer(
                             modifier =
                                 Modifier
@@ -186,7 +198,7 @@ fun AllSongsScreen(
                                     .height(12.dp),
                         )
                         TextField(
-                            value = keyword,
+                            value = searchKeyword,
                             cornerRadius = 12.dp,
                             onValueChange = { viewModel.updateSearchKeyword(it) },
                             modifier =
@@ -212,7 +224,7 @@ fun AllSongsScreen(
                                 }
                             },
                             trailingIcon = {
-                                if (keyword.isNotEmpty()) {
+                                if (searchKeyword.isNotEmpty()) {
                                     IconButton(onClick = { viewModel.clearSearch() }) {
                                         Icon(
                                             imageVector = Icons.Default.Clear,
@@ -265,6 +277,7 @@ fun AllSongsScreen(
                             song = song,
                             isMultiSelectMode = isMultiSelectMode,
                             isSelected = selectedSongIds.contains(song.songId),
+                            isPlaying = currentPlayingMediaStoreId == song.mediaStoreId,
                             onItemClick = {
                                 if (isMultiSelectMode) {
                                     song.songId?.let { viewModel.toggleSongSelection(it) }
@@ -279,6 +292,43 @@ fun AllSongsScreen(
                             },
                             modifier = Modifier.animateItem(),
                         )
+                    }
+
+                    // 建议10：搜索无结果时显示空态提示
+                    if (
+                        filteredSongs.itemCount == 0 &&
+                        searchKeyword.isNotEmpty() &&
+                        filteredSongs.loadState.refresh !is LoadState.Loading
+                    ) {
+                        item {
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 48.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(56.dp),
+                                    tint = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                                )
+                                Text(
+                                    text = "未找到「$searchKeyword」相关歌曲",
+                                    style = MiuixTheme.textStyles.body1,
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                    textAlign = TextAlign.Center,
+                                )
+                                Text(
+                                    text = "尝试搜索歌曲名或艺术家名",
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
                     }
 
                     // 底部占位，避免被浮动菜单遮挡
@@ -443,6 +493,7 @@ private fun SongItemCard(
     song: Song,
     isMultiSelectMode: Boolean,
     isSelected: Boolean,
+    isPlaying: Boolean,
     onItemClick: () -> Unit,
     onItemLongClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -504,18 +555,36 @@ private fun SongItemCard(
 
             // 歌曲信息
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = song.displayName,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    color =
-                        if (isSelected) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            MiuixTheme.colorScheme.onSurface
-                        },
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // 建议8：正在播放指示图标
+                    AnimatedVisibility(
+                        visible = isPlaying,
+                        enter = fadeIn(),
+                        exit = fadeOut(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
+                    Text(
+                        text = song.displayName,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        color =
+                            if (isSelected || isPlaying) {
+                                MiuixTheme.colorScheme.primary
+                            } else {
+                                MiuixTheme.colorScheme.onSurface
+                            },
+                    )
+                }
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,

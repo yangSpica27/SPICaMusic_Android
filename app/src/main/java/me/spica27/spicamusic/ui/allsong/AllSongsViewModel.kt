@@ -77,6 +77,16 @@ class AllSongsViewModel(
                 initialValue = 0,
             )
 
+    // 当前正在播放的歌曲 mediaStoreId（mediaId == mediaStoreId.toString()）
+    val currentPlayingMediaStoreId: StateFlow<Long?> =
+        player.currentMediaItem
+            .map { it?.mediaId?.toLongOrNull() }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = null,
+            )
+
     /**
      * 更新搜索关键词
      */
