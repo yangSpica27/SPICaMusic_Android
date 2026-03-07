@@ -34,6 +34,9 @@ class ReverbAudioProcessor : AudioProcessor {
     private var delayBufferIndex = 0
     private var sampleRate = 44100
 
+    // 复用输出缓冲区，避免每帧 allocateDirect
+    private var cachedOutputBuffer: ByteBuffer = ByteBuffer.allocateDirect(0)
+
     override fun configure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding != AudioFormat.ENCODING_PCM_16BIT) {
             this.inputAudioFormat = AudioProcessor.AudioFormat.NOT_SET
@@ -73,7 +76,12 @@ class ReverbAudioProcessor : AudioProcessor {
             return
         }
 
-        val output = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder())
+        // 复用输出缓冲区（容量不足时才重新分配）
+        if (cachedOutputBuffer.capacity() < size) {
+            cachedOutputBuffer = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder())
+        }
+        cachedOutputBuffer.clear().limit(size)
+        val output = cachedOutputBuffer
         
         // 计算延迟参数
         val delayTime = (roomSize * MAX_DELAY_MS).toInt() // 延迟时间(ms)

@@ -40,6 +40,11 @@ class FFTAudioProcessor : IFFTProcessor {
 
         // 最大分贝值
         private const val MAX_DB = 60f
+
+        // 预计算汉宁窗系数（固定 FFT_SIZE，初始化一次即可）
+        private val HANNING_WINDOW = FloatArray(FFT_SIZE) { i ->
+            (0.5 * (1 - kotlin.math.cos(2 * Math.PI * i / (FFT_SIZE - 1)))).toFloat()
+        }
     }
 
     private val listeners = CopyOnWriteArrayList<FFTListener>()
@@ -60,6 +65,12 @@ class FFTAudioProcessor : IFFTProcessor {
     // 音频缓冲区
     private val audioBuffer = FloatArray(FFT_SIZE)
     private var bufferIndex = 0
+
+    // 预分配复用缓冲区，避免热路径中重复分配 FloatArray
+    // 用于 bytesToFloats 的转换输出（最大可容纳一次 process 调用的样本数）
+    private var convertBuffer = FloatArray(FFT_SIZE)
+    // 用于传递给 performFFT 的独立拷贝（防止 audioBuffer 被下次 process 覆盖）
+    private val processBuffer = FloatArray(FFT_SIZE)
 
     // 处理标志 - 使用原子布尔值确保线程安全
     private val isProcessing = AtomicBoolean(false)
@@ -123,26 +134,29 @@ class FFTAudioProcessor : IFFTProcessor {
             fft = FFT(FFT_SIZE)
         }
 
-        // 将字节数组转换为浮点数组 (16-bit PCM)
-        val samples = bytesToFloats(audioData, channelCount)
+        // 将字节数组转换为浮点数组 (16-bit PCM)，复用 convertBuffer 避免分配
+        val sampleCount = audioData.size / 2 / channelCount
+        if (convertBuffer.size < sampleCount) {
+            convertBuffer = FloatArray(sampleCount)
+        }
+        bytesToFloats(audioData, channelCount, convertBuffer, sampleCount)
 
         // 填充缓冲区
-        for (sample in samples) {
-            audioBuffer[bufferIndex] = sample
+        for (i in 0 until sampleCount) {
+            audioBuffer[bufferIndex] = convertBuffer[i]
             bufferIndex++
 
             // 缓冲区满时异步执行 FFT 分析
             if (bufferIndex >= FFT_SIZE) {
-                // 复制缓冲区数据，避免在异步处理时被覆盖
-                val bufferCopy = audioBuffer.copyOf()
                 bufferIndex = 0
 
-                // 标记开始处理
+                // 将 audioBuffer 拷贝到 processBuffer，避免异步执行时被主路径覆盖
                 if (isProcessing.compareAndSet(false, true)) {
+                    audioBuffer.copyInto(processBuffer)
                     // 在独立线程中异步处理FFT
                     fftScope.launch {
                         try {
-                            performFFT(bufferCopy)
+                            performFFT(processBuffer)
                         } catch (e: Exception) {
                             Timber.e(e, "FFT processing error")
                         } finally {
@@ -208,12 +222,11 @@ class FFTAudioProcessor : IFFTProcessor {
     }
 
     /**
-     * 应用汉宁窗函数
+     * 应用汉宁窗函数（使用预计算系数，避免每帧重复计算三角函数）
      */
     private fun applyHanningWindow(data: FloatArray) {
         for (i in data.indices) {
-            val multiplier = 0.5 * (1 - kotlin.math.cos(2 * Math.PI * i / (data.size - 1)))
-            data[i] = (data[i] * multiplier).toFloat()
+            data[i] *= HANNING_WINDOW[i]
         }
     }
 
@@ -270,29 +283,25 @@ class FFTAudioProcessor : IFFTProcessor {
     }
 
     /**
-     * 将 PCM 字节数组转换为浮点数组
+     * 将 PCM 字节数组转换为浮点数组，结果写入 out（复用，不分配新数组）
      * @param data 16-bit PCM 数据
      * @param channelCount 声道数
-     * @return 单声道浮点数组 (-1.0 to 1.0)
+     * @param out 输出目标数组
+     * @param sampleCount 有效样本数
      */
-    private fun bytesToFloats(data: ByteArray, channelCount: Int): FloatArray {
-        val samples = data.size / 2 / channelCount
-        val result = FloatArray(samples)
-
+    private fun bytesToFloats(data: ByteArray, channelCount: Int, out: FloatArray, sampleCount: Int) {
         var byteIndex = 0
-        for (i in 0 until samples) {
+        for (i in 0 until sampleCount) {
             // 读取第一个声道的样本 (16-bit little-endian)
             val low = data[byteIndex].toInt() and 0xFF
             val high = data[byteIndex + 1].toInt()
             val sample = (high shl 8) or low
 
             // 归一化到 -1.0 到 1.0
-            result[i] = sample / 32768f
+            out[i] = sample / 32768f
 
             // 跳过其他声道
             byteIndex += 2 * channelCount
         }
-
-        return result
     }
 }

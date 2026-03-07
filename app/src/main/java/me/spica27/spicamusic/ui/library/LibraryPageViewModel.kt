@@ -46,7 +46,7 @@ class LibraryPageViewModel(
     fun refreshRecommendations() {
         viewModelScope.launch {
             try {
-                // 基于历史最常听的歌曲 + 随机补全
+                // 基于历史最常听的歌曲 + 数据库随机补全（不再全量加载歌曲到内存）
                 val top = historyRepository.getTopSongsByDuration(limit = 10)
                 val topIds = top.map { it.songId }
 
@@ -60,11 +60,8 @@ class LibraryPageViewModel(
                 val need = 15 - topSongs.size
                 val filler =
                     if (need > 0) {
-                        val all = songRepositoryImpl.getAllSongs()
-                        all
-                            .filter { s -> topIds.none { it == s.mediaStoreId } }
-                            .shuffled()
-                            .take(need)
+                        // 直接在数据库层 ORDER BY RANDOM() LIMIT need，避免全量加载
+                        songRepositoryImpl.getRandomSongsExcluding(topIds, need)
                     } else {
                         emptyList()
                     }

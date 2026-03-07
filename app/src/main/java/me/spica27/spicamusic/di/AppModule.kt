@@ -11,6 +11,7 @@ import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import me.spica27.spicamusic.storage.api.IScanFolderRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
+import me.spica27.spicamusic.storage.impl.dao.ExtraInfoDao
 import me.spica27.spicamusic.ui.album.AlbumViewModel
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailViewModel
 import me.spica27.spicamusic.ui.allsong.AllSongsViewModel
@@ -21,6 +22,7 @@ import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.listeningstats.ListeningStatsViewModel
 import me.spica27.spicamusic.ui.mostedplayed.MostPlayedViewModel
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
+import me.spica27.spicamusic.ui.player.LyricsViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.playlist.PlaylistViewModel
 import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailViewModel
@@ -83,6 +85,15 @@ object AppModule {
                 PlayerViewModel(
                     player = get<IMusicPlayer>(),
                     songRepository = get<ISongRepository>(),
+                )
+            }
+
+            // 歌词页面 ViewModel
+            viewModel {
+                LyricsViewModel(
+                    player = get<IMusicPlayer>(),
+                    apiClient = get(),
+                    extraInfoDao = get<ExtraInfoDao>(),
                 )
             }
 

@@ -43,6 +43,12 @@ interface ISongRepository {
     fun getRandomSongFlow(): Flow<List<Song>>
 
     /**
+     * 随机获取 [limit] 首歌曲，排除 [excludeIds] 中的 mediaStoreId
+     * 当 [excludeIds] 为空时直接随机取，不执行 NOT IN 查询
+     */
+    suspend fun getRandomSongsExcluding(excludeIds: List<Long>, limit: Int): List<Song>
+
+    /**
      * 根据ID获取歌曲 Flow
      */
     fun getSongFlowById(id: Long): Flow<Song?>

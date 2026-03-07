@@ -299,7 +299,7 @@ private fun LibraryContent(
             }
         } else {
             val displayCount = minOf(albumsItems.itemCount, 4)
-            items(displayCount) { index ->
+            items(displayCount, key = { albumsItems[it]?.id ?: "album_placeholder_$it" }) { index ->
                 val album = albumsItems[index]
                 if (album != null) {
                     AlbumMiniCard(
@@ -391,7 +391,7 @@ private fun LibraryContent(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(recommended) { song ->
+                    items(recommended, key = { it.mediaStoreId }) { song ->
                         Card(
                             onClick = {
                                 // 点击某一项，从该项开始播放整个推荐列表
@@ -505,7 +505,7 @@ private fun LibraryContent(
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
-        items(libraryItems.size) { index ->
+        items(libraryItems.size, key = { libraryItems[it].title }) { index ->
             LibraryItemCard(
                 title = libraryItems[index].title,
                 icon = libraryItems[index].icon,

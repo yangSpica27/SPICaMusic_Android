@@ -47,6 +47,9 @@ class EqualizerAudioProcessor : AudioProcessor {
     private var outputBuffer = AudioProcessor.EMPTY_BUFFER
     private var inputEnded = false
 
+    // 复用输出缓冲区，避免每帧 allocateDirect
+    private var cachedOutputBuffer: ByteBuffer = ByteBuffer.allocateDirect(0)
+
     override fun configure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding != AudioFormat.ENCODING_PCM_16BIT) {
             this.inputAudioFormat = AudioProcessor.AudioFormat.NOT_SET
@@ -80,8 +83,12 @@ class EqualizerAudioProcessor : AudioProcessor {
             return
         }
 
-        // 创建输出缓冲区
-        val output = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder())
+        // 创建输出缓冲区（复用已分配内存，容量不足时才重新分配）
+        if (cachedOutputBuffer.capacity() < size) {
+            cachedOutputBuffer = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder())
+        }
+        cachedOutputBuffer.clear().limit(size)
+        val output = cachedOutputBuffer
         
         val filterBank = filters
         if (filterBank == null) {

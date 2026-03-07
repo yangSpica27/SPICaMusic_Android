@@ -186,6 +186,14 @@ interface SongDao {
     @Query("SELECT * FROM song WHERE songId IN (SELECT songId FROM song ORDER BY RANDOM() LIMIT 15) AND (isIgnore == 0)")
     fun randomSong(): Flow<List<SongEntity>>
 
+    /** 随机取 [limit] 首歌曲，不含已忽略 */
+    @Query("SELECT * FROM song WHERE isIgnore == 0 ORDER BY RANDOM() LIMIT :limit")
+    suspend fun getRandomSongs(limit: Int): List<SongEntity>
+
+    /** 随机取 [limit] 首歌曲，排除 [excludeIds] 中的 mediaStoreId，不含已忽略 */
+    @Query("SELECT * FROM song WHERE mediaStoreId NOT IN (:excludeIds) AND isIgnore == 0 ORDER BY RANDOM() LIMIT :limit")
+    suspend fun getRandomSongsExcluding(excludeIds: List<Long>, limit: Int): List<SongEntity>
+
     @Query("SELECT * FROM song WHERE isIgnore == 1")
     fun getIgnoreSongsFlow(): Flow<List<SongEntity>>
 

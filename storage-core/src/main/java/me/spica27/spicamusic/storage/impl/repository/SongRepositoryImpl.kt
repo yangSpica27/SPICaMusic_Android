@@ -39,6 +39,15 @@ class SongRepositoryImpl(
     override fun getRandomSongFlow(): Flow<List<Song>> =
         songDao.randomSong().map { list -> list.map { it.toCommon() } }
 
+    override suspend fun getRandomSongsExcluding(excludeIds: List<Long>, limit: Int): List<Song> =
+        withContext(Dispatchers.IO) {
+            if (excludeIds.isEmpty()) {
+                songDao.getRandomSongs(limit).map { it.toCommon() }
+            } else {
+                songDao.getRandomSongsExcluding(excludeIds, limit).map { it.toCommon() }
+            }
+        }
+
     override fun getSongFlowById(id: Long): Flow<Song?> =
         songDao.getSongFlowWithId(id).map { it?.toCommon() }
 
