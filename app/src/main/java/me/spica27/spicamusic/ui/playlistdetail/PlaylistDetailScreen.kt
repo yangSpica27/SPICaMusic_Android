@@ -82,7 +82,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
-import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
@@ -659,7 +658,7 @@ private fun SongItemCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(ContinuousRoundedRectangle(16.dp))
+                .clip(Shapes.LargeCornerBasedShape)
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
@@ -696,7 +695,7 @@ private fun SongItemCard(
                 modifier =
                     Modifier
                         .size(56.dp)
-                        .clip(ContinuousRoundedRectangle(8.dp))
+                        .clip(Shapes.SmallCornerBasedShape)
                         .background(MiuixTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
@@ -709,7 +708,7 @@ private fun SongItemCard(
                                 Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(1f)
-                                    .clip(ContinuousRoundedRectangle(8.dp))
+                                    .clip(Shapes.SmallCornerBasedShape)
                                     .background(MiuixTheme.colorScheme.surfaceContainerHigh),
                         ) {
                             Icon(

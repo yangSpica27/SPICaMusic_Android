@@ -1,13 +1,13 @@
 package me.spica27.spicamusic.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.defaultTextStyles
@@ -20,13 +20,14 @@ private val LightColorScheme = lightColorScheme()
 private val DarkColorScheme = darkColorScheme()
 
 object Shapes {
-    val ExtraLarge2CornerBasedShape = ContinuousRoundedRectangle(32.dp)
-    val ExtraLarge1CornerBasedShape = ContinuousRoundedRectangle(24.dp)
-    val ExtraLargeCornerBasedShape = ContinuousRoundedRectangle(20.dp)
-    val LargeCornerBasedShape = ContinuousRoundedRectangle(16.dp)
-    val MediumCornerBasedShape = ContinuousRoundedRectangle(12.dp)
-    val SmallCornerBasedShape = ContinuousRoundedRectangle(8.dp)
-    val ExtraSmallCornerBasedShape = ContinuousRoundedRectangle(4.dp)
+    val ExtraLarge2CornerBasedShape = RoundedCornerShape(32.dp)
+    val ExtraLarge1CornerBasedShape = RoundedCornerShape(24.dp)
+    val ExtraLargeCornerBasedShape = RoundedCornerShape(20.dp)
+    val LargeCornerBasedShape = RoundedCornerShape(16.dp)
+    val MediumCornerBasedShape = RoundedCornerShape(12.dp)
+
+    val SmallCornerBasedShape = RoundedCornerShape(8.dp)
+    val ExtraSmallCornerBasedShape = RoundedCornerShape(4.dp)
 }
 
 @Composable

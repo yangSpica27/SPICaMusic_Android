@@ -35,8 +35,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.theme.Shapes
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
@@ -138,7 +138,7 @@ private fun OffsetAdjustBar(
     Row(
         modifier =
             modifier
-                .clip(ContinuousRoundedRectangle(22.dp))
+                .clip(Shapes.LargeCornerBasedShape)
                 .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.15f))
                 .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -166,7 +166,7 @@ private fun OffsetAdjustBar(
             fontSize = 13.sp,
             modifier =
                 Modifier
-                    .clip(ContinuousRoundedRectangle(14.dp))
+                    .clip(Shapes.LargeCornerBasedShape)
                     .clickable { onOffsetChange(0) } // 点击重置
                     .padding(horizontal = 8.dp, vertical = 4.dp),
         )
@@ -196,7 +196,7 @@ private fun SwitchLyricsButton(
     Row(
         modifier =
             modifier
-                .clip(ContinuousRoundedRectangle(22.dp))
+                .clip(Shapes.ExtraLargeCornerBasedShape)
                 .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.15f))
                 .clickable(onClick = onClick)
                 .padding(horizontal = 12.dp, vertical = 8.dp),

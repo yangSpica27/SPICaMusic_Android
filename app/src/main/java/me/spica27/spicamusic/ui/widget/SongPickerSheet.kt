@@ -48,12 +48,12 @@ import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
+import me.spica27.spicamusic.ui.theme.Shapes
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -330,7 +330,7 @@ private fun PickerSongItem(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(ContinuousRoundedRectangle(12.dp))
+                .clip(Shapes.MediumCornerBasedShape)
                 .clickable(onClick = onClick),
         colors =
             CardDefaults.defaultColors(
@@ -349,7 +349,7 @@ private fun PickerSongItem(
                 modifier =
                     Modifier
                         .size(48.dp)
-                        .clip(ContinuousRoundedRectangle(8.dp))
+                        .clip(Shapes.SmallCornerBasedShape)
                         .background(MiuixTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
             ) {
@@ -362,7 +362,7 @@ private fun PickerSongItem(
                                 Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(1f)
-                                    .clip(ContinuousRoundedRectangle(8.dp))
+                                    .clip(Shapes.SmallCornerBasedShape)
                                     .background(MiuixTheme.colorScheme.surfaceContainerHigh),
                         ) {
                             Icon(

@@ -286,23 +286,32 @@ private class EffectShaderSurfaceView(
 }
 
 private class EffectShaderRenderer : GLSurfaceView.Renderer {
-    @Volatile private var musicLevel: Float = 0f
+    @Volatile
+    private var musicLevel: Float = 0f
 
-    @Volatile private var beat: Float = 0f
+    @Volatile
+    private var beat: Float = 0f
 
-    @Volatile private var midFreq: Float = 0f
+    @Volatile
+    private var midFreq: Float = 0f
 
-    @Volatile private var highFreq: Float = 0f
+    @Volatile
+    private var highFreq: Float = 0f
 
-    @Volatile private var colorR: Float = Color(0xFF2196F3).red
+    @Volatile
+    private var colorR: Float = Color(0xFF2196F3).red
 
-    @Volatile private var colorG: Float = Color(0xFF2196F3).green
+    @Volatile
+    private var colorG: Float = Color(0xFF2196F3).green
 
-    @Volatile private var colorB: Float = Color(0xFF2196F3).blue
+    @Volatile
+    private var colorB: Float = Color(0xFF2196F3).blue
 
-    @Volatile private var colorA: Float = Color(0xFF2196F3).alpha
+    @Volatile
+    private var colorA: Float = Color(0xFF2196F3).alpha
 
-    @Volatile private var isDarkMode: Boolean = false
+    @Volatile
+    private var isDarkMode: Boolean = false
 
     private var program: Int = 0
     private var positionHandle: Int = 0
@@ -384,15 +393,32 @@ private class EffectShaderRenderer : GLSurfaceView.Renderer {
         GLES20.glUseProgram(program)
 
         vertexBuffer.position(0)
-        GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, STRIDE_BYTES, vertexBuffer)
+        GLES20.glVertexAttribPointer(
+            positionHandle,
+            2,
+            GLES20.GL_FLOAT,
+            false,
+            STRIDE_BYTES,
+            vertexBuffer,
+        )
         GLES20.glEnableVertexAttribArray(positionHandle)
 
         vertexBuffer.position(2)
-        GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, STRIDE_BYTES, vertexBuffer)
+        GLES20.glVertexAttribPointer(
+            texCoordHandle,
+            2,
+            GLES20.GL_FLOAT,
+            false,
+            STRIDE_BYTES,
+            vertexBuffer,
+        )
         GLES20.glEnableVertexAttribArray(texCoordHandle)
 
         GLES20.glUniform2f(resolutionHandle, surfaceWidth.toFloat(), surfaceHeight.toFloat())
-        GLES20.glUniform1f(animTimeHandle, ((SystemClock.elapsedRealtime() - startTimeMs) % 3_600_000L) / 180f)
+        GLES20.glUniform1f(
+            animTimeHandle,
+            ((SystemClock.elapsedRealtime() - startTimeMs) % 3_600_000L) / 180f,
+        )
         GLES20.glUniform1f(musicLevelHandle, musicLevel)
         GLES20.glUniform1f(beatHandle, beat)
         GLES20.glUniform1f(midFreqHandle, midFreq)

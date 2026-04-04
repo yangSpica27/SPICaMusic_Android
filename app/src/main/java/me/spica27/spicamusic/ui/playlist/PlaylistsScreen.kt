@@ -41,7 +41,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
@@ -54,6 +53,7 @@ import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.player.impl.utils.getCoverUri
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
+import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
@@ -227,9 +227,7 @@ private fun PlaylistCard(
                 .navSharedBounds(
                     playlist,
                 ).clip(
-                    ContinuousRoundedRectangle(
-                        12.dp,
-                    ),
+                    Shapes.MediumCornerBasedShape,
                 ).pressable(null)
                 .combinedClickable(
                     onClick = onClick,
@@ -244,9 +242,7 @@ private fun PlaylistCard(
                     .fillMaxWidth()
                     .aspectRatio(1f)
                     .clip(
-                        ContinuousRoundedRectangle(
-                            8.dp,
-                        ),
+                        Shapes.SmallCornerBasedShape,
                     ),
         )
 

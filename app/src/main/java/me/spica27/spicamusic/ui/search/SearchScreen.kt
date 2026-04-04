@@ -60,7 +60,6 @@ import androidx.media3.common.MediaItem
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
@@ -545,12 +544,12 @@ private fun SongItemCard(
                         .size(48.dp)
                         .shadow(
                             elevation = 2.dp,
-                            shape = ContinuousRoundedRectangle(10.dp),
+                            shape = Shapes.MediumCornerBasedShape,
                             clip = false,
                             ambientColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             spotColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         ).clip(
-                            ContinuousRoundedRectangle(10.dp),
+                            Shapes.MediumCornerBasedShape,
                         ),
                 uri = song.getCoverUri(),
                 placeHolder = {

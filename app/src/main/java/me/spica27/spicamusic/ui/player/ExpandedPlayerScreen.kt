@@ -70,7 +70,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
-import com.mocharealm.gaze.capsule.ContinuousRoundedRectangle
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
@@ -359,7 +358,7 @@ private fun AudioTag(
 ) {
     Surface(
         modifier = modifier,
-        shape = ContinuousRoundedRectangle(12.dp),
+        shape = Shapes.MediumCornerBasedShape,
         color = color.copy(alpha = 0.15f),
     ) {
         Text(
@@ -493,7 +492,7 @@ private fun InfoCard(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(ContinuousRoundedRectangle(16.dp))
+                .clip(Shapes.LargeCornerBasedShape)
                 .background(MiuixTheme.colorScheme.surfaceContainerHigh)
                 .padding(16.dp),
     ) {
@@ -953,7 +952,7 @@ private fun PlayerControls(
                 modifier =
                     Modifier
                         .size(80.dp)
-                        .clip(ContinuousRoundedRectangle(40.dp))
+                        .clip(CircleShape)
                         .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.9f)),
             ) {
                 Icon(
