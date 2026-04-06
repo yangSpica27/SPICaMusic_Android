@@ -49,7 +49,7 @@ import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonColors
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -262,7 +262,7 @@ private fun Header(
                 },
                 minWidth = 120.dp,
                 colors =
-                    ButtonColors(
+                    ButtonDefaults.buttonColors(
                         MiuixTheme.colorScheme.onSurface,
                         MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.1f),
                     ),

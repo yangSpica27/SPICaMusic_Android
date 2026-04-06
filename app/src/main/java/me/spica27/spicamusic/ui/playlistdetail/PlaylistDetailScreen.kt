@@ -102,7 +102,6 @@ import me.spica27.spicamusic.ui.widget.SongPickerSheet
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonColors
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -114,14 +113,13 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
-import top.yukonga.miuix.kmp.extra.WindowDialog
-import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.overScrollOutOfBound
 import top.yukonga.miuix.kmp.utils.pressable
+import top.yukonga.miuix.kmp.window.WindowDialog
+import top.yukonga.miuix.kmp.window.WindowListPopup
 
 /**
  * 歌单详情页面
@@ -443,7 +441,7 @@ private fun PlaylistHeader(
                         vertical = 6.dp,
                     ),
                 colors =
-                    ButtonColors(
+                    ButtonDefaults.buttonColors(
                         MiuixTheme.colorScheme.primaryContainer,
                         MiuixTheme.colorScheme.primaryContainer,
                     ),
@@ -479,7 +477,7 @@ private fun ActionBar(
     onAddSongs: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val showMenu = remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
 
     Row(
         modifier = modifier,
@@ -565,7 +563,7 @@ private fun ActionBar(
         Box {
             Card(
                 cornerRadius = 16.dp,
-                onClick = { showMenu.value = true },
+                onClick = { showMenu = true },
                 colors =
                     CardDefaults.defaultColors(
                         color = MiuixTheme.colorScheme.surfaceVariant,
@@ -589,16 +587,14 @@ private fun ActionBar(
                     WindowListPopup(
                         show = showMenu,
                         alignment = PopupPositionProvider.Align.End,
-                        onDismissRequest = { showMenu.value = false },
+                        onDismissRequest = { showMenu = false },
                     ) {
-                        val dismiss = LocalWindowListPopupState.current
-
                         ListPopupColumn {
                             TextButton(
                                 cornerRadius = 0.dp,
                                 text = stringResource(R.string.add_songs),
                                 onClick = {
-                                    dismiss()
+                                    showMenu = false
                                     onAddSongs()
                                 },
                             )
@@ -606,7 +602,7 @@ private fun ActionBar(
                                 cornerRadius = 0.dp,
                                 text = "重命名歌单",
                                 onClick = {
-                                    dismiss()
+                                    showMenu = false
                                     onShowMenu()
                                 },
                             )
@@ -618,7 +614,7 @@ private fun ActionBar(
                                         textColor = MiuixTheme.colorScheme.error,
                                     ),
                                 onClick = {
-                                    dismiss()
+                                    showMenu = false
                                     // 删除歌单逻辑
                                 },
                             )
@@ -992,7 +988,7 @@ private fun RenamePlaylistDialog(
     WindowDialog(
         title = stringResource(R.string.rename),
         onDismissRequest = onDismiss,
-        show = show,
+        show = show.value,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),

@@ -56,7 +56,7 @@ import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonColors
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -182,7 +182,7 @@ fun MostPlayedScreen(
                             Button(
                                 onClick = { viewModel.playAll() },
                                 colors =
-                                    ButtonColors(
+                                    ButtonDefaults.buttonColors(
                                         MiuixTheme.colorScheme.primary,
                                         MiuixTheme.colorScheme.primary,
                                     ),
@@ -200,7 +200,7 @@ fun MostPlayedScreen(
                             Button(
                                 onClick = { viewModel.saveAsPlaylist() },
                                 colors =
-                                    ButtonColors(
+                                    ButtonDefaults.buttonColors(
                                         MiuixTheme.colorScheme.secondaryContainer,
                                         MiuixTheme.colorScheme.secondaryContainer,
                                     ),

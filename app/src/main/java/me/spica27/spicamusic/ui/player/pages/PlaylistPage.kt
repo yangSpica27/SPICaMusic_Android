@@ -74,7 +74,7 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.extra.WindowDialog
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import java.util.concurrent.TimeUnit
@@ -377,59 +377,62 @@ fun CurrentPlaylistPage(
                         tint = MiuixTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(6.dp))
-                    Text(text = stringResource(R.string.create_playlist), style = MiuixTheme.textStyles.body1)
+                    Text(
+                        text = stringResource(R.string.create_playlist),
+                        style = MiuixTheme.textStyles.body1,
+                    )
                 }
             }
         }
     }
 
-    if (showCreateDialog) {
-        var playlistName by remember { mutableStateOf("") }
-        val showState = remember { mutableStateOf(true) }
+    var playlistName by remember { mutableStateOf("") }
 
-        WindowDialog(
-            title = stringResource(R.string.create_playlist),
-            onDismissRequest = { showCreateDialog = false },
-            show = showState,
+    OverlayDialog(
+        title = stringResource(R.string.create_playlist),
+        onDismissRequest = {
+            showCreateDialog = false
+            playlistName = ""
+        },
+        show = showCreateDialog,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            TextField(
+                value = playlistName,
+                onValueChange = { playlistName = it },
+                label = stringResource(R.string.hint_input_playlist_name),
+                modifier = Modifier.fillMaxWidth(),
+                useLabelAsPlaceholder = true,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
             ) {
-                TextField(
-                    value = playlistName,
-                    onValueChange = { playlistName = it },
-                    label = stringResource(R.string.hint_input_playlist_name),
-                    modifier = Modifier.fillMaxWidth(),
-                    useLabelAsPlaceholder = true,
+                TextButton(
+                    text = stringResource(R.string.cancel),
+                    onClick = { showCreateDialog = false },
                 )
-                Spacer(modifier = Modifier.height(24.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(
-                        text = stringResource(R.string.cancel),
-                        onClick = { showCreateDialog = false },
-                    )
-                    Spacer(modifier = Modifier.size(12.dp))
-                    TextButton(
-                        text = stringResource(R.string.create),
-                        onClick = {
-                            if (playlistName.isNotBlank()) {
-                                panelViewModel.createPlaylistWithMediaIds(
-                                    name = playlistName,
-                                    mediaIds = selectedMediaIds.toList(),
-                                ) { success ->
-                                    if (success) {
-                                        selectedMediaIds.clear()
-                                        isMultiSelectMode = false
-                                        showCreateDialog = false
-                                    }
+                Spacer(modifier = Modifier.size(12.dp))
+                TextButton(
+                    text = stringResource(R.string.create),
+                    onClick = {
+                        if (playlistName.isNotBlank()) {
+                            panelViewModel.createPlaylistWithMediaIds(
+                                name = playlistName,
+                                mediaIds = selectedMediaIds.toList(),
+                            ) { success ->
+                                if (success) {
+                                    selectedMediaIds.clear()
+                                    isMultiSelectMode = false
+                                    showCreateDialog = false
                                 }
                             }
-                        },
-                    )
-                }
+                        }
+                    },
+                )
             }
         }
     }

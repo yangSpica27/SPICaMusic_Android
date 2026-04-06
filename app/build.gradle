@@ -10,7 +10,7 @@ plugins {
 
 android {
   namespace 'me.spica27.spicamusic'
-  compileSdk = 36
+  compileSdk = 37
 
   def props = new Properties()
   file("$rootDir/gradle.properties").withInputStream { props.load(it) }
@@ -120,7 +120,8 @@ dependencies {
   implementation libs.androidx.ui.graphics
   implementation libs.androidx.ui.tooling.preview
   implementation libs.androidautosize
-  implementation libs.miuix.android
+  implementation libs.miuix.ui
+  implementation libs.miuix.preference
 //  implementation libs.miuix.android.nav3
   implementation libs.androidx.constraintlayout
   testImplementation libs.junit

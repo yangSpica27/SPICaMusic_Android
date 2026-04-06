@@ -25,11 +25,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -88,12 +88,11 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.extra.LocalWindowListPopupState
-import top.yukonga.miuix.kmp.extra.WindowListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.pressable
+import top.yukonga.miuix.kmp.window.WindowListPopup
 import java.util.Locale
 
 /**
@@ -329,7 +328,7 @@ private fun WelcomeHolder(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        imageVector = Icons.Default.QueueMusic,
+                        imageVector = Icons.AutoMirrored.Default.QueueMusic,
                         contentDescription = null,
                         tint = MiuixTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.size(26.dp),
@@ -601,11 +600,10 @@ private fun SongItemCard(
             )
         }
         WindowListPopup(
-            show = showPopup,
+            show = showPopup.value,
             alignment = PopupPositionProvider.Align.End,
             onDismissRequest = { showPopup.value = false },
         ) {
-            val dismiss = LocalWindowListPopupState.current
             ListPopupColumn {
                 items.forEachIndexed { index, string ->
                     DropdownImpl(
@@ -643,7 +641,7 @@ private fun SongItemCard(
                                     // 查看详情
                                 }
                             }
-                            dismiss()
+                            showPopup.value = false
                         },
                         index = index,
                     )

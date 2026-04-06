@@ -25,7 +25,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
@@ -65,16 +65,16 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.extra.WindowDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.overScrollOutOfBound
 import top.yukonga.miuix.kmp.utils.pressable
+import top.yukonga.miuix.kmp.window.WindowDialog
 
 /**
  * 歌单页面
  */
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun PlaylistsScreen(modifier: Modifier = Modifier) {
     val viewModel: PlaylistViewModel = koinViewModel()
@@ -93,7 +93,6 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
                 .navSharedBounds(
                     Screen.Playlists,
                 ).fillMaxSize(),
-        popupHost = { MiuixPopupHost() },
         topBar = {
             TopAppBar(
                 color = Color.Transparent,
@@ -184,13 +183,11 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
     }
 
     // 创建歌单对话框
-    if (showCreateDialog) {
-        CreatePlaylistDialog(
-            onDismiss = { viewModel.hideCreateDialog() },
-            onCreate = { name -> viewModel.createPlaylist(name) },
-            show = showCreateDialog,
-        )
-    }
+    CreatePlaylistDialog(
+        onDismiss = { viewModel.hideCreateDialog() },
+        onCreate = { name -> viewModel.createPlaylist(name) },
+        show = showCreateDialog,
+    )
 
     // 删除确认对话框
     showDeleteDialog?.let { playlist ->
@@ -455,16 +452,13 @@ private fun CreatePlaylistDialog(
 ) {
     var playlistName by remember { mutableStateOf("") }
 
-    val showState = remember { mutableStateOf(true) }
-
-    LaunchedEffect(show) {
-        showState.value = show
-    }
-
     WindowDialog(
         title = stringResource(R.string.create_playlist),
         onDismissRequest = onDismiss,
-        show = showState,
+        show = show,
+        onDismissFinished = {
+            playlistName = ""
+        },
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -521,16 +515,10 @@ private fun DeletePlaylistDialog(
     onConfirm: () -> Unit,
     show: Boolean,
 ) {
-    val showState = remember { mutableStateOf(true) }
-
-    LaunchedEffect(show) {
-        showState.value = show
-    }
-
     WindowDialog(
         title = stringResource(R.string.delete_playlist_title),
         onDismissRequest = onDismiss,
-        show = showState,
+        show = show,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),

@@ -15,7 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.extra.WindowDropdown
+import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -92,7 +92,7 @@ private fun SelectSettingsItem(
 ) {
     val currentValue by item.valueFlow.collectAsStateWithLifecycle()
 
-    WindowDropdown(
+    OverlayDropdownPreference(
         modifier = modifier,
         startAction = {
             Box(

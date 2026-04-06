@@ -57,7 +57,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.extra.WindowDialog
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 class PlaylistPanelController internal constructor(
@@ -430,9 +430,9 @@ private fun CreatePlaylistDialog(
     onCreate: (String) -> Unit,
 ) {
     var playlistName by remember { mutableStateOf("") }
-    val showState = remember { mutableStateOf(true) }
+    val showState by remember { mutableStateOf(true) }
 
-    WindowDialog(
+    OverlayDialog(
         title = stringResource(R.string.create_playlist),
         onDismissRequest = onDismiss,
         show = showState,
