@@ -9,16 +9,16 @@ import androidx.media3.common.util.UnstableApi
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
-import coil3.disk.DiskCache
-import coil3.memory.MemoryCache
+import coil3.request.allowConversionToBitmap
+import coil3.request.allowRgb565
 import coil3.request.crossfade
+import coil3.request.premultipliedAlpha
 import me.spcia.lyric_core.di.extraInfoModule
 import me.spica27.spicamusic.di.AppModule
 import me.spica27.spicamusic.player.impl.SpicaPlayer
 import me.spica27.spicamusic.service.PlaybackService
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.impl.di.storageModule
-import okio.Path.Companion.toOkioPath
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -94,19 +94,12 @@ class App :
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader
             .Builder(context)
-            .memoryCache {
-                MemoryCache
-                    .Builder()
-                    .maxSizeBytes(50 * 1024 * 1024)
-                    .build()
-            }.diskCache {
-                DiskCache
-                    .Builder()
-                    // 磁盘缓存 50MB
-                    .directory(context.cacheDir.resolve("image_cache").toOkioPath())
-                    .maxSizeBytes(50 * 1024 * 1024)
-                    .build()
-            }.crossfade(true) // 启用淡入淡出效果
+            // 关闭全局 crossfade：sharedBounds 动画已负责视觉过渡，
+            // crossfade 叠加会造成 GPU 双重合成，加剧跳转掉帧。
+            .crossfade(false)
+            .premultipliedAlpha(true) // 预乘 alpha 优化 GPU 性能，减少内存占用
+            .allowRgb565(true)
+            .allowConversionToBitmap(true)
             .build()
 
     companion object {
