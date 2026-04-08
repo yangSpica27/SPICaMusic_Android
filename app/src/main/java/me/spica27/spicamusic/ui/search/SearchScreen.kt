@@ -61,7 +61,6 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import dev.chrisbanes.haze.HazeProgressive
-import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
@@ -85,9 +84,9 @@ import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -135,7 +134,7 @@ fun SearchScreen(
                                 )
                         },
             ) {
-                TopAppBar(
+                SmallTopAppBar(
                     title = "搜索",
                     scrollBehavior = scrollBehavior,
                     color = Color.Transparent,
@@ -156,6 +155,10 @@ fun SearchScreen(
     ) { paddingValues ->
         AnimatedContent(
             searchKeyword.isEmpty(),
+            modifier =
+                Modifier
+                    .hazeSource(state = listHazeSource)
+                    .fillMaxSize(),
         ) { isEmptyKeyword ->
             if (isEmptyKeyword) {
                 // 欢迎提示
@@ -184,7 +187,6 @@ fun SearchScreen(
                         listState = listState,
                         paddingValues = paddingValues,
                         scrollBehavior = scrollBehavior,
-                        listHazeSource = listHazeSource,
                     )
                 }
             }
@@ -402,7 +404,6 @@ private fun SearchResultHolder(
     listState: LazyListState,
     paddingValues: PaddingValues,
     scrollBehavior: ScrollBehavior,
-    listHazeSource: HazeState,
 ) {
     val playerViewModel = LocalPlayerViewModel.current
     val currentPlaylist by playerViewModel.currentPlaylist.collectAsStateWithLifecycle()
@@ -413,7 +414,6 @@ private fun SearchResultHolder(
         contentPadding = paddingValues,
         modifier =
             Modifier
-                .hazeSource(state = listHazeSource)
                 .fillMaxSize()
                 .nestedScroll(LocalFloatingTabBarScrollConnection.current)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
