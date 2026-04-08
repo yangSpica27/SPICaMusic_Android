@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
@@ -268,15 +269,17 @@ private fun AlbumItem(
     val backStack = LocalNavBackStack.current
     val localNavSharedTransitionScope = LocalNavSharedTransitionScope.current
     val localNavAnimatedContentScope = LocalNavAnimatedContentScope.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     with(localNavSharedTransitionScope) {
         Column(
             modifier =
                 modifier
                     .sharedBounds(
-                        rememberSharedContentState(album),
+                        rememberSharedContentState("album_${album.id}"),
                         localNavAnimatedContentScope,
                     ).clip(Shapes.SmallCornerBasedShape)
                     .clickable {
+                        keyboardController?.hide()
                         backStack.add(Screen.AlbumDetail(album))
                     },
             verticalArrangement = Arrangement.spacedBy(6.dp),

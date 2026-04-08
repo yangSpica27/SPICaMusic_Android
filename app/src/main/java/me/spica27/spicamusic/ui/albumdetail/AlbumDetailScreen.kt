@@ -82,7 +82,7 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
         modifier =
             modifier
                 .navSharedBounds(
-                    album,
+                    "album_${album.id}",
                 ).fillMaxSize(),
         topBar = {
             TopAppBar(
