@@ -16,9 +16,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
+import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayerAction
-import me.spica27.spicamusic.storage.api.ISongRepository
 import timber.log.Timber
 
 /**
@@ -26,8 +26,8 @@ import timber.log.Timber
  * 使用 Paging 3 按需加载歌曲列表，避免全量加载到内存
  */
 class AllSongsViewModel(
-    private val songRepository: ISongRepository,
-    private val player: IMusicPlayer,
+    private val songRepository: SongUseCases,
+    private val player: PlayerUseCases,
 ) : ViewModel() {
     // 搜索关键词
     private val _searchKeyword = MutableStateFlow("")

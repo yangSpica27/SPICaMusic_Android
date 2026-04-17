@@ -3,16 +3,16 @@ package me.spica27.spicamusic.ui.player
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.storage.api.IPlaylistRepository
-import me.spica27.spicamusic.storage.api.ISongRepository
+import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import timber.log.Timber
 
 /**
  * 当前播放列表面板 ViewModel
  */
 class CurrentPlaylistPanelViewModel(
-    private val playlistRepository: IPlaylistRepository,
-    private val songRepository: ISongRepository,
+    private val playlistRepository: PlaylistUseCases,
+    private val songRepository: SongUseCases,
 ) : ViewModel() {
     /**
      * 根据 MediaItem 的 mediaId 列表创建歌单并添加歌曲

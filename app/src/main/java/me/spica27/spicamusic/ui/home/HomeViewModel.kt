@@ -12,8 +12,8 @@ import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.SongFilter
 import me.spica27.spicamusic.common.entity.SongSortOrder
-import me.spica27.spicamusic.storage.api.IPlaylistRepository
-import me.spica27.spicamusic.storage.api.ISongRepository
+import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
 
 /**
  * 首页 ViewModel
@@ -21,8 +21,8 @@ import me.spica27.spicamusic.storage.api.ISongRepository
  * 播放器相关操作请使用 PlayerViewModel
  */
 class HomeViewModel(
-    private val songRepository: ISongRepository,
-    private val playlistRepository: IPlaylistRepository,
+    private val songRepository: SongUseCases,
+    private val playlistRepository: PlaylistUseCases,
 ) : ViewModel() {
     // 排序方式
     private val _sortOrder = MutableStateFlow(SongSortOrder.DEFAULT)

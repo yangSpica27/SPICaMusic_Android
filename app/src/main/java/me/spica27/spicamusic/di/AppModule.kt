@@ -4,14 +4,16 @@ import com.linc.amplituda.Amplituda
 import com.skydoves.sandwich.retrofit.adapters.ApiResponseCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import me.spica27.spicamusic.player.api.IMusicPlayer
-import me.spica27.spicamusic.storage.api.IAlbumRepository
-import me.spica27.spicamusic.storage.api.IMusicScanService
-import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
-import me.spica27.spicamusic.storage.api.IPlaylistRepository
-import me.spica27.spicamusic.storage.api.IScanFolderRepository
-import me.spica27.spicamusic.storage.api.ISongRepository
-import me.spica27.spicamusic.storage.impl.dao.ExtraInfoDao
+import me.spica27.spicamusic.core.preferences.PreferencesManager
+import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
+import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
+import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
+import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
+import me.spica27.spicamusic.feature.library.domain.ScanFolderUseCases
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
+import me.spica27.spicamusic.feature.lyrics.domain.LyricsUseCases
+import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
+import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 import me.spica27.spicamusic.ui.album.AlbumViewModel
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailViewModel
 import me.spica27.spicamusic.ui.allsong.AllSongsViewModel
@@ -29,7 +31,6 @@ import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailViewModel
 import me.spica27.spicamusic.ui.search.SearchViewModel
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.settings.SettingsViewModel
-import me.spica27.spicamusic.utils.PreferencesManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidApplication
@@ -83,47 +84,46 @@ object AppModule {
             // 播放器 ViewModel - 全局共享
             viewModel {
                 PlayerViewModel(
-                    player = get<IMusicPlayer>(),
-                    songRepository = get<ISongRepository>(),
+                    player = get<PlayerUseCases>(),
+                    songRepository = get<SongUseCases>(),
                 )
             }
 
             // 歌词页面 ViewModel
             viewModel {
                 LyricsViewModel(
-                    player = get<IMusicPlayer>(),
-                    apiClient = get(),
-                    extraInfoDao = get<ExtraInfoDao>(),
+                    player = get<PlayerUseCases>(),
+                    lyricsUseCases = get<LyricsUseCases>(),
                 )
             }
 
             // 当前播放列表面板 ViewModel
             viewModel {
                 CurrentPlaylistPanelViewModel(
-                    playlistRepository = get<IPlaylistRepository>(),
-                    songRepository = get<ISongRepository>(),
+                    playlistRepository = get<PlaylistUseCases>(),
+                    songRepository = get<SongUseCases>(),
                 )
             }
 
             // 首页 ViewModel
             viewModel {
                 HomeViewModel(
-                    songRepository = get<ISongRepository>(),
-                    playlistRepository = get<IPlaylistRepository>(),
+                    songRepository = get<SongUseCases>(),
+                    playlistRepository = get<PlaylistUseCases>(),
                 )
             }
 
             // 搜索页面 ViewModel
             viewModel {
                 SearchViewModel(
-                    songRepository = get<ISongRepository>(),
+                    songRepository = get<SongUseCases>(),
                 )
             }
 
             // 设置页面 ViewModel
             viewModel {
                 SettingsViewModel(
-                    preferencesManager = get<PreferencesManager>(),
+                    settingsUseCases = get<SettingsUseCases>(),
                 )
             }
 
@@ -131,23 +131,23 @@ object AppModule {
             viewModel {
                 MediaLibrarySourceViewModel(
                     app = androidApplication(),
-                    scanService = get<IMusicScanService>(),
-                    folderRepository = get<IScanFolderRepository>(),
+                    scanService = get<MusicScanUseCases>(),
+                    folderRepository = get<ScanFolderUseCases>(),
                 )
             }
 
             // 所有歌曲页面 ViewModel
             viewModel {
                 AllSongsViewModel(
-                    songRepository = get<ISongRepository>(),
-                    player = get<IMusicPlayer>(),
+                    songRepository = get<SongUseCases>(),
+                    player = get<PlayerUseCases>(),
                 )
             }
 
             // 歌单页面 ViewModel
             viewModel {
                 PlaylistViewModel(
-                    playlistRepository = get<IPlaylistRepository>(),
+                    playlistRepository = get<PlaylistUseCases>(),
                 )
             }
 
@@ -155,9 +155,9 @@ object AppModule {
             viewModel { parameters ->
                 PlaylistDetailViewModel(
                     playlistId = parameters.get<Long>(),
-                    playlistRepository = get<IPlaylistRepository>(),
-                    player = get<IMusicPlayer>(),
-                    songRepository = get<ISongRepository>(),
+                    playlistRepository = get<PlaylistUseCases>(),
+                    player = get<PlayerUseCases>(),
+                    songRepository = get<SongUseCases>(),
                 )
             }
 
@@ -165,41 +165,41 @@ object AppModule {
             viewModel { parameters ->
                 AlbumDetailViewModel(
                     albumId = parameters.get<String>(),
-                    albumRepository = get<IAlbumRepository>(),
-                    player = get<IMusicPlayer>(),
+                    albumRepository = get<AlbumUseCases>(),
+                    player = get<PlayerUseCases>(),
                 )
             }
 
             // 媒体库
             viewModel {
                 LibraryPageViewModel(
-                    songRepositoryImpl = get<ISongRepository>(),
-                    albumRepositoryImpl = get<IAlbumRepository>(),
-                    playlistRepositoryImpl = get<IPlaylistRepository>(),
-                    historyRepository = get<IPlayHistoryRepository>(),
+                    songRepositoryImpl = get<SongUseCases>(),
+                    albumRepositoryImpl = get<AlbumUseCases>(),
+                    playlistRepositoryImpl = get<PlaylistUseCases>(),
+                    historyRepository = get<PlayHistoryUseCases>(),
                 )
             }
 
             // 专辑页面 ViewModel
             viewModel {
                 AlbumViewModel(
-                    albumRepository = get<IAlbumRepository>(),
+                    albumRepository = get<AlbumUseCases>(),
                 )
             }
 
             // 音效配置页面 ViewModel
             viewModel {
                 AudioEffectsViewModel(
-                    preferencesManager = get<PreferencesManager>(),
-                    player = get<IMusicPlayer>(),
+                    settingsUseCases = get<SettingsUseCases>(),
+                    player = get<PlayerUseCases>(),
                 )
             }
 
             // 听歌统计页面 ViewModel
             viewModel {
                 ListeningStatsViewModel(
-                    historyRepository = get<IPlayHistoryRepository>(),
-                    songRepository = get<ISongRepository>(),
+                    historyRepository = get<PlayHistoryUseCases>(),
+                    songRepository = get<SongUseCases>(),
                 )
             }
 
@@ -207,10 +207,10 @@ object AppModule {
             viewModel {
                 MostPlayedViewModel(
                     app = androidApplication(),
-                    historyRepository = get<IPlayHistoryRepository>(),
-                    songRepository = get<ISongRepository>(),
-                    playlistRepository = get<IPlaylistRepository>(),
-                    player = get<IMusicPlayer>(),
+                    historyRepository = get<PlayHistoryUseCases>(),
+                    songRepository = get<SongUseCases>(),
+                    playlistRepository = get<PlaylistUseCases>(),
+                    player = get<PlayerUseCases>(),
                 )
             }
 
@@ -218,9 +218,9 @@ object AppModule {
             viewModel {
                 FavoriteViewModel(
                     app = androidApplication(),
-                    songRepository = get<ISongRepository>(),
-                    player = get<IMusicPlayer>(),
-                    playlistRepository = get<IPlaylistRepository>(),
+                    songRepository = get<SongUseCases>(),
+                    player = get<PlayerUseCases>(),
+                    playlistRepository = get<PlaylistUseCases>(),
                 )
             }
         }

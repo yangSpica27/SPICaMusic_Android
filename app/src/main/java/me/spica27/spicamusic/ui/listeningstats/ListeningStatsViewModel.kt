@@ -8,8 +8,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
-import me.spica27.spicamusic.storage.api.ISongRepository
+import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
 
 data class TopSongDisplayItem(
     val songId: Long,
@@ -19,8 +19,8 @@ data class TopSongDisplayItem(
 )
 
 class ListeningStatsViewModel(
-    private val historyRepository: IPlayHistoryRepository,
-    private val songRepository: ISongRepository,
+    private val historyRepository: PlayHistoryUseCases,
+    private val songRepository: SongUseCases,
 ) : ViewModel() {
     private val _weeklyStats = MutableStateFlow<PlayStats?>(null)
     val weeklyStats: StateFlow<PlayStats?> = _weeklyStats.asStateFlow()

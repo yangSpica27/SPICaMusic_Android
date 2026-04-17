@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.storage.api.ISongRepository
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
 
 /**
  * SearchPage 列表项的密封类：分组头 or 歌曲
@@ -39,7 +39,7 @@ sealed class SearchListItem {
  * 空关键词不加载数据（WelcomeHolder），有关键词时使用 Paging 3 + InsertSeparators 实现分组
  */
 class SearchViewModel(
-    private val songRepository: ISongRepository,
+    private val songRepository: SongUseCases,
 ) : ViewModel() {
     // 搜索关键词
     private val _searchKeyword = MutableStateFlow("")

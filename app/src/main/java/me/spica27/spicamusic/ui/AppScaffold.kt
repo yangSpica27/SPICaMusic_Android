@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.rememberNavBackStack
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.rememberHazeState
+import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.navigation.AppNavGraph
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
@@ -27,7 +28,6 @@ import me.spica27.spicamusic.ui.player.PlaylistPanelController
 import me.spica27.spicamusic.ui.theme.SPICaMusicTheme
 import me.spica27.spicamusic.ui.widget.FloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.widget.rememberFloatingTabBarScrollConnection
-import me.spica27.spicamusic.utils.PreferencesManager
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
 

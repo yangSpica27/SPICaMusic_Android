@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.player.api.IMusicPlayer
-import me.spica27.spicamusic.utils.PreferencesManager
+import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
+import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 
 /**
  * 音效配置 ViewModel
@@ -18,40 +18,40 @@ import me.spica27.spicamusic.utils.PreferencesManager
  * 管理 EQ 和混响效果的状态，并持久化到 DataStore
  */
 class AudioEffectsViewModel(
-    private val preferencesManager: PreferencesManager,
-    private val player: IMusicPlayer,
+    private val settingsUseCases: SettingsUseCases,
+    private val player: PlayerUseCases,
 ) : ViewModel() {
     // EQ 默认频段（10段）
     private val defaultEqBands = List(10) { 0f }
 
     // EQ 开关
     val eqEnabled: StateFlow<Boolean> =
-        preferencesManager
-            .getBoolean(PreferencesManager.Keys.EQ_ENABLED, false)
+        settingsUseCases
+            .getBoolean(SettingsUseCases.Keys.EQ_ENABLED, false)
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // EQ 频段增益值 (-12dB to +12dB)
     val eqBands: StateFlow<List<Float>> =
-        preferencesManager
-            .getFloatList(PreferencesManager.Keys.EQ_BANDS, defaultEqBands)
+        settingsUseCases
+            .getFloatList(SettingsUseCases.Keys.EQ_BANDS, defaultEqBands)
             .stateIn(viewModelScope, SharingStarted.Eagerly, defaultEqBands)
 
     // 混响开关
     val reverbEnabled: StateFlow<Boolean> =
-        preferencesManager
-            .getBoolean(PreferencesManager.Keys.REVERB_ENABLED, false)
+        settingsUseCases
+            .getBoolean(SettingsUseCases.Keys.REVERB_ENABLED, false)
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // 混响强度 (0.0 - 1.0)
     val reverbLevel: StateFlow<Float> =
-        preferencesManager
-            .getFloat(PreferencesManager.Keys.REVERB_LEVEL, 0.3f)
+        settingsUseCases
+            .getFloat(SettingsUseCases.Keys.REVERB_LEVEL, 0.3f)
             .stateIn(viewModelScope, SharingStarted.Eagerly, 0.3f)
 
     // 混响房间大小 (0.0 - 1.0)
     val reverbRoomSize: StateFlow<Float> =
-        preferencesManager
-            .getFloat(PreferencesManager.Keys.REVERB_ROOM_SIZE, 0.5f)
+        settingsUseCases
+            .getFloat(SettingsUseCases.Keys.REVERB_ROOM_SIZE, 0.5f)
             .stateIn(viewModelScope, SharingStarted.Eagerly, 0.5f)
 
     // 加载状态
@@ -99,7 +99,7 @@ class AudioEffectsViewModel(
      */
     fun setEqEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            preferencesManager.setBoolean(PreferencesManager.Keys.EQ_ENABLED, enabled)
+            settingsUseCases.setBoolean(SettingsUseCases.Keys.EQ_ENABLED, enabled)
         }
     }
 
@@ -117,7 +117,7 @@ class AudioEffectsViewModel(
         viewModelScope.launch {
             val newBands = eqBands.value.toMutableList()
             newBands[band] = gainDb.coerceIn(-12f, 12f)
-            preferencesManager.setFloatList(PreferencesManager.Keys.EQ_BANDS, newBands)
+            settingsUseCases.setFloatList(SettingsUseCases.Keys.EQ_BANDS, newBands)
         }
     }
 
@@ -129,7 +129,7 @@ class AudioEffectsViewModel(
 
         viewModelScope.launch {
             val clampedBands = bands.map { it.coerceIn(-12f, 12f) }
-            preferencesManager.setFloatList(PreferencesManager.Keys.EQ_BANDS, clampedBands)
+            settingsUseCases.setFloatList(SettingsUseCases.Keys.EQ_BANDS, clampedBands)
         }
     }
 
@@ -154,7 +154,7 @@ class AudioEffectsViewModel(
      */
     fun setReverbEnabled(enabled: Boolean) {
         viewModelScope.launch {
-            preferencesManager.setBoolean(PreferencesManager.Keys.REVERB_ENABLED, enabled)
+            settingsUseCases.setBoolean(SettingsUseCases.Keys.REVERB_ENABLED, enabled)
         }
     }
 
@@ -164,7 +164,7 @@ class AudioEffectsViewModel(
     fun setReverbLevel(level: Float) {
         viewModelScope.launch {
             val clampedLevel = level.coerceIn(0f, 1f)
-            preferencesManager.setFloat(PreferencesManager.Keys.REVERB_LEVEL, clampedLevel)
+            settingsUseCases.setFloat(SettingsUseCases.Keys.REVERB_LEVEL, clampedLevel)
         }
     }
 
@@ -174,7 +174,7 @@ class AudioEffectsViewModel(
     fun setReverbRoomSize(roomSize: Float) {
         viewModelScope.launch {
             val clampedSize = roomSize.coerceIn(0f, 1f)
-            preferencesManager.setFloat(PreferencesManager.Keys.REVERB_ROOM_SIZE, clampedSize)
+            settingsUseCases.setFloat(SettingsUseCases.Keys.REVERB_ROOM_SIZE, clampedSize)
         }
     }
 
@@ -191,8 +191,8 @@ class AudioEffectsViewModel(
 
             // 重置混响
             setReverbEnabled(false)
-            preferencesManager.setFloat(PreferencesManager.Keys.REVERB_LEVEL, 0.3f)
-            preferencesManager.setFloat(PreferencesManager.Keys.REVERB_ROOM_SIZE, 0.5f)
+            settingsUseCases.setFloat(SettingsUseCases.Keys.REVERB_LEVEL, 0.3f)
+            settingsUseCases.setFloat(SettingsUseCases.Keys.REVERB_ROOM_SIZE, 0.5f)
 
             _isLoading.value = false
         }

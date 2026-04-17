@@ -34,8 +34,13 @@ dependencyResolutionManagement {
 rootProject.name = "SPICaMusic"
 include ':app'
 include ':common'
-include ':storage-core'
-include ':player-core'
+include ':core-preferences'
+include ':feature-library-data'
+include ':feature-player-data'
 //include(':decoder_flac')
 //include(":starrysky")
-include ':lyric-core'
+include ':feature-lyrics-data'
+include ':feature-library-domain'
+include ':feature-player-domain'
+include ':feature-settings-domain'
+include ':feature-lyrics-domain'

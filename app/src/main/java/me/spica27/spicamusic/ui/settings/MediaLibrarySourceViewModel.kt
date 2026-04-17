@@ -17,9 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
+import me.spica27.spicamusic.feature.library.domain.ScanFolderUseCases
 import me.spica27.spicamusic.storage.api.FolderType
-import me.spica27.spicamusic.storage.api.IMusicScanService
-import me.spica27.spicamusic.storage.api.IScanFolderRepository
 import me.spica27.spicamusic.storage.api.ScanFolder
 import me.spica27.spicamusic.storage.api.ScanProgress
 import me.spica27.spicamusic.storage.api.ScanResult
@@ -48,8 +48,8 @@ sealed class ScanState {
  */
 class MediaLibrarySourceViewModel(
     private val app: Application,
-    private val scanService: IMusicScanService,
-    private val folderRepository: IScanFolderRepository,
+    private val scanService: MusicScanUseCases,
+    private val folderRepository: ScanFolderUseCases,
 ) : AndroidViewModel(app) {
     private val _scanState = MutableStateFlow<ScanState>(ScanState.Idle)
     val scanState: StateFlow<ScanState> = _scanState.asStateFlow()

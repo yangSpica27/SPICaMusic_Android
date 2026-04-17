@@ -8,11 +8,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
-import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
+import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
+import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayerAction
-import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
-import me.spica27.spicamusic.storage.api.IPlaylistRepository
-import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.ui.listeningstats.TopSongDisplayItem
 import timber.log.Timber
 import java.util.Calendar
@@ -27,10 +27,10 @@ enum class MostPlayedRange(
 
 class MostPlayedViewModel(
     private val app: Application,
-    private val historyRepository: IPlayHistoryRepository,
-    private val songRepository: ISongRepository,
-    private val playlistRepository: IPlaylistRepository,
-    private val player: IMusicPlayer,
+    private val historyRepository: PlayHistoryUseCases,
+    private val songRepository: SongUseCases,
+    private val playlistRepository: PlaylistUseCases,
+    private val player: PlayerUseCases,
 ) : AndroidViewModel(app) {
     private val _selectedRange = MutableStateFlow(MostPlayedRange.ALL_TIME)
     val selectedRange: StateFlow<MostPlayedRange> = _selectedRange.asStateFlow()

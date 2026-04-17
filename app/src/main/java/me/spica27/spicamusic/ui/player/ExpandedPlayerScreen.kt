@@ -78,6 +78,7 @@ import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
+import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
@@ -90,7 +91,6 @@ import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
-import me.spica27.spicamusic.utils.PreferencesManager
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import timber.log.Timber

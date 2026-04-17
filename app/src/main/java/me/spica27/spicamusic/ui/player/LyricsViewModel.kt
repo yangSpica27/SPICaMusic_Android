@@ -11,15 +11,13 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.spcia.lyric_core.ApiClient
 import me.spcia.lyric_core.entity.SongLyrics
 import me.spcia.lyric_core.parser.YrcParser
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.utils.LrcParser
-import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.feature.lyrics.domain.LyricsUseCases
+import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayerAction
-import me.spica27.spicamusic.storage.impl.dao.ExtraInfoDao
-import me.spica27.spicamusic.storage.impl.entity.ExtraInfoEntity
 import timber.log.Timber
 
 /**
@@ -27,9 +25,8 @@ import timber.log.Timber
  * 负责歌词加载（缓存优先）、偏移量持久化、多歌词源管理
  */
 class LyricsViewModel(
-    private val player: IMusicPlayer,
-    private val apiClient: ApiClient,
-    private val extraInfoDao: ExtraInfoDao,
+    private val player: PlayerUseCases,
+    private val lyricsUseCases: LyricsUseCases,
 ) : ViewModel() {
     data class UiState(
         val isLoading: Boolean = false,
@@ -87,7 +84,7 @@ class LyricsViewModel(
                 // 1. 优先从缓存读取
                 val cached =
                     withContext(Dispatchers.IO) {
-                        extraInfoDao.getLyricWithMediaId(mediaStoreId)
+                        lyricsUseCases.getCachedLyrics(mediaStoreId)
                     }
 
                 var currentLyrics: List<LyricItem>? = null
@@ -107,7 +104,7 @@ class LyricsViewModel(
                 // 2. 始终搜索所有源（用于切换面板）
                 val results =
                     withContext(Dispatchers.IO) {
-                        apiClient.searchAllLyrics(title)
+                        lyricsUseCases.searchAllLyrics(title)
                     }
                 val parsedAll = results.map { parseLyrics(it.lyrics) ?: emptyList() }
 
@@ -160,9 +157,9 @@ class LyricsViewModel(
         _uiState.update { it.copy(lyricsOffsetMs = offsetMs) }
         if (mediaStoreId <= 0L) return
         viewModelScope.launch(Dispatchers.IO) {
-            val existing = extraInfoDao.getLyricWithMediaId(mediaStoreId)
+            val existing = lyricsUseCases.getCachedLyrics(mediaStoreId)
             if (existing != null) {
-                extraInfoDao.updateDelay(mediaStoreId, offsetMs)
+                lyricsUseCases.updateDelay(mediaStoreId, offsetMs)
             }
         }
     }
@@ -186,19 +183,7 @@ class LyricsViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             val sourceName = "${source.artist} - ${source.name}"
-            val existing = extraInfoDao.getLyricWithMediaId(mediaStoreId)
-            if (existing != null) {
-                extraInfoDao.updateLyricsAndSource(mediaStoreId, source.lyrics, sourceName)
-            } else {
-                extraInfoDao.insertLyric(
-                    ExtraInfoEntity(
-                        mediaId = mediaStoreId,
-                        lyrics = source.lyrics,
-                        lyricSourceName = sourceName,
-                        delay = state.lyricsOffsetMs,
-                    ),
-                )
-            }
+            lyricsUseCases.saveLyricsSource(mediaStoreId, source.lyrics, sourceName, state.lyricsOffsetMs)
             Timber.d("已缓存歌词: mediaId=$mediaStoreId, source=$sourceName")
         }
     }

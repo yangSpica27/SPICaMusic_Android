@@ -12,9 +12,14 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/common" />
-            <option value="$PROJECT_DIR$/lyric-core" />
-            <option value="$PROJECT_DIR$/player-core" />
-            <option value="$PROJECT_DIR$/storage-core" />
+            <option value="$PROJECT_DIR$/core-preferences" />
+            <option value="$PROJECT_DIR$/feature-library-data" />
+            <option value="$PROJECT_DIR$/feature-library-domain" />
+            <option value="$PROJECT_DIR$/feature-lyrics-data" />
+            <option value="$PROJECT_DIR$/feature-lyrics-domain" />
+            <option value="$PROJECT_DIR$/feature-player-data" />
+            <option value="$PROJECT_DIR$/feature-player-domain" />
+            <option value="$PROJECT_DIR$/feature-settings-domain" />
           </set>
         </option>
       </GradleProjectSettings>

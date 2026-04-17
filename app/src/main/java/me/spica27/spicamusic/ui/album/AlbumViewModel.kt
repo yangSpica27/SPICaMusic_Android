@@ -9,10 +9,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
-import me.spica27.spicamusic.storage.api.IAlbumRepository
+import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
 
 class AlbumViewModel(
-    private val albumRepository: IAlbumRepository,
+    private val albumRepository: AlbumUseCases,
 ) : ViewModel() {
     // 搜索关键词
     private val _searchKeyword = MutableStateFlow("")

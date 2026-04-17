@@ -34,17 +34,22 @@
 
 柠檬音乐是一款基于 **Media3 ExoPlayer** 和 **Jetpack Compose** 精心打造的现代化 Android 音乐播放器。
 
-采用**模块化架构**设计，核心逻辑与 UI 完全解耦，面向接口编程。支持多种高品质音频格式 (FLAC/ALAC/Opus 等)，提供歌词显示、EQ 调节、歌单管理等丰富功能。
+采用**Clean Architecture + 模块化**设计，核心逻辑与 UI 完全解耦，面向接口编程。支持多种高品质音频格式 (FLAC/ALAC/Opus 等)，提供歌词显示、EQ 调节、歌单管理等丰富功能。
 
 ## 🏗️ 架构设计
 
 ```
 SPICaMusic_Android/
-├── app/           # UI层 - Compose界面、导航、主题、ViewModels
-├── common/        # 共享模块 - 通用实体类和工具
-├── storage-core/  # 存储模块 - Room数据库、Repository接口与实现
-├── player-core/   # 播放器模块 - Media3封装、播放控制、音频处理
-└── lyric-core/    # 歌词模块 - 网络API、歌词搜索服务
+├── app/                    # 应用入口与组装层（导航、Service、Koin 启动）
+├── common/                 # 共享实体与通用模型
+├── core-preferences/       # 偏好存储基础设施
+├── feature-library-data/   # 音乐库 data 层（Room、MediaStore、扫描）
+├── feature-library-domain/ # 音乐库 domain 层（use case / repository facade）
+├── feature-player-data/    # 播放 data 层（Media3、播放器桥接、DSP）
+├── feature-player-domain/  # 播放 domain 层
+├── feature-lyrics-data/    # 歌词 data 层（API、缓存 DI）
+├── feature-lyrics-domain/  # 歌词 domain 层
+└── feature-settings-domain/# 设置 domain 层
 ```
 
 ## 🎵 功能特性

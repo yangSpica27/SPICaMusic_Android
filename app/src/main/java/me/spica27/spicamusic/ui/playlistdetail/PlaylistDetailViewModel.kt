@@ -16,10 +16,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
+import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayerAction
-import me.spica27.spicamusic.storage.api.IPlaylistRepository
-import me.spica27.spicamusic.storage.api.ISongRepository
 import timber.log.Timber
 
 /**
@@ -27,9 +27,9 @@ import timber.log.Timber
  */
 class PlaylistDetailViewModel(
     private val playlistId: Long,
-    private val playlistRepository: IPlaylistRepository,
-    private val player: IMusicPlayer,
-    private val songRepository: ISongRepository,
+    private val playlistRepository: PlaylistUseCases,
+    private val player: PlayerUseCases,
+    private val songRepository: SongUseCases,
 ) : ViewModel() {
     // 歌单信息
     val playlist: StateFlow<Playlist?> =

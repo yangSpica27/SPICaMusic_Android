@@ -20,12 +20,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
+import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.FFTListener
 import me.spica27.spicamusic.player.api.IFFTProcessor
-import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
-import me.spica27.spicamusic.storage.api.ISongRepository
 import timber.log.Timber
 
 /**
@@ -34,8 +34,8 @@ import timber.log.Timber
  * 可在多个页面中共享使用
  */
 class PlayerViewModel(
-    private val player: IMusicPlayer,
-    private val songRepository: ISongRepository,
+    private val player: PlayerUseCases,
+    private val songRepository: SongUseCases,
 ) : ViewModel() {
     // ==================== 播放状态 ====================
 

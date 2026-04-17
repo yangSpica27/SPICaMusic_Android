@@ -18,10 +18,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
+import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayerAction
-import me.spica27.spicamusic.storage.api.IPlaylistRepository
-import me.spica27.spicamusic.storage.api.ISongRepository
 import timber.log.Timber
 
 /**
@@ -30,9 +30,9 @@ import timber.log.Timber
  */
 class FavoriteViewModel(
     private val app: Application,
-    private val songRepository: ISongRepository,
-    private val player: IMusicPlayer,
-    private val playlistRepository: IPlaylistRepository,
+    private val songRepository: SongUseCases,
+    private val player: PlayerUseCases,
+    private val playlistRepository: PlaylistUseCases,
 ) : ViewModel() {
     // 搜索关键词
     private val _searchKeyword = MutableStateFlow("")

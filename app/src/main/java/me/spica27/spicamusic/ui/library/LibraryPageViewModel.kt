@@ -9,16 +9,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.storage.api.IAlbumRepository
-import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
-import me.spica27.spicamusic.storage.api.IPlaylistRepository
-import me.spica27.spicamusic.storage.api.ISongRepository
+import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
+import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
+import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
 
 class LibraryPageViewModel(
-    private val songRepositoryImpl: ISongRepository,
-    private val albumRepositoryImpl: IAlbumRepository,
-    private val playlistRepositoryImpl: IPlaylistRepository,
-    private val historyRepository: IPlayHistoryRepository,
+    private val songRepositoryImpl: SongUseCases,
+    private val albumRepositoryImpl: AlbumUseCases,
+    private val playlistRepositoryImpl: PlaylistUseCases,
+    private val historyRepository: PlayHistoryUseCases,
 ) : ViewModel() {
     val albumList = albumRepositoryImpl.getAllPagingFlow()
     val playlists = playlistRepositoryImpl.getAllPlaylistsFlow()

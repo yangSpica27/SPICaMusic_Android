@@ -112,9 +112,14 @@ tasks.getByPath("preBuild").dependsOn("ktlintFormat")
 dependencies {
   // 模块依赖
   implementation project(':common')
-  implementation project(':storage-core')
-  implementation project(':player-core')
-  implementation project(':lyric-core')
+  implementation project(':core-preferences')
+  implementation project(':feature-library-data')
+  implementation project(':feature-player-data')
+  implementation project(':feature-lyrics-data')
+  implementation project(':feature-library-domain')
+  implementation project(':feature-player-domain')
+  implementation project(':feature-settings-domain')
+  implementation project(':feature-lyrics-domain')
   implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
   implementation libs.androidx.core.ktx
   implementation libs.androidx.lifecycle.runtime.ktx

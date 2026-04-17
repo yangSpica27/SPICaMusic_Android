@@ -7,63 +7,63 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
-import me.spica27.spicamusic.utils.PreferencesManager
+import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 
 /**
  * 设置页面 ViewModel
  */
 class SettingsViewModel(
-    private val preferencesManager: PreferencesManager,
+    private val settingsUseCases: SettingsUseCases,
 ) : ViewModel() {
     // 暗色模式
     val darkMode =
-        preferencesManager
-            .getBoolean(PreferencesManager.Keys.DARK_MODE, false)
+        settingsUseCases
+            .getBoolean(SettingsUseCases.Keys.DARK_MODE, false)
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     fun setDarkMode(enabled: Boolean) {
         viewModelScope.launch {
-            preferencesManager.setBoolean(PreferencesManager.Keys.DARK_MODE, enabled)
+            settingsUseCases.setBoolean(SettingsUseCases.Keys.DARK_MODE, enabled)
         }
     }
 
     // 屏幕常亮
     val keepScreenOn =
-        preferencesManager
-            .getBoolean(PreferencesManager.Keys.KEEP_SCREEN_ON, false)
+        settingsUseCases
+            .getBoolean(SettingsUseCases.Keys.KEEP_SCREEN_ON, false)
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     fun setKeepScreenOn(enabled: Boolean) {
         viewModelScope.launch {
-            preferencesManager.setBoolean(PreferencesManager.Keys.KEEP_SCREEN_ON, enabled)
+            settingsUseCases.setBoolean(SettingsUseCases.Keys.KEEP_SCREEN_ON, enabled)
         }
     }
 
     // 动态频谱
     val dynamicSpectrumBackground =
-        preferencesManager
+        settingsUseCases
             .getString(
-                PreferencesManager.Keys.DYNAMIC_SPECTRUM_BACKGROUND,
+                SettingsUseCases.Keys.DYNAMIC_SPECTRUM_BACKGROUND,
                 DynamicSpectrumBackground.TopGlow.value,
             ).stateIn(viewModelScope, SharingStarted.Eagerly, DynamicSpectrumBackground.TopGlow.value)
 
     fun setDynamicSpectrumBackground(value: String) {
         viewModelScope.launch {
-            preferencesManager.setString(PreferencesManager.Keys.DYNAMIC_SPECTRUM_BACKGROUND, value)
+            settingsUseCases.setString(SettingsUseCases.Keys.DYNAMIC_SPECTRUM_BACKGROUND, value)
         }
     }
 
     // 动态封面
     val dynamicCoverType =
-        preferencesManager
+        settingsUseCases
             .getString(
-                PreferencesManager.Keys.DYNAMIC_COVER_TYPE,
+                SettingsUseCases.Keys.DYNAMIC_COVER_TYPE,
                 DynamicCoverType.ShiningStars.value,
             ).stateIn(viewModelScope, SharingStarted.Eagerly, DynamicCoverType.ShiningStars.value)
 
     fun setDynamicCoverType(value: String) {
         viewModelScope.launch {
-            preferencesManager.setString(PreferencesManager.Keys.DYNAMIC_COVER_TYPE, value)
+            settingsUseCases.setString(SettingsUseCases.Keys.DYNAMIC_COVER_TYPE, value)
         }
     }
 }

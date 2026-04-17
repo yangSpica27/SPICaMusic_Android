@@ -50,7 +50,7 @@ dependencies {
     api project(':common')
     
     // Storage API (for song data access)
-    implementation project(':storage-core')
+    implementation project(':feature-library-data')
     
     // TarsosDSP for FFT analysis
     compileOnly fileTree(dir: "libs", include: ["*.jar"])

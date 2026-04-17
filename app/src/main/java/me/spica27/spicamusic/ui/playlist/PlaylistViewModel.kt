@@ -11,14 +11,14 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.storage.api.IPlaylistRepository
+import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import timber.log.Timber
 
 /**
  * 歌单页面 ViewModel
  */
 class PlaylistViewModel(
-    private val playlistRepository: IPlaylistRepository,
+    private val playlistRepository: PlaylistUseCases,
 ) : ViewModel() {
     // 所有歌单列表
     val playlists: StateFlow<List<Playlist>> =

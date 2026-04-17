@@ -7,14 +7,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.player.api.IMusicPlayer
+import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
+import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayerAction
-import me.spica27.spicamusic.storage.api.IAlbumRepository
 
 class AlbumDetailViewModel(
     private val albumId: String,
-    private val albumRepository: IAlbumRepository,
-    private val player: IMusicPlayer,
+    private val albumRepository: AlbumUseCases,
+    private val player: PlayerUseCases,
 ) : ViewModel() {
     val songs: StateFlow<List<Song>> =
         albumRepository.getAlbumSongsFlow(albumId).stateIn(

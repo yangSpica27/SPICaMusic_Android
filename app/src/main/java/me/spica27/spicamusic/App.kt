@@ -15,9 +15,13 @@ import coil3.request.crossfade
 import coil3.request.premultipliedAlpha
 import me.spcia.lyric_core.di.extraInfoModule
 import me.spica27.spicamusic.di.AppModule
+import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
+import me.spica27.spicamusic.feature.library.domain.libraryDomainModule
+import me.spica27.spicamusic.feature.lyrics.domain.lyricsDomainModule
+import me.spica27.spicamusic.feature.player.domain.playerDomainModule
+import me.spica27.spicamusic.feature.settings.domain.settingsDomainModule
 import me.spica27.spicamusic.player.impl.SpicaPlayer
 import me.spica27.spicamusic.service.PlaybackService
-import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.impl.di.storageModule
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
@@ -32,7 +36,7 @@ import timber.log.Timber
 class App :
     Application(),
     SingletonImageLoader.Factory {
-    private val musicScanService: IMusicScanService by inject()
+    private val musicScanService: MusicScanUseCases by inject()
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
@@ -49,8 +53,12 @@ class App :
             androidLogger()
             androidContext(this@App)
             modules(
-                storageModule, // 存储模块 (storage-core)
-                SpicaPlayer.createModule(PlaybackService::class.java), // 播放器模块 (player-core)
+                storageModule, // 数据模块 (feature-library-data)
+                SpicaPlayer.createModule(PlaybackService::class.java), // 数据模块 (feature-player-data)
+                libraryDomainModule,
+                playerDomainModule,
+                settingsDomainModule,
+                lyricsDomainModule,
                 AppModule.appModule, // 应用模块
                 extraInfoModule,
             )
