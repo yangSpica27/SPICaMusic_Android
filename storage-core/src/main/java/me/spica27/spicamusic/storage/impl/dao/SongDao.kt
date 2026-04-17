@@ -138,6 +138,7 @@ interface SongDao {
     data class SongScanInfo(
         val songId: Long,
         val mediaStoreId: Long,
+        val albumId: Long,
         val dateModified: Long,
         val like: Boolean,
         val isIgnore: Boolean,
@@ -148,8 +149,11 @@ interface SongDao {
      * 获取所有歌曲的扫描摘要信息（用于增量比较）
      * 只查询必要列，避免全量加载
      */
-    @Query("SELECT songId, mediaStoreId, dateModified, `like`, isIgnore, sort FROM song")
+    @Query("SELECT songId, mediaStoreId, albumId, dateModified, `like`, isIgnore, sort FROM song")
     suspend fun getAllScanInfo(): List<SongScanInfo>
+
+    @Query("SELECT songId, mediaStoreId, albumId, dateModified, `like`, isIgnore, sort FROM song WHERE mediaStoreId IN (:mediaStoreIds)")
+    suspend fun getScanInfoByMediaStoreIds(mediaStoreIds: List<Long>): List<SongScanInfo>
 
     /**
      * 使用 Upsert 策略批量插入或更新歌曲

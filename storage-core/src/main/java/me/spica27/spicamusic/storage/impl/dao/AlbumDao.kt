@@ -26,6 +26,22 @@ interface AlbumDao {
         insertAll(list)
     }
 
+    @Query("DELETE FROM albumentity WHERE id IN (:albumIds)")
+    fun deleteByIds(albumIds: List<String>)
+
+    @Transaction
+    fun replaceByIds(
+        albumIds: List<String>,
+        list: List<AlbumEntity>,
+    ) {
+        if (albumIds.isNotEmpty()) {
+            deleteByIds(albumIds)
+        }
+        if (list.isNotEmpty()) {
+            insertAll(list)
+        }
+    }
+
     @Query("SELECT * FROM albumentity")
     fun getAllPaging(): PagingSource<Int, AlbumEntity>
 

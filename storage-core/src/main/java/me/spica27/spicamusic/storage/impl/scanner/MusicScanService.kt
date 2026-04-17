@@ -67,6 +67,11 @@ class MusicScanService(
     // 去抖动任务
     private var debounceJob: Job? = null
 
+    private val pendingMediaStoreSyncLock = Any()
+    private val pendingChangedMediaStoreIds = mutableSetOf<Long>()
+    private val pendingDeletedMediaStoreIds = mutableSetOf<Long>()
+    private var pendingFullMediaStoreRescan = false
+
     // MediaStore 内容观察者
     private var mediaStoreObserver: ContentObserver? = null
 
@@ -149,13 +154,11 @@ class MusicScanService(
                     _mediaStoreChanges.emit(MediaStoreChangeEvent(changeType))
                 }
 
-                // 去抖动：取消之前的任务，延迟执行扫描
-                debounceJob?.cancel()
-                debounceJob = serviceScope.launch {
-                    delay(debounceDelayMs)
-                    Timber.tag(TAG).i("去抖动完成，开始增量扫描...")
-                    scanMediaStore()
-                }
+                enqueueObservedMediaStoreChange(
+                    mediaStoreId = extractObservedMediaStoreId(uri),
+                    changeType = changeType,
+                )
+                scheduleDebouncedMediaStoreSync()
             }
         }
 
@@ -180,6 +183,103 @@ class MusicScanService(
         }
         debounceJob?.cancel()
         debounceJob = null
+        synchronized(pendingMediaStoreSyncLock) {
+            pendingChangedMediaStoreIds.clear()
+            pendingDeletedMediaStoreIds.clear()
+            pendingFullMediaStoreRescan = false
+        }
+    }
+
+    private data class PendingMediaStoreSync(
+        val changedIds: Set<Long>,
+        val deletedIds: Set<Long>,
+        val requiresFullRescan: Boolean,
+    )
+
+    private fun enqueueObservedMediaStoreChange(
+        mediaStoreId: Long?,
+        changeType: MediaStoreChangeType,
+    ) {
+        synchronized(pendingMediaStoreSyncLock) {
+            when {
+                changeType == MediaStoreChangeType.CONTENT_DELETED && mediaStoreId != null -> {
+                    pendingDeletedMediaStoreIds.add(mediaStoreId)
+                }
+
+                mediaStoreId != null -> {
+                    pendingChangedMediaStoreIds.add(mediaStoreId)
+                }
+
+                else -> {
+                    pendingFullMediaStoreRescan = true
+                }
+            }
+        }
+    }
+
+    private fun scheduleDebouncedMediaStoreSync() {
+        debounceJob?.cancel()
+        debounceJob =
+            serviceScope.launch {
+                delay(debounceDelayMs)
+                flushPendingMediaStoreSync()
+            }
+    }
+
+    private fun takePendingMediaStoreSync(): PendingMediaStoreSync =
+        synchronized(pendingMediaStoreSyncLock) {
+            val request =
+                PendingMediaStoreSync(
+                    changedIds = pendingChangedMediaStoreIds.toSet(),
+                    deletedIds = pendingDeletedMediaStoreIds.toSet(),
+                    requiresFullRescan = pendingFullMediaStoreRescan,
+                )
+            pendingChangedMediaStoreIds.clear()
+            pendingDeletedMediaStoreIds.clear()
+            pendingFullMediaStoreRescan = false
+            request
+        }
+
+    private fun mergePendingMediaStoreSync(request: PendingMediaStoreSync) {
+        synchronized(pendingMediaStoreSyncLock) {
+            pendingChangedMediaStoreIds.addAll(request.changedIds)
+            pendingDeletedMediaStoreIds.addAll(request.deletedIds)
+            pendingFullMediaStoreRescan = pendingFullMediaStoreRescan || request.requiresFullRescan
+        }
+    }
+
+    private suspend fun flushPendingMediaStoreSync() {
+        val request = takePendingMediaStoreSync()
+        if (!request.requiresFullRescan && request.changedIds.isEmpty() && request.deletedIds.isEmpty()) {
+            return
+        }
+
+        if (_isScanning.value) {
+            Timber.tag(TAG).i("当前已有扫描任务，合并变更并等待下一轮去抖动同步")
+            mergePendingMediaStoreSync(request)
+            scheduleDebouncedMediaStoreSync()
+            return
+        }
+
+        if (request.requiresFullRescan) {
+            Timber.tag(TAG).i("监听变更无法定位具体媒体项，回退到全量增量扫描")
+            scanMediaStore()
+            return
+        }
+
+        Timber.tag(TAG).i(
+            "去抖动完成，开始局部同步 MediaStore：changed=${request.changedIds.size}, deleted=${request.deletedIds.size}",
+        )
+        scanMediaStoreDelta(
+            changedMediaStoreIds = request.changedIds,
+            deletedMediaStoreIds = request.deletedIds,
+        )
+    }
+
+    private fun extractObservedMediaStoreId(uri: Uri?): Long? {
+        if (uri == null) return null
+        return runCatching { ContentUris.parseId(uri) }.getOrNull()
+            ?: uri.lastPathSegment?.toLongOrNull()
     }
 
     override suspend fun scanMediaStore(): ScanResult = withContext(Dispatchers.IO) {
@@ -406,6 +506,181 @@ class MusicScanService(
         }
     }
 
+    private suspend fun scanMediaStoreDelta(
+        changedMediaStoreIds: Set<Long>,
+        deletedMediaStoreIds: Set<Long>,
+    ): ScanResult =
+        withContext(Dispatchers.IO) {
+            val candidateIds = (changedMediaStoreIds + deletedMediaStoreIds)
+            if (candidateIds.isEmpty()) return@withContext ScanResult(0, 0, 0, 0)
+            if (_isScanning.value) {
+                Timber.tag(TAG).w("扫描已在进行中，跳过本次局部同步")
+                return@withContext ScanResult(0, 0, 0, 0)
+            }
+
+            _isScanning.value = true
+            isCancelled = false
+            var totalScanned = 0
+            var newAdded = 0
+            var updated = 0
+
+            try {
+                val ignorePrefixes = loadIgnorePrefixes()
+                val existingInfoMap =
+                    songDao
+                        .getScanInfoByMediaStoreIds(candidateIds.toList())
+                        .associateBy { it.mediaStoreId }
+                val affectedAlbumIds = mutableSetOf<Long>()
+                val retainedExistingIds = mutableSetOf<Long>()
+                val songsToUpsert = mutableListOf<SongEntity>()
+                val contentResolver = context.contentResolver
+                val queryTargetIds = changedMediaStoreIds.toList()
+
+                queryTargetIds.chunked(300).forEach { chunk ->
+                    if (isCancelled) return@forEach
+                    queryMediaStoreByIds(contentResolver, chunk)?.use { cursor ->
+                        val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+                        val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
+                        val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+                        val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
+                        val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+                        val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
+                        val albumIdColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM_ID)
+                        val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+                        val dateModifiedColumn =
+                            cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
+
+                        while (cursor.moveToNext() && !isCancelled) {
+                            val mediaStoreId = cursor.getLong(idColumn)
+                            val displayName = cursor.getString(nameColumn) ?: "Unknown"
+                            val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
+                            val size = cursor.getLong(sizeColumn)
+                            val duration = cursor.getLong(durationColumn)
+                            val mimeType = cursor.getString(mimeTypeColumn) ?: ""
+                            val albumId = cursor.getLong(albumIdColumn)
+                            val path = cursor.getString(dataColumn) ?: ""
+                            val dateModified = cursor.getLong(dateModifiedColumn)
+                            val existingInfo = existingInfoMap[mediaStoreId]
+
+                            if (!isMediaStoreSongEligible(mimeType, duration, path, ignorePrefixes)) {
+                                existingInfo?.albumId?.let(affectedAlbumIds::add)
+                                continue
+                            }
+
+                            totalScanned++
+                            _scanProgress.value =
+                                ScanProgress(
+                                    current = totalScanned,
+                                    total = queryTargetIds.size,
+                                    currentFile = displayName,
+                                )
+
+                            if (
+                                existingInfo != null &&
+                                existingInfo.dateModified == dateModified &&
+                                dateModified != 0L
+                            ) {
+                                retainedExistingIds.add(mediaStoreId)
+                                continue
+                            }
+
+                            val audioInfo =
+                                extractAudioInfoWithTaglib(
+                                    contentResolver = contentResolver,
+                                    mediaStoreId = mediaStoreId,
+                                    fallbackDuration = duration,
+                                )
+                            val finalDisplayName = audioInfo.title ?: displayName
+                            val finalArtist = audioInfo.artist ?: artist
+                            val sortName = generateSortName(finalDisplayName)
+                            val codec = resolveCodec(mimeType, audioInfo.bitRate)
+
+                            songsToUpsert.add(
+                                SongEntity(
+                                    songId = existingInfo?.songId,
+                                    mediaStoreId = mediaStoreId,
+                                    path = path,
+                                    displayName = finalDisplayName,
+                                    artist = finalArtist,
+                                    size = size,
+                                    like = existingInfo?.like ?: false,
+                                    duration = audioInfo.duration.takeIf { it > 0 } ?: duration,
+                                    sort = existingInfo?.sort ?: 0,
+                                    mimeType = mimeType,
+                                    albumId = albumId,
+                                    sampleRate = audioInfo.sampleRate,
+                                    bitRate = audioInfo.bitRate,
+                                    channels = audioInfo.channels,
+                                    digit = audioInfo.digit,
+                                    isIgnore = existingInfo?.isIgnore ?: false,
+                                    sortName = sortName,
+                                    dateModified = dateModified,
+                                    codec = codec,
+                                ),
+                            )
+                            affectedAlbumIds.add(albumId)
+                            existingInfo?.albumId?.takeIf { it != albumId }?.let(affectedAlbumIds::add)
+                            if (existingInfo != null) {
+                                retainedExistingIds.add(mediaStoreId)
+                                updated++
+                            } else {
+                                newAdded++
+                            }
+                        }
+                    }
+                }
+
+                if (isCancelled) {
+                    Timber.tag(TAG).w("局部同步已取消")
+                    return@withContext ScanResult(totalScanned, 0, 0, 0)
+                }
+
+                val removedMediaStoreIds =
+                    buildSet {
+                        addAll(deletedMediaStoreIds.filter { it in existingInfoMap })
+                        queryTargetIds
+                            .filter { it in existingInfoMap && it !in retainedExistingIds }
+                            .forEach(::add)
+                    }
+                removedMediaStoreIds
+                    .asSequence()
+                    .mapNotNull(existingInfoMap::get)
+                    .map { it.albumId }
+                    .forEach(affectedAlbumIds::add)
+
+                songDao.incrementalUpdateSongs(
+                    removedMediaStoreIds = removedMediaStoreIds.toList(),
+                    changedSongs = songsToUpsert,
+                )
+                refreshAlbumsByIds(affectedAlbumIds)
+
+                Timber.tag(TAG).i(
+                    "局部同步完成: 目标=${candidateIds.size}, 扫描=$totalScanned, 新增=$newAdded, 更新=$updated, 删除=${removedMediaStoreIds.size}",
+                )
+
+                ScanResult(
+                    totalScanned = totalScanned,
+                    newAdded = newAdded,
+                    updated = updated,
+                    removed = removedMediaStoreIds.size,
+                )
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "局部同步 MediaStore 失败，回退到全量增量扫描")
+                mergePendingMediaStoreSync(
+                    PendingMediaStoreSync(
+                        changedIds = emptySet(),
+                        deletedIds = emptySet(),
+                        requiresFullRescan = true,
+                    ),
+                )
+                scheduleDebouncedMediaStoreSync()
+                ScanResult(0, 0, 0, 0)
+            } finally {
+                _isScanning.value = false
+                _scanProgress.value = null
+            }
+        }
+
     override suspend fun scanFolder(folderPath: String): ScanResult {
         Timber.tag(TAG).w("scanFolder 已废弃，请使用 scanExtraFolders()")
         return ScanResult(0, 0, 0, 0)
@@ -535,6 +810,89 @@ class MusicScanService(
 
         Timber.tag(TAG).i("额外文件夹扫描完成: 总计=$totalScanned, 新增=$newAdded")
         ScanResult(totalScanned = totalScanned, newAdded = newAdded, updated = 0, removed = 0)
+    }
+
+    private suspend fun loadIgnorePrefixes(): List<String> =
+        try {
+            scanFolderRepository
+                .getIgnoreFoldersSync()
+                .mapNotNull { it.pathPrefix }
+                .map { if (it.endsWith("/")) it else "$it/" }
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+    private fun queryMediaStoreByIds(
+        contentResolver: ContentResolver,
+        mediaStoreIds: List<Long>,
+    ) = if (mediaStoreIds.isEmpty()) {
+        null
+    } else {
+        val uri =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+            } else {
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+            }
+        val placeholders = mediaStoreIds.joinToString(",") { "?" }
+        contentResolver.query(
+            uri,
+            arrayOf(
+                MediaStore.Audio.Media._ID,
+                MediaStore.Audio.Media.DISPLAY_NAME,
+                MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.SIZE,
+                MediaStore.Audio.Media.DURATION,
+                MediaStore.Audio.Media.MIME_TYPE,
+                MediaStore.Audio.Media.ALBUM_ID,
+                MediaStore.Audio.Media.DATA,
+                MediaStore.Audio.Media.DATE_MODIFIED,
+            ),
+            "${MediaStore.Audio.Media._ID} IN ($placeholders)",
+            mediaStoreIds.map(Long::toString).toTypedArray(),
+            null,
+        )
+    }
+
+    private fun isMediaStoreSongEligible(
+        mimeType: String,
+        duration: Long,
+        path: String,
+        ignorePrefixes: List<String>,
+    ): Boolean {
+        if (!SUPPORTED_MIME_TYPES.contains(mimeType)) return false
+        if (duration < 10000) return false
+        if (path.isNotEmpty() && ignorePrefixes.any { path.startsWith(it) }) return false
+        return true
+    }
+
+    private fun resolveCodec(
+        mimeType: String,
+        bitRate: Int,
+    ): String {
+        var codec =
+            when {
+                mimeType.contains("mp3", ignoreCase = true) -> "MP3"
+                mimeType.contains("aac", ignoreCase = true) -> "AAC"
+                mimeType.contains("flac", ignoreCase = true) -> "FLAC"
+                mimeType.contains("alac", ignoreCase = true) -> "ALAC"
+                mimeType.contains("opus", ignoreCase = true) -> "Opus"
+                mimeType.contains("vorbis", ignoreCase = true) -> "Vorbis"
+                mimeType.contains("wav", ignoreCase = true) -> "WAV"
+                mimeType.contains("m4a", ignoreCase = true) -> "M4A"
+                else -> mimeType.substringAfter("/").uppercase()
+            }
+        if (codec == "M4A") {
+            codec = if (bitRate >= 700000) "ALAC" else "AAC"
+        }
+        return codec
+    }
+
+    private suspend fun refreshAlbumsByIds(albumIds: Set<Long>) {
+        if (albumIds.isEmpty()) return
+        val albumIdStrings = albumIds.map(Long::toString)
+        val albums = loadAlbums(albumIds)
+        albumDao.replaceByIds(albumIdStrings, albums)
     }
 
     /** 从 MediaStore 构建现有文件路径的可变集合 */
@@ -860,7 +1218,8 @@ class MusicScanService(
     )
 
 
-    private suspend fun loadAlbums(): List<AlbumEntity> = withContext(Dispatchers.IO) {
+    private suspend fun loadAlbums(albumIds: Set<Long>? = null): List<AlbumEntity> = withContext(Dispatchers.IO) {
+        if (albumIds != null && albumIds.isEmpty()) return@withContext emptyList()
         val albums = mutableListOf<AlbumEntity>()
         val collection = MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI
 
@@ -874,40 +1233,57 @@ class MusicScanService(
 
         val sortOrder = "${MediaStore.Audio.Albums.ALBUM} ASC"
 
-        context.contentResolver.query(
-            collection,
-            projection,
-            null,
-            null,
-            sortOrder
-        )?.use { cursor ->
-            // Cache column indices
-            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums._ID)
-            val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.ALBUM)
-            val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.ARTIST)
-            val songsCountColumn =
-                cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.NUMBER_OF_SONGS)
-            val yearColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.FIRST_YEAR)
+        val chunks = albumIds?.toList()?.chunked(300) ?: listOf(emptyList())
+        chunks.forEach { chunk ->
+            val selection =
+                if (chunk.isEmpty()) {
+                    null
+                } else {
+                    "${MediaStore.Audio.Albums._ID} IN (${chunk.joinToString(",") { "?" }})"
+                }
+            val selectionArgs =
+                if (chunk.isEmpty()) {
+                    null
+                } else {
+                    chunk.map(Long::toString).toTypedArray()
+                }
 
-            while (cursor.moveToNext()) {
-                val id = cursor.getLong(idColumn)
-                val title = cursor.getString(albumColumn) ?: continue // Skip if null
-                val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
-                val songsCount = cursor.getInt(songsCountColumn)
-                val year = cursor.getInt(yearColumn)
-                val albumArtUri = ContentUris.withAppendedId(
-                    MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
-                    id
-                ).toString()
-                val album = AlbumEntity(
-                    id = id.toString(),
-                    title = title,
-                    artist = artist,
-                    artworkUri = albumArtUri,
-                    year = year,
-                    numberOfSongs = songsCount,
-                )
-                albums.add(album)
+            context.contentResolver.query(
+                collection,
+                projection,
+                selection,
+                selectionArgs,
+                sortOrder,
+            )?.use { cursor ->
+                val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums._ID)
+                val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.ALBUM)
+                val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.ARTIST)
+                val songsCountColumn =
+                    cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.NUMBER_OF_SONGS)
+                val yearColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.FIRST_YEAR)
+
+                while (cursor.moveToNext()) {
+                    val id = cursor.getLong(idColumn)
+                    val title = cursor.getString(albumColumn) ?: continue
+                    val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
+                    val songsCount = cursor.getInt(songsCountColumn)
+                    val year = cursor.getInt(yearColumn)
+                    val albumArtUri =
+                        ContentUris.withAppendedId(
+                            MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
+                            id,
+                        ).toString()
+                    albums.add(
+                        AlbumEntity(
+                            id = id.toString(),
+                            title = title,
+                            artist = artist,
+                            artworkUri = albumArtUri,
+                            year = year,
+                            numberOfSongs = songsCount,
+                        ),
+                    )
+                }
             }
         }
 
