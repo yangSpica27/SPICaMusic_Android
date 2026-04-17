@@ -94,9 +94,7 @@ class App :
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader
             .Builder(context)
-            // 关闭全局 crossfade：sharedBounds 动画已负责视觉过渡，
-            // crossfade 叠加会造成 GPU 双重合成，加剧跳转掉帧。
-            .crossfade(false)
+            .crossfade(true)
             .premultipliedAlpha(true) // 预乘 alpha 优化 GPU 性能，减少内存占用
             .allowRgb565(true)
             .allowConversionToBitmap(true)
