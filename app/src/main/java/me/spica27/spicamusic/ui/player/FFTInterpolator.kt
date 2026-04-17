@@ -39,6 +39,8 @@ class FFTInterpolator(
 
     // 插值后的绘制数据
     private val _interpolatedData = MutableStateFlow(FloatArray(bandCount))
+    private val interpolatedBuffers = arrayOf(FloatArray(bandCount), FloatArray(bandCount))
+    private var activeInterpolatedBufferIndex = 0
 
     /**
      * 插值后的绘制数据
@@ -129,11 +131,14 @@ class FFTInterpolator(
                             ((currentTime - lastUpdateTime) / safeInterval.toFloat())
                                 .coerceIn(0f, 1f)
 
-                        // 对每个频段进行线性插值
-                        val newData =
-                            FloatArray(bandCount) { index ->
+                        // 使用双缓冲复用数组，避免每帧分配新的 FloatArray。
+                        val nextBufferIndex = activeInterpolatedBufferIndex xor 1
+                        val newData = interpolatedBuffers[nextBufferIndex]
+                        for (index in 0 until bandCount) {
+                            newData[index] =
                                 lastBands[index] + (currentBands[index] - lastBands[index]) * progress
-                            }
+                        }
+                        activeInterpolatedBufferIndex = nextBufferIndex
 
                         // 更新插值数据
                         _interpolatedData.value = newData
@@ -154,8 +159,10 @@ class FFTInterpolator(
         fftListenerJob?.cancel()
         fftListenerJob = null
 
-        // 重置数据为全0
-        _interpolatedData.value = FloatArray(bandCount)
+        // 重置数据为全0，并切换缓冲区以保证 StateFlow 发出新引用。
+        interpolatedBuffers.forEach { it.fill(0f) }
+        activeInterpolatedBufferIndex = activeInterpolatedBufferIndex xor 1
+        _interpolatedData.value = interpolatedBuffers[activeInterpolatedBufferIndex]
     }
 
     /**

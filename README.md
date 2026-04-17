@@ -83,9 +83,9 @@ git clone https://github.com/spica27/SPICaMusic_Android.git
 ```
 
 **环境要求**:
-- Android Studio Narwhal 2025.1.1+
-- JDK 21+
-- Android SDK 29+ (minSdk 29, targetSdk 36)
+- Android Studio Otter Feature Drop 3 / 2026.1.3+（或兼容 AGP 9.1 的更新版本）
+- JDK 17+
+- Android SDK 29+ (minSdk 29, targetSdk 36, compileSdk 37)
 
 ## ⚠️ 注意事项
 
