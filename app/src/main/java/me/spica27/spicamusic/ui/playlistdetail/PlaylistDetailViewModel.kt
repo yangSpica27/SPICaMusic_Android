@@ -139,9 +139,22 @@ class PlaylistDetailViewModel(
     private val _showRenameDialog = MutableStateFlow(false)
     val showRenameDialog = _showRenameDialog.asStateFlow()
 
+    private val _showDeleteConfirmDialog = MutableStateFlow(false)
+
+    val showDeleteConfirmDialog = _showDeleteConfirmDialog.asStateFlow()
+
+    private val _playlistDeleted = MutableStateFlow(false)
+    val playlistDeleted = _playlistDeleted.asStateFlow()
+
     // 是否显示添加歌曲选择器
     private val _showAddSongsSheet = MutableStateFlow(false)
+
     val showAddSongsSheet = _showAddSongsSheet.asStateFlow()
+
+    // 是否显示更多选项菜单
+    private val _showMoreOptionsMenu = MutableStateFlow(false)
+
+    val showMoreOptionsMenu = _showMoreOptionsMenu.asStateFlow()
 
     /**
      * 播放歌单所有歌曲
@@ -231,6 +244,27 @@ class PlaylistDetailViewModel(
         _selectedSongs.value = emptySet()
     }
 
+    fun showDeleteConfirmDialog() {
+        _showDeleteConfirmDialog.value = true
+    }
+
+    fun hideDeleteConfirmDialog() {
+        _showDeleteConfirmDialog.value = false
+    }
+
+    fun deletePlaylist() {
+        viewModelScope.launch {
+            try {
+                playlistRepository.deletePlaylist(playlistId)
+                _playlistDeleted.value = true
+                hideDeleteConfirmDialog()
+                Timber.d("删除歌单成功: $playlistId")
+            } catch (e: Exception) {
+                Timber.e(e, "删除歌单失败")
+            }
+        }
+    }
+
     /**
      * 从歌单中移除选中的歌曲
      */
@@ -299,6 +333,20 @@ class PlaylistDetailViewModel(
      */
     fun hideAddSongsSheet() {
         _showAddSongsSheet.value = false
+    }
+
+    /**
+     * 显示更多选项菜单
+     */
+    fun showMoreOptionsMenu() {
+        _showMoreOptionsMenu.value = true
+    }
+
+    /**
+     * 隐藏更多选项菜单
+     */
+    fun hideMoreOptionsMenu() {
+        _showMoreOptionsMenu.value = false
     }
 
     /**

@@ -56,7 +56,7 @@ import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -115,9 +115,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.MiuixPopupHost
-import top.yukonga.miuix.kmp.utils.SinkFeedback
 import top.yukonga.miuix.kmp.utils.overScrollOutOfBound
-import top.yukonga.miuix.kmp.utils.pressable
 import top.yukonga.miuix.kmp.window.WindowDialog
 import top.yukonga.miuix.kmp.window.WindowListPopup
 
@@ -147,8 +145,10 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedSongs by viewModel.selectedSongs.collectAsStateWithLifecycle()
     val showRenameDialog by viewModel.showRenameDialog.collectAsStateWithLifecycle()
+    val showDeleteDialog by viewModel.showDeleteConfirmDialog.collectAsStateWithLifecycle()
     val showAddSongsSheet by viewModel.showAddSongsSheet.collectAsStateWithLifecycle()
     val pickerSongCount by viewModel.pickerSongCount.collectAsStateWithLifecycle()
+    val playlistDeleted by viewModel.playlistDeleted.collectAsStateWithLifecycle()
 
     // 添加歌曲选择器
     if (showAddSongsSheet) {
@@ -186,6 +186,15 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
         viewModel.exitSearchMode()
     }
 
+    BackHandler(enabled = showDeleteDialog || showRenameDialog) {
+        if (showDeleteDialog) {
+            viewModel.hideDeleteConfirmDialog()
+        }
+        if (showRenameDialog) {
+            viewModel.hideRenameDialog()
+        }
+    }
+
     val searchFocusRequester = remember { FocusRequester() }
     LaunchedEffect(isSearchMode) {
         if (isSearchMode) {
@@ -200,6 +209,12 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
 
     val hazeState = rememberHazeState()
 
+    LaunchedEffect(playlistDeleted) {
+        if (playlistDeleted) {
+            backStack.removeLastOrNull()
+        }
+    }
+
     with(localNavSharedTransitionScope) {
         Scaffold(
             modifier =
@@ -207,7 +222,8 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                     .sharedBounds(
                         rememberSharedContentState(playlist ?: ""),
                         animatedVisibilityScope = localNavAnimatedContentScope,
-                    ).fillMaxSize(),
+                    )
+                    .fillMaxSize(),
             popupHost = { MiuixPopupHost() },
             topBar = {
                 Column(
@@ -238,10 +254,10 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                             transitionSpec = {
                                 if (targetState) {
                                     (fadeIn() + slideInHorizontally { it / 2 }) togetherWith
-                                        (fadeOut() + slideOutHorizontally { -it / 2 })
+                                            (fadeOut() + slideOutHorizontally { -it / 2 })
                                 } else {
                                     (fadeIn() + slideInHorizontally { -it / 2 }) togetherWith
-                                        (fadeOut() + slideOutHorizontally { it / 2 })
+                                            (fadeOut() + slideOutHorizontally { it / 2 })
                                 }
                             },
                             contentKey = { it },
@@ -263,14 +279,14 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                                         contentKey = { it },
                                         transitionSpec = {
                                             fadeIn() +
-                                                slideIntoContainer(
-                                                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                                    animationSpec = tween(300),
-                                                ) togetherWith fadeOut() +
-                                                slideOutOfContainer(
-                                                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                                    animationSpec = tween(300),
-                                                )
+                                                    slideIntoContainer(
+                                                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                                        animationSpec = tween(300),
+                                                    ) togetherWith fadeOut() +
+                                                    slideOutOfContainer(
+                                                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                                        animationSpec = tween(300),
+                                                    )
                                         },
                                     ) { isMultiSelectMode ->
                                         if (isMultiSelectMode) {
@@ -337,13 +353,19 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                         if (isSearchMode && displayedSongs.isEmpty()) {
                             item {
                                 Box(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 32.dp),
                                     contentAlignment = Alignment.Center,
                                 ) {
                                     Text(
                                         text = "没有找到「$searchKeyword」相关的歌曲",
                                         style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
+                                        color =
+                                            MiuixTheme.colorScheme.onSurfaceVariantActions.copy(
+                                                alpha = 0.5f,
+                                            ),
                                     )
                                 }
                             }
@@ -377,6 +399,20 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                     }
                 }
             }
+
+            DeletePlaylistDialog(
+                playlistName = playlist?.playlistName.orEmpty(),
+                onDismiss = viewModel::hideDeleteConfirmDialog,
+                onConfirm = viewModel::deletePlaylist,
+                show = showDeleteDialog,
+            )
+
+            RenamePlaylistDialog(
+                initialName = playlist?.playlistName.orEmpty(),
+                onDismiss = viewModel::hideRenameDialog,
+                onConfirm = viewModel::renamePlaylist,
+                show = showRenameDialog,
+            )
         }
     }
 }
@@ -394,7 +430,7 @@ private fun PlaylistHeader(
 ) {
     Row(
         modifier =
-        modifier,
+            modifier,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Grid 组合封面
@@ -783,27 +819,65 @@ private fun NormalRightIcons(
     hazeState: HazeState,
     onSearchClick: () -> Unit,
 ) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        TopBarIconButton(
-            hazeState = hazeState,
-            imageVector = Icons.Default.Search,
-            contentDescription = "搜索歌曲",
-            onClick = onSearchClick,
-        )
-        TopBarIconButton(
-            hazeState = hazeState,
-            imageVector = Icons.Default.Add,
-            contentDescription = stringResource(R.string.add_songs),
-            onClick = { viewModel.showAddSongsSheet() },
-        )
-        TopBarIconButton(
-            hazeState = hazeState,
-            imageVector = Icons.Default.MoreVert,
-            contentDescription = stringResource(R.string.more),
-            onClick = { /* TODO: 显示更多操作菜单 */ },
-        )
+    val showMoreMenu = viewModel.showMoreOptionsMenu.collectAsState().value
+
+    Box {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            TopBarIconButton(
+                hazeState = hazeState,
+                imageVector = Icons.Default.Search,
+                contentDescription = "搜索歌曲",
+                onClick = onSearchClick,
+            )
+            TopBarIconButton(
+                hazeState = hazeState,
+                imageVector = Icons.Default.Add,
+                contentDescription = stringResource(R.string.add_songs),
+                onClick = { viewModel.showAddSongsSheet() },
+            )
+            TopBarIconButton(
+                hazeState = hazeState,
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = stringResource(R.string.more),
+                onClick = {
+                    viewModel.showMoreOptionsMenu()
+                },
+            )
+        }
+        WindowListPopup(
+            show = showMoreMenu,
+            alignment = PopupPositionProvider.Align.End,
+            onDismissRequest = {
+                viewModel.hideMoreOptionsMenu()
+            },
+            minWidth = 120.dp,
+        ) {
+            ListPopupColumn {
+                TextButton(
+                    cornerRadius = 0.dp,
+                    text = "重命名歌单",
+                    onClick = {
+                        viewModel.hideMoreOptionsMenu()
+                        viewModel.showRenameDialog()
+                    },
+                )
+                TextButton(
+                    cornerRadius = 0.dp,
+                    text = "删除歌单",
+                    colors =
+                        ButtonDefaults.textButtonColors().copy(
+                            textColor = MiuixTheme.colorScheme.error,
+                        ),
+                    onClick = {
+                        viewModel.hideMoreOptionsMenu()
+                        // 删除歌单逻辑
+                        viewModel.showDeleteConfirmDialog()
+                    },
+                )
+            }
+        }
     }
 }
 
@@ -825,7 +899,8 @@ private fun SearchBarField(
                 .hazeEffect(
                     hazeState,
                     HazeMaterials.ultraThin(containerColor = MiuixTheme.colorScheme.surface),
-                ).padding(horizontal = 14.dp),
+                )
+                .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -973,29 +1048,68 @@ private fun EmptySongList(modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * 重命名歌单对话框
- */
+@Composable
+private fun DeletePlaylistDialog(
+    playlistName: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    show: Boolean,
+) {
+    WindowDialog(
+        title = stringResource(R.string.delete_playlist_title),
+        onDismissRequest = onDismiss,
+        show = show,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.confirm_delete_playlist, playlistName),
+                style = MiuixTheme.textStyles.body1,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(
+                    text = stringResource(R.string.cancel),
+                    onClick = onDismiss,
+                )
+                Spacer(modifier = Modifier.size(12.dp))
+                Button(
+                    onClick = onConfirm,
+                ) {
+                    Text(stringResource(R.string.delete))
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun RenamePlaylistDialog(
-    currentName: String,
+    initialName: String,
     onDismiss: () -> Unit,
-    onRename: (String) -> Unit,
-    show: MutableState<Boolean>,
+    onConfirm: (String) -> Unit,
+    show: Boolean,
 ) {
-    var newName by remember { mutableStateOf(currentName) }
+    var playlistName by remember(show, initialName) { mutableStateOf(initialName) }
+    val trimmedName = playlistName.trim()
+    val canConfirm = trimmedName.isNotEmpty() && trimmedName != initialName.trim()
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     WindowDialog(
         title = stringResource(R.string.rename),
         onDismissRequest = onDismiss,
-        show = show.value,
+        show = show,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             TextField(
-                value = newName,
-                onValueChange = { newName = it },
+                value = playlistName,
+                onValueChange = { playlistName = it },
                 label = stringResource(R.string.hint_input_playlist_name),
                 modifier = Modifier.fillMaxWidth(),
                 useLabelAsPlaceholder = true,
@@ -1008,25 +1122,16 @@ private fun RenamePlaylistDialog(
                 TextButton(
                     text = stringResource(R.string.cancel),
                     onClick = onDismiss,
-                    modifier =
-                        Modifier.pressable(
-                            interactionSource = null,
-                            indication = SinkFeedback(),
-                        ),
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.size(12.dp))
                 Button(
                     onClick = {
-                        if (newName.isNotBlank() && newName != currentName) {
-                            onRename(newName)
+                        if (canConfirm) {
+                            keyboardController?.hide()
+                            onConfirm(trimmedName)
                         }
                     },
-                    modifier =
-                        Modifier.pressable(
-                            interactionSource = null,
-                            indication = SinkFeedback(),
-                        ),
-                    enabled = newName.isNotBlank() && newName != currentName,
+                    enabled = canConfirm,
                 ) {
                     Text(stringResource(R.string.confirm))
                 }
