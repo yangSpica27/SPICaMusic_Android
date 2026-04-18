@@ -1,8 +1,3 @@
-# Storage module ProGuard rules
--keep class me.spica27.spicamusic.storage.api.** { *; }
--keep class me.spica27.spicamusic.storage.impl.entity.** { *; }
-
-# Room
+# Room only needs the database entry point preserved for generated lookups.
 -keep class * extends androidx.room.RoomDatabase
--keep @androidx.room.Entity class *
 -dontwarn androidx.room.paging.**

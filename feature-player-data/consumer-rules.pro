@@ -1,6 +1,1 @@
-# Player module consumer ProGuard rules
--keep class me.spica27.spicamusic.player.api.** { *; }
-
-# Media3
--keep class androidx.media3.** { *; }
--dontwarn androidx.media3.**
+# Media3 already ships the rules it needs; avoid broad keeps here so app code can still shrink.
