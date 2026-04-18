@@ -52,7 +52,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.player.impl.utils.getCoverUri
+import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.theme.Shapes
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card

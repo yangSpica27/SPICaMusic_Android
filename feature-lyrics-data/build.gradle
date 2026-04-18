@@ -49,8 +49,6 @@ kotlin {
 dependencies {
   // Common module
   api project(':common')
-  // Storage API (for song data access)
-  implementation project(':feature-library-data')
   implementation libs.androidx.core.ktx
   implementation libs.androidx.lifecycle.runtime.ktx
 

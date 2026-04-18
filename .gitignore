@@ -18,3 +18,4 @@ local.properties
 /storage-core/build/
 /docs/
 /.kotlin/
+/common/build/

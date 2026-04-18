@@ -55,10 +55,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.feature.library.domain.ScanFolder
+import me.spica27.spicamusic.feature.library.domain.ScanProgress
+import me.spica27.spicamusic.feature.library.domain.ScanResult
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
-import me.spica27.spicamusic.storage.api.ScanFolder
-import me.spica27.spicamusic.storage.api.ScanResult
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
@@ -579,7 +580,7 @@ private fun EmptyFoldersCard(message: String) {
 }
 
 @Composable
-private fun ScanningCard(progress: me.spica27.spicamusic.storage.api.ScanProgress) {
+private fun ScanningCard(progress: ScanProgress) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors =

@@ -35,7 +35,7 @@ kotlin {
 }
 
 dependencies {
-  api project(':feature-lyrics-data')
-  api project(':feature-library-data')
+  implementation project(':feature-lyrics-data')
+  implementation project(':feature-library-data')
   implementation libs.koin.androidx.compose
 }

@@ -3,6 +3,7 @@ package me.spica27.spicamusic.storage.impl.di
 import android.app.Application
 import androidx.room.Room
 import me.spica27.spicamusic.storage.api.IAlbumRepository
+import me.spica27.spicamusic.storage.api.ILyricRepository
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
@@ -10,6 +11,7 @@ import me.spica27.spicamusic.storage.api.IScanFolderRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.storage.impl.db.AppDatabase
 import me.spica27.spicamusic.storage.impl.repository.AlbumRepositoryImpl
+import me.spica27.spicamusic.storage.impl.repository.LyricRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.PlayHistoryRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.PlaylistRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.ScanFolderRepositoryImpl
@@ -45,6 +47,7 @@ val storageModule = module {
     single<IPlaylistRepository> { PlaylistRepositoryImpl(get(), get()) }
     single<IPlayHistoryRepository> { PlayHistoryRepositoryImpl(get()) }
     single<IAlbumRepository> { AlbumRepositoryImpl(get()) }
+    single<ILyricRepository> { LyricRepositoryImpl(get()) }
     single<IScanFolderRepository> { ScanFolderRepositoryImpl(get()) }
 
     // 扫描服务

@@ -17,12 +17,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.feature.library.domain.FolderType
 import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
+import me.spica27.spicamusic.feature.library.domain.ScanFolder
 import me.spica27.spicamusic.feature.library.domain.ScanFolderUseCases
-import me.spica27.spicamusic.storage.api.FolderType
-import me.spica27.spicamusic.storage.api.ScanFolder
-import me.spica27.spicamusic.storage.api.ScanProgress
-import me.spica27.spicamusic.storage.api.ScanResult
+import me.spica27.spicamusic.feature.library.domain.ScanProgress
+import me.spica27.spicamusic.feature.library.domain.ScanResult
 
 /**
  * 媒体库扫描状态

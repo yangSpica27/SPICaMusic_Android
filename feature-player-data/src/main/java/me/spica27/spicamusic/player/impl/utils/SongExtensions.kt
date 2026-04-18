@@ -6,12 +6,11 @@ import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.getCoverUri
 
 /**
  * Song 实体的扩展方法 - Player 模块专用
  */
-
-fun Song.getCoverUri(): Uri = "content://media/external/audio/albumart/$albumId".toUri()
 
 fun Song.getSongUri(): Uri = "content://media/external/audio/media/$mediaStoreId".toUri()
 
