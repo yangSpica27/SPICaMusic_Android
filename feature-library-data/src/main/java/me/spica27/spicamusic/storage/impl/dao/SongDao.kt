@@ -6,6 +6,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RewriteQueriesToDropUnusedColumns
 import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
@@ -98,6 +99,7 @@ interface SongDao {
     @Delete
     suspend fun delete(song: List<SongEntity>)
 
+    @RewriteQueriesToDropUnusedColumns
     @Query(
         """
         SELECT s.*, COUNT(ph.mediaId) as play_count 
@@ -110,6 +112,7 @@ interface SongDao {
     )
     fun getOftenListenSongs(): Flow<List<SongEntity>>
 
+    @RewriteQueriesToDropUnusedColumns
     @Query(
         """
         SELECT s.*, COUNT(ph.mediaId) as play_count 

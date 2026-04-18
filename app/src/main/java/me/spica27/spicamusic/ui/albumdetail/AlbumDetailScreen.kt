@@ -36,8 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.chrisbanes.haze.HazeProgressive
-import dev.chrisbanes.haze.hazeEffect
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Song
@@ -173,14 +171,7 @@ private fun Header(
                     .fillMaxSize()
                     .clip(
                         RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
-                    ).hazeEffect {
-                        progressive =
-                            HazeProgressive.verticalGradient(
-                                startY = .5f,
-                                startIntensity = 0f,
-                                endIntensity = .8f,
-                            )
-                    },
+                    ),
             placeHolder = {
                 Box(
                     modifier =
