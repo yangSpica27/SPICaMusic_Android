@@ -331,22 +331,6 @@ interface SongDao {
     fun getSongsBySortNamePaging(keyword: String? = null): PagingSource<Int, SongEntity>
 
     /**
-     * 获取符合条件的歌曲总数（用于 UI 显示总数）
-     */
-    @Query(
-        """
-        SELECT COUNT(*) FROM song 
-        WHERE isIgnore == 0
-        AND (
-            :keyword IS NULL OR :keyword = ''
-            OR displayName LIKE '%' || :keyword || '%' 
-            OR artist LIKE '%' || :keyword || '%'
-        )
-    """
-    )
-    fun countFilteredSongs(keyword: String? = null): Flow<Int>
-
-    /**
      * 获取所有符合条件的歌曲 ID（用于全选功能）
      */
     @Query(

@@ -96,11 +96,11 @@ fun AllSongsScreen(
     viewModel: AllSongsViewModel = koinViewModel(),
 ) {
     val filteredSongs: LazyPagingItems<Song> = viewModel.filteredSongs.collectAsLazyPagingItems()
-    val songCount by viewModel.songCount.collectAsStateWithLifecycle()
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedSongIds by viewModel.selectedSongIds.collectAsStateWithLifecycle()
     val currentPlayingMediaStoreId by viewModel.currentPlayingMediaStoreId.collectAsStateWithLifecycle()
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
+    val songCount = filteredSongs.itemCount
 
     val scrollBehavior = MiuixScrollBehavior()
 

@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
+import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
@@ -105,9 +106,11 @@ fun SearchScreen(
 ) {
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
     val searchPagingItems = viewModel.searchPagingResults.collectAsLazyPagingItems()
-    val searchResultCount by viewModel.searchResultCount.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+    val isSearchRefreshIdle = searchPagingItems.loadState.refresh is LoadState.NotLoading
+    val isSearchEmpty = searchKeyword.isNotEmpty() && isSearchRefreshIdle && searchPagingItems.itemCount == 0
+    val hasSearchResults = searchKeyword.isNotEmpty() && isSearchRefreshIdle && searchPagingItems.itemCount > 0
 
     LaunchedEffect(searchKeyword) {
         listState.animateScrollToItem(0)
@@ -169,7 +172,7 @@ fun SearchScreen(
                     paddingValues = paddingValues,
                 )
             } else {
-                if (searchResultCount == 0) {
+                if (isSearchEmpty) {
                     // 空提示
                     EmptyHolder(
                         modifier =
@@ -180,7 +183,7 @@ fun SearchScreen(
                                 .padding(horizontal = 16.dp),
                         inputText = searchKeyword,
                     )
-                } else if (searchKeyword.isNotEmpty() && searchResultCount > 0) {
+                } else if (hasSearchResults) {
                     // 搜索结果列表
                     SearchResultHolder(
                         searchPagingItems = searchPagingItems,

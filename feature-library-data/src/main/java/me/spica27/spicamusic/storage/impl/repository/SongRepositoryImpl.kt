@@ -242,7 +242,7 @@ class SongRepositoryImpl(
             config = PagingConfig(
                 pageSize = PAGE_SIZE,
                 prefetchDistance = PREFETCH_DISTANCE,
-                enablePlaceholders = false,
+                enablePlaceholders = true,
             ),
             pagingSourceFactory = { songDao.getFilteredSongsPaging(keyword) }
         ).flow.map { pagingData -> pagingData.map { it.toCommon() } }
@@ -252,13 +252,10 @@ class SongRepositoryImpl(
             config = PagingConfig(
                 pageSize = PAGE_SIZE,
                 prefetchDistance = PREFETCH_DISTANCE,
-                enablePlaceholders = false,
+                enablePlaceholders = true,
             ),
             pagingSourceFactory = { songDao.getSongsBySortNamePaging(keyword) }
         ).flow.map { pagingData -> pagingData.map { it.toCommon() } }
-
-    override fun countFilteredSongsFlow(keyword: String?): Flow<Int> =
-        songDao.countFilteredSongs(keyword)
 
     override suspend fun getFilteredSongIds(keyword: String?): List<Long> =
         withContext(Dispatchers.IO) {

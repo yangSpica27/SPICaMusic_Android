@@ -23,7 +23,7 @@ import me.spica27.spicamusic.storage.impl.entity.SongEntity
         ExtraInfoEntity::class, PlayHistoryEntity::class, AlbumEntity::class,
         ScanFolderEntity::class],
     version = 10,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun songDao(): SongDao

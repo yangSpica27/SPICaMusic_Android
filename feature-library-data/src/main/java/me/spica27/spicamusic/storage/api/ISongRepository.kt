@@ -179,11 +179,6 @@ interface ISongRepository {
     fun getSongsBySortNamePagingFlow(keyword: String? = null): Flow<PagingData<Song>>
 
     /**
-     * 获取符合条件的歌曲总数 Flow（用于 UI 显示）
-     */
-    fun countFilteredSongsFlow(keyword: String? = null): Flow<Int>
-
-    /**
      * 获取所有符合条件的歌曲 ID（用于全选功能）
      */
     suspend fun getFilteredSongIds(keyword: String? = null): List<Long>

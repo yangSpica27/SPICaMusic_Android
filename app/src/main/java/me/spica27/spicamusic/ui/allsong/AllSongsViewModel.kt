@@ -52,21 +52,6 @@ class AllSongsViewModel(
                 )
             }.cachedIn(viewModelScope)
 
-    // 歌曲总数（用于 TopBar 显示 "所有歌曲 (N)"）
-    @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-    val songCount: StateFlow<Int> =
-        _searchKeyword
-            .debounce(300)
-            .flatMapLatest { keyword ->
-                songRepository.countFilteredSongsFlow(
-                    keyword = keyword.ifBlank { null },
-                )
-            }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = 0,
-            )
-
     // 已选中的歌曲数量
     val selectedCount: StateFlow<Int> =
         _selectedSongIds

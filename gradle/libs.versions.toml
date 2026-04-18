@@ -118,7 +118,6 @@ androidx-media3-session = { group = "androidx.media3", name = "media3-session", 
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "pagingVersion" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "pagingVersion" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
-androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
 androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "roomVersion" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
 

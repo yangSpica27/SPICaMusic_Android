@@ -37,6 +37,11 @@ kotlin {
   }
 }
 
+ksp {
+  arg("room.schemaLocation", "$projectDir\\schemas")
+  arg("room.generateKotlin", "true")
+}
+
 dependencies {
   // Common module
   api project(':common')
@@ -47,7 +52,6 @@ dependencies {
   // Room
   api libs.androidx.room.runtime
   ksp libs.androidx.room.compiler
-  api libs.androidx.room.ktx
   api libs.androidx.room.paging
 
   // Paging
