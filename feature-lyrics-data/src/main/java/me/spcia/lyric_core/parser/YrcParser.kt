@@ -1,5 +1,6 @@
 package me.spcia.lyric_core.parser
 
+import me.spica27.spicamusic.common.entity.LyricItem
 import timber.log.Timber
 
 /**
@@ -21,9 +22,9 @@ object YrcParser {
         if (yrcContent.isBlank()) {
             return emptyList()
         }
-        
+
         val lines = mutableListOf<YrcLine>()
-        
+
         try {
             yrcContent.lines().forEach { line ->
                 if (line.startsWith("[") && line.contains("](")) {
@@ -33,13 +34,34 @@ object YrcParser {
         } catch (e: Exception) {
             Timber.tag("YrcParser").e(e, "YRC解析失败")
         }
-        
+
         return lines
     }
-    
+
+    /**
+     * 解析 YRC 并直接映射为逐字歌词对象，避免中间 LRC 字符串转换。
+     */
+    fun parseToLyricItems(yrcContent: String): List<LyricItem> =
+        parse(yrcContent).mapIndexed { index, line ->
+            LyricItem.WordsLyric(
+                words =
+                    line.words.map { word ->
+                        LyricItem.WordsLyric.WordWithTiming(
+                            content = word.text,
+                            startTime = word.startTime,
+                            endTime = word.endTime,
+                        )
+                    },
+                translation = emptyList(),
+                startTime = line.startTime,
+                endTime = maxOf(line.endTime, line.words.lastOrNull()?.endTime ?: line.endTime),
+                key = "${index}_${line.startTime}",
+            )
+        }
+
     /**
      * 解析单行 YRC 歌词
-     * 
+     *
      * 格式: [行开始时间,行持续时间](字1开始,字1持续,字1空格)文1(字2...)文2...
      */
     private fun parseLine(line: String): YrcLine? {
@@ -47,43 +69,42 @@ object YrcParser {
             // 提取行时间信息 [startTime,duration]
             val lineTimeEnd = line.indexOf(']')
             if (lineTimeEnd == -1) return null
-            
+
             val lineTimeStr = line.substring(1, lineTimeEnd)
             val lineTimes = lineTimeStr.split(",")
             if (lineTimes.size < 2) return null
-            
+
             val lineStartTime = lineTimes[0].toLongOrNull() ?: return null
             val lineDuration = lineTimes[1].toLongOrNull() ?: return null
-            
+
             // 提取字符信息
-            val contentStart = line.indexOf("](") + 2
-            if (contentStart < 2) return null
-            
+            val contentStart = line.indexOf('(', startIndex = lineTimeEnd)
+            if (contentStart == -1) return null
+
             val words = mutableListOf<YrcWord>()
             var currentIndex = contentStart
-            var currentTime = 0L
-            
+
             while (currentIndex < line.length) {
                 // 查找下一个字符的时间标记
                 if (line[currentIndex] == '(') {
                     val timeEnd = line.indexOf(')', currentIndex)
                     if (timeEnd == -1) break
-                    
+
                     // 提取字符时间 (startOffset,duration,emptySpace)
                     val timeStr = line.substring(currentIndex + 1, timeEnd)
                     val times = timeStr.split(",")
                     if (times.size < 2) break
-                    
+
                     val startOffset = times[0].toLongOrNull() ?: 0
                     val duration = times[1].toLongOrNull() ?: 0
-                    
+
                     // 提取字符文本
                     val textStart = timeEnd + 1
                     var textEnd = textStart
                     while (textEnd < line.length && line[textEnd] != '(') {
                         textEnd++
                     }
-                    
+
                     if (textStart < line.length) {
                         val text = line.substring(textStart, textEnd)
                         if (text.isNotEmpty()) {
@@ -91,46 +112,45 @@ object YrcParser {
                                 YrcWord(
                                     text = text,
                                     startTime = lineStartTime + startOffset,
-                                    duration = duration
-                                )
+                                    duration = duration,
+                                ),
                             )
                         }
                     }
-                    
+
                     currentIndex = textEnd
                 } else {
                     currentIndex++
                 }
             }
-            
+
             return if (words.isNotEmpty()) {
                 YrcLine(
                     startTime = lineStartTime,
                     duration = lineDuration,
-                    words = words
+                    words = words,
                 )
             } else {
                 null
             }
-            
         } catch (e: Exception) {
             Timber.tag("YrcParser").w(e, "解析行失败: $line")
             return null
         }
     }
-    
+
     /**
      * YRC 歌词行
      */
     data class YrcLine(
         val startTime: Long,      // 行开始时间（毫秒）
         val duration: Long,       // 行持续时间（毫秒）
-        val words: List<YrcWord>  // 字符列表
+        val words: List<YrcWord>, // 字符列表
     ) {
         val endTime: Long get() = startTime + duration
-        
+
         val text: String get() = words.joinToString("") { it.text }
-        
+
         /**
          * 获取指定时间点应该高亮的字符索引
          * @param currentTime 当前播放时间（毫秒）
@@ -139,42 +159,42 @@ object YrcParser {
         fun getHighlightIndex(currentTime: Long): Int {
             if (currentTime < startTime) return -1
             if (currentTime >= endTime) return words.size
-            
+
             words.forEachIndexed { index, word ->
                 if (currentTime < word.endTime) {
                     return index
                 }
             }
-            
+
             return words.size
         }
-        
+
         /**
          * 获取指定时间点当前字符的进度（0.0 ~ 1.0）
          */
         fun getWordProgress(currentTime: Long, wordIndex: Int): Float {
             if (wordIndex < 0 || wordIndex >= words.size) return 0f
-            
+
             val word = words[wordIndex]
             if (currentTime < word.startTime) return 0f
             if (currentTime >= word.endTime) return 1f
-            
+
             val elapsed = currentTime - word.startTime
             return (elapsed.toFloat() / word.duration).coerceIn(0f, 1f)
         }
     }
-    
+
     /**
      * YRC 歌词字符
      */
     data class YrcWord(
         val text: String,         // 字符文本
         val startTime: Long,      // 字符开始时间（毫秒）
-        val duration: Long        // 字符持续时间（毫秒）
+        val duration: Long,       // 字符持续时间（毫秒）
     ) {
         val endTime: Long get() = startTime + duration
     }
-    
+
     /**
      * 转换为标准 LRC 格式（仅时间戳+整行文本）
      */

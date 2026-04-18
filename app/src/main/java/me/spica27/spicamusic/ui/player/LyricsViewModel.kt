@@ -94,7 +94,7 @@ class LyricsViewModel(
                 if (cached != null && cached.lyrics.isNotBlank()) {
                     Timber.d("使用缓存歌词: mediaId=$mediaStoreId, source=${cached.lyricSourceName}")
                     currentOffset = cached.delay
-                    currentLyrics = parseLyrics(cached.lyrics)
+                    currentLyrics = parseLyricsInBackground(cached.lyrics)
                     if (currentLyrics.isNullOrEmpty()) {
                         errorMsg = "歌词解析失败"
                         currentLyrics = null
@@ -106,7 +106,7 @@ class LyricsViewModel(
                     withContext(Dispatchers.IO) {
                         lyricsUseCases.searchAllLyrics(title)
                     }
-                val parsedAll = results.map { parseLyrics(it.lyrics) ?: emptyList() }
+                val parsedAll = parseLyricsSourcesInBackground(results)
 
                 // 3. 无缓存时使用第一个结果
                 val sourceIndex: Int
@@ -196,22 +196,33 @@ class LyricsViewModel(
     /** 获取当前播放位置（毫秒） */
     fun getCurrentPositionMs(): Long = player.currentPosition
 
+    private suspend fun parseLyricsInBackground(lyricsText: String): List<LyricItem>? =
+        withContext(Dispatchers.Default) {
+            parseLyrics(lyricsText)
+        }
+
+    private suspend fun parseLyricsSourcesInBackground(results: List<SongLyrics>): List<List<LyricItem>> =
+        withContext(Dispatchers.Default) {
+            results.map { parseLyrics(it.lyrics).orEmpty() }
+        }
+
     companion object {
+        private fun String.isYrcFormat(): Boolean =
+            lineSequence().any { line ->
+                line.startsWith("[") && line.contains("](")
+            }
+
         /**
          * 解析歌词文本为 LyricItem 列表
          */
         fun parseLyrics(lyricsText: String): List<LyricItem>? {
             if (lyricsText.isBlank()) return null
 
-            val isYrcFormat =
-                lyricsText.contains("](") &&
-                    lyricsText.contains("[") &&
-                    lyricsText.matches(Regex(".*\\[\\d+.*\\]\\(\\d+.*\\).*"))
-
-            return if (isYrcFormat) {
+            return if (lyricsText.isYrcFormat()) {
                 try {
-                    val yrcLines = YrcParser.parse(lyricsText)
-                    LrcParser.parse(YrcParser.toLrc(yrcLines))
+                    YrcParser.parseToLyricItems(lyricsText).ifEmpty {
+                        LrcParser.parse(lyricsText)
+                    }
                 } catch (e: Exception) {
                     Timber.w(e, "YRC parse failed, fallback to LRC")
                     LrcParser.parse(lyricsText)
