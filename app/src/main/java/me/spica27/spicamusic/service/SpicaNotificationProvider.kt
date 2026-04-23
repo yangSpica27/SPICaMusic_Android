@@ -78,7 +78,10 @@ internal class SpicaNotificationProvider(
                 mediaSession,
                 player.availableCommands,
                 customLayoutWithEnabledCommandButtonsOnly.build(),
-                !Util.shouldShowPlayButton(player, mediaSession.showPlayButtonIfPlaybackIsSuppressed),
+                !Util.shouldShowPlayButton(
+                    player,
+                    mediaSession.showPlayButtonIfPlaybackIsSuppressed,
+                ),
             )
 
         val compactViewIndices: IntArray =
@@ -120,7 +123,7 @@ internal class SpicaNotificationProvider(
                 .setDeleteIntent(
                     actionFactory.createMediaActionPendingIntent(
                         mediaSession,
-                        Player.COMMAND_STOP.toLong(),
+                        Player.COMMAND_STOP,
                     ),
                 ).setOnlyAlertOnce(true)
                 .setStyle(mediaStyle)
@@ -136,6 +139,12 @@ internal class SpicaNotificationProvider(
         action: String,
         extras: Bundle,
     ): Boolean = false
+
+    override fun getNotificationChannelInfo(): MediaNotification.Provider.NotificationChannelInfo =
+        MediaNotification.Provider.NotificationChannelInfo(
+            channelId,
+            channelName,
+        )
 
     private fun addNotificationActions(
         mediaSession: MediaSession,
