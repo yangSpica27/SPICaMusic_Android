@@ -222,8 +222,7 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                     .sharedBounds(
                         rememberSharedContentState(playlist ?: ""),
                         animatedVisibilityScope = localNavAnimatedContentScope,
-                    )
-                    .fillMaxSize(),
+                    ).fillMaxSize(),
             popupHost = { MiuixPopupHost() },
             topBar = {
                 Column(
@@ -254,10 +253,10 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                             transitionSpec = {
                                 if (targetState) {
                                     (fadeIn() + slideInHorizontally { it / 2 }) togetherWith
-                                            (fadeOut() + slideOutHorizontally { -it / 2 })
+                                        (fadeOut() + slideOutHorizontally { -it / 2 })
                                 } else {
                                     (fadeIn() + slideInHorizontally { -it / 2 }) togetherWith
-                                            (fadeOut() + slideOutHorizontally { it / 2 })
+                                        (fadeOut() + slideOutHorizontally { it / 2 })
                                 }
                             },
                             contentKey = { it },
@@ -279,14 +278,14 @@ fun PlaylistDetailScreen(modifier: Modifier = Modifier) {
                                         contentKey = { it },
                                         transitionSpec = {
                                             fadeIn() +
-                                                    slideIntoContainer(
-                                                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                                        animationSpec = tween(300),
-                                                    ) togetherWith fadeOut() +
-                                                    slideOutOfContainer(
-                                                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                                        animationSpec = tween(300),
-                                                    )
+                                                slideIntoContainer(
+                                                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                                    animationSpec = tween(300),
+                                                ) togetherWith fadeOut() +
+                                                slideOutOfContainer(
+                                                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                                    animationSpec = tween(300),
+                                                )
                                         },
                                     ) { isMultiSelectMode ->
                                         if (isMultiSelectMode) {
@@ -430,7 +429,7 @@ private fun PlaylistHeader(
 ) {
     Row(
         modifier =
-            modifier,
+        modifier,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Grid 组合封面
@@ -899,8 +898,7 @@ private fun SearchBarField(
                 .hazeEffect(
                     hazeState,
                     HazeMaterials.ultraThin(containerColor = MiuixTheme.colorScheme.surface),
-                )
-                .padding(horizontal = 14.dp),
+                ).padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(

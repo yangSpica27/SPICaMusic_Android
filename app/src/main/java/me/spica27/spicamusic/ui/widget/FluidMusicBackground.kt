@@ -18,20 +18,29 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.hazeEffect
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.settings.SettingsViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import timber.log.Timber
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
@@ -110,6 +119,102 @@ fun FluidMusicBackground(
     }
 }
 
+private const val RENDER_FRAME_DELAY_MS = 8L
+
+private class TextureViewRenderLoop(
+    threadName: String,
+) {
+    private val surfaceActive = AtomicBoolean(false)
+    private val generation = AtomicInteger(0)
+    private val stateLock = Any()
+    private val renderDispatcher: ExecutorCoroutineDispatcher =
+        Executors
+            .newSingleThreadExecutor { runnable ->
+                Thread(runnable, threadName).apply {
+                    priority = Thread.MIN_PRIORITY
+                }
+            }.asCoroutineDispatcher()
+    private val renderScope = CoroutineScope(renderDispatcher + SupervisorJob())
+    private var drawJob: Job? = null
+
+    fun start(
+        textureView: TextureView,
+        drawFrame: (android.graphics.Canvas) -> Unit,
+    ) {
+        stopAndAwait()
+        surfaceActive.set(true)
+        val token = generation.incrementAndGet()
+
+        synchronized(stateLock) {
+            drawJob =
+                renderScope.launch {
+                    while (isActive && surfaceActive.get() && generation.get() == token) {
+                        val canvas =
+                            try {
+                                textureView.lockCanvas(null)
+                            } catch (e: IllegalStateException) {
+                                Timber
+                                    .tag("FluidMusicBackground")
+                                    .w(e, "TextureView lockCanvas failed, stopping render loop")
+                                break
+                            }
+
+                        if (canvas == null) {
+                            delay(RENDER_FRAME_DELAY_MS)
+                            continue
+                        }
+
+                        var shouldContinue = true
+                        try {
+                            if (!surfaceActive.get() || generation.get() != token) {
+                                shouldContinue = false
+                            } else {
+                                drawFrame(canvas)
+                            }
+                        } finally {
+                            try {
+                                textureView.unlockCanvasAndPost(canvas)
+                            } catch (e: IllegalStateException) {
+                                Timber
+                                    .tag("FluidMusicBackground")
+                                    .w(e, "TextureView unlockCanvasAndPost failed, stopping render loop")
+                                shouldContinue = false
+                            }
+                        }
+
+                        if (!shouldContinue) {
+                            break
+                        }
+
+                        delay(RENDER_FRAME_DELAY_MS)
+                    }
+                }
+        }
+    }
+
+    fun stopAndAwait() {
+        surfaceActive.set(false)
+        generation.incrementAndGet()
+        val job =
+            synchronized(stateLock) {
+                drawJob.also { drawJob = null }
+            }
+
+        job?.cancel()
+        if (job != null) {
+            runBlocking {
+                job.join()
+            }
+        }
+    }
+
+    fun release() {
+        stopAndAwait()
+        renderScope.coroutineContext.cancel()
+        renderDispatcher.close()
+    }
+}
+
 /** 线程安全数据持有者，供 TopGlowBackground 绘制线程读取 */
 private class TopGlowHolder {
     @Volatile var fftData: FloatArray = FloatArray(0)
@@ -118,7 +223,6 @@ private class TopGlowHolder {
 
     @Volatile var colorB: Int = android.graphics.Color.TRANSPARENT
 
-    // 预分配，避免绘制线程频繁 GC
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     val rectF = RectF()
 }
@@ -129,10 +233,9 @@ private fun TopGlowBackground(
     fftDrawData: FloatArray,
     coverColor: Color,
 ) {
-    val scope = rememberCoroutineScope()
     val holder = remember { TopGlowHolder() }
+    val renderLoop = remember { TextureViewRenderLoop("TopGlow-Renderer") }
 
-    // 仅在颜色变化时重算，写入 volatile 字段供绘制线程异步读取
     SideEffect {
         holder.fftData = fftDrawData
         val luminance = calculateLuminance(coverColor)
@@ -141,77 +244,59 @@ private fun TopGlowBackground(
         holder.colorB = shiftHue(coverColor, hueShift * 1.6f).copy(alpha = 0.2f).toArgb()
     }
 
+    DisposableEffect(renderLoop) {
+        onDispose {
+            renderLoop.release()
+        }
+    }
+
     AndroidView(
         modifier = modifier.hazeEffect { blurRadius = 72.dp },
         factory = { ctx ->
             TextureView(ctx).also { tv ->
                 tv.isOpaque = false
-                // API 31+ 使用 RenderEffect 模糊 TextureView 自身绘制内容
-//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-//                    val blurPx = with(density) { 72.dp.toPx() }
-//                    tv.setRenderEffect(
-//                        android.graphics.RenderEffect.createBlurEffect(
-//                            blurPx,
-//                            blurPx,
-//                            Shader.TileMode.CLAMP,
-//                        ),
-//                    )
-//                }
                 tv.surfaceTextureListener =
                     object : TextureView.SurfaceTextureListener {
-                        private var drawJob: Job? = null
-
                         override fun onSurfaceTextureAvailable(
                             surface: SurfaceTexture,
                             width: Int,
                             height: Int,
                         ) {
-                            drawJob =
-                                scope.launch(Dispatchers.Default) {
-                                    while (isActive) {
-                                        val canvas = tv.lockCanvas(null)
-                                        if (canvas != null) {
-                                            try {
-                                                canvas.drawColor(
-                                                    android.graphics.Color.TRANSPARENT,
-                                                    PorterDuff.Mode.CLEAR,
-                                                )
-                                                val data = holder.fftData
-                                                if (data.isNotEmpty()) {
-                                                    val w = canvas.width.toFloat()
-                                                    val h = canvas.height.toFloat()
-                                                    val bandWidth = w / data.size
-                                                    // 每帧创建一次渐变，横跨整个 canvas（与原 Brush.linearGradient 行为一致）
-                                                    holder.paint.shader =
-                                                        LinearGradient(
-                                                            0f,
-                                                            0f,
-                                                            w,
-                                                            h,
-                                                            holder.colorA,
-                                                            holder.colorB,
-                                                            Shader.TileMode.CLAMP,
-                                                        )
-                                                    data.forEachIndexed { index, magnitude ->
-                                                        val energy = magnitude.coerceIn(0f, 1f)
-                                                        val barH = h * 0.8f * energy + h * 0.08f
-                                                        val left = index * bandWidth
-                                                        holder.rectF.set(
-                                                            left,
-                                                            0f,
-                                                            left + max(1f, bandWidth * 0.9f),
-                                                            barH,
-                                                        )
-                                                        canvas.drawRect(holder.rectF, holder.paint)
-                                                    }
-                                                }
-                                            } finally {
-                                                tv.unlockCanvasAndPost(canvas)
-                                            }
-                                        }
-                                        delay(8L) // ~120 fps 上限，让调度器决定实际帧率
-                                    }
+                            renderLoop.start(tv) { canvas ->
+                                canvas.drawColor(
+                                    android.graphics.Color.TRANSPARENT,
+                                    PorterDuff.Mode.CLEAR,
+                                )
+                                val data = holder.fftData
+                                if (data.isEmpty()) return@start
+
+                                val w = canvas.width.toFloat()
+                                val h = canvas.height.toFloat()
+                                val bandWidth = w / data.size
+                                holder.paint.shader =
+                                    LinearGradient(
+                                        0f,
+                                        0f,
+                                        w,
+                                        h,
+                                        holder.colorA,
+                                        holder.colorB,
+                                        Shader.TileMode.CLAMP,
+                                    )
+
+                                data.forEachIndexed { index, magnitude ->
+                                    val energy = magnitude.coerceIn(0f, 1f)
+                                    val barHeight = h * 0.8f * energy + h * 0.08f
+                                    val left = index * bandWidth
+                                    holder.rectF.set(
+                                        left,
+                                        0f,
+                                        left + max(1f, bandWidth * 0.9f),
+                                        barHeight,
+                                    )
+                                    canvas.drawRect(holder.rectF, holder.paint)
                                 }
+                            }
                         }
 
                         override fun onSurfaceTextureSizeChanged(
@@ -221,7 +306,7 @@ private fun TopGlowBackground(
                         ) {}
 
                         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                            drawJob?.cancel()
+                            renderLoop.stopAndAwait()
                             return true
                         }
 
@@ -236,11 +321,10 @@ private fun TopGlowBackground(
 private class LiquidAuroraHolder {
     @Volatile var fftData: FloatArray = FloatArray(0)
 
-    // 每层的颜色 A/B（ARGB Int），SideEffect 中更新
+    @Volatile var phase: Float = 0f
+
     val layerColorA = IntArray(3)
     val layerColorB = IntArray(3)
-
-    // 预分配 Path 对象，每帧通过 reset() 复用
     val paths = Array(3) { android.graphics.Path() }
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 }
@@ -252,12 +336,14 @@ private fun LiquidAuroraBackground(
     coverColor: Color,
     isDarkMode: Boolean?,
 ) {
-    val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
     val holder = remember { LiquidAuroraHolder() }
+    val renderLoop = remember { TextureViewRenderLoop("LiquidAurora-Renderer") }
 
     SideEffect {
         holder.fftData = fftDrawData
+        val elapsed = System.currentTimeMillis() % 20_000L
+        holder.phase = elapsed / 20_000f * 360f
+
         val alpha = if (isDarkMode == true) 0.9f else 0.75f
         for (layer in 0 until 3) {
             val colorA = shiftHue(coverColor, layer * 18f + 120f)
@@ -268,6 +354,12 @@ private fun LiquidAuroraBackground(
         }
     }
 
+    DisposableEffect(renderLoop) {
+        onDispose {
+            renderLoop.release()
+        }
+    }
+
     AndroidView(
         modifier = modifier.hazeEffect { blurRadius = 40.dp },
         factory = { ctx ->
@@ -275,95 +367,75 @@ private fun LiquidAuroraBackground(
                 tv.isOpaque = false
                 tv.surfaceTextureListener =
                     object : TextureView.SurfaceTextureListener {
-                        private var drawJob: Job? = null
-
                         override fun onSurfaceTextureAvailable(
                             surface: SurfaceTexture,
                             width: Int,
                             height: Int,
                         ) {
-                            drawJob =
-                                scope.launch(Dispatchers.Default) {
-                                    // 以启动时间为基准，20 秒一个相位周期（与原 tween(20000) 一致）
-                                    val startTime = System.currentTimeMillis()
-                                    val layers = 3
+                            renderLoop.start(tv) { canvas ->
+                                canvas.drawColor(
+                                    android.graphics.Color.TRANSPARENT,
+                                    PorterDuff.Mode.CLEAR,
+                                )
+                                val data = holder.fftData
+                                if (data.isEmpty()) return@start
 
-                                    while (isActive) {
-                                        val canvas = tv.lockCanvas(null)
-                                        if (canvas != null) {
-                                            try {
-                                                canvas.drawColor(
-                                                    android.graphics.Color.TRANSPARENT,
-                                                    PorterDuff.Mode.CLEAR,
-                                                )
-                                                val data = holder.fftData
-                                                val w = canvas.width.toFloat()
-                                                val h = canvas.height.toFloat()
-                                                val elapsed =
-                                                    (System.currentTimeMillis() - startTime) % 20_000L
-                                                val phase = elapsed / 20_000f * 360f
+                                val w = canvas.width.toFloat()
+                                val h = canvas.height.toFloat()
+                                val layers = 3
+                                val chunkSize = (data.size / layers).coerceAtLeast(1)
 
-                                                val chunkSize =
-                                                    if (data.isNotEmpty()) {
-                                                        (data.size / layers).coerceAtLeast(1)
-                                                    } else {
-                                                        1
-                                                    }
+                                repeat(layers) { layer ->
+                                    val startIndex = layer * chunkSize
+                                    val endIndex = min(data.size, startIndex + chunkSize)
+                                    if (startIndex >= endIndex) return@repeat
 
-                                                repeat(layers) { layer ->
-                                                    val startIndex = layer * chunkSize
-                                                    val endIndex =
-                                                        min(data.size, startIndex + chunkSize)
-                                                    if (data.isEmpty() || startIndex >= endIndex) return@repeat
+                                    val path = holder.paths[layer]
+                                    path.reset()
+                                    path.moveTo(0f, 0f)
 
-                                                    val path = holder.paths[layer]
-                                                    path.reset()
-                                                    path.moveTo(0f, 0f)
+                                    val steps = endIndex - startIndex
+                                    val amplitude = h * (0.28f - layer * 0.05f)
+                                    val phaseShift =
+                                        (holder.phase + layer * 45f) * (PI / 180.0)
 
-                                                    val steps = endIndex - startIndex
-                                                    val amplitude = h * (0.28f - layer * 0.05f)
-                                                    val phaseShift =
-                                                        (phase + layer * 45f) * (PI / 180.0)
-
-                                                    for (i in 0 until steps) {
-                                                        val progress =
-                                                            if (steps == 1) 0f else i / (steps - 1f)
-                                                        val energy =
-                                                            data[startIndex + i].coerceIn(0f, 1f)
-                                                        val wave =
-                                                            sin(progress * 6f + phaseShift).toFloat()
-                                                        val y =
-                                                            h * 0.35f - amplitude * energy -
-                                                                amplitude * 0.2f * wave
-                                                        path.lineTo(progress * w, y)
-                                                    }
-                                                    path.lineTo(w, 0f)
-                                                    path.close()
-
-                                                    // 垂直渐变（与原 Brush.verticalGradient 一致）
-                                                    holder.paint.shader =
-                                                        LinearGradient(
-                                                            0f,
-                                                            0f,
-                                                            0f,
-                                                            h * 0.5f,
-                                                            intArrayOf(
-                                                                holder.layerColorA[layer],
-                                                                holder.layerColorB[layer],
-                                                                holder.layerColorB[layer],
-                                                            ),
-                                                            null,
-                                                            Shader.TileMode.CLAMP,
-                                                        )
-                                                    canvas.drawPath(path, holder.paint)
-                                                }
-                                            } finally {
-                                                tv.unlockCanvasAndPost(canvas)
+                                    for (index in 0 until steps) {
+                                        val progress =
+                                            if (steps == 1) {
+                                                0f
+                                            } else {
+                                                index / (steps - 1f)
                                             }
-                                        }
-                                        delay(8L)
+                                        val energy = data[startIndex + index].coerceIn(0f, 1f)
+                                        val wave =
+                                            sin(progress * 6f + phaseShift).toFloat()
+                                        val y =
+                                            h * 0.35f -
+                                                amplitude * energy -
+                                                amplitude * 0.2f * wave
+                                        path.lineTo(progress * w, y)
                                     }
+
+                                    path.lineTo(w, 0f)
+                                    path.close()
+
+                                    holder.paint.shader =
+                                        LinearGradient(
+                                            0f,
+                                            0f,
+                                            0f,
+                                            h * 0.5f,
+                                            intArrayOf(
+                                                holder.layerColorA[layer],
+                                                holder.layerColorB[layer],
+                                                holder.layerColorB[layer],
+                                            ),
+                                            null,
+                                            Shader.TileMode.CLAMP,
+                                        )
+                                    canvas.drawPath(path, holder.paint)
                                 }
+                            }
                         }
 
                         override fun onSurfaceTextureSizeChanged(
@@ -373,7 +445,7 @@ private fun LiquidAuroraBackground(
                         ) {}
 
                         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                            drawJob?.cancel()
+                            renderLoop.stopAndAwait()
                             return true
                         }
 
