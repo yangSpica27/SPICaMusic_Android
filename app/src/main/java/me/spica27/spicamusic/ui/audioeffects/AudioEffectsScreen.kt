@@ -27,21 +27,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.widget.LabeledValueSliderRow
+import me.spica27.spicamusic.ui.widget.SettingsControlCard
+import me.spica27.spicamusic.ui.widget.SettingsControlHeader
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.compose.viewmodel.koinActivityViewModel
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -167,58 +166,48 @@ private fun EqualizerCard(
 ) {
     val bandFrequencies = listOf("31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
 
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-        ) {
-            // 标题和开关
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.equalizer_10_band),
-                    style = MiuixTheme.textStyles.title3,
-                    fontWeight = FontWeight.Bold,
-                )
+    SettingsControlCard(modifier = modifier) {
+        SettingsControlHeader(
+            title = stringResource(R.string.equalizer_10_band),
+            trailing = {
                 Switch(
                     checked = enabled,
                     onCheckedChange = onEnableChange,
                 )
-            }
+            },
+        )
 
-            AnimatedVisibility(visible = enabled) {
-                Column(
+        AnimatedVisibility(visible = enabled) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.Bottom,
                 ) {
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // 频段可视化
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.Bottom,
-                    ) {
-                        bands.forEachIndexed { index, gain ->
-                            EqualizerBar(
-                                frequency = bandFrequencies[index],
-                                gain = gain,
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // 滑块控制
                     bands.forEachIndexed { index, gain ->
-                        EqualizerSlider(
-                            label = "${bandFrequencies[index]} Hz",
-                            value = gain,
-                            onValueChange = { onBandChange(index, it) },
+                        EqualizerBar(
+                            frequency = bandFrequencies[index],
+                            gain = gain,
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                bands.forEachIndexed { index, gain ->
+                    LabeledValueSliderRow(
+                        label = "${bandFrequencies[index]} Hz",
+                        value = gain,
+                        valueText = stringResource(R.string.db_value_format, gain.roundToInt()),
+                        onValueChange = { onBandChange(index, it) },
+                        valueRange = -12f..12f,
+                        valueColor = if (gain >= 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.error,
+                    )
                 }
             }
         }
@@ -275,47 +264,6 @@ private fun EqualizerBar(
     }
 }
 
-/**
- * 均衡器滑块
- */
-@Composable
-private fun EqualizerSlider(
-    label: String,
-    value: Float,
-    onValueChange: (Float) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.body2,
-            modifier = Modifier.width(70.dp),
-        )
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = -12f..12f,
-            modifier = Modifier.weight(1f),
-        )
-        Spacer(
-            modifier = Modifier.width(8.dp),
-        )
-        Text(
-            text = stringResource(R.string.db_value_format, value.roundToInt()),
-            style = MiuixTheme.textStyles.body2,
-            modifier = Modifier.width(50.dp),
-            color = if (value >= 0) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.error,
-            textAlign = TextAlign.End,
-        )
-    }
-}
-
-/**
- * 混响卡片
- */
 @Composable
 private fun ReverbCard(
     enabled: Boolean,
@@ -326,96 +274,39 @@ private fun ReverbCard(
     onRoomSizeChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-        ) {
-            // 标题和开关
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.reverb_spatial),
-                        style = MiuixTheme.textStyles.title3,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = stringResource(R.string.reverb_spatial_desc),
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
+    SettingsControlCard(modifier = modifier) {
+        SettingsControlHeader(
+            title = stringResource(R.string.reverb_spatial),
+            description = stringResource(R.string.reverb_spatial_desc),
+            trailing = {
                 Switch(
                     checked = enabled,
                     onCheckedChange = onEnableChange,
                 )
-            }
+            },
+        )
 
-            AnimatedVisibility(visible = enabled) {
-                Column {
-                    Spacer(modifier = Modifier.height(16.dp))
+        AnimatedVisibility(visible = enabled) {
+            Column {
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    // 混响强度
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.reverb_intensity),
-                            style = MiuixTheme.textStyles.body2,
-                            modifier = Modifier.width(70.dp),
-                        )
-                        Slider(
-                            value = level,
-                            onValueChange = onLevelChange,
-                            valueRange = 0f..1f,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            text =
-                                stringResource(
-                                    R.string.percent_value_format,
-                                    (level * 100).roundToInt(),
-                                ),
-                            style = MiuixTheme.textStyles.body2,
-                            modifier = Modifier.width(50.dp),
-                            textAlign = TextAlign.End,
-                        )
-                    }
+                LabeledValueSliderRow(
+                    label = stringResource(R.string.reverb_intensity),
+                    value = level,
+                    valueText = stringResource(R.string.percent_value_format, (level * 100).roundToInt()),
+                    onValueChange = onLevelChange,
+                    valueRange = 0f..1f,
+                )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                    // 房间大小
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.room_size),
-                            style = MiuixTheme.textStyles.body2,
-                            modifier = Modifier.width(70.dp),
-                        )
-                        Slider(
-                            value = roomSize,
-                            onValueChange = onRoomSizeChange,
-                            valueRange = 0f..1f,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Text(
-                            text =
-                                stringResource(
-                                    R.string.percent_value_format,
-                                    (roomSize * 100).roundToInt(),
-                                ),
-                            style = MiuixTheme.textStyles.body2,
-                            modifier = Modifier.width(50.dp),
-                            textAlign = TextAlign.End,
-                        )
-                    }
-                }
+                LabeledValueSliderRow(
+                    label = stringResource(R.string.room_size),
+                    value = roomSize,
+                    valueText = stringResource(R.string.percent_value_format, (roomSize * 100).roundToInt()),
+                    onValueChange = onRoomSizeChange,
+                    valueRange = 0f..1f,
+                )
             }
         }
     }
@@ -429,47 +320,39 @@ private fun PresetsSection(
     onPresetSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(modifier = modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
+    SettingsControlCard(modifier = modifier) {
+        SettingsControlHeader(title = stringResource(R.string.presets_title))
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = stringResource(R.string.presets_title),
-                style = MiuixTheme.textStyles.title3,
-                fontWeight = FontWeight.Bold,
+            PresetButton(
+                stringResource(R.string.preset_pop),
+                onPresetSelect,
+                Modifier.weight(1f),
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                PresetButton(
-                    stringResource(R.string.preset_pop),
-                    onPresetSelect,
-                    Modifier.weight(1f),
-                )
-                PresetButton(
-                    stringResource(R.string.preset_rock),
-                    onPresetSelect,
-                    Modifier.weight(1f),
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                PresetButton(
-                    stringResource(R.string.preset_classical),
-                    onPresetSelect,
-                    Modifier.weight(1f),
-                )
-                PresetButton(
-                    stringResource(R.string.preset_jazz),
-                    onPresetSelect,
-                    Modifier.weight(1f),
-                )
-            }
+            PresetButton(
+                stringResource(R.string.preset_rock),
+                onPresetSelect,
+                Modifier.weight(1f),
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            PresetButton(
+                stringResource(R.string.preset_classical),
+                onPresetSelect,
+                Modifier.weight(1f),
+            )
+            PresetButton(
+                stringResource(R.string.preset_jazz),
+                onPresetSelect,
+                Modifier.weight(1f),
+            )
         }
     }
 }

@@ -8,6 +8,7 @@ plugins {
   alias(libs.plugins.jetbrains.kotlin.serialization)
   alias(libs.plugins.compose.compiler)
   id "org.jlleitschuh.gradle.ktlint" version "14.2.0"
+  alias(libs.plugins.stability.analyzer)
 }
 
 android {

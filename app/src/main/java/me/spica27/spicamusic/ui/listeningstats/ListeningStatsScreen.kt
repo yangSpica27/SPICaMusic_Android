@@ -1,8 +1,6 @@
 package me.spica27.spicamusic.ui.listeningstats
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,25 +9,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
@@ -40,8 +32,8 @@ import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.navigation.LocalNavBackStack
-import me.spica27.spicamusic.ui.theme.Shapes
-import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.RankedSongRow
+import me.spica27.spicamusic.ui.widget.SongListDefaults
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
@@ -176,8 +168,7 @@ private fun SectionHeader(title: String) {
     Text(
         text = title,
         color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-        style = MiuixTheme.textStyles.body2,
-        fontWeight = FontWeight.W600,
+        style = SongListDefaults.sectionHeaderTextStyle,
         modifier =
             Modifier
                 .padding(horizontal = 20.dp, vertical = 8.dp),
@@ -245,97 +236,16 @@ private fun TopSongRow(
     item: TopSongDisplayItem,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        // 排名
-        Box(
-            modifier = Modifier.width(28.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = rank.toString(),
-                style = MiuixTheme.textStyles.body2,
-                color =
-                    if (rank <= 3) {
-                        MiuixTheme.colorScheme.primary
-                    } else {
-                        MiuixTheme.colorScheme.onSurfaceContainerVariant
-                    },
-                fontWeight = if (rank <= 3) FontWeight.Bold else FontWeight.Normal,
-            )
-        }
-
-        // 封面
-        val coverUri = item.song?.getCoverUri()
-        AudioCover(
-            uri = coverUri,
-            modifier =
-                Modifier
-                    .size(44.dp)
-                    .clip(Shapes.SmallCornerBasedShape),
-            placeHolder = {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(
-                                MiuixTheme.colorScheme.surfaceContainer,
-                            ).clip(Shapes.SmallCornerBasedShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MusicNote,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            },
-        )
-
-        // 歌曲信息
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.song?.displayName ?: "未知歌曲",
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = item.song?.artist ?: "未知艺术家",
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        // 时长 + 次数
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = statsFormatDuration(item.totalDuration),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainer,
-                fontWeight = FontWeight.W500,
-                fontSize = 12.sp,
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "${formatCount(item.playCount)}次",
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                fontSize = 11.sp,
-            )
-        }
-    }
+    RankedSongRow(
+        rank = rank,
+        title = item.song?.displayName ?: "未知歌曲",
+        subtitle = item.song?.artist ?: "未知艺术家",
+        coverUri = item.song?.getCoverUri(),
+        trailingPrimaryText = statsFormatDuration(item.totalDuration),
+        trailingSecondaryText = "${formatCount(item.playCount)}次",
+        modifier = modifier,
+        placeholderContainerColor = MiuixTheme.colorScheme.surfaceContainer,
+    )
 }
 
 private fun formatCount(count: Long): String =

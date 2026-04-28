@@ -25,9 +25,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +47,7 @@ import androidx.paging.compose.itemKey
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.Album
@@ -75,6 +74,7 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 /**
  * 专辑页面
  */
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 fun AlbumsScreen(
     modifier: Modifier = Modifier,
@@ -91,12 +91,7 @@ fun AlbumsScreen(
 
     val albums = viewModel.filteredAlbums.collectAsLazyPagingItems()
 
-    val isEmpty =
-        remember(albums.itemCount) {
-            derivedStateOf {
-                albums.itemCount == 0
-            }
-        }
+    val isEmpty = albums.itemCount == 0
 
     LaunchedEffect(searchKeyword) {
         listState.animateScrollToItem(0)
@@ -165,32 +160,50 @@ fun AlbumsScreen(
                     .fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            AnimatedContent(
-                isEmpty.value,
+            AlbumContent(
+                isEmpty = isEmpty,
+                items = albums,
+                listState = listState,
+                topPadding = paddingValues.calculateTopPadding(),
+                bottomPadding = paddingValues.calculateBottomPadding(),
+                scrollBehavior = scrollBehavior,
                 modifier = Modifier.fillMaxSize(),
-            ) { isEmpty ->
+            )
+        }
+    }
+}
 
-                if (isEmpty) {
-                    EmptyPage(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(
-                                    paddingValues,
-                                ),
-                    )
-                } else {
-                    ListPage(
-                        modifier =
-                            Modifier
-                                .fillMaxSize(),
-                        items = albums,
-                        listState = listState,
-                        paddingValues = paddingValues,
-                        scrollBehavior = scrollBehavior,
-                    )
-                }
-            }
+@Composable
+private fun AlbumContent(
+    isEmpty: Boolean,
+    items: LazyPagingItems<Album>,
+    listState: LazyGridState,
+    topPadding: androidx.compose.ui.unit.Dp,
+    bottomPadding: androidx.compose.ui.unit.Dp,
+    scrollBehavior: ScrollBehavior,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedContent(
+        targetState = isEmpty,
+        modifier = modifier,
+        label = "album_page_content",
+    ) { empty ->
+        if (empty) {
+            EmptyPage(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(top = topPadding, bottom = bottomPadding),
+            )
+        } else {
+            ListPage(
+                modifier = Modifier.fillMaxSize(),
+                items = items,
+                listState = listState,
+                topPadding = topPadding,
+                bottomPadding = bottomPadding,
+                scrollBehavior = scrollBehavior,
+            )
         }
     }
 }
@@ -214,7 +227,8 @@ private fun ListPage(
     modifier: Modifier = Modifier,
     items: LazyPagingItems<Album>,
     listState: LazyGridState,
-    paddingValues: PaddingValues,
+    topPadding: androidx.compose.ui.unit.Dp,
+    bottomPadding: androidx.compose.ui.unit.Dp,
     scrollBehavior: ScrollBehavior,
 ) {
     LazyVerticalGrid(
@@ -230,8 +244,8 @@ private fun ListPage(
             PaddingValues(
                 start = 16.dp,
                 end = 16.dp,
-                top = paddingValues.calculateTopPadding(),
-                bottom = paddingValues.calculateBottomPadding() + 12.dp,
+                top = topPadding,
+                bottom = bottomPadding + 12.dp,
             ),
         horizontalArrangement =
             Arrangement
@@ -247,6 +261,7 @@ private fun ListPage(
                 items.itemKey {
                     it.id
                 },
+            contentType = { "album" },
         ) {
             val album = items[it]
             if (album != null) {

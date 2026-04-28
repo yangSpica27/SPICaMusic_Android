@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.player
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -33,6 +34,7 @@ import timber.log.Timber
  * 全局共享的播放器状态和控制逻辑
  * 可在多个页面中共享使用
  */
+@Stable
 class PlayerViewModel(
     private val player: PlayerUseCases,
     private val songRepository: SongUseCases,

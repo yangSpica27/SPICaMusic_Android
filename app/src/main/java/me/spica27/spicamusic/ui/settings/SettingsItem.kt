@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui.settings
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.flow.StateFlow
 
@@ -15,6 +16,7 @@ sealed class SettingsItem {
     /**
      * 开关类设置项
      */
+    @Immutable
     data class SwitchItem(
         override val title: String,
         override val subtitle: String? = null,
@@ -27,6 +29,7 @@ sealed class SettingsItem {
     /**
      * 选择类设置项（单选）
      */
+    @Immutable
     data class SelectItem(
         override val title: String,
         override val subtitle: String? = null,
@@ -40,6 +43,7 @@ sealed class SettingsItem {
     /**
      * 跳转类设置项
      */
+    @Immutable
     data class NavigationItem(
         val modifier: Modifier = Modifier,
         override val title: String,
@@ -51,6 +55,7 @@ sealed class SettingsItem {
     /**
      * 分组标题
      */
+    @Immutable
     data class GroupHeader(
         override val title: String,
     ) : SettingsItem() {
@@ -62,6 +67,7 @@ sealed class SettingsItem {
 /**
  * 选择项数据类
  */
+@Immutable
 data class SelectOption(
     val value: String,
     val label: String,

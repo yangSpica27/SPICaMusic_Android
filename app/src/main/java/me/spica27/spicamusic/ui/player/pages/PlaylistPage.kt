@@ -8,7 +8,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -48,16 +47,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
@@ -67,8 +63,8 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
-import me.spica27.spicamusic.ui.theme.Shapes
-import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.CompactSongRow
+import me.spica27.spicamusic.ui.widget.GradientPlaceholderCover
 import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -470,105 +466,57 @@ private fun PlaylistItemRow(
                     interactionSource = remember { MutableInteractionSource() },
                 ).padding(12.dp),
     ) {
-        Row(
+        CompactSongRow(
+            title = title,
+            subtitle = artist,
+            coverUri = artworkUri,
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "${index + 1}",
-                style = MiuixTheme.textStyles.title4,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.width(44.dp),
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.size(6.dp))
-            AudioCover(
-                uri = artworkUri,
-                modifier =
-                    Modifier
-                        .size(44.dp)
-                        .clip(Shapes.SmallCornerBasedShape)
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        MiuixTheme.colorScheme.tertiaryContainer,
-                                        MiuixTheme.colorScheme.surfaceContainerHigh,
-                                    ),
-                            ),
-                        ),
-                placeHolder = {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize(),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.MusicNote,
-                            contentDescription = stringResource(R.string.cover_placeholder),
-                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            modifier =
-                                Modifier
-                                    .size(24.dp)
-                                    .align(
-                                        Alignment.Center,
-                                    ),
-                        )
-                    }
-                },
-            )
-
-            Spacer(modifier = Modifier.size(12.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-            ) {
+            leading = {
                 Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.body1,
-                    maxLines = 1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = artist,
-                    style = MiuixTheme.textStyles.body2,
+                    text = "${index + 1}",
+                    style = MiuixTheme.textStyles.title4,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.width(44.dp),
+                    textAlign = TextAlign.Center,
                 )
-            }
-            Spacer(modifier = Modifier.size(12.dp))
-            AnimatedContent(isPlaying) { isPlaying ->
-                Text(
-                    text =
-                        if (isPlaying) {
-                            stringResource(R.string.now_playing_indicator)
-                        } else {
-                            formatTime(
-                                item.mediaMetadata.durationMs ?: 0L,
-                            )
-                        },
-                    style = MiuixTheme.textStyles.body2,
-                    color =
-                        if (
-                            isPlaying
-                        ) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        },
+            },
+            coverContainerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
+            coverPlaceholder = {
+                GradientPlaceholderCover(
+                    modifier = Modifier.fillMaxSize(),
+                    icon = Icons.Rounded.MusicNote,
+                    iconSize = 24.dp,
+                    contentDescription = stringResource(R.string.cover_placeholder),
                 )
-            }
-            Spacer(modifier = Modifier.size(12.dp))
-            if (isMultiSelectMode) {
-                Icon(
-                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                    contentDescription = null,
-                    tint = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-        }
+            },
+            trailing = {
+                AnimatedContent(isPlaying) { active ->
+                    Text(
+                        text =
+                            if (active) {
+                                stringResource(R.string.now_playing_indicator)
+                            } else {
+                                formatTime(item.mediaMetadata.durationMs ?: 0L)
+                            },
+                        style = MiuixTheme.textStyles.body2,
+                        color =
+                            if (active) {
+                                MiuixTheme.colorScheme.primary
+                            } else {
+                                MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            },
+                    )
+                }
+                if (isMultiSelectMode) {
+                    Spacer(modifier = Modifier.size(12.dp))
+                    Icon(
+                        imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+            },
+        )
     }
 }
 

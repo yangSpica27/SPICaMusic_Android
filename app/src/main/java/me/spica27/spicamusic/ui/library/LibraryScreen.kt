@@ -72,6 +72,10 @@ import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.EmptyStateCard
+import me.spica27.spicamusic.ui.widget.GradientPlaceholderCover
+import me.spica27.spicamusic.ui.widget.MediaMiniCardFrame
+import me.spica27.spicamusic.ui.widget.MediaMiniCardText
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.compose.viewmodel.koinActivityViewModel
 import org.koin.java.KoinJavaComponent
@@ -557,43 +561,16 @@ private fun EmptyPlaylistCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    EmptyStateCard(
+        title = stringResource(R.string.no_playlists),
+        summary = stringResource(R.string.create_first_playlist),
+        icon = Icons.Default.MusicNote,
         onClick = onClick,
-        pressFeedbackType = PressFeedbackType.Sink,
-        cornerRadius = 10.dp,
         modifier =
             modifier
                 .fillMaxWidth()
                 .height(160.dp),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Default.MusicNote,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.no_playlists),
-                style = MiuixTheme.textStyles.title4,
-                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.create_first_playlist),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
-            )
-        }
-    }
+    )
 }
 
 /**
@@ -605,49 +582,20 @@ private fun PlaylistMiniCard(
     playlist: Playlist,
     onClick: () -> Unit,
 ) {
-    Card(
-        onClick = onClick,
-        pressFeedbackType = PressFeedbackType.Sink,
-        cornerRadius = 10.dp,
+    MediaMiniCardFrame(
         modifier = modifier.width(120.dp),
-    ) {
-        Column {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .size(120.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        MiuixTheme.colorScheme.tertiaryContainer,
-                                        MiuixTheme.colorScheme.surfaceContainerHigh,
-                                    ),
-                            ),
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
-                )
-            }
-
-            Text(
-                text = playlist.playlistName,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+        onClick = onClick,
+        cover = {
+            GradientPlaceholderCover(
+                modifier = Modifier.fillMaxSize(),
             )
-        }
-    }
+        },
+        text = {
+            MediaMiniCardText(
+                title = playlist.playlistName,
+            )
+        },
+    )
 }
 
 /**
@@ -658,43 +606,16 @@ private fun EmptyAlbumCard(
     onRescan: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    EmptyStateCard(
+        title = stringResource(R.string.no_albums),
+        summary = stringResource(R.string.try_rescan_media_library),
+        icon = Icons.Default.Refresh,
         onClick = onRescan,
-        pressFeedbackType = PressFeedbackType.Sink,
-        cornerRadius = 10.dp,
         modifier =
             modifier
                 .fillMaxWidth()
                 .height(160.dp),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Default.Refresh,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.no_albums),
-                style = MiuixTheme.textStyles.title4,
-                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.try_rescan_media_library),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
-            )
-        }
-    }
+    )
 }
 
 @Composable
@@ -703,81 +624,40 @@ private fun AlbumMiniCard(
     album: Album,
     onClick: () -> Unit,
 ) {
-    Card(
+    MediaMiniCardFrame(
+        modifier = modifier.navSharedBounds("album_${album.id}"),
         onClick = onClick,
-        pressFeedbackType = PressFeedbackType.Sink,
-        cornerRadius = 10.dp,
-        modifier = modifier,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-        ) {
+        cover = {
             Box(
                 modifier =
                     Modifier
-                        .fillMaxWidth()
-                        .size(120.dp)
+                        .fillMaxSize()
                         .clip(Shapes.SmallCornerBasedShape),
                 contentAlignment = Alignment.Center,
             ) {
                 AudioCover(
                     uri = album.artworkUri?.toUri(),
-                    modifier = Modifier.fillMaxSize(),
+                    modifier =
+                        Modifier
+                            .fillMaxSize(),
                     placeHolder = {
-                        Box(
+                        GradientPlaceholderCover(
                             modifier =
                                 Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.verticalGradient(
-                                            colors =
-                                                listOf(
-                                                    MiuixTheme.colorScheme.tertiaryContainer,
-                                                    MiuixTheme.colorScheme.surfaceContainerHigh,
-                                                ),
-                                        ),
-                                    ).padding(
-                                        12.dp,
-                                    ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = album.title,
-                                style = MiuixTheme.textStyles.headline1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
-                            )
-                        }
+                                    .fillMaxSize(),
+                            overlayText = album.title,
+                        )
                     },
                 )
             }
-            Spacer(
-                modifier = Modifier.height(8.dp),
+        },
+        text = {
+            MediaMiniCardText(
+                title = album.title,
+                subtitle = album.artist,
             )
-            Text(
-                text = album.title,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-            )
-            Spacer(
-                modifier = Modifier.height(4.dp),
-            )
-            Text(
-                text = album.artist,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                maxLines = 1,
-                modifier = Modifier.padding(horizontal = 12.dp),
-            )
-            Spacer(
-                modifier = Modifier.height(10.dp),
-            )
-        }
-    }
+        },
+    )
 }
 
 @Composable
@@ -788,29 +668,14 @@ private fun AlbumMiniPlaceholder() {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .size(120.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        MiuixTheme.colorScheme.surfaceContainer,
-                                        MiuixTheme.colorScheme.surfaceContainerHigh,
-                                    ),
-                            ),
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
-                )
-            }
+            GradientPlaceholderCover(
+                modifier = Modifier.size(120.dp),
+                gradientColors =
+                    listOf(
+                        MiuixTheme.colorScheme.surfaceContainer,
+                        MiuixTheme.colorScheme.surfaceContainerHigh,
+                    ),
+            )
             Spacer(modifier = Modifier.height(8.dp))
         }
     }

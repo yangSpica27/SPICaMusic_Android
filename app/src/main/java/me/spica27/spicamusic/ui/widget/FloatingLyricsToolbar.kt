@@ -7,15 +7,11 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
@@ -32,9 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.theme.Shapes
 import top.yukonga.miuix.kmp.basic.Text
@@ -106,15 +100,9 @@ fun FloatingLyricsToolbar(
         }
 
         // 主按钮（展开/收起）
-        Box(
-            modifier =
-                Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(
-                        MiuixTheme.colorScheme.onSurface.copy(alpha = 0.15f),
-                    ).clickable { isExpanded = !isExpanded },
-            contentAlignment = Alignment.Center,
+        LyricsCircleButton(
+            onClick = { isExpanded = !isExpanded },
+            size = 44.dp,
         ) {
             Icon(
                 imageVector = if (isExpanded) Icons.Rounded.Close else Icons.Rounded.Tune,
@@ -135,14 +123,11 @@ private fun OffsetAdjustBar(
     onOffsetChange: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            modifier
-                .clip(Shapes.LargeCornerBasedShape)
-                .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.15f))
-                .padding(horizontal = 4.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    LyricsPill(
+        modifier = modifier,
+        shape = Shapes.LargeCornerBasedShape,
+        horizontalPadding = 4.dp,
+        verticalPadding = 4.dp,
     ) {
         // -0.5s 按钮
         ToolbarIconButton(
@@ -160,10 +145,8 @@ private fun OffsetAdjustBar(
         val offsetText = formatOffset(offsetMs)
         Text(
             text = offsetText,
-            style = MiuixTheme.textStyles.body2,
+            style = LyricsControlDefaults.pillLabelTextStyle,
             color = MiuixTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium,
-            fontSize = 13.sp,
             modifier =
                 Modifier
                     .clip(Shapes.LargeCornerBasedShape)
@@ -193,15 +176,10 @@ private fun SwitchLyricsButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            modifier
-                .clip(Shapes.ExtraLargeCornerBasedShape)
-                .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.15f))
-                .clickable(onClick = onClick)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    LyricsPill(
+        modifier = modifier,
+        onClick = onClick,
+        shape = Shapes.ExtraLargeCornerBasedShape,
     ) {
         Icon(
             imageVector = Icons.Rounded.SwapHoriz,
@@ -211,10 +189,8 @@ private fun SwitchLyricsButton(
         )
         Text(
             text = stringResource(R.string.toggle_lyrics),
-            style = MiuixTheme.textStyles.body2,
+            style = LyricsControlDefaults.pillLabelTextStyle,
             color = MiuixTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Medium,
-            fontSize = 13.sp,
         )
     }
 }
@@ -228,13 +204,11 @@ private fun ToolbarIconButton(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    Box(
-        modifier =
-            modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
+    LyricsCircleButton(
+        onClick = onClick,
+        modifier = modifier,
+        size = 32.dp,
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
     ) {
         content()
     }

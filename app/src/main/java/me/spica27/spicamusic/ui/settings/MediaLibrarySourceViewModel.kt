@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.provider.DocumentsContract
+import androidx.compose.runtime.Stable
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,6 +47,7 @@ sealed class ScanState {
 /**
  * 媒体库来源 ViewModel
  */
+@Stable
 class MediaLibrarySourceViewModel(
     private val app: Application,
     private val scanService: MusicScanUseCases,

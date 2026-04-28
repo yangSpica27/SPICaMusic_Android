@@ -79,7 +79,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import dev.chrisbanes.haze.HazeState
@@ -98,6 +97,9 @@ import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.LocalNavSharedTransitionScope
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.IconActionCard
+import me.spica27.spicamusic.ui.widget.LibraryActionCard
+import me.spica27.spicamusic.ui.widget.SongListDefaults
 import me.spica27.spicamusic.ui.widget.SongPickerSheet
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -490,8 +492,7 @@ private fun PlaylistHeader(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = stringResource(R.string.play_all),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
+                    style = SongListDefaults.songDurationTextStyle,
                     color = MiuixTheme.colorScheme.onPrimary,
                 )
             }
@@ -519,142 +520,77 @@ private fun ActionBar(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 播放全部按钮
-        Card(
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .clickable {
-                        onPlayAll()
-                    },
-            colors =
-                CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.primary,
-                    contentColor = MiuixTheme.colorScheme.primary,
-                ),
-            cornerRadius = 16.dp,
-        ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MiuixTheme.colorScheme.onPrimary,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.play_all),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MiuixTheme.colorScheme.onPrimary,
-                )
-            }
-        }
+        LibraryActionCard(
+            icon = Icons.Default.PlayArrow,
+            label = stringResource(R.string.play_all),
+            containerColor = MiuixTheme.colorScheme.primary,
+            contentColor = MiuixTheme.colorScheme.onPrimary,
+            onClick = onPlayAll,
+            modifier = Modifier.weight(1f),
+        )
 
         // 多选模式按钮
-        Card(
+        IconActionCard(
+            icon = Icons.Default.Checklist,
+            contentDescription = stringResource(R.string.multi_select),
+            containerColor =
+                if (isMultiSelectMode) {
+                    MiuixTheme.colorScheme.tertiaryContainer
+                } else {
+                    MiuixTheme.colorScheme.surfaceVariant
+                },
+            contentColor =
+                if (isMultiSelectMode) {
+                    MiuixTheme.colorScheme.onTertiaryContainer
+                } else {
+                    MiuixTheme.colorScheme.onSurface
+                },
             onClick = onToggleMultiSelect,
-            cornerRadius = 16.dp,
-            colors =
-                CardDefaults.defaultColors(
-                    color =
-                        if (isMultiSelectMode) {
-                            MiuixTheme.colorScheme.tertiaryContainer
-                        } else {
-                            MiuixTheme.colorScheme.surfaceVariant
-                        },
-                    contentColor =
-                        if (isMultiSelectMode) {
-                            MiuixTheme.colorScheme.onTertiaryContainer
-                        } else {
-                            MiuixTheme.colorScheme.onSurfaceContainerVariant
-                        },
-                ),
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(48.dp)
-                        .padding(12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Checklist,
-                    contentDescription = stringResource(R.string.multi_select),
-                    modifier = Modifier.size(24.dp),
-                    tint = MiuixTheme.colorScheme.onSurface,
-                )
-            }
-        }
+        )
 
         // 菜单按钮
         Box {
-            Card(
-                cornerRadius = 16.dp,
+            IconActionCard(
+                icon = Icons.Default.MoreVert,
+                contentDescription = null,
+                containerColor = MiuixTheme.colorScheme.surfaceVariant,
+                contentColor = MiuixTheme.colorScheme.onSurface,
                 onClick = { showMenu = true },
-                colors =
-                    CardDefaults.defaultColors(
-                        color = MiuixTheme.colorScheme.surfaceVariant,
-                        contentColor = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    ),
-                modifier = Modifier.size(48.dp),
+            )
+            WindowListPopup(
+                show = showMenu,
+                alignment = PopupPositionProvider.Align.End,
+                onDismissRequest = { showMenu = false },
             ) {
-                // 下拉菜单
-                Box(
-                    modifier =
-                        Modifier
-                            .size(48.dp)
-                            .padding(12.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurface,
+                ListPopupColumn {
+                    TextButton(
+                        cornerRadius = 0.dp,
+                        text = stringResource(R.string.add_songs),
+                        onClick = {
+                            showMenu = false
+                            onAddSongs()
+                        },
                     )
-                    WindowListPopup(
-                        show = showMenu,
-                        alignment = PopupPositionProvider.Align.End,
-                        onDismissRequest = { showMenu = false },
-                    ) {
-                        ListPopupColumn {
-                            TextButton(
-                                cornerRadius = 0.dp,
-                                text = stringResource(R.string.add_songs),
-                                onClick = {
-                                    showMenu = false
-                                    onAddSongs()
-                                },
-                            )
-                            TextButton(
-                                cornerRadius = 0.dp,
-                                text = "重命名歌单",
-                                onClick = {
-                                    showMenu = false
-                                    onShowMenu()
-                                },
-                            )
-                            TextButton(
-                                cornerRadius = 0.dp,
-                                text = "删除歌单",
-                                colors =
-                                    ButtonDefaults.textButtonColors().copy(
-                                        textColor = MiuixTheme.colorScheme.error,
-                                    ),
-                                onClick = {
-                                    showMenu = false
-                                    // 删除歌单逻辑
-                                },
-                            )
-                        }
-                    }
+                    TextButton(
+                        cornerRadius = 0.dp,
+                        text = "重命名歌单",
+                        onClick = {
+                            showMenu = false
+                            onShowMenu()
+                        },
+                    )
+                    TextButton(
+                        cornerRadius = 0.dp,
+                        text = "删除歌单",
+                        colors =
+                            ButtonDefaults.textButtonColors().copy(
+                                textColor = MiuixTheme.colorScheme.error,
+                            ),
+                        onClick = {
+                            showMenu = false
+                            // 删除歌单逻辑
+                        },
+                    )
                 }
             }
         }
@@ -764,15 +700,14 @@ private fun SongItemCard(
             ) {
                 Text(
                     text = song.displayName,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Medium,
+                    style = SongListDefaults.songTitleTextStyle,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = song.artist,
-                    style = MiuixTheme.textStyles.body2,
+                    style = SongListDefaults.songMetaTextStyle,
                     color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

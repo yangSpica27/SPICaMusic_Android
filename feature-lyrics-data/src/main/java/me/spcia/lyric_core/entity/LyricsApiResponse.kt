@@ -1,6 +1,7 @@
 package me.spcia.lyric_core.entity
 
 import androidx.annotation.Keep
+import androidx.compose.runtime.Immutable
 import com.squareup.moshi.JsonClass
 
 /**
@@ -17,6 +18,7 @@ data class LyricsApiResponse(
 /**
  * 歌曲歌词信息
  */
+@Immutable
 @Keep
 @JsonClass(generateAdapter = true)
 data class SongLyrics(

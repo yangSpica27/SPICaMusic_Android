@@ -76,6 +76,7 @@ import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.SongListDefaults
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.DropdownImpl
@@ -578,26 +579,24 @@ private fun SongItemCard(
                 Text(
                     text = song.displayName,
                     maxLines = 1,
-                    style = MiuixTheme.textStyles.body1,
+                    style = SongListDefaults.songTitleTextStyle.copy(letterSpacing = 1.002.sp),
                     letterSpacing = 1.002.sp,
-                    fontWeight = FontWeight.Medium,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = song.artist,
                     maxLines = 1,
                     modifier = Modifier.padding(top = 4.dp),
-                    style = MiuixTheme.textStyles.body2,
+                    style = SongListDefaults.songMetaTextStyle.copy(letterSpacing = 1.009.sp),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     overflow = TextOverflow.Ellipsis,
-                    letterSpacing = 1.009.sp,
                 )
             }
 
             // 时长
             Text(
                 text = formatDuration(song.duration),
-                fontSize = 14.sp,
+                style = SongListDefaults.songDurationTextStyle,
                 color = MiuixTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(start = 8.dp),
             )

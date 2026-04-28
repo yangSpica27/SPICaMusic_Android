@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui.favorite
 
 import android.app.Application
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -28,6 +29,7 @@ import timber.log.Timber
  * 我的收藏页面 ViewModel
  * 使用 Paging3 按需加载收藏歌曲列表
  */
+@Stable
 class FavoriteViewModel(
     private val app: Application,
     private val songRepository: SongUseCases,

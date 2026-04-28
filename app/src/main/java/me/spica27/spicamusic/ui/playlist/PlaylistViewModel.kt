@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.playlist
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +18,7 @@ import timber.log.Timber
 /**
  * 歌单页面 ViewModel
  */
+@Stable
 class PlaylistViewModel(
     private val playlistRepository: PlaylistUseCases,
 ) : ViewModel() {

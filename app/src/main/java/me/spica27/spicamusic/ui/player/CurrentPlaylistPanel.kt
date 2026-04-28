@@ -43,13 +43,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.theme.Shapes
-import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.CompactSongRow
+import me.spica27.spicamusic.ui.widget.EmptyStateContent
 import org.koin.compose.viewmodel.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
@@ -288,24 +288,12 @@ private fun CurrentPlaylistPanelContent(
 
 @Composable
 private fun EmptyPlaylistState(modifier: Modifier = Modifier) {
-    Column(
+    EmptyStateContent(
+        icon = Icons.Default.LibraryMusic,
+        title = stringResource(R.string.playlist_empty),
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Default.LibraryMusic,
-            contentDescription = null,
-            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            modifier = Modifier.size(40.dp),
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(R.string.playlist_empty),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-    }
+        iconSize = 40.dp,
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -339,48 +327,25 @@ private fun PlaylistMediaItemRow(
                     onLongClick = onLongClick,
                 ).padding(12.dp),
     ) {
-        Row(
+        CompactSongRow(
+            title = title,
+            subtitle = artist,
+            coverUri = artworkUri,
+            coverContainerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AudioCover(
-                uri = artworkUri,
-                modifier =
-                    Modifier
-                        .size(44.dp)
-                        .clip(Shapes.SmallCornerBasedShape)
-                        .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-            )
-
-            Spacer(modifier = Modifier.size(12.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = artist,
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            if (isMultiSelectMode) {
-                Icon(
-                    imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                    contentDescription = null,
-                    tint = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-        }
+            trailing =
+                if (isMultiSelectMode) {
+                    {
+                        Icon(
+                            imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                            contentDescription = null,
+                            tint = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
+                } else {
+                    null
+                },
+        )
     }
 }
 

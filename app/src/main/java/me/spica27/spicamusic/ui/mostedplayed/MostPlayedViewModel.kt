@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui.mostedplayed
 
 import android.app.Application
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ enum class MostPlayedRange(
     ALL_TIME(R.string.range_all_time),
 }
 
+@Stable
 class MostPlayedViewModel(
     private val app: Application,
     private val historyRepository: PlayHistoryUseCases,

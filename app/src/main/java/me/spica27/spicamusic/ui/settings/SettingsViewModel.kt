@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.settings
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -12,6 +13,7 @@ import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 /**
  * 设置页面 ViewModel
  */
+@Stable
 class SettingsViewModel(
     private val settingsUseCases: SettingsUseCases,
 ) : ViewModel() {

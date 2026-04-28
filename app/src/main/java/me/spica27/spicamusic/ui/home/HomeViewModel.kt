@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.home
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,7 @@ import me.spica27.spicamusic.feature.library.domain.SongUseCases
  * 负责管理首页的数据和业务逻辑
  * 播放器相关操作请使用 PlayerViewModel
  */
+@Stable
 class HomeViewModel(
     private val songRepository: SongUseCases,
     private val playlistRepository: PlaylistUseCases,

@@ -1,6 +1,9 @@
 package me.spica27.spicamusic.common.entity
 
+import androidx.compose.runtime.Immutable
+
 // 参考LMusic https://github.com/cy745/lmusic
+@Immutable
 sealed class LyricItem(
     open val time: Long = 0,
     open val key: String = "",
@@ -9,6 +12,7 @@ sealed class LyricItem(
 
     override fun toString(): String = "LyricItem(time=$time, key='$key')"
 
+    @Immutable
     data class NormalLyric(
         val content: String,
         val translation: String? = null,
@@ -16,6 +20,7 @@ sealed class LyricItem(
         override val key: String,
     ) : LyricItem()
 
+    @Immutable
     data class WordsLyric(
         val agent: String = "",
         val words: List<WordWithTiming>,
@@ -24,11 +29,14 @@ sealed class LyricItem(
         val endTime: Long,
         override val key: String,
     ) : LyricItem(time = startTime) {
+
+        @Immutable
         data class Translation(
             val content: String,
             val lang: String,
         )
 
+        @Immutable
         data class WordWithTiming(
             val content: String,
             val startTime: Long,

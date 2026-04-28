@@ -2,7 +2,6 @@ package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import me.spcia.lyric_core.entity.SongLyrics
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricItem
+import me.spica27.spicamusic.ui.widget.SongListDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -107,14 +107,10 @@ fun LyricsSwitcherSheet(
                 }
 
                 // 确认按钮
-                Box(
-                    modifier =
-                        Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(MiuixTheme.colorScheme.primary)
-                            .clickable { onConfirm(pagerState.currentPage) },
-                    contentAlignment = Alignment.Center,
+                LyricsCircleButton(
+                    onClick = { onConfirm(pagerState.currentPage) },
+                    size = 40.dp,
+                    containerColor = MiuixTheme.colorScheme.primary,
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Check,
@@ -221,21 +217,9 @@ private fun SourceInfoBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // 序号标签
-        Box(
-            modifier =
-                Modifier
-                    .clip(CircleShape)
-                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.15f))
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.pager_format, currentPage + 1, sources.size),
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 12.sp,
-            )
-        }
+        LyricsBadge(
+            text = stringResource(R.string.pager_format, currentPage + 1, sources.size),
+        )
 
         Spacer(modifier = Modifier.width(10.dp))
 
@@ -243,19 +227,17 @@ private fun SourceInfoBar(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = source.name,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Medium,
+                style = SongListDefaults.songTitleTextStyle,
                 color = MiuixTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = source.artist,
-                style = MiuixTheme.textStyles.body2,
+                style = SongListDefaults.songMetaTextStyle.copy(fontSize = 12.sp),
                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 12.sp,
             )
         }
     }

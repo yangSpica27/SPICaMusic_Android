@@ -5,7 +5,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,8 +12,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -22,7 +19,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
@@ -30,14 +26,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.hazeEffect
@@ -52,11 +45,10 @@ import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.listeningstats.TopSongDisplayItem
 import me.spica27.spicamusic.ui.theme.Shapes
-import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.LibraryActionCard
+import me.spica27.spicamusic.ui.widget.RankedSongRow
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -179,42 +171,22 @@ fun MostPlayedScreen(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Button(
+                            LibraryActionCard(
+                                icon = Icons.Default.PlayArrow,
+                                label = stringResource(R.string.play_all),
+                                containerColor = MiuixTheme.colorScheme.primary,
+                                contentColor = MiuixTheme.colorScheme.onPrimary,
                                 onClick = { viewModel.playAll() },
-                                colors =
-                                    ButtonDefaults.buttonColors(
-                                        MiuixTheme.colorScheme.primary,
-                                        MiuixTheme.colorScheme.primary,
-                                    ),
                                 modifier = Modifier.weight(1f),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = null,
-                                    tint = MiuixTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = stringResource(R.string.play_all), color = MiuixTheme.colorScheme.onPrimary)
-                            }
-                            Button(
+                            )
+                            LibraryActionCard(
+                                icon = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                label = stringResource(R.string.save_as_playlist),
+                                containerColor = MiuixTheme.colorScheme.secondaryContainer,
+                                contentColor = MiuixTheme.colorScheme.onSecondaryContainer,
                                 onClick = { viewModel.saveAsPlaylist() },
-                                colors =
-                                    ButtonDefaults.buttonColors(
-                                        MiuixTheme.colorScheme.secondaryContainer,
-                                        MiuixTheme.colorScheme.secondaryContainer,
-                                    ),
                                 modifier = Modifier.weight(1f),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
-                                    contentDescription = null,
-                                    tint = MiuixTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.size(16.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = stringResource(R.string.save_as_playlist), color = MiuixTheme.colorScheme.onSecondaryContainer)
-                            }
+                            )
                         }
                     }
                     item { Spacer(modifier = Modifier.height(4.dp)) }
@@ -315,99 +287,18 @@ private fun MostPlayedSongRow(
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
+    RankedSongRow(
+        rank = rank,
+        title = item.song?.displayName ?: "未知歌曲",
+        subtitle = item.song?.artist ?: "未知艺术家",
+        coverUri = item.song?.getCoverUri(),
+        trailingPrimaryText = mostPlayedFormatDuration(item.totalDuration),
+        trailingSecondaryText = "${formatCount(item.playCount)}次",
+        modifier = modifier,
         onClick = onClick,
-        color = Color.Transparent,
+        surfaceColor = Color.Transparent,
         shape = Shapes.MediumCornerBasedShape,
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // 排名
-            Box(modifier = Modifier.width(28.dp), contentAlignment = Alignment.Center) {
-                Text(
-                    text = rank.toString(),
-                    style = MiuixTheme.textStyles.body2,
-                    color =
-                        if (rank <= 3) {
-                            MiuixTheme.colorScheme.primary
-                        } else {
-                            MiuixTheme.colorScheme.onSurfaceContainerVariant
-                        },
-                    fontWeight = if (rank <= 3) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-
-            // 封面
-            val coverUri = item.song?.getCoverUri()
-            AudioCover(
-                uri = coverUri,
-                modifier =
-                    Modifier
-                        .size(44.dp)
-                        .clip(Shapes.SmallCornerBasedShape),
-                placeHolder = {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .clip(Shapes.SmallCornerBasedShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MusicNote,
-                            contentDescription = null,
-                            tint = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-                },
-            )
-
-            // 歌曲信息
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = item.song?.displayName ?: "未知歌曲",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = item.song?.artist ?: "未知艺术家",
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            // 播放时长 + 次数
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = mostPlayedFormatDuration(item.totalDuration),
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainer,
-                    fontWeight = FontWeight.W500,
-                    fontSize = 12.sp,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "${formatCount(item.playCount)}次",
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    fontSize = 11.sp,
-                )
-            }
-        }
-    }
+    )
 }
 
 private fun mostPlayedFormatDuration(ms: Long): String {

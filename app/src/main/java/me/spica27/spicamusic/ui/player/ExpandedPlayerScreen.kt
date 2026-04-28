@@ -86,6 +86,8 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCityVisualizer
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
+import me.spica27.spicamusic.ui.widget.InfoSectionCard
+import me.spica27.spicamusic.ui.widget.InfoSectionRow
 import me.spica27.spicamusic.ui.widget.ShiningStarsVisualizer
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
@@ -450,18 +452,18 @@ private fun AudioInfoCard(
     val mimeType =
         currentMediaItem?.localConfiguration?.mimeType ?: stringResource(R.string.unknown_format)
 
-    InfoCard(title = stringResource(R.string.audio_info), modifier = modifier) {
-        InfoRow(label = stringResource(R.string.audio_format_label), value = mimeType)
+    InfoSectionCard(title = stringResource(R.string.audio_info), modifier = modifier) {
+        InfoSectionRow(label = stringResource(R.string.audio_format_label), value = mimeType)
 
         if (sampleRate > 0) {
-            InfoRow(
+            InfoSectionRow(
                 label = stringResource(R.string.sample_rate_label),
                 value = "${sampleRate}Hz (${sampleRate / 1000}kHz)",
             )
         }
 
         if (bitRate > 0) {
-            InfoRow(
+            InfoSectionRow(
                 label = stringResource(R.string.bitrate_label),
                 value = "${bitRate / 1000}kbps",
             )
@@ -474,69 +476,8 @@ private fun AudioInfoCard(
                     2 -> stringResource(R.string.stereo)
                     else -> stringResource(R.string.channels_format, channels)
                 }
-            InfoRow(label = stringResource(R.string.channel_count_label), value = channelName)
+            InfoSectionRow(label = stringResource(R.string.channel_count_label), value = channelName)
         }
-    }
-}
-
-/**
- * 信息卡片
- */
-@Composable
-private fun InfoCard(
-    title: String,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(Shapes.LargeCornerBasedShape)
-                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                .padding(16.dp),
-    ) {
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.title4,
-            fontWeight = FontWeight.Bold,
-            color = MiuixTheme.colorScheme.onSurface,
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        content()
-    }
-}
-
-/**
- * 信息行
- */
-@Composable
-private fun InfoRow(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(vertical = 6.dp),
-    ) {
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.title4,
-            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurface,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 

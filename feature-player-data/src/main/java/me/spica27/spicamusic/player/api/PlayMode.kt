@@ -1,8 +1,11 @@
 package me.spica27.spicamusic.player.api
 
+import androidx.compose.runtime.Immutable
+
 /**
  * 播放模式
  */
+@Immutable
 sealed class PlayMode(val name: String) {
     /**
      * 列表循环

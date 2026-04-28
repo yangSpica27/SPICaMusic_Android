@@ -49,7 +49,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -60,6 +59,10 @@ import me.spica27.spicamusic.feature.library.domain.ScanProgress
 import me.spica27.spicamusic.feature.library.domain.ScanResult
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
+import me.spica27.spicamusic.ui.widget.StatusCard
+import me.spica27.spicamusic.ui.widget.StatusCardBodyText
+import me.spica27.spicamusic.ui.widget.StatusCardHeader
+import me.spica27.spicamusic.ui.widget.StatusKeyValueRow
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
@@ -291,61 +294,37 @@ private fun MediaStoreScanCard(
     hasPermission: Boolean,
     onScanClick: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors =
-            CardDefaults.defaultColors(
-                contentColor = MiuixTheme.colorScheme.primaryContainer,
-                color = MiuixTheme.colorScheme.primaryContainer,
-            ),
-    ) {
-        Column(
+    StatusCard(containerColor = MiuixTheme.colorScheme.primaryContainer) {
+        StatusCardHeader(
+            icon = Icons.Default.Refresh,
+            title = stringResource(R.string.full_scan),
+            titleColor = MiuixTheme.colorScheme.onPrimaryContainer,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        StatusCardBodyText(
+            text =
+                if (hasPermission) {
+                    stringResource(R.string.full_scan_desc)
+                } else {
+                    stringResource(R.string.need_audio_permission_to_scan)
+                },
+            color = MiuixTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onScanClick,
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                    .pressable(interactionSource = null, indication = SinkFeedback())
+                    .align(Alignment.End),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = null,
-                    tint = MiuixTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(24.dp),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(R.string.full_scan),
-                    style = MiuixTheme.textStyles.title4,
-                    color = MiuixTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text =
-                    if (hasPermission) {
-                        stringResource(R.string.full_scan_desc)
-                    } else {
-                        stringResource(R.string.need_audio_permission_to_scan)
-                    },
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                if (hasPermission) {
+                    stringResource(R.string.start_scanner)
+                } else {
+                    stringResource(R.string.grant_permission_and_scan)
+                },
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onScanClick,
-                modifier =
-                    Modifier
-                        .pressable(interactionSource = null, indication = SinkFeedback())
-                        .align(Alignment.End),
-            ) {
-                Text(
-                    if (hasPermission) {
-                        stringResource(R.string.start_scanner)
-                    } else {
-                        stringResource(R.string.grant_permission_and_scan)
-                    },
-                )
-            }
         }
     }
 }
@@ -548,18 +527,9 @@ private fun FolderItemCard(
 
 @Composable
 private fun EmptyFoldersCard(message: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors =
-            CardDefaults.defaultColors(
-                contentColor = MiuixTheme.colorScheme.surfaceVariant,
-            ),
-    ) {
+    StatusCard(containerColor = MiuixTheme.colorScheme.surfaceVariant) {
         Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
@@ -569,11 +539,10 @@ private fun EmptyFoldersCard(message: String) {
                 modifier = Modifier.size(32.dp),
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
+            StatusCardBodyText(
                 text = message,
-                style = MiuixTheme.textStyles.body1,
                 color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
+                modifier = Modifier,
             )
         }
     }
@@ -581,66 +550,44 @@ private fun EmptyFoldersCard(message: String) {
 
 @Composable
 private fun ScanningCard(progress: ScanProgress) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors =
-            CardDefaults.defaultColors(
-                contentColor = MiuixTheme.colorScheme.secondaryContainer,
-            ),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+    StatusCard(containerColor = MiuixTheme.colorScheme.secondaryContainer) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 3.dp,
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(R.string.scanning),
-                    style = MiuixTheme.textStyles.title4,
-                    color = MiuixTheme.colorScheme.onSecondaryContainer,
-                )
-            }
-
-            if (progress.total > 0) {
-                Spacer(modifier = Modifier.height(12.dp))
-                LinearProgressIndicator(
-                    progress = progress.current.toFloat() / progress.total,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = "${progress.current} / ${progress.total}",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
-                    )
-                    Text(
-                        text = "${(progress.current * 100 / progress.total)}%",
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 3.dp,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = progress.currentFile,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
-                maxLines = 1,
+                text = stringResource(R.string.scanning),
+                style = MiuixTheme.textStyles.title4,
+                color = MiuixTheme.colorScheme.onSecondaryContainer,
             )
         }
+
+        if (progress.total > 0) {
+            Spacer(modifier = Modifier.height(12.dp))
+            LinearProgressIndicator(
+                progress = progress.current.toFloat() / progress.total,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            StatusKeyValueRow(
+                label = "${progress.current} / ${progress.total}",
+                value = "${(progress.current * 100 / progress.total)}%",
+                labelColor = MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                valueColor = MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = progress.currentFile,
+            style = MiuixTheme.textStyles.body2,
+            color = MiuixTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f),
+            maxLines = 1,
+        )
     }
 }
 
@@ -649,65 +596,42 @@ private fun ScanResultCard(
     result: ScanResult,
     onDismiss: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors =
-            CardDefaults.defaultColors(
-                contentColor = MiuixTheme.colorScheme.tertiaryContainer,
-            ),
-    ) {
-        Column(
+    StatusCard(containerColor = MiuixTheme.colorScheme.tertiaryContainer) {
+        StatusCardHeader(
+            icon = Icons.Default.CheckCircle,
+            title = stringResource(R.string.scan_completed),
+            titleColor = MiuixTheme.colorScheme.onTertiaryContainer,
+            iconTint = MiuixTheme.colorScheme.primary,
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ResultRow(
+            stringResource(R.string.total_scanned),
+            stringResource(R.string.songs_count_format, result.totalScanned),
+        )
+        ResultRow(
+            stringResource(R.string.new_added),
+            stringResource(R.string.songs_count_format, result.newAdded),
+        )
+        ResultRow(
+            stringResource(R.string.updated),
+            stringResource(R.string.songs_count_format, result.updated),
+        )
+        ResultRow(
+            stringResource(R.string.removed),
+            stringResource(R.string.songs_count_format, result.removed),
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+        TextButton(
+            text = stringResource(R.string.btn_sure),
+            onClick = onDismiss,
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = MiuixTheme.colorScheme.primary,
-                    modifier = Modifier.size(32.dp),
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(R.string.scan_completed),
-                    style = MiuixTheme.textStyles.title4,
-                    color = MiuixTheme.colorScheme.onTertiaryContainer,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            ResultRow(
-                stringResource(R.string.total_scanned),
-                stringResource(R.string.songs_count_format, result.totalScanned),
-            )
-            ResultRow(
-                stringResource(R.string.new_added),
-                stringResource(R.string.songs_count_format, result.newAdded),
-            )
-            ResultRow(
-                stringResource(R.string.updated),
-                stringResource(R.string.songs_count_format, result.updated),
-            )
-            ResultRow(
-                stringResource(R.string.removed),
-                stringResource(R.string.songs_count_format, result.removed),
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-            TextButton(
-                text = stringResource(R.string.btn_sure),
-                onClick = onDismiss,
-                modifier =
-                    Modifier
-                        .pressable(interactionSource = null, indication = SinkFeedback())
-                        .align(Alignment.End),
-            )
-        }
+                    .pressable(interactionSource = null, indication = SinkFeedback())
+                    .align(Alignment.End),
+        )
     }
 }
 
@@ -716,24 +640,12 @@ private fun ResultRow(
     label: String,
     value: String,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
-        )
-        Text(
-            text = value,
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onTertiaryContainer,
-        )
-    }
+    StatusKeyValueRow(
+        label = label,
+        value = value,
+        labelColor = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
+        valueColor = MiuixTheme.colorScheme.onTertiaryContainer,
+    )
 }
 
 @Composable
@@ -742,40 +654,27 @@ private fun ErrorCard(
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors =
-            CardDefaults.defaultColors(contentColor = MiuixTheme.colorScheme.errorContainer),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+    StatusCard(containerColor = MiuixTheme.colorScheme.errorContainer) {
+        StatusCardBodyText(
+            text = stringResource(R.string.scan_failed),
+            color = MiuixTheme.colorScheme.onErrorContainer,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        StatusCardBodyText(
+            text = message,
+            color = MiuixTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.align(Alignment.End),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(
-                text = stringResource(R.string.scan_failed),
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onErrorContainer,
+            TextButton(
+                text = stringResource(R.string.cancel),
+                onClick = onDismiss,
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = message,
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.align(Alignment.End),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TextButton(
-                    text = stringResource(R.string.cancel),
-                    onClick = onDismiss,
-                )
-                Button(onClick = onRetry) {
-                    Text(stringResource(R.string.retry))
-                }
+            Button(onClick = onRetry) {
+                Text(stringResource(R.string.retry))
             }
         }
     }
@@ -786,30 +685,16 @@ private fun InfoCard(
     title: String,
     message: String,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors =
-            CardDefaults.defaultColors(
-                contentColor = MiuixTheme.colorScheme.surfaceVariant,
-            ),
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.Start,
-        ) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = message,
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.8f),
-                textAlign = TextAlign.Start,
-            )
-        }
+    StatusCard(containerColor = MiuixTheme.colorScheme.surfaceVariant) {
+        StatusCardBodyText(
+            text = title,
+            color = MiuixTheme.colorScheme.onSurfaceVariantActions,
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        StatusCardBodyText(
+            text = message,
+            color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.8f),
+        )
     }
 }
 

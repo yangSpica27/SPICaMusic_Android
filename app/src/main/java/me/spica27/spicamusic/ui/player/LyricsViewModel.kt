@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.player
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,7 @@ import timber.log.Timber
  * 歌词页面 ViewModel
  * 负责歌词加载（缓存优先）、偏移量持久化、多歌词源管理
  */
+@Stable
 class LyricsViewModel(
     private val player: PlayerUseCases,
     private val lyricsUseCases: LyricsUseCases,

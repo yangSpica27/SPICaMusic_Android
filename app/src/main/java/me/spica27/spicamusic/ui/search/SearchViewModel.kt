@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.search
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -36,6 +37,7 @@ sealed class SearchListItem {
  * 搜索页面 ViewModel
  * 空关键词不加载数据（WelcomeHolder），有关键词时使用 Paging 3 + InsertSeparators 实现分组
  */
+@Stable
 class SearchViewModel(
     private val songRepository: SongUseCases,
 ) : ViewModel() {

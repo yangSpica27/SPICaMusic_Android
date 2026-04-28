@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.navigation
 
+import androidx.compose.runtime.Immutable
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import me.spica27.spicamusic.common.entity.Album
@@ -9,6 +10,7 @@ import me.spica27.spicamusic.common.entity.Album
  * 使用 @Serializable 支持类型安全导航
  * 继承 NavKey 以满足 Navigation 3 的类型约束
  */
+@Immutable
 sealed interface Screen : NavKey {
     @Serializable
     data object Home : Screen

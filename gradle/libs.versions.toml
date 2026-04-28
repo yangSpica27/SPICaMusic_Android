@@ -13,7 +13,7 @@ dynamicanimationKtxVersion = "1.1.0"
 hazeVersion = "1.7.2"
 
 koinAndroidxComposeVersion = "4.2.1"
-kotlin = "2.2.21"
+kotlin = "2.3.21"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
@@ -38,14 +38,14 @@ timberVersion = "5.0.1"
 nav3Core = "1.1.1"
 material3AdaptiveNav3 = "1.1.0"
 lifecycleViewmodelNav3 = "2.10.0"
-kotlinSerialization = "2.2.21"
-kotlinxSerializationCore = "1.10.0"
+kotlinSerialization = "2.3.21"
+kotlinxSerializationCore = "1.11.0"
 moshiKotlin = "1.15.2"
 
 paletteVersion = "1.0.0"
 
 media3SessionVersion = "1.10.0"
-ksp = "2.2.21-2.0.4"
+ksp = "2.3.7"
 roomVersion = "2.8.4"
 miuixAndroid = "0.9.0"
 androidautosize = "v1.2.1"
@@ -128,3 +128,4 @@ jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serializati
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.7.4" }

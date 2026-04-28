@@ -43,6 +43,7 @@ import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.SongListDefaults
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -311,17 +312,15 @@ private fun SongItemCard(
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = song.displayName,
-                style = MiuixTheme.textStyles.body1,
+                style = SongListDefaults.songTitleTextStyle.copy(fontWeight = FontWeight.W600),
                 color = MiuixTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
-                fontWeight = FontWeight.W600,
             )
             Text(
                 text = formatDuration(song.duration),
-                style = MiuixTheme.textStyles.body1,
+                style = SongListDefaults.songDurationTextStyle.copy(fontWeight = FontWeight.W500),
                 color = MiuixTheme.colorScheme.onSurface.copy(alpha = .6f),
                 modifier = Modifier,
-                fontWeight = FontWeight.W500,
             )
         }
     }

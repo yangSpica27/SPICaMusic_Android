@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.album
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
 
+@Stable
 class AlbumViewModel(
     private val albumRepository: AlbumUseCases,
 ) : ViewModel() {

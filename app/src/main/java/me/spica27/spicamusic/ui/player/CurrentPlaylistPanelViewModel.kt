@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.player
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
@@ -10,6 +11,7 @@ import timber.log.Timber
 /**
  * 当前播放列表面板 ViewModel
  */
+@Stable
 class CurrentPlaylistPanelViewModel(
     private val playlistRepository: PlaylistUseCases,
     private val songRepository: SongUseCases,

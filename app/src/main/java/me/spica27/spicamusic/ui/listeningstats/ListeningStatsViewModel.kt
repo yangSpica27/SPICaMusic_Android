@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.listeningstats
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ data class TopSongDisplayItem(
     val playCount: Long,
 )
 
+@Stable
 class ListeningStatsViewModel(
     private val historyRepository: PlayHistoryUseCases,
     private val songRepository: SongUseCases,

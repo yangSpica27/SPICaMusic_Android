@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,13 +44,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -69,6 +65,9 @@ import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioQualityBadges
+import me.spica27.spicamusic.ui.widget.LibraryActionCard
+import me.spica27.spicamusic.ui.widget.SelectionMenuActionItem
+import me.spica27.spicamusic.ui.widget.SongListDefaults
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
@@ -231,11 +230,30 @@ fun FavoriteScreen(
                             },
                             singleLine = true,
                         )
-                        FavoriteActionButtons(
-                            onPlayAll = { viewModel.playAllSongs() },
-                            onMultiSelect = { viewModel.enterMultiSelectMode() },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        )
+                        Row(
+                            modifier =
+                                Modifier
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            LibraryActionCard(
+                                icon = Icons.Default.PlayArrow,
+                                label = stringResource(R.string.play_all),
+                                containerColor = MiuixTheme.colorScheme.primary,
+                                contentColor = MiuixTheme.colorScheme.onPrimary,
+                                onClick = { viewModel.playAllSongs() },
+                                modifier = Modifier.weight(1f),
+                            )
+                            LibraryActionCard(
+                                icon = Icons.Default.CheckCircle,
+                                label = stringResource(R.string.multi_select),
+                                containerColor = MiuixTheme.colorScheme.tertiaryContainer,
+                                contentColor = MiuixTheme.colorScheme.onTertiaryContainer,
+                                onClick = { viewModel.enterMultiSelectMode() },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
             }
@@ -352,84 +370,6 @@ fun FavoriteScreen(
     }
 }
 
-@Composable
-private fun FavoriteActionButtons(
-    onPlayAll: () -> Unit,
-    onMultiSelect: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Card(
-            onClick = onPlayAll,
-            modifier = Modifier.weight(1f),
-            colors =
-                CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.primary,
-                    contentColor = MiuixTheme.colorScheme.primary,
-                ),
-        ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    tint = MiuixTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(24.dp),
-                )
-                Text(
-                    text = stringResource(R.string.play_all),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MiuixTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
-        }
-
-        Card(
-            onClick = onMultiSelect,
-            modifier = Modifier.weight(1f),
-            colors =
-                CardDefaults.defaultColors(
-                    color = MiuixTheme.colorScheme.tertiaryContainer,
-                    contentColor = MiuixTheme.colorScheme.tertiaryContainer,
-                ),
-        ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MiuixTheme.colorScheme.onTertiaryContainer,
-                )
-                Text(
-                    text = stringResource(R.string.multi_select),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(start = 8.dp),
-                    color = MiuixTheme.colorScheme.onTertiaryContainer,
-                )
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SongItemCard(
@@ -483,8 +423,7 @@ private fun SongItemCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = song.displayName,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
+                    style = SongListDefaults.songTitleTextStyle,
                     maxLines = 1,
                     color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
                 )
@@ -504,7 +443,7 @@ private fun SongItemCard(
                     AudioQualityBadges(song)
                     Text(
                         text = song.artist,
-                        fontSize = 14.sp,
+                        style = SongListDefaults.songMetaTextStyle,
                         color =
                             if (isSelected) {
                                 MiuixTheme.colorScheme.primary
@@ -519,7 +458,7 @@ private fun SongItemCard(
 
             Text(
                 text = formatDuration(song.duration),
-                fontSize = 14.sp,
+                style = SongListDefaults.songDurationTextStyle,
                 color =
                     if (isSelected) {
                         MiuixTheme.colorScheme.primary
@@ -544,50 +483,17 @@ private fun FavoriteMultiSelectMenu(
                 .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        MenuActionItem(
+        SelectionMenuActionItem(
             icon = Icons.Default.FavoriteBorder,
             label = stringResource(R.string.remove_from_favorites),
             onClick = onUnfavorite,
             modifier = Modifier.weight(1f),
         )
-        MenuActionItem(
+        SelectionMenuActionItem(
             icon = Icons.AutoMirrored.Filled.PlaylistAdd,
             label = stringResource(R.string.create_playlist),
             onClick = onCreatePlaylist,
             modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-@Composable
-private fun MenuActionItem(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier =
-            modifier
-                .padding(8.dp)
-                .combinedClickable(
-                    onClick = onClick,
-                    indication = ripple(bounded = false, radius = 32.dp),
-                    interactionSource = remember { MutableInteractionSource() },
-                ),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = MiuixTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.size(28.dp),
-        )
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            color = MiuixTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.padding(top = 4.dp),
         )
     }
 }

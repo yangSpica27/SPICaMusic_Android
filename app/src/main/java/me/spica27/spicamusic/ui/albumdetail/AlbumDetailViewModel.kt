@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.albumdetail
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -11,6 +12,7 @@ import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayerAction
 
+@Stable
 class AlbumDetailViewModel(
     private val albumId: String,
     private val albumRepository: AlbumUseCases,

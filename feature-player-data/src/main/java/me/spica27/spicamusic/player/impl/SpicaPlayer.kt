@@ -110,9 +110,8 @@ class SpicaPlayer(
 
     // 记录当前播放会话的开始信息，用于计算 playedDuration
     private var playSessionMediaId: String? = null
-    private var playStartPosition: Long = 0L
-    private var playStartTimeMs: Long = 0L
     private var isRecordingPlay: Boolean = false
+    private val playbackDurationTracker = PlaybackDurationTracker()
 
     override val currentPosition: Long
         get() = runCatching { if (browserFuture.isDone) browserFuture.get()?.currentPosition else null }.getOrNull()
@@ -332,20 +331,18 @@ class SpicaPlayer(
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         this@SpicaPlayer._isPlaying.value = isPlaying
         if (isPlaying) {
-            // 开始记录播放会话
-            playSessionMediaId = _currentMediaItem.value?.mediaId
-            playStartPosition = browserInstance?.currentPosition ?: 0L
-            playStartTimeMs = System.currentTimeMillis()
-            isRecordingPlay = true
+            startPlaySession(
+                mediaId = _currentMediaItem.value?.mediaId,
+                positionMs = browserInstance?.currentPosition ?: 0L,
+            )
         } else {
-            // 停止或暂停时记录一次播放事件
             if (isRecordingPlay) {
                 val mediaId = playSessionMediaId
                 val currentPos = browserInstance?.currentPosition ?: 0L
-                val playedDuration = (currentPos - playStartPosition).coerceAtLeast(0L)
+                val playedDuration = playbackDurationTracker.playedDurationFromPosition(currentPos)
                 val dur = _currentDuration.value
                 val completed = dur > 0 && playedDuration >= (dur * 0.9)
-                if (mediaId != null) {
+                if (mediaId != null && playedDuration > 0L) {
                     val extra = buildExtraFromMetadata(_currentMediaMetadata.value)
                     val ph = PlayHistory(
                         songId = mediaId.toLongOrNull() ?: 0L,
@@ -373,8 +370,21 @@ class SpicaPlayer(
                     }
                 }
             }
-            isRecordingPlay = false
-            playSessionMediaId = null
+            clearPlaySession()
+        }
+    }
+
+    override fun onPositionDiscontinuity(
+        oldPosition: Player.PositionInfo,
+        newPosition: Player.PositionInfo,
+        reason: Int,
+    ) {
+        if (reason == Player.DISCONTINUITY_REASON_SEEK && isRecordingPlay) {
+            playbackDurationTracker.splitOnSeek(
+                oldPositionMs = oldPosition.positionMs,
+                newPositionMs = newPosition.positionMs,
+                nowMs = System.currentTimeMillis(),
+            )
         }
     }
 
@@ -387,36 +397,37 @@ class SpicaPlayer(
         mediaItem: MediaItem?,
         reason: Int,
     ) {
-        // 记录上一首歌的播放信息（在切歌且仍在播放的情况下）
-        val previousMediaId = _currentMediaItem.value?.mediaId
+        val previousMediaId = playSessionMediaId
         if (previousMediaId != null && isRecordingPlay) {
             val now = System.currentTimeMillis()
-            val playedDuration = (now - playStartTimeMs).coerceAtLeast(0L)
+            val playedDuration = playbackDurationTracker.playedDurationFromElapsed(now)
             val dur = _currentDuration.value
             val completed = dur > 0 && playedDuration >= (dur * 0.9)
-            val extra = buildExtraFromMetadata(_currentMediaMetadata.value)
-            val ph = PlayHistory(
-                songId = previousMediaId.toLongOrNull() ?: 0L,
-                playTime = now,
-                playCount = 1,
-                userId = null,
-                sessionId = null,
-                deviceId = null,
-                duration = dur,
-                playedDuration = playedDuration,
-                position = playStartPosition,
-                actionType = if (completed) 3 else 2,
-                contextType = _currentPlaylistMetadata.value?.title?.toString() ?: "",
-                contextId = null,
-                isCompleted = completed,
-                source = "",
-                extra = extra,
-            )
-            launch(Dispatchers.IO) {
-                try {
-                    playHistoryRepository.addPlayHistory(ph)
-                } catch (e: Exception) {
-                    Timber.e(e)
+            if (playedDuration > 0L) {
+                val extra = buildExtraFromMetadata(_currentMediaMetadata.value)
+                val ph = PlayHistory(
+                    songId = previousMediaId.toLongOrNull() ?: 0L,
+                    playTime = now,
+                    playCount = 1,
+                    userId = null,
+                    sessionId = null,
+                    deviceId = null,
+                    duration = dur,
+                    playedDuration = playedDuration,
+                    position = if (completed) dur else 0L,
+                    actionType = if (completed) 3 else 2,
+                    contextType = _currentPlaylistMetadata.value?.title?.toString() ?: "",
+                    contextId = null,
+                    isCompleted = completed,
+                    source = "",
+                    extra = extra,
+                )
+                launch(Dispatchers.IO) {
+                    try {
+                        playHistoryRepository.addPlayHistory(ph)
+                    } catch (e: Exception) {
+                        Timber.e(e)
+                    }
                 }
             }
         }
@@ -437,13 +448,31 @@ class SpicaPlayer(
             _pauseWhenCompletion.value = false
         }
 
-        // 如果仍在播放则开始记录新会话
+        clearPlaySession()
         if (_isPlaying.value) {
-            playSessionMediaId = _currentMediaItem.value?.mediaId
-            playStartPosition = browserInstance?.currentPosition ?: 0L
-            playStartTimeMs = System.currentTimeMillis()
-            isRecordingPlay = true
+            startPlaySession(
+                mediaId = _currentMediaItem.value?.mediaId,
+                positionMs = browserInstance?.currentPosition ?: 0L,
+            )
         }
+    }
+
+    private fun startPlaySession(
+        mediaId: String?,
+        positionMs: Long,
+    ) {
+        playSessionMediaId = mediaId
+        playbackDurationTracker.beginSession(
+            positionMs = positionMs,
+            nowMs = System.currentTimeMillis(),
+        )
+        isRecordingPlay = true
+    }
+
+    private fun clearPlaySession() {
+        playbackDurationTracker.clear()
+        isRecordingPlay = false
+        playSessionMediaId = null
     }
 
     override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {

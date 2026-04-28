@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.allsong
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -25,6 +26,7 @@ import timber.log.Timber
  * 所有歌曲页面 ViewModel
  * 使用 Paging 3 按需加载歌曲列表，避免全量加载到内存
  */
+@Stable
 class AllSongsViewModel(
     private val songRepository: SongUseCases,
     private val player: PlayerUseCases,

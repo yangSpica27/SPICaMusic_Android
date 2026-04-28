@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.playlistdetail
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -25,6 +26,7 @@ import timber.log.Timber
 /**
  * 歌单详情页面 ViewModel
  */
+@Stable
 class PlaylistDetailViewModel(
     private val playlistId: Long,
     private val playlistRepository: PlaylistUseCases,

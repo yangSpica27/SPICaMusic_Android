@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui.library
 
 import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 
+@Stable
 class LibraryPageViewModel(
     private val songRepositoryImpl: SongUseCases,
     private val albumRepositoryImpl: AlbumUseCases,

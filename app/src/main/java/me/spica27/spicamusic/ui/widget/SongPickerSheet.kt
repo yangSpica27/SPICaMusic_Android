@@ -4,13 +4,10 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -24,7 +21,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
@@ -41,9 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -337,89 +331,34 @@ private fun PickerSongItem(
                 color = bgColor,
             ),
     ) {
-        Row(
+        CompactSongRow(
+            title = song.displayName,
+            subtitle = song.artist,
+            coverUri = song.getCoverUri(),
+            coverSize = 48.dp,
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // 封面
-            Box(
-                modifier =
-                    Modifier
-                        .size(48.dp)
-                        .clip(Shapes.SmallCornerBasedShape)
-                        .background(MiuixTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
-            ) {
-                AudioCover(
-                    uri = song.getCoverUri(),
-                    modifier = Modifier.fillMaxSize(),
-                    placeHolder = {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(1f)
-                                    .clip(Shapes.SmallCornerBasedShape)
-                                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.MusicNote,
-                                contentDescription = null,
-                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                modifier =
-                                    Modifier
-                                        .size(20.dp)
-                                        .align(Alignment.Center),
-                            )
-                        }
-                    },
+            subtitleColor = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
+            trailing = {
+                Icon(
+                    imageVector =
+                        if (isSelected) {
+                            Icons.Default.CheckCircle
+                        } else {
+                            Icons.Default.RadioButtonUnchecked
+                        },
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint =
+                        if (isSelected) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f)
+                        },
                 )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // 歌曲信息
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = song.displayName,
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = song.artist,
-                    style = MiuixTheme.textStyles.body2,
-                    fontSize = 13.sp,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // 选中状态
-            Icon(
-                imageVector =
-                    if (isSelected) {
-                        Icons.Default.CheckCircle
-                    } else {
-                        Icons.Default.RadioButtonUnchecked
-                    },
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint =
-                    if (isSelected) {
-                        MiuixTheme.colorScheme.primary
-                    } else {
-                        MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f)
-                    },
-            )
-        }
+            },
+        )
     }
 }

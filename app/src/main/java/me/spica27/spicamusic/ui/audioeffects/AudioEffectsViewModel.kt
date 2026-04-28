@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.audioeffects
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +18,7 @@ import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
  *
  * 管理 EQ 和混响效果的状态，并持久化到 DataStore
  */
+@Stable
 class AudioEffectsViewModel(
     private val settingsUseCases: SettingsUseCases,
     private val player: PlayerUseCases,

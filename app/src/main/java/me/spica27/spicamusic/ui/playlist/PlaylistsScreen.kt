@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.ui.playlist
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -55,6 +53,8 @@ import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.EmptyStateContent
+import me.spica27.spicamusic.ui.widget.GradientPlaceholderCover
 import me.spica27.spicamusic.utils.navSharedBounds
 import org.koin.androidx.compose.koinViewModel
 import top.yukonga.miuix.kmp.basic.Button
@@ -273,11 +273,9 @@ private fun PlaylistGridCover(
     ) {
         if (songs.isEmpty()) {
             // 空歌单默认封面
-            Icon(
-                imageVector = Icons.Default.MusicNote,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
+            GradientPlaceholderCover(
+                modifier = Modifier.fillMaxSize(),
+                iconSize = 64.dp,
             )
         } else {
             // 2x2 网格布局显示前4首歌曲封面
@@ -353,42 +351,11 @@ private fun GridCoverItem(
         uri = song?.getCoverUri(),
         modifier = modifier,
         placeHolder = {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors =
-                                    listOf(
-                                        MiuixTheme.colorScheme.tertiaryContainer,
-                                        MiuixTheme.colorScheme.surfaceContainerHigh,
-                                    ),
-                            ),
-                        ),
-            ) {
-                if (song != null) {
-                    Text(
-                        text = song.displayName.take(1),
-                        style = MiuixTheme.textStyles.title3,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
-                        modifier =
-                            Modifier.align(
-                                Alignment.Center,
-                            ),
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.MusicNote,
-                        contentDescription = null,
-                        modifier =
-                            Modifier
-                                .size(24.dp)
-                                .align(Alignment.Center),
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
-                    )
-                }
-            }
+            GradientPlaceholderCover(
+                modifier = Modifier.fillMaxSize(),
+                overlayText = song?.displayName?.take(1),
+                iconSize = 24.dp,
+            )
         },
     )
 }
@@ -401,29 +368,13 @@ private fun EmptyPlaylistState(
     onCreatePlaylist: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    EmptyStateContent(
+        icon = Icons.Default.MusicNote,
+        title = stringResource(R.string.no_playlists),
+        summary = stringResource(R.string.create_first_playlist),
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        iconSize = 80.dp,
     ) {
-        Icon(
-            imageVector = Icons.Default.MusicNote,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.3f),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = stringResource(R.string.no_playlists),
-            style = MiuixTheme.textStyles.title4,
-            color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.6f),
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(R.string.create_first_playlist),
-            style = MiuixTheme.textStyles.body2,
-            color = MiuixTheme.colorScheme.onSurfaceVariantActions.copy(alpha = 0.5f),
-        )
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = onCreatePlaylist,
