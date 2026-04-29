@@ -698,9 +698,7 @@ private fun LibraryItemCard(
         cornerRadius = 10.dp,
         modifier =
             modifier
-                .navSharedBounds(
-                    key = route,
-                ).fillMaxWidth()
+                .fillMaxWidth()
                 .height(
                     80.dp,
                 ),
