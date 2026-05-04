@@ -27,12 +27,28 @@ suspend fun extractDominantColorFromUri(
         if (uri == null) return@withContext fallbackColor
 
         try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            val bitmap = BitmapFactory.decodeStream(inputStream)
-            inputStream?.close()
+            // 第一次 pass：仅读取图片尺寸，不分配像素内存
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, bounds)
+            }
+
+            // 计算 inSampleSize，目标尺寸 128×128（调色板提取不需要高分辨率）
+            val sampleSize = calculateInSampleSize(bounds, 128, 128)
+
+            // 第二次 pass：按比例缩放解码，大幅降低内存占用
+            val options =
+                BitmapFactory.Options().apply {
+                    inSampleSize = sampleSize
+                    inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 // 节省一半内存
+                }
+            val bitmap =
+                context.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(it, null, options)
+                }
 
             if (bitmap != null) {
-                val palette = Palette.from(bitmap).generate()
+                val palette = Palette.from(bitmap).maximumColorCount(16).generate()
                 bitmap.recycle()
 
                 // 优先使用鲜艳色，其次是主色
@@ -68,6 +84,24 @@ fun rememberDominantColorFromUri(
     }
 
     return dominantColor
+}
+
+/** 计算合适的 inSampleSize，使解码后尺寸不超过 [reqWidth]×[reqHeight] */
+private fun calculateInSampleSize(
+    options: BitmapFactory.Options,
+    reqWidth: Int,
+    reqHeight: Int,
+): Int {
+    val (height, width) = options.outHeight to options.outWidth
+    var inSampleSize = 1
+    if (height > reqHeight || width > reqWidth) {
+        val halfHeight = height / 2
+        val halfWidth = width / 2
+        while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+            inSampleSize *= 2
+        }
+    }
+    return inSampleSize
 }
 
 /**

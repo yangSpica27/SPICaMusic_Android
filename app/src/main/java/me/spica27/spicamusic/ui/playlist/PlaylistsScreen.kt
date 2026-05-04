@@ -205,7 +205,7 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun PlaylistCard(
+public fun PlaylistCard(
     playlist: Playlist,
     viewModel: PlaylistViewModel,
     onClick: () -> Unit,

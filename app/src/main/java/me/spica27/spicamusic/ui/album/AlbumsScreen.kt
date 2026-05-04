@@ -38,7 +38,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.paging.compose.LazyPagingItems
@@ -51,6 +50,7 @@ import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.Album
+import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
@@ -300,7 +300,7 @@ private fun AlbumItem(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             AudioCover(
-                uri = album.artworkUri.toString().toUri(),
+                uri = album.getCoverUri(),
                 modifier =
                     Modifier
                         .fillMaxWidth()

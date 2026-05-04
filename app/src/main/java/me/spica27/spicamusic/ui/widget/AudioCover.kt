@@ -25,12 +25,13 @@ fun AudioCover(
     Box(modifier = modifier) {
         if (state !is AsyncImagePainter.State.Success) {
             placeHolder()
+        } else {
+            Image(
+                painter = painter,
+                contentDescription = "audio cover",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
         }
-        Image(
-            painter = painter,
-            contentDescription = "audio cover",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize(),
-        )
     }
 }

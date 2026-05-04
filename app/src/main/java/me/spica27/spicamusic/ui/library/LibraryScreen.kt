@@ -48,7 +48,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -636,7 +635,7 @@ private fun AlbumMiniCard(
                 contentAlignment = Alignment.Center,
             ) {
                 AudioCover(
-                    uri = album.artworkUri?.toUri(),
+                    uri = album.getCoverUri(),
                     modifier =
                         Modifier
                             .fillMaxSize(),

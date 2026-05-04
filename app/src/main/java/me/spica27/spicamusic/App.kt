@@ -102,7 +102,7 @@ class App :
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader
             .Builder(context)
-            .crossfade(true)
+            .crossfade(false)
             .premultipliedAlpha(true) // 预乘 alpha 优化 GPU 性能，减少内存占用
             .allowRgb565(true)
             .allowConversionToBitmap(true)

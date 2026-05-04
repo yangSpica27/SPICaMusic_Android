@@ -34,11 +34,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.navigation.LocalNavBackStack
 import me.spica27.spicamusic.navigation.Screen
 import me.spica27.spicamusic.ui.LocalFloatingTabBarScrollConnection
@@ -166,7 +166,7 @@ private fun Header(
                 .aspectRatio(0.78f),
     ) {
         AudioCover(
-            uri = album.artworkUri.toString().toUri(),
+            uri = album.getCoverUri(),
             modifier =
                 Modifier
                     .fillMaxSize()
