@@ -61,8 +61,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.hazeEffect
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.findPlayingIndex
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -670,27 +672,48 @@ private fun ProgressiveWordsText(
         return
     }
 
-    val textMeasurer = rememberTextMeasurer()
+    // cacheSize=0：禁用内部缓存，确保相同字符各自持有独立的 TextLayoutResult 实例，
+    // 避免 drawText(shadow=...) 修改共享 MultiParagraph 内部 TextPaint 导致渲染污染
+    val textMeasurer = rememberTextMeasurer(cacheSize = 0)
 
-    // ── 测量缓存：仅依赖文本内容和样式，不随进度变化 ──
-    val measuredWords =
-        remember(text, wordRanges, baseStyle) {
-            wordRanges.map { range ->
-                val layoutResult = textMeasurer.measure(text = range.word.content, style = baseStyle)
-                val boundingBox = wordBoundingBox(layoutResult, 0, range.word.content.length)
-                MeasuredWord(layoutResult, boundingBox)
+    // 测量结果异步填充：null 表示尚未完成，显示占位文本
+    var measuredWords by remember(text, wordRanges, baseStyle) {
+        mutableStateOf<List<MeasuredWord>?>(null)
+    }
+
+    // ── 将文本测量移至后台线程，避免阻塞 Composition ──
+    LaunchedEffect(text, wordRanges, baseStyle) {
+        val result =
+            withContext(Dispatchers.Default) {
+                wordRanges.map { range ->
+                    val layoutResult =
+                        textMeasurer.measure(
+                            text = range.word.content,
+                            style = baseStyle,
+                        )
+                    val boundingBox = wordBoundingBox(layoutResult, 0, range.word.content.length)
+                    MeasuredWord(layoutResult, boundingBox)
+                }
             }
-        }
+        measuredWords = result
+    }
 
     val density = LocalDensity.current
     val activeColor = activeStyle.color.copy(alpha = highlightStrength)
     val baseColor = baseStyle.color
     val wordTranslationYPx = with(density) { LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx() }
 
+    val words = measuredWords
+    if (words == null) {
+        // 测量完成前显示无样式占位文本，避免空白闪烁
+        Text(text = text, style = baseStyle, modifier = modifier)
+        return
+    }
+
     FlowRow(
         modifier = modifier,
     ) {
-        measuredWords.forEachIndexed { index, measured ->
+        words.forEachIndexed { index, measured ->
             val range = wordRanges[index]
 
             Canvas(
