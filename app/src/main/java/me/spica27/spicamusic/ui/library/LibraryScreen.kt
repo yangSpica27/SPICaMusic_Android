@@ -17,10 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
@@ -182,347 +180,354 @@ private fun LibraryContent(
     val backStack = LocalNavBackStack.current
     val playlists by viewModel.playlists.collectAsStateWithLifecycle(initialValue = emptyList())
     val albumsItems = viewModel.albumList.collectAsLazyPagingItems()
-    LazyVerticalGrid(
+    val recommended by viewModel.recommendedSongs.collectAsStateWithLifecycle(initialValue = emptyList())
+    val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle(initialValue = null)
+    val player: IMusicPlayer = KoinJavaComponent.getKoin().get()
+
+    Column(
         modifier =
             modifier
                 .hazeSource(hazeState)
                 .overScrollVertical()
                 .nestedScroll(LocalFloatingTabBarScrollConnection.current)
-                .nestedScroll(scrollBehavior.nestedScrollConnection),
-        columns = GridCells.Fixed(2),
-        contentPadding =
-            PaddingValues(
-                top = paddingValues.calculateTopPadding(),
-                bottom = paddingValues.calculateBottomPadding(),
-            ),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        state = viewModel.lazyGridState,
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .verticalScroll(viewModel.scrollState)
+                .padding(
+                    top = paddingValues.calculateTopPadding(),
+                    bottom = paddingValues.calculateBottomPadding(),
+                ),
     ) {
-        item(span = { GridItemSpan(2) }) {
-            Row(
-                modifier =
-                    Modifier
-                        .navSharedBounds(Screen.Search)
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .clip(Shapes.MediumCornerBasedShape)
-                        .background(
-                            MiuixTheme.colorScheme.surfaceContainer,
-                        ).clickable {
-                            backStack.add(Screen.Search)
-                        }.padding(
-                            horizontal = 16.dp,
-                            vertical = 12.dp,
-                        ),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    Icons.Default.Search,
-                    contentDescription = stringResource(R.string.search),
-                    tint = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                )
-                Text(
-                    text = stringResource(R.string.search_song_or_artist),
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    style = MiuixTheme.textStyles.body1,
-                )
-            }
-        }
-
-        // 歌单分区：显示已有歌单或引导创建
-        item(span = { GridItemSpan(2) }) {
-            Title(
-                text = stringResource(R.string.title_playlist),
-                summary = "浏览你创建的歌单",
-                rightWidget = { ViewAllButton { backStack.add(Screen.Playlists) } },
+        // 搜索栏
+        Row(
+            modifier =
+                Modifier
+                    .navSharedBounds(Screen.Search)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clip(Shapes.MediumCornerBasedShape)
+                    .background(MiuixTheme.colorScheme.surfaceContainer)
+                    .clickable { backStack.add(Screen.Search) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = stringResource(R.string.search),
+                tint = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            )
+            Text(
+                text = stringResource(R.string.search_song_or_artist),
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                style = MiuixTheme.textStyles.body1,
             )
         }
 
+        // 歌单分区
+        Title(
+            text = stringResource(R.string.title_playlist),
+            summary = "浏览你创建的歌单",
+            rightWidget = { ViewAllButton { backStack.add(Screen.Playlists) } },
+        )
+        Spacer(
+            modifier = Modifier.height(12.dp),
+        )
         if (playlists.isEmpty()) {
-            // 未创建歌单时展示占位卡片，点击进入歌单页面去创建
-            item(span = { GridItemSpan(2) }) {
-                EmptyPlaylistCard(
-                    onClick = { backStack.add(Screen.Playlists) },
-                    modifier =
-                        Modifier
-                            .navSharedBounds(
-                                Screen.Playlists,
-                            ).padding(horizontal = 10.dp),
-                )
-            }
+            EmptyPlaylistCard(
+                onClick = { backStack.add(Screen.Playlists) },
+                modifier =
+                    Modifier
+                        .navSharedBounds(Screen.Playlists)
+                        .padding(horizontal = 10.dp),
+            )
         } else {
-            item(
-                span = { GridItemSpan(2) },
+            LazyRow(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .overScrollHorizontal(),
+                contentPadding = PaddingValues(horizontal = 22.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                LazyRow(
+                val display = playlists.take(4)
+                items(display, key = { it.playlistId ?: 0L }) { playlist ->
+                    PlaylistMiniCard(
+                        modifier = Modifier.navSharedBounds(playlist),
+                        playlist = playlist,
+                        onClick = {
+                            playlist.playlistId?.let { id ->
+                                backStack.add(Screen.PlaylistDetail(id))
+                            }
+                        },
+                    )
+                }
+            }
+        }
+        Spacer(
+            modifier = Modifier.height(12.dp),
+        )
+        // 专辑分区
+        Title(
+            text = stringResource(R.string.albums_title),
+            summary = "浏览你的专辑收藏",
+            rightWidget = { ViewAllButton { backStack.add(Screen.Albums) } },
+        )
+        Spacer(
+            modifier = Modifier.height(12.dp),
+        )
+        if (albumsItems.itemCount == 0) {
+            EmptyAlbumCard(
+                onRescan = { backStack.add(Screen.MediaLibrarySource) },
+                modifier = Modifier.padding(horizontal = 10.dp),
+            )
+        } else {
+            val displayCount = minOf(albumsItems.itemCount, 4)
+            val albumRows = (0 until displayCount step 2).toList()
+            albumRows.forEachIndexed { rowIndex, rowStart ->
+                Row(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .overScrollHorizontal(),
-                    contentPadding = PaddingValues(horizontal = 22.dp),
+                            .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    // 显示最多 4 个歌单作为预览
-                    val display = playlists.take(4)
-                    this@LazyRow.items(display, key = { it.playlistId ?: 0L }) { playlist ->
-                        PlaylistMiniCard(
-                            modifier =
-                                Modifier.navSharedBounds(playlist),
-                            playlist = playlist,
-                            onClick = {
-                                playlist.playlistId?.let { id ->
-                                    backStack.add(
-                                        Screen.PlaylistDetail(
-                                            id,
+                    val album0 = albumsItems[rowStart]
+                    if (album0 != null) {
+                        AlbumMiniCard(
+                            modifier = Modifier.weight(1f).navSharedBounds(album0),
+                            album = album0,
+                            onClick = { backStack.add(Screen.AlbumDetail(album0)) },
+                        )
+                    } else {
+                        AlbumMiniPlaceholder(Modifier.weight(1f))
+                    }
+                    val secondIndex = rowStart + 1
+                    if (secondIndex < displayCount) {
+                        val album1 = albumsItems[secondIndex]
+                        if (album1 != null) {
+                            AlbumMiniCard(
+                                modifier = Modifier.weight(1f).navSharedBounds(album1),
+                                album = album1,
+                                onClick = { backStack.add(Screen.AlbumDetail(album1)) },
+                            )
+                        } else {
+                            AlbumMiniPlaceholder(Modifier.weight(1f))
+                        }
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
+                if (rowIndex < albumRows.lastIndex) Spacer(Modifier.height(12.dp))
+            }
+        }
+        Spacer(
+            modifier = Modifier.height(12.dp),
+        )
+        // 歌曲推荐分区
+        Title(
+            text = "歌曲推荐",
+            summary = "基于你的听歌习惯推荐",
+            rightWidget = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier =
+                        Modifier
+                            .clip(Shapes.LargeCornerBasedShape)
+                            .background(MiuixTheme.colorScheme.primaryContainer)
+                            .clickable(onClick = {
+                                val mediaIds = recommended.map { it.mediaStoreId.toString() }
+                                if (mediaIds.isNotEmpty()) {
+                                    player.doAction(
+                                        PlayerAction.UpdateList(
+                                            mediaIds = mediaIds,
+                                            mediaId = mediaIds.first(),
+                                            start = true,
                                         ),
                                     )
                                 }
-                            },
-                        )
-                    }
-                }
-            }
-        }
-        // 专辑分区：展示最多 4 张专辑预览或占位提示去重新扫描
-        item(span = { GridItemSpan(2) }) {
-            Title(
-                text = stringResource(R.string.albums_title),
-                summary = "浏览你的专辑收藏",
-                rightWidget = { ViewAllButton { backStack.add(Screen.Albums) } },
-            )
-        }
-
-        if (albumsItems.itemCount == 0) {
-            item(span = { GridItemSpan(2) }) {
-                EmptyAlbumCard(
-                    onRescan = { backStack.add(Screen.MediaLibrarySource) },
-                    modifier = Modifier.padding(horizontal = 10.dp),
-                )
-            }
-        } else {
-            val displayCount = minOf(albumsItems.itemCount, 4)
-            items(displayCount, key = { albumsItems[it]?.id ?: "album_placeholder_$it" }) { index ->
-                val album = albumsItems[index]
-                if (album != null) {
-                    AlbumMiniCard(
-                        modifier =
-                            Modifier
-                                .padding(
-                                    start = if (index % 2 == 0) 16.dp else 0.dp,
-                                    end = if (index % 2 == 0) 0.dp else 16.dp,
-                                ).navSharedBounds(album),
-                        album = album,
-                        onClick = { backStack.add(Screen.AlbumDetail(album)) },
-                    )
-                } else {
-                    AlbumMiniPlaceholder()
-                }
-            }
-        }
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Title(
-                text = "歌曲推荐",
-                summary = "基于你的听歌习惯推荐",
-                rightWidget = {
-                    val recommended by viewModel.recommendedSongs.collectAsStateWithLifecycle(
-                        initialValue = emptyList(),
-                    )
-                    val player: IMusicPlayer =
-                        KoinJavaComponent
-                            .getKoin()
-                            .get()
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier =
-                            Modifier
-                                .clip(Shapes.LargeCornerBasedShape)
-                                .background(
-                                    MiuixTheme.colorScheme.primaryContainer,
-                                ).clickable(onClick = {
-                                    // 播放全部推荐，从第一个开始
-                                    val mediaIds = recommended.map { it.mediaStoreId.toString() }
-                                    if (mediaIds.isNotEmpty()) {
-                                        player.doAction(
-                                            PlayerAction.UpdateList(
-                                                mediaIds = mediaIds,
-                                                mediaId = mediaIds.first(),
-                                                start = true,
-                                            ),
-                                        )
-                                    }
-                                })
-                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = stringResource(R.string.play_recommendation),
-                            tint = MiuixTheme.colorScheme.onPrimaryContainer,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.play),
-                            color = MiuixTheme.colorScheme.onPrimaryContainer,
-                            style = MiuixTheme.textStyles.subtitle,
-                        )
-                    }
-                },
-            )
-        }
-        // 推荐歌曲列表
-        item(span = { GridItemSpan(2) }) {
-            val recommended by viewModel.recommendedSongs.collectAsStateWithLifecycle(initialValue = emptyList())
-            if (recommended.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.no_recommendations),
-                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                    style = MiuixTheme.textStyles.subtitle,
-                    modifier = Modifier.padding(horizontal = 10.dp),
-                )
-            } else {
-                val player: IMusicPlayer =
-                    KoinJavaComponent
-                        .getKoin()
-                        .get()
-                LazyRow(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            })
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
                 ) {
-                    items(recommended, key = { it.mediaStoreId }) { song ->
-                        Card(
-                            onClick = {
-                                // 点击某一项，从该项开始播放整个推荐列表
-                                val mediaIds = recommended.map { it.mediaStoreId.toString() }
-                                player.doAction(
-                                    PlayerAction.UpdateList(
-                                        mediaIds = mediaIds,
-                                        mediaId = song.mediaStoreId.toString(),
-                                        start = true,
-                                    ),
-                                )
-                            },
-                            pressFeedbackType = PressFeedbackType.Sink,
-                            cornerRadius = 10.dp,
-                            modifier = Modifier.size(width = 180.dp, height = 100.dp),
-                        ) {
-                            Box(
-                                Modifier.fillMaxSize(),
-                            ) {
-                                AudioCover(
-                                    uri = song.getCoverUri(),
-                                    modifier =
-                                        Modifier
-                                            .fillMaxSize()
-                                            .hazeEffect(
-                                                style =
-                                                    HazeMaterials.ultraThick(
-                                                        MiuixTheme.colorScheme.surface,
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = stringResource(R.string.play_recommendation),
+                        tint = MiuixTheme.colorScheme.onPrimaryContainer,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.play),
+                        color = MiuixTheme.colorScheme.onPrimaryContainer,
+                        style = MiuixTheme.textStyles.subtitle,
+                    )
+                }
+            },
+        )
+        Spacer(
+            modifier = Modifier.height(12.dp),
+        )
+        if (recommended.isEmpty()) {
+            Text(
+                text = stringResource(R.string.no_recommendations),
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                style = MiuixTheme.textStyles.subtitle,
+                modifier = Modifier.padding(horizontal = 10.dp),
+            )
+        } else {
+            LazyRow(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(recommended, key = { it.mediaStoreId }) { song ->
+                    Card(
+                        onClick = {
+                            val mediaIds = recommended.map { it.mediaStoreId.toString() }
+                            player.doAction(
+                                PlayerAction.UpdateList(
+                                    mediaIds = mediaIds,
+                                    mediaId = song.mediaStoreId.toString(),
+                                    start = true,
+                                ),
+                            )
+                        },
+                        pressFeedbackType = PressFeedbackType.Sink,
+                        cornerRadius = 10.dp,
+                        modifier = Modifier.size(width = 180.dp, height = 100.dp),
+                    ) {
+                        Box(Modifier.fillMaxSize()) {
+                            AudioCover(
+                                uri = song.getCoverUri(),
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .hazeEffect(
+                                            style =
+                                                HazeMaterials.ultraThick(
+                                                    MiuixTheme.colorScheme.surface,
+                                                ),
+                                        ) {
+                                            progressive =
+                                                HazeProgressive.LinearGradient(
+                                                    startIntensity = 0.45f,
+                                                    endIntensity = 0f,
+                                                )
+                                        },
+                                placeHolder = {
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .fillMaxSize()
+                                                .background(
+                                                    Brush.verticalGradient(
+                                                        colors =
+                                                            listOf(
+                                                                MiuixTheme.colorScheme.tertiaryContainer,
+                                                                MiuixTheme.colorScheme.surfaceContainerHigh,
+                                                            ),
                                                     ),
-                                            ) {
-                                                progressive =
-                                                    HazeProgressive.LinearGradient(
-                                                        startIntensity = 0.45f,
-                                                        endIntensity = 0f,
-                                                    )
-                                            },
-                                    placeHolder = {
-                                        Box(
+                                                ),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = song.displayName,
+                                            style = MiuixTheme.textStyles.headline1,
+                                            color =
+                                                MiuixTheme.colorScheme.onSurfaceVariantActions.copy(
+                                                    alpha = 0.3f,
+                                                ),
                                             modifier =
                                                 Modifier
-                                                    .fillMaxSize()
-                                                    .background(
-                                                        Brush.verticalGradient(
-                                                            colors =
-                                                                listOf(
-                                                                    MiuixTheme.colorScheme.tertiaryContainer,
-                                                                    MiuixTheme.colorScheme.surfaceContainerHigh,
-                                                                ),
-                                                        ),
-                                                    ),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Text(
-                                                text = song.displayName,
-                                                style = MiuixTheme.textStyles.headline1,
-                                                color =
-                                                    MiuixTheme.colorScheme.onSurfaceVariantActions.copy(
-                                                        alpha = 0.3f,
-                                                    ),
-                                                modifier =
-                                                    Modifier
-                                                        .padding(12.dp)
-                                                        .scale(2f)
-                                                        .rotate(-45f),
-                                            )
-                                        }
-                                    },
+                                                    .padding(12.dp)
+                                                    .scale(2f)
+                                                    .rotate(-45f),
+                                        )
+                                    }
+                                },
+                            )
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = song.displayName,
+                                    style = MiuixTheme.textStyles.body1,
+                                    maxLines = 2,
                                 )
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(
-                                        text = song.displayName,
-                                        style = MiuixTheme.textStyles.body1,
-                                        maxLines = 2,
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = song.artist,
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onSurfaceSecondary,
-                                        maxLines = 1,
-                                    )
-                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = song.artist,
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                                    maxLines = 1,
+                                )
                             }
                         }
                     }
                 }
             }
         }
-        item(
-            span = { GridItemSpan(2) },
-        ) {
-            Title(
-                text = stringResource(R.string.listening_stats),
-                summary = "查看你的听歌数据和习惯",
-                rightWidget = { ViewAllButton { backStack.add(Screen.ListeningStats) } },
-            )
+        Spacer(
+            modifier = Modifier.height(12.dp),
+        )
+        // 听歌统计分区
+        Title(
+            text = stringResource(R.string.listening_stats),
+            summary = "查看你的听歌数据和习惯",
+            rightWidget = { ViewAllButton { backStack.add(Screen.ListeningStats) } },
+        )
+        Spacer(
+            modifier = Modifier.height(12.dp),
+        )
+        WeeklyStatsCard(
+            weeklyStats = weeklyStats,
+            onRefresh = { viewModel.refreshWeeklyStats() },
+        )
+        Spacer(
+            modifier = Modifier.height(20.dp),
+        )
+        // 快捷入口
+        Text(
+            text = stringResource(R.string.quick_action),
+            color = MiuixTheme.colorScheme.onSurface,
+            style = MiuixTheme.textStyles.subtitle,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+        Spacer(
+            modifier = Modifier.height(12.dp),
+        )
+        val libraryRows = libraryItems.indices.step(2).toList()
+        libraryRows.forEachIndexed { rowIndex, rowStart ->
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                LibraryItemCard(
+                    title = libraryItems[rowStart].title,
+                    icon = libraryItems[rowStart].icon,
+                    onClick = { backStack.add(libraryItems[rowStart].screen) },
+                    modifier = Modifier.weight(1f),
+                    route = libraryItems[rowStart].screen,
+                )
+                val secondIndex = rowStart + 1
+                if (secondIndex < libraryItems.size) {
+                    LibraryItemCard(
+                        title = libraryItems[secondIndex].title,
+                        icon = libraryItems[secondIndex].icon,
+                        onClick = { backStack.add(libraryItems[secondIndex].screen) },
+                        modifier = Modifier.weight(1f),
+                        route = libraryItems[secondIndex].screen,
+                    )
+                } else {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+            if (rowIndex < libraryRows.lastIndex) Spacer(Modifier.height(12.dp))
         }
-        // 本周听歌统计卡片：展示本周听歌总时长、播放次数和听过的歌曲数
-        item(span = { GridItemSpan(2) }) {
-            val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle(initialValue = null)
-            WeeklyStatsCard(
-                weeklyStats = weeklyStats,
-                onRefresh = { viewModel.refreshWeeklyStats() },
-            )
-        }
-        item(span = { GridItemSpan(2) }) {
-            Text(
-                text = stringResource(R.string.quick_action),
-                color = MiuixTheme.colorScheme.onSurface,
-                style = MiuixTheme.textStyles.subtitle,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-        }
-        items(libraryItems.size, key = { libraryItems[it].title }) { index ->
-            LibraryItemCard(
-                title = libraryItems[index].title,
-                icon = libraryItems[index].icon,
-                onClick = { backStack.add(libraryItems[index].screen) },
-                Modifier.padding(
-                    start = if (index % 2 == 0) 16.dp else 0.dp,
-                    end = if (index % 2 == 0) 0.dp else 16.dp,
-                ),
-                route = libraryItems[index].screen,
-            )
-        }
-        item {
-            Spacer(modifier = Modifier.height(280.dp))
-        }
+
+        Spacer(modifier = Modifier.height(280.dp))
     }
 }
 
@@ -660,11 +665,11 @@ private fun AlbumMiniCard(
 }
 
 @Composable
-private fun AlbumMiniPlaceholder() {
+private fun AlbumMiniPlaceholder(modifier: Modifier = Modifier) {
     Card(
         pressFeedbackType = PressFeedbackType.Sink,
         cornerRadius = 10.dp,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column {
             GradientPlaceholderCover(

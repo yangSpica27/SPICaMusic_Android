@@ -288,6 +288,7 @@
   <string name="save_as_playlist">保存为歌单</string>
   <string name="saved_as_playlist_format">已保存为歌单「%s」</string>
   <string name="save_failed">保存失败</string>
+  <string name="save_as_playlist_succcess">保存成功</string>
 
   <!-- Song picker sheet -->
   <string name="add_songs_title">添加歌曲</string>

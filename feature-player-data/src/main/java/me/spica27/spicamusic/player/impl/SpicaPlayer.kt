@@ -2,6 +2,7 @@ package me.spica27.spicamusic.player.impl
 
 import android.content.ComponentName
 import android.content.Context
+import android.os.SystemClock
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -339,8 +340,10 @@ class SpicaPlayer(
             if (isRecordingPlay) {
                 val mediaId = playSessionMediaId
                 val currentPos = browserInstance?.currentPosition ?: 0L
-                val playedDuration = playbackDurationTracker.playedDurationFromPosition(currentPos)
                 val dur = _currentDuration.value
+                val rawPlayedDuration = playbackDurationTracker.playedDurationFromPosition(currentPos)
+                // Cap to song duration as a safety net.
+                val playedDuration = if (dur > 0) rawPlayedDuration.coerceAtMost(dur) else rawPlayedDuration
                 val completed = dur > 0 && playedDuration >= (dur * 0.9)
                 if (mediaId != null && playedDuration > 0L) {
                     val extra = buildExtraFromMetadata(_currentMediaMetadata.value)
@@ -383,7 +386,7 @@ class SpicaPlayer(
             playbackDurationTracker.splitOnSeek(
                 oldPositionMs = oldPosition.positionMs,
                 newPositionMs = newPosition.positionMs,
-                nowMs = System.currentTimeMillis(),
+                nowMs = SystemClock.elapsedRealtime(),
             )
         }
     }
@@ -399,15 +402,18 @@ class SpicaPlayer(
     ) {
         val previousMediaId = playSessionMediaId
         if (previousMediaId != null && isRecordingPlay) {
-            val now = System.currentTimeMillis()
-            val playedDuration = playbackDurationTracker.playedDurationFromElapsed(now)
+            val now = SystemClock.elapsedRealtime()
             val dur = _currentDuration.value
+            val rawPlayedDuration = playbackDurationTracker.playedDurationFromElapsed(now)
+            // Cap to actual song duration to guard against wall-clock jumps or any
+            // accounting anomaly that would inflate the stored duration.
+            val playedDuration = if (dur > 0) rawPlayedDuration.coerceAtMost(dur) else rawPlayedDuration
             val completed = dur > 0 && playedDuration >= (dur * 0.9)
             if (playedDuration > 0L) {
                 val extra = buildExtraFromMetadata(_currentMediaMetadata.value)
                 val ph = PlayHistory(
                     songId = previousMediaId.toLongOrNull() ?: 0L,
-                    playTime = now,
+                    playTime = System.currentTimeMillis(),
                     playCount = 1,
                     userId = null,
                     sessionId = null,
@@ -464,7 +470,7 @@ class SpicaPlayer(
         playSessionMediaId = mediaId
         playbackDurationTracker.beginSession(
             positionMs = positionMs,
-            nowMs = System.currentTimeMillis(),
+            nowMs = SystemClock.elapsedRealtime(),
         )
         isRecordingPlay = true
     }

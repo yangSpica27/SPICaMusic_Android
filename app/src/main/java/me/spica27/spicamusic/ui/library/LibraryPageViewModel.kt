@@ -1,6 +1,6 @@
 package me.spica27.spicamusic.ui.library
 
-import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -28,7 +28,7 @@ class LibraryPageViewModel(
     val weeklyStats: StateFlow<PlayStats?> = _weeklyStats.asStateFlow()
     private val _recommendedSongs = MutableStateFlow<List<Song>>(emptyList())
     val recommendedSongs: StateFlow<List<Song>> = _recommendedSongs.asStateFlow()
-    val lazyGridState = LazyGridState()
+    val scrollState = ScrollState(0)
 
     init {
         refreshWeeklyStats()

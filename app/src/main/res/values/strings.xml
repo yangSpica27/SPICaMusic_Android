@@ -286,6 +286,7 @@
 
   <!-- Playlist save operations -->
   <string name="save_as_playlist">Save as Playlist</string>
+  <string name="save_as_playlist_succcess">Save as Playlist Success</string>
   <string name="saved_as_playlist_format">Saved as playlist \"%s\"</string>
   <string name="save_failed">Save failed</string>
 

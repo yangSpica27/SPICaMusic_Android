@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.mostedplayed
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -39,6 +40,7 @@ import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.navigation.LocalNavBackStack
@@ -151,7 +153,10 @@ fun MostPlayedScreen(
                 // 时间范围选择器
                 item {
                     LazyRow(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(MostPlayedRange.entries) { range ->
@@ -168,7 +173,10 @@ fun MostPlayedScreen(
                 if (songs.isNotEmpty()) {
                     item {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             LibraryActionCard(
@@ -182,9 +190,19 @@ fun MostPlayedScreen(
                             LibraryActionCard(
                                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
                                 label = stringResource(R.string.save_as_playlist),
-                                containerColor = MiuixTheme.colorScheme.secondaryContainer,
-                                contentColor = MiuixTheme.colorScheme.onSecondaryContainer,
-                                onClick = { viewModel.saveAsPlaylist() },
+                                containerColor = MiuixTheme.colorScheme.tertiaryContainer,
+                                contentColor = MiuixTheme.colorScheme.onTertiaryContainer,
+                                onClick = {
+                                    viewModel.saveAsPlaylist()
+                                    Toast
+                                        .makeText(
+                                            App.getInstance(),
+                                            App
+                                                .getInstance()
+                                                .getString(R.string.save_as_playlist_succcess),
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                },
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -205,7 +223,10 @@ fun MostPlayedScreen(
                     if (songs.isEmpty()) {
                         item {
                             Box(
-                                modifier = Modifier.fillMaxWidth().padding(top = 64.dp),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 64.dp),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
@@ -219,7 +240,10 @@ fun MostPlayedScreen(
                 } else {
                     item {
                         Box(
-                            modifier = Modifier.fillMaxWidth().padding(top = 64.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 64.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
@@ -237,7 +261,10 @@ fun MostPlayedScreen(
                 visible = snackbarMessage != null,
                 enter = fadeIn(),
                 exit = fadeOut(),
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = paddingValues.calculateBottomPadding() + 16.dp),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = paddingValues.calculateBottomPadding() + 16.dp),
             ) {
                 Surface(
                     modifier = Modifier.padding(horizontal = 24.dp),
@@ -262,8 +289,10 @@ private fun RangeChip(
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val backgroundColor = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.secondaryContainer
-    val textColor = if (selected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSecondaryContainer
+    val backgroundColor =
+        if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.secondaryContainer
+    val textColor =
+        if (selected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSecondaryContainer
 
     Surface(
         color = backgroundColor,
@@ -314,7 +343,17 @@ private fun mostPlayedFormatDuration(ms: Long): String {
 
 private fun formatCount(count: Long): String =
     when {
-        count >= 1_000_000L -> String.format(Locale.getDefault(), "%.1fm", count / 1_000_000.0).trimEnd('0').trimEnd('.')
-        count >= 1_000L -> String.format(Locale.getDefault(), "%.1fk", count / 1_000.0).trimEnd('0').trimEnd('.')
+        count >= 1_000_000L ->
+            String
+                .format(Locale.getDefault(), "%.1fm", count / 1_000_000.0)
+                .trimEnd('0')
+                .trimEnd('.')
+
+        count >= 1_000L ->
+            String
+                .format(Locale.getDefault(), "%.1fk", count / 1_000.0)
+                .trimEnd('0')
+                .trimEnd('.')
+
         else -> count.toString()
     }
