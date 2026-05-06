@@ -162,6 +162,7 @@ fun PlaylistsScreen(modifier: Modifier = Modifier) {
 
             items(playlists, key = { it.playlistId ?: 0 }) { playlist ->
                 PlaylistCard(
+                    modifier = Modifier.animateItem(),
                     playlist = playlist,
                     viewModel = viewModel,
                     onClick = {
@@ -219,7 +220,7 @@ public fun PlaylistCard(
 
     Column(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .navSharedBounds(
                     playlist,
