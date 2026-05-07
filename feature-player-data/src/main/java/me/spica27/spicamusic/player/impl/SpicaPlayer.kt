@@ -11,10 +11,10 @@ import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaBrowser
 import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import me.spica27.spicamusic.common.entity.PlayHistory
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
@@ -81,9 +82,12 @@ class SpicaPlayer(
     private val _initializing = AtomicBoolean(false)
 
     private var browserInstance: MediaBrowser? = null
-    private val browserFuture by lazy {
-        MediaBrowser.Builder(context, sessionToken).buildAsync()
-    }
+
+    // Nullable var instead of `by lazy` so it can be reset after release(), allowing re-init.
+    private var _browserFuture: ListenableFuture<MediaBrowser>? = null
+
+    private fun getOrCreateBrowserFuture(): ListenableFuture<MediaBrowser> =
+        _browserFuture ?: MediaBrowser.Builder(context, sessionToken).buildAsync().also { _browserFuture = it }
 
     override val playMode: StateFlow<PlayMode> = playerKVUtils.getPlayModeFlow()
         .stateIn(this, kotlinx.coroutines.flow.SharingStarted.Eagerly, PlayMode.LOOP)
@@ -115,8 +119,10 @@ class SpicaPlayer(
     private val playbackDurationTracker = PlaybackDurationTracker()
 
     override val currentPosition: Long
-        get() = runCatching { if (browserFuture.isDone) browserFuture.get()?.currentPosition else null }.getOrNull()
-            ?: 0L
+        get() = runCatching {
+            val future = _browserFuture
+            if (future != null && future.isDone) future.get()?.currentPosition else null
+        }.getOrNull() ?: 0L
 
     override fun isItemPlaying(mediaId: String): Boolean {
         if (!_isPlaying.value) return false
@@ -132,7 +138,7 @@ class SpicaPlayer(
         if (!_initializing.compareAndSet(false, true)) return
         launch(Dispatchers.Main) {
             try {
-                val browser = browserFuture.await()
+                val browser = getOrCreateBrowserFuture().await()
                 browserInstance = browser
                 browser.addListener(this@SpicaPlayer)
 
@@ -142,6 +148,7 @@ class SpicaPlayer(
 
                 if (items.isEmpty()) {
                     Timber.e("No songs found")
+                    _initializing.set(false)
                     return@launch
                 }
 
@@ -154,6 +161,8 @@ class SpicaPlayer(
                 browser.prepare()
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Failed to initialize player")
+                _browserFuture = null
+            } finally {
                 _initializing.set(false)
             }
         }
@@ -167,7 +176,9 @@ class SpicaPlayer(
         if (browserInstance == null) {
             init()
         }
-        return browserFuture.await()
+        // 10-second timeout prevents doAction from hanging forever if PlaybackService
+        // fails to start (process death, system kill, manifest misconfiguration).
+        return withTimeoutOrNull(10_000L) { getOrCreateBrowserFuture().await() }
     }
 
     override fun doAction(action: PlayerAction) {
@@ -210,27 +221,21 @@ class SpicaPlayer(
 
                         if (index == -1) {
                             // 不在播放列表中，添加并播放
-                            launch(Dispatchers.IO) {
-                                val item = async { MediaLibrary.getItem(action.mediaId) }.await()
-
-                                withContext(Dispatchers.Main) {
-                                    if (item != null) {
-                                        Timber.tag(TAG)
-                                            .d("Item not in playlist, adding and playing: ${item.mediaId}")
-                                        val currentIndex = browser.currentMediaItemIndex
-                                        val toIndex =
-                                            if (currentIndex == -1) 0 else currentIndex + 1
-                                        browser.addMediaItem(toIndex, item)
-                                        browser.prepare()
-                                        browser.seekTo(toIndex, 0)
-                                        browser.playWhenReady = true
-                                        Timber.tag(TAG)
-                                            .d("Seeking to new item at index: $toIndex, playWhenReady=true")
-                                    } else {
-                                        Timber.tag(TAG)
-                                            .w("Item with mediaId=${action.mediaId} not found in media library")
-                                    }
-                                }
+                            val item = withContext(Dispatchers.IO) { MediaLibrary.getItem(action.mediaId) }
+                            if (item != null) {
+                                Timber.tag(TAG)
+                                    .d("Item not in playlist, adding and playing: ${item.mediaId}")
+                                val currentIndex = browser.currentMediaItemIndex
+                                val toIndex = if (currentIndex == -1) 0 else currentIndex + 1
+                                browser.addMediaItem(toIndex, item)
+                                browser.prepare()
+                                browser.seekTo(toIndex, 0)
+                                browser.playWhenReady = true
+                                Timber.tag(TAG)
+                                    .d("Seeking to new item at index: $toIndex, playWhenReady=true")
+                            } else {
+                                Timber.tag(TAG)
+                                    .w("Item with mediaId=${action.mediaId} not found in media library")
                             }
                         } else {
                             Timber.tag(TAG).d("Item already in playlist, seeking to index: $index")
@@ -258,41 +263,31 @@ class SpicaPlayer(
                     }
 
                     is PlayerAction.AddToNext -> {
-                        launch(Dispatchers.IO) {
-                            val item = MediaLibrary.getItem(action.mediaId)
+                        val item = withContext(Dispatchers.IO) { MediaLibrary.getItem(action.mediaId) }
+                        if (item == null) {
+                            Timber.tag(TAG)
+                                .w("Item with mediaId=${action.mediaId} not found for AddToNext")
+                        } else {
+                            // 处理空播放列表的情况
+                            val currentIndex = browser.currentMediaItemIndex.coerceAtLeast(0)
+                            val index = browser.currentTimeline.indexOf(action.mediaId)
 
-                            withContext(Dispatchers.Main) {
-                                if (item == null) {
-                                    Timber.tag(TAG)
-                                        .w("Item with mediaId=${action.mediaId} not found for AddToNext")
-                                    return@withContext
-                                }
-
-                                // 处理空播放列表的情况
-                                val currentIndex = browser.currentMediaItemIndex.coerceAtLeast(0)
-                                val index = browser.currentTimeline.indexOf(action.mediaId)
-
-                                if (index != -1) {
-                                    val offset = if (index > currentIndex) 1 else 0
-                                    browser.moveMediaItem(index, currentIndex + offset)
-                                } else {
-                                    browser.addMediaItem(currentIndex + 1, item)
-                                }
+                            if (index != -1) {
+                                val offset = if (index > currentIndex) 1 else 0
+                                browser.moveMediaItem(index, currentIndex + offset)
+                            } else {
+                                browser.addMediaItem(currentIndex + 1, item)
                             }
                         }
                     }
 
                     is PlayerAction.UpdateList -> {
-                        launch(Dispatchers.IO) {
-                            val index = action.mediaId?.let { action.mediaIds.indexOf(it) }
-                                ?.takeIf { it >= 0 } ?: 0
-                            val items = MediaLibrary.mediaIdToMediaItems(action.mediaIds)
-                            withContext(Dispatchers.Main) {
-                                browser.setMediaItems(items, index, 0)
-                                if (action.start) {
-                                    browser.play()
-                                }
-                            }
+                        val index = action.mediaId?.let { action.mediaIds.indexOf(it) }
+                            ?.takeIf { it >= 0 } ?: 0
+                        val items = withContext(Dispatchers.IO) { MediaLibrary.mediaIdToMediaItems(action.mediaIds) }
+                        browser.setMediaItems(items, index, 0)
+                        if (action.start) {
+                            browser.play()
                         }
                     }
 
@@ -303,12 +298,8 @@ class SpicaPlayer(
 
                     is PlayerAction.AddToQueue -> {
                         Timber.tag(TAG).w("AddToQueue  not implemented yet")
-                        val items = async(Dispatchers.IO) {
-                            MediaLibrary.mediaIdToMediaItems(action.mediaIds)
-                        }.await()
-                        launch(Dispatchers.Main) {
-                            browser.addMediaItems(items)
-                        }
+                        val items = withContext(Dispatchers.IO) { MediaLibrary.mediaIdToMediaItems(action.mediaIds) }
+                        browser.addMediaItems(items)
                     }
                 }
             } catch (e: Exception) {
@@ -320,12 +311,15 @@ class SpicaPlayer(
     override fun release() {
         // 1. 移除监听器
         browserInstance?.removeListener(this)
-        // 2. 释放 MediaBrowser
-        browserInstance?.release()
+        // 2. 释放 MediaBrowser 及其 Future（Media3 规范：releaseFuture 负责 Future 的生命周期）
+        _browserFuture?.let { MediaBrowser.releaseFuture(it) }
+        _browserFuture = null
         browserInstance = null
-        // 3. 释放 FFT 处理器（取消线程池）
+        // 3. 允许 release 后重新 init（例如服务重启场景）
+        _initializing.set(false)
+        // 4. 释放 FFT 处理器（取消线程池）
         _fftProcessor.release()
-        // 4. 取消协程
+        // 5. 取消协程
         coroutineContext.cancel()
     }
 

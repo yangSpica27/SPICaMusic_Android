@@ -122,7 +122,7 @@ fun AlbumDetailScreen(modifier: Modifier = Modifier) {
             item {
                 Header(album, viewModel)
             }
-            items(count = songs.size) { index ->
+            items(count = songs.size, key = { index -> songs[index].songId ?: songs[index].mediaStoreId }) { index ->
                 val song = songs[index]
                 Column {
                     if (index == 0) {

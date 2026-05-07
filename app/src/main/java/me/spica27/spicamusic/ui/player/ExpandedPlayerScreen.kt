@@ -45,6 +45,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -156,7 +157,10 @@ fun ExpandedPlayerScreen(
         Timber.tag("ExpandedPlayerScreen").d("当前歌曲收藏状态: $songLikeState")
     }
 
-    LaunchedEffect(trueTimePosition) {
+    // 将播放位置同步到 seekbar：trueTimePosition 每秒更新多次，
+    // 使用 SideEffect（同步、无协程开销）代替 LaunchedEffect，
+    // 避免每次更新都取消并重建一个新的协程。
+    SideEffect {
         if (!isSeekingState) {
             seekValueState = trueTimePosition.toFloat()
         }

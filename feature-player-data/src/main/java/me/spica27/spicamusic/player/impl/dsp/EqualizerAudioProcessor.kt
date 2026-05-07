@@ -38,9 +38,11 @@ class EqualizerAudioProcessor : AudioProcessor {
     private var sampleRate = 44100f
     private var channelCount = 2
 
-    // [band][channel] 过滤器阵列
+    // [band][channel] 过滤器阵列；@Volatile 保证音频线程与主线程之间的引用可见性
+    @Volatile
     private var filters: Array<Array<BiquadFilter>>? = null
-    
+
+    @Volatile
     private var enabled = false
     private var inputAudioFormat = AudioProcessor.AudioFormat.NOT_SET
     private var outputAudioFormat = AudioProcessor.AudioFormat.NOT_SET
