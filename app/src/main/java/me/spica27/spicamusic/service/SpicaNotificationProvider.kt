@@ -26,9 +26,10 @@ import androidx.media3.session.MediaNotification.Provider.Callback
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaStyleNotificationHelper
 import androidx.media3.session.SessionCommand
-import coil3.request.ImageRequest
-import coil3.toBitmap
 import com.google.common.collect.ImmutableList
+import com.skydoves.landscapist.core.ImageRequest
+import com.skydoves.landscapist.core.Landscapist
+import com.skydoves.landscapist.core.model.ImageResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -301,30 +302,30 @@ internal class SpicaNotificationProvider(
         builder: NotificationCompat.Builder,
         onNotificationChangedCallback: Callback,
     ) {
-        ImageRequest
-            .Builder(context)
-            .data(metadata.artworkUri)
-            .size(100)
-            .target(
-                onSuccess = {
-                    builder.setLargeIcon(it.toBitmap())
-                    onNotificationChangedCallback.onNotificationChanged(
-                        MediaNotification(notificationId, builder.build()),
-                    )
-                },
-                onError = {
-                    builder.setLargeIcon(
-                        ContextCompat
-                            .getDrawable(
-                                context,
-                                me.spica27.spicamusic.R.drawable.default_cover,
-                            )?.toBitmap(),
-                    )
-                    onNotificationChangedCallback.onNotificationChanged(
-                        MediaNotification(notificationId, builder.build()),
-                    )
-                },
-            ).build()
+        Landscapist.getInstance().enqueue(
+            ImageRequest
+                .builder()
+                .model(metadata.artworkUri)
+                .size(100, 100)
+                .build(),
+        ) { result ->
+            if (result is ImageResult.Success) {
+                val imageBitmap = result.data as android.graphics.Bitmap?
+                builder.setLargeIcon(imageBitmap)
+                // TODO--加通知栏图标
+            } else {
+                builder.setLargeIcon(
+                    ContextCompat
+                        .getDrawable(
+                            context,
+                            R.drawable.default_cover,
+                        )?.toBitmap(),
+                )
+            }
+            onNotificationChangedCallback.onNotificationChanged(
+                MediaNotification(notificationId, builder.build()),
+            )
+        }
     }
 
     private fun createCommandButtonExtra() = Bundle().apply { putInt(COMMAND_KEY_COMPACT_VIEW_INDEX, C.INDEX_UNSET) }

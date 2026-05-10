@@ -14,6 +14,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
@@ -30,7 +31,6 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import org.intellij.lang.annotations.Language
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -173,7 +173,7 @@ fun EffectShaderBackground(
     val lifecycleOwner = LocalLifecycleOwner.current
     val surfaceViewHolder = remember { mutableStateOf<EffectShaderSurfaceView?>(null) }
     val renderer = remember { EffectShaderRenderer() }
-    val effectiveIsDarkMode = isDarkMode ?: (MiuixTheme.colorScheme.background.luminance() < 0.5f)
+    val effectiveIsDarkMode = isDarkMode ?: (MaterialTheme.colorScheme.background.luminance() < 0.5f)
 
     SideEffect {
         renderer.updateEffect(

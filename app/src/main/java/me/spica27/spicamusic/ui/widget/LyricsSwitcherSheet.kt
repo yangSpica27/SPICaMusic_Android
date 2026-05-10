@@ -20,7 +20,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,9 +37,6 @@ import androidx.compose.ui.unit.sp
 import me.spcia.lyric_core.entity.SongLyrics
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricItem
-import me.spica27.spicamusic.ui.widget.SongListDefaults
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 歌词切换选择面板
@@ -71,8 +70,8 @@ fun LyricsSwitcherSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MiuixTheme.colorScheme.background,
-        contentColor = MiuixTheme.colorScheme.onBackground,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         dragHandle = null,
     ) {
         Column(
@@ -93,15 +92,15 @@ fun LyricsSwitcherSheet(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(R.string.choose_lyrics),
-                        style = MiuixTheme.textStyles.title2,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MiuixTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = stringResource(R.string.lyrics_preview_instruction),
-                        style = MiuixTheme.textStyles.body2,
-                        color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         fontSize = 13.sp,
                     )
                 }
@@ -110,12 +109,12 @@ fun LyricsSwitcherSheet(
                 LyricsCircleButton(
                     onClick = { onConfirm(pagerState.currentPage) },
                     size = 40.dp,
-                    containerColor = MiuixTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.primary,
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Check,
                         contentDescription = "确认选择",
-                        tint = MiuixTheme.colorScheme.onPrimary,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(22.dp),
                     )
                 }
@@ -158,8 +157,8 @@ fun LyricsSwitcherSheet(
                     ) {
                         Text(
                             text = stringResource(R.string.lyrics_parse_failed),
-                            style = MiuixTheme.textStyles.body1,
-                            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         )
                     }
                 }
@@ -180,9 +179,9 @@ fun LyricsSwitcherSheet(
                         val color by animateColorAsState(
                             targetValue =
                                 if (isSelected) {
-                                    MiuixTheme.colorScheme.primary
+                                    MaterialTheme.colorScheme.primary
                                 } else {
-                                    MiuixTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                                 },
                             label = "dotColor",
                         )
@@ -227,15 +226,15 @@ private fun SourceInfoBar(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = source.name,
-                style = SongListDefaults.songTitleTextStyle,
-                color = MiuixTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = source.artist,
-                style = SongListDefaults.songMetaTextStyle.copy(fontSize = 12.sp),
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

@@ -10,23 +10,28 @@ constraintlayoutComposeVersion = "1.1.1"
 converterMoshiVersion = "3.0.0"
 datastorePreferencesVersion = "1.3.0-alpha08"
 dynamicanimationKtxVersion = "1.1.0"
+graphicsCoreVersion = "1.0.4"
+graphicsPathVersion = "1.1.0"
+graphicsShapesVersion = "1.1.0"
 hazeVersion = "1.7.2"
-
+cloudy = "0.5.0"
 koinAndroidxComposeVersion = "4.2.1"
 kotlin = "2.3.21"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
+landscapistCoreVersion = "2.9.7"
+landscapistImageVersion = "2.9.7"
 lifecycleRuntimeKtx = "2.9.2"
 activityCompose = "1.13.0"
-composeBom = "2026.04.01"
+composeBom = "2026.05.00"
 constraintlayout = "2.2.1"
 loggingInterceptorVersion = "5.3.2"
 material3Version = "1.4.0"
 materialIconsCoreVersion = "1.7.8"
 media3ExoplayerVersion = "1.10.0"
-mediaVersion = "1.7.1"
+mediaVersion = "1.8.0"
 okhttpVersion = "5.3.2"
 pagingVersion = "3.4.2"
 pinyin4jVersion = "2.5.1"
@@ -63,11 +68,12 @@ androidx-constraintlayout-compose = { module = "androidx.constraintlayout:constr
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferencesVersion" }
 androidx-dynamicanimation-ktx = { module = "androidx.dynamicanimation:dynamicanimation-ktx", version.ref = "dynamicanimationKtxVersion" }
+androidx-graphics-core = { module = "androidx.graphics:graphics-core", version.ref = "graphicsCoreVersion" }
+androidx-graphics-path = { module = "androidx.graphics:graphics-path", version.ref = "graphicsPathVersion" }
+androidx-graphics-shapes = { module = "androidx.graphics:graphics-shapes", version.ref = "graphicsShapesVersion" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-media = { module = "androidx.media:media", version.ref = "mediaVersion" }
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3ExoplayerVersion" }
-
-capsule-android = { module = "com.mocharealm.gaze:capsule-android", version.ref = "capsuleAndroidVersion" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "converterMoshiVersion" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "hazeVersion" }
@@ -89,6 +95,8 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-palette-ktx = { group = "androidx.palette", name = "palette-ktx", version.ref = "paletteVersion" }
+landscapist-core = { module = "com.github.skydoves:landscapist-core", version.ref = "landscapistCoreVersion" }
+landscapist-image = { module = "com.github.skydoves:landscapist-image", version.ref = "landscapistImageVersion" }
 miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference", version.ref = "miuixAndroid" }
 miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui", version.ref = "miuixAndroid" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
@@ -112,7 +120,7 @@ androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecy
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerializationCore" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
 moshi-kotlin-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", version.ref = "moshiKotlin" }
-
+cloudy = { module = "com.github.skydoves:cloudy", version.ref = "cloudy" }
 
 androidx-media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3SessionVersion" }
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "pagingVersion" }

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,18 +22,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.spica27.spicamusic.ui.theme.Shapes
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 object LyricsControlDefaults {
     val surfaceColor
-        @Composable get() = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+        @Composable get() = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
 
     val pillLabelTextStyle
-        @Composable get() = MiuixTheme.textStyles.body2.copy(fontWeight = FontWeight.Medium, fontSize = 13.sp)
+        @Composable get() = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium, fontSize = 13.sp)
 
     val badgeTextStyle
-        @Composable get() = MiuixTheme.textStyles.body2.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+        @Composable get() = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
 }
 
 @Composable
@@ -89,8 +89,8 @@ fun LyricsPill(
 fun LyricsBadge(
     text: String,
     modifier: Modifier = Modifier,
-    containerColor: Color = MiuixTheme.colorScheme.primary.copy(alpha = 0.15f),
-    contentColor: Color = MiuixTheme.colorScheme.primary,
+    containerColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+    contentColor: Color = MaterialTheme.colorScheme.primary,
 ) {
     Box(
         modifier =

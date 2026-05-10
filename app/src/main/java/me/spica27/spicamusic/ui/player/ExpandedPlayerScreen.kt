@@ -42,6 +42,9 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -71,8 +74,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -87,8 +88,6 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.widget.AudioCityVisualizer
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
-import me.spica27.spicamusic.ui.widget.InfoSectionCard
-import me.spica27.spicamusic.ui.widget.InfoSectionRow
 import me.spica27.spicamusic.ui.widget.ShiningStarsVisualizer
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
@@ -97,9 +96,6 @@ import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import timber.log.Timber
-import top.yukonga.miuix.kmp.basic.Surface
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -173,26 +169,23 @@ fun ExpandedPlayerScreen(
     val coverColor =
         rememberDominantColorFromUri(
             uri = currentMediaItem?.mediaMetadata?.artworkUri,
-            fallbackColor = MiuixTheme.colorScheme.primary,
+            fallbackColor = MaterialTheme.colorScheme.primary,
         )
-
-    val backgroundState = rememberHazeState()
 
     Box(
         modifier =
             modifier
-                .background(MiuixTheme.colorScheme.background)
+                .background(MaterialTheme.colorScheme.background)
                 .fillMaxSize(),
     ) {
         // 流动背景（仅前台时启用，节省电量）
         FluidMusicBackground(
             modifier =
                 Modifier
-                    .hazeSource(backgroundState)
                     .fillMaxSize(),
             coverColor = coverColor,
             enabled = isAppInForeground,
-            isDarkMode = MiuixTheme.colorScheme.surface.luminance() < 0.5f,
+            isDarkMode = MaterialTheme.colorScheme.surface.luminance() < 0.5f,
         )
 
         // 内容层
@@ -221,7 +214,6 @@ fun ExpandedPlayerScreen(
                         ShowOnIdleContent(pagerState.currentPage == 0) {
                             CurrentPlaylistPage(
                                 modifier = Modifier.fillMaxSize(),
-                                backgroundState = backgroundState,
                             )
                         }
                     }
@@ -301,7 +293,7 @@ private fun TopBar(
                 Icon(
                     imageVector = Icons.Rounded.KeyboardArrowDown,
                     contentDescription = stringResource(R.string.collapse),
-                    tint = MiuixTheme.colorScheme.onSurface,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(32.dp),
                 )
             }
@@ -345,7 +337,7 @@ private fun PageIndicator(
                     Modifier
                         .size(width = width, height = 6.dp)
                         .clip(CircleShape)
-                        .background(MiuixTheme.colorScheme.onSurface.copy(alpha = alpha)),
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)),
             )
         }
     }
@@ -370,7 +362,7 @@ private fun AudioTag(
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MiuixTheme.textStyles.subtitle,
+            style = MaterialTheme.typography.titleMedium,
             color = color,
             fontWeight = FontWeight.SemiBold,
         )
@@ -407,7 +399,7 @@ private fun AudioQualityTags(
         if (sampleRate > 0) {
             AudioTag(
                 text = "${sampleRate / 1000}kHz",
-                color = if (sampleRate >= 96000) Color(0xFF4CAF50) else MiuixTheme.colorScheme.primary,
+                color = if (sampleRate >= 96000) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
@@ -417,7 +409,7 @@ private fun AudioQualityTags(
             val bitRateKbps = bitRate / 1000
             AudioTag(
                 text = "${bitRateKbps}kbps",
-                color = if (bitRateKbps >= 320) Color(0xFF2196F3) else MiuixTheme.colorScheme.secondary,
+                color = if (bitRateKbps >= 320) Color(0xFF2196F3) else MaterialTheme.colorScheme.secondary,
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
@@ -437,50 +429,6 @@ private fun AudioQualityTags(
                 text = stringResource(R.string.high_quality),
                 color = Color(0xFF9C27B0),
             )
-        }
-    }
-}
-
-/**
- * 音频信息卡片
- */
-@Composable
-private fun AudioInfoCard(
-    currentMediaItem: MediaItem?,
-    modifier: Modifier = Modifier,
-) {
-    val extras = currentMediaItem?.mediaMetadata?.extras
-    val sampleRate = extras?.getInt("sampleRate") ?: 0
-    val bitRate = extras?.getInt("bitRate") ?: 0
-    val channels = extras?.getInt("channels") ?: 0
-    val mimeType =
-        currentMediaItem?.localConfiguration?.mimeType ?: stringResource(R.string.unknown_format)
-
-    InfoSectionCard(title = stringResource(R.string.audio_info), modifier = modifier) {
-        InfoSectionRow(label = stringResource(R.string.audio_format_label), value = mimeType)
-
-        if (sampleRate > 0) {
-            InfoSectionRow(
-                label = stringResource(R.string.sample_rate_label),
-                value = "${sampleRate}Hz (${sampleRate / 1000}kHz)",
-            )
-        }
-
-        if (bitRate > 0) {
-            InfoSectionRow(
-                label = stringResource(R.string.bitrate_label),
-                value = "${bitRate / 1000}kbps",
-            )
-        }
-
-        if (channels > 0) {
-            val channelName =
-                when (channels) {
-                    1 -> stringResource(R.string.mono)
-                    2 -> stringResource(R.string.stereo)
-                    else -> stringResource(R.string.channels_format, channels)
-                }
-            InfoSectionRow(label = stringResource(R.string.channel_count_label), value = channelName)
         }
     }
 }
@@ -577,12 +525,12 @@ private fun PlayerPage(
                                 Modifier
                                     .fillMaxSize()
                                     .clip(Shapes.LargeCornerBasedShape)
-                                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.MusicNote,
                                 contentDescription = stringResource(R.string.cover_placeholder),
-                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier =
                                     Modifier
                                         .size(64.dp)
@@ -632,7 +580,7 @@ private fun PlayerPage(
                         val coverColor =
                             rememberDominantColorFromUri(
                                 uri = currentMediaItem?.mediaMetadata?.artworkUri,
-                                fallbackColor = MiuixTheme.colorScheme.primary,
+                                fallbackColor = MaterialTheme.colorScheme.primary,
                             )
 
                         when (dynamicCoverType) {
@@ -658,13 +606,13 @@ private fun PlayerPage(
                             modifier =
                                 Modifier
                                     .fillMaxSize()
-                                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = stringResource(R.string.visualization_requires_android13),
-                                style = MiuixTheme.textStyles.body1,
-                                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 textAlign = TextAlign.Center,
                             )
                         }
@@ -726,8 +674,8 @@ private fun PlayerPage(
             onProgressChangeFinished = {
                 onValueChangeFinished.invoke()
             },
-            waveformBrush = SolidColor(MiuixTheme.colorScheme.onSurfaceContainerVariant),
-            progressBrush = SolidColor(MiuixTheme.colorScheme.onSurface),
+            waveformBrush = SolidColor(MaterialTheme.colorScheme.onSecondaryContainer),
+            progressBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -743,8 +691,8 @@ private fun PlayerPage(
         ) {
             Text(
                 text = formatTime(realPosition.toLong()),
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
             )
 
@@ -758,12 +706,12 @@ private fun PlayerPage(
                     modifier =
                         Modifier
                             .background(
-                                MiuixTheme.colorScheme.primaryVariant,
+                                MaterialTheme.colorScheme.inversePrimary,
                                 shape = Shapes.SmallCornerBasedShape,
                             ).padding(vertical = 4.dp, horizontal = 8.dp),
                     text = formatTime(seekPosition.toLong()),
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onPrimaryVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
 
@@ -771,8 +719,8 @@ private fun PlayerPage(
 
             Text(
                 text = formatTime(duration),
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
             )
         }
@@ -822,9 +770,9 @@ private fun SongInfo(
         ) { title ->
             Text(
                 text = title,
-                style = MiuixTheme.textStyles.title1,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MiuixTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -841,8 +789,8 @@ private fun SongInfo(
         ) { artist ->
             Text(
                 text = artist,
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -884,7 +832,7 @@ private fun PlayerControls(
                 Icon(
                     imageVector = Icons.Rounded.SkipPrevious,
                     contentDescription = stringResource(R.string.previous_track),
-                    tint = MiuixTheme.colorScheme.onSurface,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(40.dp),
                 )
             }
@@ -898,7 +846,7 @@ private fun PlayerControls(
                     Modifier
                         .size(80.dp)
                         .clip(CircleShape)
-                        .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.9f)),
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)),
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
@@ -910,7 +858,7 @@ private fun PlayerControls(
                                 R.string.play,
                             )
                         },
-                    tint = MiuixTheme.colorScheme.onPrimary,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(48.dp),
                 )
             }
@@ -925,7 +873,7 @@ private fun PlayerControls(
                 Icon(
                     imageVector = Icons.Rounded.SkipNext,
                     contentDescription = stringResource(R.string.next_track),
-                    tint = MiuixTheme.colorScheme.onSurface,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(40.dp),
                 )
             }
@@ -949,7 +897,7 @@ private fun PlayerControls(
                             PlayMode.SHUFFLE -> Icons.Rounded.Shuffle
                         },
                     contentDescription = stringResource(R.string.play_mode),
-                    tint = MiuixTheme.colorScheme.onSurface,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(28.dp),
                 )
             }
@@ -968,7 +916,7 @@ private fun PlayerControls(
                         if (isLike) {
                             Color.Red
                         } else {
-                            MiuixTheme.colorScheme.onSurface
+                            MaterialTheme.colorScheme.onSurface
                         },
                     modifier = Modifier.size(28.dp),
                 )

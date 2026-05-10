@@ -39,7 +39,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastRoundToInt
-import kotlin.math.pow
+import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 
 /**
  * Returns the provided [Dp] as an [Int] value by the [LocalDensity].
@@ -270,15 +270,7 @@ public fun materialSharedAxisZIn(
             ),
     ) +
         scaleIn(
-            animationSpec =
-                tween { fraction ->
-                    // 自定义缓动曲线：前半段加速，后半段减速
-                    if (fraction < 0.5f) {
-                        4 * fraction * fraction * fraction // 加速立方曲线
-                    } else {
-                        1 - (-2 * fraction + 2).pow(3) / 2 // 减速立方曲线
-                    }
-                },
+            animationSpec = tween(easing = EaseInOutCubic),
             initialScale = if (forward) 0.8f else 1.1f,
         )
 
@@ -293,15 +285,7 @@ public fun materialSharedAxisZOut(
     durationMillis: Int = 325,
 ): ExitTransition =
     fadeOut(
-        animationSpec =
-            tween { fraction ->
-                // 自定义缓动曲线：前半段加速，后半段减速
-                if (fraction < 0.5f) {
-                    4 * fraction * fraction * fraction // 加速立方曲线
-                } else {
-                    1 - (-2 * fraction + 2).pow(3) / 2 // 减速立方曲线
-                }
-            },
+        animationSpec = tween(easing = EaseInOutCubic),
     ) +
         scaleOut(
             animationSpec =

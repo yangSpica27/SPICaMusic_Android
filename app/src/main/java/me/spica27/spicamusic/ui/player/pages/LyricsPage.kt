@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,7 +27,6 @@ import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsSwitcherSheet
 import me.spica27.spicamusic.ui.widget.LyricsUI
 import org.koin.androidx.compose.koinViewModel
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 全屏歌词页面
@@ -85,14 +85,14 @@ fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
             uiState.isLoading -> {
                 CircularProgressIndicator(
                     modifier = Modifier.size(48.dp),
-                    color = MiuixTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
             uiState.errorMessage != null -> {
                 Text(
                     text = uiState.errorMessage!!,
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     textAlign = TextAlign.Center,
                 )
             }
@@ -109,8 +109,8 @@ fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
             else -> {
                 Text(
                     text = "等待播放",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                     textAlign = TextAlign.Center,
                 )
             }

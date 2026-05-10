@@ -19,6 +19,8 @@ import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,8 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.theme.Shapes
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
 
 /**
@@ -107,7 +107,7 @@ fun FloatingLyricsToolbar(
             Icon(
                 imageVector = if (isExpanded) Icons.Rounded.Close else Icons.Rounded.Tune,
                 contentDescription = if (isExpanded) stringResource(R.string.collapse) else stringResource(R.string.lyrics_tool),
-                tint = MiuixTheme.colorScheme.onSurface,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(22.dp),
             )
         }
@@ -136,7 +136,7 @@ private fun OffsetAdjustBar(
             Icon(
                 imageVector = Icons.Rounded.Remove,
                 contentDescription = stringResource(R.string.advance_half_second),
-                tint = MiuixTheme.colorScheme.onSurface,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -146,7 +146,7 @@ private fun OffsetAdjustBar(
         Text(
             text = offsetText,
             style = LyricsControlDefaults.pillLabelTextStyle,
-            color = MiuixTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier =
                 Modifier
                     .clip(Shapes.LargeCornerBasedShape)
@@ -161,7 +161,7 @@ private fun OffsetAdjustBar(
             Icon(
                 imageVector = Icons.Rounded.Add,
                 contentDescription = stringResource(R.string.delay_half_second),
-                tint = MiuixTheme.colorScheme.onSurface,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -184,13 +184,13 @@ private fun SwitchLyricsButton(
         Icon(
             imageVector = Icons.Rounded.SwapHoriz,
             contentDescription = null,
-            tint = MiuixTheme.colorScheme.onSurface,
+            tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(18.dp),
         )
         Text(
             text = stringResource(R.string.toggle_lyrics),
             style = LyricsControlDefaults.pillLabelTextStyle,
-            color = MiuixTheme.colorScheme.onSurface,
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }

@@ -60,8 +60,7 @@ android {
 
   buildTypes {
     release {
-      minifyEnabled true
-      shrinkResources true
+      optimization.enable = true
       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
       signingConfig signingConfigs.signingConfig
     }
@@ -131,9 +130,6 @@ dependencies {
   implementation libs.androidx.ui.graphics
   implementation libs.androidx.ui.tooling.preview
   implementation libs.androidautosize
-  implementation libs.miuix.ui
-  implementation libs.miuix.preference
-//  implementation libs.miuix.android.nav3
   implementation libs.androidx.constraintlayout
   testImplementation libs.junit
   androidTestImplementation libs.androidx.junit
@@ -142,8 +138,6 @@ dependencies {
   androidTestImplementation libs.androidx.ui.test.junit4
   debugImplementation libs.androidx.ui.tooling
   debugImplementation libs.androidx.ui.test.manifest
-  implementation(libs.coil.compose)
-  implementation(libs.coil.network.okhttp)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
 
   implementation libs.timber
@@ -160,6 +154,9 @@ dependencies {
   implementation libs.androidx.navigation3.ui
   implementation libs.androidx.lifecycle.viewmodel.navigation3
   implementation libs.material3
+
+  implementation(libs.landscapist.core)
+  implementation(libs.landscapist.image)
 
   // 播放器相关依赖 (实现层需要)
   implementation libs.androidx.media3.exoplayer
@@ -186,10 +183,14 @@ dependencies {
   implementation libs.koin.androidx.compose
   implementation(libs.pinyin4j)
   implementation(libs.androidx.compose.material.icons.extended)
-  implementation(libs.haze)
-  implementation(libs.haze.materials)
-  implementation(libs.capsule.android)
   implementation(libs.androidx.palette.ktx)
+  implementation(libs.cloudy)
+  // 本地导航库
+  implementation project(':navkit')
+
+  implementation libs.androidx.graphics.core
+  implementation libs.androidx.graphics.path
+  implementation libs.androidx.graphics.shapes
 }
 
 tasks.register('incrementBuildNumber') {

@@ -3,11 +3,13 @@ package me.spica27.spicamusic.ui.home
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
@@ -30,6 +32,16 @@ class HomeViewModel(
     private val _sortOrder = MutableStateFlow(SongSortOrder.DEFAULT)
     val sortOrder: StateFlow<SongSortOrder> = _sortOrder
 
+    private val _currentPage = MutableStateFlow(HomePage.Library)
+    val currentPage: StateFlow<HomePage> = _currentPage
+
+    private val _fullScreenPlayer = MutableStateFlow(false)
+    val fullScreenPlayer: StateFlow<Boolean> = _fullScreenPlayer
+
+    private val _showCreateMenu = MutableStateFlow(false)
+
+    val showCreateMenu: StateFlow<Boolean> = _showCreateMenu
+
     // 筛选条件
     private val _filter = MutableStateFlow(SongFilter.EMPTY)
     val filter: StateFlow<SongFilter> = _filter
@@ -41,6 +53,7 @@ class HomeViewModel(
         combine(_sortOrder, _filter) { sort, filter ->
             songRepository.getSongsFlow(sort, filter)
         }.flatMapLatest { it }
+            .flowOn(Dispatchers.IO)
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -115,5 +128,26 @@ class HomeViewModel(
     fun resetFilter() {
         _filter.value = SongFilter.EMPTY
         _sortOrder.value = SongSortOrder.DEFAULT
+    }
+
+    /**
+     * 导航到指定页面
+     */
+    fun navigateToPage(page: HomePage) {
+        _currentPage.value = page
+    }
+
+    /**
+     * 显示或隐藏创建菜单
+     */
+    fun toggleCreateMenu() {
+        _showCreateMenu.value = !_showCreateMenu.value
+    }
+
+    /**
+     * 显示或隐藏全屏播放器
+     */
+    fun toggleFullScreenPlayer(show: Boolean) {
+        _fullScreenPlayer.value = show
     }
 }

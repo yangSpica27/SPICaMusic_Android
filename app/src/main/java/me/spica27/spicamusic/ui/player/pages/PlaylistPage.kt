@@ -8,8 +8,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,21 +19,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.LocationSearching
 import androidx.compose.material.icons.filled.PlaylistRemove
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -53,26 +51,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
-import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
-import me.spica27.spicamusic.ui.widget.CompactSongRow
-import me.spica27.spicamusic.ui.widget.GradientPlaceholderCover
 import org.koin.compose.viewmodel.koinViewModel
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.overScrollVertical
 import java.util.concurrent.TimeUnit
 
 /**
@@ -82,7 +69,6 @@ import java.util.concurrent.TimeUnit
 fun CurrentPlaylistPage(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
-    backgroundState: HazeState,
 ) {
     val panelViewModel: CurrentPlaylistPanelViewModel = koinViewModel()
     val currentPlaylist by viewModel.currentPlaylist.collectAsStateWithLifecycle()
@@ -156,20 +142,20 @@ fun CurrentPlaylistPage(
                         } else {
                             stringResource(R.string.playlist_count_format, currentPlaylist.size)
                         },
-                    style = MiuixTheme.textStyles.title3,
-                    color = MiuixTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
             AnimatedContent(isMultiSelectMode) { selectMode ->
                 if (selectMode) {
                     TextButton(
-                        text = stringResource(R.string.cancel),
                         onClick = {
                             isMultiSelectMode = false
                             selectedMediaIds.clear()
                         },
-                        insideMargin = PaddingValues(vertical = 4.dp, horizontal = 8.dp),
-                    )
+                    ) {
+                        stringResource(R.string.cancel)
+                    }
                 } else {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -188,7 +174,7 @@ fun CurrentPlaylistPage(
                             Icon(
                                 imageVector = Icons.Default.LocationSearching,
                                 contentDescription = stringResource(R.string.jump_to_playing),
-                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         IconButton(
@@ -201,7 +187,7 @@ fun CurrentPlaylistPage(
                             Icon(
                                 imageVector = Icons.Default.PlaylistRemove,
                                 contentDescription = stringResource(R.string.clear_playlist),
-                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -224,19 +210,19 @@ fun CurrentPlaylistPage(
                     Icon(
                         imageVector = Icons.Default.LibraryMusic,
                         contentDescription = null,
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        tint = MaterialTheme.colorScheme.inversePrimary,
                         modifier = Modifier.size(48.dp),
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = stringResource(R.string.playlist_empty),
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.inversePrimary,
                     )
                 }
             }
         } else {
-            val selectItemBackgroundColor = MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.2f)
+            val selectItemBackgroundColor = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.2f)
 
             LazyColumn(
                 state = scrollState,
@@ -244,7 +230,6 @@ fun CurrentPlaylistPage(
                     Modifier
                         .animateContentSize()
                         .fillMaxWidth()
-                        .overScrollVertical()
                         .weight(1f)
                         .drawBehind {
                             if (currentPlayingIndex >= 0) {
@@ -310,7 +295,6 @@ fun CurrentPlaylistPage(
                                 viewModel.playByMediaStoreId(item.mediaId)
                             }
                         },
-                        backgroundState = backgroundState,
                         onLongClick = {
                             if (!isMultiSelectMode) {
                                 isMultiSelectMode = true
@@ -353,12 +337,12 @@ fun CurrentPlaylistPage(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = stringResource(R.string.delete),
-                        tint = MiuixTheme.colorScheme.onSurface,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(6.dp))
                     Text(
                         text = stringResource(R.string.batch_delete),
-                        style = MiuixTheme.textStyles.body1,
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
 
@@ -370,12 +354,12 @@ fun CurrentPlaylistPage(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                         contentDescription = stringResource(R.string.create_playlist),
-                        tint = MiuixTheme.colorScheme.onSurface,
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(6.dp))
                     Text(
                         text = stringResource(R.string.create_playlist),
-                        style = MiuixTheme.textStyles.body1,
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             }
@@ -384,54 +368,54 @@ fun CurrentPlaylistPage(
 
     var playlistName by remember { mutableStateOf("") }
 
-    OverlayDialog(
-        title = stringResource(R.string.create_playlist),
-        onDismissRequest = {
-            showCreateDialog = false
-            playlistName = ""
-        },
-        show = showCreateDialog,
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-        ) {
-            TextField(
-                value = playlistName,
-                onValueChange = { playlistName = it },
-                label = stringResource(R.string.hint_input_playlist_name),
-                modifier = Modifier.fillMaxWidth(),
-                useLabelAsPlaceholder = true,
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(
-                    text = stringResource(R.string.cancel),
-                    onClick = { showCreateDialog = false },
-                )
-                Spacer(modifier = Modifier.size(12.dp))
-                TextButton(
-                    text = stringResource(R.string.create),
-                    onClick = {
-                        if (playlistName.isNotBlank()) {
-                            panelViewModel.createPlaylistWithMediaIds(
-                                name = playlistName,
-                                mediaIds = selectedMediaIds.toList(),
-                            ) { success ->
-                                if (success) {
-                                    selectedMediaIds.clear()
-                                    isMultiSelectMode = false
-                                    showCreateDialog = false
-                                }
-                            }
-                        }
-                    },
-                )
-            }
-        }
-    }
+//    OverlayDialog(
+//        title = stringResource(R.string.create_playlist),
+//        onDismissRequest = {
+//            showCreateDialog = false
+//            playlistName = ""
+//        },
+//        show = showCreateDialog,
+//    ) {
+//        Column(
+//            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+//        ) {
+//            TextField(
+//                value = playlistName,
+//                onValueChange = { playlistName = it },
+//                label = stringResource(R.string.hint_input_playlist_name),
+//                modifier = Modifier.fillMaxWidth(),
+//                useLabelAsPlaceholder = true,
+//            )
+//            Spacer(modifier = Modifier.height(24.dp))
+//            Row(
+//                modifier = Modifier.fillMaxWidth(),
+//                horizontalArrangement = Arrangement.End,
+//            ) {
+//                TextButton(
+//                    text = stringResource(R.string.cancel),
+//                    onClick = { showCreateDialog = false },
+//                )
+//                Spacer(modifier = Modifier.size(12.dp))
+//                TextButton(
+//                    text = stringResource(R.string.create),
+//                    onClick = {
+//                        if (playlistName.isNotBlank()) {
+//                            panelViewModel.createPlaylistWithMediaIds(
+//                                name = playlistName,
+//                                mediaIds = selectedMediaIds.toList(),
+//                            ) { success ->
+//                                if (success) {
+//                                    selectedMediaIds.clear()
+//                                    isMultiSelectMode = false
+//                                    showCreateDialog = false
+//                                }
+//                            }
+//                        }
+//                    },
+//                )
+//            }
+//        }
+//    }
 }
 
 /**
@@ -448,76 +432,75 @@ private fun PlaylistItemRow(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier,
-    backgroundState: HazeState,
 ) {
-    val metadata = item.mediaMetadata
-    val title = metadata.title?.toString() ?: stringResource(R.string.unknown_song)
-    val artist = metadata.artist?.toString() ?: stringResource(R.string.unknown_artist)
-    val artworkUri = metadata.artworkUri
-
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick,
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() },
-                ).padding(12.dp),
-    ) {
-        CompactSongRow(
-            title = title,
-            subtitle = artist,
-            coverUri = artworkUri,
-            modifier = Modifier.fillMaxWidth(),
-            leading = {
-                Text(
-                    text = "${index + 1}",
-                    style = MiuixTheme.textStyles.title4,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier.width(44.dp),
-                    textAlign = TextAlign.Center,
-                )
-            },
-            coverContainerColor = MiuixTheme.colorScheme.surfaceContainerHigh,
-            coverPlaceholder = {
-                GradientPlaceholderCover(
-                    modifier = Modifier.fillMaxSize(),
-                    icon = Icons.Rounded.MusicNote,
-                    iconSize = 24.dp,
-                    contentDescription = stringResource(R.string.cover_placeholder),
-                )
-            },
-            trailing = {
-                AnimatedContent(isPlaying) { active ->
-                    Text(
-                        text =
-                            if (active) {
-                                stringResource(R.string.now_playing_indicator)
-                            } else {
-                                formatTime(item.mediaMetadata.durationMs ?: 0L)
-                            },
-                        style = MiuixTheme.textStyles.body2,
-                        color =
-                            if (active) {
-                                MiuixTheme.colorScheme.primary
-                            } else {
-                                MiuixTheme.colorScheme.onSurfaceVariantSummary
-                            },
-                    )
-                }
-                if (isMultiSelectMode) {
-                    Spacer(modifier = Modifier.size(12.dp))
-                    Icon(
-                        imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = null,
-                        tint = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-            },
-        )
-    }
+//    val metadata = item.mediaMetadata
+//    val title = metadata.title?.toString() ?: stringResource(R.string.unknown_song)
+//    val artist = metadata.artist?.toString() ?: stringResource(R.string.unknown_artist)
+//    val artworkUri = metadata.artworkUri
+//
+//    Box(
+//        modifier =
+//            modifier
+//                .fillMaxWidth()
+//                .combinedClickable(
+//                    onClick = onClick,
+//                    onLongClick = onLongClick,
+//                    indication = null,
+//                    interactionSource = remember { MutableInteractionSource() },
+//                ).padding(12.dp),
+//    ) {
+//        CompactSongRow(
+//            title = title,
+//            subtitle = artist,
+//            coverUri = artworkUri,
+//            modifier = Modifier.fillMaxWidth(),
+//            leading = {
+//                Text(
+//                    text = "${index + 1}",
+//                    style = MaterialTheme.typography.bodyMedium,
+//                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+//                    modifier = Modifier.width(44.dp),
+//                    textAlign = TextAlign.Center,
+//                )
+//            },
+//            coverContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+//            coverPlaceholder = {
+//                GradientPlaceholderCover(
+//                    modifier = Modifier.fillMaxSize(),
+//                    icon = Icons.Rounded.MusicNote,
+//                    iconSize = 24.dp,
+//                    contentDescription = stringResource(R.string.cover_placeholder),
+//                )
+//            },
+//            trailing = {
+//                AnimatedContent(isPlaying) { active ->
+//                    Text(
+//                        text =
+//                            if (active) {
+//                                stringResource(R.string.now_playing_indicator)
+//                            } else {
+//                                formatTime(item.mediaMetadata.durationMs ?: 0L)
+//                            },
+//                        style = MaterialTheme.typography.bodyMedium,
+//                        color =
+//                            if (active) {
+//                                MaterialTheme.colorScheme.primary
+//                            } else {
+//                                MaterialTheme.colorScheme.onSurfaceVariant
+//                            },
+//                    )
+//                }
+//                if (isMultiSelectMode) {
+//                    Spacer(modifier = Modifier.size(12.dp))
+//                    Icon(
+//                        imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+//                        contentDescription = null,
+//                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+//                    )
+//                }
+//            },
+//        )
+//    }
 }
 
 /**

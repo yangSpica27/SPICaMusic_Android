@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.SurroundSound
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -22,9 +25,6 @@ import me.spica27.spicamusic.common.entity.QualityType
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getQualityType
 import me.spica27.spicamusic.ui.theme.Shapes
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * 音质等级 - 根据优化后的分级系统
@@ -176,37 +176,37 @@ private fun QualityBadge(
             // 顶级 - 强调色
             QualityLevel.EXCELLENT ->
                 listOf(
-                    MiuixTheme.colorScheme.primary,
-                    MiuixTheme.colorScheme.primary,
-                ) to MiuixTheme.colorScheme.onPrimary
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary,
+                ) to MaterialTheme.colorScheme.onPrimary
 
             // 优秀 - 主色容器
             QualityLevel.GOOD ->
                 listOf(
-                    MiuixTheme.colorScheme.primaryContainer,
-                    MiuixTheme.colorScheme.primaryContainer,
-                ) to MiuixTheme.colorScheme.onPrimaryContainer
+                    MaterialTheme.colorScheme.primaryContainer,
+                    MaterialTheme.colorScheme.primaryContainer,
+                ) to MaterialTheme.colorScheme.onPrimaryContainer
 
             // 良好 - 次要色容器
             QualityLevel.STANDARD ->
                 listOf(
-                    MiuixTheme.colorScheme.secondaryContainer,
-                    MiuixTheme.colorScheme.secondaryContainer,
-                ) to MiuixTheme.colorScheme.onSecondaryContainer
+                    MaterialTheme.colorScheme.secondaryContainer,
+                    MaterialTheme.colorScheme.secondaryContainer,
+                ) to MaterialTheme.colorScheme.onSecondaryContainer
 
             // 标准 - 第三色容器
             QualityLevel.LOW ->
                 listOf(
-                    MiuixTheme.colorScheme.tertiaryContainer,
-                    MiuixTheme.colorScheme.tertiaryContainer,
-                ) to MiuixTheme.colorScheme.onTertiaryContainer
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                ) to MaterialTheme.colorScheme.onTertiaryContainer
 
             // 低质量 - 表面变体
             QualityLevel.POOR ->
                 listOf(
-                    MiuixTheme.colorScheme.surfaceVariant,
-                    MiuixTheme.colorScheme.surfaceVariant,
-                ) to MiuixTheme.colorScheme.onSurfaceContainerVariant
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    MaterialTheme.colorScheme.surfaceVariant,
+                ) to MaterialTheme.colorScheme.onSurfaceVariant
         }
 
     Box(
@@ -229,7 +229,7 @@ private fun QualityBadge(
             Text(
                 text = text,
                 style =
-                    MiuixTheme.textStyles.footnote2.copy(
+                    MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 0.8.sp,
                     ),

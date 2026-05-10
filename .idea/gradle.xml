@@ -20,6 +20,7 @@
             <option value="$PROJECT_DIR$/feature-player-data" />
             <option value="$PROJECT_DIR$/feature-player-domain" />
             <option value="$PROJECT_DIR$/feature-settings-domain" />
+            <option value="$PROJECT_DIR$/navkit" />
           </set>
         </option>
       </GradleProjectSettings>

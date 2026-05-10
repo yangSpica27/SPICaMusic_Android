@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -26,7 +27,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -41,7 +41,7 @@ import kotlin.math.sin
 @Composable
 fun CompactMusicBackground(
     modifier: Modifier = Modifier,
-    coverColor: Color = MiuixTheme.colorScheme.primary,
+    coverColor: Color = MaterialTheme.colorScheme.primary,
     enabled: Boolean = true,
     isDarkMode: Boolean? = null,
 ) {

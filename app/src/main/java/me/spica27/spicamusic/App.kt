@@ -6,13 +6,6 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.media3.common.util.UnstableApi
-import coil3.ImageLoader
-import coil3.PlatformContext
-import coil3.SingletonImageLoader
-import coil3.request.allowConversionToBitmap
-import coil3.request.allowRgb565
-import coil3.request.crossfade
-import coil3.request.premultipliedAlpha
 import me.spcia.lyric_core.di.extraInfoModule
 import me.spica27.spicamusic.di.AppModule
 import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
@@ -33,9 +26,7 @@ import timber.log.Timber
  * 应用程序类
  * 负责初始化 Koin 依赖注入、ImageLoader 和其他全局配置
  */
-class App :
-    Application(),
-    SingletonImageLoader.Factory {
+class App : Application() {
     private val musicScanService: MusicScanUseCases by inject()
 
     @OptIn(UnstableApi::class)
@@ -94,19 +85,6 @@ class App :
             },
         )
     }
-
-    /**
-     * 创建自定义 ImageLoader 配置
-     * 优化图片缓存策略，提高加载性能
-     */
-    override fun newImageLoader(context: PlatformContext): ImageLoader =
-        ImageLoader
-            .Builder(context)
-            .crossfade(false)
-            .premultipliedAlpha(true) // 预乘 alpha 优化 GPU 性能，减少内存占用
-            .allowRgb565(true)
-            .allowConversionToBitmap(true)
-            .build()
 
     companion object {
         private lateinit var instance: App

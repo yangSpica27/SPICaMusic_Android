@@ -18,10 +18,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
@@ -251,7 +249,7 @@ private fun TopGlowBackground(
     }
 
     AndroidView(
-        modifier = modifier.hazeEffect { blurRadius = 72.dp },
+        modifier = modifier,
         factory = { ctx ->
             TextureView(ctx).also { tv ->
                 tv.isOpaque = false
@@ -361,7 +359,7 @@ private fun LiquidAuroraBackground(
     }
 
     AndroidView(
-        modifier = modifier.hazeEffect { blurRadius = 40.dp },
+        modifier = modifier,
         factory = { ctx ->
             TextureView(ctx).also { tv ->
                 tv.isOpaque = false

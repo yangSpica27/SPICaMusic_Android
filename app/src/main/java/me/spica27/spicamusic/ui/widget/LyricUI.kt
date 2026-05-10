@@ -31,6 +31,10 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -60,7 +64,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -68,10 +71,6 @@ import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.findPlayingIndex
 import me.spica27.spicamusic.ui.theme.Shapes
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
@@ -323,7 +322,7 @@ fun LyricsUI(
                         .align(Alignment.Center)
                         .fillMaxWidth()
                         .height(1.dp)
-                        .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.2f)),
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)),
             )
         }
 
@@ -354,8 +353,8 @@ private fun EmptyLyricState(modifier: Modifier = Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Text(
             text = LyricUIConstants.EMPTY_LYRIC_TEXT,
-            style = MiuixTheme.textStyles.body1,
-            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
     }
 }
@@ -391,15 +390,14 @@ private fun LyricLine(
     scale: Float,
     blurRadius: Dp,
 ) {
-    val inactiveTextColor = MiuixTheme.colorScheme.onSurface.copy(alpha = alpha)
-    val activeTextColor = MiuixTheme.colorScheme.onSurface
+    val inactiveTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
+    val activeTextColor = MaterialTheme.colorScheme.onSurface
 
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clip(Shapes.ExtraLarge2CornerBasedShape)
-                .hazeEffect { this.blurRadius = blurRadius }
                 .graphicsLayer {
                     this.alpha = alpha
                     scaleX = scale
@@ -411,7 +409,7 @@ private fun LyricLine(
     ) {
         Text(
             text = lyric.content.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
-            style = MiuixTheme.textStyles.title2,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Medium,
             color = if (isActive) activeTextColor else inactiveTextColor,
             textAlign = TextAlign.Start,
@@ -422,7 +420,7 @@ private fun LyricLine(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = lyric.translation!!,
-                style = MiuixTheme.textStyles.body2,
+                style = MaterialTheme.typography.bodyMedium,
                 color =
                     if (isActive) {
                         activeTextColor.copy(alpha = LyricUIConstants.ACTIVE_TRANSLATION_ALPHA)
@@ -525,7 +523,7 @@ private fun WordsLyricLine(
     scale: Float,
     blurRadius: Dp,
 ) {
-    val activeTextColor = MiuixTheme.colorScheme.onSurface
+    val activeTextColor = MaterialTheme.colorScheme.onSurface
     val baseTextColor = activeTextColor.copy(alpha = LyricUIConstants.BASE_TEXT_ALPHA * alpha)
     val translationColor =
         activeTextColor.copy(alpha = LyricUIConstants.TRANSLATION_TEXT_ALPHA * alpha)
@@ -602,7 +600,6 @@ private fun WordsLyricLine(
             Modifier
                 .fillMaxWidth()
                 .clip(Shapes.ExtraLarge2CornerBasedShape)
-                .hazeEffect { this.blurRadius = blurRadius }
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
@@ -616,12 +613,12 @@ private fun WordsLyricLine(
             wordRanges = wordRanges,
             progressProvider = { range -> wordProgress(range.word, renderState.displayTime) },
             baseStyle =
-                MiuixTheme.textStyles.title2.copy(
+                MaterialTheme.typography.titleMedium.copy(
                     color = baseTextColor,
                     fontWeight = FontWeight.ExtraBold,
                 ),
             activeStyle =
-                MiuixTheme.textStyles.title2.copy(
+                MaterialTheme.typography.titleMedium.copy(
                     color = activeTextColor,
                     fontWeight = FontWeight.ExtraBold,
                 ),
@@ -635,7 +632,7 @@ private fun WordsLyricLine(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = translation,
-                style = MiuixTheme.textStyles.body2,
+                style = MaterialTheme.typography.bodySmall,
                 color = translationColor,
                 textAlign = TextAlign.Start,
                 overflow = TextOverflow.Ellipsis,
@@ -811,13 +808,13 @@ private fun SeekPreview(
             modifier =
                 Modifier
                     .clip(Shapes.ExtraLarge1CornerBasedShape)
-                    .background(MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f))
                     .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
             Text(
                 text = timeText,
-                style = MiuixTheme.textStyles.body2,
-                color = MiuixTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
 
@@ -827,12 +824,11 @@ private fun SeekPreview(
                 Modifier
                     .width(88.dp)
                     .height(44.dp),
-            backgroundColor = MiuixTheme.colorScheme.primaryContainer,
         ) {
             Icon(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = "定位到此行",
-                tint = MiuixTheme.colorScheme.onPrimaryContainer,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
