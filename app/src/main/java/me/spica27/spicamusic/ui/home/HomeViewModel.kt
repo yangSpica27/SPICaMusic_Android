@@ -35,8 +35,9 @@ class HomeViewModel(
     private val _currentPage = MutableStateFlow(HomePage.Library)
     val currentPage: StateFlow<HomePage> = _currentPage
 
-    private val _fullScreenPlayer = MutableStateFlow(false)
-    val fullScreenPlayer: StateFlow<Boolean> = _fullScreenPlayer
+    // 播放器展开进度 0f = 最小化, 1f = 全屏
+    private val _playerExpandProgress = MutableStateFlow(0f)
+    val playerExpandProgress: StateFlow<Float> = _playerExpandProgress
 
     private val _showCreateMenu = MutableStateFlow(false)
 
@@ -145,9 +146,23 @@ class HomeViewModel(
     }
 
     /**
-     * 显示或隐藏全屏播放器
+     * 更新播放器展开进度
      */
-    fun toggleFullScreenPlayer(show: Boolean) {
-        _fullScreenPlayer.value = show
+    fun updatePlayerExpandProgress(progress: Float) {
+        _playerExpandProgress.value = progress.coerceIn(0f, 1f)
+    }
+
+    /**
+     * 展开播放器到全屏
+     */
+    fun expandPlayer() {
+        _playerExpandProgress.value = 1f
+    }
+
+    /**
+     * 收起播放器到迷你模式
+     */
+    fun collapsePlayer() {
+        _playerExpandProgress.value = 0f
     }
 }

@@ -35,9 +35,9 @@ class HomeScene : StackScene() {
             modifier = Modifier.fillMaxSize(),
             transitionSpec = {
                 materialSharedAxisZIn(forward = true) togetherWith
-                    materialSharedAxisZOut(
-                        forward = true,
-                    )
+                        materialSharedAxisZOut(
+                            forward = true,
+                        )
             },
         ) {
             when (it) {
@@ -53,7 +53,7 @@ class HomeScene : StackScene() {
 enum class HomePage(
     val title: String,
 ) {
-    Finder("Finder"),
-    Music("Music"),
-    Library("Library"),
+    Finder("发现"),
+    Music("音乐"),
+    Library("资料库"),
 }

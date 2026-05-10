@@ -1,15 +1,13 @@
 package me.spica27.spicamusic.ui.home
 
+import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
@@ -17,8 +15,14 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,100 +34,87 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.graphics.shapes.CornerRounding
-import androidx.graphics.shapes.Morph
-import androidx.graphics.shapes.RoundedPolygon
-import androidx.graphics.shapes.star
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.spicamusic.ui.player.DEFAULT_PAGE
+import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
+import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
-import me.spica27.spicamusic.ui.widget.CustomRotatingMorphShape
 import me.spica27.spicamusic.ui.widget.highLightClickable
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import org.koin.compose.viewmodel.koinActivityViewModel
 
-@OptIn(ExperimentalFoundationStyleApi::class)
+/** 播放器面板的两个锚点状态 */
+private enum class PlayerSheetValue { Collapsed, Expanded }
+
+/**
+ * 底部媒体控制栏
+ * - 收起状态：显示迷你播放条 + 首页 Tab 切换区
+ * - 展开状态：全屏播放器
+ * 支持点击展开和上划/下划连续拖拽手势
+ */
+@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun BottomMediaBar() {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
-
     val navigationPath = LocalNavigationPath.current
+    val density = LocalDensity.current
+    val coroutineScope = rememberCoroutineScope()
 
     val showCreateMenu = homeViewModel.showCreateMenu.collectAsStateWithLifecycle().value
 
-    BackHandler(showCreateMenu) {
-        homeViewModel.toggleCreateMenu()
-    }
+    // 记录迷你播放条实际高度（含导航栏内边距），首帧用估算值避免闪烁
+    var miniBarHeightPx by remember { mutableStateOf(with(density) { 120.dp.roundToPx() }) }
 
-    val shapeA =
+    // 记录跳转到播放器的初始页（默认主页 or 播放列表页）
+    var initialPage by remember { mutableIntStateOf(DEFAULT_PAGE) }
+
+    // 可拖拽锚点状态
+    val draggableState =
         remember {
-            RoundedPolygon.star(
-                4,
-                rounding = CornerRounding(0.2f),
+            AnchoredDraggableState(
+                initialValue = PlayerSheetValue.Collapsed,
+                snapAnimationSpec = tween(400, easing = EaseInOutCubic),
+                decayAnimationSpec = exponentialDecay(),
+                positionalThreshold = { totalDistance -> totalDistance * 0.45f },
+                velocityThreshold = { with(density) { 150.dp.toPx() } },
             )
         }
-    val shapeB =
-        remember {
-            RoundedPolygon(
-                6,
-                rounding = CornerRounding(0.2f),
-            )
-        }
-    val morph =
-        remember {
-            Morph(shapeA, shapeB)
-        }
-    val infiniteTransition = rememberInfiniteTransition("infinite outline movement")
-    val animatedProgress =
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec =
-                infiniteRepeatable(
-                    tween(2000, easing = EaseInOutCubic),
-                    repeatMode = RepeatMode.Reverse,
-                ),
-            label = "animatedMorphProgress",
-        )
-    val animatedRotation =
-        infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec =
-                infiniteRepeatable(
-                    tween(3000, easing = EaseInOutCubic),
-                    repeatMode = RepeatMode.Restart,
-                ),
-            label = "animatedMorphProgress",
-        )
 
     val addBtnRotate =
         animateFloatAsState(
             targetValue = if (showCreateMenu) 45f else 0f,
-            label = "",
+            label = "addBtnRotate",
             animationSpec =
                 spring(
                     stiffness = Spring.StiffnessMediumLow,
@@ -131,126 +122,165 @@ fun BottomMediaBar() {
                 ),
         ).value
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .navigationBarsPadding(),
-        verticalArrangement = Arrangement.Bottom,
-    ) {
-        Column(
+    // 收起创建菜单的系统返回键拦截（优先级高于播放器收起）
+    BackHandler(showCreateMenu) {
+        homeViewModel.toggleCreateMenu()
+    }
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val screenHeightPx = with(density) { maxHeight.toPx() }
+
+        // 每当屏幕高度或迷你栏高度变化时更新锚点
+        LaunchedEffect(screenHeightPx, miniBarHeightPx) {
+            draggableState.updateAnchors(
+                DraggableAnchors {
+                    PlayerSheetValue.Collapsed at (screenHeightPx - miniBarHeightPx)
+                    PlayerSheetValue.Expanded at 0f
+                },
+            )
+        }
+
+        // 展开进度：0.0 = 完全收起，1.0 = 完全展开
+        val progress by remember {
+            derivedStateOf {
+                val offset = draggableState.offset
+                val maxOffset = screenHeightPx - miniBarHeightPx
+                if (offset.isNaN() || maxOffset <= 0f) return@derivedStateOf 0f
+                (1f - offset / maxOffset).coerceIn(0f, 1f)
+            }
+        }
+
+        val isExpanded by remember {
+            derivedStateOf { draggableState.currentValue == PlayerSheetValue.Expanded }
+        }
+
+        // 展开时拦截系统返回键，将播放器收起
+        BackHandler(enabled = isExpanded) {
+            coroutineScope.launch { draggableState.animateTo(PlayerSheetValue.Collapsed) }
+        }
+
+        // 可拖拽播放器面板（通过 translationY 在屏幕上滑入 / 滑出）
+        Box(
             modifier =
                 Modifier
-                    .animateContentSize(
-                        animationSpec =
-                            spring(
-                                stiffness = Spring.StiffnessMediumLow,
-                                dampingRatio = Spring.DampingRatioLowBouncy,
-                            ),
-                    ),
+                    .fillMaxSize()
+                    .zIndex(2f)
+                    .graphicsLayer {
+                        translationY =
+                            if (draggableState.offset.isNaN()) {
+                                (screenHeightPx - miniBarHeightPx)
+                            } else {
+                                draggableState.offset
+                            }
+                    },
         ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            horizontal = 16.dp,
-                        ).background(
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                            shape = MaterialTheme.shapes.large,
-                        ).padding(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 封面占位
+            // 全屏播放器（随进度淡入，progress > 0.01 时才合成以节省开销）
+            if (progress > 0.01f) {
                 Box(
                     modifier =
                         Modifier
-                            .size(48.dp)
-                            .clip(
-                                CustomRotatingMorphShape(
-                                    morph,
-                                    animatedProgress.value,
-                                    animatedRotation.value,
-                                ),
-                            ).background(
-                                color = MaterialTheme.colorScheme.primary,
-                            ),
-                )
-                // 歌曲信息占位
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.Center,
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                alpha = ((progress - 0.15f) / 0.55f).coerceIn(0f, 1f)
+                            },
                 ) {
-                    Text(
-                        text = "歌曲名称",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = "歌手名称",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                // 播放控制占位
-                Box(
-                    modifier =
-                        Modifier
-                            .size(48.dp)
-                            .clip(shape = CircleShape)
-                            .background(
-                                color = MaterialTheme.colorScheme.primary,
-                            ).highLightClickable {},
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.Default.PlayArrow,
-                        contentDescription = "Play",
-                        tint = MaterialTheme.colorScheme.onPrimary,
+                    ExpandedPlayerScreen(
+                        onCollapse = {
+                            coroutineScope.launch {
+                                draggableState.animateTo(PlayerSheetValue.Collapsed)
+                            }
+                        },
+                        progress = progress,
+                        initialPage = initialPage,
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
 
-            AnimatedVisibility(
-                navigationPath.scenes.lastOrNull() is HomeScene,
-                enter = materialSharedAxisYIn(forward = true),
-                exit = materialSharedAxisYOut(forward = false),
+            // 迷你播放条 + Tab 切换区 —— 位于面板顶部
+            // 当面板收起时，面板整体下移使迷你条恰好出现在屏幕底部
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        // onSizeChanged 必须在 animateContentSize 外侧：
+                        // 这样它看到的是动画插值后的居间高度，miniBarHeightPx
+                        // 随动画逐帧平滑更新，锚点也跟着平滑变化，消除闪现
+                        .onSizeChanged { size -> miniBarHeightPx = size.height }
+                        .animateContentSize(
+                            animationSpec =
+                                spring(
+                                    stiffness = Spring.StiffnessMediumLow,
+                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                ),
+                        ).align(Alignment.TopCenter)
+                        .navigationBarsPadding()
+                        .graphicsLayer { alpha = (1f - progress / 0.25f).coerceIn(0f, 1f) }
+                        // 拖拽手势：上划展开，下划收起
+                        .anchoredDraggable(draggableState, Orientation.Vertical),
             ) {
-                Row(
+                // 实际播放条
+                LargeBottomPlayerBar(
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = 16.dp,
-                            ).padding(vertical = 8.dp),
+                            .padding(horizontal = 16.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surfaceContainer,
+                                shape = CircleShape,
+                            ),
+                    onExpand = {
+                        initialPage = DEFAULT_PAGE
+                        coroutineScope.launch {
+                            draggableState.animateTo(PlayerSheetValue.Expanded)
+                        }
+                    },
+                    onExpandToPlaylist = {
+                        initialPage = 0
+                        coroutineScope.launch {
+                            draggableState.animateTo(PlayerSheetValue.Expanded)
+                        }
+                    },
+                )
+
+                // Tab 切换区（仅在 HomeScene 时可见）
+                AnimatedVisibility(
+                    navigationPath.scenes.lastOrNull() is HomeScene,
+                    enter = materialSharedAxisYIn(forward = true),
+                    exit = materialSharedAxisYOut(forward = false),
                 ) {
-                    HomePageSwitcher(
-                        modifier = Modifier.weight(1f),
-                    )
-                    Box(
+                    Row(
                         modifier =
                             Modifier
-                                .rotate(
-                                    addBtnRotate,
-                                ).size(48.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    shape = CircleShape,
-                                ).highLightClickable {
-                                    homeViewModel.toggleCreateMenu()
-                                },
-                        contentAlignment = Alignment.Center,
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .padding(vertical = 8.dp),
                     ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Add",
-                            tint = MaterialTheme.colorScheme.onTertiary,
+                        HomePageSwitcher(
+                            modifier = Modifier.weight(1f),
                         )
+                        Box(
+                            modifier =
+                                Modifier
+                                    .rotate(addBtnRotate)
+                                    .size(48.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        shape = CircleShape,
+                                    ).highLightClickable {
+                                        homeViewModel.toggleCreateMenu()
+                                    },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Add",
+                                tint = MaterialTheme.colorScheme.onTertiary,
+                            )
+                        }
                     }
                 }
             }
-        } // end inner Column
+        }
     }
 }
 
@@ -357,8 +387,6 @@ private fun HomePageSwitchItem(
     title: String,
     bandHomePage: HomePage,
 ) {
-    val navigationPath = LocalNavigationPath.current
-
     val homeViewModel: HomeViewModel = koinActivityViewModel()
 
     val currentHomePage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
