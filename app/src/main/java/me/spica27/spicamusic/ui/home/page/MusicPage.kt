@@ -105,7 +105,7 @@ fun MusicPage() {
     LaunchedEffect(selectTab) {
         val index = tabs.indexOf(selectTab)
         if (index != pagerState.targetPage) {
-            pagerState.scrollToPage(index)
+            pagerState.animateScrollToPage(index)
         }
     }
 
@@ -127,8 +127,9 @@ fun MusicPage() {
     ) { paddingValues ->
         Column(
             modifier =
-                Modifier
-                    .padding(paddingValues),
+                Modifier.padding(
+                    top = paddingValues.calculateTopPadding(),
+                ),
         ) {
             TopTabs(
                 modifier = Modifier,
@@ -227,7 +228,7 @@ private fun TopTabItem(
                 ).highLightClickable {
                     onSelectTab(bandTab)
                 },
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = bandTab.title,
@@ -276,6 +277,7 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
                         with(density) {
                             headerHeight.toDp()
                         },
+                    bottom = 200.dp,
                 ),
         ) {
             items(allSong, key = { it.mediaStoreId }) { song ->

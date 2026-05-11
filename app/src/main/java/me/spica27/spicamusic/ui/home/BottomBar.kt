@@ -6,7 +6,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -14,7 +13,6 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
@@ -52,8 +50,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -63,15 +64,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.skydoves.cloudy.Sky
+import com.skydoves.cloudy.cloudy
 import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.ui.player.DEFAULT_PAGE
 import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
 import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
+import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import me.spica27.spicamusic.ui.widget.highLightClickable
-import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
-import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 /** 播放器面板的两个锚点状态 */
@@ -85,13 +87,11 @@ private enum class PlayerSheetValue { Collapsed, Expanded }
  */
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun BottomMediaBar() {
+fun BottomMediaBar(sky: Sky) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val navigationPath = LocalNavigationPath.current
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
-
-    val showCreateMenu = homeViewModel.showCreateMenu.collectAsStateWithLifecycle().value
 
     // 记录迷你播放条实际高度（含导航栏内边距），首帧用估算值避免闪烁
     var miniBarHeightPx by remember { mutableStateOf(with(density) { 120.dp.roundToPx() }) }
@@ -111,22 +111,7 @@ fun BottomMediaBar() {
             )
         }
 
-    val addBtnRotate =
-        animateFloatAsState(
-            targetValue = if (showCreateMenu) 45f else 0f,
-            label = "addBtnRotate",
-            animationSpec =
-                spring(
-                    stiffness = Spring.StiffnessMediumLow,
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                ),
-        ).value
-
     // 收起创建菜单的系统返回键拦截（优先级高于播放器收起）
-    BackHandler(showCreateMenu) {
-        homeViewModel.toggleCreateMenu()
-    }
-
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val screenHeightPx = with(density) { maxHeight.toPx() }
 
@@ -180,9 +165,7 @@ fun BottomMediaBar() {
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .graphicsLayer {
-                                alpha = ((progress - 0.15f) / 0.55f).coerceIn(0f, 1f)
-                            },
+                            .graphicsLayer {},
                 ) {
                     ExpandedPlayerScreen(
                         onCollapse = {
@@ -224,9 +207,11 @@ fun BottomMediaBar() {
                     modifier =
                         Modifier
                             .padding(horizontal = 16.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceContainer,
-                                shape = CircleShape,
+                            .clip(CircleShape)
+                            .cloudy(
+                                sky = sky,
+                                radius = 64,
+                                tint = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.8f),
                             ),
                     onExpand = {
                         initialPage = DEFAULT_PAGE
@@ -242,41 +227,39 @@ fun BottomMediaBar() {
                     },
                 )
 
-                // Tab 切换区（仅在 HomeScene 时可见）
-                AnimatedVisibility(
-                    navigationPath.scenes.lastOrNull() is HomeScene,
-                    enter = materialSharedAxisYIn(forward = true),
-                    exit = materialSharedAxisYOut(forward = false),
+                Row(
+                    modifier =
+                        Modifier
+                            .animateContentSize()
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(vertical = 8.dp),
                 ) {
-                    Row(
+                    HomePageSwitcher(
+                        modifier = Modifier.weight(1f),
+                        sky = sky,
+                    )
+                    Box(
                         modifier =
                             Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                                .padding(vertical = 8.dp),
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .cloudy(
+                                    sky = sky,
+                                    radius = 62,
+                                    tint = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.8f),
+                                ).highLightClickable {
+                                    navigationPath.push(
+                                        PlaylistCreatorScene(),
+                                    )
+                                },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        HomePageSwitcher(
-                            modifier = Modifier.weight(1f),
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Add",
+                            tint = MaterialTheme.colorScheme.onTertiary,
                         )
-                        Box(
-                            modifier =
-                                Modifier
-                                    .rotate(addBtnRotate)
-                                    .size(48.dp)
-                                    .background(
-                                        color = MaterialTheme.colorScheme.tertiary,
-                                        shape = CircleShape,
-                                    ).highLightClickable {
-                                        homeViewModel.toggleCreateMenu()
-                                    },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = "Add",
-                                tint = MaterialTheme.colorScheme.onTertiary,
-                            )
-                        }
                     }
                 }
             }
@@ -285,7 +268,10 @@ fun BottomMediaBar() {
 }
 
 @Composable
-private fun HomePageSwitcher(modifier: Modifier = Modifier) {
+private fun HomePageSwitcher(
+    modifier: Modifier = Modifier,
+    sky: Sky,
+) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val tabs = remember { HomePage.entries.toTypedArray() }
     val selectIndex = homeViewModel.currentPage.collectAsStateWithLifecycle().value
@@ -328,26 +314,28 @@ private fun HomePageSwitcher(modifier: Modifier = Modifier) {
             modifier
                 .height(48.dp)
                 .padding(end = 12.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    shape = CircleShape,
+                .clip(CircleShape)
+                .cloudy(
+                    sky = sky,
+                    radius = 62,
+                    tint = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.8f),
                 ).drawWithCache {
                     onDrawBehind {
                         if (indicatorWidth > 0.dp && indicatorHeight > 0.dp) {
                             drawRoundRect(
                                 color = indicatorColor,
                                 topLeft =
-                                    androidx.compose.ui.geometry.Offset(
+                                    Offset(
                                         indicatorOffset.toPx(),
                                         0f,
                                     ),
                                 size =
-                                    androidx.compose.ui.geometry.Size(
+                                    Size(
                                         indicatorWidth.toPx(),
                                         indicatorHeight.toPx(),
                                     ),
                                 cornerRadius =
-                                    androidx.compose.ui.geometry.CornerRadius(
+                                    CornerRadius(
                                         100f,
                                         100f,
                                     ),

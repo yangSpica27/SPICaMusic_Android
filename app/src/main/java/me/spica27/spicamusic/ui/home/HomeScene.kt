@@ -2,12 +2,16 @@ package me.spica27.spicamusic.ui.home
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.skydoves.cloudy.rememberSky
+import com.skydoves.cloudy.sky
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.ui.home.page.FinderPage
@@ -27,24 +31,35 @@ class HomeScene : StackScene() {
 
         val currentPage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
 
-        AnimatedContent(
-            targetState = currentPage,
-            contentKey = {
-                it
-            },
+        val sky = rememberSky()
+
+        Box(
             modifier = Modifier.fillMaxSize(),
-            transitionSpec = {
-                materialSharedAxisZIn(forward = true) togetherWith
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            AnimatedContent(
+                targetState = currentPage,
+                contentKey = {
+                    it
+                },
+                modifier =
+                    Modifier
+                        .sky(sky)
+                        .fillMaxSize(),
+                transitionSpec = {
+                    materialSharedAxisZIn(forward = true) togetherWith
                         materialSharedAxisZOut(
                             forward = true,
                         )
-            },
-        ) {
-            when (it) {
-                HomePage.Finder -> FinderPage()
-                HomePage.Music -> MusicPage()
-                HomePage.Library -> LibraryPage()
+                },
+            ) {
+                when (it) {
+                    HomePage.Finder -> FinderPage()
+                    HomePage.Music -> MusicPage()
+                    HomePage.Library -> LibraryPage()
+                }
             }
+            BottomMediaBar(sky = sky)
         }
     }
 }

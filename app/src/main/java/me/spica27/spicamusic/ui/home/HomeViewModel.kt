@@ -32,7 +32,7 @@ class HomeViewModel(
     private val _sortOrder = MutableStateFlow(SongSortOrder.DEFAULT)
     val sortOrder: StateFlow<SongSortOrder> = _sortOrder
 
-    private val _currentPage = MutableStateFlow(HomePage.Library)
+    private val _currentPage = MutableStateFlow(HomePage.Finder)
     val currentPage: StateFlow<HomePage> = _currentPage
 
     // 播放器展开进度 0f = 最小化, 1f = 全屏

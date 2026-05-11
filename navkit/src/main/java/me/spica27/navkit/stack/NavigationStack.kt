@@ -13,15 +13,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.util.lerp
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.path.NavigationPath
+import me.spica27.navkit.scene.DialogScene
 import me.spica27.navkit.scene.Scene
 import me.spica27.navkit.scene.SceneKeySet
 import me.spica27.navkit.scene.SceneStage
@@ -126,9 +130,9 @@ private fun SceneContainer(
     path: NavigationPath,
     entryViewModel: EntryViewModel
 ) {
-    // StackScene 专用：从 Draw 阶段读取动画进度，避免 Composition-phase 重组
-    val sceneModifier = if (scene is StackScene) {
-        Modifier
+    // StackScene / DialogScene：从 Draw 阶段读取动画进度，避免 Composition-phase 重组
+    val sceneModifier = when (scene) {
+        is StackScene -> Modifier
             .fillMaxSize()
             .onGloballyPositioned {
                 // 首次布局完成时通知场景，解锁进场动画
@@ -138,31 +142,51 @@ private fun SceneContainer(
                 // 在 Draw 阶段读取进度值（不触发重组）
                 val enter = scene.enterProgress.value
                 val ahead = scene.aheadEnterProgress(path.scenes)
+                val fgProgress = scene.dialogForegroundProgress(path.scenes)
 
-                // 进场：整体 alpha 随进度渐显
+                // ── 自身进场动画 ──────────────────────────────────────────
                 alpha = enter
-
-                // 进场：从右侧滑入（translationX 从 +100dp → 0）
                 translationX = (1f - enter) * size.width * ENTER_SLIDE_FRACTION
 
-                // 背景压缩：下层场景随上层场景入场而轻微缩小并左移
+                // ── StackScene 入场：背景压缩 + 左移 ─────────────────────
+                val compressionAhead = ahead.coerceIn(0f, 1f)
                 val compressionScale = COMPRESS_SCALE_MIN +
-                        (1f - COMPRESS_SCALE_MIN) * (1f - ahead.coerceIn(0f, 1f))
+                        (1f - COMPRESS_SCALE_MIN) * (1f - compressionAhead)
                 scaleX = compressionScale
                 scaleY = compressionScale
-                translationX -= ahead.coerceIn(0f, 1f) * size.width * COMPRESS_TRANSLATE_FRACTION
-            }
-            .drawWithCache {
-                val ahead = scene.aheadEnterProgress(path.scenes)
-                onDrawWithContent {
-                    drawContent()
-                    drawRect(
-                        color = Color.Black.copy(alpha = 0.2f * (ahead.coerceIn(0f, 1f)))
+                translationX -= compressionAhead * size.width * COMPRESS_TRANSLATE_FRACTION
+
+                // ── StackScene 入场：背景模糊（API < 31 时 Compose 自动忽略）
+                if (compressionAhead > 0f) {
+                    val blurSigma = compressionAhead * density * BLUR_MAX_DP
+                    renderEffect = BlurEffect(blurSigma, blurSigma, TileMode.Clamp)
+                }
+
+                // ── DialogScene 入场：背景变暗 + 去饱和度 ──────────────────
+                if (fgProgress > 0f) {
+                    // alpha 1.0 → 0.3，乘以自身进度保持进场同步
+                    alpha *= lerp(1f, 0.3f, fgProgress)
+                    // Rec. 601 灰度化 ColorMatrix
+                    val g = fgProgress
+                    val c = 1f - g
+                    colorFilter = ColorFilter.colorMatrix(
+                        ColorMatrix(
+                            floatArrayOf(
+                                0.213f * g + c, 0.715f * g, 0.072f * g, 0f, 0f,
+                                0.213f * g, 0.715f * g + c, 0.072f * g, 0f, 0f,
+                                0.213f * g, 0.715f * g, 0.072f * g + c, 0f, 0f,
+                                0f, 0f, 0f, 1f, 0f,
+                            )
+                        )
                     )
                 }
             }
-    } else {
-        Modifier.fillMaxSize()
+
+        is DialogScene -> Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { scene.notifyPlaced() }
+
+        else -> Modifier.fillMaxSize()
     }
 
     // 将 EntryViewModel 的 ViewModelStoreOwner 注入到子树，
@@ -201,3 +225,6 @@ private const val COMPRESS_SCALE_MIN = 0.94f
 
 /** 背景压缩时的左移偏移比例 */
 private const val COMPRESS_TRANSLATE_FRACTION = 0.04f
+
+/** StackScene 进场时对背景施加的最大模糊半径（dp） */
+private const val BLUR_MAX_DP = 24f

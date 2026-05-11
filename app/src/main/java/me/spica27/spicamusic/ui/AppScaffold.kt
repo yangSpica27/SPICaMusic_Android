@@ -7,7 +7,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.navkit.stack.NavigationStack
 import me.spica27.spicamusic.core.preferences.PreferencesManager
-import me.spica27.spicamusic.ui.home.BottomMediaBar
 import me.spica27.spicamusic.ui.home.HomeScene
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
@@ -40,7 +39,6 @@ fun AppScaffold() {
                     HomeScene()
                 },
                 content = {
-                    BottomMediaBar()
                 },
             )
         }

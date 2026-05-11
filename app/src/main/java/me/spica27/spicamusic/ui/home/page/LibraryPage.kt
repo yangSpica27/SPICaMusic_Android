@@ -76,8 +76,7 @@ fun LibraryPage() {
     ) { paddingValues ->
         Column(
             modifier =
-                Modifier
-                    .padding(paddingValues),
+            Modifier,
         ) {
             TopTabBar(
                 tabs = tabs,
@@ -86,8 +85,8 @@ fun LibraryPage() {
             )
 
             when (selectTab) {
-                LibraryPageTab.Playlist -> PlaylistPage()
-                LibraryPageTab.Folder -> PlaylistPage()
+                LibraryPageTab.Playlist -> PlaylistPage(paddingValues = paddingValues)
+                LibraryPageTab.Folder -> PlaylistPage(paddingValues = paddingValues)
             }
         }
     }
@@ -188,7 +187,10 @@ private fun TopTabItem(
 }
 
 @Composable
-private fun PlaylistPage(modifier: Modifier = Modifier) {
+private fun PlaylistPage(
+    modifier: Modifier = Modifier,
+    paddingValues: PaddingValues,
+) {
     val colors =
         remember {
             listOf(
@@ -203,7 +205,12 @@ private fun PlaylistPage(modifier: Modifier = Modifier) {
             GridCells
                 .Fixed(2),
         contentPadding =
-            PaddingValues(16.dp),
+            PaddingValues(
+                top = paddingValues.calculateTopPadding(),
+                bottom = 200.dp,
+                start = 16.dp,
+                end = 16.dp,
+            ),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),

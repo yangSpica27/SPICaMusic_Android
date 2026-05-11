@@ -6,7 +6,6 @@ import androidx.compose.animation.core.spring
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-
 /**
  * 支持进退场动画的堆栈式场景。
  *
@@ -103,6 +102,28 @@ abstract class StackScene : Scene() {
             }
         }
         return sum
+    }
+
+    /**
+     * 计算所有排在当前场景之后（id 更大）且尚未 Disappeared 的 [DialogScene] 的
+     * [DialogScene.enterProgress] 之和，clamp 到 [0f, 1f]。
+     *
+     * 此值在 `Modifier.graphicsLayer {}` 内读取（Draw 阶段），
+     * 驱动背景场景的变暗（alpha 0.3）与去饱和度（ColorMatrix）效果。
+     *
+     * @param scenes 导航栈的完整快照列表
+     */
+    fun dialogForegroundProgress(scenes: List<Scene>): Float {
+        var sum = 0f
+        for (scene in scenes) {
+            if (scene is DialogScene &&
+                scene.id > id &&
+                scene.stage.value != SceneStage.Disappeared
+            ) {
+                sum += scene.enterProgress.value
+            }
+        }
+        return sum.coerceIn(0f, 1f)
     }
 
     companion object {
