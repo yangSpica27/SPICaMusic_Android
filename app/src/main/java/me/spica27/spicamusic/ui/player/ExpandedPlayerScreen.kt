@@ -932,7 +932,7 @@ private fun PlayerControls(
 /**
  * 格式化时间 (毫秒 -> mm:ss)
  */
-private fun formatTime(millis: Long): String {
+fun formatTime(millis: Long): String {
     val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)
     val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
     return String.format(Locale.CHINESE, "%d:%02d", minutes, seconds)

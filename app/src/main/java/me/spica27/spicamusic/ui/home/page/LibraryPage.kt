@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -32,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +46,7 @@ import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,7 +54,9 @@ import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
+import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.widget.highLightClickable
+import me.spica27.spicamusic.ui.widget.primaryClickable
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +71,22 @@ fun LibraryPage() {
             LibraryPageTab.entries
         }
 
+    val pagerState = rememberPagerState { tabs.size }
+
+    LaunchedEffect(selectTab) {
+        val index = tabs.indexOf(selectTab)
+        if (index != pagerState.targetPage) {
+            pagerState.animateScrollToPage(index)
+        }
+    }
+
+    LaunchedEffect(pagerState.targetPage) {
+        val tab = tabs[pagerState.targetPage]
+        if (tab != selectTab) {
+            selectTab = tab
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -76,17 +98,23 @@ fun LibraryPage() {
     ) { paddingValues ->
         Column(
             modifier =
-            Modifier,
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = paddingValues.calculateTopPadding(),
+                    ),
         ) {
             TopTabBar(
                 tabs = tabs,
                 selectTab = selectTab,
                 onSelectTab = { selectTab = it },
             )
-
-            when (selectTab) {
-                LibraryPageTab.Playlist -> PlaylistPage(paddingValues = paddingValues)
-                LibraryPageTab.Folder -> PlaylistPage(paddingValues = paddingValues)
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.weight(1f),
+                overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Horizontal),
+            ) {
+                PlaylistPage(Modifier.fillMaxSize())
             }
         }
     }
@@ -187,10 +215,7 @@ private fun TopTabItem(
 }
 
 @Composable
-private fun PlaylistPage(
-    modifier: Modifier = Modifier,
-    paddingValues: PaddingValues,
-) {
+private fun PlaylistPage(modifier: Modifier = Modifier) {
     val colors =
         remember {
             listOf(
@@ -200,13 +225,15 @@ private fun PlaylistPage(
             )
         }
     LazyVerticalGrid(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .nestedScroll(LocalBottomBarScrollConnection.current),
         columns =
             GridCells
                 .Fixed(2),
         contentPadding =
             PaddingValues(
-                top = paddingValues.calculateTopPadding(),
                 bottom = 200.dp,
                 start = 16.dp,
                 end = 16.dp,
@@ -244,10 +271,10 @@ private fun PlaylistItem(
                 modifier
                     .fillMaxWidth()
                     .shadow(4.dp, MaterialTheme.shapes.medium)
-                    .background(
-                        color,
-                        MaterialTheme.shapes.medium,
-                    ).padding(16.dp),
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(color)
+                    .primaryClickable {
+                    }.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row {

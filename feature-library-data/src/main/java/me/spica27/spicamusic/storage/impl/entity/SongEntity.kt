@@ -29,6 +29,7 @@ data class SongEntity(
     var sortName: String,
     var mimeType: String,
     var albumId: Long,
+    var album: String,
     var sampleRate: Int,
     var bitRate: Int,
     var channels: Int,

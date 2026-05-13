@@ -324,6 +324,7 @@ class MusicScanService(
                 MediaStore.Audio.Media._ID,
                 MediaStore.Audio.Media.DISPLAY_NAME,
                 MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.ALBUM,
                 MediaStore.Audio.Media.SIZE,
                 MediaStore.Audio.Media.DURATION,
                 MediaStore.Audio.Media.MIME_TYPE,
@@ -357,6 +358,7 @@ class MusicScanService(
                 val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
                 val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
                 val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+                val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
                 val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
                 val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
                 val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
@@ -372,6 +374,7 @@ class MusicScanService(
                     val mediaStoreId = cursor.getLong(idColumn)
                     val displayName = cursor.getString(nameColumn) ?: "Unknown"
                     val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
+                    val albumName = cursor.getString(albumColumn) ?: ""
                     val size = cursor.getLong(sizeColumn)
                     val duration = cursor.getLong(durationColumn)
                     val mimeType = cursor.getString(mimeTypeColumn) ?: ""
@@ -420,6 +423,7 @@ class MusicScanService(
 
                     val finalDisplayName = audioInfo.title ?: displayName
                     val finalArtist = audioInfo.artist ?: artist
+                    val finalAlbum = audioInfo.album ?: albumName
                     val sortName = generateSortName(finalDisplayName)
 
 
@@ -452,6 +456,7 @@ class MusicScanService(
                         sort = existingInfo?.sort ?: 0,
                         mimeType = mimeType,
                         albumId = albumId,
+                        album = finalAlbum,
                         sampleRate = audioInfo.sampleRate,
                         bitRate = audioInfo.bitRate,
                         channels = audioInfo.channels,
@@ -542,6 +547,7 @@ class MusicScanService(
                         val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
                         val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
                         val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+                        val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
                         val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
                         val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
                         val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
@@ -554,6 +560,7 @@ class MusicScanService(
                             val mediaStoreId = cursor.getLong(idColumn)
                             val displayName = cursor.getString(nameColumn) ?: "Unknown"
                             val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
+                            val albumName = cursor.getString(albumColumn) ?: ""
                             val size = cursor.getLong(sizeColumn)
                             val duration = cursor.getLong(durationColumn)
                             val mimeType = cursor.getString(mimeTypeColumn) ?: ""
@@ -592,6 +599,7 @@ class MusicScanService(
                                 )
                             val finalDisplayName = audioInfo.title ?: displayName
                             val finalArtist = audioInfo.artist ?: artist
+                            val finalAlbum = audioInfo.album ?: albumName
                             val sortName = generateSortName(finalDisplayName)
                             val codec = resolveCodec(mimeType, audioInfo.bitRate)
 
@@ -608,6 +616,7 @@ class MusicScanService(
                                     sort = existingInfo?.sort ?: 0,
                                     mimeType = mimeType,
                                     albumId = albumId,
+                                    album = finalAlbum,
                                     sampleRate = audioInfo.sampleRate,
                                     bitRate = audioInfo.bitRate,
                                     channels = audioInfo.channels,
@@ -760,6 +769,7 @@ class MusicScanService(
 
                     val finalDisplayName = audioInfo.title ?: fileInfo.displayName
                     val finalArtist = audioInfo.artist ?: "Unknown Artist"
+                    val finalAlbum = audioInfo.album ?: ""
                     val sortName = generateSortName(finalDisplayName)
                     val mimeType = fileInfo.mimeType
                     var codec = when {
@@ -787,6 +797,7 @@ class MusicScanService(
                         sortName = sortName,
                         mimeType = mimeType,
                         albumId = 0L,
+                        album = finalAlbum,
                         sampleRate = audioInfo.sampleRate,
                         bitRate = audioInfo.bitRate,
                         channels = audioInfo.channels,
@@ -841,6 +852,7 @@ class MusicScanService(
                 MediaStore.Audio.Media._ID,
                 MediaStore.Audio.Media.DISPLAY_NAME,
                 MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.ALBUM,
                 MediaStore.Audio.Media.SIZE,
                 MediaStore.Audio.Media.DURATION,
                 MediaStore.Audio.Media.MIME_TYPE,
@@ -1053,6 +1065,7 @@ class MusicScanService(
     ): AudioInfo {
         var title: String? = null
         var artist: String? = null
+        var album: String? = null
         var duration = 0L
         var sampleRate = 0
         var bitRate = 0
@@ -1063,39 +1076,44 @@ class MusicScanService(
             val uri = "content://media/external/audio/media/$mediaStoreId".toUri()
 
             // 只打开一次 FileDescriptor，通过 dup() 复制给两个 TagLib 调用
+            // dupPfd 包裹在 use{} 中：若在 detachFd() 之前发生异常，use{} 负责
+            // 关闭复制出来的 fd，避免泄漏；detachFd() 成功后 close() 是空操作。
             contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
                 try {
-                    val dupPfd = pfd.dup()
-                    val fdForMetadata = pfd.detachFd()      // int fd，所有权转移给 TagLib
-                    val fdForAudioProps = dupPfd.detachFd()  // int fd（复制），所有权转移给 TagLib
+                    pfd.dup().use { dupPfd ->
+                        // detachFd() 将 fd 所有权转移给 TagLib，TagLib 用完后负责关闭
+                        val fdForMetadata = pfd.detachFd()
+                        val fdForAudioProps = dupPfd.detachFd()
 
-                    // 读取元数据（标题和艺术家）
-                    try {
-                        val metadata = TagLib.getMetadata(
-                            fd = fdForMetadata,
-                            readPictures = false
-                        )
-                        if (metadata != null) {
-                            title = metadata.propertyMap["TITLE"]?.firstOrNull()
-                            artist = metadata.propertyMap["ARTIST"]?.firstOrNull()
+                        // 读取元数据（标题、艺术家、专辑）
+                        try {
+                            val metadata = TagLib.getMetadata(
+                                fd = fdForMetadata,
+                                readPictures = false
+                            )
+                            if (metadata != null) {
+                                title = metadata.propertyMap["TITLE"]?.firstOrNull()
+                                artist = metadata.propertyMap["ARTIST"]?.firstOrNull()
+                                album = metadata.propertyMap["ALBUM"]?.firstOrNull()
+                            }
+                        } catch (e: Exception) {
+                            Timber.tag(TAG).w(e, "Taglib 元数据读取失败")
                         }
-                    } catch (e: Exception) {
-                        Timber.tag(TAG).w(e, "Taglib 元数据读取失败")
-                    }
 
-                    // 读取音频属性（采样率、比特率等）
-                    try {
-                        TagLib.getAudioProperties(
-                            fdForAudioProps,
-                            readStyle = AudioPropertiesReadStyle.Accurate
-                        )?.let {
-                            duration = it.length.toLong()
-                            sampleRate = it.sampleRate
-                            bitRate = it.bitrate * 1000 // kbps 转 bps
-                            channels = it.channels
+                        // 读取音频属性（采样率、比特率等）
+                        try {
+                            TagLib.getAudioProperties(
+                                fdForAudioProps,
+                                readStyle = AudioPropertiesReadStyle.Accurate
+                            )?.let {
+                                duration = it.length.toLong()
+                                sampleRate = it.sampleRate
+                                bitRate = it.bitrate * 1000 // kbps 转 bps
+                                channels = it.channels
+                            }
+                        } catch (e: Exception) {
+                            Timber.tag(TAG).w(e, "Taglib 音频属性读取失败")
                         }
-                    } catch (e: Exception) {
-                        Timber.tag(TAG).w(e, "Taglib 音频属性读取失败")
                     }
                 } catch (e: Exception) {
                     Timber.tag(TAG).w(e, "Taglib FD 操作失败，回退到默认值")
@@ -1144,6 +1162,7 @@ class MusicScanService(
         return AudioInfo(
             title = title,
             artist = artist,
+            album = album,
             duration = duration,
             sampleRate = sampleRate,
             bitRate = bitRate,
@@ -1210,6 +1229,7 @@ class MusicScanService(
     private data class AudioInfo(
         val title: String? = null,
         val artist: String? = null,
+        val album: String? = null,
         val duration: Long,
         val sampleRate: Int,
         val bitRate: Int,

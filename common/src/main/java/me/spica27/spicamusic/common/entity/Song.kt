@@ -30,4 +30,5 @@ data class Song(
     val isIgnore: Boolean,
     val sortName: String,
     val codec: String,
+    val album: String,
 ) : Parcelable

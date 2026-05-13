@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui.widget
 
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffXfermode
+import android.graphics.RuntimeXfermode
 import android.os.Build
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.MutatorMutex
@@ -69,11 +70,55 @@ half4 main(float2 coord) {
 // Blend modes
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** ADD: brightens the destination – ideal for light/dark backgrounds where a glow is desired. */
-private val LightRippleXfermode = PorterDuffXfermode(PorterDuff.Mode.ADD)
+private const val SATURATED_COLOR_GLSL = """
+const vec3 luma = vec3(0.2126, 0.7152, 0.0722);
 
-/** SRC_OVER: standard alpha-composite – used when ADD would over-saturate. */
-private val DarkRippleXfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_OVER)
+half4 saturatedColor(half4 color, float sat) {
+    if (color.a == 0.0) return color;
+    half3 rgb = color.rgb / color.a;
+    half gray = dot(rgb, luma);
+    half3 saturated = mix(half3(gray), rgb, sat);
+    return half4(saturated, 1.0) * color.a;
+}
+
+uniform float saturation;
+"""
+
+private val LightRippleXfermode: android.graphics.Xfermode =
+    if (Build.VERSION.SDK_INT >= 36) {
+        RuntimeXfermode(
+            """
+            $SATURATED_COLOR_GLSL
+            half4 main(half4 src, half4 dst) {
+                half3 Co = saturate(src.rgb + dst.rgb);
+                half Ao = saturate(src.a + dst.a);
+                half4 color = half4(Co, Ao);
+                float sat = mix(1.0, saturation, src.a);
+                return saturatedColor(color, sat);
+            }
+            """.trimIndent(),
+        ).also { it.setFloatUniform("saturation", 2.0f) }
+    } else {
+        PorterDuffXfermode(PorterDuff.Mode.ADD)
+    }
+
+private val DarkRippleXfermode: android.graphics.Xfermode =
+    if (Build.VERSION.SDK_INT >= 36) {
+        RuntimeXfermode(
+            """
+            $SATURATED_COLOR_GLSL
+            half4 main(half4 src, half4 dst) {
+                half3 Co = max(src.rgb + dst.rgb - src.a, half3(0.0));
+                half Ao = saturate(src.a + dst.a);
+                half4 color = half4(Co, Ao);
+                float sat = mix(1.0, saturation, src.a);
+                return saturatedColor(color, sat);
+            }
+            """.trimIndent(),
+        ).also { it.setFloatUniform("saturation", 2.0f) }
+    } else {
+        PorterDuffXfermode(PorterDuff.Mode.SRC_OVER)
+    }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Indication node
@@ -82,7 +127,6 @@ private val DarkRippleXfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_OVER)
 /**
  * [DrawModifierNode] that draws an expanding white disc ripple on press/hover/focus.
  *
- * Matches testApp2's RippleIndicationNode design:
  *   - Ripple expands from component **center** (not touch point).
  *   - Alpha is a symmetric triangle: 0 → 0.0875 peak at raw time 250 → 0.
  *   - Frame loop driven by [withFrameNanos]; [shouldAutoInvalidate] = false.
@@ -163,11 +207,6 @@ private class SpicaRippleIndicationNode(
 
     // ── Animation ─────────────────────────────────────────────────────────────
 
-    /**
-     * Linearly animates [rawTime] from its current value to [target] at a rate of
-     * 1000 units/second (mirrors testApp2: `duration = (target - current) / 1000`).
-     * Calls [invalidateDraw] on every frame so [draw] is re-invoked.
-     */
     private suspend fun animateTo(target: Float) {
         val start = rawTime
         val durationSec = (target - start) / 1000f
@@ -204,13 +243,6 @@ private class SpicaRippleIndicationNode(
         }
     }
 
-    /**
-     * AGSL shader ripple (API 33+).
-     *
-     * Sets all three uniforms each frame: [size] (may change on layout), and the
-     * per-frame [backgroundAlpha] / [time] values. Uses ADD xfermode for light
-     * ripple (matches testApp2 LightRippleXfermode), SrcOver for dark.
-     */
     @Suppress("NewApi")
     private fun ContentDrawScope.drawShaderRipple(time: Int) {
         if (rippleShaderRef == null) {

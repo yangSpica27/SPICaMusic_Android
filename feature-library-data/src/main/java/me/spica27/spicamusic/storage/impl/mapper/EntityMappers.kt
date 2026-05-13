@@ -31,7 +31,8 @@ fun SongEntity.toCommon() = Song(
     channels = channels,
     digit = digit,
     isIgnore = isIgnore,
-    codec = codec
+    codec = codec,
+    album = album,
 )
 
 fun AlbumEntity.toCommon() = Album(
@@ -62,7 +63,8 @@ fun Song.toEntity() = SongEntity(
     digit = digit,
     isIgnore = isIgnore,
     sortName = sortName,
-    codec = codec
+    codec = codec,
+    album = album
 )
 
 fun PlaylistEntity.toCommon() = Playlist(

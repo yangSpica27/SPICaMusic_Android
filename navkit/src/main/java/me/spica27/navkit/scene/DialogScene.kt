@@ -1,8 +1,8 @@
 package me.spica27.navkit.scene
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -97,9 +97,9 @@ abstract class DialogScene : Scene() {
     override suspend fun onAppear() {
         enterProgress.animateTo(
             targetValue = 1f,
-            animationSpec = spring(
-                stiffness = SPRING_STIFFNESS,
-                dampingRatio = Spring.DampingRatioNoBouncy
+            animationSpec = tween(
+                375,
+                easing = DIALOG_EASING
             )
         )
     }
@@ -108,9 +108,9 @@ abstract class DialogScene : Scene() {
     override suspend fun onDisappear() {
         enterProgress.animateTo(
             targetValue = 0f,
-            animationSpec = spring(
-                stiffness = SPRING_STIFFNESS,
-                dampingRatio = Spring.DampingRatioNoBouncy
+            animationSpec = tween(
+                350,
+                easing = DIALOG_EASING
             )
         )
     }
@@ -144,9 +144,11 @@ abstract class DialogScene : Scene() {
         val path = LocalNavigationPath.current
         val scene = LocalScene.current
 
-        Box(Modifier
-            .zIndex(3f)
-            .fillMaxSize()) {
+        Box(
+            Modifier
+                .zIndex(3f)
+                .fillMaxSize()
+        ) {
             // 半透明遮罩：随进度渐显，点击关闭对话框
             val interactionSource = remember { MutableInteractionSource() }
             Box(
@@ -177,13 +179,20 @@ abstract class DialogScene : Scene() {
     }
 
     companion object {
-        /** 进退场弹簧刚度（600 ≈ 快速弹出，比导航场景 300f 更急促） */
-        private const val SPRING_STIFFNESS = 600f
-
         /** 遮罩最大不透明度（进度为 1f 时） */
         private const val SCRIM_MAX_ALPHA = 0.5f
 
         /** 进场起始缩放比（0.92 → 1.0，产生"弹出"感） */
         private const val DIALOG_SCALE_MIN = 0.92f
+
+        /** 进场/退场动画的 easing，前半段稍慢，后半段加速 */
+        private val DIALOG_EASING = Easing { fraction ->
+            // 自定义 easing，前半段稍慢，后半段加速
+            if (fraction < 0.5f) {
+                2f * fraction * fraction
+            } else {
+                -1f + (4f - 2f * fraction) * fraction
+            }
+        }
     }
 }

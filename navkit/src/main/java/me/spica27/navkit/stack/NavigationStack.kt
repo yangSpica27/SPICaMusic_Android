@@ -164,6 +164,8 @@ private fun SceneContainer(
 
                 // ── DialogScene 入场：背景变暗 + 去饱和度 ──────────────────
                 if (fgProgress > 0f) {
+                    val blurSigma = fgProgress * density * BLUR_MAX_DP
+                    renderEffect = BlurEffect(blurSigma, blurSigma, TileMode.Clamp)
                     // alpha 1.0 → 0.3，乘以自身进度保持进场同步
                     alpha *= lerp(1f, 0.3f, fgProgress)
                     // Rec. 601 灰度化 ColorMatrix

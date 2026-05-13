@@ -4,6 +4,7 @@ import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,10 +23,10 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Hexagon
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,11 +61,12 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.home.HomeViewModel
+import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
+import me.spica27.spicamusic.ui.scan.ScannerScene
 import me.spica27.spicamusic.ui.settings.SettingsScene
 import me.spica27.spicamusic.ui.widget.AnimateOnEnter
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.highLightClickable
-import me.spica27.spicamusic.ui.widget.primaryClickable
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.random.Random
@@ -99,8 +101,9 @@ fun FinderPage() {
                     icon = Icons.Default.Hexagon,
                 ),
                 Shortcut(
-                    title = "专辑列表",
-                    icon = Icons.Default.Article,
+                    title = "音乐扫描",
+                    icon = Icons.Default.Scanner,
+                    scene = ScannerScene(),
                 ),
             )
         }
@@ -125,6 +128,7 @@ fun FinderPage() {
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .nestedScroll(LocalBottomBarScrollConnection.current)
                     .nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
@@ -176,7 +180,7 @@ fun FinderPage() {
                                     transformOrigin = TransformOrigin(0.5f, 0.5f)
                                 }.fillMaxSize(),
                         title = shortcut.title,
-                        scene = SettingsScene(),
+                        scene = shortcut.scene,
                         icon = shortcut.icon,
                     )
                 }
@@ -314,7 +318,8 @@ private fun SongItem(song: Song) {
     Column(
         modifier =
             Modifier
-                .primaryClickable {
+                .clip(MaterialTheme.shapes.medium)
+                .clickable {
                 },
     ) {
         Card(

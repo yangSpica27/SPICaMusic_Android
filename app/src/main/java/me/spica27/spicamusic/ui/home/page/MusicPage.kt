@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +59,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -77,11 +79,13 @@ import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.home.HomeViewModel
+import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import me.spica27.spicamusic.ui.widget.AnimateOnEnter
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
-import me.spica27.spicamusic.ui.widget.highLightClickable
+import me.spica27.spicamusic.ui.widget.primaryClickable
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.max
 
@@ -145,9 +149,9 @@ fun MusicPage() {
             ) {
                 val page = tabs[it]
                 when (page) {
-                    MusicTab.SONG -> AllSongPage()
-                    MusicTab.ALBUM -> AllSongPage()
-                    MusicTab.ARTIST -> AllSongPage()
+                    MusicTab.SONG -> AllSongPage(Modifier)
+                    MusicTab.ALBUM -> AllSongPage(Modifier)
+                    MusicTab.ARTIST -> AllSongPage(Modifier)
                 }
             }
         }
@@ -225,7 +229,7 @@ private fun TopTabItem(
                 .background(
                     MaterialTheme.colorScheme.surfaceContainer,
                     CircleShape,
-                ).highLightClickable {
+                ).primaryClickable {
                     onSelectTab(bandTab)
                 },
         verticalAlignment = Alignment.CenterVertically,
@@ -264,13 +268,16 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
             lazyListState.firstVisibleItemIndex == 0
         }
     }
-
+    val path = LocalNavigationPath.current
     Box(
         modifier,
     ) {
         LazyColumn(
             state = lazyListState,
-            modifier = Modifier.fillMaxSize(),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(LocalBottomBarScrollConnection.current),
             contentPadding =
                 PaddingValues(
                     top =
@@ -298,7 +305,9 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
                                     scaleY = 0.75f + 0.25f * progress
                                     transformOrigin = TransformOrigin(0.5f, 0f)
                                 }.animateItem()
-                                .fillMaxWidth(),
+                                .clickable {
+                                    path.push(SongMenuScene(song))
+                                }.fillMaxWidth(),
                         song = song,
                     )
                 }
@@ -382,8 +391,7 @@ private fun SongItem(
     Row(
         modifier =
             modifier
-                .highLightClickable {
-                }.padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
