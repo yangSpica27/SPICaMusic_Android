@@ -16,11 +16,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
@@ -65,6 +70,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -74,19 +80,27 @@ import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.star
 import androidx.graphics.shapes.toPath
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.common.entity.Album
+import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.ui.album.AlbumViewModel
+import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
+import me.spica27.spicamusic.ui.artist.ArtistViewModel
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
+import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import me.spica27.spicamusic.ui.widget.AnimateOnEnter
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
-import me.spica27.spicamusic.ui.widget.primaryClickable
 import org.koin.compose.viewmodel.koinActivityViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -150,8 +164,8 @@ fun MusicPage() {
                 val page = tabs[it]
                 when (page) {
                     MusicTab.SONG -> AllSongPage(Modifier)
-                    MusicTab.ALBUM -> AllSongPage(Modifier)
-                    MusicTab.ARTIST -> AllSongPage(Modifier)
+                    MusicTab.ALBUM -> AlbumPage(Modifier)
+                    MusicTab.ARTIST -> ArtistsPage(Modifier)
                 }
             }
         }
@@ -229,7 +243,7 @@ private fun TopTabItem(
                 .background(
                     MaterialTheme.colorScheme.surfaceContainer,
                     CircleShape,
-                ).primaryClickable {
+                ).clickable {
                     onSelectTab(bandTab)
                 },
         verticalAlignment = Alignment.CenterVertically,
@@ -268,7 +282,11 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
             lazyListState.firstVisibleItemIndex == 0
         }
     }
+
     val path = LocalNavigationPath.current
+
+    val playerViewMode = LocalPlayerViewModel.current
+
     Box(
         modifier,
     ) {
@@ -297,6 +315,9 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
                         ),
                 ) { progress, _ ->
                     SongItem(
+                        menuClick = {
+                            path.push(SongMenuScene(song))
+                        },
                         modifier =
                             Modifier
                                 .graphicsLayer {
@@ -306,7 +327,10 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
                                     transformOrigin = TransformOrigin(0.5f, 0f)
                                 }.animateItem()
                                 .clickable {
-                                    path.push(SongMenuScene(song))
+                                    playerViewMode.updatePlaylist(
+                                        allSong.map { it.mediaStoreId.toString() },
+                                        song.mediaStoreId.toString(),
+                                    )
                                 }.fillMaxWidth(),
                         song = song,
                     )
@@ -370,6 +394,7 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
 private fun SongItem(
     modifier: Modifier = Modifier,
     song: Song,
+    menuClick: () -> Unit,
 ) {
     val coverUri =
         remember(song) {
@@ -448,7 +473,9 @@ private fun SongItem(
             )
         }
         IconButton(
-            onClick = { /* TODO */ },
+            onClick = {
+                menuClick.invoke()
+            },
         ) {
             Image(
                 Icons.Default.MoreVert,
@@ -460,10 +487,184 @@ private fun SongItem(
 
 @Composable
 fun AlbumPage(modifier: Modifier = Modifier) {
+    val path = LocalNavigationPath.current
+    val viewModel: AlbumViewModel = koinViewModel()
+    val albums = viewModel.filteredAlbums.collectAsLazyPagingItems()
+
+    LazyVerticalGrid(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .nestedScroll(LocalBottomBarScrollConnection.current),
+        columns = GridCells.Fixed(2),
+        contentPadding =
+            PaddingValues(
+                start = 12.dp,
+                end = 12.dp,
+                top = 8.dp,
+                bottom = 200.dp,
+            ),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        items(
+            count = albums.itemCount,
+            key = albums.itemKey { it.id },
+        ) { index ->
+            val album = albums[index] ?: return@items
+            AlbumGridItem(
+                album = album,
+                onClick = { path.push(AlbumDetailScene(album)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun AlbumGridItem(
+    album: Album,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .clip(MaterialTheme.shapes.medium)
+                .clickable(onClick = onClick)
+                .padding(bottom = 12.dp),
+    ) {
+        LandscapistImage(
+            imageModel = { album.getCoverUri() },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(MaterialTheme.shapes.medium),
+            success = { _, painter ->
+                Image(
+                    painter = painter,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            },
+            failure = {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.default_cover),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            },
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = album.title,
+            modifier = Modifier.padding(horizontal = 8.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.W600,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = album.artist,
+            modifier = Modifier.padding(horizontal = 8.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable
 fun ArtistsPage(modifier: Modifier = Modifier) {
+    val viewModel: ArtistViewModel = koinViewModel()
+    val artists = viewModel.filteredArtists.collectAsLazyPagingItems()
+
+    LazyColumn(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .nestedScroll(LocalBottomBarScrollConnection.current),
+        contentPadding = PaddingValues(bottom = 200.dp),
+    ) {
+        items(
+            count = artists.itemCount,
+            key = artists.itemKey { it.name },
+        ) { index ->
+            val artist = artists[index] ?: return@items
+            ArtistRow(artist = artist)
+        }
+    }
+}
+
+@Composable
+private fun ArtistRow(
+    artist: Artist,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(onClick = {})
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        LandscapistImage(
+            imageModel = { artist.getCoverUri() },
+            modifier =
+                Modifier
+                    .size(52.dp)
+                    .clip(MaterialTheme.shapes.medium),
+            success = { _, painter ->
+                Image(
+                    painter = painter,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            },
+            failure = {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.default_cover),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            },
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = artist.name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.W600,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "${artist.songCount} 首歌曲",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 fun RoundedPolygon.getBounds() = calculateBounds().let { Rect(it[0], it[1], it[2], it[3]) }

@@ -493,7 +493,36 @@ interface SongDao {
             OR artist LIKE '%' || :keyword || '%'
         )
         ORDER BY displayName COLLATE NOCASE ASC
-    """
+    """,
     )
     suspend fun getLikeMediaStoreIds(keyword: String? = null): List<Long>
+
+    // ===== 艺术家分页查询 =====
+
+    /** 轻量投影：由 song 表按 artist 聚合推导出的歌手信息 */
+    data class ArtistProjection(
+        @androidx.room.ColumnInfo(name = "artist") val name: String,
+        @androidx.room.ColumnInfo(name = "songCount") val songCount: Int,
+        @androidx.room.ColumnInfo(name = "coverAlbumId") val coverAlbumId: Long,
+    )
+
+    /**
+     * 分页获取歌手列表（按艺术家名分组，支持关键词过滤）
+     */
+    @Query(
+        """
+        SELECT artist, COUNT(*) AS songCount, albumId AS coverAlbumId
+        FROM song
+        WHERE isIgnore == 0
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR artist LIKE '%' || :keyword || '%'
+        )
+        GROUP BY artist
+        ORDER BY
+            CASE WHEN artist GLOB '[A-Za-z]*' THEN 0 ELSE 1 END,
+            artist COLLATE NOCASE ASC
+    """,
+    )
+    fun getArtistsPaging(keyword: String? = null): PagingSource<Int, ArtistProjection>
 }

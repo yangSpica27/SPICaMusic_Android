@@ -3,27 +3,36 @@ package me.spica27.spicamusic.ui.player.pages
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.LocationSearching
@@ -45,20 +54,37 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.graphics.shapes.Morph
+import androidx.graphics.shapes.toPath
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
+import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
+import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import org.koin.compose.viewmodel.koinViewModel
 import java.util.concurrent.TimeUnit
 
@@ -113,9 +139,7 @@ fun CurrentPlaylistPage(
     val coroutineScope = rememberCoroutineScope()
 
     Column(
-        modifier =
-            modifier
-                .padding(horizontal = 16.dp),
+        modifier = modifier.padding(horizontal = 16.dp),
     ) {
         // 顶部标题和操作
         Row(
@@ -129,8 +153,7 @@ fun CurrentPlaylistPage(
         ) {
             AnimatedContent(
                 isMultiSelectMode,
-                modifier =
-                Modifier,
+                modifier = Modifier,
             ) { isMultiSelectMode ->
                 Text(
                     text =
@@ -142,7 +165,7 @@ fun CurrentPlaylistPage(
                         } else {
                             stringResource(R.string.playlist_count_format, currentPlaylist.size)
                         },
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -222,7 +245,8 @@ fun CurrentPlaylistPage(
                 }
             }
         } else {
-            val selectItemBackgroundColor = MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.2f)
+            val selectItemBackgroundColor =
+                MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.2f)
 
             LazyColumn(
                 state = scrollState,
@@ -234,7 +258,7 @@ fun CurrentPlaylistPage(
                         .drawBehind {
                             if (currentPlayingIndex >= 0) {
                                 // 计算背景位置和尺寸
-                                val itemHeight = 68.dp.toPx() // 44dp(封面) + 24dp(padding)
+                                val itemHeight = 80.dp.toPx() // 64dp(封面) + 24dp(padding)
                                 val spacing = 8.dp.toPx()
                                 val topPadding = 8.dp.toPx()
                                 val cornerRadius = 12.dp.toPx()
@@ -255,12 +279,9 @@ fun CurrentPlaylistPage(
                                 // 绘制圆角矩形背景
                                 drawRoundRect(
                                     color = selectItemBackgroundColor,
-                                    topLeft =
-                                        Offset(0f, backgroundTop),
-                                    size =
-                                        Size(size.width, itemHeight),
-                                    cornerRadius =
-                                        CornerRadius(cornerRadius),
+                                    topLeft = Offset(0f, backgroundTop),
+                                    size = Size(size.width, itemHeight),
+                                    cornerRadius = CornerRadius(cornerRadius),
                                     style = Fill,
                                 )
                             }
@@ -433,74 +454,148 @@ private fun PlaylistItemRow(
     onLongClick: () -> Unit,
     modifier: Modifier,
 ) {
-//    val metadata = item.mediaMetadata
-//    val title = metadata.title?.toString() ?: stringResource(R.string.unknown_song)
-//    val artist = metadata.artist?.toString() ?: stringResource(R.string.unknown_artist)
-//    val artworkUri = metadata.artworkUri
-//
-//    Box(
-//        modifier =
-//            modifier
-//                .fillMaxWidth()
-//                .combinedClickable(
-//                    onClick = onClick,
-//                    onLongClick = onLongClick,
-//                    indication = null,
-//                    interactionSource = remember { MutableInteractionSource() },
-//                ).padding(12.dp),
-//    ) {
-//        CompactSongRow(
-//            title = title,
-//            subtitle = artist,
-//            coverUri = artworkUri,
-//            modifier = Modifier.fillMaxWidth(),
-//            leading = {
-//                Text(
-//                    text = "${index + 1}",
-//                    style = MaterialTheme.typography.bodyMedium,
-//                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-//                    modifier = Modifier.width(44.dp),
-//                    textAlign = TextAlign.Center,
-//                )
-//            },
-//            coverContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
-//            coverPlaceholder = {
-//                GradientPlaceholderCover(
-//                    modifier = Modifier.fillMaxSize(),
-//                    icon = Icons.Rounded.MusicNote,
-//                    iconSize = 24.dp,
-//                    contentDescription = stringResource(R.string.cover_placeholder),
-//                )
-//            },
-//            trailing = {
-//                AnimatedContent(isPlaying) { active ->
-//                    Text(
-//                        text =
-//                            if (active) {
-//                                stringResource(R.string.now_playing_indicator)
-//                            } else {
-//                                formatTime(item.mediaMetadata.durationMs ?: 0L)
-//                            },
-//                        style = MaterialTheme.typography.bodyMedium,
-//                        color =
-//                            if (active) {
-//                                MaterialTheme.colorScheme.primary
-//                            } else {
-//                                MaterialTheme.colorScheme.onSurfaceVariant
-//                            },
-//                    )
-//                }
-//                if (isMultiSelectMode) {
-//                    Spacer(modifier = Modifier.size(12.dp))
-//                    Icon(
-//                        imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-//                        contentDescription = null,
-//                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-//                    )
-//                }
-//            },
-//        )
-//    }
+    val metadata = item.mediaMetadata
+    val title =
+        remember(metadata) {
+            metadata.title?.toString() ?: App.getInstance().getString(R.string.unknown_song)
+        }
+    val artist =
+        remember(metadata) {
+            metadata.artist?.toString() ?: App.getInstance().getString(R.string.unknown_artist)
+        }
+    val artworkUri = metadata.artworkUri
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                ).height(80.dp)
+                .padding(12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 4.dp,
+                    ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "$index",
+                Modifier.width(44.dp),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.ExtraBold,
+            )
+            LandscapistImage(
+                imageModel = {
+                    artworkUri
+                },
+                modifier =
+                    Modifier
+                        .fillMaxHeight()
+                        .aspectRatio(1f)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.surface),
+                success = { state, painter ->
+                    ShowOnIdleContent(true) {
+                        Image(painter, contentDescription = null, contentScale = ContentScale.Crop)
+                    }
+                },
+                failure = {
+                    ShowOnIdleContent(true) {
+                        Image(
+                            painterResource(R.drawable.default_cover),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
+                },
+            )
+            Column(
+                Modifier
+                    .weight(1f)
+                    .padding(
+                        horizontal = 12.dp,
+                    ),
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.W600,
+                    maxLines = 1,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    artist,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                )
+            }
+            AnimatedContent(isPlaying) { isPlaying ->
+                if (isMultiSelectMode) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint =
+                            animateColorAsState(
+                                if (isSelected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    Color.Transparent
+                                },
+                            ).value,
+                    )
+                } else if (isPlaying) {
+                    Text(
+                        "正在播放",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.W600,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Text(
+                        formatTime(metadata.durationMs ?: 0L),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.W600,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 基于 Morph 进度的封面裁剪 Shape，每次 createOutline 时使用当时的 progress。
+ * 注意：matrix 在每次调用时重置，避免累积变换。
+ */
+private class MorphClipShape(
+    private val morph: Morph,
+    private val progress: Float,
+) : Shape {
+    override fun createOutline(
+        size: Size,
+        layoutDirection: LayoutDirection,
+        density: Density,
+    ): Outline {
+        val matrix = Matrix()
+        matrix.scale(size.width / 2f, size.height / 2f)
+        matrix.translate(1f, 1f)
+        val path = morph.toPath(progress = progress).asComposePath()
+        path.transform(matrix)
+        return Outline.Generic(path)
+    }
 }
 
 /**

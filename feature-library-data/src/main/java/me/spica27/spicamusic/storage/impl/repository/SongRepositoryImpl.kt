@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.SongFilter
 import me.spica27.spicamusic.common.entity.SongGroup
@@ -328,6 +329,20 @@ class SongRepositoryImpl(
     override suspend fun getLikeMediaStoreIds(keyword: String?): List<Long> =
         withContext(Dispatchers.IO) {
             songDao.getLikeMediaStoreIds(keyword)
+        }
+
+    // ===== 艺术家分页 API 实现 =====
+
+    override fun getArtistsPagingFlow(keyword: String?): Flow<PagingData<Artist>> =
+        Pager(
+            config = PagingConfig(
+                pageSize = PAGE_SIZE,
+                prefetchDistance = PREFETCH_DISTANCE,
+                enablePlaceholders = false,
+            ),
+            pagingSourceFactory = { songDao.getArtistsPaging(keyword) },
+        ).flow.map { pagingData ->
+            pagingData.map { Artist(name = it.name, songCount = it.songCount, coverAlbumId = it.coverAlbumId) }
         }
 
 }

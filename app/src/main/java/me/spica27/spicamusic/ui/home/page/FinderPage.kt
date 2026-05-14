@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -48,6 +49,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntSize
@@ -66,7 +68,6 @@ import me.spica27.spicamusic.ui.scan.ScannerScene
 import me.spica27.spicamusic.ui.settings.SettingsScene
 import me.spica27.spicamusic.ui.widget.AnimateOnEnter
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
-import me.spica27.spicamusic.ui.widget.highLightClickable
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.random.Random
@@ -254,7 +255,7 @@ private fun ShortcutItem(
                 .clip(MaterialTheme.shapes.medium)
                 .background(
                     MaterialTheme.colorScheme.surfaceContainer,
-                ).highLightClickable {
+                ).clickable {
                     if (scene != null) {
                         path.push(scene)
                     }
@@ -319,6 +320,7 @@ private fun SongItem(song: Song) {
         modifier =
             Modifier
                 .clip(MaterialTheme.shapes.medium)
+                .width(160.dp)
                 .clickable {
                 },
     ) {
@@ -367,7 +369,7 @@ private fun SongCover(song: Song) {
                     painter = painter,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    contentScale = ContentScale.Crop,
                 )
             }
         },
@@ -376,7 +378,7 @@ private fun SongCover(song: Song) {
                 painter = painterResource(R.drawable.default_cover),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                contentScale = ContentScale.Crop,
             )
         },
     )

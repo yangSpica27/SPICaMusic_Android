@@ -17,6 +17,7 @@ import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 import me.spica27.spicamusic.ui.album.AlbumViewModel
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailViewModel
 import me.spica27.spicamusic.ui.allsong.AllSongsViewModel
+import me.spica27.spicamusic.ui.artist.ArtistViewModel
 import me.spica27.spicamusic.ui.audioeffects.AudioEffectsViewModel
 import me.spica27.spicamusic.ui.favorite.FavoriteViewModel
 import me.spica27.spicamusic.ui.home.HomeViewModel
@@ -184,6 +185,13 @@ object AppModule {
             viewModel {
                 AlbumViewModel(
                     albumRepository = get<AlbumUseCases>(),
+                )
+            }
+
+            // 歌手页面 ViewModel
+            viewModel {
+                ArtistViewModel(
+                    songUseCases = get<SongUseCases>(),
                 )
             }
 

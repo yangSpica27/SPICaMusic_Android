@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui.scan
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
-import me.spica27.spicamusic.ui.widget.primaryClickable
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
@@ -96,7 +96,7 @@ class ScannerScene : StackScene() {
                                 .fillMaxWidth()
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primary)
-                                .primaryClickable {
+                                .clickable {
                                     mediaLibrarySourceViewModel.startMediaStoreScan()
                                 }.padding(
                                     vertical = 8.dp,

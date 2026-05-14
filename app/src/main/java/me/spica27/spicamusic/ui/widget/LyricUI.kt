@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -179,7 +180,7 @@ fun LyricsUI(
         val outgoingIndex = lastSettledPlayingIndex
         lastSettledPlayingIndex = playingIndex
 
-        if (outgoingIndex !in lyricLines.indices || outgoingIndex == playingIndex) {
+        if (outgoingIndex !in lyricLines.indices) {
             leavingPlayingIndex = Int.MAX_VALUE
             return@LaunchedEffect
         }
@@ -297,6 +298,11 @@ fun LyricsUI(
                     }
                 }
             }
+            item {
+                Spacer(
+                    modifier = Modifier.height(200.dp),
+                )
+            }
         }
 
         Box(
@@ -402,14 +408,15 @@ private fun LyricLine(
                     this.alpha = alpha
                     scaleX = scale
                     scaleY = scale
-                }.padding(
+                }.blur(blurRadius)
+                .padding(
                     horizontal = LyricUIConstants.LYRIC_HORIZONTAL_PADDING.dp,
                     vertical = LyricUIConstants.LYRIC_VERTICAL_PADDING.dp,
                 ),
     ) {
         Text(
             text = lyric.content.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Medium,
             color = if (isActive) activeTextColor else inactiveTextColor,
             textAlign = TextAlign.Start,
@@ -420,7 +427,7 @@ private fun LyricLine(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = lyric.translation!!,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleMedium,
                 color =
                     if (isActive) {
                         activeTextColor.copy(alpha = LyricUIConstants.ACTIVE_TRANSLATION_ALPHA)
@@ -599,6 +606,7 @@ private fun WordsLyricLine(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .blur(blurRadius)
                 .clip(Shapes.ExtraLarge2CornerBasedShape)
                 .graphicsLayer {
                     scaleX = scale
@@ -613,12 +621,12 @@ private fun WordsLyricLine(
             wordRanges = wordRanges,
             progressProvider = { range -> wordProgress(range.word, renderState.displayTime) },
             baseStyle =
-                MaterialTheme.typography.titleMedium.copy(
+                MaterialTheme.typography.headlineSmall.copy(
                     color = baseTextColor,
                     fontWeight = FontWeight.ExtraBold,
                 ),
             activeStyle =
-                MaterialTheme.typography.titleMedium.copy(
+                MaterialTheme.typography.headlineSmall.copy(
                     color = activeTextColor,
                     fontWeight = FontWeight.ExtraBold,
                 ),

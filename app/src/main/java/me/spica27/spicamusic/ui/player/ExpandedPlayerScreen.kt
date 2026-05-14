@@ -674,7 +674,7 @@ private fun PlayerPage(
             onProgressChangeFinished = {
                 onValueChangeFinished.invoke()
             },
-            waveformBrush = SolidColor(MaterialTheme.colorScheme.onSecondaryContainer),
+            waveformBrush = SolidColor(MaterialTheme.colorScheme.inverseOnSurface),
             progressBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
             modifier =
                 Modifier

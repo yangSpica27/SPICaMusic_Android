@@ -10,6 +10,7 @@ import androidx.media3.common.Timeline
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaBrowser
+import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
@@ -50,7 +51,7 @@ import kotlin.coroutines.CoroutineContext
 class SpicaPlayer(
     private val context: Context,
     private val playbackServiceClass: Class<*>,
-) : IMusicPlayer, CoroutineScope, Player.Listener {
+) : IMusicPlayer, CoroutineScope, Player.Listener, MediaBrowser.Listener {
 
     private val TAG = "SpicaPlayer"
 
@@ -87,7 +88,10 @@ class SpicaPlayer(
     private var _browserFuture: ListenableFuture<MediaBrowser>? = null
 
     private fun getOrCreateBrowserFuture(): ListenableFuture<MediaBrowser> =
-        _browserFuture ?: MediaBrowser.Builder(context, sessionToken).buildAsync().also { _browserFuture = it }
+        _browserFuture ?: MediaBrowser.Builder(context, sessionToken)
+            .setListener(this)
+            .buildAsync()
+            .also { _browserFuture = it }
 
     override val playMode: StateFlow<PlayMode> = playerKVUtils.getPlayModeFlow()
         .stateIn(this, kotlinx.coroutines.flow.SharingStarted.Eagerly, PlayMode.LOOP)
@@ -187,7 +191,13 @@ class SpicaPlayer(
                 val browser = ensureInitialized() ?: return@launch
                 Timber.d("doAction: ${action.javaClass.simpleName}")
                 when (action) {
-                    PlayerAction.Play -> browser.play()
+                    PlayerAction.Play -> {
+                        // 若 ExoPlayer 在服务重启后处于 IDLE 状态，需要先 prepare()
+                        if (browser.playbackState == Player.STATE_IDLE) {
+                            browser.prepare()
+                        }
+                        browser.play()
+                    }
                     PlayerAction.Pause -> browser.pause()
 
                     PlayerAction.SkipToNext -> {
@@ -206,9 +216,14 @@ class SpicaPlayer(
                     }
 
                     PlayerAction.PlayOrPause -> {
-                        if (browser.isPlaying) {
+                        // 使用 _isPlaying.value（来自 onIsPlayingChanged 回调的权威状态），
+                        // 避免 browser.isPlaying 在服务重连后返回过期值导致误调 pause()
+                        if (_isPlaying.value) {
                             browser.pause()
                         } else {
+                            if (browser.playbackState == Player.STATE_IDLE) {
+                                browser.prepare()
+                            }
                             browser.play()
                         }
                     }
@@ -321,6 +336,21 @@ class SpicaPlayer(
         _fftProcessor.release()
         // 5. 取消协程
         coroutineContext.cancel()
+    }
+
+    // ==================== MediaController.Listener ====================
+
+    /**
+     * PlaybackService 被系统杀死后重连时触发。
+     * 重置 browserInstance，使下一次 doAction 能重新走 init() 恢复播放列表。
+     */
+    override fun onDisconnected(controller: MediaController) {
+        Timber.tag(TAG).w("MediaBrowser disconnected, resetting for re-init on next action")
+        browserInstance?.removeListener(this)
+        browserInstance = null
+        _browserFuture = null
+        _initializing.set(false)
+        _isPlaying.value = false
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {

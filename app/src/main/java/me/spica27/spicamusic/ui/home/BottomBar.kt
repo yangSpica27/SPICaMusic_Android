@@ -17,6 +17,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
@@ -41,7 +42,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -86,8 +86,6 @@ import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
 import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
-import me.spica27.spicamusic.ui.widget.highLightClickable
-import me.spica27.spicamusic.ui.widget.primaryClickable
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.roundToInt
 
@@ -107,6 +105,8 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
     val navigationPath = LocalNavigationPath.current
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
+
+    val currentHomePage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
 
     // 记录迷你播放条实际高度（含导航栏内边距），首帧用估算值避免闪烁
     var miniBarHeightPx by remember { mutableStateOf(with(density) { 120.dp.roundToPx() }) }
@@ -279,10 +279,10 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                             .sharedElement(
                                                 sharedContentState = rememberSharedContentState("plus_icon"),
                                                 animatedVisibilityScope = this@AnimatedContent,
-                                            ).size(48.dp)
+                                            ).size(56.dp)
                                             .clip(CircleShape)
                                             .background(MaterialTheme.colorScheme.tertiary)
-                                            .primaryClickable {
+                                            .clickable {
                                                 navigationPath.push(
                                                     PlaylistCreatorScene(),
                                                 )
@@ -323,7 +323,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     .background(MaterialTheme.colorScheme.secondaryContainer),
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Home,
+                                imageVector = currentHomePage.icon,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                             )
@@ -338,7 +338,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     .weight(1f)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                    .primaryClickable {
+                                    .clickable {
                                         isSingleLineMode = false
                                     }.padding(
                                         8.dp,
@@ -436,24 +436,25 @@ private fun HomePageSwitcher(modifier: Modifier = Modifier) {
     Row(
         modifier =
             modifier
-                .height(48.dp)
+                .height(56.dp)
                 .padding(end = 12.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .drawWithCache {
+                    val paddingValues = 6.dp.toPx()
                     onDrawBehind {
                         if (indicatorWidth > 0.dp && indicatorHeight > 0.dp) {
                             drawRoundRect(
                                 color = indicatorColor,
                                 topLeft =
                                     Offset(
-                                        indicatorOffset.toPx(),
-                                        0f,
+                                        indicatorOffset.toPx() + paddingValues,
+                                        paddingValues,
                                     ),
                                 size =
                                     Size(
-                                        indicatorWidth.toPx(),
-                                        indicatorHeight.toPx(),
+                                        indicatorWidth.toPx() - 2 * paddingValues,
+                                        indicatorHeight.toPx() - 2 * paddingValues,
                                     ),
                                 cornerRadius =
                                     CornerRadius(
@@ -477,7 +478,7 @@ private fun HomePageSwitcher(modifier: Modifier = Modifier) {
                         }.weight(1f),
                 icon = {
                     Icon(
-                        Icons.Default.Home,
+                        page.icon,
                         contentDescription = "Discover",
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
@@ -508,11 +509,11 @@ private fun HomePageSwitchItem(
     Row(
         modifier =
             modifier
-                .highLightClickable {
+                .clickable {
                     if (!isSelected) {
                         homeViewModel.navigateToPage(bandHomePage)
                     }
-                }.height(48.dp),
+                }.height(56.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {

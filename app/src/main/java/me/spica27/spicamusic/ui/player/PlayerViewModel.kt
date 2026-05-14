@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui.player
 
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -17,9 +18,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
@@ -27,6 +30,7 @@ import me.spica27.spicamusic.player.api.FFTListener
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
+import me.spica27.spicamusic.utils.extractDominantColorFromUri
 import timber.log.Timber
 
 /**
@@ -112,6 +116,20 @@ class PlayerViewModel(
                 viewModelScope,
                 started = SharingStarted.Eagerly,
                 initialValue = 0L,
+            )
+
+    val playerThemeColor: StateFlow<Color> =
+        currentMediaItem
+            .map {
+                extractDominantColorFromUri(
+                    context = App.getInstance(),
+                    uri = it?.mediaMetadata?.artworkUri,
+                )
+            }.flowOn(Dispatchers.IO)
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                Color(0xFF2196F3),
             )
 
     // ==================== 基础播放控制 ====================

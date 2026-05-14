@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui.player
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.widget.AudioCover
-import me.spica27.spicamusic.ui.widget.highLightClickable
 
 /**
  * 底部迷你播放条
@@ -57,7 +57,7 @@ fun LargeBottomPlayerBar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .highLightClickable { onExpand() },
+                .clickable { onExpand() },
     ) {
         Column {
             // 进度条

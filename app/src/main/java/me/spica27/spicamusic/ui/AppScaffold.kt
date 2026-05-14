@@ -2,9 +2,11 @@ package me.spica27.spicamusic.ui
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import me.spica27.navkit.stack.NavigationStack
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.ui.home.HomeScene
@@ -26,12 +28,14 @@ fun AppScaffold() {
     val isDarkMode =
         preferencesManager
             .getBoolean(PreferencesManager.Keys.DARK_MODE)
-            .collectAsStateWithLifecycle(false)
+            .collectAsState(false)
 
     val playerViewModel: PlayerViewModel = koinActivityViewModel()
-
+    val color = playerViewModel.playerThemeColor.collectAsState().value
+    val theColor = animateColorAsState(color, tween(550)).value
     SPICaMusicTheme(
         darkTheme = isDarkMode.value,
+        themeColor = theColor,
     ) {
         CompositionLocalProvider(LocalPlayerViewModel provides playerViewModel) {
             NavigationStack(

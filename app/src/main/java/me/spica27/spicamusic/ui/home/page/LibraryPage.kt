@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -55,8 +56,6 @@ import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
-import me.spica27.spicamusic.ui.widget.highLightClickable
-import me.spica27.spicamusic.ui.widget.primaryClickable
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -190,7 +189,7 @@ private fun TopTabItem(
                 .background(
                     MaterialTheme.colorScheme.surfaceContainer,
                     CircleShape,
-                ).highLightClickable {
+                ).clickable {
                     onSelectTab(bandTab)
                 },
         verticalAlignment = Alignment.CenterVertically,
@@ -273,7 +272,7 @@ private fun PlaylistItem(
                     .shadow(4.dp, MaterialTheme.shapes.medium)
                     .clip(MaterialTheme.shapes.medium)
                     .background(color)
-                    .primaryClickable {
+                    .clickable {
                     }.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {

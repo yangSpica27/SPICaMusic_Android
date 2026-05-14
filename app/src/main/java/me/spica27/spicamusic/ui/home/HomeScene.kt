@@ -4,6 +4,10 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AllInbox
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -11,6 +15,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
@@ -70,10 +75,11 @@ class HomeScene : StackScene() {
 @Immutable
 enum class HomePage(
     val title: String,
+    val icon: ImageVector,
 ) {
-    Finder("发现"),
-    Music("音乐"),
-    Library("资料库"),
+    Finder("发现", Icons.Default.AllInbox),
+    Music("音乐", Icons.Default.MusicNote),
+    Library("资料库", Icons.Default.LibraryMusic),
 }
 
 val LocalBottomBarScrollConnection =

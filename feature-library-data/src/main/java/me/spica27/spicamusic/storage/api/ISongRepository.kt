@@ -2,6 +2,7 @@ package me.spica27.spicamusic.storage.api
 
 import androidx.paging.PagingData
 import kotlinx.coroutines.flow.Flow
+import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.SongFilter
 import me.spica27.spicamusic.common.entity.SongGroup
@@ -246,4 +247,11 @@ interface ISongRepository {
      * 获取所有喜欢的歌曲 mediaStoreId（用于播放）
      */
     suspend fun getLikeMediaStoreIds(keyword: String? = null): List<Long>
+
+    // ===== 艺术家分页 API =====
+
+    /**
+     * 分页获取歌手列表（按艺术家名分组，支持关键词过滤）
+     */
+    fun getArtistsPagingFlow(keyword: String? = null): Flow<PagingData<Artist>>
 }
