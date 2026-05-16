@@ -92,6 +92,19 @@ interface PlaylistDao {
     @Query("SELECT * FROM Playlist ORDER BY createTimestamp DESC")
     fun getAllPaging(): PagingSource<Int, PlaylistEntity>
 
+    /**
+     * 获取歌单前 4 个不同专辑 ID，用于封面马赛克渲染。
+     * 按歌曲加入时间倒序取最新的 4 个不同 albumId。
+     */
+    @Query(
+        """SELECT DISTINCT s.albumId FROM Song AS s
+           JOIN PlaylistSongCrossRef AS psc ON s.songId = psc.songId
+           WHERE psc.playlistId = :playlistId
+           ORDER BY psc.insertTime DESC
+           LIMIT 4"""
+    )
+    fun getCoverAlbumIds(playlistId: Long): Flow<List<Long>>
+
     /** 在指定歌单内按关键字（曲名 / 艺术家）过滤歌曲，按加入时间倒序 */
     @Query(
         """SELECT s.* FROM Song AS s

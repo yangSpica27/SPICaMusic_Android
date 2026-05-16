@@ -46,8 +46,8 @@ class SettingsViewModel(
         settingsUseCases
             .getString(
                 SettingsUseCases.Keys.DYNAMIC_SPECTRUM_BACKGROUND,
-                DynamicSpectrumBackground.TopGlow.value,
-            ).stateIn(viewModelScope, SharingStarted.Eagerly, DynamicSpectrumBackground.TopGlow.value)
+                DynamicSpectrumBackground.EffectShader.value,
+            ).stateIn(viewModelScope, SharingStarted.Eagerly, DynamicSpectrumBackground.EffectShader.value)
 
     fun setDynamicSpectrumBackground(value: String) {
         viewModelScope.launch {

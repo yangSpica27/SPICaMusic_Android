@@ -16,8 +16,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineScope
@@ -249,7 +251,7 @@ private fun TopGlowBackground(
     }
 
     AndroidView(
-        modifier = modifier,
+        modifier = modifier.blur(45.dp),
         factory = { ctx ->
             TextureView(ctx).also { tv ->
                 tv.isOpaque = false
@@ -271,6 +273,7 @@ private fun TopGlowBackground(
                                 val w = canvas.width.toFloat()
                                 val h = canvas.height.toFloat()
                                 val bandWidth = w / data.size
+                                val blurRadius = (bandWidth * 1.5f).coerceAtLeast(4f)
                                 holder.paint.shader =
                                     LinearGradient(
                                         0f,

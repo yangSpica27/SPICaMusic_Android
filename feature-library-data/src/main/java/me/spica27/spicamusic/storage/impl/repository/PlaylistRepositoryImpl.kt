@@ -105,4 +105,7 @@ class PlaylistRepositoryImpl(
             playlistDao.setNeedUpdate(playlistId)
         }
     }
+
+    override fun getPlaylistCoverAlbumIds(playlistId: Long): Flow<List<Long>> =
+        playlistDao.getCoverAlbumIds(playlistId)
 }

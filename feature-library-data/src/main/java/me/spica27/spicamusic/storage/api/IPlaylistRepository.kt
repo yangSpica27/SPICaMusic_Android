@@ -86,4 +86,10 @@ interface IPlaylistRepository {
      * 批量添加歌曲到歌单
      */
     suspend fun addSongsToPlaylist(playlistId: Long, songIds: List<Long>)
+
+    /**
+     * 获取歌单封面所需的前 4 个不同专辑 ID（Flow），用于马赛克封面渲染。
+     * 结果列表长度 0–4，调用方根据长度选择渲染策略。
+     */
+    fun getPlaylistCoverAlbumIds(playlistId: Long): Flow<List<Long>>
 }
