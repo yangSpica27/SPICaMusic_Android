@@ -517,32 +517,42 @@ private fun PlayerPage(
             // 根据旋转角度显示正面或背面
             if (rotateY <= 90f) {
                 // 正面：封面
-                AudioCover(
-                    uri = currentMediaItem?.mediaMetadata?.artworkUri,
-                    placeHolder = {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .clip(Shapes.LargeCornerBasedShape)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.MusicNote,
-                                contentDescription = stringResource(R.string.cover_placeholder),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+
+                AnimatedContent(
+                    currentMediaItem,
+                    modifier = Modifier.fillMaxSize(),
+                    transitionSpec = {
+                        materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
+                    },
+                ) { currentMediaItem ->
+                    AudioCover(
+                        uri = currentMediaItem?.mediaMetadata?.artworkUri,
+                        placeHolder = {
+                            Box(
                                 modifier =
                                     Modifier
-                                        .size(64.dp)
-                                        .align(Alignment.Center),
-                            )
-                        }
-                    },
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .clip(Shapes.LargeCornerBasedShape),
-                )
+                                        .fillMaxSize()
+                                        .clip(Shapes.LargeCornerBasedShape)
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.MusicNote,
+                                    contentDescription = stringResource(R.string.cover_placeholder),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier =
+                                        Modifier
+                                            .size(64.dp)
+                                            .align(Alignment.Center),
+                                )
+                            }
+                        },
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .clip(Shapes.LargeCornerBasedShape)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    )
+                }
             } else {
                 // 背面：3D 音频可视化器
                 Box(

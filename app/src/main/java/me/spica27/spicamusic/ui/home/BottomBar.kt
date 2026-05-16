@@ -84,6 +84,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.player.DEFAULT_PAGE
 import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
 import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
+import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -102,12 +103,13 @@ private enum class PlayerSheetValue { Collapsed, Expanded }
 @Composable
 fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalBottomBarScrollConnection.current) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
+    val playerViewModel = LocalPlayerViewModel.current
     val navigationPath = LocalNavigationPath.current
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
 
     val currentHomePage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
-
+    val nowPlayingSong = playerViewModel.currentMediaItem.collectAsStateWithLifecycle().value
     // 记录迷你播放条实际高度（含导航栏内边距），首帧用估算值避免闪烁
     var miniBarHeightPx by remember { mutableStateOf(with(density) { 120.dp.roundToPx() }) }
 
@@ -355,7 +357,12 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                         .clip(CircleShape),
                             )
                             Text(
-                                text = "正在播放的歌曲 - 歌手",
+                                text =
+                                    if (nowPlayingSong != null) {
+                                        nowPlayingSong.mediaMetadata.title.toString()
+                                    } else {
+                                        "没有正在播放的歌曲"
+                                    },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,

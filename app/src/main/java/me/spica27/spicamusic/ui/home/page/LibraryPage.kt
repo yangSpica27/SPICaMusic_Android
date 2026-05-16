@@ -2,20 +2,20 @@ package me.spica27.spicamusic.ui.home.page
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -23,12 +23,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -43,17 +38,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.innerShadow
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
@@ -215,14 +203,6 @@ private fun TopTabItem(
 
 @Composable
 private fun PlaylistPage(modifier: Modifier = Modifier) {
-    val colors =
-        remember {
-            listOf(
-                Color(0xff08979c),
-                Color(0xff389e0d),
-                Color(0xff531dab),
-            )
-        }
     LazyVerticalGrid(
         modifier =
             modifier
@@ -244,15 +224,15 @@ private fun PlaylistPage(modifier: Modifier = Modifier) {
         items(
             10,
             key = { it },
-            span = { GridItemSpan(2) },
+            span = { GridItemSpan(1) },
         ) { index ->
             PlaylistItem(
                 modifier =
-                    Modifier.fillMaxWidth(),
+                    Modifier.fillMaxWidth().clickable {
+                    },
                 Playlist(
                     playlistName = "Playlist ${index + 1}",
                 ),
-                colors[index % colors.size],
             )
         }
     }
@@ -262,99 +242,32 @@ private fun PlaylistPage(modifier: Modifier = Modifier) {
 private fun PlaylistItem(
     modifier: Modifier = Modifier,
     playlist: Playlist,
-    color: Color,
 ) {
-    Box {
-        Column(
-            modifier =
-                modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp, MaterialTheme.shapes.medium)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(color)
-                    .clickable {
-                    }.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Row {
-                LandscapistImage(
-                    imageModel = {
-                        R.drawable.default_cover
-                    },
-                    modifier =
-                        Modifier
-                            .clip(MaterialTheme.shapes.medium)
-                            .size(66.dp),
-                    success = { state, painter ->
-                        Image(
-                            painter = painter,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
-                    },
-                )
-                Column(
-                    modifier =
-                        Modifier
-                            .padding(horizontal = 16.dp)
-                            .weight(1f),
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Text(
-                        text = playlist.playlistName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.W600,
-                        color = Color.White,
-                    )
-                    Text(
-                        text = "10 songs",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(.6f),
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = null,
-                    tint = Color.White,
-                )
-            }
-            Text(
-                text = "50首歌曲 · 40分钟",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(.6f),
-            )
-            Row {
-                Text(
-                    text = "创建于 2024-06-01",
-                    color = Color.White.copy(.6f),
-                    fontWeight = FontWeight.W600,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-        }
-        IconButton(
-            onClick = { },
+    Column(
+        modifier = modifier,
+    ) {
+        LandscapistImage(
+            imageModel = {},
             modifier =
                 Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(MaterialTheme.shapes.medium)
                     .background(
-                        Color.Black,
-                        CircleShape,
-                    ).innerShadow(
-                        CircleShape,
-                        Shadow(
-                            color = Color.White.copy(.5f),
-                            radius = 15.dp,
-                        ),
+                        MaterialTheme.colorScheme.surfaceContainer,
                     ),
-        ) {
-            Icon(
-                imageVector = Icons.Default.PlayArrow,
-                contentDescription = null,
-                tint = Color.White,
-            )
-        }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = playlist.playlistName,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+        )
+        Text(
+            text = "10 songs",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
 }

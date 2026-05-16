@@ -53,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -63,6 +64,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
@@ -238,9 +240,9 @@ private fun TopTabItem(
     Row(
         modifier =
             modifier
+                .clip(CircleShape)
                 .background(
                     MaterialTheme.colorScheme.surfaceContainer,
-                    CircleShape,
                 ).clickable {
                     onSelectTab(bandTab)
                 },
@@ -251,7 +253,13 @@ private fun TopTabItem(
             modifier =
                 Modifier
                     .background(indicatorColor, CircleShape)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .innerShadow(
+                        CircleShape,
+                        Shadow(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            radius = 3.dp,
+                        ),
+                    ).padding(horizontal = 16.dp, vertical = 8.dp),
             color = textColor,
         )
         AnimatedVisibility(isSelected) {
@@ -281,8 +289,11 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
             if (lazyListState.firstVisibleItemIndex > 0) {
                 1f
             } else {
-                // quadratic ease-in: header lingers at top then collapses quickly
-                val x = (lazyListState.firstVisibleItemScrollOffset / collapseDistancePx).coerceIn(0f, 1f)
+                val x =
+                    (lazyListState.firstVisibleItemScrollOffset / collapseDistancePx).coerceIn(
+                        0f,
+                        1f,
+                    )
                 1f - (1f - x) * (1f - x)
             }
         }
@@ -290,27 +301,29 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
 
     val animatedProgress by animateFloatAsState(
         targetValue = rawProgress,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        animationSpec =
+            spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            ),
         label = "music_header_progress",
     )
 
     Column(modifier) {
-        // Collapsible header: Modifier.layout reports the collapsed height to the Column so
-        // the LazyColumn below naturally moves up, while graphicsLayer handles visual transforms
-        // in the Draw phase without triggering extra recomposition.
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .layout { measurable, constraints ->
                         val placeable = measurable.measure(constraints)
-                        val reportedH = (placeable.height * (1f - animatedProgress)).toInt().coerceAtLeast(0)
+                        val reportedH =
+                            (placeable.height * (1f - animatedProgress)).toInt().coerceAtLeast(0)
                         layout(placeable.width, reportedH) {
                             placeable.place(0, 0)
                         }
                     }.clipToBounds()
                     .graphicsLayer {
-                        alpha = 1f - animatedProgress * 0.92f
+                        alpha = 1f - animatedProgress
                         translationY = -size.height * animatedProgress * 0.3f
                         scaleX = 1f - animatedProgress * 0.03f
                         scaleY = 1f - animatedProgress * 0.05f
@@ -530,7 +543,8 @@ private fun AlbumGridItem(
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(MaterialTheme.shapes.medium),
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
             success = { _, painter ->
                 Image(
                     painter = painter,
