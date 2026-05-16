@@ -179,8 +179,7 @@ fun FinderPage() {
                                     scaleX = 1.0f * progress
                                     scaleY = 1.0f * progress
                                     transformOrigin = TransformOrigin(0.5f, 0.5f)
-                                }
-                                .fillMaxSize(),
+                                }.fillMaxSize(),
                         title = shortcut.title,
                         scene = shortcut.scene,
                         icon = shortcut.icon,
@@ -252,13 +251,11 @@ private fun ShortcutItem(
                 .padding(
                     end = ((index % 2) * 16).dp,
                     start = ((1 - index % 2) * 16).dp,
-                )
-                .height(80.dp)
+                ).height(80.dp)
                 .clip(MaterialTheme.shapes.medium)
                 .background(
                     MaterialTheme.colorScheme.surfaceContainer,
-                )
-                .clickable {
+                ).clickable {
                     if (scene != null) {
                         path.push(scene)
                     }
@@ -291,8 +288,7 @@ private fun ShortcutItem(
                         .graphicsLayer {
                             translationX = 16.dp.toPx()
                             translationY = 10.dp.toPx()
-                        }
-                        .background(
+                        }.background(
                             Brush.radialGradient(
                                 colors =
                                     listOf(

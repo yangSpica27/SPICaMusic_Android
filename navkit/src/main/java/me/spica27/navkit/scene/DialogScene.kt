@@ -24,7 +24,6 @@ import me.spica27.navkit.scene.DialogScene.Companion.DIALOG_SCALE_MIN
 import me.spica27.navkit.scene.DialogScene.Companion.SCRIM_MAX_ALPHA
 
 /**
- * 浮层式对话框场景的抽象基类，对应 testApp2 的 DialogScene 设计。
  *
  * ## 动画模型
  * - [enterProgress]：进场进度，0f = 完全不可见，1f = 完全呈现

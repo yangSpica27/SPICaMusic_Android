@@ -83,6 +83,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.skydoves.landscapist.image.LandscapistImage
+import me.spica27.navkit.geometry.GeometryTransition
+import me.spica27.navkit.geometry.geometrySource
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
@@ -518,7 +520,9 @@ fun AlbumPage(modifier: Modifier = Modifier) {
             val album = albums[index] ?: return@items
             AlbumGridItem(
                 album = album,
-                onClick = { path.push(AlbumDetailScene(album)) },
+                onClick = { transition ->
+                    path.push(AlbumDetailScene(album, transition))
+                },
             )
         }
     }
@@ -527,14 +531,16 @@ fun AlbumPage(modifier: Modifier = Modifier) {
 @Composable
 private fun AlbumGridItem(
     album: Album,
-    onClick: () -> Unit,
+    onClick: (GeometryTransition) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 每个专辑维护独立的 GeometryTransition，geometrySource 持续记录封面在屏幕中的位置
+    val transition = remember(album.id) { GeometryTransition("album_cover_${album.id}") }
     Column(
         modifier =
             modifier
                 .clip(MaterialTheme.shapes.medium)
-                .clickable(onClick = onClick)
+                .clickable { onClick(transition) }
                 .padding(bottom = 12.dp),
     ) {
         LandscapistImage(
@@ -543,15 +549,21 @@ private fun AlbumGridItem(
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    // 持续记录此封面的屏幕坐标，作为飞行动画的起始位置
+                    .geometrySource(transition)
+                    // 飞行动画进行中（progress > 0）时隐藏源封面，防止与 overlay 重叠
+                    .graphicsLayer { alpha = if (transition.progress.value > 0f) 0f else 1f },
             success = { _, painter ->
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                ShowOnIdleContent(true) {
+                    Image(
+                        painter = painter,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             },
             failure = {
                 Box(

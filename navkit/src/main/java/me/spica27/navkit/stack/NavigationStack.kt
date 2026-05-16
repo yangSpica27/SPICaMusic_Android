@@ -3,7 +3,10 @@ package me.spica27.navkit.stack
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -13,15 +16,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import me.spica27.navkit.geometry.GeometryTransition
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.path.NavigationPath
@@ -105,6 +112,16 @@ fun NavigationStack(
                                 entryViewModel = entryViewModel
                             )
                         }
+                    }
+                }
+            }
+
+            // 几何过渡浮层（最顶层 z 序，渲染在所有场景之上）
+            // 遍历可见场景，为持有 geometryTransition 的场景渲染飞行封面浮层
+            visibleScenes.forEach { scene ->
+                scene.geometryTransition?.let { t ->
+                    key("overlay_${scene.id}") {
+                        GeometryOverlay(transition = t) { scene.FloatingContent() }
                     }
                 }
             }
@@ -209,6 +226,46 @@ private fun SceneContainer(
     ) {
         Box(modifier = sceneModifier) {
             scene.Content()
+        }
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// 几何过渡浮层
+// ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * 渲染飞行中的共享元素浮层。
+ *
+ * - 从 [transition] 读取当前进度，计算插值后的边界矩形
+ * - 用 [absoluteOffset] + [size] 将内容定位到正确的屏幕位置/尺寸
+ * - 进度达到 1f（动画完成）后自动隐藏
+ */
+@Composable
+private fun GeometryOverlay(
+    transition: GeometryTransition,
+    content: @Composable () -> Unit,
+) {
+    // 读取动画进度（Compose 状态，每帧触发本 composable 重组）
+    val progress = transition.progress.value
+    if (progress >= 1f) return
+
+    val bounds = transition.getBounds()
+    val density = LocalDensity.current
+    with(density) {
+        Box(
+            modifier = Modifier
+                .absoluteOffset(
+                    x = bounds.left.toDp(),
+                    y = bounds.top.toDp(),
+                )
+                .size(
+                    width = bounds.width.coerceAtLeast(1f).toDp(),
+                    height = bounds.height.coerceAtLeast(1f).toDp(),
+                )
+                .clip(RoundedCornerShape(16.dp)),
+        ) {
+            content()
         }
     }
 }

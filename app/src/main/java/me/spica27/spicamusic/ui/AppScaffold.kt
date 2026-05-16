@@ -1,9 +1,5 @@
 package me.spica27.spicamusic.ui
 
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -20,7 +16,6 @@ import org.koin.compose.viewmodel.koinActivityViewModel
  * 应用主框架
  * PlayerViewModel 在此处创建，作为 Activity 级别的单例共享
  */
-@RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun AppScaffold() {
     val preferencesManager = koinInject<PreferencesManager>()
@@ -32,10 +27,9 @@ fun AppScaffold() {
 
     val playerViewModel: PlayerViewModel = koinActivityViewModel()
     val color = playerViewModel.playerThemeColor.collectAsState().value
-    val theColor = animateColorAsState(color, tween(550)).value
     SPICaMusicTheme(
         darkTheme = isDarkMode.value,
-        themeColor = theColor,
+        themeColor = color,
     ) {
         CompositionLocalProvider(LocalPlayerViewModel provides playerViewModel) {
             NavigationStack(

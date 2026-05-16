@@ -84,6 +84,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
+import me.spica27.spicamusic.ui.player.formatTime
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import org.koin.compose.viewmodel.koinViewModel
 import java.util.concurrent.TimeUnit
@@ -475,7 +476,7 @@ private fun PlaylistItemRow(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
                 ).height(80.dp)
-                .padding(12.dp),
+                .padding(vertical = 8.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(
@@ -483,18 +484,16 @@ private fun PlaylistItemRow(
                 Modifier
                     .fillMaxHeight()
                     .fillMaxWidth()
-                    .padding(
-                        horizontal = 4.dp,
-                    ),
+                    .padding(end = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "$index",
+                "${index + 1}",
                 Modifier.width(44.dp),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Normal,
             )
             LandscapistImage(
                 imageModel = {

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import me.spica27.navkit.geometry.GeometryTransition
 
 /**
  * 所有场景的抽象基类。
@@ -43,6 +44,21 @@ abstract class Scene {
      */
     @Composable
     abstract fun Content()
+
+    /**
+     * 场景持有的几何过渡（共享元素动画驱动器）。非 null 时，
+     * [me.spica27.navkit.stack.NavigationStack] 在场景可见期间自动调用 [FloatingContent]
+     * 渲染浮层（飞行封面动画）。子类重写此属性以提供自定义过渡。
+     */
+    open val geometryTransition: GeometryTransition? get() = null
+
+    /**
+     * 几何过渡期间渲染的浮层内容（飞行封面动画中的图像）。
+     * 仅当 [geometryTransition] 非 null 时由 NavigationStack 调用。
+     * 子类重写此方法以提供自定义浮层内容。
+     */
+    @Composable
+    open fun FloatingContent() {}
 
     // ──────────────────────────────────────────────────────────────────────
     // 生命周期钩子（由 NavigationPath 的协程调用，子类可重写）
