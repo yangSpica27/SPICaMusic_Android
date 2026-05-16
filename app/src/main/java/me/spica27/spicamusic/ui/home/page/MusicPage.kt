@@ -2,11 +2,10 @@ package me.spica27.spicamusic.ui.home.page
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandIn
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -47,13 +46,13 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -66,13 +65,12 @@ import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.graphics.shapes.CornerRounding
@@ -272,38 +270,81 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val allSong = homeViewModel.allSongs.collectAsStateWithLifecycle().value
     val density = LocalDensity.current
-    var headerHeight by remember {
-        mutableIntStateOf(0)
-    }
     val lazyListState = rememberLazyListState()
 
-    val showHeader by remember {
+    val path = LocalNavigationPath.current
+    val playerViewMode = LocalPlayerViewModel.current
+
+    val collapseDistancePx = with(density) { 72.dp.toPx() }
+    val rawProgress by remember {
         derivedStateOf {
-            lazyListState.firstVisibleItemIndex == 0
+            if (lazyListState.firstVisibleItemIndex > 0) {
+                1f
+            } else {
+                // quadratic ease-in: header lingers at top then collapses quickly
+                val x = (lazyListState.firstVisibleItemScrollOffset / collapseDistancePx).coerceIn(0f, 1f)
+                1f - (1f - x) * (1f - x)
+            }
         }
     }
 
-    val path = LocalNavigationPath.current
+    val animatedProgress by animateFloatAsState(
+        targetValue = rawProgress,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "music_header_progress",
+    )
 
-    val playerViewMode = LocalPlayerViewModel.current
+    Column(modifier) {
+        // Collapsible header: Modifier.layout reports the collapsed height to the Column so
+        // the LazyColumn below naturally moves up, while graphicsLayer handles visual transforms
+        // in the Draw phase without triggering extra recomposition.
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val reportedH = (placeable.height * (1f - animatedProgress)).toInt().coerceAtLeast(0)
+                        layout(placeable.width, reportedH) {
+                            placeable.place(0, 0)
+                        }
+                    }.clipToBounds()
+                    .graphicsLayer {
+                        alpha = 1f - animatedProgress * 0.92f
+                        translationY = -size.height * animatedProgress * 0.3f
+                        scaleX = 1f - animatedProgress * 0.03f
+                        scaleY = 1f - animatedProgress * 0.05f
+                    }.background(
+                        Brush.verticalGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.01f),
+                            ),
+                        ),
+                    ).padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // 播放全部按钮
+            ElevatedButton(onClick = { }) {
+                Text(text = "播放全部")
+            }
 
-    Box(
-        modifier,
-    ) {
+            // 排序方式切换按钮
+            IconButton(onClick = {}) {
+                Image(Icons.Default.Sort, contentDescription = null)
+            }
+        }
+
         LazyColumn(
             state = lazyListState,
             modifier =
                 Modifier
                     .fillMaxSize()
                     .nestedScroll(LocalBottomBarScrollConnection.current),
-            contentPadding =
-                PaddingValues(
-                    top =
-                        with(density) {
-                            headerHeight.toDp()
-                        },
-                    bottom = 200.dp,
-                ),
+            contentPadding = PaddingValues(bottom = 200.dp),
         ) {
             items(allSong, key = { it.mediaStoreId }) { song ->
                 AnimateOnEnter(
@@ -333,56 +374,6 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
                                     )
                                 }.fillMaxWidth(),
                         song = song,
-                    )
-                }
-            }
-        }
-        // Header
-        AnimatedVisibility(
-            showHeader,
-            enter =
-                expandIn(
-                    initialSize = { IntSize(it.width, 0) },
-                ) + fadeIn(),
-            exit =
-                fadeOut() +
-                    shrinkOut {
-                        IntSize(it.width, 0)
-                    },
-        ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .onGloballyPositioned {
-                            headerHeight = it.size.height
-                        }.background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.surface,
-                                    MaterialTheme.colorScheme.surface,
-                                    MaterialTheme.colorScheme.surface,
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.01f),
-                                ),
-                            ),
-                        ).padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // 播放全部按钮
-                ElevatedButton(
-                    onClick = { },
-                ) {
-                    Text(text = "播放全部")
-                }
-
-                // 排序方式切换按钮
-                IconButton(
-                    onClick = {},
-                ) {
-                    Image(
-                        Icons.Default.Sort,
-                        contentDescription = null,
                     )
                 }
             }

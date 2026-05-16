@@ -56,8 +56,9 @@ interface IFFTProcessor {
      * @param audioData PCM 音频数据
      * @param sampleRate 采样率
      * @param channelCount 声道数
+     * @param audioDataSize 有效字节数，默认为 audioData.size；传入复用缓冲区时需指定实际大小
      */
-    fun process(audioData: ByteArray, sampleRate: Int, channelCount: Int)
+    fun process(audioData: ByteArray, sampleRate: Int, channelCount: Int, audioDataSize: Int = audioData.size)
 
     /**
      * 重置处理器状态

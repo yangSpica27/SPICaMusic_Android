@@ -71,6 +71,16 @@ class FFTAudioProcessor : IFFTProcessor {
     private var convertBuffer = FloatArray(FFT_SIZE)
     // 用于传递给 performFFT 的独立拷贝（防止 audioBuffer 被下次 process 覆盖）
     private val processBuffer = FloatArray(FFT_SIZE)
+    // 预分配 FFT 幅度缓冲区，避免 performFFT 每次分配（只在 FFT 线程中使用，无需同步）
+    private val magnitudesBuffer = FloatArray(FFT_SIZE / 2)
+    // 预分配频段映射结果缓冲区
+    private val bandValuesBuffer = FloatArray(IFFTProcessor.BAND_COUNT)
+    // 预分配 _bands 发射缓冲区（双缓冲避免外部持有引用时被覆盖）
+    private val bandResultBuffers = arrayOf(
+        FloatArray(IFFTProcessor.BAND_COUNT),
+        FloatArray(IFFTProcessor.BAND_COUNT),
+    )
+    private var activeBandResultIndex = 0
 
     // 处理标志 - 使用原子布尔值确保线程安全
     private val isProcessing = AtomicBoolean(false)
@@ -118,7 +128,7 @@ class FFTAudioProcessor : IFFTProcessor {
      * 处理音频数据
      * 如果正在处理FFT，丢弃当前音频数据，避免阻塞
      */
-    override fun process(audioData: ByteArray, sampleRate: Int, channelCount: Int) {
+    override fun process(audioData: ByteArray, sampleRate: Int, channelCount: Int, audioDataSize: Int) {
         // 如果正在处理FFT，丢弃当前音频数据，避免阻塞
         if (isProcessing.get()) {
             return
@@ -135,7 +145,7 @@ class FFTAudioProcessor : IFFTProcessor {
         }
 
         // 将字节数组转换为浮点数组 (16-bit PCM)，复用 convertBuffer 避免分配
-        val sampleCount = audioData.size / 2 / channelCount
+        val sampleCount = audioDataSize / 2 / channelCount
         if (convertBuffer.size < sampleCount) {
             convertBuffer = FloatArray(sampleCount)
         }
@@ -179,6 +189,7 @@ class FFTAudioProcessor : IFFTProcessor {
 
     /**
      * 执行 FFT 分析（在独立线程中执行）
+     * 所有中间缓冲区均为预分配字段，零堆分配热路径。
      * @param fftData 已填充的音频数据
      */
     private fun performFFT(fftData: FloatArray) {
@@ -190,25 +201,29 @@ class FFTAudioProcessor : IFFTProcessor {
         // 执行 FFT
         fftInstance.forwardTransform(fftData)
 
-        // 计算频谱幅度
-        val magnitudes = FloatArray(FFT_SIZE / 2)
+        // 计算频谱幅度（复用预分配的 magnitudesBuffer，零分配）
         for (i in 0 until FFT_SIZE / 2) {
             val real = fftData[2 * i]
             val imag = fftData[2 * i + 1]
-            magnitudes[i] = sqrt(real * real + imag * imag)
+            magnitudesBuffer[i] = sqrt(real * real + imag * imag)
         }
 
-        // 映射到 31 个频段
-        val bandValues = mapToBands(magnitudes, currentSampleRate)
+        // 映射到 31 个频段（结果写入 bandValuesBuffer，零分配）
+        mapToBands(magnitudesBuffer, currentSampleRate, bandValuesBuffer)
 
         // 平滑处理
         for (i in 0 until IFFTProcessor.BAND_COUNT) {
             smoothedBands[i] = smoothedBands[i] * SMOOTHING_FACTOR +
-                    bandValues[i] * (1 - SMOOTHING_FACTOR)
+                    bandValuesBuffer[i] * (1 - SMOOTHING_FACTOR)
         }
 
-        // 更新状态
-        val result = smoothedBands.copyOf()
+        // 双缓冲：切换到下一个结果缓冲区，避免外部持有引用时被覆盖
+        val nextIndex = activeBandResultIndex xor 1
+        val result = bandResultBuffers[nextIndex]
+        smoothedBands.copyInto(result)
+        activeBandResultIndex = nextIndex
+
+        // 更新状态（发出已复制的缓冲区引用，零额外分配）
         _bands.value = result
 
         // 通知监听器
@@ -231,10 +246,9 @@ class FFTAudioProcessor : IFFTProcessor {
     }
 
     /**
-     * 将 FFT 结果映射到 31 个频段
+     * 将 FFT 结果映射到 31 个频段，结果写入 result（复用，零分配）
      */
-    private fun mapToBands(magnitudes: FloatArray, sampleRate: Int): FloatArray {
-        val result = FloatArray(IFFTProcessor.BAND_COUNT)
+    private fun mapToBands(magnitudes: FloatArray, sampleRate: Int, result: FloatArray) {
         val frequencyResolution = sampleRate.toFloat() / FFT_SIZE
 
         for (bandIndex in 0 until IFFTProcessor.BAND_COUNT) {
@@ -279,7 +293,7 @@ class FFTAudioProcessor : IFFTProcessor {
             result[bandIndex] = max(0f, min(1f, normalized))
         }
 
-        return result
+        return
     }
 
     /**

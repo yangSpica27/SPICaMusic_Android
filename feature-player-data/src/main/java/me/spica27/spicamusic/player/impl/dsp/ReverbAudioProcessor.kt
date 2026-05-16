@@ -126,7 +126,11 @@ class ReverbAudioProcessor : AudioProcessor {
         inputEnded = true
     }
 
-    override fun getOutput(): ByteBuffer = outputBuffer
+    override fun getOutput(): ByteBuffer {
+        val out = outputBuffer
+        outputBuffer = AudioProcessor.EMPTY_BUFFER
+        return out
+    }
 
     override fun isEnded(): Boolean = inputEnded && outputBuffer === AudioProcessor.EMPTY_BUFFER
 
