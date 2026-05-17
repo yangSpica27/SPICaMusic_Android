@@ -64,6 +64,7 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
+import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.scan.ScannerScene
 import me.spica27.spicamusic.ui.settings.SettingsScene
 import me.spica27.spicamusic.ui.widget.AnimateOnEnter
@@ -84,6 +85,8 @@ fun FinderPage() {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
 
     val frequentSongs = homeViewModel.frequentSongs.collectAsStateWithLifecycle().value
+
+    val playViewModel = LocalPlayerViewModel.current
 
     val shortcuts =
         remember {
@@ -179,7 +182,8 @@ fun FinderPage() {
                                     scaleX = 1.0f * progress
                                     scaleY = 1.0f * progress
                                     transformOrigin = TransformOrigin(0.5f, 0.5f)
-                                }.fillMaxSize(),
+                                }
+                                .fillMaxSize(),
                         title = shortcut.title,
                         scene = shortcut.scene,
                         icon = shortcut.icon,
@@ -208,7 +212,13 @@ fun FinderPage() {
                         ),
                 ) {
                     items(frequentSongs) { song ->
-                        SongItem(song)
+                        SongItem(song, clickable = {
+                            playViewModel.updatePlaylistWithSongs(
+                                frequentSongs,
+                                startSong = song,
+                                autoStart = true
+                            )
+                        })
                     }
                 }
             }
@@ -251,11 +261,13 @@ private fun ShortcutItem(
                 .padding(
                     end = ((index % 2) * 16).dp,
                     start = ((1 - index % 2) * 16).dp,
-                ).height(80.dp)
+                )
+                .height(80.dp)
                 .clip(MaterialTheme.shapes.medium)
                 .background(
                     MaterialTheme.colorScheme.surfaceContainer,
-                ).clickable {
+                )
+                .clickable {
                     if (scene != null) {
                         path.push(scene)
                     }
@@ -288,7 +300,8 @@ private fun ShortcutItem(
                         .graphicsLayer {
                             translationX = 16.dp.toPx()
                             translationY = 10.dp.toPx()
-                        }.background(
+                        }
+                        .background(
                             Brush.radialGradient(
                                 colors =
                                     listOf(
@@ -315,12 +328,13 @@ private fun ShortcutItem(
 }
 
 @Composable
-private fun SongItem(song: Song) {
+private fun SongItem(song: Song, clickable: (Song) -> Unit) {
     Column(
         modifier =
             Modifier
                 .width(160.dp)
                 .clickable {
+                    clickable.invoke(song)
                 },
     ) {
         Card(

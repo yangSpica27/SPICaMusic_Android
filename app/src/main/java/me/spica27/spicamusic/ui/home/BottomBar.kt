@@ -193,9 +193,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                 },
                     ) {
                         // 全屏播放器（随进度淡入，progress > 0.01 时才合成以节省开销）
-                        // 注意：不要在此处添加 graphicsLayer {}，TextureView（FluidMusicBackground）
-                        // 直接由硬件合成器渲染，放入离屏层会导致顶部出现蓝色栅格等渲染乱码
-                        if (progress > 0.01f) {
+                        if (progress > 0.001f) {
                             ExpandedPlayerScreen(
                                 onCollapse = {
                                     coroutineScope.launch {
@@ -204,7 +202,11 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                 },
                                 progress = progress,
                                 initialPage = initialPage,
-                                modifier = Modifier.fillMaxSize(),
+                                modifier =
+                                    Modifier
+                                        .graphicsLayer {
+                                            alpha = progress.coerceIn(0f, 1f)
+                                        }.fillMaxSize(),
                             )
                         }
 
