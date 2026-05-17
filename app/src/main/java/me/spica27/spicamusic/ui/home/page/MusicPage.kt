@@ -245,8 +245,7 @@ private fun TopTabItem(
                 .clip(CircleShape)
                 .background(
                     MaterialTheme.colorScheme.surfaceContainer,
-                )
-                .clickable {
+                ).clickable {
                     onSelectTab(bandTab)
                 },
         verticalAlignment = Alignment.CenterVertically,
@@ -262,8 +261,7 @@ private fun TopTabItem(
                             color = MaterialTheme.colorScheme.onPrimary,
                             radius = 3.dp,
                         ),
-                    )
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    ).padding(horizontal = 16.dp, vertical = 8.dp),
             color = textColor,
         )
         AnimatedVisibility(isSelected) {
@@ -325,15 +323,13 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
                         layout(placeable.width, reportedH) {
                             placeable.place(0, 0)
                         }
-                    }
-                    .clipToBounds()
+                    }.clipToBounds()
                     .graphicsLayer {
                         alpha = 1f - animatedProgress
                         translationY = -size.height * animatedProgress * 0.3f
                         scaleX = 1f - animatedProgress * 0.03f
                         scaleY = 1f - animatedProgress * 0.05f
-                    }
-                    .background(
+                    }.background(
                         Brush.verticalGradient(
                             listOf(
                                 MaterialTheme.colorScheme.surface,
@@ -342,8 +338,7 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
                                 MaterialTheme.colorScheme.surface.copy(alpha = 0.01f),
                             ),
                         ),
-                    )
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    ).padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -386,16 +381,14 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
                                     scaleX = 0.75f + 0.25f * progress
                                     scaleY = 0.75f + 0.25f * progress
                                     transformOrigin = TransformOrigin(0.5f, 0f)
-                                }
-                                .animateItem()
+                                }.animateItem()
                                 .clickable {
                                     playerViewMode.updatePlaylist(
                                         allSong.map { it.mediaStoreId.toString() },
                                         song.mediaStoreId.toString(),
-                                        autoStart = true
+                                        autoStart = true,
                                     )
-                                }
-                                .fillMaxWidth(),
+                                }.fillMaxWidth(),
                         song = song,
                     )
                 }
@@ -450,8 +443,7 @@ private fun SongItem(
                                 .clip(clip)
                                 .background(
                                     MaterialTheme.colorScheme.surfaceContainerHigh,
-                                )
-                                .fillMaxSize(),
+                                ).fillMaxSize(),
                     )
                 }
             },
@@ -466,8 +458,7 @@ private fun SongItem(
                                 .clip(clip)
                                 .background(
                                     MaterialTheme.colorScheme.surfaceContainerHigh,
-                                )
-                                .fillMaxSize(),
+                                ).fillMaxSize(),
                     )
                 }
             },

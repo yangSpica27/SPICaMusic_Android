@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.Hexagon
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Scanner
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,6 +68,7 @@ import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.scan.ScannerScene
+import me.spica27.spicamusic.ui.search.SearchScene
 import me.spica27.spicamusic.ui.settings.SettingsScene
 import me.spica27.spicamusic.ui.widget.AnimateOnEnter
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
@@ -151,6 +154,37 @@ fun FinderPage() {
                     orientation = Orientation.Vertical,
                 ),
         ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .clip(MaterialTheme.shapes.large)
+                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                            .clickable {
+                                path.push(SearchScene())
+                            }.padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Text(
+                        text = "根据关键词搜索歌曲",
+                        style =
+                            MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Light,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
+                    )
+                }
+            }
+
             // ========= 快捷入口START =========
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(
@@ -182,8 +216,7 @@ fun FinderPage() {
                                     scaleX = 1.0f * progress
                                     scaleY = 1.0f * progress
                                     transformOrigin = TransformOrigin(0.5f, 0.5f)
-                                }
-                                .fillMaxSize(),
+                                }.fillMaxSize(),
                         title = shortcut.title,
                         scene = shortcut.scene,
                         icon = shortcut.icon,
@@ -216,7 +249,7 @@ fun FinderPage() {
                             playViewModel.updatePlaylistWithSongs(
                                 frequentSongs,
                                 startSong = song,
-                                autoStart = true
+                                autoStart = true,
                             )
                         })
                     }
@@ -261,13 +294,11 @@ private fun ShortcutItem(
                 .padding(
                     end = ((index % 2) * 16).dp,
                     start = ((1 - index % 2) * 16).dp,
-                )
-                .height(80.dp)
+                ).height(80.dp)
                 .clip(MaterialTheme.shapes.medium)
                 .background(
                     MaterialTheme.colorScheme.surfaceContainer,
-                )
-                .clickable {
+                ).clickable {
                     if (scene != null) {
                         path.push(scene)
                     }
@@ -300,8 +331,7 @@ private fun ShortcutItem(
                         .graphicsLayer {
                             translationX = 16.dp.toPx()
                             translationY = 10.dp.toPx()
-                        }
-                        .background(
+                        }.background(
                             Brush.radialGradient(
                                 colors =
                                     listOf(
@@ -328,7 +358,10 @@ private fun ShortcutItem(
 }
 
 @Composable
-private fun SongItem(song: Song, clickable: (Song) -> Unit) {
+private fun SongItem(
+    song: Song,
+    clickable: (Song) -> Unit,
+) {
     Column(
         modifier =
             Modifier
