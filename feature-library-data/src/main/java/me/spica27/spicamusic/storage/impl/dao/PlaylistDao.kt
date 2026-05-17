@@ -8,7 +8,10 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
-import me.spica27.spicamusic.storage.impl.entity.*
+import me.spica27.spicamusic.storage.impl.entity.PlaylistEntity
+import me.spica27.spicamusic.storage.impl.entity.PlaylistSongCrossRefEntity
+import me.spica27.spicamusic.storage.impl.entity.PlaylistWithSongsEntity
+import me.spica27.spicamusic.storage.impl.entity.SongEntity
 
 @Dao
 interface PlaylistDao {
@@ -43,17 +46,17 @@ interface PlaylistDao {
     @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
     fun getPlaylistsWithSongsWithPlayListIdFlow(playlistId: Long): Flow<PlaylistWithSongsEntity?>
 
-    @Query("SELECT s.* FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.songId = psc.songId WHERE psc.playlistId = :playlistId ORDER BY psc.insertTime DESC")
+    @Query("SELECT s.* FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId ORDER BY psc.insertTime DESC")
     fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<SongEntity>>
 
-    @Query("SELECT s.* FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.songId = psc.songId WHERE psc.playlistId = :playlistId ORDER BY psc.insertTime DESC")
+    @Query("SELECT s.* FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId ORDER BY psc.insertTime DESC")
     fun getSongsByPlaylistId(playlistId: Long): List<SongEntity>
 
-    @Query("SELECT * FROM Playlist WHERE playlistId IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)")
-    fun getPlaylistsHaveSong(songId: Long): Flow<List<PlaylistEntity>>
+    @Query("SELECT * FROM Playlist WHERE playlistId IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE mediaId == :mediaId)")
+    fun getPlaylistsHaveSong(mediaId: Long): Flow<List<PlaylistEntity>>
 
-    @Query("SELECT * FROM Playlist WHERE playlistId NOT IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE songId == :songId)")
-    fun getPlaylistsNotHavingSong(songId: Long): Flow<List<PlaylistEntity>>
+    @Query("SELECT * FROM Playlist WHERE playlistId NOT IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE mediaId == :mediaId)")
+    fun getPlaylistsNotHavingSong(mediaId: Long): Flow<List<PlaylistEntity>>
 
     @Transaction
     @Query("DELETE FROM playlist WHERE playlistId ==:playlistId")
@@ -92,13 +95,18 @@ interface PlaylistDao {
     @Query("SELECT * FROM Playlist ORDER BY createTimestamp DESC")
     fun getAllPaging(): PagingSource<Int, PlaylistEntity>
 
+
+    /** 获取歌单内歌曲数量 */
+    @Query("SELECT COUNT(*) FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId")
+    fun getSongSizeByPlaylistId(playlistId: Long): Flow<Int>
+
     /**
      * 获取歌单前 4 个不同专辑 ID，用于封面马赛克渲染。
      * 按歌曲加入时间倒序取最新的 4 个不同 albumId。
      */
     @Query(
         """SELECT DISTINCT s.albumId FROM Song AS s
-           JOIN PlaylistSongCrossRef AS psc ON s.songId = psc.songId
+           JOIN PlaylistSongCrossRef AS psc ON s.mediaStoreId = psc.mediaId
            WHERE psc.playlistId = :playlistId
            ORDER BY psc.insertTime DESC
            LIMIT 4"""
@@ -108,11 +116,25 @@ interface PlaylistDao {
     /** 在指定歌单内按关键字（曲名 / 艺术家）过滤歌曲，按加入时间倒序 */
     @Query(
         """SELECT s.* FROM Song AS s
-           JOIN PlaylistSongCrossRef AS psc ON s.songId = psc.songId
+           JOIN PlaylistSongCrossRef AS psc ON s.mediaStoreId = psc.mediaId
            WHERE psc.playlistId = :playlistId
              AND (s.displayName LIKE '%' || :keyword || '%'
                   OR s.artist LIKE '%' || :keyword || '%')
            ORDER BY psc.insertTime DESC"""
     )
     fun searchSongsByPlaylistId(playlistId: Long, keyword: String): Flow<List<SongEntity>>
+
+    @Query(
+        """SELECT s.* FROM Song AS s
+           JOIN PlaylistSongCrossRef AS psc ON s.mediaStoreId = psc.mediaId
+           WHERE psc.playlistId = :playlistId
+                      AND (s.displayName LIKE '%' || :keyword || '%'
+                  OR s.artist LIKE '%' || :keyword || '%')
+           ORDER BY psc.insertTime DESC"""
+    )
+    fun getSongsPagingByPlaylistId(playlistId: Long, keyword: String): PagingSource<Int, SongEntity>
+
+
+    @Query("SELECT s.mediaStoreId FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId ORDER BY psc.insertTime DESC")
+    fun getMediaIdsByPlaylistId(playlistId: Long): List<Long>
 }

@@ -90,6 +90,13 @@ class SongRepositoryImpl(
         songDao.likeSongs(ids, isLike)
     }
 
+    override suspend fun likeSongsByMediaStoreIds(
+        mediaStoreIds: List<Long>,
+        isLike: Boolean
+    ) = withContext(Dispatchers.IO) {
+        songDao.likeSongsByMediaStoreIds(mediaStoreIds, isLike)
+    }
+
     override suspend fun setIgnoreStatus(id: Long, isIgnore: Boolean) =
         withContext(Dispatchers.IO) {
             songDao.ignore(id, isIgnore)

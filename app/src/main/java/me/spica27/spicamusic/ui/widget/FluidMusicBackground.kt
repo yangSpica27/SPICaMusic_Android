@@ -92,14 +92,14 @@ fun FluidMusicBackground(
     when (backgroundMode) {
         DynamicSpectrumBackground.TopGlow ->
             TopGlowBackground(
-                modifier = modifier,
+                modifier = modifier.blur(72.dp),
                 fftDrawData = fftSnapshot,
                 coverColor = coverColor,
             )
 
         DynamicSpectrumBackground.LiquidAurora ->
             LiquidAuroraBackground(
-                modifier = modifier,
+                modifier = modifier.blur(40.dp),
                 fftDrawData = fftSnapshot,
                 coverColor = coverColor,
                 isDarkMode = isDarkMode,

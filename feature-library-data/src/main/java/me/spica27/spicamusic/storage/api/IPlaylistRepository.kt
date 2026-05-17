@@ -24,7 +24,7 @@ interface IPlaylistRepository {
     /**
      * 根据歌单ID获取歌曲列表 Flow
      */
-    fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<Song>>
+    fun getSongsByPlaylistIdFlow(playlistId: Long, keyword: String): Flow<PagingData<Song>>
 
     /**
      * 根据歌单ID获取歌单信息 Flow
@@ -39,12 +39,12 @@ interface IPlaylistRepository {
     /**
      * 获取包含指定歌曲的歌单列表
      */
-    fun getPlaylistsHavingSong(songId: Long): Flow<List<Playlist>>
+    fun getPlaylistsHavingSong(mediaId: Long): Flow<List<Playlist>>
 
     /**
      * 获取不包含指定歌曲的歌单列表
      */
-    fun getPlaylistsNotHavingSong(songId: Long): Flow<List<Playlist>>
+    fun getPlaylistsNotHavingSong(mediaId: Long): Flow<List<Playlist>>
 
     /**
      * 获取歌单详情（包含歌曲）Flow
@@ -75,21 +75,32 @@ interface IPlaylistRepository {
     /**
      * 添加歌曲到歌单
      */
-    suspend fun addSongToPlaylist(playlistId: Long, songId: Long)
+    suspend fun addSongToPlaylist(playlistId: Long, mediaId: Long)
 
     /**
      * 从歌单中移除歌曲
      */
-    suspend fun removeSongFromPlaylist(playlistId: Long, songId: Long)
+    suspend fun removeSongFromPlaylist(playlistId: Long, mediaId: Long)
 
     /**
      * 批量添加歌曲到歌单
      */
-    suspend fun addSongsToPlaylist(playlistId: Long, songIds: List<Long>)
+    suspend fun addSongsToPlaylist(playlistId: Long, mediaIds: List<Long>)
 
     /**
      * 获取歌单封面所需的前 4 个不同专辑 ID（Flow），用于马赛克封面渲染。
      * 结果列表长度 0–4，调用方根据长度选择渲染策略。
      */
     fun getPlaylistCoverAlbumIds(playlistId: Long): Flow<List<Long>>
+
+
+    /**
+     * 获取歌单内歌曲数量 Flow
+     */
+    fun getSongSizeInPlaylist(playlistId: Long): Flow<Int>
+
+    /**
+     * 获取歌单内所有歌曲ID Flow
+     */
+    fun getMediaIdsInPlaylist(playlistId: Long): List<Long>
 }

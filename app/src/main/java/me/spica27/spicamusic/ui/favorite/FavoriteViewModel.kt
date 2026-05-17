@@ -120,19 +120,19 @@ class FavoriteViewModel(
         _selectedSongIds.value = emptySet()
     }
 
-    fun toggleSongSelection(songId: Long) {
+    fun toggleSongSelection(mediaStoreId: Long) {
         _selectedSongIds.value =
-            if (_selectedSongIds.value.contains(songId)) {
-                _selectedSongIds.value - songId
+            if (_selectedSongIds.value.contains(mediaStoreId)) {
+                _selectedSongIds.value - mediaStoreId
             } else {
-                _selectedSongIds.value + songId
+                _selectedSongIds.value + mediaStoreId
             }
     }
 
     fun selectAll() {
         viewModelScope.launch {
             val keyword = _searchKeyword.value.ifBlank { null }
-            val allIds = songRepository.getLikeSongIds(keyword)
+            val allIds = songRepository.getLikeMediaStoreIds(keyword)
             _selectedSongIds.value = allIds.toSet()
         }
     }
@@ -146,7 +146,7 @@ class FavoriteViewModel(
         viewModelScope.launch {
             val ids = _selectedSongIds.value.toList()
             if (ids.isNotEmpty()) {
-                songRepository.likeSongs(ids, false)
+                songRepository.likeSongsByMediaStoreIds(ids, false)
             }
         }
     }
@@ -154,26 +154,15 @@ class FavoriteViewModel(
     /** 播放选中的歌曲 */
     fun playSelectedSongs() {
         viewModelScope.launch {
-            val ids = _selectedSongIds.value.toList()
-            if (ids.isEmpty()) return@launch
-            // 根据选中的 songId 找到对应的 mediaStoreId
-            val keyword = _searchKeyword.value.ifBlank { null }
-            val allMediaIds = songRepository.getLikeMediaStoreIds(keyword)
-            val songIdToMediaId =
-                songRepository
-                    .getLikeSongIds(keyword)
-                    .zip(allMediaIds)
-                    .toMap()
-            val selectedMediaIds = ids.mapNotNull { songIdToMediaId[it]?.toString() }
-            if (selectedMediaIds.isNotEmpty()) {
-                player.doAction(
-                    PlayerAction.UpdateList(
-                        mediaIds = selectedMediaIds,
-                        mediaId = selectedMediaIds.first(),
-                        start = true,
-                    ),
-                )
-            }
+            val selectedMediaIds = _selectedSongIds.value.map { it.toString() }
+            if (selectedMediaIds.isEmpty()) return@launch
+            player.doAction(
+                PlayerAction.UpdateList(
+                    mediaIds = selectedMediaIds,
+                    mediaId = selectedMediaIds.first(),
+                    start = true,
+                ),
+            )
         }
     }
 

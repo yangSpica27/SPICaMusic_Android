@@ -22,7 +22,7 @@ import me.spica27.spicamusic.storage.impl.entity.SongEntity
     entities = [SongEntity::class, PlaylistEntity::class, PlaylistSongCrossRefEntity::class,
         ExtraInfoEntity::class, PlayHistoryEntity::class, AlbumEntity::class,
         ScanFolderEntity::class],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {

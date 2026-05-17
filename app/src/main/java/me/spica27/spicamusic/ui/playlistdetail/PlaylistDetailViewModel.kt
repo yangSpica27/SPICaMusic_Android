@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,16 +43,23 @@ class PlaylistDetailViewModel(
             initialValue = null,
         )
 
-    // 歌单中的歌曲列表（完整，供播放器使用）
-    val songs: StateFlow<List<Song>> =
-        playlistRepository.getSongsByPlaylistIdFlow(playlistId).stateIn(
+    // 歌单封面所需的专辑 ID（最多 4 个，用于马赛克封面）
+    val coverAlbumIds: StateFlow<List<Long>> =
+        playlistRepository.getPlaylistCoverAlbumIds(playlistId).stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList(),
         )
 
-    // ===== 搜索功能 =====
+    // 歌单内歌曲数量
+    val songCount: StateFlow<Int> =
+        playlistRepository.getSongSizeInPlaylist(playlistId).stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0,
+        )
 
+    // ===== 搜索功能 =====
     private val _isSearchMode = MutableStateFlow(false)
     val isSearchMode = _isSearchMode.asStateFlow()
 
@@ -59,18 +68,18 @@ class PlaylistDetailViewModel(
 
     /** 展示用歌曲列表：搜索模式+关键字非空时返回过滤结果，否则返回完整列表 */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val displayedSongs: StateFlow<List<Song>> =
+    val displayedSongs: StateFlow<PagingData<Song>> =
         combine(_isSearchMode, _searchKeyword) { isSearch, keyword -> isSearch to keyword }
             .flatMapLatest { (isSearch, keyword) ->
-                if (isSearch && keyword.isNotBlank()) {
-                    playlistRepository.searchSongsByPlaylistId(playlistId, keyword)
+                if (isSearch) {
+                    playlistRepository.getSongsByPlaylistIdFlow(playlistId, keyword)
                 } else {
-                    playlistRepository.getSongsByPlaylistIdFlow(playlistId)
+                    playlistRepository.getSongsByPlaylistIdFlow(playlistId, "")
                 }
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList(),
+                initialValue = PagingData.empty(),
             )
 
     fun enterSearchMode() {
@@ -162,20 +171,20 @@ class PlaylistDetailViewModel(
      * 播放歌单所有歌曲
      */
     fun playAll() {
-        val songList = songs.value
-        if (songList.isEmpty()) {
-            Timber.w("歌单为空，无法播放")
-            return
-        }
-
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Main) {
+            val ids =
+                async(Dispatchers.IO) { playlistRepository.getMediaIdsInPlaylist(playlistId) }.await()
+            if (ids.isEmpty()) {
+                Timber.w("歌单中没有歌曲，无法播放")
+                return@launch
+            }
             try {
                 // 增加播放次数
                 playlistRepository.incrementPlaylistPlayTime(playlistId)
                 // 发送播放指令
                 player.doAction(
                     PlayerAction.UpdateList(
-                        songList.map { it.mediaStoreId.toString() },
+                        ids.map { it.toString() },
                         start = true,
                     ),
                 )
@@ -190,12 +199,17 @@ class PlaylistDetailViewModel(
      * 播放指定歌曲
      */
     fun playSongInList(song: Song) {
-        val songList = songs.value
         viewModelScope.launch {
+            val ids =
+                async(Dispatchers.IO) { playlistRepository.getMediaIdsInPlaylist(playlistId) }.await()
+            if (ids.isEmpty()) {
+                Timber.w("歌单中没有歌曲，无法播放")
+                return@launch
+            }
             try {
                 player.doAction(
                     PlayerAction.UpdateList(
-                        songList.map { it.mediaStoreId.toString() },
+                        ids.map { it.toString() },
                         mediaId = song.mediaStoreId.toString(),
                         start = true,
                     ),
@@ -221,13 +235,13 @@ class PlaylistDetailViewModel(
     /**
      * 切换歌曲选中状态
      */
-    fun toggleSongSelection(songId: Long?) {
-        if (songId == null) return
+    fun toggleSongSelection(mediaId: Long?) {
+        if (mediaId == null) return
         val current = _selectedSongs.value.toMutableSet()
-        if (current.contains(songId)) {
-            current.remove(songId)
+        if (current.contains(mediaId)) {
+            current.remove(mediaId)
         } else {
-            current.add(songId)
+            current.add(mediaId)
         }
         _selectedSongs.value = current
     }
@@ -236,7 +250,14 @@ class PlaylistDetailViewModel(
      * 全选
      */
     fun selectAll() {
-        _selectedSongs.value = songs.value.map { it.songId ?: -1 }.toSet()
+        viewModelScope.launch(Dispatchers.IO) {
+            val ids = playlistRepository.getMediaIdsInPlaylist(playlistId)
+            if (ids.isEmpty()) {
+                Timber.w("歌单中没有歌曲，无法全选")
+                return@launch
+            }
+            _selectedSongs.value = ids.toSet()
+        }
     }
 
     /**
@@ -276,8 +297,8 @@ class PlaylistDetailViewModel(
 
         viewModelScope.launch {
             try {
-                selected.forEach { songId ->
-                    playlistRepository.removeSongFromPlaylist(playlistId, songId)
+                selected.forEach { mediaId ->
+                    playlistRepository.removeSongFromPlaylist(playlistId, mediaId)
                 }
                 Timber.d("从歌单移除 ${selected.size} 首歌曲")
                 // 退出多选模式
@@ -354,13 +375,13 @@ class PlaylistDetailViewModel(
     /**
      * 批量添加歌曲到歌单
      */
-    fun addSongsToPlaylist(songIds: List<Long>) {
-        if (songIds.isEmpty()) return
+    fun addSongsToPlaylist(mediaIds: List<Long>) {
+        if (mediaIds.isEmpty()) return
 
         viewModelScope.launch {
             try {
-                playlistRepository.addSongsToPlaylist(playlistId, songIds)
-                Timber.d("成功添加 ${songIds.size} 首歌曲到歌单")
+                playlistRepository.addSongsToPlaylist(playlistId, mediaIds)
+                Timber.d("成功添加 ${mediaIds.size} 首歌曲到歌单")
                 hideAddSongsSheet()
             } catch (e: Exception) {
                 Timber.e(e, "添加歌曲到歌单失败")

@@ -137,8 +137,8 @@ class MostPlayedViewModel(
         viewModelScope.launch {
             try {
                 val playlistId = playlistRepository.createPlaylist(name)
-                val songIds = list.mapNotNull { it.song?.songId }
-                playlistRepository.addSongsToPlaylist(playlistId, songIds)
+                val mediaIds = list.mapNotNull { it.song?.mediaStoreId }
+                playlistRepository.addSongsToPlaylist(playlistId, mediaIds)
                 _snackbarMessage.value = app.getString(R.string.saved_as_playlist_format, name)
             } catch (e: Exception) {
                 Timber.e(e, "保存歌单失败")

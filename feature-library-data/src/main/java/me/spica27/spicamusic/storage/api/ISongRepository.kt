@@ -101,6 +101,8 @@ interface ISongRepository {
      */
     suspend fun likeSongs(ids: List<Long>, isLike: Boolean)
 
+    suspend fun likeSongsByMediaStoreIds(mediaStoreIds: List<Long>, isLike: Boolean)
+
     /**
      * 设置歌曲忽略状态
      */

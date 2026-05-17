@@ -102,7 +102,6 @@ object AppModule {
             viewModel {
                 CurrentPlaylistPanelViewModel(
                     playlistRepository = get<PlaylistUseCases>(),
-                    songRepository = get<SongUseCases>(),
                 )
             }
 

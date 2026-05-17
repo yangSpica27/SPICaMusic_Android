@@ -29,6 +29,9 @@ interface SongDao {
     @Query("UPDATE song SET `like` = :like WHERE( songId IN (:ids))")
     suspend fun likeSongs(ids: List<Long>, like: Boolean)
 
+    @Query("UPDATE song SET `like` = :like WHERE( mediaStoreId IN (:mediaStoreIds))")
+    suspend fun likeSongsByMediaStoreIds(mediaStoreIds: List<Long>, like: Boolean)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(songs: List<SongEntity>)
 
@@ -87,10 +90,10 @@ interface SongDao {
     @Query("DELETE FROM song")
     fun deleteAllSync()
 
-    @Query("SELECT * FROM song WHERE songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId) AND (isIgnore == 0)")
+    @Query("SELECT * FROM song WHERE mediaStoreId NOT IN (SELECT mediaId FROM playlistsongcrossref WHERE playlistId = :playlistId) AND (isIgnore == 0)")
     fun getSongsNotInPlayListFlow(playlistId: Long): Flow<List<SongEntity>>
 
-    @Query("SELECT * FROM song WHERE songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId) AND (isIgnore == 0)")
+    @Query("SELECT * FROM song WHERE mediaStoreId NOT IN (SELECT mediaId FROM playlistsongcrossref WHERE playlistId = :playlistId) AND (isIgnore == 0)")
     fun getSongsNotInPlayList(playlistId: Long): List<SongEntity>
 
     @Delete
@@ -375,7 +378,7 @@ interface SongDao {
         """
         SELECT * FROM song 
         WHERE isIgnore == 0
-        AND songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId)
+        AND mediaStoreId NOT IN (SELECT mediaId FROM playlistsongcrossref WHERE playlistId = :playlistId)
         AND (
             :keyword IS NULL OR :keyword = ''
             OR displayName LIKE '%' || :keyword || '%' 
@@ -396,7 +399,7 @@ interface SongDao {
         """
         SELECT COUNT(*) FROM song 
         WHERE isIgnore == 0
-        AND songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId)
+        AND songId NOT IN (SELECT mediaId FROM playlistsongcrossref WHERE playlistId = :playlistId)
         AND (
             :keyword IS NULL OR :keyword = ''
             OR displayName LIKE '%' || :keyword || '%' 
@@ -414,9 +417,9 @@ interface SongDao {
      */
     @Query(
         """
-        SELECT songId FROM song 
+        SELECT mediaStoreId FROM song 
         WHERE isIgnore == 0
-        AND songId NOT IN (SELECT songId FROM playlistsongcrossref WHERE playlistId = :playlistId)
+        AND mediaStoreId NOT IN (SELECT mediaId FROM playlistsongcrossref WHERE playlistId = :playlistId)
         AND (
             :keyword IS NULL OR :keyword = ''
             OR displayName LIKE '%' || :keyword || '%' 

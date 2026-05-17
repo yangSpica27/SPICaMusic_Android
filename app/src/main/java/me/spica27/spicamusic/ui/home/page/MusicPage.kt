@@ -153,13 +153,12 @@ fun MusicPage() {
         ) {
             TopTabs(
                 modifier = Modifier,
-                tabs = tabs,
+                tabs = { tabs },
                 selectTab = selectTab,
                 onSelectTab = {
                     selectTab = it
                 },
             )
-
             HorizontalPager(
                 state = pagerState,
             ) {
@@ -177,19 +176,20 @@ fun MusicPage() {
 @Composable
 private fun TopTabs(
     modifier: Modifier = Modifier,
-    tabs: List<MusicTab>,
+    tabs: () -> List<MusicTab>,
     selectTab: MusicTab,
     onSelectTab: (MusicTab) -> Unit,
 ) {
     Row(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        tabs.forEach { tab ->
+        tabs.invoke().forEach { tab ->
             TopTabItem(
                 selectTab = selectTab,
                 onSelectTab = onSelectTab,

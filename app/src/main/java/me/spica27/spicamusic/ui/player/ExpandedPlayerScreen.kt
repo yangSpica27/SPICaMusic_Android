@@ -154,8 +154,6 @@ fun ExpandedPlayerScreen(
     }
 
     // 将播放位置同步到 seekbar：trueTimePosition 每秒更新多次，
-    // 使用 SideEffect（同步、无协程开销）代替 LaunchedEffect，
-    // 避免每次更新都取消并重建一个新的协程。
     LaunchedEffect(trueTimePosition) {
         if (!isSeekingState) {
             seekValueState = trueTimePosition.toFloat()

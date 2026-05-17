@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
-import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import timber.log.Timber
 
 /**
@@ -14,7 +13,6 @@ import timber.log.Timber
 @Stable
 class CurrentPlaylistPanelViewModel(
     private val playlistRepository: PlaylistUseCases,
-    private val songRepository: SongUseCases,
 ) : ViewModel() {
     /**
      * 根据 MediaItem 的 mediaId 列表创建歌单并添加歌曲
@@ -35,17 +33,13 @@ class CurrentPlaylistPanelViewModel(
 
         viewModelScope.launch {
             try {
-                val songIds =
-                    mediaIds.mapNotNull { mediaId ->
-                        val mediaStoreId = mediaId.toLongOrNull() ?: return@mapNotNull null
-                        songRepository.getSongByMediaStoreId(mediaStoreId)?.songId
-                    }
-                if (songIds.isEmpty()) {
+                val mediaIds = mediaIds.mapNotNull { it.toLongOrNull() }
+                if (mediaIds.isEmpty()) {
                     onComplete(false)
                     return@launch
                 }
                 val playlistId = playlistRepository.createPlaylist(name.trim())
-                playlistRepository.addSongsToPlaylist(playlistId, songIds)
+                playlistRepository.addSongsToPlaylist(playlistId, mediaIds)
                 onComplete(true)
             } catch (e: Exception) {
                 Timber.e(e, "创建歌单失败")

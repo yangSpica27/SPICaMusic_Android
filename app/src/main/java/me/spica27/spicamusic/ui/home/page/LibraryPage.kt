@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -31,6 +30,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,11 +40,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import com.skydoves.landscapist.image.LandscapistImage
+import androidx.paging.compose.collectAsLazyPagingItems
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.common.entity.Playlist
+import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
+import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
+import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,7 +96,7 @@ fun LibraryPage() {
                     ),
         ) {
             TopTabBar(
-                tabs = tabs,
+                tabs = { tabs },
                 selectTab = selectTab,
                 onSelectTab = { selectTab = it },
             )
@@ -110,7 +114,7 @@ fun LibraryPage() {
 @Composable
 private fun TopTabBar(
     modifier: Modifier = Modifier,
-    tabs: List<LibraryPageTab>,
+    tabs: () -> List<LibraryPageTab>,
     selectTab: LibraryPageTab,
     onSelectTab: (LibraryPageTab) -> Unit,
 ) {
@@ -119,10 +123,11 @@ private fun TopTabBar(
             modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        tabs.forEach { tab ->
+        tabs.invoke().forEach { tab ->
             TopTabItem(
                 selectTab = selectTab,
                 onSelectTab = { onSelectTab(it) },
@@ -203,6 +208,9 @@ private fun TopTabItem(
 
 @Composable
 private fun PlaylistPage(modifier: Modifier = Modifier) {
+    val playlistUseCases = koinInject<PlaylistUseCases>()
+    val playlists = playlistUseCases.getAllPlaylistsPagingFlow().collectAsLazyPagingItems()
+    val navigationPath = LocalNavigationPath.current
     LazyVerticalGrid(
         modifier =
             modifier
@@ -221,19 +229,20 @@ private fun PlaylistPage(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
     ) {
-        items(
-            10,
-            key = { it },
-            span = { GridItemSpan(1) },
-        ) { index ->
-            PlaylistItem(
-                modifier =
-                    Modifier.fillMaxWidth().clickable {
-                    },
-                Playlist(
-                    playlistName = "Playlist ${index + 1}",
-                ),
-            )
+        items(playlists.itemCount, key = { index ->
+            playlists[index]?.playlistId ?: index
+        }) { index ->
+            val playlist = playlists[index]
+            if (playlist != null) {
+                PlaylistItem(
+                    modifier =
+                        Modifier
+                            .clickable {
+                                navigationPath.push(PlaylistDetailScene(playlist))
+                            }.fillMaxWidth(),
+                    playlist = playlist,
+                )
+            }
         }
     }
 }
@@ -243,19 +252,28 @@ private fun PlaylistItem(
     modifier: Modifier = Modifier,
     playlist: Playlist,
 ) {
+    val playlistUseCases = koinInject<PlaylistUseCases>()
+
+    val albumIds =
+        playlistUseCases
+            .getPlaylistCoverAlbumIds(playlist.playlistId ?: 0L)
+            .collectAsState(initial = emptyList())
+
+    val size =
+        playlistUseCases
+            .getSongSizeInPlaylist(playlist.playlistId ?: 0L)
+            .collectAsState(initial = 0)
+
     Column(
         modifier = modifier,
     ) {
-        LandscapistImage(
-            imageModel = {},
+        PlaylistCoverView(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(
-                        MaterialTheme.colorScheme.surfaceContainer,
-                    ),
+                    .clip(MaterialTheme.shapes.large),
+            albumIds = albumIds.value,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -264,7 +282,7 @@ private fun PlaylistItem(
             maxLines = 1,
         )
         Text(
-            text = "10 songs",
+            text = "${size.value} songs",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
