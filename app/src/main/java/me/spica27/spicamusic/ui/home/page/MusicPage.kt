@@ -108,7 +108,12 @@ import kotlin.math.max
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicPage() {
-    val path = LocalNavigationPath.current
+    val homeViewModel: HomeViewModel = koinActivityViewModel()
+    val allSongs by homeViewModel.allSongs.collectAsStateWithLifecycle()
+
+    val songCount = allSongs.size
+    val albumCount = remember(allSongs) { allSongs.distinctBy { it.albumId }.size }
+    val artistCount = remember(allSongs) { allSongs.distinctBy { it.artist }.size }
 
     var selectTab by remember { mutableStateOf(MusicTab.SONG) }
 
@@ -158,6 +163,13 @@ fun MusicPage() {
                 onSelectTab = {
                     selectTab = it
                 },
+                extraText = { tab ->
+                    when (tab) {
+                        MusicTab.SONG -> if (songCount > 0) "${songCount}首" else null
+                        MusicTab.ALBUM -> if (albumCount > 0) "${albumCount}张" else null
+                        MusicTab.ARTIST -> if (artistCount > 0) "${artistCount}位" else null
+                    }
+                },
             )
             HorizontalPager(
                 state = pagerState,
@@ -179,6 +191,7 @@ private fun TopTabs(
     tabs: () -> List<MusicTab>,
     selectTab: MusicTab,
     onSelectTab: (MusicTab) -> Unit,
+    extraText: (MusicTab) -> String? = { null },
 ) {
     Row(
         modifier =
@@ -194,6 +207,7 @@ private fun TopTabs(
                 selectTab = selectTab,
                 onSelectTab = onSelectTab,
                 bandTab = tab,
+                extraText = extraText(tab),
             )
         }
     }
@@ -213,7 +227,7 @@ private fun TopTabItem(
     modifier: Modifier = Modifier,
     selectTab: MusicTab,
     onSelectTab: (MusicTab) -> Unit,
-    extraText: String? = "1000首",
+    extraText: String? = null,
     bandTab: MusicTab,
 ) {
     val isSelected =
@@ -633,7 +647,8 @@ private fun ArtistRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clickable(onClick = {})
+                .clickable(onClick = {
+                })
                 .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),

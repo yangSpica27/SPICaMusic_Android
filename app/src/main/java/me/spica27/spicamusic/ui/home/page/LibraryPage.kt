@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.common.entity.Playlist
@@ -54,6 +55,10 @@ import org.koin.compose.koinInject
 @Composable
 fun LibraryPage() {
     val path = LocalNavigationPath.current
+
+    val playlistUseCases = koinInject<PlaylistUseCases>()
+    val playlists by playlistUseCases.getAllPlaylistsFlow().collectAsStateWithLifecycle(initialValue = emptyList())
+    val playlistCount = playlists.size
 
     var selectTab by remember { mutableStateOf(LibraryPageTab.Playlist) }
 
@@ -99,6 +104,12 @@ fun LibraryPage() {
                 tabs = { tabs },
                 selectTab = selectTab,
                 onSelectTab = { selectTab = it },
+                extraText = { tab ->
+                    when (tab) {
+                        LibraryPageTab.Playlist -> if (playlistCount > 0) "${playlistCount}个" else null
+                        LibraryPageTab.Folder -> null
+                    }
+                },
             )
             HorizontalPager(
                 state = pagerState,
@@ -117,6 +128,7 @@ private fun TopTabBar(
     tabs: () -> List<LibraryPageTab>,
     selectTab: LibraryPageTab,
     onSelectTab: (LibraryPageTab) -> Unit,
+    extraText: (LibraryPageTab) -> String? = { null },
 ) {
     Row(
         modifier =
@@ -132,6 +144,7 @@ private fun TopTabBar(
                 selectTab = selectTab,
                 onSelectTab = { onSelectTab(it) },
                 bandTab = tab,
+                extraText = extraText(tab),
             )
         }
     }
@@ -150,7 +163,7 @@ private fun TopTabItem(
     modifier: Modifier = Modifier,
     selectTab: LibraryPageTab,
     onSelectTab: (LibraryPageTab) -> Unit,
-    extraText: String? = "10个",
+    extraText: String? = null,
     bandTab: LibraryPageTab,
 ) {
     val isSelected =

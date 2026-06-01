@@ -84,6 +84,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -351,6 +352,8 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                         DropdownMenu(
                             expanded = showMoreOptionsMenu,
                             onDismissRequest = viewModel::hideMoreOptionsMenu,
+                            shape = MaterialTheme.shapes.medium,
+                            offset = DpOffset(x = (-12).dp, y = 0.dp),
                         ) {
                             DropdownMenuItem(
                                 text = { Text("添加歌曲") },

@@ -102,6 +102,7 @@ fun FinderPage() {
                 Shortcut(
                     title = "设置中心",
                     icon = Icons.Default.Settings,
+                    scene = SettingsScene(),
                 ),
                 Shortcut(
                     title = "听歌统计",
