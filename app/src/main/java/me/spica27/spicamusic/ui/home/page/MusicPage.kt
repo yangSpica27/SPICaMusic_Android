@@ -538,6 +538,7 @@ fun AlbumPage(modifier: Modifier = Modifier) {
                 onClick = { transition ->
                     path.push(AlbumDetailScene(album, transition))
                 },
+                modifier.animateItem(),
             )
         }
     }
@@ -633,7 +634,7 @@ fun ArtistsPage(modifier: Modifier = Modifier) {
             key = artists.itemKey { it.name },
         ) { index ->
             val artist = artists[index] ?: return@items
-            ArtistRow(artist = artist)
+            ArtistRow(artist = artist, modifier.animateItem())
         }
     }
 }
