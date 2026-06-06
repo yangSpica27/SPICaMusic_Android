@@ -206,7 +206,8 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     Modifier
                                         .graphicsLayer {
                                             alpha = progress.coerceIn(0f, 1f)
-                                        }.fillMaxSize(),
+                                        }.background(MaterialTheme.colorScheme.surface)
+                                        .fillMaxSize(),
                             )
                         }
 

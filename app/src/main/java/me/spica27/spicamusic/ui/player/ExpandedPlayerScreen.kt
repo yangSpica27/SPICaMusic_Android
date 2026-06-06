@@ -173,7 +173,6 @@ fun ExpandedPlayerScreen(
     Box(
         modifier =
             modifier
-                .background(MaterialTheme.colorScheme.background)
                 .fillMaxSize(),
     ) {
         // 流动背景（仅前台时启用，节省电量）
