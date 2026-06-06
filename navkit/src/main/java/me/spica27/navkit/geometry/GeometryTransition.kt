@@ -18,12 +18,29 @@ import androidx.compose.ui.geometry.Rect
  * @param key 标识此过渡的唯一字符串，供 NavigationStack 匹配源/目标节点
  */
 class GeometryTransition(val key: String) {
+    /**
+     * 共享元素当前的可见所有权阶段。
+     *
+     * - [Source]：源节点显示，浮层隐藏
+     * - [Forward]：正向飞行中，仅浮层显示
+     * - [Target]：目标节点显示，浮层隐藏
+     * - [Reverse]：反向飞行中，仅浮层显示
+     */
+    enum class GeometryPhase {
+        Source,
+        Forward,
+        Target,
+        Reverse,
+    }
 
     /** 过渡起始矩形（源节点的全局位置和尺寸） */
     val sourceRect: MutableState<Rect> = mutableStateOf(Rect.Zero)
 
     /** 过渡目标矩形（目标节点的全局位置和尺寸） */
     val targetRect: MutableState<Rect> = mutableStateOf(Rect.Zero)
+
+    /** 当前共享元素处于哪个显示阶段 */
+    val phase: MutableState<GeometryPhase> = mutableStateOf(GeometryPhase.Source)
 
     /**
      * 过渡进度：0f = 完全在源位置，1f = 完全在目标位置。
@@ -39,6 +56,7 @@ class GeometryTransition(val key: String) {
      * @param onComplete 动画结束后的回调（可选）
      */
     suspend fun animateForward() {
+        phase.value = GeometryPhase.Forward
         progress.animateTo(
             targetValue = 1f,
             animationSpec = spring(
@@ -46,12 +64,14 @@ class GeometryTransition(val key: String) {
                 dampingRatio = Spring.DampingRatioNoBouncy
             )
         )
+        phase.value = GeometryPhase.Target
     }
 
     /**
      * 反向动画从当前进度回到 0f（用于 pop 时复原）。
      */
     suspend fun animateReverse() {
+        phase.value = GeometryPhase.Reverse
         progress.animateTo(
             targetValue = 0f,
             animationSpec = spring(
@@ -59,12 +79,38 @@ class GeometryTransition(val key: String) {
                 dampingRatio = Spring.DampingRatioNoBouncy
             )
         )
+        phase.value = GeometryPhase.Source
     }
 
     /** 将进度 snap 到 0f（无动画重置） */
     suspend fun reset() {
+        phase.value = GeometryPhase.Source
         progress.snapTo(0f)
     }
+
+    /**
+     * 源节点的显示策略：
+     * - Source：始终显示
+     * - Forward：在动画最开始的极短时间内继续显示，避免 overlay 首次接管时闪空
+     * - Reverse / Target：隐藏
+     */
+    fun shouldShowSource(): Boolean =
+        when (phase.value) {
+            GeometryPhase.Source -> true
+            GeometryPhase.Forward -> progress.value <= SOURCE_HANDOFF_PROGRESS
+            GeometryPhase.Target, GeometryPhase.Reverse -> false
+        }
+
+    /**
+     * 目标节点的显示策略：
+     * - 仅在 Target 阶段显示
+     * - Forward / Reverse 期间交由 overlay 接管
+     */
+    fun shouldShowTarget(): Boolean =
+        when (phase.value) {
+            GeometryPhase.Target -> true
+            GeometryPhase.Source, GeometryPhase.Forward, GeometryPhase.Reverse -> false
+        }
 
     /**
      * 根据当前 [progress.value] 在 [sourceRect] 和 [targetRect] 之间插值，
@@ -90,5 +136,11 @@ class GeometryTransition(val key: String) {
     companion object {
         /** 几何过渡弹簧刚度（250 ≈ 略软于导航弹簧 300，视觉上更流畅） */
         private const val SPRING_STIFFNESS = 250f
+
+        /**
+         * 正向飞行开始时源节点延迟交棒的进度阈值。
+         * 让 overlay 有一两个绘制帧完成图片接管，避免点击瞬间闪烁。
+         */
+        private const val SOURCE_HANDOFF_PROGRESS = 0.08f
     }
 }

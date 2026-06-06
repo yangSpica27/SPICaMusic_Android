@@ -18,6 +18,7 @@ import me.spica27.spicamusic.ui.album.AlbumViewModel
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailViewModel
 import me.spica27.spicamusic.ui.allsong.AllSongsViewModel
 import me.spica27.spicamusic.ui.artist.ArtistViewModel
+import me.spica27.spicamusic.ui.artistdetail.ArtistDetailViewModel
 import me.spica27.spicamusic.ui.audioeffects.AudioEffectsViewModel
 import me.spica27.spicamusic.ui.favorite.FavoriteViewModel
 import me.spica27.spicamusic.ui.home.HomeViewModel
@@ -191,6 +192,15 @@ object AppModule {
             viewModel {
                 ArtistViewModel(
                     songUseCases = get<SongUseCases>(),
+                )
+            }
+
+            // 歌手详情页面 ViewModel
+            viewModel { parameters ->
+                ArtistDetailViewModel(
+                    artistName = parameters.get<String>(),
+                    songUseCases = get<SongUseCases>(),
+                    player = get<PlayerUseCases>(),
                 )
             }
 

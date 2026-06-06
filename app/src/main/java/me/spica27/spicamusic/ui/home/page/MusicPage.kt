@@ -94,6 +94,7 @@ import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.album.AlbumViewModel
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
 import me.spica27.spicamusic.ui.artist.ArtistViewModel
+import me.spica27.spicamusic.ui.artistdetail.ArtistDetailScene
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
@@ -569,8 +570,10 @@ private fun AlbumGridItem(
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     // 持续记录此封面的屏幕坐标，作为飞行动画的起始位置
                     .geometrySource(transition)
-                    // 飞行动画进行中（progress > 0）时隐藏源封面，防止与 overlay 重叠
-                    .graphicsLayer { alpha = if (transition.progress.value > 0f) 0f else 1f },
+                    // 正向动画起始的几个百分点继续保留源封面，避免 overlay 首次接管时闪空
+                    .graphicsLayer {
+                        alpha = if (transition.shouldShowSource()) 1f else 0f
+                    },
             success = { _, painter ->
                 ShowOnIdleContent(true) {
                     Image(
@@ -621,6 +624,7 @@ private fun AlbumGridItem(
 fun ArtistsPage(modifier: Modifier = Modifier) {
     val viewModel: ArtistViewModel = koinViewModel()
     val artists = viewModel.filteredArtists.collectAsLazyPagingItems()
+    val path = LocalNavigationPath.current
 
     LazyColumn(
         modifier =
@@ -634,7 +638,11 @@ fun ArtistsPage(modifier: Modifier = Modifier) {
             key = artists.itemKey { it.name },
         ) { index ->
             val artist = artists[index] ?: return@items
-            ArtistRow(artist = artist, modifier.animateItem())
+            ArtistRow(
+                artist = artist,
+                modifier = modifier.animateItem(),
+                onClick = { path.push(ArtistDetailScene(artist)) },
+            )
         }
     }
 }
@@ -643,13 +651,13 @@ fun ArtistsPage(modifier: Modifier = Modifier) {
 private fun ArtistRow(
     artist: Artist,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clickable(onClick = {
-                })
+                .clickable(onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),

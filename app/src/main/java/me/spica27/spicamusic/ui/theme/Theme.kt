@@ -36,7 +36,6 @@ fun SPICaMusicTheme(
             isDark = darkTheme,
             specVersion = ColorSpec.SpecVersion.SPEC_2025,
             style = PaletteStyle.Expressive,
-            isAmoled = true,
         )
 
     MaterialTheme(

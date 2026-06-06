@@ -29,6 +29,7 @@ import androidx.compose.ui.util.lerp
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.spica27.navkit.geometry.GeometryTransition
+import me.spica27.navkit.geometry.GeometryTransition.GeometryPhase
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.path.NavigationPath
@@ -239,18 +240,19 @@ private fun SceneContainer(
  *
  * - 从 [transition] 读取当前进度，计算插值后的边界矩形
  * - 用 [absoluteOffset] + [size] 将内容定位到正确的屏幕位置/尺寸
- * - 进度达到 1f（动画完成）后自动隐藏
+ * - 浮层常驻，仅在正向/反向飞行阶段显示，避免 reverse 起点重新挂载导致闪烁
  */
 @Composable
 private fun GeometryOverlay(
     transition: GeometryTransition,
     content: @Composable () -> Unit,
 ) {
-    // 读取动画进度（Compose 状态，每帧触发本 composable 重组）
-    val progress = transition.progress.value
-    if (progress >= 1f) return
-
     val bounds = transition.getBounds()
+    val isVisible =
+        when (transition.phase.value) {
+            GeometryPhase.Forward, GeometryPhase.Reverse -> true
+            GeometryPhase.Source, GeometryPhase.Target -> false
+        }
     val density = LocalDensity.current
     with(density) {
         Box(
@@ -263,7 +265,8 @@ private fun GeometryOverlay(
                     width = bounds.width.coerceAtLeast(1f).toDp(),
                     height = bounds.height.coerceAtLeast(1f).toDp(),
                 )
-                .clip(RoundedCornerShape(16.dp)),
+                .clip(RoundedCornerShape(16.dp))
+                .graphicsLayer { alpha = if (isVisible) 1f else 0f },
         ) {
             content()
         }
