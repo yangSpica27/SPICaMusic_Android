@@ -35,7 +35,7 @@ object Spacing {
 object LayoutTokens {
     val MusicHeaderHorizontalPadding = 20.dp
     val MusicHeaderTopPadding = 20.dp
-    val MusicHeaderBottomPadding = 16.dp
+    val MusicHeaderBottomPadding = 4.dp
     val MusicTabContainerPadding = 4.dp
     val MusicTabHeight = 64.dp
     val MusicActionRowMinHeight = 72.dp

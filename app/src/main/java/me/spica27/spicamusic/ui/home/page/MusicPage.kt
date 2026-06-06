@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -31,7 +32,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Sort
-import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -75,6 +76,7 @@ import androidx.graphics.shapes.toPath
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import com.google.common.collect.ImmutableList
 import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.navkit.geometry.GeometryTransition
 import me.spica27.navkit.geometry.geometrySource
@@ -154,7 +156,7 @@ fun MusicPage() {
     ) {
         MusicPageHeader(
             summaryText = summaryText,
-            tabs = tabs,
+            tabs = ImmutableList.copyOf(tabs),
             selectTab = selectTab,
             onSelectTab = { selectTab = it },
             extraText = { tab ->
@@ -183,7 +185,7 @@ fun MusicPage() {
 private fun MusicPageHeader(
     modifier: Modifier = Modifier,
     summaryText: String,
-    tabs: List<MusicTab>,
+    tabs: ImmutableList<MusicTab>,
     selectTab: MusicTab,
     onSelectTab: (MusicTab) -> Unit,
     extraText: (MusicTab) -> String? = { null },
@@ -199,7 +201,7 @@ private fun MusicPageHeader(
                             MaterialTheme.colorScheme.surface,
                         ),
                     ),
-                ),
+                ).statusBarsPadding(),
     ) {
         Column(
             modifier =
@@ -208,7 +210,6 @@ private fun MusicPageHeader(
                     .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                     .padding(
                         top = LayoutTokens.MusicHeaderTopPadding,
-                        bottom = LayoutTokens.MusicHeaderBottomPadding,
                     ),
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
         ) {
@@ -382,15 +383,19 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
                         translationY = -size.height * animatedProgress * 0.3f
                         scaleX = 1f - animatedProgress * 0.03f
                         scaleY = 1f - animatedProgress * 0.05f
-                    }.padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding, vertical = Spacing.Small)
-                    .clip(Shapes.ExtraLargeCornerBasedShape)
+                    }.padding(
+                        horizontal = LayoutTokens.MusicHeaderHorizontalPadding,
+                        vertical = Spacing.Small,
+                    ).clip(Shapes.ExtraLargeCornerBasedShape)
                     .background(MaterialTheme.colorScheme.surfaceContainerLow)
                     .padding(horizontal = Spacing.Small, vertical = Spacing.Small),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // 播放全部按钮
-            ElevatedButton(onClick = { }) {
+            Button(
+                onClick = { },
+            ) {
                 Text(text = "播放全部")
             }
 
