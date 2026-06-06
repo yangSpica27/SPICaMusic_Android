@@ -75,6 +75,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.image.LandscapistImage
@@ -87,8 +88,10 @@ import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
+import me.spica27.spicamusic.ui.theme.LayoutTokens
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.roundToInt
+import androidx.compose.ui.util.lerp as floatLerp
 
 /** 播放器面板的两个锚点状态 */
 private enum class PlayerSheetValue { Collapsed, Expanded }
@@ -142,15 +145,20 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
             )
         }
 
-        // 展开进度：0.0 = 完全收起，1.0 = 完全展开
-        val progress by remember {
-            derivedStateOf {
-                val offset = draggableState.offset
-                val maxOffset = screenHeightPx - miniBarHeightPx
-                if (offset.isNaN() || maxOffset <= 0f) return@derivedStateOf 0f
-                (1f - offset / maxOffset).coerceIn(0f, 1f)
+        val collapsedOffsetPx = remember(screenHeightPx, miniBarHeightPx) { screenHeightPx - miniBarHeightPx }
+        val collapsedHorizontalInsetPx = with(density) { LayoutTokens.PlayerCollapsedHorizontalInset.toPx() }
+        val collapsedTopInsetPx = with(density) { LayoutTokens.PlayerCollapsedTopInset.toPx() }
+        val progressProvider =
+            remember(draggableState, collapsedOffsetPx) {
+                {
+                    val offset = draggableState.offset
+                    if (offset.isNaN() || collapsedOffsetPx <= 0f) {
+                        0f
+                    } else {
+                        (1f - offset / collapsedOffsetPx).coerceIn(0f, 1f)
+                    }
+                }
             }
-        }
 
         val isExpanded by remember {
             derivedStateOf { draggableState.currentValue == PlayerSheetValue.Expanded }
@@ -185,30 +193,51 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     IntOffset(
                                         0,
                                         if (draggableState.offset.isNaN()) {
-                                            (screenHeightPx - miniBarHeightPx).roundToInt()
+                                            collapsedOffsetPx.roundToInt()
                                         } else {
                                             draggableState.offset.roundToInt()
                                         },
                                     )
                                 },
                     ) {
-                        // 全屏播放器（随进度淡入，progress > 0.01 时才合成以节省开销）
-                        if (progress > 0.001f) {
-                            ExpandedPlayerScreen(
-                                onCollapse = {
-                                    coroutineScope.launch {
-                                        draggableState.animateTo(PlayerSheetValue.Collapsed)
-                                    }
-                                },
-                                progress = progress,
-                                initialPage = initialPage,
-                                modifier =
-                                    Modifier
-                                        .graphicsLayer {
-                                            alpha = progress.coerceIn(0f, 1f)
-                                        }.background(MaterialTheme.colorScheme.surface)
-                                        .fillMaxSize(),
-                            )
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        val progress = progressProvider()
+                                        val sideInsetPx = floatLerp(collapsedHorizontalInsetPx, 0f, progress)
+                                        val topInsetPx = floatLerp(collapsedTopInsetPx, 0f, progress)
+                                        val safeWidth = size.width.coerceAtLeast(1f)
+                                        val safeHeight = size.height.coerceAtLeast(1f)
+
+                                        translationX = sideInsetPx
+                                        translationY = topInsetPx
+                                        scaleX = ((safeWidth - sideInsetPx * 2f) / safeWidth).coerceIn(0.85f, 1f)
+                                        scaleY = ((safeHeight - topInsetPx) / safeHeight).coerceIn(0.85f, 1f)
+                                        transformOrigin =
+                                            androidx.compose.ui.graphics
+                                                .TransformOrigin(0.5f, 0f)
+                                        shape =
+                                            androidx.compose.foundation.shape.RoundedCornerShape(
+                                                topStart = lerp(LayoutTokens.PlayerCollapsedCornerRadius, 0.dp, progress),
+                                                topEnd = lerp(LayoutTokens.PlayerCollapsedCornerRadius, 0.dp, progress),
+                                            )
+                                        clip = true
+                                    },
+                        ) {
+                            if (progressProvider.invoke() > 0.01f) {
+                                ExpandedPlayerScreen(
+                                    onCollapse = {
+                                        coroutineScope.launch {
+                                            draggableState.animateTo(PlayerSheetValue.Collapsed)
+                                        }
+                                    },
+                                    progressProvider = progressProvider,
+                                    initialPage = initialPage,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
                         }
 
                         // 迷你播放条 + Tab 切换区 —— 位于面板顶部
@@ -227,7 +256,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     ).align(Alignment.TopCenter)
                                     .navigationBarsPadding()
                                     .graphicsLayer {
-                                        alpha = (1f - progress / 0.25f).coerceIn(0f, 1f)
+                                        alpha = (1f - progressProvider() / 0.25f).coerceIn(0f, 1f)
                                     }
                                     // 拖拽手势：上划展开，下划收起
                                     .anchoredDraggable(draggableState, Orientation.Vertical),

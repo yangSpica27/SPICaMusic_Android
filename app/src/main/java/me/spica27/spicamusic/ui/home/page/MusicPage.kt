@@ -1,7 +1,7 @@
 package me.spica27.spicamusic.ui.home.page
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -9,7 +9,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,18 +28,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -53,10 +47,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.innerShadow
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
@@ -64,7 +58,6 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
@@ -100,13 +93,15 @@ import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
+import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AnimateOnEnter
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import org.koin.compose.viewmodel.koinActivityViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.max
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicPage() {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
@@ -142,74 +137,111 @@ fun MusicPage() {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(text = "Music")
-                },
-            )
-        },
-    ) { paddingValues ->
-        Column(
-            modifier =
-                Modifier.padding(
-                    top = paddingValues.calculateTopPadding(),
-                ),
-        ) {
-            TopTabs(
-                modifier = Modifier,
-                tabs = { tabs },
-                selectTab = selectTab,
-                onSelectTab = {
-                    selectTab = it
-                },
-                extraText = { tab ->
-                    when (tab) {
-                        MusicTab.SONG -> if (songCount > 0) "${songCount}首" else null
-                        MusicTab.ALBUM -> if (albumCount > 0) "${albumCount}张" else null
-                        MusicTab.ARTIST -> if (artistCount > 0) "${artistCount}位" else null
-                    }
-                },
-            )
-            HorizontalPager(
-                state = pagerState,
-            ) {
-                val page = tabs[it]
-                when (page) {
-                    MusicTab.SONG -> AllSongPage(Modifier)
-                    MusicTab.ALBUM -> AlbumPage(Modifier)
-                    MusicTab.ARTIST -> ArtistsPage(Modifier)
+    val summaryText =
+        remember(songCount, albumCount, artistCount) {
+            buildString {
+                append("$songCount 首歌曲")
+                append(" · $albumCount 张专辑")
+                append(" · $artistCount 位歌手")
+            }
+        }
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface),
+    ) {
+        MusicPageHeader(
+            summaryText = summaryText,
+            tabs = tabs,
+            selectTab = selectTab,
+            onSelectTab = { selectTab = it },
+            extraText = { tab ->
+                when (tab) {
+                    MusicTab.SONG -> if (songCount > 0) "${songCount}首" else null
+                    MusicTab.ALBUM -> if (albumCount > 0) "${albumCount}张" else null
+                    MusicTab.ARTIST -> if (artistCount > 0) "${artistCount}位" else null
                 }
+            },
+        )
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f),
+        ) {
+            val page = tabs[it]
+            when (page) {
+                MusicTab.SONG -> AllSongPage(Modifier)
+                MusicTab.ALBUM -> AlbumPage(Modifier)
+                MusicTab.ARTIST -> ArtistsPage(Modifier)
             }
         }
     }
 }
 
 @Composable
-private fun TopTabs(
+private fun MusicPageHeader(
     modifier: Modifier = Modifier,
-    tabs: () -> List<MusicTab>,
+    summaryText: String,
+    tabs: List<MusicTab>,
     selectTab: MusicTab,
     onSelectTab: (MusicTab) -> Unit,
     extraText: (MusicTab) -> String? = { null },
 ) {
-    Row(
+    Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceContainerLow,
+                            MaterialTheme.colorScheme.surface,
+                        ),
+                    ),
+                ),
     ) {
-        tabs.invoke().forEach { tab ->
-            TopTabItem(
-                selectTab = selectTab,
-                onSelectTab = onSelectTab,
-                bandTab = tab,
-                extraText = extraText(tab),
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                    .padding(
+                        top = LayoutTokens.MusicHeaderTopPadding,
+                        bottom = LayoutTokens.MusicHeaderBottomPadding,
+                    ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
+        ) {
+            Text(
+                text = "音乐",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
             )
+            Text(
+                text = summaryText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(Shapes.ExtraLarge1CornerBasedShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                        .padding(LayoutTokens.MusicTabContainerPadding),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+            ) {
+                tabs.forEach { tab ->
+                    TopTabItem(
+                        modifier = Modifier.weight(1f),
+                        selectTab = selectTab,
+                        onSelectTab = onSelectTab,
+                        bandTab = tab,
+                        extraText = extraText(tab),
+                    )
+                }
+            }
         }
     }
 }
@@ -236,12 +268,12 @@ private fun TopTabItem(
             selectTab == bandTab
         }
 
-    val indicatorColor =
+    val containerColor =
         animateColorAsState(
             if (isSelected) {
                 MaterialTheme.colorScheme.primary
             } else {
-                MaterialTheme.colorScheme.surfaceContainer
+                Color.Transparent
             },
         ).value
 
@@ -254,39 +286,45 @@ private fun TopTabItem(
             },
         ).value
 
-    Row(
+    val secondaryTextColor =
+        animateColorAsState(
+            if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f)
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        ).value
+
+    Column(
         modifier =
             modifier
-                .clip(CircleShape)
+                .height(LayoutTokens.MusicTabHeight)
+                .clip(Shapes.LargeCornerBasedShape)
                 .background(
-                    MaterialTheme.colorScheme.surfaceContainer,
-                ).clickable {
+                    containerColor,
+                ).animateContentSize()
+                .clickable {
                     onSelectTab(bandTab)
-                },
-        verticalAlignment = Alignment.CenterVertically,
+                }.padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = bandTab.title,
-            modifier =
-                Modifier
-                    .background(indicatorColor, CircleShape)
-                    .innerShadow(
-                        CircleShape,
-                        Shadow(
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            radius = 3.dp,
-                        ),
-                    ).padding(horizontal = 16.dp, vertical = 8.dp),
             color = textColor,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        AnimatedVisibility(isSelected) {
-            Text(
-                text = extraText ?: "",
-                modifier =
-                    Modifier
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-        }
+        Spacer(Modifier.height(Spacing.ExtraSmall))
+        Text(
+            text = extraText ?: " ",
+            color = secondaryTextColor,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -300,7 +338,7 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
     val path = LocalNavigationPath.current
     val playerViewMode = LocalPlayerViewModel.current
 
-    val collapseDistancePx = with(density) { 72.dp.toPx() }
+    val collapseDistancePx = with(density) { LayoutTokens.MusicActionRowMinHeight.toPx() }
     val rawProgress by remember {
         derivedStateOf {
             if (lazyListState.firstVisibleItemIndex > 0) {
@@ -344,16 +382,10 @@ private fun AllSongPage(modifier: Modifier = Modifier) {
                         translationY = -size.height * animatedProgress * 0.3f
                         scaleX = 1f - animatedProgress * 0.03f
                         scaleY = 1f - animatedProgress * 0.05f
-                    }.background(
-                        Brush.verticalGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.surface,
-                                MaterialTheme.colorScheme.surface,
-                                MaterialTheme.colorScheme.surface,
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.01f),
-                            ),
-                        ),
-                    ).padding(horizontal = 16.dp, vertical = 8.dp),
+                    }.padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding, vertical = Spacing.Small)
+                    .clip(Shapes.ExtraLargeCornerBasedShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .padding(horizontal = Spacing.Small, vertical = Spacing.Small),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {

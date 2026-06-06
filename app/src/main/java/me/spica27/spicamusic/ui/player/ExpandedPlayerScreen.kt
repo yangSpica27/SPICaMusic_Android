@@ -85,6 +85,7 @@ import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
 import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCityVisualizer
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
@@ -98,6 +99,7 @@ import org.koin.compose.koinInject
 import timber.log.Timber
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import androidx.compose.ui.util.lerp as floatLerp
 
 // ============================================
 // 常量定义
@@ -108,6 +110,12 @@ private const val COVER_FADE_THRESHOLD = 0.8f
 private const val CONTROLS_FADE_THRESHOLD = 0.5f
 private const val PAGE_COUNT = 3
 const val DEFAULT_PAGE = 1
+private const val HERO_REVEAL_THRESHOLD = 0.08f
+private const val META_REVEAL_THRESHOLD = 0.18f
+private const val TAGS_REVEAL_THRESHOLD = 0.28f
+private const val SEEKBAR_REVEAL_THRESHOLD = 0.34f
+private const val PLAYER_CONTROLS_REVEAL_THRESHOLD = 0.48f
+private const val COLLAPSED_HERO_SCALE = 0.82f
 
 // ============================================
 // 主屏幕组件
@@ -121,7 +129,7 @@ fun ExpandedPlayerScreen(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
     onCollapse: () -> Unit,
-    progress: Float = 1f, // 展开进度，用于视觉效果
+    progressProvider: () -> Float = { 1f }, // 展开进度提供器，避免整棵树每帧重组
     initialPage: Int = DEFAULT_PAGE, // 初始页面索引
 ) {
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
@@ -197,6 +205,7 @@ fun ExpandedPlayerScreen(
             TopBar(
                 currentPage = pagerState.currentPage,
                 onCollapse = onCollapse,
+                progressProvider = progressProvider,
             )
 
             // 水平 Pager 内容区域
@@ -242,7 +251,7 @@ fun ExpandedPlayerScreen(
                                 onFavoriteClick = {
                                     viewModel.toggleLikeCurrentSong()
                                 },
-                                progress = progress,
+                                progressProvider = progressProvider,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -273,6 +282,7 @@ fun ExpandedPlayerScreen(
 private fun TopBar(
     currentPage: Int,
     onCollapse: () -> Unit,
+    progressProvider: () -> Float,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -282,7 +292,13 @@ private fun TopBar(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp),
+                    .graphicsLayer {
+                        val progress = progressProvider()
+                        val barAlpha = calculateFadeAlpha(progress, HERO_REVEAL_THRESHOLD)
+                        alpha = barAlpha
+                        translationY = (1f - barAlpha) * -20f
+                    }.padding(top = Spacing.Large)
+                    .padding(horizontal = Spacing.Large),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -451,7 +467,7 @@ private fun PlayerPage(
     onNextClick: () -> Unit,
     onPlayModeClick: () -> Unit,
     onFavoriteClick: () -> Unit,
-    progress: Float,
+    progressProvider: () -> Float,
     modifier: Modifier = Modifier,
     isSeekingState: Boolean = false,
 ) {
@@ -488,8 +504,8 @@ private fun PlayerPage(
     Column(
         modifier =
             modifier.padding(
-                vertical = 24.dp,
-                horizontal = 16.dp,
+                vertical = Spacing.ExtraLarge,
+                horizontal = Spacing.ExtraLarge,
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -497,9 +513,14 @@ private fun PlayerPage(
         Box(
             modifier =
                 Modifier
-                    .weight(1f, fill = false)
+                    .fillMaxWidth()
                     .aspectRatio(1f)
                     .graphicsLayer {
+                        val heroReveal = calculateFadeAlpha(progressProvider(), HERO_REVEAL_THRESHOLD)
+                        alpha = heroReveal
+                        translationY = (1f - heroReveal) * 48f
+                        scaleX = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
+                        scaleY = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
                         rotationY = rotateY
                         this.cameraDistance = cameraDistance * density
                     }.clip(Shapes.LargeCornerBasedShape)
@@ -557,7 +578,7 @@ private fun PlayerPage(
                         Modifier
                             .fillMaxSize()
                             .graphicsLayer {
-                                alpha = calculateFadeAlpha(progress, COVER_FADE_THRESHOLD)
+                                alpha = calculateFadeAlpha(progressProvider(), COVER_FADE_THRESHOLD)
                                 rotationY = 180f // 翻转背面使其正向显示
                             }.clip(Shapes.LargeCornerBasedShape),
                 ) {
@@ -628,7 +649,7 @@ private fun PlayerPage(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(Spacing.Huge))
 
         // 歌曲信息
         SongInfo(
@@ -638,9 +659,27 @@ private fun PlayerPage(
             artist =
                 currentMediaItem?.mediaMetadata?.artist?.toString()
                     ?: stringResource(R.string.unknown_artist),
+            modifier =
+                Modifier.graphicsLayer {
+                    val metaReveal = calculateFadeAlpha(progressProvider(), META_REVEAL_THRESHOLD)
+                    alpha = metaReveal
+                    translationY = (1f - metaReveal) * 24f
+                },
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(Spacing.ExtraLarge))
+
+        AudioQualityTags(
+            currentMediaItem = currentMediaItem,
+            modifier =
+                Modifier.graphicsLayer {
+                    val tagsReveal = calculateFadeAlpha(progressProvider(), TAGS_REVEAL_THRESHOLD)
+                    alpha = tagsReveal
+                    translationY = (1f - tagsReveal) * 20f
+                },
+        )
+
+        Spacer(modifier = Modifier.height(Spacing.Large))
 
         val amplituda: Amplituda = koinInject<Amplituda>()
 
@@ -674,71 +713,80 @@ private fun PlayerPage(
             Log.e("PlayerPage", "duration changed: $seekPosition")
         }
         // 进度条
-        AudioWaveSlider(
-            progress = if (duration > 0) (seekPosition / duration).coerceIn(0f, 1f) else 0f,
-            amplitudes = ampState,
-            onProgressChange = {
-                onValueChange.invoke(it)
-            },
-            onProgressChangeFinished = {
-                onValueChangeFinished.invoke()
-            },
-            waveformBrush = SolidColor(MaterialTheme.colorScheme.inverseOnSurface),
-            progressBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+        Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .graphicsLayer {
-                        alpha = calculateFadeAlpha(progress, CONTROLS_FADE_THRESHOLD)
-                    },
-        )
-        // 当前位置 和 总时长
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                Modifier.graphicsLayer {
+                    val seekbarReveal = calculateFadeAlpha(progressProvider(), SEEKBAR_REVEAL_THRESHOLD)
+                    alpha = seekbarReveal
+                    translationY = (1f - seekbarReveal) * 24f
+                },
         ) {
-            Text(
-                text = formatTime(realPosition.toLong()),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+            AudioWaveSlider(
+                progress = if (duration > 0) (seekPosition / duration).coerceIn(0f, 1f) else 0f,
+                amplitudes = ampState,
+                onProgressChange = {
+                    onValueChange.invoke(it)
+                },
+                onProgressChangeFinished = {
+                    onValueChangeFinished.invoke()
+                },
+                waveformBrush = SolidColor(MaterialTheme.colorScheme.inverseOnSurface),
+                progressBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(80.dp),
             )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // 滑动到的地方
-            AnimatedVisibility(
-                visible = isSeekingState,
+            // 当前位置 和 总时长
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    modifier =
-                        Modifier
-                            .background(
-                                MaterialTheme.colorScheme.inversePrimary,
-                                shape = Shapes.SmallCornerBasedShape,
-                            ).padding(vertical = 4.dp, horizontal = 8.dp),
-                    text = formatTime(seekPosition.toLong()),
+                    text = formatTime(realPosition.toLong()),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // 滑动到的地方
+                AnimatedVisibility(
+                    visible = isSeekingState,
+                ) {
+                    Text(
+                        modifier =
+                            Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.inversePrimary,
+                                    shape = Shapes.SmallCornerBasedShape,
+                                ).padding(vertical = 4.dp, horizontal = 8.dp),
+                        text = formatTime(seekPosition.toLong()),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Text(
+                    text = formatTime(duration),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
                 )
             }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = formatTime(duration),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
-            )
         }
-        Spacer(modifier = Modifier.height(32.dp))
+
+        Spacer(modifier = Modifier.height(Spacing.Huge))
         // 控制按钮
         PlayerControls(
             modifier =
                 Modifier.graphicsLayer {
-                    alpha = calculateFadeAlpha(progress, CONTROLS_FADE_THRESHOLD)
+                    val controlsReveal = calculateFadeAlpha(progressProvider(), PLAYER_CONTROLS_REVEAL_THRESHOLD)
+                    alpha = controlsReveal
+                    translationY = (1f - controlsReveal) * 28f
                 },
             isPlaying = isPlaying,
             playMode = playMode,
@@ -765,9 +813,10 @@ private fun PlayerPage(
 private fun SongInfo(
     title: String,
     artist: String,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         AnimatedContent(

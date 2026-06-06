@@ -23,6 +23,27 @@ object Shapes {
     val ExtraSmallCornerBasedShape = RoundedCornerShape(4.dp)
 }
 
+object Spacing {
+    val ExtraSmall = 4.dp
+    val Small = 8.dp
+    val Medium = 12.dp
+    val Large = 16.dp
+    val ExtraLarge = 24.dp
+    val Huge = 32.dp
+}
+
+object LayoutTokens {
+    val MusicHeaderHorizontalPadding = 20.dp
+    val MusicHeaderTopPadding = 20.dp
+    val MusicHeaderBottomPadding = 16.dp
+    val MusicTabContainerPadding = 4.dp
+    val MusicTabHeight = 64.dp
+    val MusicActionRowMinHeight = 72.dp
+    val PlayerCollapsedHorizontalInset = 16.dp
+    val PlayerCollapsedTopInset = 12.dp
+    val PlayerCollapsedCornerRadius = 28.dp
+}
+
 @RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun SPICaMusicTheme(
