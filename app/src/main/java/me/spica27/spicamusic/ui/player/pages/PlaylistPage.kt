@@ -359,7 +359,6 @@ fun CurrentPlaylistPage(
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = stringResource(R.string.delete),
-                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(6.dp))
                     Text(
@@ -376,7 +375,6 @@ fun CurrentPlaylistPage(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                         contentDescription = stringResource(R.string.create_playlist),
-                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.size(6.dp))
                     Text(
@@ -533,12 +531,14 @@ private fun PlaylistItemRow(
                     fontWeight = FontWeight.W600,
                     maxLines = 1,
                     modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     artist,
                     modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
             }
             AnimatedContent(isPlaying) { isPlaying ->
