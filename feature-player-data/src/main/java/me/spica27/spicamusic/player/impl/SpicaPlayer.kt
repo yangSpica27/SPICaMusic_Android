@@ -312,7 +312,6 @@ class SpicaPlayer(
                     }
 
                     is PlayerAction.AddToQueue -> {
-                        Timber.tag(TAG).w("AddToQueue  not implemented yet")
                         val items = withContext(Dispatchers.IO) { MediaLibrary.mediaIdToMediaItems(action.mediaIds) }
                         browser.addMediaItems(items)
                     }

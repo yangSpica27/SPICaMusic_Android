@@ -4,6 +4,7 @@ import com.linc.amplituda.Amplituda
 import com.skydoves.sandwich.retrofit.adapters.ApiResponseCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
 import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
@@ -20,6 +21,7 @@ import me.spica27.spicamusic.ui.allsong.AllSongsViewModel
 import me.spica27.spicamusic.ui.artist.ArtistViewModel
 import me.spica27.spicamusic.ui.artistdetail.ArtistDetailViewModel
 import me.spica27.spicamusic.ui.audioeffects.AudioEffectsViewModel
+import me.spica27.spicamusic.ui.dialog.SongMenuViewModel
 import me.spica27.spicamusic.ui.favorite.FavoriteViewModel
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
@@ -166,6 +168,17 @@ object AppModule {
             viewModel { parameters ->
                 AlbumDetailViewModel(
                     albumId = parameters.get<String>(),
+                    albumRepository = get<AlbumUseCases>(),
+                    player = get<PlayerUseCases>(),
+                )
+            }
+
+            // 歌曲菜单弹窗 ViewModel
+            viewModel { parameters ->
+                SongMenuViewModel(
+                    song = parameters.get<Song>(),
+                    songRepository = get<SongUseCases>(),
+                    playlistRepository = get<PlaylistUseCases>(),
                     albumRepository = get<AlbumUseCases>(),
                     player = get<PlayerUseCases>(),
                 )

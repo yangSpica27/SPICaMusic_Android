@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import com.google.common.collect.ImmutableList
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.common.entity.DynamicCoverType
@@ -124,9 +125,11 @@ class SettingsScene : StackScene() {
                             )
                         },
                         options =
-                            DynamicSpectrumBackground.presets.map {
-                                SelectOption(it.value, it.name)
-                            },
+                            ImmutableList.copyOf(
+                                DynamicSpectrumBackground.presets.map {
+                                    SelectOption(it.value, it.name)
+                                },
+                            ),
                         currentValue = spectrumValue,
                         onValueChange = viewModel::setDynamicSpectrumBackground,
                     )
@@ -143,9 +146,11 @@ class SettingsScene : StackScene() {
                             )
                         },
                         options =
-                            DynamicCoverType.presets.map {
-                                SelectOption(it.value, it.name)
-                            },
+                            ImmutableList.copyOf(
+                                DynamicCoverType.presets.map {
+                                    SelectOption(it.value, it.name)
+                                },
+                            ),
                         currentValue = coverTypeValue,
                         onValueChange = viewModel::setDynamicCoverType,
                     )
@@ -249,7 +254,7 @@ private fun SettingsSelectItem(
     title: String,
     subtitle: String? = null,
     icon: (@Composable () -> Unit)? = null,
-    options: List<SelectOption>,
+    options: ImmutableList<SelectOption>,
     currentValue: String,
     onValueChange: (String) -> Unit,
 ) {
