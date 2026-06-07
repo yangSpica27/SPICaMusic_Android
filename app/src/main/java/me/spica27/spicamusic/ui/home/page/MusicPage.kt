@@ -665,7 +665,7 @@ fun ArtistsPage(
     }
 }
 
-private fun Modifier.followHeaderSection(progress: Float): Modifier =
+fun Modifier.followHeaderSection(progress: Float): Modifier =
     this.layout { measurable, constraints ->
         val placeable = measurable.measure(constraints)
         val collapseProgress = 1f - (1f - progress) * (1f - progress)

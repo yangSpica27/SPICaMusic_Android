@@ -1,6 +1,9 @@
 package me.spica27.spicamusic.ui.home.page
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -45,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -145,14 +149,14 @@ fun LibraryPage() {
             when (tabs[page]) {
                 LibraryPageTab.Playlist ->
                     PlaylistPage(
-                        playlists = playlists,
+                        playlists = ImmutableList.copyOf(playlists),
                         weeklyStats = weeklyStats,
                     )
 
                 LibraryPageTab.Folder ->
                     FolderPage(
-                        extraFolders = extraFolders,
-                        ignoreFolders = ignoreFolders,
+                        extraFolders = ImmutableList.copyOf(extraFolders),
+                        ignoreFolders = ImmutableList.copyOf(ignoreFolders),
                         onScanClick = { path.push(ScannerScene()) },
                         onManageClick = { path.push(SettingsScene()) },
                     )
@@ -172,23 +176,38 @@ private fun LibraryPageHeader(
     onCreatePlaylistClick: () -> Unit,
     extraText: (LibraryPageTab) -> String? = { null },
 ) {
+    val scrollConnection = LocalBottomBarScrollConnection.current
+
+    val headerBackground =
+        animateColorAsState(
+            if (scrollConnection.isInline) {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
+        ).value
+
+    val progress =
+        animateFloatAsState(
+            targetValue = if (scrollConnection.isInline) 1f else 0f,
+            label = "header_progress",
+        ).value
+
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(
-                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surfaceContainerLow,
-                            MaterialTheme.colorScheme.surface,
-                        ),
-                    ),
+                .animateContentSize(
+                    animationSpec = tween(durationMillis = 60),
+                ).background(
+                    headerBackground,
                 ).statusBarsPadding(),
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .animateContentSize(animationSpec = tween(durationMillis = 80))
                     .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                     .padding(
                         top = LayoutTokens.MusicHeaderTopPadding,
@@ -196,19 +215,35 @@ private fun LibraryPageHeader(
                     ),
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
         ) {
-            Text(
-                text = "资料库",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = summaryText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Column(
+                modifier =
+                    Modifier
+                        .animateContentSize(animationSpec = tween(durationMillis = 120))
+                        .followHeaderSection(progress)
+                        .graphicsLayer {
+                            translationY = -28f * progress
+                            alpha = 1f - progress
+                        },
+                verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+            ) {
+                Text(
+                    text = "资料库",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = summaryText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .animateContentSize()
+                        .followHeaderSection(progress)
+                        .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
             ) {
                 ElevatedButton(
@@ -252,6 +287,7 @@ private fun LibraryPageHeader(
                         onSelectTab = onSelectTab,
                         tab = tab,
                         extraText = extraText(tab),
+                        progress = progress,
                     )
                 }
             }
@@ -274,6 +310,7 @@ private fun LibraryTabItem(
     onSelectTab: (LibraryPageTab) -> Unit,
     extraText: String? = null,
     tab: LibraryPageTab,
+    progress: Float = 0f,
 ) {
     val isSelected = remember(tab, selectTab) { selectTab == tab }
     val containerColor =
@@ -295,8 +332,9 @@ private fun LibraryTabItem(
     Column(
         modifier =
             modifier
-                .height(LayoutTokens.MusicTabHeight)
-                .clip(Shapes.LargeCornerBasedShape)
+                .animateContentSize(
+                    animationSpec = tween(durationMillis = 125),
+                ).clip(Shapes.LargeCornerBasedShape)
                 .background(containerColor)
                 .clickable { onSelectTab(tab) }
                 .padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall),
@@ -311,20 +349,21 @@ private fun LibraryTabItem(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        Spacer(Modifier.height(Spacing.ExtraSmall))
-        Text(
-            text = extraText ?: " ",
-            color = secondaryTextColor,
-            style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (progress < 0.1f && extraText != null) {
+            Text(
+                text = extraText,
+                color = secondaryTextColor,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
 @Composable
 private fun PlaylistPage(
-    playlists: List<Playlist>,
+    playlists: ImmutableList<Playlist>,
     weeklyStats: PlayStats?,
     modifier: Modifier = Modifier,
 ) {
@@ -379,13 +418,16 @@ private fun PlaylistPage(
                 )
             }
         }
+        item {
+            Spacer(Modifier.height(150.dp))
+        }
     }
 }
 
 @Composable
 private fun FolderPage(
-    extraFolders: List<ScanFolder>,
-    ignoreFolders: List<ScanFolder>,
+    extraFolders: ImmutableList<ScanFolder>,
+    ignoreFolders: ImmutableList<ScanFolder>,
     onScanClick: () -> Unit,
     onManageClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -443,6 +485,10 @@ private fun FolderPage(
             items(ignoreFolders.size) { index ->
                 FolderRow(folder = ignoreFolders[index])
             }
+        }
+
+        item {
+            Spacer(Modifier.height(150.dp))
         }
     }
 }
