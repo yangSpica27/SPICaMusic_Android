@@ -66,6 +66,7 @@ import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
 import me.spica27.spicamusic.ui.scan.ScannerScene
 import me.spica27.spicamusic.ui.settings.SettingsScene
+import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
@@ -191,6 +192,7 @@ private fun LibraryPageHeader(
         animateFloatAsState(
             targetValue = if (scrollConnection.isInline) 1f else 0f,
             label = "header_progress",
+            animationSpec = tween(durationMillis = 155, easing = EaseInOutCubic),
         ).value
 
     Box(
@@ -198,7 +200,7 @@ private fun LibraryPageHeader(
             modifier
                 .fillMaxWidth()
                 .animateContentSize(
-                    animationSpec = tween(durationMillis = 60),
+                    animationSpec = tween(durationMillis = 185),
                 ).background(
                     headerBackground,
                 ).statusBarsPadding(),
@@ -207,7 +209,7 @@ private fun LibraryPageHeader(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .animateContentSize(animationSpec = tween(durationMillis = 80))
+                    .animateContentSize(animationSpec = tween(durationMillis = 180))
                     .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                     .padding(
                         top = LayoutTokens.MusicHeaderTopPadding,
@@ -218,7 +220,7 @@ private fun LibraryPageHeader(
             Column(
                 modifier =
                     Modifier
-                        .animateContentSize(animationSpec = tween(durationMillis = 120))
+                        .animateContentSize(animationSpec = tween(durationMillis = 220))
                         .followHeaderSection(progress)
                         .graphicsLayer {
                             translationY = -28f * progress
@@ -241,7 +243,7 @@ private fun LibraryPageHeader(
             Row(
                 modifier =
                     Modifier
-                        .animateContentSize()
+                        .animateContentSize(animationSpec = tween(durationMillis = 255))
                         .followHeaderSection(progress)
                         .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
@@ -333,7 +335,7 @@ private fun LibraryTabItem(
         modifier =
             modifier
                 .animateContentSize(
-                    animationSpec = tween(durationMillis = 125),
+                    animationSpec = tween(durationMillis = 225),
                 ).clip(Shapes.LargeCornerBasedShape)
                 .background(containerColor)
                 .clickable { onSelectTab(tab) }
