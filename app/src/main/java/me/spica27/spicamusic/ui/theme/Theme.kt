@@ -38,6 +38,9 @@ object LayoutTokens {
     val MusicTabContainerPadding = 4.dp
     val MusicTabHeight = 64.dp
     val MusicActionRowMinHeight = 72.dp
+    val PageHeaderFollowDistance = 240.dp
+    val PageHeaderCollapsedTitleScale = 0.82f
+    val PageHeaderCollapsedTabHeight = 52.dp
     val PlayerCollapsedHorizontalInset = 16.dp
     val PlayerCollapsedTopInset = 12.dp
     val PlayerCollapsedCornerRadius = 28.dp
