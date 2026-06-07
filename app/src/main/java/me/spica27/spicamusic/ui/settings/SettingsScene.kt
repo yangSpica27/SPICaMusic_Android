@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,7 +47,6 @@ import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
-import me.spica27.spicamusic.ui.scan.ScannerScene
 import org.koin.compose.viewmodel.koinViewModel
 
 class SettingsScene : StackScene() {
@@ -191,25 +189,6 @@ class SettingsScene : StackScene() {
                                 horizontal = 16.dp,
                                 vertical = 4.dp,
                             ),
-                    )
-                }
-
-                // 工具
-                item {
-                    SettingsGroupHeader(title = "工具")
-                }
-                item {
-                    SettingsNavigationItem(
-                        title = "扫描音乐",
-                        subtitle = "扫描设备上的本地音乐文件",
-                        icon = {
-                            Icon(
-                                Icons.Default.Scanner,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        onClick = { path.push(ScannerScene()) },
                     )
                 }
             }

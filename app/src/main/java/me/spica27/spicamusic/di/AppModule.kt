@@ -191,6 +191,7 @@ object AppModule {
                     albumRepositoryImpl = get<AlbumUseCases>(),
                     playlistRepositoryImpl = get<PlaylistUseCases>(),
                     historyRepository = get<PlayHistoryUseCases>(),
+                    scanFolderUseCases = get<ScanFolderUseCases>(),
                 )
             }
 

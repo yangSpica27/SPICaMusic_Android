@@ -1,7 +1,5 @@
 package me.spica27.spicamusic.ui.home.page
 
-import androidx.compose.animation.core.EaseOutCubic
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,24 +9,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.style.ExperimentalFoundationStyleApi
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Hexagon
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlaylistPlay
-import androidx.compose.material.icons.filled.Scanner
+import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
@@ -39,81 +32,67 @@ import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.scene.Scene
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
+import me.spica27.spicamusic.ui.home.HomePage
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
-import me.spica27.spicamusic.ui.scan.ScannerScene
+import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
 import me.spica27.spicamusic.ui.search.SearchScene
 import me.spica27.spicamusic.ui.settings.SettingsScene
-import me.spica27.spicamusic.ui.widget.AnimateOnEnter
+import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
-import kotlin.random.Random
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationStyleApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinderPage() {
     val path = LocalNavigationPath.current
-
-    val scrollBehavior =
-        androidx.compose.material3.TopAppBarDefaults
-            .enterAlwaysScrollBehavior()
-
     val homeViewModel: HomeViewModel = koinActivityViewModel()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    val frequentSongs = homeViewModel.frequentSongs.collectAsStateWithLifecycle().value
+    val frequentSongs by homeViewModel.frequentSongs.collectAsStateWithLifecycle()
+    val favoriteSongs by homeViewModel.favoriteSongs.collectAsStateWithLifecycle()
+    val playlists by homeViewModel.playlists.collectAsStateWithLifecycle()
 
-    val playViewModel = LocalPlayerViewModel.current
+    val playerViewModel = LocalPlayerViewModel.current
 
-    val shortcuts =
-        remember {
-            listOf(
-                Shortcut(
-                    title = "我的歌单",
-                    icon = Icons.Default.PlaylistPlay,
-                    scene = SettingsScene(),
-                ),
-                Shortcut(
-                    title = "设置中心",
-                    icon = Icons.Default.Settings,
-                    scene = SettingsScene(),
-                ),
-                Shortcut(
-                    title = "听歌统计",
-                    icon = Icons.Default.Hexagon,
-                ),
-                Shortcut(
-                    title = "音乐扫描",
-                    icon = Icons.Default.Scanner,
-                    scene = ScannerScene(),
-                ),
-            )
+    val summaryText =
+        remember(frequentSongs.size, favoriteSongs.size, playlists.size) {
+            buildString {
+                append("${frequentSongs.size} 首常听")
+                append(" · ${favoriteSongs.size} 首收藏")
+                append(" · ${playlists.size} 个歌单")
+            }
         }
 
     Scaffold(
@@ -122,17 +101,17 @@ fun FinderPage() {
                 title = { Text("发现") },
                 scrollBehavior = scrollBehavior,
                 actions = {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = { path.push(SettingsScene()) }) {
                         Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = null,
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "设置中心",
                         )
                     }
                 },
             )
         },
     ) { paddingValues ->
-        LazyVerticalGrid(
+        LazyColumn(
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -143,215 +122,82 @@ fun FinderPage() {
                     top = paddingValues.calculateTopPadding(),
                     bottom = paddingValues.calculateBottomPadding() + 200.dp,
                 ),
-            horizontalArrangement =
-                Arrangement
-                    .spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            columns =
-                androidx.compose.foundation.lazy.grid.GridCells
-                    .Fixed(2),
-            overscrollEffect =
-                rememberIOSOverScrollEffect(
-                    orientation = Orientation.Vertical,
-                ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Large),
+            overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                            .clip(MaterialTheme.shapes.large)
-                            .background(MaterialTheme.colorScheme.secondaryContainer)
-                            .clickable {
-                                path.push(SearchScene())
-                            }.padding(horizontal = 12.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(24.dp),
-                    )
-                    Text(
-                        text = "根据关键词搜索歌曲",
-                        style =
-                            MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Light,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            ),
-                    )
-                }
+            item {
+                FinderHeroSearchCard(
+                    summaryText = summaryText,
+                    onClick = { path.push(SearchScene()) },
+                )
             }
 
-            // ========= 快捷入口START =========
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Title("快捷入口")
-                }
-            }
-            itemsIndexed(shortcuts, key = { index, shortcut ->
-                "shortcut-$index-${shortcut.title}"
-            }) { index, shortcut ->
-                val delayMillis = remember { Random.nextInt(0, 280) }
-                val durationMillis = remember { Random.nextInt(100, 700) }
-                AnimateOnEnter(
-                    delayMillis = delayMillis,
-                    animationSpec =
-                        tween(
-                            durationMillis = durationMillis,
-                            delayMillis = delayMillis,
-                            easing = EaseOutCubic,
-                        ),
-                ) { progress, _ ->
-                    ShortcutItem(
-                        index = index,
-                        modifier =
-                            Modifier
-                                .graphicsLayer {
-                                    this.alpha = progress
-                                    scaleX = 1.0f * progress
-                                    scaleY = 1.0f * progress
-                                    transformOrigin = TransformOrigin(0.5f, 0.5f)
-                                }.fillMaxSize(),
-                        title = shortcut.title,
-                        scene = shortcut.scene,
-                        icon = shortcut.icon,
-                    )
-                }
-            }
-            // ========= 快捷入口END =========
-
-            // ========= 推荐歌单START =========
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Title("推荐歌曲")
-                }
+            item {
+                PrimaryActionGroup(
+                    onOpenLibrary = { homeViewModel.navigateToPage(HomePage.Library) },
+                    onOpenMusic = { homeViewModel.navigateToPage(HomePage.Music) },
+                    onOpenSettings = { path.push(SettingsScene()) },
+                )
             }
 
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    overscrollEffect =
-                        rememberIOSOverScrollEffect(
-                            orientation = Orientation.Horizontal,
-                        ),
-                ) {
-                    items(frequentSongs) { song ->
-                        SongItem(song, clickable = {
-                            playViewModel.updatePlaylistWithSongs(
-                                frequentSongs,
-                                startSong = song,
-                                autoStart = true,
-                            )
-                        })
-                    }
-                }
+            item {
+                SectionTitle(
+                    title = "最近常听",
+                    subtitle = "${frequentSongs.size} 首",
+                )
             }
 
-            // ========= 推荐歌单END =========
+            item {
+                SongRail(
+                    songs = frequentSongs,
+                    emptyTitle = "还没有常听歌曲",
+                    emptySubtitle = "开始播放音乐后，这里会出现你最常听的内容。",
+                    onSongClick = { song ->
+                        playerViewModel.updatePlaylistWithSongs(
+                            songs = frequentSongs,
+                            startSong = song,
+                            autoStart = true,
+                        )
+                    },
+                )
+            }
 
-            // =========== 统计START ============
+            item {
+                SectionTitle(
+                    title = "我的收藏",
+                    subtitle = "${favoriteSongs.size} 首",
+                )
+            }
 
-            // =========== 统计END ============
-        }
-    }
-}
+            item {
+                SongRail(
+                    songs = favoriteSongs.take(10),
+                    emptyTitle = "还没有收藏歌曲",
+                    emptySubtitle = "在播放器或歌曲菜单中收藏喜欢的歌曲，它们会在这里展示。",
+                    onSongClick = { song ->
+                        playerViewModel.updatePlaylistWithSongs(
+                            songs = favoriteSongs,
+                            startSong = song,
+                            autoStart = true,
+                        )
+                    },
+                )
+            }
 
-@Composable
-private fun Title(title: String) {
-    Text(
-        text = title,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        style =
-            MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.W600,
-            ),
-    )
-}
+            item {
+                SectionTitle(
+                    title = "歌单速览",
+                    subtitle = "${playlists.size} 个",
+                )
+            }
 
-@Composable
-private fun ShortcutItem(
-    index: Int,
-    modifier: Modifier,
-    title: String,
-    icon: ImageVector,
-    scene: Scene? = null,
-) {
-    val path = LocalNavigationPath.current
-
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(
-                    end = ((index % 2) * 16).dp,
-                    start = ((1 - index % 2) * 16).dp,
-                ).height(80.dp)
-                .clip(MaterialTheme.shapes.medium)
-                .background(
-                    MaterialTheme.colorScheme.surfaceContainer,
-                ).clickable {
-                    if (scene != null) {
-                        path.push(scene)
-                    }
-                },
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize(),
-        ) {
-            Text(
-                text = title,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(
-                            16.dp,
-                        ),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterEnd)
-                        .size(64.dp)
-                        .rotate(45f)
-                        .graphicsLayer {
-                            translationX = 16.dp.toPx()
-                            translationY = 10.dp.toPx()
-                        }.background(
-                            Brush.radialGradient(
-                                colors =
-                                    listOf(
-                                        MaterialTheme.colorScheme.primaryFixed,
-                                        MaterialTheme.colorScheme.primaryFixedDim,
-                                        MaterialTheme.colorScheme.inversePrimary,
-                                    ),
-                            ),
-                            shape = MaterialTheme.shapes.extraSmall,
-                        ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier =
-                        Modifier
-                            .size(32.dp),
+            item {
+                PlaylistRail(
+                    playlists = playlists.take(8),
+                    onPlaylistClick = { playlist ->
+                        path.push(PlaylistDetailScene(playlist))
+                    },
+                    onEmptyClick = { homeViewModel.navigateToPage(HomePage.Library) },
                 )
             }
         }
@@ -359,40 +205,392 @@ private fun ShortcutItem(
 }
 
 @Composable
-private fun SongItem(
-    song: Song,
-    clickable: (Song) -> Unit,
+private fun FinderHeroSearchCard(
+    summaryText: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                .padding(top = Spacing.Small)
+                .clip(Shapes.ExtraLarge1CornerBasedShape)
+                .background(
+                    Brush.linearGradient(
+                        colors =
+                            listOf(
+                                MaterialTheme.colorScheme.secondaryContainer,
+                                MaterialTheme.colorScheme.tertiaryContainer,
+                            ),
+                    ),
+                ).clickable(onClick = onClick)
+                .padding(Spacing.ExtraLarge),
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+                Column {
+                    Text(
+                        text = "搜索音乐",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                    Text(
+                        text = "按歌曲、歌手、专辑快速查找",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                    )
+                }
+            }
+            Text(
+                text = summaryText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PrimaryActionGroup(
+    onOpenLibrary: () -> Unit,
+    onOpenMusic: () -> Unit,
+    onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
         modifier =
-            Modifier
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        FinderFeatureCard(
+            title = "我的资料库",
+            subtitle = "管理歌单、扫描音乐、整理来源",
+            icon = Icons.Default.LibraryMusic,
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onOpenLibrary,
+            accent =
+                Brush.linearGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.surfaceContainerLow,
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
+                    ),
+                ),
+        )
+
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)) {
+            FinderFeatureCard(
+                title = "全部音乐",
+                subtitle = "按歌曲、专辑、歌手浏览",
+                icon = Icons.Default.MusicNote,
+                modifier = Modifier.weight(1f),
+                onClick = onOpenMusic,
+            )
+            FinderFeatureCard(
+                title = "设置中心",
+                subtitle = "主题、背景、播放偏好",
+                icon = Icons.Default.Settings,
+                modifier =
+                    Modifier
+                        .weight(1f),
+                onClick = onOpenSettings,
+            )
+        }
+    }
+}
+
+@Composable
+private fun FinderFeatureCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    accent: Brush =
+        Brush.linearGradient(
+            listOf(
+                MaterialTheme.colorScheme.surfaceContainerLow,
+                MaterialTheme.colorScheme.surfaceContainer,
+            ),
+        ),
+) {
+    Box(
+        modifier =
+            modifier
+                .clip(Shapes.ExtraLargeCornerBasedShape)
+                .background(accent)
+                .clickable(onClick = onClick)
+                .padding(Spacing.Large),
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                minLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SongRail(
+    songs: List<Song>,
+    emptyTitle: String,
+    emptySubtitle: String,
+    onSongClick: (Song) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (songs.isEmpty()) {
+        EmptyFinderCard(
+            title = emptyTitle,
+            subtitle = emptySubtitle,
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
+        )
+    } else {
+        LazyRow(
+            modifier = modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+            overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Horizontal),
+        ) {
+            items(
+                items = songs,
+                key = { it.mediaStoreId },
+            ) { song ->
+                FinderSongCard(
+                    song = song,
+                    onClick = { onSongClick(song) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FinderSongCard(
+    song: Song,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
                 .width(160.dp)
-                .clickable {
-                    clickable.invoke(song)
-                },
+                .clickable(onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
         Card(
             modifier =
                 Modifier
-                    .size(160.dp, 160.dp),
+                    .size(160.dp)
+                    .clip(Shapes.ExtraLargeCornerBasedShape),
         ) {
             SongCover(song)
         }
-        Spacer(
-            modifier = Modifier.size(8.dp),
-        )
         Text(
-            song.displayName,
-            style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                ),
+            text = song.displayName,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
-            song.artist,
+            text = song.artist,
             style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun PlaylistRail(
+    playlists: List<Playlist>,
+    onPlaylistClick: (Playlist) -> Unit,
+    onEmptyClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (playlists.isEmpty()) {
+        EmptyFinderCard(
+            title = "还没有歌单",
+            subtitle = "前往资料库创建歌单后，这里会展示你的歌单速览。",
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
+            onClick = onEmptyClick,
+        )
+    } else {
+        LazyRow(
+            modifier = modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+            overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Horizontal),
+        ) {
+            items(
+                items = playlists,
+                key = { it.playlistId ?: it.playlistName.hashCode().toLong() },
+            ) { playlist ->
+                FinderPlaylistCard(
+                    playlist = playlist,
+                    onClick = { onPlaylistClick(playlist) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FinderPlaylistCard(
+    playlist: Playlist,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val playlistUseCases = koinInject<PlaylistUseCases>()
+    val albumIds =
+        playlistUseCases
+            .getPlaylistCoverAlbumIds(playlist.playlistId ?: 0L)
+            .collectAsState(initial = emptyList())
+    val size =
+        playlistUseCases
+            .getSongSizeInPlaylist(playlist.playlistId ?: 0L)
+            .collectAsState(initial = 0)
+
+    Column(
+        modifier =
+            modifier
+                .width(168.dp)
+                .clickable(onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+    ) {
+        PlaylistCoverView(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(Shapes.ExtraLargeCornerBasedShape),
+            albumIds = albumIds.value,
+        )
+        Text(
+            text = playlist.playlistName,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = "${size.value} 首歌曲",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun EmptyFinderCard(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+) {
+    Column(
+        modifier =
+            modifier
+                .clip(Shapes.ExtraLargeCornerBasedShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .clickable(enabled = onClick != null) { onClick?.invoke() }
+                .padding(Spacing.Large),
+        verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SectionTitle(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -406,11 +604,7 @@ private fun SongCover(song: Song) {
     LandscapistImage(
         imageModel = { coverUri },
         modifier = Modifier.fillMaxSize(),
-        imageOptions =
-            ImageOptions(
-                requestSize = IntSize(200, 200),
-            ),
-        success = { state, painter ->
+        success = { _, painter ->
             ShowOnIdleContent(true) {
                 Image(
                     painter = painter,
@@ -432,8 +626,8 @@ private fun SongCover(song: Song) {
 }
 
 @Immutable
-class Shortcut(
+private class Shortcut(
     val title: String,
     val icon: ImageVector,
-    val scene: Scene? = null,
+    val onClick: () -> Unit,
 )

@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,12 @@ class HomeScene : StackScene() {
         val currentPage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
 
         val bottomBarScrollConnection = rememberBottomBarScrollConnection()
+
+        BackHandler(
+            currentPage != HomePage.Finder,
+        ) {
+            homeViewModel.navigateToPage(HomePage.Finder)
+        }
 
         CompositionLocalProvider(
             LocalBottomBarScrollConnection provides bottomBarScrollConnection,
