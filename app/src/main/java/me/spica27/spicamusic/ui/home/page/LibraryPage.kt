@@ -590,6 +590,7 @@ private fun SectionTitle(
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = subtitle,
@@ -618,6 +619,7 @@ private fun EmptyLibraryCard(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = subtitle,
@@ -713,6 +715,7 @@ private fun PlaylistItem(
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = "${size.value} 首歌曲",

@@ -496,6 +496,7 @@ private fun SongItem(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.W600,
                 maxLines = 1,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = song.artist,
@@ -622,6 +623,7 @@ private fun AlbumGridItem(
             fontWeight = FontWeight.W600,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = album.artist,
@@ -747,6 +749,7 @@ private fun ArtistRow(
                 fontWeight = FontWeight.W600,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = "${artist.songCount} 首歌曲",

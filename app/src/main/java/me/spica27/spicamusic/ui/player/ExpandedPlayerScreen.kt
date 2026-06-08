@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.ui.player
 
 import android.os.Build
-import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseInOut
@@ -516,7 +515,8 @@ private fun PlayerPage(
                     .fillMaxWidth()
                     .aspectRatio(1f)
                     .graphicsLayer {
-                        val heroReveal = calculateFadeAlpha(progressProvider(), HERO_REVEAL_THRESHOLD)
+                        val heroReveal =
+                            calculateFadeAlpha(progressProvider(), HERO_REVEAL_THRESHOLD)
                         alpha = heroReveal
                         translationY = (1f - heroReveal) * 48f
                         scaleX = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
@@ -709,14 +709,12 @@ private fun PlayerPage(
                 ampState = data
             }
         }
-        LaunchedEffect(seekPosition) {
-            Log.e("PlayerPage", "duration changed: $seekPosition")
-        }
         // 进度条
         Column(
             modifier =
                 Modifier.graphicsLayer {
-                    val seekbarReveal = calculateFadeAlpha(progressProvider(), SEEKBAR_REVEAL_THRESHOLD)
+                    val seekbarReveal =
+                        calculateFadeAlpha(progressProvider(), SEEKBAR_REVEAL_THRESHOLD)
                     alpha = seekbarReveal
                     translationY = (1f - seekbarReveal) * 24f
                 },
@@ -783,11 +781,8 @@ private fun PlayerPage(
         // 控制按钮
         PlayerControls(
             modifier =
-                Modifier.graphicsLayer {
-                    val controlsReveal = calculateFadeAlpha(progressProvider(), PLAYER_CONTROLS_REVEAL_THRESHOLD)
-                    alpha = controlsReveal
-                    translationY = (1f - controlsReveal) * 28f
-                },
+                Modifier
+                    .weight(1f),
             isPlaying = isPlaying,
             playMode = playMode,
             isLike = isLike,
@@ -882,6 +877,21 @@ private fun PlayerControls(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // 播放模式
+            IconButton(onClick = onPlayModeClick) {
+                Icon(
+                    imageVector =
+                        when (playMode) {
+                            PlayMode.LOOP -> Icons.Rounded.Repeat
+                            PlayMode.LIST -> Icons.Rounded.RepeatOne
+                            PlayMode.SHUFFLE -> Icons.Rounded.Shuffle
+                        },
+                    contentDescription = stringResource(R.string.play_mode),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+
             // 上一首
             IconButton(
                 onClick = onPreviousClick,
@@ -933,30 +943,6 @@ private fun PlayerControls(
                     contentDescription = stringResource(R.string.next_track),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(40.dp),
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // 次要控制行
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // 播放模式
-            IconButton(onClick = onPlayModeClick) {
-                Icon(
-                    imageVector =
-                        when (playMode) {
-                            PlayMode.LOOP -> Icons.Rounded.Repeat
-                            PlayMode.LIST -> Icons.Rounded.RepeatOne
-                            PlayMode.SHUFFLE -> Icons.Rounded.Shuffle
-                        },
-                    contentDescription = stringResource(R.string.play_mode),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(28.dp),
                 )
             }
 
