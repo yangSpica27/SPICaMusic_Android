@@ -2,7 +2,10 @@ package me.spica27.spicamusic.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalView
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.navkit.stack.NavigationStack
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.ui.home.HomeScene
@@ -20,15 +23,23 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 fun AppScaffold() {
     val preferencesManager = koinInject<PreferencesManager>()
 
-    val isDarkMode =
+    val isDarkMode by
         preferencesManager
             .getBoolean(PreferencesManager.Keys.DARK_MODE)
-            .collectAsState(false)
+            .collectAsStateWithLifecycle(false)
 
     val playerViewModel: PlayerViewModel = koinActivityViewModel()
-    val color = playerViewModel.playerThemeColor.collectAsState().value
+    val color by playerViewModel.playerThemeColor.collectAsStateWithLifecycle()
+    val keepScreenOn by
+        preferencesManager
+            .getBoolean(PreferencesManager.Keys.KEEP_SCREEN_ON)
+            .collectAsStateWithLifecycle(false)
+    val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
+
+    KeepScreenOnEffect(enabled = keepScreenOn && isPlaying)
+
     SPICaMusicTheme(
-        darkTheme = isDarkMode.value,
+        darkTheme = isDarkMode,
         themeColor = color,
     ) {
         CompositionLocalProvider(LocalPlayerViewModel provides playerViewModel) {
@@ -39,6 +50,20 @@ fun AppScaffold() {
                 content = {
                 },
             )
+        }
+    }
+}
+
+@Composable
+private fun KeepScreenOnEffect(enabled: Boolean) {
+    val view = LocalView.current
+
+    DisposableEffect(view, enabled) {
+        val previous = view.keepScreenOn
+        view.keepScreenOn = enabled
+
+        onDispose {
+            view.keepScreenOn = previous
         }
     }
 }

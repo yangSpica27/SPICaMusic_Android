@@ -295,14 +295,14 @@ fun CurrentPlaylistPage(
             ) {
                 itemsIndexed(
                     currentPlaylist,
-                    key = { index, song -> song.mediaId },
+                    key = { index, song -> "${index}_${song.mediaId}" },
                 ) { index, item ->
                     val isSelected = selectedMediaIds.contains(item.mediaId)
                     val isPlaying = currentMediaItem?.mediaId == item.mediaId
                     PlaylistItemRow(
                         index = index,
                         modifier = Modifier.animateItem(),
-                        item = item,
+                        item = { item },
                         isPlaying = isPlaying,
                         isMultiSelectMode = isMultiSelectMode,
                         isSelected = isSelected,
@@ -445,7 +445,7 @@ fun CurrentPlaylistPage(
 @Composable
 private fun PlaylistItemRow(
     index: Int,
-    item: MediaItem,
+    item: () -> MediaItem,
     isPlaying: Boolean,
     isMultiSelectMode: Boolean,
     isSelected: Boolean,
@@ -453,7 +453,7 @@ private fun PlaylistItemRow(
     onLongClick: () -> Unit,
     modifier: Modifier,
 ) {
-    val metadata = item.mediaMetadata
+    val metadata = item.invoke().mediaMetadata
     val title =
         remember(metadata) {
             metadata.title?.toString() ?: App.getInstance().getString(R.string.unknown_song)

@@ -2,14 +2,18 @@ package me.spica27.spicamusic.ui.theme
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.materialkolor.DynamicMaterialTheme
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
+import me.spica27.spicamusic.ui.widget.rememberClickHighlightIndication
 
 object Shapes {
     val ExtraLarge2CornerBasedShape = RoundedCornerShape(32.dp)
@@ -57,8 +61,16 @@ fun SPICaMusicTheme(
         seedColor = themeColor,
         isDark = darkTheme,
         animate = true,
-        content = content,
         specVersion = ColorSpec.SpecVersion.SPEC_2025,
         style = PaletteStyle.TonalSpot,
-    )
+    ) {
+        val clickHighlightIndication =
+            rememberClickHighlightIndication(
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        CompositionLocalProvider(
+            LocalIndication provides clickHighlightIndication,
+            content = content,
+        )
+    }
 }

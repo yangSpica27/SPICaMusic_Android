@@ -6,13 +6,34 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ElevatedButton
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DataUsage
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -20,13 +41,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.player.formatTime
 
 class SongInfoScene(
@@ -55,7 +79,8 @@ class SongInfoScene(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .graphicsLayer { alpha = enterProgress.value * 0.5f }
+                        .graphicsLayer { alpha = enterProgress.value }
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.42f))
                         .clickable(
                             interactionSource = interactionSource,
                             indication = null,
@@ -66,7 +91,7 @@ class SongInfoScene(
             Box(
                 modifier =
                     Modifier
-                        .align(Alignment.Center)
+                        .align(Alignment.BottomCenter)
                         .graphicsLayer {
                             val p = enterProgress.value
                             alpha = p
@@ -82,46 +107,103 @@ class SongInfoScene(
     @Composable
     override fun DialogContent() {
         val path = LocalNavigationPath.current
-        Box(
-            Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
+        val scene = LocalScene.current
+        Surface(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                    .navigationBarsPadding()
+                    .padding(bottom = 12.dp),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
         ) {
-            Box(
+            Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(
-                            horizontal = 24.dp,
-                        ).clip(MaterialTheme.shapes.large)
-                        .background(
-                            MaterialTheme.colorScheme.secondaryContainer,
-                        ),
+                        .padding(horizontal = 20.dp),
             ) {
-                Column(
-                    Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                Box(
+                    modifier =
+                        Modifier
+                            .padding(top = 10.dp)
+                            .width(44.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f))
+                            .align(Alignment.CenterHorizontally),
+                )
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 18.dp, bottom = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Text("信息", style = MaterialTheme.typography.headlineSmall)
-                    Spacer(Modifier.height(5.dp))
-                    Item("歌曲名称", song.displayName)
-                    Item("歌手", song.artist)
-                    Item("专辑", song.album)
-                    Item("时长", formatTime(song.duration))
-                    Item("文件路径", song.path)
-                    Item("文件大小", "${song.size / 1024 / 1024} MB")
-                    Item("文件格式", song.codec)
-
-                    Spacer(Modifier.height(20.dp))
-                    ElevatedButton(
-                        onClick = {
-                            path.popTop()
-                        },
-                        modifier = Modifier.align(Alignment.End),
+                    Surface(
+                        modifier = Modifier.size(72.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        tonalElevation = 3.dp,
                     ) {
-                        Text("关闭")
+                        LandscapistImage(
+                            imageModel = { song.getCoverUri() },
+                            modifier = Modifier.fillMaxSize(),
+                        )
                     }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "歌曲信息",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = song.displayName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ) {
+                        IconButton(onClick = { path.pop(scene) }) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "关闭",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp)
+                            .verticalScroll(rememberScrollState())
+                            .padding(top = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    InfoItem(Icons.Default.MusicNote, "歌曲名称", song.displayName)
+                    InfoItem(Icons.Default.Person, "歌手", song.artist)
+                    InfoItem(Icons.Default.Album, "专辑", song.album)
+                    InfoItem(Icons.Default.Schedule, "时长", formatTime(song.duration))
+                    InfoItem(Icons.Default.Folder, "文件路径", song.path)
+                    InfoItem(Icons.Default.DataUsage, "文件大小", "${song.size / 1024 / 1024} MB")
+                    InfoItem(Icons.Default.Info, "文件格式", song.codec)
+                }
+                Spacer(Modifier.height(14.dp))
+                Button(
+                    onClick = { path.pop(scene) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                ) {
+                    Text("关闭")
                 }
             }
         }
@@ -129,23 +211,51 @@ class SongInfoScene(
 }
 
 @Composable
-private fun Item(
+private fun InfoItem(
+    icon: ImageVector,
     title: String,
     content: String,
 ) {
-    Column(
-        Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
-        Text(
-            title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            content,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Surface(
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(21.dp),
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = if (title == "文件路径") 2 else 1,
+                )
+            }
+        }
     }
 }

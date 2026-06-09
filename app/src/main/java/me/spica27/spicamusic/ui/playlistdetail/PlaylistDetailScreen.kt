@@ -1,11 +1,18 @@
 package me.spica27.spicamusic.ui.playlistdetail
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +26,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -77,9 +85,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -139,7 +151,14 @@ fun PlaylistDetailScreen(playlist: Playlist) {
         if (playlistDeleted) path.popTop()
     }
 
+    BackHandler(isMultiSelectMode) {
+        viewModel.toggleMultiSelectMode()
+    }
+
     val displayName = currentPlaylist?.playlistName ?: playlist.playlistName
+    BackHandler(enabled = isSearchMode) {
+        viewModel.exitSearchMode()
+    }
 
     // ── 滚动状态与动画 ──────────────────────────────────────────────────────
     val lazyListState = rememberLazyListState()
@@ -304,135 +323,132 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                 .align(Alignment.TopStart)
                 .background(MaterialTheme.colorScheme.background.copy(alpha = hdrAlpha)),
         ) {
-            if (isSearchMode) {
-                SearchTopBar(
-                    keyword = searchKeyword,
-                    onKeywordChange = viewModel::updateSearchKeyword,
-                    onClose = viewModel::exitSearchMode,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                            .padding(horizontal = 4.dp, vertical = 4.dp),
-                )
-            } else {
-                Row(
+            AnimatedContent(
+                targetState = isSearchMode,
+                modifier =
                     Modifier
                         .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = { path.popTop() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        )
+                        .align(Alignment.BottomCenter),
+                transitionSpec = {
+                    if (targetState) {
+                        (fadeIn() + slideInHorizontally { it / 3 }) togetherWith
+                            (fadeOut() + slideOutHorizontally { -it / 3 })
+                    } else {
+                        (fadeIn() + slideInHorizontally { -it / 3 }) togetherWith
+                            (fadeOut() + slideOutHorizontally { it / 3 })
                     }
-                    Text(
-                        text = displayName,
+                },
+                label = "playlistSearchTopBar",
+            ) { searching ->
+                if (searching) {
+                    SearchTopBar(
+                        keyword = searchKeyword,
+                        onKeywordChange = viewModel::updateSearchKeyword,
+                        onClose = viewModel::exitSearchMode,
                         modifier =
                             Modifier
-                                .weight(1f)
-                                .padding(start = 55.dp, end = 4.dp)
-                                .graphicsLayer { alpha = smallAlpha },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.W600,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 4.dp),
                     )
-                    IconButton(onClick = viewModel::enterSearchMode) {
-                        Icon(Icons.Default.Search, contentDescription = "搜索")
-                    }
-                    Box {
-                        IconButton(onClick = viewModel::showMoreOptionsMenu) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "更多")
-                        }
-                        DropdownMenu(
-                            expanded = showMoreOptionsMenu,
-                            onDismissRequest = viewModel::hideMoreOptionsMenu,
-                            shape = MaterialTheme.shapes.medium,
-                            offset = DpOffset(x = (-12).dp, y = 0.dp),
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("添加歌曲") },
-                                onClick = {
-                                    viewModel.hideMoreOptionsMenu()
-                                    viewModel.showAddSongsSheet()
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.PlaylistAdd,
-                                        contentDescription = null,
-                                    )
-                                },
+                } else {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(onClick = { path.popTop() }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "返回",
+                                tint = MaterialTheme.colorScheme.onSurface,
                             )
-                            if (isMultiSelectMode) {
-                                DropdownMenuItem(
-                                    text = { Text("全选") },
+                        }
+                        Text(
+                            text = displayName,
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .padding(start = 55.dp, end = 4.dp)
+                                    .graphicsLayer { alpha = smallAlpha },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.W600,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        IconButton(onClick = viewModel::enterSearchMode) {
+                            Icon(Icons.Default.Search, contentDescription = "搜索")
+                        }
+                        Box {
+                            IconButton(onClick = viewModel::showMoreOptionsMenu) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "更多")
+                            }
+                            DropdownMenu(
+                                expanded = showMoreOptionsMenu,
+                                onDismissRequest = viewModel::hideMoreOptionsMenu,
+                                shape = RoundedCornerShape(22.dp),
+                                offset = DpOffset(x = (-12).dp, y = 0.dp),
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                tonalElevation = 6.dp,
+                                shadowElevation = 8.dp,
+                            ) {
+                                PlaylistDropdownMenuItem(
+                                    text = "添加歌曲",
+                                    icon = Icons.AutoMirrored.Filled.PlaylistAdd,
                                     onClick = {
                                         viewModel.hideMoreOptionsMenu()
-                                        viewModel.selectAll()
-                                    },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.CheckBox, contentDescription = null)
+                                        viewModel.showAddSongsSheet()
                                     },
                                 )
-                                DropdownMenuItem(
-                                    text = { Text("取消全选") },
+                                if (isMultiSelectMode) {
+                                    PlaylistDropdownMenuItem(
+                                        text = "全选",
+                                        icon = Icons.Default.CheckBox,
+                                        onClick = {
+                                            viewModel.hideMoreOptionsMenu()
+                                            viewModel.selectAll()
+                                        },
+                                    )
+                                    PlaylistDropdownMenuItem(
+                                        text = "取消全选",
+                                        icon = Icons.Default.CheckBoxOutlineBlank,
+                                        onClick = {
+                                            viewModel.hideMoreOptionsMenu()
+                                            viewModel.deselectAll()
+                                        },
+                                    )
+                                } else {
+                                    PlaylistDropdownMenuItem(
+                                        text = "多选",
+                                        icon = Icons.Default.CheckBoxOutlineBlank,
+                                        onClick = {
+                                            viewModel.hideMoreOptionsMenu()
+                                            viewModel.toggleMultiSelectMode()
+                                        },
+                                    )
+                                }
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                                )
+                                PlaylistDropdownMenuItem(
+                                    text = "重命名",
+                                    icon = Icons.Default.Edit,
                                     onClick = {
                                         viewModel.hideMoreOptionsMenu()
-                                        viewModel.deselectAll()
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.CheckBoxOutlineBlank,
-                                            contentDescription = null,
-                                        )
+                                        viewModel.showRenameDialog()
                                     },
                                 )
-                            } else {
-                                DropdownMenuItem(
-                                    text = { Text("多选") },
+                                PlaylistDropdownMenuItem(
+                                    text = "删除歌单",
+                                    icon = Icons.Default.Delete,
+                                    destructive = true,
                                     onClick = {
                                         viewModel.hideMoreOptionsMenu()
-                                        viewModel.toggleMultiSelectMode()
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.CheckBoxOutlineBlank,
-                                            contentDescription = null,
-                                        )
+                                        viewModel.showDeleteConfirmDialog()
                                     },
                                 )
                             }
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                            DropdownMenuItem(
-                                text = { Text("重命名") },
-                                onClick = {
-                                    viewModel.hideMoreOptionsMenu()
-                                    viewModel.showRenameDialog()
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Edit, contentDescription = null)
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("删除歌单") },
-                                onClick = {
-                                    viewModel.hideMoreOptionsMenu()
-                                    viewModel.showDeleteConfirmDialog()
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Default.Delete, contentDescription = null)
-                                },
-                                colors =
-                                    MenuDefaults.itemColors(
-                                        textColor = MaterialTheme.colorScheme.error,
-                                        leadingIconColor = MaterialTheme.colorScheme.error,
-                                    ),
-                            )
                         }
                     }
                 }
@@ -495,6 +511,72 @@ fun PlaylistDetailScreen(playlist: Playlist) {
             onDismiss = viewModel::hideAddSongsSheet,
         )
     }
+}
+
+@Composable
+private fun PlaylistDropdownMenuItem(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    destructive: Boolean = false,
+) {
+    val contentColor =
+        if (destructive) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
+    val iconContainerColor =
+        if (destructive) {
+            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.72f)
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+        }
+    val iconColor =
+        if (destructive) {
+            MaterialTheme.colorScheme.onErrorContainer
+        } else {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        }
+
+    DropdownMenuItem(
+        modifier =
+            Modifier
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+                .width(220.dp)
+                .clip(RoundedCornerShape(16.dp)),
+        text = {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = contentColor,
+            )
+        },
+        leadingIcon = {
+            Surface(
+                modifier = Modifier.size(32.dp),
+                shape = RoundedCornerShape(11.dp),
+                color = iconContainerColor,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        },
+        colors =
+            MenuDefaults.itemColors(
+                textColor = contentColor,
+                leadingIconColor = iconColor,
+            ),
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+        onClick = onClick,
+    )
 }
 
 // ── 播放 / 添加歌曲操作行 ──────────────────────────────────────────────────────
@@ -638,40 +720,81 @@ private fun SearchTopBar(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onClose) {
-            Icon(Icons.Default.Close, contentDescription = "关闭搜索")
-        }
-        TextField(
-            value = keyword,
-            colors =
-                TextFieldDefaults.colors(
-                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                    disabledIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
-                ),
-            onValueChange = onKeywordChange,
-            shape = RoundedCornerShape(50),
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .padding(start = 55.dp),
-            placeholder = { Text("搜索歌曲...") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(onSearch = {}),
-            trailingIcon =
-                if (keyword.isNotEmpty()) {
-                    {
-                        IconButton(onClick = { onKeywordChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "清除")
-                        }
-                    }
-                } else {
-                    null
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
+        tonalElevation = 4.dp,
+        shadowElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 4.dp, end = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onClose, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "关闭搜索",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.Default.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            TextField(
+                value = keyword,
+                colors =
+                    TextFieldDefaults.colors(
+                        focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                        unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                        disabledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                        focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                        unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                        disabledIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    ),
+                onValueChange = onKeywordChange,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester),
+                placeholder = {
+                    Text(
+                        text = "搜索歌单内歌曲",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                    )
                 },
-        )
-        Spacer(Modifier.width(4.dp))
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {}),
+                trailingIcon = null,
+            )
+            AnimatedVisibility(
+                visible = keyword.isNotEmpty(),
+                enter = fadeIn() + slideInHorizontally { it / 2 },
+                exit = fadeOut() + slideOutHorizontally { it / 2 },
+            ) {
+                IconButton(onClick = { onKeywordChange("") }, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        Icons.Default.Clear,
+                        contentDescription = "清除",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -817,32 +940,49 @@ private fun SongPickerBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
-        Column(Modifier.fillMaxWidth()) {
-            // 顶部标题 + 添加按钮
-            Row(
+        Column(
+            modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .fillMaxHeight(0.9f),
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, top = 20.dp, end = 12.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = "添加歌曲",
-                    style = MaterialTheme.typography.titleMedium,
+                Column(
                     modifier = Modifier.weight(1f),
-                )
-                Button(
-                    onClick = { viewModel.addSongsToPlaylist(selectedIds.toList()) },
-                    enabled = selectedIds.isNotEmpty(),
                 ) {
-                    Text("添加 (${selectedIds.size})")
+                    Text(
+                        text = "添加歌曲",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text =
+                            if (selectedIds.isEmpty()) {
+                                "从音乐库中选择要加入歌单的歌曲"
+                            } else {
+                                "已选择 ${selectedIds.size} 首歌曲"
+                            },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "关闭")
                 }
             }
 
-            // 搜索框
             TextField(
                 value = pickerKeyword,
                 colors =
                     TextFieldDefaults.colors().copy(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                         focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
                         unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
                         disabledIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
@@ -851,8 +991,8 @@ private fun SongPickerBottomSheet(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                placeholder = { Text("搜索歌曲...") },
+                        .padding(horizontal = 20.dp),
+                placeholder = { Text("搜索歌曲、歌手或专辑") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon =
                     if (pickerKeyword.isNotEmpty()) {
@@ -865,34 +1005,106 @@ private fun SongPickerBottomSheet(
                         null
                     },
                 singleLine = true,
-                shape = RoundedCornerShape(50),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = {}),
+                shape = RoundedCornerShape(24.dp),
             )
 
-            HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+            AnimatedContent(selectedIds.isNotEmpty()) {
+                if (it) {
+                    Surface(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.CheckBox,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Text(
+                                text = "将添加 ${selectedIds.size} 首歌曲",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(onClick = { selectedIds = emptySet() }) {
+                                Text("清空")
+                            }
+                        }
+                    }
+                } else {
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
 
-            // 歌曲列表
-            LazyColumn(
+            Box(
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(bottom = 200.dp),
             ) {
-                items(count = pickerSongs.itemCount, key = { index ->
-                    pickerSongs[index]?.mediaStoreId ?: index
-                }) { index ->
-                    val song = pickerSongs[index] ?: return@items
-                    val isSelected = selectedIds.contains(song.mediaStoreId)
-                    PickerSongRow(
-                        modifier = Modifier.animateItem(),
-                        song = song,
-                        isSelected = isSelected,
-                        onToggle = {
-                            selectedIds =
-                                if (isSelected) {
-                                    selectedIds - song.mediaStoreId
-                                } else {
-                                    selectedIds + song.mediaStoreId
-                                }
-                        },
-                    )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 112.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(count = pickerSongs.itemCount, key = { index ->
+                        pickerSongs[index]?.mediaStoreId ?: index
+                    }) { index ->
+                        val song = pickerSongs[index] ?: return@items
+                        val isSelected = selectedIds.contains(song.mediaStoreId)
+                        PickerSongRow(
+                            modifier = Modifier.animateItem(),
+                            song = song,
+                            isSelected = isSelected,
+                            onToggle = {
+                                selectedIds =
+                                    if (isSelected) {
+                                        selectedIds - song.mediaStoreId
+                                    } else {
+                                        selectedIds + song.mediaStoreId
+                                    }
+                            },
+                        )
+                    }
+                }
+
+                Surface(
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .navigationBarsPadding(),
+                    tonalElevation = 6.dp,
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("取消")
+                        }
+                        Button(
+                            onClick = { viewModel.addSongsToPlaylist(selectedIds.toList()) },
+                            enabled = selectedIds.isNotEmpty(),
+                            modifier = Modifier.weight(1.5f),
+                        ) {
+                            Text(if (selectedIds.isEmpty()) "选择歌曲" else "添加 ${selectedIds.size} 首")
+                        }
+                    }
                 }
             }
         }
@@ -910,72 +1122,75 @@ private fun PickerSongRow(
 ) {
     val rowBackground =
         if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
         } else {
-            MaterialTheme.colorScheme.background
+            MaterialTheme.colorScheme.surfaceContainerLow
         }
-    Row(
+    Surface(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clickable(onClick = onToggle)
-                .background(rowBackground)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .clip(RoundedCornerShape(18.dp))
+                .clickable(onClick = onToggle),
+        shape = RoundedCornerShape(18.dp),
+        color = rowBackground,
+        tonalElevation = if (isSelected) 2.dp else 0.dp,
     ) {
-        LandscapistImage(
-            imageModel = { song.getCoverUri() },
-            modifier =
-                Modifier
-                    .size(44.dp)
-                    .clip(MaterialTheme.shapes.small),
-            success = { _, painter ->
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            },
-            failure = {
-                Box(
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            LandscapistImage(
+                imageModel = { song.getCoverUri() },
+                modifier =
                     Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.Default.MusicNote,
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(14.dp)),
+                success = { _, painter ->
+                    Image(
+                        painter = painter,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
                     )
-                }
-            },
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = song.displayName,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                },
+                failure = {
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Default.MusicNote,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                },
             )
-            Text(
-                text = song.artist,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = song.displayName,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = song.artist,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onToggle() },
             )
         }
-        Checkbox(
-            checked = isSelected,
-            onCheckedChange = { onToggle() },
-        )
     }
-    HorizontalDivider(
-        modifier = Modifier.padding(start = 72.dp, end = 16.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-    )
 }

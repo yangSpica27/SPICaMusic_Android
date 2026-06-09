@@ -47,6 +47,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -135,6 +136,10 @@ fun ExpandedPlayerScreen(
     val playMode by viewModel.playMode.collectAsStateWithLifecycle()
     val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
     val duration by viewModel.currentDuration.collectAsStateWithLifecycle()
+    val audioQualityInfo =
+        remember(currentMediaItem?.mediaId, currentMediaItem?.mediaMetadata?.extras) {
+            currentMediaItem.toAudioQualityInfo()
+        }
 
     // 监听应用生命周期状态
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -229,6 +234,7 @@ fun ExpandedPlayerScreen(
                             PlayerPage(
                                 isSeekingState = isSeekingState,
                                 currentMediaItem = currentMediaItem,
+                                audioQualityInfo = audioQualityInfo,
                                 realPosition = trueTimePosition.toFloat(),
                                 seekPosition = seekValueState,
                                 duration = duration,
@@ -381,44 +387,56 @@ private fun AudioTag(
     }
 }
 
+@Immutable
+private data class AudioQualityInfo(
+    val sampleRate: Int,
+    val bitRate: Int,
+    val isLossless: Boolean,
+)
+
+private fun MediaItem?.toAudioQualityInfo(): AudioQualityInfo {
+    val extras = this?.mediaMetadata?.extras
+    val sampleRate = extras?.getInt("sampleRate") ?: 0
+    val bitRate = extras?.getInt("bitRate") ?: 0
+    val mimeType = extras?.getString("mimeType").orEmpty()
+    val isLossless =
+        mimeType.contains("flac", ignoreCase = true) ||
+            mimeType.contains("alac", ignoreCase = true) ||
+            mimeType.contains("wav", ignoreCase = true)
+
+    return AudioQualityInfo(
+        sampleRate = sampleRate,
+        bitRate = bitRate,
+        isLossless = isLossless,
+    )
+}
+
 /**
  * 音频质量标签组
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AudioQualityTags(
-    currentMediaItem: MediaItem?,
+    audioQualityInfo: AudioQualityInfo,
     modifier: Modifier = Modifier,
 ) {
-    val extras = currentMediaItem?.mediaMetadata?.extras
-    val sampleRate = extras?.getInt("sampleRate") ?: 0
-    val bitRate = extras?.getInt("bitRate") ?: 0
-    val mimeType = extras?.getString("mimeType") ?: ""
-    val isLossless =
-        mimeType.contains("flac", ignoreCase = true) ||
-            mimeType.contains(
-                "alac",
-                ignoreCase = true,
-            ) ||
-            mimeType.contains("wav", ignoreCase = true)
-
     FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.Center,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         // 采样率标签
-        if (sampleRate > 0) {
+        if (audioQualityInfo.sampleRate > 0) {
             AudioTag(
-                text = "${sampleRate / 1000}kHz",
-                color = if (sampleRate >= 96000) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
+                text = "${audioQualityInfo.sampleRate / 1000}kHz",
+                color = if (audioQualityInfo.sampleRate >= 96000) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
 
         // 比特率标签
-        if (bitRate > 0) {
-            val bitRateKbps = bitRate / 1000
+        if (audioQualityInfo.bitRate > 0) {
+            val bitRateKbps = audioQualityInfo.bitRate / 1000
             AudioTag(
                 text = "${bitRateKbps}kbps",
                 color = if (bitRateKbps >= 320) Color(0xFF2196F3) else MaterialTheme.colorScheme.secondary,
@@ -427,7 +445,7 @@ private fun AudioQualityTags(
         }
 
         // 无损标签
-        if (isLossless) {
+        if (audioQualityInfo.isLossless) {
             AudioTag(
                 text = stringResource(R.string.lossless),
                 color = Color(0xFFFF9800),
@@ -436,7 +454,7 @@ private fun AudioQualityTags(
         }
 
         // 高品质标签
-        if (bitRate >= 320000 && !isLossless) {
+        if (audioQualityInfo.bitRate >= 320000 && !audioQualityInfo.isLossless) {
             AudioTag(
                 text = stringResource(R.string.high_quality),
                 color = Color(0xFF9C27B0),
@@ -453,6 +471,7 @@ private fun AudioQualityTags(
 @Composable
 private fun PlayerPage(
     currentMediaItem: MediaItem?,
+    audioQualityInfo: AudioQualityInfo,
     seekPosition: Float,
     realPosition: Float,
     duration: Long,
@@ -670,7 +689,7 @@ private fun PlayerPage(
         Spacer(modifier = Modifier.height(Spacing.ExtraLarge))
 
         AudioQualityTags(
-            currentMediaItem = currentMediaItem,
+            audioQualityInfo = audioQualityInfo,
             modifier =
                 Modifier.graphicsLayer {
                     val tagsReveal = calculateFadeAlpha(progressProvider(), TAGS_REVEAL_THRESHOLD)

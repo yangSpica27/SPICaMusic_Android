@@ -71,6 +71,7 @@ import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
+import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -505,7 +506,8 @@ private fun WeeklyStatsCard(
             modifier
                 .fillMaxWidth()
                 .clip(Shapes.ExtraLargeCornerBasedShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .clickHighlight {
+                }.background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .padding(Spacing.Large),
         verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
