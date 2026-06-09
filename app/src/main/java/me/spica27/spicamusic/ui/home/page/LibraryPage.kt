@@ -134,7 +134,7 @@ fun LibraryPage() {
             onCreatePlaylistClick = { path.push(PlaylistCreatorScene()) },
             extraText = { tab ->
                 when (tab) {
-                    LibraryPageTab.Playlist -> if (playlists.isNotEmpty()) "${playlists.size}个" else null
+                    LibraryPageTab.Playlist -> if (playlists.isNotEmpty()) "${playlists.size}个" else "暂未创建"
                     LibraryPageTab.Folder -> {
                         val total = extraFolders.size + ignoreFolders.size
                         if (total > 0) "${total}个" else "空空如也"

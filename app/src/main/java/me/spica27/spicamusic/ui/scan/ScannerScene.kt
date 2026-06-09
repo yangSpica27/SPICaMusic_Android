@@ -6,27 +6,44 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,25 +51,40 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
+import me.spica27.spicamusic.feature.library.domain.ScanProgress
+import me.spica27.spicamusic.feature.library.domain.ScanResult
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.settings.ScanState
+import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
@@ -64,9 +96,10 @@ class ScannerScene : StackScene() {
     override fun Content() {
         val path = LocalNavigationPath.current
         val viewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
-        val scanState by viewModel.scanState.collectAsState()
+        val scanState by viewModel.scanState.collectAsStateWithLifecycle()
 
         Scaffold(
+            containerColor = MaterialTheme.colorScheme.surface,
             topBar = {
                 TopAppBar(
                     navigationIcon = {
@@ -79,19 +112,40 @@ class ScannerScene : StackScene() {
                         }
                     },
                     title = { Text("扫描音乐") },
+                    colors =
+                        TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            scrolledContainerColor = Color.Transparent,
+                        ),
                 )
             },
         ) { paddingValues ->
-            ScannerContent(
-                scanState = scanState,
-                onStartScan = { viewModel.startFullScan() },
-                onCancelScan = { viewModel.cancelScan() },
-                onResetState = { viewModel.resetState() },
+            Box(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(paddingValues),
-            )
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.surface,
+                                    MaterialTheme.colorScheme.surfaceContainerLow,
+                                    MaterialTheme.colorScheme.surface,
+                                ),
+                            ),
+                        ),
+            ) {
+                ScannerAmbientBackground()
+                ScannerContent(
+                    scanState = scanState,
+                    onStartScan = { viewModel.startFullScan() },
+                    onCancelScan = { viewModel.cancelScan() },
+                    onResetState = { viewModel.resetState() },
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                )
+            }
         }
     }
 }
@@ -105,7 +159,6 @@ private fun ScannerContent(
     onResetState: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Android 13+ 使用 READ_MEDIA_AUDIO，低版本使用 READ_EXTERNAL_STORAGE
     val permissionName =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             Manifest.permission.READ_MEDIA_AUDIO
@@ -116,29 +169,107 @@ private fun ScannerContent(
 
     AnimatedContent(
         targetState = permissionState.status.isGranted,
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
+        transitionSpec = {
+            materialSharedAxisZIn(forward = true) togetherWith
+                materialSharedAxisZOut(
+                    forward = true,
+                )
+        },
         label = "scan_permission_anim",
         modifier = modifier,
     ) { granted ->
-        if (!granted) {
-            // 权限未授予
-            PermissionRequestContent(
-                shouldShowRationale = permissionState.status.shouldShowRationale,
-                onRequestPermission = { permissionState.launchPermissionRequest() },
-            )
-        } else {
-            // 已有权限，显示扫描 UI
+        if (granted) {
             ScanReadyContent(
                 scanState = scanState,
                 onStartScan = onStartScan,
                 onCancelScan = onCancelScan,
                 onResetState = onResetState,
             )
+        } else {
+            PermissionRequestContent(
+                shouldShowRationale = permissionState.status.shouldShowRationale,
+                onRequestPermission = { permissionState.launchPermissionRequest() },
+            )
         }
     }
 }
 
-/** 权限未授予时的引导页 */
+@Composable
+private fun ScannerAmbientBackground() {
+    val transition = rememberInfiniteTransition(label = "scanner_ambient")
+    val drift by transition.animateFloat(
+        initialValue = -20f,
+        targetValue = 20f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 5200),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "scanner_orb_drift",
+    )
+
+    Box(Modifier.fillMaxSize()) {
+        AmbientOrb(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
+            size = 250,
+            modifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 56.dp, y = (-44).dp)
+                    .graphicsLayer {
+                        translationY = drift
+                        translationX = -drift * 0.42f
+                    },
+        )
+        AmbientOrb(
+            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f),
+            size = 220,
+            modifier =
+                Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = (-88).dp, y = 28.dp)
+                    .graphicsLayer {
+                        translationY = -drift * 0.72f
+                        translationX = drift * 0.3f
+                    },
+        )
+        AmbientOrb(
+            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
+            size = 180,
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = 64.dp, y = 42.dp)
+                    .graphicsLayer {
+                        translationY = -drift * 0.35f
+                    },
+        )
+    }
+}
+
+@Composable
+private fun AmbientOrb(
+    color: Color,
+    size: Int,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .size(size.dp)
+                .blur(54.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        listOf(
+                            color,
+                            color.copy(alpha = 0f),
+                        ),
+                    ),
+                ),
+    )
+}
+
 @Composable
 private fun PermissionRequestContent(
     shouldShowRationale: Boolean,
@@ -147,61 +278,43 @@ private fun PermissionRequestContent(
 ) {
     val context = LocalContext.current
 
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = if (shouldShowRationale) Icons.Default.Lock else Icons.Default.LibraryMusic,
-            contentDescription = null,
-            modifier = Modifier.size(72.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(24.dp))
-        Text(
-            text = if (shouldShowRationale) "媒体访问权限被拒绝" else "需要媒体访问权限",
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            text =
+    ScannerPageLayout(modifier = modifier) {
+        ScannerHeroCard(
+            icon = if (shouldShowRationale) Icons.Default.Lock else Icons.Default.LibraryMusic,
+            eyebrow = "权限准备",
+            title = if (shouldShowRationale) "需要重新开启媒体权限" else "让 SPICa 发现你的音乐",
+            subtitle =
                 if (shouldShowRationale) {
-                    "请前往系统设置，手动开启「媒体和文件」访问权限，之后返回应用即可扫描本地音乐。"
+                    "请前往系统设置开启媒体访问权限，返回后即可扫描本地曲库。"
                 } else {
-                    "扫描本地音乐需要读取媒体文件权限，请授予权限以继续。"
+                    "扫描只会读取设备上的音频文件，用来建立本地音乐库和播放列表。"
                 },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(32.dp))
-        if (shouldShowRationale) {
-            // 被永久拒绝，引导去设置
-            Button(
-                onClick = {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = Uri.fromParts("package", context.packageName, null)
-                        },
-                    )
-                },
-            ) {
-                Text("前往系统设置")
-            }
-        } else {
-            Button(onClick = onRequestPermission) {
-                Text("授予权限")
+        ) {
+            if (shouldShowRationale) {
+                Button(
+                    onClick = {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                            },
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("前往系统设置")
+                }
+            } else {
+                Button(
+                    onClick = onRequestPermission,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("授予媒体权限")
+                }
             }
         }
     }
 }
 
-/** 已有权限时的扫描主界面 */
 @Composable
 private fun ScanReadyContent(
     scanState: ScanState,
@@ -210,8 +323,6 @@ private fun ScanReadyContent(
     onResetState: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // 用状态类型（Int）作为动画 key，而不是整个 scanState 对象。
-    // 这样 Scanning 内部每次进度更新时只做普通重组，不会触发 AnimatedContent 的淡入淡出动画。
     val stateKey =
         when (scanState) {
             is ScanState.Idle -> 0
@@ -222,7 +333,12 @@ private fun ScanReadyContent(
 
     AnimatedContent(
         targetState = stateKey,
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
+        transitionSpec = {
+            materialSharedAxisZIn(forward = true) togetherWith
+                materialSharedAxisZOut(
+                    forward = true,
+                )
+        },
         label = "scan_state_anim",
         modifier = modifier.fillMaxSize(),
     ) { key ->
@@ -230,26 +346,25 @@ private fun ScanReadyContent(
             0 -> IdleContent(onStartScan = onStartScan)
             1 ->
                 ScanningContent(
-                    // scanState 直接从外部读取，每次进度更新直接重组 ScanningContent，
-                    // 不经过 AnimatedContent 的 key 判断，不产生抖动
                     progress =
-                        (scanState as? ScanState.Scanning)?.progress
-                            ?: me.spica27.spicamusic.feature.library.domain
-                                .ScanProgress(0, 0, ""),
+                        (scanState as? ScanState.Scanning)?.progress ?: ScanProgress(
+                            0,
+                            0,
+                            "",
+                        ),
                     onCancel = onCancelScan,
                 )
+
             2 ->
                 SuccessContent(
-                    result =
-                        (scanState as? ScanState.Success)?.result
-                            ?: me.spica27.spicamusic.feature.library.domain
-                                .ScanResult(0, 0, 0, 0),
+                    result = (scanState as? ScanState.Success)?.result ?: ScanResult(0, 0, 0, 0),
                     onRescan = {
                         onResetState()
                         onStartScan()
                     },
                     onDone = onResetState,
                 )
+
             else ->
                 ErrorContent(
                     message = (scanState as? ScanState.Error)?.message ?: "",
@@ -264,146 +379,357 @@ private fun ScanReadyContent(
 }
 
 @Composable
-private fun IdleContent(
-    onStartScan: () -> Unit,
+private fun ScannerPageLayout(
     modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier =
             modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    PaddingValues(
+                        start = LayoutTokens.MusicHeaderHorizontalPadding,
+                        end = LayoutTokens.MusicHeaderHorizontalPadding,
+                        top = Spacing.Large,
+                        bottom = Spacing.Huge,
+                    ),
+                ),
         verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        content = content,
+    )
+}
+
+@Composable
+private fun ScannerHeroCard(
+    icon: ImageVector,
+    eyebrow: String,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = Shapes.ExtraLarge2CornerBasedShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.86f),
+        tonalElevation = 8.dp,
+        shadowElevation = 2.dp,
     ) {
-        Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = null,
-            modifier = Modifier.size(72.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(24.dp))
-        Text(
-            text = "扫描本地音乐",
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "扫描设备上的音乐文件并加入音乐库",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(32.dp))
-        Button(
-            onClick = onStartScan,
-            modifier = Modifier.fillMaxWidth(),
+        Box(
+            modifier =
+                Modifier
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+                                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
+                                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.46f),
+                            ),
+                        ),
+                    ).padding(Spacing.ExtraLarge),
         ) {
-            Text("开始扫描")
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.Large),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(86.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(66.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(34.dp),
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
+                    Text(
+                        text = eyebrow,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun IdleContent(
+    onStartScan: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ScannerPageLayout(modifier = modifier) {
+        ScannerHeroCard(
+            icon = Icons.Default.Scanner,
+            eyebrow = "本地曲库",
+            title = "重新整理你的音乐宇宙",
+            subtitle = "一次扫描 MediaStore 与额外文件夹，自动同步新增、更新和已移除的歌曲。",
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+            ) {
+                ScanFeatureChip(
+                    icon = Icons.Default.LibraryMusic,
+                    label = "音频文件",
+                    modifier = Modifier.weight(1f),
+                )
+                ScanFeatureChip(
+                    icon = Icons.Default.Folder,
+                    label = "额外目录",
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            ElevatedButton(
+                onClick = onStartScan,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.GraphicEq,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(Spacing.Small))
+                Text("开始智能扫描")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScanFeatureChip(
+    icon: ImageVector,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = Shapes.LargeCornerBasedShape,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.62f),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(Spacing.ExtraSmall))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
         }
     }
 }
 
 @Composable
 private fun ScanningContent(
-    progress: me.spica27.spicamusic.feature.library.domain.ScanProgress,
+    progress: ScanProgress,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        CircularProgressIndicator(modifier = Modifier.size(56.dp))
-        Spacer(Modifier.height(24.dp))
-        Text(
-            text = "正在扫描音乐...",
-            style = MaterialTheme.typography.titleMedium,
-        )
-        Spacer(Modifier.height(16.dp))
+    val rawProgress = if (progress.total > 0) progress.current.toFloat() / progress.total else 0f
+    val progressFraction = rawProgress.coerceIn(0f, 1f)
+    val animatedProgress by animateFloatAsState(
+        targetValue = progressFraction,
+        animationSpec = tween(durationMillis = 360),
+        label = "scan_progress",
+    )
 
-        // 进度条（total == 0 时显示不确定进度）
-        if (progress.total > 0) {
-            LinearProgressIndicator(
-                progress = { progress.current.toFloat() / progress.total },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "${progress.current} / ${progress.total}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-            )
+    ScannerPageLayout(modifier = modifier) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = Shapes.ExtraLarge2CornerBasedShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
+            tonalElevation = 8.dp,
+            shadowElevation = 2.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(Spacing.ExtraLarge),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Spacing.Large),
+            ) {
+                Box(
+                    modifier = Modifier.size(132.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (progress.total > 0) {
+                        CircularProgressIndicator(
+                            progress = { animatedProgress },
+                            modifier = Modifier.fillMaxSize(),
+                            strokeWidth = 9.dp,
+                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        )
+                        Text(
+                            text = "${(animatedProgress * 100).toInt()}%",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.fillMaxSize(),
+                            strokeWidth = 9.dp,
+                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        )
+                        Icon(
+                            imageVector = Icons.Default.GraphicEq,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(34.dp),
+                        )
+                    }
+                }
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+                ) {
+                    Text(
+                        text = "正在捕捉音乐信号",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = if (progress.total > 0) "${progress.current} / ${progress.total} 首" else "正在准备扫描队列",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                LinearProgressIndicator(
+                    progress = { animatedProgress },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(10.dp)
+                            .clip(CircleShape),
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                )
+                CurrentFileCard(currentFile = progress.currentFile)
+                OutlinedButton(
+                    onClick = onCancel,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("停止扫描")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CurrentFileCard(currentFile: String) {
+    val targetColor =
+        if (currentFile.isBlank()) {
+            MaterialTheme.colorScheme.surfaceContainer
         } else {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            MaterialTheme.colorScheme.secondaryContainer
         }
+    val cardColor by animateColorAsState(targetColor, label = "scan_file_card_color")
 
-        // 当前文件名
-        if (progress.currentFile.isNotBlank()) {
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = progress.currentFile,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = Shapes.LargeCornerBasedShape,
+        color = cardColor.copy(alpha = 0.78f),
+    ) {
+        Row(
+            modifier = Modifier.padding(Spacing.Large),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+        ) {
+            Icon(
+                imageVector = Icons.Default.LibraryMusic,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(24.dp),
             )
-        }
-
-        Spacer(Modifier.height(32.dp))
-        OutlinedButton(onClick = onCancel) {
-            Text("取消")
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)) {
+                Text(
+                    text = "当前文件",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = currentFile.ifBlank { "等待下一个音频文件..." },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun SuccessContent(
-    result: me.spica27.spicamusic.feature.library.domain.ScanResult,
+    result: ScanResult,
     onRescan: () -> Unit,
     onDone: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Default.CheckCircle,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(20.dp))
-        Text(
-            text = "扫描完成",
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Spacer(Modifier.height(16.dp))
-
-        // 扫描结果统计
-        ScanResultRow("共扫描", "${result.totalScanned} 首")
-        ScanResultRow("新增", "${result.newAdded} 首")
-        ScanResultRow("更新", "${result.updated} 首")
-        ScanResultRow("移除", "${result.removed} 首")
-
-        Spacer(Modifier.height(32.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onRescan) {
-                Text("重新扫描")
-            }
-            Button(onClick = onDone) {
-                Text("完成")
+    ScannerPageLayout(modifier = modifier) {
+        ScannerHeroCard(
+            icon = Icons.Default.CheckCircle,
+            eyebrow = "扫描完成",
+            title = "曲库已经焕然一新",
+            subtitle = "已完成本地媒体与额外目录同步，你可以立刻回到资料库继续播放。",
+        ) {
+            ScanResultGrid(result = result)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+            ) {
+                OutlinedButton(
+                    onClick = onRescan,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("重新扫描")
+                }
+                Button(
+                    onClick = onDone,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("完成")
+                }
             }
         }
     }
@@ -416,60 +742,96 @@ private fun ErrorContent(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Default.Error,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.error,
-        )
-        Spacer(Modifier.height(20.dp))
-        Text(
-            text = "扫描失败",
-            style = MaterialTheme.typography.titleLarge,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(32.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onDismiss) { Text("取消") }
-            Button(onClick = onRetry) { Text("重试") }
+    ScannerPageLayout(modifier = modifier) {
+        ScannerHeroCard(
+            icon = Icons.Default.Error,
+            eyebrow = "扫描中断",
+            title = "没有完成本次整理",
+            subtitle = message.ifBlank { "扫描过程中发生未知错误，请稍后重试。" },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("稍后再说")
+                }
+                Button(
+                    onClick = onRetry,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("重试")
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun ScanResultRow(
+private fun ScanResultGrid(
+    result: ScanResult,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
+            ScanResultTile(
+                label = "共扫描",
+                value = result.totalScanned.toString(),
+                modifier = Modifier.weight(1f),
+            )
+            ScanResultTile(
+                label = "新增",
+                value = result.newAdded.toString(),
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
+            ScanResultTile(
+                label = "更新",
+                value = result.updated.toString(),
+                modifier = Modifier.weight(1f),
+            )
+            ScanResultTile(
+                label = "移除",
+                value = result.removed.toString(),
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScanResultTile(
     label: String,
     value: String,
+    modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+    Surface(
+        modifier = modifier,
+        shape = Shapes.LargeCornerBasedShape,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.64f),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-        )
+        Column(
+            modifier = Modifier.padding(Spacing.Large),
+            verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = "$label / 首",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
