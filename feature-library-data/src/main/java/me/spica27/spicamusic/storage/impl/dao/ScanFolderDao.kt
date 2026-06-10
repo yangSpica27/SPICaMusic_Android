@@ -25,6 +25,6 @@ interface ScanFolderDao {
     @Query("UPDATE ScanFolder SET isAccessible = 0 WHERE id = :id")
     suspend fun markInaccessible(id: Long)
 
-    @Query("UPDATE ScanFolder SET uriString = :uriString, isAccessible = 1 WHERE id = :id")
-    suspend fun reAuthorize(id: Long, uriString: String)
+    @Query("UPDATE ScanFolder SET uriString = :uriString, pathPrefix = :pathPrefix, isAccessible = 1 WHERE id = :id")
+    suspend fun reAuthorize(id: Long, uriString: String, pathPrefix: String?)
 }

@@ -1,5 +1,7 @@
 package me.spica27.spicamusic.ui.home.page
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
@@ -26,16 +28,19 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -65,7 +71,7 @@ import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
 import me.spica27.spicamusic.ui.scan.ScannerScene
-import me.spica27.spicamusic.ui.settings.SettingsScene
+import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -159,8 +165,6 @@ fun LibraryPage() {
                     FolderPage(
                         extraFolders = ImmutableList.copyOf(extraFolders),
                         ignoreFolders = ImmutableList.copyOf(ignoreFolders),
-                        onScanClick = { path.push(ScannerScene()) },
-                        onManageClick = { path.push(SettingsScene()) },
                     )
             }
         }
@@ -431,10 +435,29 @@ private fun PlaylistPage(
 private fun FolderPage(
     extraFolders: ImmutableList<ScanFolder>,
     ignoreFolders: ImmutableList<ScanFolder>,
-    onScanClick: () -> Unit,
-    onManageClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val sourceViewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
+    var pendingReauthFolderId by remember { mutableStateOf<Long?>(null) }
+
+    val addExtraLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            uri?.let { sourceViewModel.addExtraFolder(context, it) }
+        }
+    val addIgnoreLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            uri?.let { sourceViewModel.addIgnoreFolder(context, it) }
+        }
+    val reauthLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            val id = pendingReauthFolderId
+            if (uri != null && id != null) {
+                sourceViewModel.reAuthorizeFolder(context, id, uri)
+            }
+            pendingReauthFolderId = null
+        }
+
     LazyColumn(
         modifier =
             modifier
@@ -454,6 +477,7 @@ private fun FolderPage(
             SectionTitle(
                 title = "额外扫描目录",
                 subtitle = "${extraFolders.size} 个",
+                onAddClick = { addExtraLauncher.launch(null) },
             )
         }
 
@@ -461,12 +485,22 @@ private fun FolderPage(
             item {
                 EmptyLibraryCard(
                     title = "没有额外扫描目录",
-                    subtitle = "你可以在设置中添加更多资料库来源。",
+                    subtitle = "点击右侧「+」选择文件夹，其中的音频会注册进系统媒体库。",
                 )
             }
         } else {
-            items(extraFolders.size) { index ->
-                FolderRow(folder = extraFolders[index])
+            items(
+                items = extraFolders,
+                key = { "extra_${it.id}" },
+            ) { folder ->
+                FolderRow(
+                    folder = folder,
+                    onRemove = { sourceViewModel.removeFolder(context, folder) },
+                    onReAuthorize = {
+                        pendingReauthFolderId = folder.id
+                        reauthLauncher.launch(null)
+                    },
+                )
             }
         }
 
@@ -474,6 +508,7 @@ private fun FolderPage(
             SectionTitle(
                 title = "忽略目录",
                 subtitle = "${ignoreFolders.size} 个",
+                onAddClick = { addIgnoreLauncher.launch(null) },
             )
         }
 
@@ -481,12 +516,18 @@ private fun FolderPage(
             item {
                 EmptyLibraryCard(
                     title = "没有忽略目录",
-                    subtitle = "设置忽略目录后，这里的列表会自动更新。",
+                    subtitle = "点击右侧「+」选择文件夹，扫描时会跳过其中的音频。",
                 )
             }
         } else {
-            items(ignoreFolders.size) { index ->
-                FolderRow(folder = ignoreFolders[index])
+            items(
+                items = ignoreFolders,
+                key = { "ignore_${it.id}" },
+            ) { folder ->
+                FolderRow(
+                    folder = folder,
+                    onRemove = { sourceViewModel.removeFolder(context, folder) },
+                )
             }
         }
 
@@ -582,6 +623,7 @@ private fun SectionTitle(
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
+    onAddClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -599,6 +641,15 @@ private fun SectionTitle(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        if (onAddClick != null) {
+            IconButton(onClick = onAddClick) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "添加目录",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
     }
 }
 
@@ -634,7 +685,9 @@ private fun EmptyLibraryCard(
 @Composable
 private fun FolderRow(
     folder: ScanFolder,
+    onRemove: () -> Unit,
     modifier: Modifier = Modifier,
+    onReAuthorize: (() -> Unit)? = null,
 ) {
     Row(
         modifier =
@@ -671,16 +724,40 @@ private fun FolderRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
-            text = if (folder.isAccessible) "可用" else "失效",
-            style = MaterialTheme.typography.labelMedium,
-            color =
-                if (folder.isAccessible) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
-                },
-        )
+        if (!folder.isAccessible && onReAuthorize != null) {
+            Text(
+                text = "重新授权",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier =
+                    Modifier
+                        .clip(Shapes.LargeCornerBasedShape)
+                        .clickable(onClick = onReAuthorize)
+                        .padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall),
+            )
+        } else {
+            Text(
+                text = if (folder.isAccessible) "可用" else "失效",
+                style = MaterialTheme.typography.labelMedium,
+                color =
+                    if (folder.isAccessible) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+            )
+        }
+        IconButton(
+            onClick = onRemove,
+            modifier = Modifier.size(28.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "移除目录",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
     }
 }
 

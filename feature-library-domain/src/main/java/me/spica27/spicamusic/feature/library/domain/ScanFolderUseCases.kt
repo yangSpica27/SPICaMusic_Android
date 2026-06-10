@@ -27,7 +27,8 @@ class ScanFolderUseCases(
     suspend fun reAuthorize(
         id: Long,
         newUriString: String,
+        pathPrefix: String?,
     ) {
-        repository.reAuthorize(id, newUriString)
+        repository.reAuthorize(id, newUriString, pathPrefix)
     }
 }

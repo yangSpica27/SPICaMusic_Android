@@ -1,12 +1,19 @@
 package me.spica27.spicamusic.ui.search
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,23 +28,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,12 +49,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.skydoves.landscapist.ImageOptions
@@ -62,14 +70,21 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioQualityBadges
+import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.materialSharedAxisXIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
+import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.androidx.compose.koinViewModel
 
+/**
+ * 搜索页：大标题 + 圆角胶囊搜索框，
+ * 结果列表按首字母分组，关键词在结果中高亮显示。
+ */
 class SearchScene : StackScene() {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val path = LocalNavigationPath.current
@@ -83,7 +98,7 @@ class SearchScene : StackScene() {
 
         Scaffold(
             topBar = {
-                SearchTopBar(
+                SearchHeader(
                     query = searchKey,
                     onQueryChange = searchViewModel::updateSearchKeyword,
                     onClear = searchViewModel::clearSearch,
@@ -99,40 +114,51 @@ class SearchScene : StackScene() {
                         .fillMaxSize()
                         .padding(paddingValues),
             ) {
-                AnimatedVisibility(
-                    visible = searchKey.isEmpty(),
-                    enter = fadeIn(),
-                    exit = fadeOut(),
-                ) {
-                    SearchHint()
-                }
-
-                AnimatedVisibility(
-                    visible = searchKey.isNotEmpty(),
-                    enter = fadeIn(tween(200)),
-                    exit = fadeOut(tween(150)),
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 80.dp),
-                    ) {
-                        if (searchResult.itemCount == 0 && searchKey.isNotEmpty()) {
-                            item {
-                                NoResultHint(query = searchKey)
+                AnimatedContent(
+                    targetState = searchKey.isEmpty(),
+                    transitionSpec = {
+                        (fadeIn(tween(220, easing = EaseOutCubic)) + slideInVertically(tween(220, easing = EaseOutCubic)) { it / 12 })
+                            .togetherWith(fadeOut(tween(120)))
+                    },
+                    label = "search_content",
+                ) { isEmptyQuery ->
+                    if (isEmptyQuery) {
+                        SearchHint()
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding =
+                                PaddingValues(
+                                    start = LayoutTokens.MusicHeaderHorizontalPadding,
+                                    end = LayoutTokens.MusicHeaderHorizontalPadding,
+                                    top = Spacing.Small,
+                                    bottom = 120.dp,
+                                ),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+                            overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
+                        ) {
+                            if (searchResult.itemCount == 0) {
+                                item(key = "no_result") {
+                                    NoResultHint(query = searchKey)
+                                }
                             }
-                        }
-                        items(searchResult.itemCount) { index ->
-                            val item = searchResult[index] ?: return@items
-                            when (item) {
-                                is SearchListItem.Header -> SearchGroupHeader(title = item.title)
-                                is SearchListItem.SongItem ->
-                                    SearchSongItem(
-                                        song = item.song,
-                                        index = index,
-                                        onPlay = { playerViewModel.playSong(item.song) },
-                                        onMore = { path.push(SongMenuScene(item.song)) },
-                                        modifier = Modifier.animateItem(),
-                                    )
+                            items(searchResult.itemCount) { index ->
+                                when (val item = searchResult[index] ?: return@items) {
+                                    is SearchListItem.Header ->
+                                        SearchGroupHeader(
+                                            title = item.title,
+                                            modifier = Modifier.animateItem(),
+                                        )
+
+                                    is SearchListItem.SongItem ->
+                                        SearchSongItem(
+                                            song = item.song,
+                                            keyword = searchKey,
+                                            onPlay = { playerViewModel.playSong(item.song) },
+                                            onMore = { path.push(SongMenuScene(item.song)) },
+                                            modifier = Modifier.animateItem(),
+                                        )
+                                }
                             }
                         }
                     }
@@ -142,158 +168,226 @@ class SearchScene : StackScene() {
     }
 }
 
+/** 顶部：返回按钮 + 胶囊搜索框 */
 @Composable
-private fun SearchTopBar(
+private fun SearchHeader(
     query: String,
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
     onBack: () -> Unit,
     focusRequester: FocusRequester,
 ) {
-    Surface(
-        modifier = Modifier.padding(end = 10.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp,
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .statusBarsPadding()
+                .padding(
+                    start = Spacing.Small,
+                    end = LayoutTokens.MusicHeaderHorizontalPadding,
+                    top = Spacing.Small,
+                    bottom = Spacing.Medium,
+                ),
     ) {
         Row(
-            modifier =
-                Modifier
-                    .statusBarsPadding()
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
         ) {
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.Default.ArrowBackIosNew,
                     contentDescription = "返回",
                     tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(20.dp),
                 )
             }
-            TextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .focusRequester(focusRequester),
-                placeholder = {
-                    Text(
-                        "搜索歌曲、专辑、歌手",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                },
-                colors =
-                    TextFieldDefaults.colors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-                shape = Shapes.ExtraLargeCornerBasedShape,
-                singleLine = true,
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                },
-                trailingIcon = {
-                    AnimatedVisibility(
-                        visible = query.isNotEmpty(),
-                        enter = materialSharedAxisXIn(true),
-                        exit = materialSharedAxisZOut(true),
-                    ) {
-                        IconButton(onClick = onClear) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "清空",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                },
+            SearchInputField(
+                query = query,
+                onQueryChange = onQueryChange,
+                onClear = onClear,
+                focusRequester = focusRequester,
+                modifier = Modifier.weight(1f),
             )
         }
     }
 }
 
+/** 胶囊形搜索输入框 */
 @Composable
-private fun SearchGroupHeader(title: String) {
-    Text(
-        text = title.uppercase(),
-        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 20.dp, top = 16.dp, bottom = 4.dp),
-    )
-}
-
-@Composable
-private fun SearchSongItem(
-    song: Song,
-    index: Int,
-    onPlay: () -> Unit,
-    onMore: () -> Unit,
-    modifier: Modifier,
+private fun SearchInputField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClear: () -> Unit,
+    focusRequester: FocusRequester,
+    modifier: Modifier = Modifier,
 ) {
-    ListItem(
+    Row(
         modifier =
             modifier
-                .animateContentSize()
-                .clickable(onClick = onPlay),
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        leadingContent = {
-            Box(
-                modifier =
-                    Modifier
-                        .size(45.dp)
-                        .clip(Shapes.MediumCornerBasedShape),
-            ) {
-                LandscapistImage(
-                    imageModel = { song.getCoverUri() },
-                    modifier = Modifier.fillMaxSize(),
-                    imageOptions = ImageOptions(contentScale = ContentScale.Crop),
-                    failure = {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MusicNote,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                    },
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .padding(horizontal = Spacing.Large, vertical = Spacing.Medium),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp),
+        )
+        Box(modifier = Modifier.weight(1f)) {
+            if (query.isEmpty()) {
+                Text(
+                    text = "搜索歌曲、专辑、歌手",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
                 )
             }
-        },
-        headlineContent = {
-            Text(
-                text = song.displayName,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = 4.dp),
+                        .focusRequester(focusRequester),
+                textStyle =
+                    MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                    ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                singleLine = true,
             )
-        },
-        supportingContent = {
+        }
+        AnimatedVisibility(
+            visible = query.isNotEmpty(),
+            enter = materialSharedAxisXIn(true),
+            exit = materialSharedAxisZOut(true),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f))
+                        .clickHighlight(onClick = onClear),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "清空",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
+    }
+}
+
+/** 分组字母头：主题色圆角小标签 */
+@Composable
+private fun SearchGroupHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(top = Spacing.Medium, bottom = Spacing.ExtraSmall),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(28.dp)
+                    .clip(Shapes.SmallCornerBasedShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = title.uppercase(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+        Box(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .height(1.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        )
+    }
+}
+
+/** 单曲条目：圆角卡片 + 封面 + 关键词高亮 */
+@Composable
+private fun SearchSongItem(
+    song: Song,
+    keyword: String,
+    onPlay: () -> Unit,
+    onMore: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(Shapes.LargeCornerBasedShape)
+                .clickHighlight(onClick = onPlay)
+                .padding(horizontal = Spacing.Small, vertical = Spacing.Small),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(52.dp)
+                    .clip(Shapes.MediumCornerBasedShape),
+        ) {
+            LandscapistImage(
+                imageModel = { song.getCoverUri() },
+                modifier = Modifier.fillMaxSize(),
+                imageOptions = ImageOptions(contentScale = ContentScale.Crop),
+                failure = {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MusicNote,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                },
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+        ) {
+            Text(
+                text = highlightKeyword(song.displayName, keyword),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
             ) {
                 AudioQualityBadges(song = song)
                 Text(
@@ -310,52 +404,119 @@ private fun SearchSongItem(
                     modifier = Modifier.weight(1f, fill = false),
                 )
             }
-        },
-        trailingContent = {
-            IconButton(onClick = onMore) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "更多",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
-    )
+        }
+        IconButton(onClick = onMore) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "更多",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
+/** 把命中关键词的部分用主题色加粗高亮 */
+@Composable
+private fun highlightKeyword(
+    text: String,
+    keyword: String,
+) = buildAnnotatedString {
+    val trimmed = keyword.trim()
+    if (trimmed.isEmpty()) {
+        append(text)
+        return@buildAnnotatedString
+    }
+    val highlightStyle =
+        SpanStyle(
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+        )
+    var start = 0
+    while (start < text.length) {
+        val hit = text.indexOf(trimmed, startIndex = start, ignoreCase = true)
+        if (hit < 0) {
+            append(text.substring(start))
+            break
+        }
+        append(text.substring(start, hit))
+        withStyle(highlightStyle) {
+            append(text.substring(hit, hit + trimmed.length))
+        }
+        start = hit + trimmed.length
+    }
+}
+
+/** 空关键词时的引导页：呼吸动画图标 + 文案 */
 @Composable
 private fun SearchHint(modifier: Modifier = Modifier) {
+    val breath = rememberInfiniteTransition(label = "search_hint_breath")
+    val scale by breath.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1800, easing = EaseOutCubic),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "scale",
+    )
+    val glowAlpha by breath.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 0.5f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1800, easing = EaseOutCubic),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "glow",
+    )
+
     Column(
         modifier =
             modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp),
+                .padding(horizontal = Spacing.ExtraLarge),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
         Box(
-            modifier =
-                Modifier
-                    .padding(top = 55.dp)
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+            modifier = Modifier.padding(top = 64.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            // 外圈光晕
+            Box(
+                modifier =
+                    Modifier
+                        .size(112.dp)
+                        .scale(scale)
+                        .clip(CircleShape)
+                        .graphicsLayer { alpha = glowAlpha }
+                        .background(MaterialTheme.colorScheme.primaryContainer),
             )
+            Box(
+                modifier =
+                    Modifier
+                        .size(84.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(38.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
         }
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(Spacing.ExtraLarge))
         Text(
             text = "搜索你的音乐",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Spacing.Small))
         Text(
             text = "输入歌名、专辑或歌手名称来查找歌曲",
             style = MaterialTheme.typography.bodyMedium,
@@ -364,6 +525,7 @@ private fun SearchHint(modifier: Modifier = Modifier) {
     }
 }
 
+/** 无结果时的提示 */
 @Composable
 private fun NoResultHint(
     query: String,
@@ -373,16 +535,32 @@ private fun NoResultHint(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(top = 80.dp, bottom = 32.dp)
-                .padding(horizontal = 32.dp),
+                .padding(top = 64.dp, bottom = Spacing.ExtraLarge)
+                .padding(horizontal = Spacing.ExtraLarge),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
-        Spacer(Modifier.height(8.dp))
+        Box(
+            modifier =
+                Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.SearchOff,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(32.dp),
+            )
+        }
+        Spacer(Modifier.height(Spacing.Small))
         Text(
             text = "没有找到「$query」",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = "试试换个关键词，或检查拼写是否正确",

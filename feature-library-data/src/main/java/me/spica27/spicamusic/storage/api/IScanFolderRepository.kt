@@ -35,5 +35,5 @@ interface IScanFolderRepository {
     )
     suspend fun removeFolder(id: Long)
     suspend fun markInaccessible(id: Long)
-    suspend fun reAuthorize(id: Long, newUriString: String)
+    suspend fun reAuthorize(id: Long, newUriString: String, pathPrefix: String?)
 }

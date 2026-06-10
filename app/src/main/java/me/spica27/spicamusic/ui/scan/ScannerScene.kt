@@ -7,19 +7,26 @@ import android.os.Build
 import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,25 +36,21 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Scanner
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -61,12 +64,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -83,12 +92,11 @@ import me.spica27.spicamusic.ui.settings.ScanState
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
-import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
- * 扫描界面
+ * 扫描界面：以中央"雷达脉冲"圆盘为视觉主体，
+ * 待机时缓慢呼吸，扫描时旋转扫光 + 进度环，完成 / 出错时切换状态色。
  */
 class ScannerScene : StackScene() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -134,8 +142,8 @@ class ScannerScene : StackScene() {
                             ),
                         ),
             ) {
-                ScannerAmbientBackground()
-                ScannerContent(
+//                ScannerAuroraBackground()
+                ScannerBody(
                     scanState = scanState,
                     onStartScan = { viewModel.startFullScan() },
                     onCancelScan = { viewModel.cancelScan() },
@@ -150,15 +158,29 @@ class ScannerScene : StackScene() {
     }
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// 页面状态归一
+// ──────────────────────────────────────────────────────────────────────────
+
+/** 圆盘 / 文案 / 操作区共用的归一化页面状态 */
+private enum class DialPhase {
+    Permission,
+    Idle,
+    Scanning,
+    Success,
+    Error,
+}
+
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-private fun ScannerContent(
+private fun ScannerBody(
     scanState: ScanState,
     onStartScan: () -> Unit,
     onCancelScan: () -> Unit,
     onResetState: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val permissionName =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             Manifest.permission.READ_MEDIA_AUDIO
@@ -166,89 +188,134 @@ private fun ScannerContent(
             Manifest.permission.READ_EXTERNAL_STORAGE
         }
     val permissionState = rememberPermissionState(permissionName)
+    val granted = permissionState.status.isGranted
 
-    AnimatedContent(
-        targetState = permissionState.status.isGranted,
-        transitionSpec = {
-            materialSharedAxisZIn(forward = true) togetherWith
-                materialSharedAxisZOut(
-                    forward = true,
-                )
-        },
-        label = "scan_permission_anim",
-        modifier = modifier,
-    ) { granted ->
-        if (granted) {
-            ScanReadyContent(
-                scanState = scanState,
-                onStartScan = onStartScan,
-                onCancelScan = onCancelScan,
-                onResetState = onResetState,
-            )
-        } else {
-            PermissionRequestContent(
-                shouldShowRationale = permissionState.status.shouldShowRationale,
-                onRequestPermission = { permissionState.launchPermissionRequest() },
-            )
+    val phase =
+        when {
+            !granted -> DialPhase.Permission
+            scanState is ScanState.Scanning -> DialPhase.Scanning
+            scanState is ScanState.Success -> DialPhase.Success
+            scanState is ScanState.Error -> DialPhase.Error
+            else -> DialPhase.Idle
         }
+
+    val progress = (scanState as? ScanState.Scanning)?.progress ?: ScanProgress(0, 0, "")
+    val progressFraction =
+        if (progress.total > 0) {
+            (progress.current.toFloat() / progress.total).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
+    val animatedProgress by animateFloatAsState(
+        targetValue = progressFraction,
+        animationSpec = tween(durationMillis = 360),
+        label = "scan_progress",
+    )
+
+    Column(
+        modifier =
+            modifier.padding(
+                horizontal = LayoutTokens.MusicHeaderHorizontalPadding,
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.weight(1f))
+
+        ScannerDial(
+            phase = phase,
+            progress = animatedProgress,
+            hasDeterminateProgress = progress.total > 0,
+        )
+
+        Spacer(Modifier.height(Spacing.ExtraLarge))
+
+        ScannerStatusText(
+            phase = phase,
+            progress = progress,
+            errorMessage = (scanState as? ScanState.Error)?.message.orEmpty(),
+        )
+
+        Spacer(Modifier.weight(1f))
+
+        ScannerActionPanel(
+            phase = phase,
+            progress = progress,
+            result = (scanState as? ScanState.Success)?.result ?: ScanResult(0, 0, 0, 0),
+            shouldShowRationale = permissionState.status.shouldShowRationale,
+            onRequestPermission = { permissionState.launchPermissionRequest() },
+            onOpenSettings = {
+                context.startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.fromParts("package", context.packageName, null)
+                    },
+                )
+            },
+            onStartScan = onStartScan,
+            onCancelScan = onCancelScan,
+            onResetState = onResetState,
+        )
+
+        Spacer(Modifier.height(Spacing.Huge))
     }
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// 背景氛围
+// ──────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun ScannerAmbientBackground() {
-    val transition = rememberInfiniteTransition(label = "scanner_ambient")
+private fun ScannerAuroraBackground() {
+    val transition = rememberInfiniteTransition(label = "scanner_aurora")
     val drift by transition.animateFloat(
-        initialValue = -20f,
-        targetValue = 20f,
+        initialValue = -24f,
+        targetValue = 24f,
         animationSpec =
             infiniteRepeatable(
-                animation = tween(durationMillis = 5200),
+                animation = tween(durationMillis = 6400),
                 repeatMode = RepeatMode.Reverse,
             ),
-        label = "scanner_orb_drift",
+        label = "scanner_aurora_drift",
     )
 
     Box(Modifier.fillMaxSize()) {
-        AmbientOrb(
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
-            size = 250,
+        AuroraOrb(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
+            size = 280,
             modifier =
                 Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = 56.dp, y = (-44).dp)
+                    .offset(x = 72.dp, y = (-56).dp)
                     .graphicsLayer {
                         translationY = drift
-                        translationX = -drift * 0.42f
+                        translationX = -drift * 0.4f
                     },
         )
-        AmbientOrb(
-            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f),
-            size = 220,
+        AuroraOrb(
+            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f),
+            size = 240,
             modifier =
                 Modifier
                     .align(Alignment.CenterStart)
-                    .offset(x = (-88).dp, y = 28.dp)
+                    .offset(x = (-96).dp)
                     .graphicsLayer {
-                        translationY = -drift * 0.72f
+                        translationY = -drift * 0.7f
                         translationX = drift * 0.3f
                     },
         )
-        AmbientOrb(
+        AuroraOrb(
             color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f),
-            size = 180,
+            size = 200,
             modifier =
                 Modifier
                     .align(Alignment.BottomEnd)
-                    .offset(x = 64.dp, y = 42.dp)
-                    .graphicsLayer {
-                        translationY = -drift * 0.35f
-                    },
+                    .offset(x = 64.dp, y = 48.dp)
+                    .graphicsLayer { translationY = -drift * 0.4f },
         )
     }
 }
 
 @Composable
-private fun AmbientOrb(
+private fun AuroraOrb(
     color: Color,
     size: Int,
     modifier: Modifier = Modifier,
@@ -257,271 +324,451 @@ private fun AmbientOrb(
         modifier =
             modifier
                 .size(size.dp)
-                .blur(54.dp)
+                .blur(56.dp)
                 .clip(CircleShape)
                 .background(
-                    Brush.radialGradient(
-                        listOf(
-                            color,
-                            color.copy(alpha = 0f),
-                        ),
-                    ),
+                    Brush.radialGradient(listOf(color, color.copy(alpha = 0f))),
                 ),
     )
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// 中央雷达圆盘
+// ──────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun PermissionRequestContent(
-    shouldShowRationale: Boolean,
-    onRequestPermission: () -> Unit,
+private fun ScannerDial(
+    phase: DialPhase,
+    progress: Float,
+    hasDeterminateProgress: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
+    val isScanning = phase == DialPhase.Scanning
+    val accentColor =
+        when (phase) {
+            DialPhase.Error -> MaterialTheme.colorScheme.error
+            else -> MaterialTheme.colorScheme.primary
+        }
+    val animatedAccent by animateColorAsState(accentColor, label = "dial_accent")
+    val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
 
-    ScannerPageLayout(modifier = modifier) {
-        ScannerHeroCard(
-            icon = if (shouldShowRationale) Icons.Default.Lock else Icons.Default.LibraryMusic,
-            eyebrow = "权限准备",
-            title = if (shouldShowRationale) "需要重新开启媒体权限" else "让 SPICa 发现你的音乐",
-            subtitle =
-                if (shouldShowRationale) {
-                    "请前往系统设置开启媒体访问权限，返回后即可扫描本地曲库。"
-                } else {
-                    "扫描只会读取设备上的音频文件，用来建立本地音乐库和播放列表。"
-                },
-        ) {
-            if (shouldShowRationale) {
-                Button(
-                    onClick = {
-                        context.startActivity(
-                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", context.packageName, null)
-                            },
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("前往系统设置")
+    val infinite = rememberInfiniteTransition(label = "dial_anim")
+
+    // 扫描时的旋转扫光角度（线性匀速）
+    val sweepAngle by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 2600, easing = LinearEasing),
+            ),
+        label = "dial_sweep",
+    )
+
+    // 雷达涟漪相位（0..1 循环，三道涟漪相位错开）
+    val ripplePhase by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 3200, easing = EaseOutCubic),
+            ),
+        label = "dial_ripple",
+    )
+
+    // 待机呼吸缩放
+    val breath by infinite.animateFloat(
+        initialValue = 0.97f,
+        targetValue = 1.03f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 2400),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "dial_breath",
+    )
+
+    val rippleStrength by animateFloatAsState(
+        targetValue = if (isScanning) 1f else 0.45f,
+        animationSpec = tween(600),
+        label = "dial_ripple_strength",
+    )
+
+    Box(
+        modifier = modifier.size(280.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        // 涟漪 + 扫光 + 进度环（Draw 阶段读取动画值，避免整树重组）
+        Canvas(Modifier.fillMaxSize()) {
+            val center = Offset(size.width / 2f, size.height / 2f)
+            val discRadius = size.minDimension * 0.255f
+            val maxRadius = size.minDimension * 0.5f
+
+            // 三道相位错开的雷达涟漪
+            repeat(3) { i ->
+                val t = (ripplePhase + i / 3f) % 1f
+                val radius = discRadius + (maxRadius - discRadius) * t
+                val alpha = (1f - t) * 0.30f * rippleStrength
+                if (alpha > 0.01f) {
+                    drawCircle(
+                        color = animatedAccent.copy(alpha = alpha),
+                        radius = radius,
+                        center = center,
+                        style = Stroke(width = 2.dp.toPx()),
+                    )
                 }
-            } else {
-                Button(
-                    onClick = onRequestPermission,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("授予媒体权限")
+            }
+
+            val ringRadius = size.minDimension * 0.36f
+            val ringStroke = 10.dp.toPx()
+
+            // 进度环轨道
+            drawCircle(
+                color = trackColor,
+                radius = ringRadius,
+                center = center,
+                style = Stroke(width = ringStroke),
+            )
+
+            if (isScanning) {
+                // 旋转扫光（雷达扫描臂）
+                rotate(degrees = sweepAngle, pivot = center) {
+                    drawCircle(
+                        brush =
+                            Brush.sweepGradient(
+                                colors =
+                                    listOf(
+                                        animatedAccent.copy(alpha = 0f),
+                                        animatedAccent.copy(alpha = 0f),
+                                        animatedAccent.copy(alpha = 0.55f),
+                                    ),
+                                center = center,
+                            ),
+                        radius = ringRadius,
+                        center = center,
+                        style = Stroke(width = ringStroke),
+                    )
+                }
+            }
+
+            // 确定性进度弧
+            val progressSweep =
+                when {
+                    isScanning && hasDeterminateProgress -> 360f * progress
+                    phase == DialPhase.Success -> 360f
+                    else -> 0f
+                }
+            if (progressSweep > 0f) {
+                drawArc(
+                    color = animatedAccent,
+                    startAngle = -90f,
+                    sweepAngle = progressSweep,
+                    useCenter = false,
+                    topLeft = Offset(center.x - ringRadius, center.y - ringRadius),
+                    size = Size(ringRadius * 2f, ringRadius * 2f),
+                    style = Stroke(width = ringStroke, cap = StrokeCap.Round),
+                )
+            }
+        }
+
+        // 中央圆盘
+        Box(
+            modifier =
+                Modifier
+                    .size(132.dp)
+                    .graphicsLayer {
+                        val scale = if (isScanning) 1f else breath
+                        scaleX = scale
+                        scaleY = scale
+                    }.clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            listOf(
+                                animatedAccent.copy(alpha = 0.92f),
+                                animatedAccent,
+                            ),
+                        ),
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            AnimatedContent(
+                targetState = phase to (isScanning && hasDeterminateProgress),
+                transitionSpec = {
+                    (fadeIn(tween(220)) + scaleIn(spring(stiffness = Spring.StiffnessMedium), initialScale = 0.7f))
+                        .togetherWith(fadeOut(tween(160)))
+                },
+                label = "dial_center",
+            ) { (p, determinate) ->
+                if (determinate) {
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                } else {
+                    Icon(
+                        imageVector =
+                            when (p) {
+                                DialPhase.Permission -> Icons.Default.Lock
+                                DialPhase.Idle -> Icons.Default.MusicNote
+                                DialPhase.Scanning -> Icons.Default.GraphicEq
+                                DialPhase.Success -> Icons.Default.Check
+                                DialPhase.Error -> Icons.Default.PriorityHigh
+                            },
+                        contentDescription = null,
+                        tint =
+                            if (p == DialPhase.Error) {
+                                MaterialTheme.colorScheme.onError
+                            } else {
+                                MaterialTheme.colorScheme.onPrimary
+                            },
+                        modifier = Modifier.size(52.dp),
+                    )
                 }
             }
         }
     }
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// 状态文案
+// ──────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun ScanReadyContent(
-    scanState: ScanState,
+private fun ScannerStatusText(
+    phase: DialPhase,
+    progress: ScanProgress,
+    errorMessage: String,
+    modifier: Modifier = Modifier,
+) {
+    AnimatedContent(
+        targetState = phase,
+        transitionSpec = {
+            (fadeIn(tween(260)) + slideInVertically(tween(260)) { it / 6 })
+                .togetherWith(fadeOut(tween(160)))
+        },
+        label = "scan_status_text",
+        modifier = modifier,
+    ) { p ->
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+        ) {
+            val (title, subtitle) =
+                when (p) {
+                    DialPhase.Permission ->
+                        "让 SPICa 发现你的音乐" to
+                            "扫描只会读取设备上的音频文件，用来建立本地音乐库和播放列表。"
+
+                    DialPhase.Idle ->
+                        "准备整理你的音乐宇宙" to
+                            "一次扫描 MediaStore 与额外文件夹，自动同步新增、更新和已移除的歌曲。"
+
+                    DialPhase.Scanning ->
+                        "正在捕捉音乐信号" to
+                            if (progress.total > 0) {
+                                "${progress.current} / ${progress.total} 首"
+                            } else {
+                                "正在准备扫描队列…"
+                            }
+
+                    DialPhase.Success ->
+                        "曲库已经焕然一新" to
+                            "本地媒体与额外目录已完成同步，回到资料库继续播放吧。"
+
+                    DialPhase.Error ->
+                        "没有完成本次整理" to
+                            errorMessage.ifBlank { "扫描过程中发生未知错误，请稍后重试。" }
+                }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = Spacing.Large),
+            )
+        }
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// 底部操作区
+// ──────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ScannerActionPanel(
+    phase: DialPhase,
+    progress: ScanProgress,
+    result: ScanResult,
+    shouldShowRationale: Boolean,
+    onRequestPermission: () -> Unit,
+    onOpenSettings: () -> Unit,
     onStartScan: () -> Unit,
     onCancelScan: () -> Unit,
     onResetState: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val stateKey =
-        when (scanState) {
-            is ScanState.Idle -> 0
-            is ScanState.Scanning -> 1
-            is ScanState.Success -> 2
-            is ScanState.Error -> 3
-        }
-
     AnimatedContent(
-        targetState = stateKey,
+        targetState = phase,
         transitionSpec = {
-            materialSharedAxisZIn(forward = true) togetherWith
-                materialSharedAxisZOut(
-                    forward = true,
-                )
+            (fadeIn(tween(260)) + slideInVertically(tween(260)) { it / 5 })
+                .togetherWith(fadeOut(tween(160)))
         },
-        label = "scan_state_anim",
-        modifier = modifier.fillMaxSize(),
-    ) { key ->
-        when (key) {
-            0 -> IdleContent(onStartScan = onStartScan)
-            1 ->
-                ScanningContent(
-                    progress =
-                        (scanState as? ScanState.Scanning)?.progress ?: ScanProgress(
-                            0,
-                            0,
-                            "",
-                        ),
-                    onCancel = onCancelScan,
-                )
-
-            2 ->
-                SuccessContent(
-                    result = (scanState as? ScanState.Success)?.result ?: ScanResult(0, 0, 0, 0),
-                    onRescan = {
-                        onResetState()
-                        onStartScan()
-                    },
-                    onDone = onResetState,
-                )
-
-            else ->
-                ErrorContent(
-                    message = (scanState as? ScanState.Error)?.message ?: "",
-                    onRetry = {
-                        onResetState()
-                        onStartScan()
-                    },
-                    onDismiss = onResetState,
-                )
-        }
-    }
-}
-
-@Composable
-private fun ScannerPageLayout(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    PaddingValues(
-                        start = LayoutTokens.MusicHeaderHorizontalPadding,
-                        end = LayoutTokens.MusicHeaderHorizontalPadding,
-                        top = Spacing.Large,
-                        bottom = Spacing.Huge,
-                    ),
-                ),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        content = content,
-    )
-}
-
-@Composable
-private fun ScannerHeroCard(
-    icon: ImageVector,
-    eyebrow: String,
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Surface(
+        label = "scan_action_panel",
         modifier = modifier.fillMaxWidth(),
-        shape = Shapes.ExtraLarge2CornerBasedShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.86f),
-        tonalElevation = 8.dp,
-        shadowElevation = 2.dp,
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
-                                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
-                                MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.46f),
-                            ),
-                        ),
-                    ).padding(Spacing.ExtraLarge),
+    ) { p ->
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(Spacing.Large),
-                horizontalAlignment = Alignment.Start,
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(86.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(66.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(34.dp),
+            when (p) {
+                DialPhase.Permission -> {
+                    if (shouldShowRationale) {
+                        Text(
+                            text = "媒体权限被拒绝，请在系统设置中手动开启。",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
                         )
+                        Button(
+                            onClick = onOpenSettings,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp),
+                        ) {
+                            Text("前往系统设置")
+                        }
+                    } else {
+                        Button(
+                            onClick = onRequestPermission,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp),
+                        ) {
+                            Text("授予媒体权限")
+                        }
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
-                    Text(
-                        text = eyebrow,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                content()
-            }
-        }
-    }
-}
 
-@Composable
-private fun IdleContent(
-    onStartScan: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ScannerPageLayout(modifier = modifier) {
-        ScannerHeroCard(
-            icon = Icons.Default.Scanner,
-            eyebrow = "本地曲库",
-            title = "重新整理你的音乐宇宙",
-            subtitle = "一次扫描 MediaStore 与额外文件夹，自动同步新增、更新和已移除的歌曲。",
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-            ) {
-                ScanFeatureChip(
-                    icon = Icons.Default.LibraryMusic,
-                    label = "音频文件",
-                    modifier = Modifier.weight(1f),
-                )
-                ScanFeatureChip(
-                    icon = Icons.Default.Folder,
-                    label = "额外目录",
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            ElevatedButton(
-                onClick = onStartScan,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.GraphicEq,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.width(Spacing.Small))
-                Text("开始智能扫描")
+                DialPhase.Idle -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                    ) {
+                        ScanFeatureChip(
+                            icon = Icons.Default.LibraryMusic,
+                            label = "音频文件",
+                            modifier = Modifier.weight(1f),
+                        )
+                        ScanFeatureChip(
+                            icon = Icons.Default.Folder,
+                            label = "额外目录",
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Button(
+                        onClick = onStartScan,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.GraphicEq,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(Spacing.Small))
+                        Text("开始智能扫描")
+                    }
+                }
+
+                DialPhase.Scanning -> {
+                    CurrentFileCard(currentFile = progress.currentFile)
+                    OutlinedButton(
+                        onClick = onCancelScan,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                        colors =
+                            ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error,
+                            ),
+                    ) {
+                        Text("停止扫描")
+                    }
+                }
+
+                DialPhase.Success -> {
+                    ScanResultRow(result = result)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                onResetState()
+                                onStartScan()
+                            },
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                        ) {
+                            Text("重新扫描")
+                        }
+                        Button(
+                            onClick = onResetState,
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                        ) {
+                            Text("完成")
+                        }
+                    }
+                }
+
+                DialPhase.Error -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                    ) {
+                        OutlinedButton(
+                            onClick = onResetState,
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                        ) {
+                            Text("稍后再说")
+                        }
+                        Button(
+                            onClick = {
+                                onResetState()
+                                onStartScan()
+                            },
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                        ) {
+                            Text("重试")
+                        }
+                    }
+                }
             }
         }
     }
@@ -536,7 +783,7 @@ private fun ScanFeatureChip(
     Surface(
         modifier = modifier,
         shape = Shapes.LargeCornerBasedShape,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.62f),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
@@ -556,101 +803,6 @@ private fun ScanFeatureChip(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
             )
-        }
-    }
-}
-
-@Composable
-private fun ScanningContent(
-    progress: ScanProgress,
-    onCancel: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val rawProgress = if (progress.total > 0) progress.current.toFloat() / progress.total else 0f
-    val progressFraction = rawProgress.coerceIn(0f, 1f)
-    val animatedProgress by animateFloatAsState(
-        targetValue = progressFraction,
-        animationSpec = tween(durationMillis = 360),
-        label = "scan_progress",
-    )
-
-    ScannerPageLayout(modifier = modifier) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = Shapes.ExtraLarge2CornerBasedShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f),
-            tonalElevation = 8.dp,
-            shadowElevation = 2.dp,
-        ) {
-            Column(
-                modifier = Modifier.padding(Spacing.ExtraLarge),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Spacing.Large),
-            ) {
-                Box(
-                    modifier = Modifier.size(132.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (progress.total > 0) {
-                        CircularProgressIndicator(
-                            progress = { animatedProgress },
-                            modifier = Modifier.fillMaxSize(),
-                            strokeWidth = 9.dp,
-                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        )
-                        Text(
-                            text = "${(animatedProgress * 100).toInt()}%",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    } else {
-                        CircularProgressIndicator(
-                            modifier = Modifier.fillMaxSize(),
-                            strokeWidth = 9.dp,
-                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        )
-                        Icon(
-                            imageVector = Icons.Default.GraphicEq,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(34.dp),
-                        )
-                    }
-                }
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(Spacing.Small),
-                ) {
-                    Text(
-                        text = "正在捕捉音乐信号",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = if (progress.total > 0) "${progress.current} / ${progress.total} 首" else "正在准备扫描队列",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                LinearProgressIndicator(
-                    progress = { animatedProgress },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(10.dp)
-                            .clip(CircleShape),
-                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                )
-                CurrentFileCard(currentFile = progress.currentFile)
-                OutlinedButton(
-                    onClick = onCancel,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("停止扫描")
-                }
-            }
         }
     }
 }
@@ -688,10 +840,10 @@ private fun CurrentFileCard(currentFile: String) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = currentFile.ifBlank { "等待下一个音频文件..." },
+                    text = currentFile.ifBlank { "等待下一个音频文件…" },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -700,109 +852,18 @@ private fun CurrentFileCard(currentFile: String) {
 }
 
 @Composable
-private fun SuccessContent(
-    result: ScanResult,
-    onRescan: () -> Unit,
-    onDone: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ScannerPageLayout(modifier = modifier) {
-        ScannerHeroCard(
-            icon = Icons.Default.CheckCircle,
-            eyebrow = "扫描完成",
-            title = "曲库已经焕然一新",
-            subtitle = "已完成本地媒体与额外目录同步，你可以立刻回到资料库继续播放。",
-        ) {
-            ScanResultGrid(result = result)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-            ) {
-                OutlinedButton(
-                    onClick = onRescan,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("重新扫描")
-                }
-                Button(
-                    onClick = onDone,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("完成")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ErrorContent(
-    message: String,
-    onRetry: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ScannerPageLayout(modifier = modifier) {
-        ScannerHeroCard(
-            icon = Icons.Default.Error,
-            eyebrow = "扫描中断",
-            title = "没有完成本次整理",
-            subtitle = message.ifBlank { "扫描过程中发生未知错误，请稍后重试。" },
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-            ) {
-                OutlinedButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("稍后再说")
-                }
-                Button(
-                    onClick = onRetry,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("重试")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ScanResultGrid(
+private fun ScanResultRow(
     result: ScanResult,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Row(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
-            ScanResultTile(
-                label = "共扫描",
-                value = result.totalScanned.toString(),
-                modifier = Modifier.weight(1f),
-            )
-            ScanResultTile(
-                label = "新增",
-                value = result.newAdded.toString(),
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
-            ScanResultTile(
-                label = "更新",
-                value = result.updated.toString(),
-                modifier = Modifier.weight(1f),
-            )
-            ScanResultTile(
-                label = "移除",
-                value = result.removed.toString(),
-                modifier = Modifier.weight(1f),
-            )
-        }
+        ScanResultTile("共扫描", result.totalScanned.toString(), Modifier.weight(1f))
+        ScanResultTile("新增", result.newAdded.toString(), Modifier.weight(1f))
+        ScanResultTile("更新", result.updated.toString(), Modifier.weight(1f))
+        ScanResultTile("移除", result.removed.toString(), Modifier.weight(1f))
     }
 }
 
@@ -815,20 +876,21 @@ private fun ScanResultTile(
     Surface(
         modifier = modifier,
         shape = Shapes.LargeCornerBasedShape,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.64f),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.72f),
     ) {
         Column(
-            modifier = Modifier.padding(Spacing.Large),
+            modifier = Modifier.padding(vertical = Spacing.Medium),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
         ) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = "$label / 首",
+                text = label,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

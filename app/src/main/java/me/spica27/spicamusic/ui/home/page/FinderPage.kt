@@ -20,8 +20,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
@@ -62,6 +64,7 @@ import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
+import me.spica27.spicamusic.ui.scan.ScannerScene
 import me.spica27.spicamusic.ui.search.SearchScene
 import me.spica27.spicamusic.ui.settings.SettingsScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
@@ -83,6 +86,7 @@ fun FinderPage() {
     val frequentSongs by homeViewModel.frequentSongs.collectAsStateWithLifecycle()
     val favoriteSongs by homeViewModel.favoriteSongs.collectAsStateWithLifecycle()
     val playlists by homeViewModel.playlists.collectAsStateWithLifecycle()
+    val allSongs by homeViewModel.allSongs.collectAsStateWithLifecycle()
 
     val playerViewModel = LocalPlayerViewModel.current
 
@@ -130,6 +134,15 @@ fun FinderPage() {
                     summaryText = summaryText,
                     onClick = { path.push(SearchScene()) },
                 )
+            }
+
+            // 数据库没有本地音乐时，引导用户前往扫描页面
+            if (allSongs.isEmpty()) {
+                item {
+                    ScanGuideCard(
+                        onClick = { path.push(ScannerScene()) },
+                    )
+                }
             }
 
             item {
@@ -268,6 +281,92 @@ private fun FinderHeroSearchCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
             )
+        }
+    }
+}
+
+/**
+ * 本地音乐为空时的引导卡片：提示用户前往扫描页面导入歌曲
+ */
+@Composable
+private fun ScanGuideCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                .clip(Shapes.ExtraLarge1CornerBasedShape)
+                .background(
+                    Brush.linearGradient(
+                        colors =
+                            listOf(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.secondaryContainer,
+                            ),
+                    ),
+                ).clickable(onClick = onClick)
+                .padding(Spacing.ExtraLarge),
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Scanner,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+                Column {
+                    Text(
+                        text = "还没有本地音乐",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                    Text(
+                        text = "扫描设备中的歌曲，开始你的音乐之旅",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                    )
+                }
+            }
+            Row(
+                modifier =
+                    Modifier
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .padding(horizontal = Spacing.Large, vertical = Spacing.Small),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+            ) {
+                Text(
+                    text = "前往扫描",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
         }
     }
 }

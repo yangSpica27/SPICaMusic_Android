@@ -30,6 +30,11 @@ class ScanFolderRepositoryImpl(
         folderType: FolderType,
         pathPrefix: String?,
     ) {
+        // 去重：同类型下相同 URI 或相同路径前缀视为已存在
+        val existing = scanFolderDao.getByTypeSync(folderType.value)
+        if (existing.any { it.uriString == uriString || (pathPrefix != null && it.pathPrefix == pathPrefix) }) {
+            return
+        }
         scanFolderDao.insert(
             ScanFolderEntity(
                 uriString = uriString,
@@ -44,8 +49,8 @@ class ScanFolderRepositoryImpl(
 
     override suspend fun markInaccessible(id: Long) = scanFolderDao.markInaccessible(id)
 
-    override suspend fun reAuthorize(id: Long, newUriString: String) =
-        scanFolderDao.reAuthorize(id, newUriString)
+    override suspend fun reAuthorize(id: Long, newUriString: String, pathPrefix: String?) =
+        scanFolderDao.reAuthorize(id, newUriString, pathPrefix)
 }
 
 private fun ScanFolderEntity.toScanFolder() = ScanFolder(

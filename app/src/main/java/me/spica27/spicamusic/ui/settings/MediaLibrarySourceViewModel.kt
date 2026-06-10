@@ -118,7 +118,7 @@ class MediaLibrarySourceViewModel(
 
     /**
      * 添加额外扫描文件夹（后台线程安全）
-     * 自动处理 SAF 权限申请 + DisplayName 解析
+     * 自动处理 SAF 权限申请 + DisplayName 解析，添加成功后自动扫描该目录
      */
     fun addExtraFolder(
         context: Context,
@@ -145,6 +145,9 @@ class MediaLibrarySourceViewModel(
                     folderType = FolderType.EXTRA,
                     pathPrefix = resolvePathPrefix(uri),
                 )
+
+                // 自动扫描新目录，将其中音频注册进 MediaStore 并入库
+                runScan { scanService.scanExtraFolders() }
             } catch (e: Exception) {
                 // 权限申请失败或 IO 错误，静默处理
                 timber.log.Timber.w(e, "Failed to add extra folder")
@@ -154,7 +157,7 @@ class MediaLibrarySourceViewModel(
 
     /**
      * 添加忽略文件夹（后台线程安全）
-     * 不需要 SAF 权限，仅存储路径做过滤
+     * 不需要 SAF 权限，仅存储路径做过滤；添加后自动重扫以移除已入库的忽略歌曲
      */
     fun addIgnoreFolder(
         context: Context,
@@ -175,25 +178,77 @@ class MediaLibrarySourceViewModel(
                     folderType = FolderType.IGNORE,
                     pathPrefix = resolvePathPrefix(uri),
                 )
+
+                // 重扫 MediaStore：全量扫描会把忽略目录下已入库的歌曲移除
+                runScan { scanService.scanMediaStore() }
             } catch (e: Exception) {
                 timber.log.Timber.w(e, "Failed to add ignore folder")
             }
         }
     }
 
-    /** 重新授权失效的 EXTRA 文件夹（用新 URI 替换旧记录） */
+    /** 重新授权失效的 EXTRA 文件夹（用新 URI 替换旧记录），并自动重扫 */
     fun reAuthorizeFolder(
+        context: Context,
         id: Long,
         newUri: Uri,
     ) {
-        viewModelScope.launch {
-            folderRepository.reAuthorize(id, newUri.toString())
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    newUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+                folderRepository.reAuthorize(id, newUri.toString(), resolvePathPrefix(newUri))
+                runScan { scanService.scanExtraFolders() }
+            } catch (e: Exception) {
+                timber.log.Timber.w(e, "Failed to re-authorize folder")
+            }
         }
     }
 
-    fun removeFolder(id: Long) {
-        viewModelScope.launch {
-            folderRepository.removeFolder(id)
+    /**
+     * 删除目录：
+     * - EXTRA：释放 SAF 持久权限（系统持久权限有上限），已入库歌曲保留（它们已注册进 MediaStore）
+     * - IGNORE：删除后重扫 MediaStore，让该目录下的歌曲重新入库
+     */
+    fun removeFolder(
+        context: Context,
+        folder: ScanFolder,
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                folderRepository.removeFolder(folder.id)
+                when (folder.folderType) {
+                    FolderType.EXTRA -> {
+                        try {
+                            context.contentResolver.releasePersistableUriPermission(
+                                Uri.parse(folder.uriString),
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                            )
+                        } catch (e: SecurityException) {
+                            // 权限可能已被系统回收
+                        }
+                    }
+
+                    FolderType.IGNORE -> {
+                        runScan { scanService.scanMediaStore() }
+                    }
+                }
+            } catch (e: Exception) {
+                timber.log.Timber.w(e, "Failed to remove folder")
+            }
+        }
+    }
+
+    /** 执行扫描并同步 scanState（供目录增删后的自动重扫复用） */
+    private suspend fun runScan(block: suspend () -> ScanResult) {
+        try {
+            _scanState.value = ScanState.Scanning(ScanProgress(0, 0, app.getString(R.string.preparing_scan)))
+            val result = block()
+            _scanState.value = ScanState.Success(result)
+        } catch (e: Exception) {
+            _scanState.value = ScanState.Error(e.message ?: app.getString(R.string.scan_failed))
         }
     }
 
