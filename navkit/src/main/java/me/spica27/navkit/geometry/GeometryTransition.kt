@@ -39,6 +39,16 @@ class GeometryTransition(val key: String) {
     /** 过渡目标矩形（目标节点的全局位置和尺寸） */
     val targetRect: MutableState<Rect> = mutableStateOf(Rect.Zero)
 
+    /**
+     * 源节点经祖先裁剪后的**可见**矩形（boundsInWindow）。
+     * 当封面部分滚出 Lazy 视口（被 header 区域裁掉）时，此矩形小于 [sourceRect]。
+     * [Rect.Zero] 表示未记录，视为与 [sourceRect] 相同。
+     */
+    val sourceVisibleRect: MutableState<Rect> = mutableStateOf(Rect.Zero)
+
+    /** 目标节点经祖先裁剪后的可见矩形，语义同 [sourceVisibleRect] */
+    val targetVisibleRect: MutableState<Rect> = mutableStateOf(Rect.Zero)
+
     /** 当前共享元素处于哪个显示阶段 */
     val phase: MutableState<GeometryPhase> = mutableStateOf(GeometryPhase.Source)
 
@@ -128,6 +138,55 @@ class GeometryTransition(val key: String) {
             right = lerp(src.right, dst.right, t),
             bottom = lerp(src.bottom, dst.bottom, t)
         )
+    }
+
+    /**
+     * 计算当前帧浮层内容的**裁剪矩形**（窗口坐标系）。
+     *
+     * 在 [sourceVisibleRect] 与 [targetVisibleRect] 之间按 [progress] 插值：
+     * 起飞时裁剪框与源节点真实可见区域一致（被 header 裁掉 / 被浮层遮挡的部分不显示），
+     * 飞行过程中逐渐过渡到目标可见区域，避免被遮挡部分突然"弹"到最顶层。
+     *
+     * @param sourceOcclusions 源侧的额外遮挡矩形（如 BottomPlayerBar 这类兄弟浮层，
+     *   不参与祖先裁剪，需要显式扣除）
+     */
+    fun getClipBounds(sourceOcclusions: List<Rect> = emptyList()): Rect {
+        val t = progress.value
+        var src = sourceVisibleRect.value.takeIf { it != Rect.Zero } ?: sourceRect.value
+        sourceOcclusions.forEach { src = src.subtractOccluder(it) }
+        val dst = targetVisibleRect.value.takeIf { it != Rect.Zero } ?: targetRect.value
+        return Rect(
+            left = lerp(src.left, dst.left, t),
+            top = lerp(src.top, dst.top, t),
+            right = lerp(src.right, dst.right, t),
+            bottom = lerp(src.bottom, dst.bottom, t)
+        )
+    }
+
+    /**
+     * 从矩形中扣除一个遮挡矩形，结果仍以矩形近似（按被完全跨越的方向收缩边缘）。
+     * 典型场景：底部播放条横向铺满屏幕、遮住封面下缘，此时将 bottom 收缩到遮挡物上缘。
+     */
+    private fun Rect.subtractOccluder(o: Rect): Rect {
+        if (!overlaps(o)) return this
+        val coversHorizontally = o.left <= left && o.right >= right
+        val coversVertically = o.top <= top && o.bottom >= bottom
+        return when {
+            coversHorizontally && coversVertically -> Rect(left, top, left, top)
+            coversHorizontally -> when {
+                o.top <= top && o.bottom >= bottom -> Rect(left, top, left, top)
+                o.top <= top -> copy(top = o.bottom)
+                o.bottom >= bottom -> copy(bottom = o.top)
+                else -> this // 遮挡物嵌在中间，无法用单矩形表达，保持原样
+            }
+            coversVertically -> when {
+                o.left <= left && o.right >= right -> Rect(left, top, left, top)
+                o.left <= left -> copy(left = o.right)
+                o.right >= right -> copy(right = o.left)
+                else -> this
+            }
+            else -> this // 仅遮住一角，矩形裁剪无法表达，保持原样
+        }
     }
 
     private fun lerp(start: Float, end: Float, fraction: Float): Float =

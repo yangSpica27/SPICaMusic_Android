@@ -17,17 +17,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import me.spica27.navkit.geometry.GeometryOccluders
 import me.spica27.navkit.geometry.GeometryTransition
 import me.spica27.navkit.geometry.GeometryTransition.GeometryPhase
 import me.spica27.navkit.path.LocalNavigationPath
@@ -240,6 +243,9 @@ private fun SceneContainer(
  *
  * - 从 [transition] 读取当前进度，计算插值后的边界矩形
  * - 用 [absoluteOffset] + [size] 将内容定位到正确的屏幕位置/尺寸
+ * - 内容按「源可见区域 → 目标可见区域」插值出的裁剪框裁剪：
+ *   起飞时与封面真实遮挡状态（header 视口裁剪 / [GeometryOccluders] 登记的悬浮 UI）一致，
+ *   飞行中逐渐展开，避免被遮挡部分突然显示在最顶层
  * - 浮层常驻，仅在正向/反向飞行阶段显示，避免 reverse 起点重新挂载导致闪烁
  */
 @Composable
@@ -265,6 +271,18 @@ private fun GeometryOverlay(
                     width = bounds.width.coerceAtLeast(1f).toDp(),
                     height = bounds.height.coerceAtLeast(1f).toDp(),
                 )
+                .drawWithContent {
+                    // 把窗口坐标的可见裁剪框换算到浮层本地坐标后裁剪内容
+                    val clip = transition.getClipBounds(GeometryOccluders.current())
+                    clipRect(
+                        left = clip.left - bounds.left,
+                        top = clip.top - bounds.top,
+                        right = clip.right - bounds.left,
+                        bottom = clip.bottom - bounds.top,
+                    ) {
+                        this@drawWithContent.drawContent()
+                    }
+                }
                 .clip(RoundedCornerShape(16.dp))
                 .graphicsLayer { alpha = if (isVisible) 1f else 0f },
         ) {

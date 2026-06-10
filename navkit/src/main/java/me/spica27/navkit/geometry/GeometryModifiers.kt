@@ -1,11 +1,14 @@
 package me.spica27.navkit.geometry
 
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.node.GlobalPositionAwareModifierNode
 import androidx.compose.ui.node.ModifierNodeElement
@@ -25,7 +28,8 @@ import androidx.compose.ui.platform.InspectorInfo
  */
 fun Modifier.geometrySource(transition: GeometryTransition): Modifier =
     this.onGloballyPositioned { coords ->
-        transition.sourceRect.value = coords.boundsInWindow()
+        transition.sourceRect.value = coords.unclippedBoundsInWindow()
+        transition.sourceVisibleRect.value = coords.boundsInWindow()
     }
 
 /**
@@ -37,8 +41,31 @@ fun Modifier.geometrySource(transition: GeometryTransition): Modifier =
  */
 fun Modifier.geometryTarget(transition: GeometryTransition): Modifier =
     this.onGloballyPositioned { coords ->
-        transition.targetRect.value = coords.boundsInWindow()
+        transition.targetRect.value = coords.unclippedBoundsInWindow()
+        transition.targetVisibleRect.value = coords.boundsInWindow()
     }
+
+/**
+ * 将此可组合元素标记为几何过渡的**遮挡物**（如底部播放条这类悬浮在列表上方的兄弟浮层）。
+ *
+ * 遮挡物不是源节点的布局祖先，`boundsInWindow` 的祖先裁剪无法感知它；
+ * 通过此 modifier 把它的窗口矩形登记到 [GeometryOccluders]，
+ * 飞行浮层会在起飞侧裁剪框中扣除这些区域，避免被遮住的封面部分突然显示在最顶层。
+ *
+ * @param key 此遮挡物的唯一标识；节点从组合树移除时自动注销
+ */
+fun Modifier.geometryOccluder(key: Any): Modifier = this.then(GeometryOccluderElement(key))
+
+/**
+ * 计算节点在窗口坐标系中的**未裁剪**边界。
+ *
+ * [androidx.compose.ui.layout.boundsInWindow] 会按祖先（LazyColumn/LazyGrid 视口、窗口等）
+ * 裁剪结果：当封面被 header 或 BottomPlayerBar 遮挡而部分滚出视口时，
+ * 记录到的矩形被裁掉一截，导致飞行动画起点/终点错位变形。
+ * 这里改用 positionInWindow（不裁剪的左上角坐标）+ 实际布局尺寸还原完整矩形。
+ */
+private fun LayoutCoordinates.unclippedBoundsInWindow(): Rect =
+    Rect(offset = positionInWindow(), size = size.toSize())
 
 // ──────────────────────────────────────────────────────────────────────────
 // 高性能节点实现（Modifier.Node — Draw 阶段读取，避免 Composition 开销）
@@ -63,11 +90,14 @@ internal class GeometryStateNode(
     override val shouldAutoInvalidate: Boolean get() = false
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
-        val bounds: Rect = coordinates.boundsInWindow()
+        val bounds: Rect = coordinates.unclippedBoundsInWindow()
+        val visibleBounds: Rect = coordinates.boundsInWindow()
         if (isSource) {
             transition.sourceRect.value = bounds
+            transition.sourceVisibleRect.value = visibleBounds
         } else {
             transition.targetRect.value = bounds
+            transition.targetVisibleRect.value = visibleBounds
         }
     }
 
@@ -99,5 +129,56 @@ internal data class GeometryStateElement(
         name = "geometryState"
         properties["key"] = transition.key
         properties["isSource"] = isSource
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// 遮挡物登记
+// ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * 全局遮挡物登记表：key → 窗口坐标矩形。
+ *
+ * 由 [geometryOccluder] 写入/注销，[me.spica27.navkit.stack.NavigationStack]
+ * 的飞行浮层读取，用于在源侧裁剪框中扣除被悬浮 UI 遮挡的区域。
+ * 使用 mutableStateMapOf 保证矩形变化（如播放条展开/收起）时浮层自动重绘。
+ */
+object GeometryOccluders {
+    internal val rects = mutableStateMapOf<Any, Rect>()
+
+    /** 当前所有遮挡矩形的快照 */
+    fun current(): List<Rect> = rects.values.toList()
+}
+
+/** 记录遮挡物窗口矩形的节点；从组合树移除时自动注销 */
+internal class GeometryOccluderNode(
+    var occluderKey: Any
+) : Modifier.Node(), GlobalPositionAwareModifierNode {
+
+    override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
+        GeometryOccluders.rects[occluderKey] = coordinates.boundsInWindow()
+    }
+
+    override fun onDetach() {
+        GeometryOccluders.rects.remove(occluderKey)
+    }
+}
+
+internal data class GeometryOccluderElement(
+    val occluderKey: Any
+) : ModifierNodeElement<GeometryOccluderNode>() {
+
+    override fun create(): GeometryOccluderNode = GeometryOccluderNode(occluderKey)
+
+    override fun update(node: GeometryOccluderNode) {
+        if (node.occluderKey != occluderKey) {
+            GeometryOccluders.rects.remove(node.occluderKey)
+            node.occluderKey = occluderKey
+        }
+    }
+
+    override fun InspectorInfo.inspectableProperties() {
+        name = "geometryOccluder"
+        properties["key"] = occluderKey
     }
 }

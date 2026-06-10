@@ -80,6 +80,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.launch
+import me.spica27.navkit.geometry.geometryOccluder
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.player.DEFAULT_PAGE
@@ -247,6 +248,8 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                 Modifier
                                     .fillMaxWidth()
                                     .onSizeChanged { size -> miniBarHeightPx = size.height }
+                                    // 登记为几何过渡遮挡物：封面飞行时被播放条盖住的部分不会突然跳到最顶层
+                                    .geometryOccluder("bottom_media_bar")
                                     .animateContentSize(
                                         animationSpec =
                                             spring(
