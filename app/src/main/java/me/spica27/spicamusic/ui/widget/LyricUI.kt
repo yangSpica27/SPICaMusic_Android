@@ -53,6 +53,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -142,6 +143,30 @@ fun LyricsUI(
     var lastSettledPlayingIndex by remember(lyricLines) { mutableIntStateOf(Int.MAX_VALUE) }
     val playingIndex by remember(currentTime, lyricLines) {
         derivedStateOf { lyricLines.findPlayingIndex(currentTime) }
+    }
+
+    // 逐字行测量缓存：按行 key 复用。滚动时 item 被回收重建不再重新测量，
+    // 避免「占位文本 -> 逐字渲染」的反复切换闪烁
+    val wordsMeasureCache = remember(lyricLines) { HashMap<String, List<MeasuredWord>>() }
+    val wordsTextStyle =
+        MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold)
+    val prewarmTextMeasurer = rememberTextMeasurer(cacheSize = 0)
+
+    // 后台预热全部逐字行的测量结果，行首次进入视口时即可同步命中缓存
+    LaunchedEffect(lyricLines, wordsTextStyle) {
+        val pending =
+            lyricLines
+                .filterIsInstance<LyricItem.WordsLyric>()
+                .filter { it.key !in wordsMeasureCache }
+        if (pending.isEmpty()) return@LaunchedEffect
+        val results =
+            withContext(Dispatchers.Default) {
+                pending.associate { line ->
+                    val ranges = buildWordRanges(line.words.sortedBy { it.startTime })
+                    line.key to measureWordRanges(prewarmTextMeasurer, ranges, wordsTextStyle)
+                }
+            }
+        results.forEach { (key, value) -> wordsMeasureCache.putIfAbsent(key, value) }
     }
 
     val previewIndex by remember {
@@ -294,6 +319,8 @@ fun LyricsUI(
                                 alpha = alpha,
                                 scale = scale,
                                 blurRadius = blurRadius,
+                                textStyle = wordsTextStyle,
+                                measureCache = wordsMeasureCache,
                             )
                         }
                     }
@@ -530,6 +557,8 @@ private fun WordsLyricLine(
     alpha: Float,
     scale: Float,
     blurRadius: Dp,
+    textStyle: TextStyle,
+    measureCache: MutableMap<String, List<MeasuredWord>>,
 ) {
     val activeTextColor = MaterialTheme.colorScheme.onSurface
     val baseTextColor = activeTextColor.copy(alpha = LyricUIConstants.BASE_TEXT_ALPHA * alpha)
@@ -589,20 +618,6 @@ private fun WordsLyricLine(
             )
         }
 
-    val lineProgressTarget =
-        remember(renderState.displayTime, lyric) {
-            if (renderState.displayTime == Long.MIN_VALUE) {
-                0f
-            } else {
-                val duration = (lyric.endTime - lyric.startTime).coerceAtLeast(1L)
-                ((renderState.displayTime - lyric.startTime).toFloat() / duration).coerceIn(0f, 1f)
-            }
-        }
-    val lineProgress by animateFloatAsState(
-        targetValue = lineProgressTarget,
-        label = "wordsLineProgress",
-    )
-
     Column(
         modifier =
             Modifier
@@ -621,19 +636,15 @@ private fun WordsLyricLine(
             text = sentence.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
             wordRanges = wordRanges,
             progressProvider = { range -> wordProgress(range.word, renderState.displayTime) },
-            baseStyle =
-                MaterialTheme.typography.headlineSmall.copy(
-                    color = baseTextColor,
-                    fontWeight = FontWeight.ExtraBold,
-                ),
-            activeStyle =
-                MaterialTheme.typography.headlineSmall.copy(
-                    color = activeTextColor,
-                    fontWeight = FontWeight.ExtraBold,
-                ),
+            // 测量样式不含颜色：颜色随强调度逐帧动画，
+            // 若参与测量 key 会导致滚动时测量结果每帧失效引发闪烁
+            textStyle = textStyle,
+            baseColor = baseTextColor,
+            activeColor = activeTextColor,
             modifier = Modifier.fillMaxWidth(),
-            lineProgress = lineProgress,
             highlightStrength = renderState.highlightStrength,
+            cacheKey = lyric.key,
+            measureCache = measureCache,
         )
 
         val translation = lyric.translation.firstOrNull { it.content.isNotBlank() }?.content
@@ -654,7 +665,9 @@ private fun WordsLyricLine(
  * 渐进式单词文本显示（带发光效果和进度控制）
  *
  * 渲染管线设计：
- * - 文本测量（textMeasurer.measure）仅在 text/style 变化时执行，结果缓存
+ * - 文本测量与颜色解耦：textStyle 不携带颜色，强调度动画不会使测量失效
+ * - 测量结果优先从 [measureCache] 同步命中（由 LyricsUI 后台预热），
+ *   miss 时才后台测量并回填缓存，避免滚动复用时闪烁占位文本
  * - 每词进度（progressProvider）在绘制阶段内联计算，不触发 recomposition
  * - Canvas 绘制层处理渐变高亮 + 发光 + 弹跳位移，全部在 draw phase 完成
  */
@@ -663,16 +676,19 @@ private fun ProgressiveWordsText(
     text: String,
     wordRanges: List<WordCharRange>,
     progressProvider: (WordCharRange) -> Float,
-    baseStyle: TextStyle,
-    activeStyle: TextStyle,
+    textStyle: TextStyle,
+    baseColor: Color,
+    activeColor: Color,
+    cacheKey: String,
+    measureCache: MutableMap<String, List<MeasuredWord>>,
     modifier: Modifier = Modifier,
-    @Suppress("UNUSED_PARAMETER") lineProgress: Float, // 保留参数兼容，不再用作缓存 key
     highlightStrength: Float = 1f,
 ) {
     if (wordRanges.isEmpty()) {
         Text(
             text = text,
-            style = baseStyle,
+            style = textStyle,
+            color = baseColor,
             modifier = modifier,
         )
         return
@@ -682,37 +698,29 @@ private fun ProgressiveWordsText(
     // 避免 drawText(shadow=...) 修改共享 MultiParagraph 内部 TextPaint 导致渲染污染
     val textMeasurer = rememberTextMeasurer(cacheSize = 0)
 
-    // 测量结果异步填充：null 表示尚未完成，显示占位文本
-    var measuredWords by remember(text, wordRanges, baseStyle) {
-        mutableStateOf<List<MeasuredWord>?>(null)
+    // 优先同步命中缓存；miss 时后台测量后回填（仅发生在预热尚未覆盖时）
+    var measuredWords by remember(text, wordRanges, textStyle) {
+        mutableStateOf(measureCache[cacheKey])
     }
 
-    // ── 将文本测量移至后台线程，避免阻塞 Composition ──
-    LaunchedEffect(text, wordRanges, baseStyle) {
+    LaunchedEffect(text, wordRanges, textStyle) {
+        if (measuredWords != null) return@LaunchedEffect
         val result =
             withContext(Dispatchers.Default) {
-                wordRanges.map { range ->
-                    val layoutResult =
-                        textMeasurer.measure(
-                            text = range.word.content,
-                            style = baseStyle,
-                        )
-                    val boundingBox = wordBoundingBox(layoutResult, 0, range.word.content.length)
-                    MeasuredWord(layoutResult, boundingBox)
-                }
+                measureWordRanges(textMeasurer, wordRanges, textStyle)
             }
+        measureCache.putIfAbsent(cacheKey, result)
         measuredWords = result
     }
 
     val density = LocalDensity.current
-    val activeColor = activeStyle.color.copy(alpha = highlightStrength)
-    val baseColor = baseStyle.color
+    val highlightColor = activeColor.copy(alpha = activeColor.alpha * highlightStrength)
     val wordTranslationYPx = with(density) { LyricUIConstants.WORD_TRANSLATION_Y.dp.toPx() }
 
     val words = measuredWords
-    if (words == null) {
+    if (words == null || words.size != wordRanges.size) {
         // 测量完成前显示无样式占位文本，避免空白闪烁
-        Text(text = text, style = baseStyle, modifier = modifier)
+        Text(text = text, style = textStyle, color = baseColor, modifier = modifier)
         return
     }
 
@@ -752,14 +760,14 @@ private fun ProgressiveWordsText(
 
                 val colorStops =
                     arrayOf(
-                        0.0f to activeColor,
-                        fadeStart to activeColor,
+                        0.0f to highlightColor,
+                        fadeStart to highlightColor,
                         fadeEnd to baseColor,
                         1.0f to baseColor,
                     )
 
-                // 底层文字（base color，已包含在 layoutResult 样式中）
-                drawText(measured.layout)
+                // 底层文字（测量样式不含颜色，绘制时显式指定）
+                drawText(measured.layout, color = baseColor)
 
                 // 高亮层（渐变 + 发光）
                 clipRect(
@@ -778,7 +786,7 @@ private fun ProgressiveWordsText(
                             ),
                         shadow =
                             Shadow(
-                                color = activeColor.copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA * progress),
+                                color = highlightColor.copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA * progress),
                                 blurRadius =
                                     LyricUIConstants.WORD_GLOW_BLUR_RADIUS *
                                         EaseOutBounce.transform(progress),
@@ -789,6 +797,24 @@ private fun ProgressiveWordsText(
         }
     }
 }
+
+/**
+ * 逐词测量（线程安全，可在后台线程调用）
+ */
+private fun measureWordRanges(
+    textMeasurer: androidx.compose.ui.text.TextMeasurer,
+    wordRanges: List<WordCharRange>,
+    textStyle: TextStyle,
+): List<MeasuredWord> =
+    wordRanges.map { range ->
+        val layoutResult =
+            textMeasurer.measure(
+                text = range.word.content,
+                style = textStyle,
+            )
+        val boundingBox = wordBoundingBox(layoutResult, 0, range.word.content.length)
+        MeasuredWord(layoutResult, boundingBox)
+    }
 
 /**
  * 预测量的单词数据（不可变，可安全跨帧复用）
