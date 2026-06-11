@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.android.awaitFrame
 import me.spica27.spicamusic.ui.player.LyricsViewModel
 import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
@@ -99,7 +100,7 @@ fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
             uiState.lyrics != null -> {
                 LyricsUI(
                     modifier = Modifier.fillMaxSize(),
-                    lyric = uiState.lyrics!!,
+                    lyric = ImmutableList.copyOf(uiState.lyrics!!),
                     currentTime = currentTime + uiState.lyricsOffsetMs,
                     onSeekToTime = { posMs ->
                         viewModel.seekTo(posMs - uiState.lyricsOffsetMs)

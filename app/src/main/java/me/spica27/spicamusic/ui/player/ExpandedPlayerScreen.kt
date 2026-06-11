@@ -185,6 +185,9 @@ fun ExpandedPlayerScreen(
     Box(
         modifier =
             modifier
+                .graphicsLayer {
+                    alpha = progressProvider()
+                }.background(MaterialTheme.colorScheme.surface)
                 .fillMaxSize(),
     ) {
         // 流动背景（仅前台时启用，节省电量）

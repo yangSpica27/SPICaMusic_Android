@@ -60,21 +60,13 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Matrix
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.graphics.shapes.Morph
-import androidx.graphics.shapes.toPath
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import com.skydoves.landscapist.image.LandscapistImage
@@ -87,7 +79,7 @@ import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.player.formatTime
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import org.koin.compose.viewmodel.koinViewModel
-import java.util.concurrent.TimeUnit
+import kotlin.math.floor
 
 /**
  * 当前播放列表页面
@@ -178,7 +170,7 @@ fun CurrentPlaylistPage(
                             selectedMediaIds.clear()
                         },
                     ) {
-                        stringResource(R.string.cancel)
+                        Text(stringResource(R.string.cancel))
                     }
                 } else {
                     Row(
@@ -186,11 +178,13 @@ fun CurrentPlaylistPage(
                     ) {
                         IconButton(
                             onClick = {
-                                coroutineScope.launch {
-                                    scrollState.animateScrollToItem(
-                                        index = currentPlayingIndex,
-                                        scrollOffset = -scrollState.layoutInfo.viewportSize.height / 2,
-                                    )
+                                if (currentPlayingIndex >= 0) {
+                                    coroutineScope.launch {
+                                        scrollState.animateScrollToItem(
+                                            index = currentPlayingIndex,
+                                            scrollOffset = -scrollState.layoutInfo.viewportSize.height / 2,
+                                        )
+                                    }
                                 }
                             },
                             modifier = Modifier.size(24.dp),
@@ -249,43 +243,68 @@ fun CurrentPlaylistPage(
             val selectItemBackgroundColor =
                 MaterialTheme.colorScheme.inversePrimary.copy(alpha = 0.2f)
 
+            // 稳定的 item key：以 mediaId 为主，重复歌曲追加出现序号去重；
+            // 不含 index，删除/重排时其余 item 的 key 不变，animateItem 动画才能正常工作
+            val itemKeys =
+                remember(currentPlaylist) {
+                    val seen = HashMap<String, Int>()
+                    currentPlaylist.map { item ->
+                        val n = seen.merge(item.mediaId, 1, Int::plus)!!
+                        "${item.mediaId}#$n"
+                    }
+                }
+
             LazyColumn(
                 state = scrollState,
                 modifier =
                     Modifier
-                        .animateContentSize()
                         .fillMaxWidth()
                         .weight(1f)
                         .drawBehind {
-                            if (currentPlayingIndex >= 0) {
-                                // 计算背景位置和尺寸
-                                val itemHeight = 80.dp.toPx() // 64dp(封面) + 24dp(padding)
-                                val spacing = 8.dp.toPx()
-                                val topPadding = 8.dp.toPx()
-                                val cornerRadius = 12.dp.toPx()
+                            if (currentPlayingIndex < 0) return@drawBehind
+                            val layoutInfo = scrollState.layoutInfo
+                            val visible = layoutInfo.visibleItemsInfo
+                            if (visible.isEmpty()) return@drawBehind
 
-                                // 获取第一个可见项的偏移量
-                                val firstVisibleItemIndex = scrollState.firstVisibleItemIndex
-                                val firstVisibleItemScrollOffset =
-                                    scrollState.firstVisibleItemScrollOffset.toFloat()
+                            val spacing = 8.dp.toPx()
+                            val cornerRadius = 12.dp.toPx()
+                            val floorIndex = floor(animatedPlayingIndex).toInt()
+                            val fraction = animatedPlayingIndex - floorIndex
+                            val item0 = visible.firstOrNull { it.index == floorIndex }
+                            val item1 = visible.firstOrNull { it.index == floorIndex + 1 }
 
-                                // 计算背景的实际位置（考虑滚动偏移）
-                                val itemPositionInList =
-                                    animatedPlayingIndex * (itemHeight + spacing)
-                                val firstItemPosition =
-                                    firstVisibleItemIndex * (itemHeight + spacing)
-                                val backgroundTop =
-                                    topPadding + itemPositionInList - firstItemPosition - firstVisibleItemScrollOffset
+                            // 基于真实布局偏移插值计算高亮背景位置，目标行不可见时不绘制
+                            val topInViewport: Float
+                            val itemHeight: Float
+                            when {
+                                item0 != null && item1 != null -> {
+                                    topInViewport = item0.offset + (item1.offset - item0.offset) * fraction
+                                    itemHeight = item0.size + (item1.size - item0.size) * fraction
+                                }
 
-                                // 绘制圆角矩形背景
-                                drawRoundRect(
-                                    color = selectItemBackgroundColor,
-                                    topLeft = Offset(0f, backgroundTop),
-                                    size = Size(size.width, itemHeight),
-                                    cornerRadius = CornerRadius(cornerRadius),
-                                    style = Fill,
-                                )
+                                item0 != null -> {
+                                    topInViewport = item0.offset + (item0.size + spacing) * fraction
+                                    itemHeight = item0.size.toFloat()
+                                }
+
+                                item1 != null -> {
+                                    topInViewport = item1.offset - (item1.size + spacing) * (1f - fraction)
+                                    itemHeight = item1.size.toFloat()
+                                }
+
+                                else -> return@drawBehind
                             }
+
+                            val backgroundTop = topInViewport - layoutInfo.viewportStartOffset
+                            if (backgroundTop + itemHeight < 0f || backgroundTop > size.height) return@drawBehind
+
+                            drawRoundRect(
+                                color = selectItemBackgroundColor,
+                                topLeft = Offset(0f, backgroundTop),
+                                size = Size(size.width, itemHeight),
+                                cornerRadius = CornerRadius(cornerRadius),
+                                style = Fill,
+                            )
                         },
                 contentPadding =
                     PaddingValues(
@@ -295,7 +314,7 @@ fun CurrentPlaylistPage(
             ) {
                 itemsIndexed(
                     currentPlaylist,
-                    key = { index, song -> "${index}_${song.mediaId}" },
+                    key = { index, song -> itemKeys.getOrElse(index) { song.mediaId } },
                 ) { index, item ->
                     val isSelected = selectedMediaIds.contains(item.mediaId)
                     val isPlaying = currentMediaItem?.mediaId == item.mediaId
@@ -557,7 +576,7 @@ private fun PlaylistItemRow(
                     )
                 } else if (isPlaying) {
                     Text(
-                        "正在播放",
+                        stringResource(R.string.now_playing_indicator),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.W600,
                         color = MaterialTheme.colorScheme.primary,
@@ -573,35 +592,4 @@ private fun PlaylistItemRow(
             }
         }
     }
-}
-
-/**
- * 基于 Morph 进度的封面裁剪 Shape，每次 createOutline 时使用当时的 progress。
- * 注意：matrix 在每次调用时重置，避免累积变换。
- */
-private class MorphClipShape(
-    private val morph: Morph,
-    private val progress: Float,
-) : Shape {
-    override fun createOutline(
-        size: Size,
-        layoutDirection: LayoutDirection,
-        density: Density,
-    ): Outline {
-        val matrix = Matrix()
-        matrix.scale(size.width / 2f, size.height / 2f)
-        matrix.translate(1f, 1f)
-        val path = morph.toPath(progress = progress).asComposePath()
-        path.transform(matrix)
-        return Outline.Generic(path)
-    }
-}
-
-/**
- * 格式化时间 (毫秒 -> mm:ss)
- */
-private fun formatTime(millis: Long): String {
-    val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)
-    val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
-    return String.format(java.util.Locale.CHINESE, "%d:%02d", minutes, seconds)
 }

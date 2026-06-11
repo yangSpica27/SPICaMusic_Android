@@ -236,7 +236,9 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     },
                                     progressProvider = progressProvider,
                                     initialPage = initialPage,
-                                    modifier = Modifier.fillMaxSize(),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxSize(),
                                 )
                             }
                         }

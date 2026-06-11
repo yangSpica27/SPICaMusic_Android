@@ -365,7 +365,7 @@ private fun LiquidAuroraBackground(
         modifier = modifier,
         factory = { ctx ->
             TextureView(ctx).also { tv ->
-                tv.isOpaque = false
+                tv.isOpaque = true
                 tv.surfaceTextureListener =
                     object : TextureView.SurfaceTextureListener {
                         override fun onSurfaceTextureAvailable(

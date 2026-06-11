@@ -1,10 +1,13 @@
 package me.spica27.spicamusic.ui
 
+import android.app.Activity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.navkit.stack.NavigationStack
 import me.spica27.spicamusic.core.preferences.PreferencesManager
@@ -37,6 +40,12 @@ fun AppScaffold() {
     val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
 
     KeepScreenOnEffect(enabled = keepScreenOn && isPlaying)
+
+    val view = LocalView.current
+    LaunchedEffect(isDarkMode) {
+        val window = (view.context as Activity).window
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDarkMode
+    }
 
     SPICaMusicTheme(
         darkTheme = isDarkMode,

@@ -67,6 +67,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -125,7 +126,7 @@ private object LyricUIConstants {
 @Composable
 fun LyricsUI(
     modifier: Modifier = Modifier,
-    lyric: List<LyricItem>,
+    lyric: ImmutableList<LyricItem>,
     currentTime: Long,
     onSeekToTime: (Long) -> Unit = {},
 ) {

@@ -556,6 +556,7 @@ private fun WeeklyStatsCard(
             text = "本周听歌概览",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         if (weeklyStats == null) {
             Text(
@@ -715,6 +716,7 @@ private fun FolderRow(
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = folder.pathPrefix ?: folder.uriString,

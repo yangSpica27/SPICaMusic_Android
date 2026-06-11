@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.common.collect.ImmutableList
 import me.spcia.lyric_core.entity.SongLyrics
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricItem
@@ -146,7 +147,7 @@ fun LyricsSwitcherSheet(
                 if (page < parsedLyrics.size && parsedLyrics[page].isNotEmpty()) {
                     LyricsUI(
                         modifier = Modifier.fillMaxSize(),
-                        lyric = parsedLyrics[page],
+                        lyric = ImmutableList.copyOf(parsedLyrics[page]),
                         currentTime = currentTime,
                     )
                 } else {
