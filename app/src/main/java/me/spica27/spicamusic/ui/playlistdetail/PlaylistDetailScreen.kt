@@ -268,6 +268,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -375,13 +376,14 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                             fontWeight = FontWeight.W600,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         IconButton(onClick = viewModel::enterSearchMode) {
-                            Icon(Icons.Default.Search, contentDescription = "搜索")
+                            Icon(Icons.Default.Search, contentDescription = "搜索", tint = MaterialTheme.colorScheme.onSurface)
                         }
                         Box {
                             IconButton(onClick = viewModel::showMoreOptionsMenu) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "更多")
+                                Icon(Icons.Default.MoreVert, contentDescription = "更多", tint = MaterialTheme.colorScheme.onSurface)
                             }
                             DropdownMenu(
                                 expanded = showMoreOptionsMenu,
@@ -686,6 +688,7 @@ private fun SongRow(
                 fontWeight = FontWeight.W500,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = song.artist,

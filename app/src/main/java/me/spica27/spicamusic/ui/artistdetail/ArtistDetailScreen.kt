@@ -98,7 +98,7 @@ fun ArtistDetailScreen(artist: Artist) {
         label = "dominantColor",
     )
     val luminance = remember(dominantColor) { calculateLuminance(dominantColor) }
-    val onDominantColor = if (luminance > 0.55f) Color.Black else Color.White
+    val onDominantColor = if (luminance > 0.65f) Color.Black else Color.White
 
     val lazyListState = rememberLazyListState()
     val statusBarTopDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -407,6 +407,7 @@ private fun ArtistSongRow(
                 fontWeight = FontWeight.W500,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = song.album,
