@@ -141,8 +141,11 @@ fun LyricsUI(
     var showSeekOverlay by remember { mutableStateOf(false) }
     var leavingPlayingIndex by remember(lyricLines) { mutableIntStateOf(Int.MAX_VALUE) }
     var lastSettledPlayingIndex by remember(lyricLines) { mutableIntStateOf(Int.MAX_VALUE) }
-    val playingIndex by remember(currentTime, lyricLines) {
-        derivedStateOf { lyricLines.findPlayingIndex(currentTime) }
+    // currentTime 每帧变化，用 rememberUpdatedState 包装后作为稳定实例供 derivedStateOf 读取；
+    // derivedStateOf 只在计算结果（行索引）变化时才通知依赖方重组
+    val currentTimeState = rememberUpdatedState(currentTime)
+    val playingIndex by remember(lyricLines) {
+        derivedStateOf { lyricLines.findPlayingIndex(currentTimeState.value) }
     }
 
     // 逐字行测量缓存：按行 key 复用。滚动时 item 被回收重建不再重新测量，
@@ -169,7 +172,7 @@ fun LyricsUI(
         results.forEach { (key, value) -> wordsMeasureCache.putIfAbsent(key, value) }
     }
 
-    val previewIndex by remember {
+    val previewIndex by remember(lyricLines) {
         derivedStateOf {
             val layoutInfo = lazyListState.layoutInfo
             val viewportCenter = (layoutInfo.viewportStartOffset) + (layoutInfo.viewportSize.height / 2)
@@ -293,7 +296,7 @@ fun LyricsUI(
                 }
 
                 LyricItemWrapper(
-                    elasticOffset = elasticOffset.value,
+                    elasticOffset = elasticOffset,
                 ) {
                     when (line) {
                         is LyricItem.NormalLyric ->
@@ -395,16 +398,18 @@ private fun EmptyLyricState(modifier: Modifier = Modifier) {
 
 /**
  * 歌词项弹性偏移包装器
+ *
+ * [elasticOffset] 在 graphicsLayer 块内读取：弹簧动画期间只更新图层，不触发重组
  */
 @Composable
 private fun LyricItemWrapper(
-    elasticOffset: Float,
+    elasticOffset: Animatable<Float, *>,
     content: @Composable () -> Unit,
 ) {
     Box(
         modifier =
             Modifier.graphicsLayer {
-                translationY = elasticOffset
+                translationY = elasticOffset.value
             },
     ) {
         content()
@@ -499,12 +504,6 @@ private enum class LyricRenderPhase {
     Leaving,
     Inactive,
 }
-
-private data class WordsLyricRenderState(
-    val phase: LyricRenderPhase,
-    val displayTime: Long,
-    val highlightStrength: Float,
-)
 
 /**
  * 构建单词字符范围列表
@@ -609,14 +608,6 @@ private fun WordsLyricLine(
         animationSpec = tween(LyricUIConstants.WORD_HIGHLIGHT_FADE_DURATION),
         label = "wordsHighlightStrength",
     )
-    val renderState =
-        remember(renderPhase, displayTime, highlightStrength) {
-            WordsLyricRenderState(
-                phase = renderPhase,
-                displayTime = displayTime,
-                highlightStrength = highlightStrength,
-            )
-        }
 
     Column(
         modifier =
@@ -635,14 +626,14 @@ private fun WordsLyricLine(
         ProgressiveWordsText(
             text = sentence.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
             wordRanges = wordRanges,
-            progressProvider = { range -> wordProgress(range.word, renderState.displayTime) },
+            progressProvider = { range -> wordProgress(range.word, displayTime) },
             // 测量样式不含颜色：颜色随强调度逐帧动画，
             // 若参与测量 key 会导致滚动时测量结果每帧失效引发闪烁
             textStyle = textStyle,
             baseColor = baseTextColor,
             activeColor = activeTextColor,
             modifier = Modifier.fillMaxWidth(),
-            highlightStrength = renderState.highlightStrength,
+            highlightStrength = highlightStrength,
             cacheKey = lyric.key,
             measureCache = measureCache,
         )
@@ -879,6 +870,9 @@ private fun SeekPreview(
 /**
  * LazyListState 缓慢滚动扩展函数
  * 实现平滑的歌词切换动画
+ *
+ * 目标行可见时使用真实布局偏移，行高差异不会造成落点漂移；
+ * 不可见时退回平均行高估算
  */
 private suspend fun LazyListState.slowScrollToIndex(
     targetIndex: Int,
@@ -887,19 +881,30 @@ private suspend fun LazyListState.slowScrollToIndex(
 ) {
     if (viewportHeightPx <= 0 || targetIndex < 0) return
     val layoutInfoSnapshot = layoutInfo
-    val averageItemSize =
-        layoutInfoSnapshot.visibleItemsInfo
-            .takeIf { it.isNotEmpty() }
-            ?.map { it.size }
-            ?.average()
-            ?.toFloat()
-            ?.takeIf { it > 0f } ?: (viewportHeightPx / 6f)
+    val targetItem = layoutInfoSnapshot.visibleItemsInfo.firstOrNull { it.index == targetIndex }
 
-    val currentOffsetPx = firstVisibleItemIndex * averageItemSize + firstVisibleItemScrollOffset
-    val targetOffsetPx = targetIndex * averageItemSize
-    val desiredOffsetPx =
-        targetOffsetPx + viewportHeightPx * LyricUIConstants.SCROLL_VIEWPORT_OFFSET_RATIO
-    val distance = desiredOffsetPx - currentOffsetPx
+    val distance =
+        if (targetItem != null) {
+            // 目标行已可见：用真实偏移把行顶对齐到视口锚点
+            val anchorY =
+                layoutInfoSnapshot.viewportStartOffset +
+                    viewportHeightPx * LyricUIConstants.SCROLL_VIEWPORT_OFFSET_RATIO
+            targetItem.offset - anchorY
+        } else {
+            val averageItemSize =
+                layoutInfoSnapshot.visibleItemsInfo
+                    .takeIf { it.isNotEmpty() }
+                    ?.map { it.size }
+                    ?.average()
+                    ?.toFloat()
+                    ?.takeIf { it > 0f } ?: (viewportHeightPx / 6f)
+
+            val currentOffsetPx = firstVisibleItemIndex * averageItemSize + firstVisibleItemScrollOffset
+            val targetOffsetPx = targetIndex * averageItemSize
+            val desiredOffsetPx =
+                targetOffsetPx + viewportHeightPx * LyricUIConstants.SCROLL_VIEWPORT_OFFSET_RATIO
+            desiredOffsetPx - currentOffsetPx
+        }
 
     if (abs(distance) < 0.5f) return
     animateScrollBy(
