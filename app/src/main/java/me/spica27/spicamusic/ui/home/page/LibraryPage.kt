@@ -4,7 +4,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,11 +23,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +61,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -73,7 +78,6 @@ import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
 import me.spica27.spicamusic.ui.scan.ScannerScene
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
-import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
@@ -125,7 +129,27 @@ fun LibraryPage() {
                 }
             }
         }
+    val density = LocalDensity.current
+    val headerFollowDistancePx = with(density) { LayoutTokens.PageHeaderFollowDistance.toPx() }
+    val playlistState = rememberLazyGridState()
+    val folderListState = rememberLazyListState()
+    val headerProgress by remember(headerFollowDistancePx) {
+        derivedStateOf {
+            when (selectTab) {
+                LibraryPageTab.Playlist ->
+                    headerFollowProgress(
+                        playlistState,
+                        headerFollowDistancePx / 2,
+                    )
 
+                LibraryPageTab.Folder ->
+                    headerFollowProgress(
+                        folderListState,
+                        headerFollowDistancePx / 2,
+                    )
+            }
+        }
+    }
     Column(
         modifier =
             Modifier
@@ -133,6 +157,7 @@ fun LibraryPage() {
                 .background(MaterialTheme.colorScheme.surface),
     ) {
         LibraryPageHeader(
+            progress = headerProgress,
             summaryText = summaryText,
             tabs = ImmutableList.copyOf(tabs),
             selectTab = selectTab,
@@ -160,12 +185,14 @@ fun LibraryPage() {
                     PlaylistPage(
                         playlists = ImmutableList.copyOf(playlists),
                         weeklyStats = weeklyStats,
+                        gridState = playlistState,
                     )
 
                 LibraryPageTab.Folder ->
                     FolderPage(
                         extraFolders = ImmutableList.copyOf(extraFolders),
                         ignoreFolders = ImmutableList.copyOf(ignoreFolders),
+                        lazyListState = folderListState,
                     )
             }
         }
@@ -182,34 +209,28 @@ private fun LibraryPageHeader(
     onScanClick: () -> Unit,
     onCreatePlaylistClick: () -> Unit,
     extraText: (LibraryPageTab) -> String? = { null },
+    progress: Float = 0f,
 ) {
-    val scrollConnection = LocalBottomBarScrollConnection.current
-
-    val headerBackground =
+    val heroAlpha = (1f - progress * 1.35f).coerceIn(0f, 1f)
+    val backgroundColor =
         animateColorAsState(
-            if (scrollConnection.isInline) {
+            if (progress < 1f) {
                 MaterialTheme.colorScheme.surfaceContainerLow
             } else {
-                MaterialTheme.colorScheme.surface
+                MaterialTheme.colorScheme.surfaceContainerHigh
             },
-        ).value
-
-    val progress =
-        animateFloatAsState(
-            targetValue = if (scrollConnection.isInline) 1f else 0f,
-            label = "header_progress",
-            animationSpec = tween(durationMillis = 155, easing = EaseInOutCubic),
-        ).value
+        )
 
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .animateContentSize(
-                    animationSpec = tween(durationMillis = 185),
-                ).background(
-                    headerBackground,
-                ).statusBarsPadding(),
+                .background(
+                    backgroundColor.value,
+                ).statusBarsPadding()
+                .padding(
+                    bottom = 12.dp,
+                ),
     ) {
         Column(
             modifier =
@@ -226,11 +247,11 @@ private fun LibraryPageHeader(
             Column(
                 modifier =
                     Modifier
-                        .animateContentSize(animationSpec = tween(durationMillis = 220))
+                        .animateContentSize()
                         .followHeaderSection(progress)
                         .graphicsLayer {
                             translationY = -28f * progress
-                            alpha = 1f - progress
+                            alpha = heroAlpha
                         },
                 verticalArrangement = Arrangement.spacedBy(Spacing.Small),
             ) {
@@ -245,52 +266,52 @@ private fun LibraryPageHeader(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-            Row(
-                modifier =
-                    Modifier
-                        .animateContentSize(animationSpec = tween(durationMillis = 255))
-                        .followHeaderSection(progress)
-                        .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-            ) {
-                ElevatedButton(
-                    onClick = onScanClick,
-                    modifier = Modifier.weight(1f),
-                    shape =
-                        RoundedCornerShape(
-                            topStartPercent = 50,
-                            bottomStartPercent = 50,
-                            topEndPercent = 12,
-                            bottomEndPercent = 12,
-                        ),
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
                 ) {
-                    Icon(
-                        Icons.Default.Scanner,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(Spacing.ExtraSmall))
-                    Text("扫描音乐")
-                }
-                FilledTonalButton(
-                    onClick = onCreatePlaylistClick,
-                    modifier = Modifier.weight(1f),
-                    shape =
-                        RoundedCornerShape(
-                            topEndPercent = 50,
-                            bottomEndPercent = 50,
-                            topStartPercent = 12,
-                            bottomStartPercent = 12,
-                        ),
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(Spacing.ExtraSmall))
-                    Text("新建歌单")
+                    ElevatedButton(
+                        onClick = onScanClick,
+                        modifier = Modifier.weight(1f),
+                        shape =
+                            RoundedCornerShape(
+                                topStartPercent = 50,
+                                bottomStartPercent = 50,
+                                topEndPercent = 12,
+                                bottomEndPercent = 12,
+                            ),
+                    ) {
+                        Icon(
+                            Icons.Default.Scanner,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(Spacing.ExtraSmall))
+                        Text("扫描音乐")
+                    }
+                    FilledTonalButton(
+                        onClick = onCreatePlaylistClick,
+                        modifier =
+                            Modifier
+                                .weight(1f),
+                        shape =
+                            RoundedCornerShape(
+                                topEndPercent = 50,
+                                bottomEndPercent = 50,
+                                topStartPercent = 12,
+                                bottomStartPercent = 12,
+                            ),
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(Spacing.ExtraSmall))
+                        Text("新建歌单")
+                    }
                 }
             }
             Row(
@@ -388,6 +409,7 @@ private fun PlaylistPage(
     playlists: ImmutableList<Playlist>,
     weeklyStats: PlayStats?,
     modifier: Modifier = Modifier,
+    gridState: LazyGridState,
 ) {
     val navigationPath = LocalNavigationPath.current
 
@@ -407,6 +429,7 @@ private fun PlaylistPage(
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
         verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
         overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
+        state = gridState,
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             WeeklyStatsCard(weeklyStats = weeklyStats)
@@ -440,7 +463,9 @@ private fun PlaylistPage(
                 )
             }
         }
-        item {
+        item(
+            span = { GridItemSpan(maxLineSpan) },
+        ) {
             Spacer(Modifier.height(150.dp))
         }
     }
@@ -451,6 +476,7 @@ private fun FolderPage(
     extraFolders: ImmutableList<ScanFolder>,
     ignoreFolders: ImmutableList<ScanFolder>,
     modifier: Modifier = Modifier,
+    lazyListState: LazyListState,
 ) {
     val context = LocalContext.current
     val sourceViewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
@@ -487,6 +513,7 @@ private fun FolderPage(
             ),
         verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
         overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
+        state = lazyListState,
     ) {
         item {
             SectionTitle(

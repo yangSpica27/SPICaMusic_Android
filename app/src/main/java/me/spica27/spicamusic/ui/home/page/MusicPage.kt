@@ -679,7 +679,7 @@ fun Modifier.followHeaderSection(progress: Float): Modifier =
         }
     }
 
-private fun headerFollowProgress(
+fun headerFollowProgress(
     state: LazyListState,
     collapseDistancePx: Float,
 ): Float =
@@ -689,7 +689,7 @@ private fun headerFollowProgress(
         (state.firstVisibleItemScrollOffset / collapseDistancePx).coerceIn(0f, 1f)
     }
 
-private fun headerFollowProgress(
+fun headerFollowProgress(
     state: LazyGridState,
     collapseDistancePx: Float,
 ): Float =
