@@ -95,7 +95,7 @@ internal class SpicaNotificationProvider(
 
             builder
                 .setContentTitle(metadata.title)
-                .setSmallIcon(me.spica27.spicamusic.R.mipmap.ic_launcher)
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentText(metadata.artist)
 
             loadBitmapIntoNotification(

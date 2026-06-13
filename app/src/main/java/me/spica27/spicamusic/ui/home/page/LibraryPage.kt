@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
@@ -256,6 +257,13 @@ private fun LibraryPageHeader(
                 ElevatedButton(
                     onClick = onScanClick,
                     modifier = Modifier.weight(1f),
+                    shape =
+                        RoundedCornerShape(
+                            topStartPercent = 50,
+                            bottomStartPercent = 50,
+                            topEndPercent = 12,
+                            bottomEndPercent = 12,
+                        ),
                 ) {
                     Icon(
                         Icons.Default.Scanner,
@@ -268,6 +276,13 @@ private fun LibraryPageHeader(
                 FilledTonalButton(
                     onClick = onCreatePlaylistClick,
                     modifier = Modifier.weight(1f),
+                    shape =
+                        RoundedCornerShape(
+                            topEndPercent = 50,
+                            bottomEndPercent = 50,
+                            topStartPercent = 12,
+                            bottomStartPercent = 12,
+                        ),
                 ) {
                     Icon(
                         Icons.Default.Add,
