@@ -29,7 +29,6 @@ import com.skydoves.landscapist.crossfade.CrossfadePlugin
 import com.skydoves.landscapist.image.LandscapistImage
 import com.skydoves.landscapist.transformation.blur.BlurTransformationPlugin
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -65,31 +64,38 @@ import kotlin.math.sin
 fun FluidMusicBackground(
     modifier: Modifier = Modifier,
     coverColor: Color = Color(0xFF2196F3),
-    enabled: Boolean = true,
     isDarkMode: Boolean? = null,
     coverUri: () -> Uri? = { null },
 ) {
     val playerViewModel = LocalPlayerViewModel.current
     val settingsViewModel: SettingsViewModel = koinViewModel()
-
+    val modeValue by settingsViewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
+    val backgroundMode = remember(modeValue) { DynamicSpectrumBackground.fromString(modeValue) }
     val scope = rememberCoroutineScope()
 
-    DisposableEffect(Unit) {
+    val enable =
+        remember(backgroundMode) {
+            backgroundMode != DynamicSpectrumBackground.OFF
+        }
+
+    DisposableEffect(backgroundMode) {
         scope.launch {
-            playerViewModel.subscribeFFTDrawData()
+            if (enable) {
+                Timber.tag("FluidMusicBackground").d("Subscribing to FFT data for mode: $backgroundMode")
+                playerViewModel.subscribeFFTDrawData()
+            }
         }
         onDispose {
             // 组件销毁时取消订阅
-            scope.launch(Dispatchers.Default) {
+            scope.launch {
+                Timber.tag("FluidMusicBackground").d("Unsubscribing from FFT data for mode: $backgroundMode")
                 playerViewModel.unsubscribeFFTDrawData()
             }
         }
     }
 
     val fftDrawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
-    val modeValue by settingsViewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
-    val backgroundMode = remember(modeValue) { DynamicSpectrumBackground.fromString(modeValue) }
-    val fftSnapshot = if (enabled) fftDrawData else FloatArray(fftDrawData.size)
+    val fftSnapshot = if (enable) fftDrawData else FloatArray(fftDrawData.size)
 
     when (backgroundMode) {
         DynamicSpectrumBackground.TopGlow ->
@@ -452,8 +458,8 @@ private fun LiquidAuroraBackground(
                                             sin(progress * 6f + phaseShift).toFloat()
                                         val y =
                                             h * 0.35f -
-                                                    amplitude * energy -
-                                                    amplitude * 0.2f * wave
+                                                amplitude * energy -
+                                                amplitude * 0.2f * wave
                                         path.lineTo(progress * w, y)
                                     }
 
@@ -501,8 +507,7 @@ private fun LiquidAuroraBackground(
 /**
  * 计算颜色亮度（感知亮度）
  */
-private fun calculateLuminance(color: Color): Float =
-    0.299f * color.red + 0.587f * color.green + 0.114f * color.blue
+private fun calculateLuminance(color: Color): Float = 0.299f * color.red + 0.587f * color.green + 0.114f * color.blue
 
 /**
  * 色相偏移辅助函数
