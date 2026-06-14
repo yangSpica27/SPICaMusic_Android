@@ -236,7 +236,7 @@ fun ExpandedPlayerScreen(
                         ShowOnIdleContent(pagerState.currentPage == 1) {
                             PlayerPage(
                                 isSeekingState = isSeekingState,
-                                currentMediaItem = currentMediaItem,
+                                currentMediaItem = { currentMediaItem },
                                 audioQualityInfo = audioQualityInfo,
                                 realPosition = trueTimePosition.toFloat(),
                                 seekPosition = seekValueState,
@@ -473,7 +473,7 @@ private fun AudioQualityTags(
  */
 @Composable
 private fun PlayerPage(
-    currentMediaItem: MediaItem?,
+    currentMediaItem: () -> MediaItem?,
     audioQualityInfo: AudioQualityInfo,
     seekPosition: Float,
     realPosition: Float,
@@ -566,7 +566,7 @@ private fun PlayerPage(
                     },
                 ) { currentMediaItem ->
                     AudioCover(
-                        uri = currentMediaItem?.mediaMetadata?.artworkUri,
+                        uri = currentMediaItem.invoke()?.mediaMetadata?.artworkUri,
                         placeHolder = {
                             Box(
                                 modifier =
@@ -629,7 +629,7 @@ private fun PlayerPage(
 
                         val coverColor =
                             rememberDominantColorFromUri(
-                                uri = currentMediaItem?.mediaMetadata?.artworkUri,
+                                uri = currentMediaItem.invoke()?.mediaMetadata?.artworkUri,
                                 fallbackColor = MaterialTheme.colorScheme.primary,
                             )
 
@@ -676,10 +676,18 @@ private fun PlayerPage(
         // 歌曲信息
         SongInfo(
             title =
-                currentMediaItem?.mediaMetadata?.title?.toString()
+                currentMediaItem
+                    .invoke()
+                    ?.mediaMetadata
+                    ?.title
+                    ?.toString()
                     ?: stringResource(R.string.unknown_song),
             artist =
-                currentMediaItem?.mediaMetadata?.artist?.toString()
+                currentMediaItem
+                    .invoke()
+                    ?.mediaMetadata
+                    ?.artist
+                    ?.toString()
                     ?: stringResource(R.string.unknown_artist),
             modifier =
                 Modifier.graphicsLayer {
@@ -710,8 +718,8 @@ private fun PlayerPage(
         var ampState by remember { mutableStateOf(listOf<Int>()) }
 
         // 音频波形数据
-        LaunchedEffect(currentMediaItem?.mediaId) {
-            val mediaId = currentMediaItem?.mediaId ?: return@LaunchedEffect
+        LaunchedEffect(currentMediaItem.invoke()?.mediaId) {
+            val mediaId = currentMediaItem.invoke()?.mediaId ?: return@LaunchedEffect
 
             // 检查缓存
             if (amplitudeCache.containsKey(mediaId)) {
@@ -720,7 +728,7 @@ private fun PlayerPage(
             }
 
             launch(Dispatchers.IO) {
-                val data = loadAmplitudeData(currentMediaItem, amplituda)
+                val data = loadAmplitudeData(currentMediaItem.invoke(), amplituda)
 
                 // 保存到缓存，最多保留3首歌曲的数据
                 if (amplitudeCache.size >= 3) {
