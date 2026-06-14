@@ -7,6 +7,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.media3.common.util.UnstableApi
 import me.spcia.lyric_core.di.extraInfoModule
+import me.spica27.spicamusic.crash.CrashHandler
 import me.spica27.spicamusic.di.AppModule
 import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
 import me.spica27.spicamusic.feature.library.domain.libraryDomainModule
@@ -57,6 +58,7 @@ class App : Application() {
 
         // 启动 MediaStore 变更监听
         setupMediaStoreObserver()
+        CrashHandler.init(this)
     }
 
     /**

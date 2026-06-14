@@ -86,6 +86,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:screenOrientation="portrait"
+            android:name="me.spica27.spicamusic.ui.crash.CrashActivity" />
 
         <service
             android:name=".service.PlaybackService"
