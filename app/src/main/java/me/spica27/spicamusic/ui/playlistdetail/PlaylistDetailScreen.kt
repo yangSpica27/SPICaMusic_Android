@@ -858,15 +858,16 @@ private fun MultiSelectBar(
 // ── 重命名对话框 ───────────────────────────────────────────────────────────────
 
 @Composable
-private fun RenameDialog(
+fun RenameDialog(
     initialName: String,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
+    title: String = "重命名歌单",
 ) {
     var name by remember { mutableStateOf(initialName) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("重命名歌单") },
+        title = { Text(title) },
         text = {
             OutlinedTextField(
                 colors =

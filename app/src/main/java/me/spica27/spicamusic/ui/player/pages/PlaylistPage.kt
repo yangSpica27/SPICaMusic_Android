@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.LocationSearching
 import androidx.compose.material.icons.filled.PlaylistRemove
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -77,6 +78,7 @@ import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.player.formatTime
+import me.spica27.spicamusic.ui.playlistdetail.RenameDialog
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.floor
@@ -84,6 +86,7 @@ import kotlin.math.floor
 /**
  * 当前播放列表页面
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CurrentPlaylistPage(
     modifier: Modifier = Modifier,
@@ -278,7 +281,8 @@ fun CurrentPlaylistPage(
                             val itemHeight: Float
                             when {
                                 item0 != null && item1 != null -> {
-                                    topInViewport = item0.offset + (item1.offset - item0.offset) * fraction
+                                    topInViewport =
+                                        item0.offset + (item1.offset - item0.offset) * fraction
                                     itemHeight = item0.size + (item1.size - item0.size) * fraction
                                 }
 
@@ -288,7 +292,8 @@ fun CurrentPlaylistPage(
                                 }
 
                                 item1 != null -> {
-                                    topInViewport = item1.offset - (item1.size + spacing) * (1f - fraction)
+                                    topInViewport =
+                                        item1.offset - (item1.size + spacing) * (1f - fraction)
                                     itemHeight = item1.size.toFloat()
                                 }
 
@@ -405,56 +410,29 @@ fun CurrentPlaylistPage(
         }
     }
 
-    var playlistName by remember { mutableStateOf("") }
-
-//    OverlayDialog(
-//        title = stringResource(R.string.create_playlist),
-//        onDismissRequest = {
-//            showCreateDialog = false
-//            playlistName = ""
-//        },
-//        show = showCreateDialog,
-//    ) {
-//        Column(
-//            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-//        ) {
-//            TextField(
-//                value = playlistName,
-//                onValueChange = { playlistName = it },
-//                label = stringResource(R.string.hint_input_playlist_name),
-//                modifier = Modifier.fillMaxWidth(),
-//                useLabelAsPlaceholder = true,
-//            )
-//            Spacer(modifier = Modifier.height(24.dp))
-//            Row(
-//                modifier = Modifier.fillMaxWidth(),
-//                horizontalArrangement = Arrangement.End,
-//            ) {
-//                TextButton(
-//                    text = stringResource(R.string.cancel),
-//                    onClick = { showCreateDialog = false },
-//                )
-//                Spacer(modifier = Modifier.size(12.dp))
-//                TextButton(
-//                    text = stringResource(R.string.create),
-//                    onClick = {
-//                        if (playlistName.isNotBlank()) {
-//                            panelViewModel.createPlaylistWithMediaIds(
-//                                name = playlistName,
-//                                mediaIds = selectedMediaIds.toList(),
-//                            ) { success ->
-//                                if (success) {
-//                                    selectedMediaIds.clear()
-//                                    isMultiSelectMode = false
-//                                    showCreateDialog = false
-//                                }
-//                            }
-//                        }
-//                    },
-//                )
-//            }
-//        }
-//    }
+    if (showCreateDialog) {
+        RenameDialog(
+            title = stringResource(R.string.create_playlist),
+            initialName = "",
+            onDismiss = {
+                showCreateDialog = false
+            },
+            onConfirm = {
+                if (it.isNotBlank()) {
+                    panelViewModel.createPlaylistWithMediaIds(
+                        name = it,
+                        mediaIds = selectedMediaIds.toList(),
+                    ) { success ->
+                        if (success) {
+                            selectedMediaIds.clear()
+                            isMultiSelectMode = false
+                            showCreateDialog = false
+                        }
+                    }
+                }
+            },
+        )
+    }
 }
 
 /**

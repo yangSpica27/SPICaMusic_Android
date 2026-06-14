@@ -671,7 +671,7 @@ private fun PlayerPage(
             }
         }
 
-        Spacer(modifier = Modifier.height(Spacing.Huge))
+        Spacer(modifier = Modifier.height(Spacing.Large))
 
         // 歌曲信息
         SongInfo(
@@ -689,7 +689,7 @@ private fun PlayerPage(
                 },
         )
 
-        Spacer(modifier = Modifier.height(Spacing.ExtraLarge))
+        Spacer(modifier = Modifier.height(Spacing.Medium))
 
         AudioQualityTags(
             audioQualityInfo = audioQualityInfo,
@@ -798,8 +798,7 @@ private fun PlayerPage(
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(Spacing.Huge))
+        Spacer(modifier = Modifier.height(Spacing.Small))
         // 控制按钮
         PlayerControls(
             modifier =
