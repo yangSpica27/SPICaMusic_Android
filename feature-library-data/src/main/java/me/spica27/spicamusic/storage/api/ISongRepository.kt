@@ -256,4 +256,9 @@ interface ISongRepository {
      * 分页获取歌手列表（按艺术家名分组，支持关键词过滤）
      */
     fun getArtistsPagingFlow(keyword: String? = null): Flow<PagingData<Artist>>
+
+    /**
+     * 更新歌曲的波形信息
+     */
+    suspend fun updateSongWaveform(mediaId: Long, waveformData: String)
 }

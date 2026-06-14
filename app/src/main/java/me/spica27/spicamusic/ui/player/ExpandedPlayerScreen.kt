@@ -1,6 +1,8 @@
 package me.spica27.spicamusic.ui.player
 
 import android.os.Build
+import android.os.FileUtils
+import android.text.TextUtils
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseInOut
@@ -81,6 +83,7 @@ import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.core.preferences.PreferencesManager
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
@@ -97,6 +100,7 @@ import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import timber.log.Timber
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import androidx.compose.ui.util.lerp as floatLerp
@@ -502,7 +506,7 @@ private fun PlayerPage(
             DynamicCoverType.fromString(dynamicCoverTypeValue)
         }
     val isCoverFlipEnabled = dynamicCoverType !is DynamicCoverType.OFF
-
+    val songUseCases = koinInject<SongUseCases>()
     // 翻转动画状态
     var isCoverFlipped by rememberSaveable { mutableStateOf(false) }
     val animDuration = 600
@@ -726,9 +730,8 @@ private fun PlayerPage(
                 ampState = amplitudeCache[mediaId] ?: emptyList()
                 return@LaunchedEffect
             }
-
             launch(Dispatchers.IO) {
-                val data = loadAmplitudeData(currentMediaItem.invoke(), amplituda)
+                val data = loadAmplitudeData(currentMediaItem.invoke(), amplituda, songUseCases)
 
                 // 保存到缓存，最多保留3首歌曲的数据
                 if (amplitudeCache.size >= 3) {
@@ -1033,6 +1036,7 @@ private fun calculateFadeAlpha(
 private suspend fun loadAmplitudeData(
     mediaItem: MediaItem?,
     amplituda: Amplituda,
+    songUseCases: SongUseCases,
 ): List<Int> =
     withContext(Dispatchers.IO) {
         val config = mediaItem?.localConfiguration ?: return@withContext emptyList()
@@ -1042,16 +1046,46 @@ private suspend fun loadAmplitudeData(
             return@withContext emptyList()
         }
 
+        val cache = mediaItem.mediaMetadata.extras?.getString("waveformData")
+
+        if (!TextUtils.isEmpty(cache)) {
+            val cachedList = cache!!.split(",").mapNotNull { it.toIntOrNull() }
+            if (cachedList.isNotEmpty()) {
+                Timber.tag("ExpandedPlayerScreen").d("使用缓存的波形数据，长度: ${cachedList.size}")
+                return@withContext cachedList
+            }
+        }
+        Timber.tag("ExpandedPlayerScreen").d("没有缓存的波形数据，开始提取...")
         return@withContext try {
-            App.getInstance().contentResolver.openInputStream(config.uri)?.use { inputStream ->
-                var result = emptyList<Int>()
-                amplituda.processAudio(inputStream).get(
-                    { result = it.amplitudesAsList() },
-                    { result = emptyList() },
-                )
-                result
+            val uri = config.uri
+            App.getInstance().contentResolver.openInputStream(uri)?.use { inputStream ->
+                val tempFile =
+                    File.createTempFile("amplitude_cache", null, App.getInstance().cacheDir)
+
+                try {
+                    tempFile.outputStream().use { outputStream ->
+                        FileUtils.copy(inputStream, outputStream)
+                    }
+
+                    var result = emptyList<Int>()
+                    Timber.tag("ExpandedPlayerScreen").d("处理缓存文件: ${tempFile.absolutePath}")
+                    amplituda.processAudio(tempFile).get(
+                        {
+                            result = it.amplitudesAsList()
+                        },
+                        { result = emptyList() },
+                    )
+                    songUseCases.updateSongWaveform(
+                        mediaId = mediaItem.mediaId.toLongOrNull() ?: 0L,
+                        waveformData = result.joinToString(","),
+                    )
+                    mediaItem.mediaMetadata.extras?.putString("waveformData", result.joinToString(","))
+                    result
+                } finally {
+                    tempFile.delete()
+                }
             } ?: emptyList()
-        } catch (_: Exception) {
+        } catch (_: Throwable) {
             emptyList()
         }
     }

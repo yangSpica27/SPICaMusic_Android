@@ -29,9 +29,14 @@ val storageModule = module {
             get<Application>(),
             AppDatabase::class.java,
             "spica_music.db",
-        ).addMigrations(AppDatabase.MIGRATION_5_6, AppDatabase.MIGRATION_9_10)
+        ).addMigrations(
+            AppDatabase.MIGRATION_5_6,
+            AppDatabase.MIGRATION_9_10,
+            AppDatabase.MIGRATION_12_13
+        )
             // 开发阶段允许破坏性迁移，发布时应添加正式的 Migration
-            .fallbackToDestructiveMigration(true).build()
+            .fallbackToDestructiveMigration(false)
+            .build()
     }
 
     // DAOs

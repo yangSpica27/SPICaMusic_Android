@@ -22,8 +22,8 @@ import me.spica27.spicamusic.storage.impl.entity.SongEntity
     entities = [SongEntity::class, PlaylistEntity::class, PlaylistSongCrossRefEntity::class,
         ExtraInfoEntity::class, PlayHistoryEntity::class, AlbumEntity::class,
         ScanFolderEntity::class],
-    version = 12,
-    exportSchema = true,
+    version = 13,
+    exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun songDao(): SongDao
@@ -58,6 +58,18 @@ abstract class AppDatabase : RoomDatabase() {
                     """.trimIndent()
                 )
             }
+        }
+
+        /** v12 → v13: Song 表新增 waveformData 列，存储波形数据 */
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    ALTER TABLE Song ADD COLUMN waveformData TEXT
+                    """.trimIndent()
+                )
+            }
+
         }
     }
 }

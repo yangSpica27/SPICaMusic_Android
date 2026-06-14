@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui.crash
+package me.spica27.spicamusic.crash
 
 import android.content.Intent
 import android.os.Build
@@ -31,8 +31,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.MainActivity
-import me.spica27.spicamusic.crash.Crash
-import me.spica27.spicamusic.crash.CrashHandler
 import kotlin.system.exitProcess
 
 @kotlin.OptIn(ExperimentalMaterial3Api::class)

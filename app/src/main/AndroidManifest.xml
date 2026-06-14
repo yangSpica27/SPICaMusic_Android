@@ -88,7 +88,7 @@
         </activity>
         <activity
             android:screenOrientation="portrait"
-            android:name="me.spica27.spicamusic.ui.crash.CrashActivity" />
+            android:name="me.spica27.spicamusic.crash.CrashActivity" />
 
         <service
             android:name=".service.PlaybackService"

@@ -13,7 +13,6 @@ import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
-import me.spica27.spicamusic.ui.crash.CrashActivity
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -26,7 +25,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 object CrashHandler : Thread.UncaughtExceptionHandler {
-    const val EXTRA_KEY = "CRASH_MODEL"
     private lateinit var mContext: Application
     private lateinit var packageManager: PackageManager
     private val dateFormatter = SimpleDateFormat("yyyyMMdd_HHmm", Locale.CHINA)

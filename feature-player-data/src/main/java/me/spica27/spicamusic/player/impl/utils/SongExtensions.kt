@@ -15,23 +15,26 @@ import me.spica27.spicamusic.common.entity.getCoverUri
 fun Song.getSongUri(): Uri = "content://media/external/audio/media/$mediaStoreId".toUri()
 
 fun Song.toMediaItem(): MediaItem =
-  MediaItem.Builder().setMediaId(mediaStoreId.toString()).setUri(getSongUri()).setMimeType(mimeType)
-    .setRequestMetadata(
-      MediaItem.RequestMetadata.Builder()
-        .setMediaUri(getSongUri()).build(),
-    ).setMediaMetadata(
-      MediaMetadata.Builder().setTitle(displayName).setDisplayTitle(displayName).setArtist(artist)
-        .setSubtitle(artist)
-        .setExtras(Bundle().apply {
-          putLong("mediaStoreId", mediaStoreId)
-          putLong("albumId", albumId)
-          putInt("sampleRate", sampleRate)
-          putInt("bitRate", bitRate)
-          putInt("channels", channels)
-          putInt("digit", digit)
-        })
-        .setDurationMs(duration).setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-        .setIsPlayable(true).setIsBrowsable(true).setArtworkUri(getCoverUri()).build(),
-    )
-    .setMimeType(mimeType)
-    .build()
+    MediaItem.Builder().setMediaId(mediaStoreId.toString()).setUri(getSongUri())
+        .setMimeType(mimeType)
+        .setRequestMetadata(
+            MediaItem.RequestMetadata.Builder()
+                .setMediaUri(getSongUri()).build(),
+        ).setMediaMetadata(
+            MediaMetadata.Builder().setTitle(displayName).setDisplayTitle(displayName)
+                .setArtist(artist)
+                .setSubtitle(artist)
+                .setExtras(Bundle().apply {
+                    putLong("mediaStoreId", mediaStoreId)
+                    putLong("albumId", albumId)
+                    putInt("sampleRate", sampleRate)
+                    putInt("bitRate", bitRate)
+                    putInt("channels", channels)
+                    putInt("digit", digit)
+                    putString("waveformData", waveformData)
+                })
+                .setDurationMs(duration).setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+                .setIsPlayable(true).setIsBrowsable(true).setArtworkUri(getCoverUri()).build(),
+        )
+        .setMimeType(mimeType)
+        .build()

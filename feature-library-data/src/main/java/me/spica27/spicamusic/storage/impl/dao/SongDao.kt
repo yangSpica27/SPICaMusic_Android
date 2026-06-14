@@ -53,6 +53,9 @@ interface SongDao {
     @Query("SELECT * FROM song WHERE mediaStoreId == :id")
     fun getSongWithMediaStoreId(id: Long): SongEntity?
 
+    @Query("UPDATE song SET waveformData = :waveformData WHERE mediaStoreId == :mediaStoreId")
+    suspend fun updateWaveformDataByMediaStoreId(mediaStoreId: Long, waveformData: String)
+
     @Query("SELECT COALESCE(`like`, 0) FROM song WHERE mediaStoreId == :mediaStoreId")
     fun getSongLikeFlowWithMediaId(mediaStoreId: Long): Flow<Int>
 
@@ -146,6 +149,7 @@ interface SongDao {
         val mediaStoreId: Long,
         val albumId: Long,
         val dateModified: Long,
+        val waveformData: String?,
         val like: Boolean,
         val isIgnore: Boolean,
         val sort: Int,
@@ -155,10 +159,10 @@ interface SongDao {
      * 获取所有歌曲的扫描摘要信息（用于增量比较）
      * 只查询必要列，避免全量加载
      */
-    @Query("SELECT songId, mediaStoreId, albumId, dateModified, `like`, isIgnore, sort FROM song")
+    @Query("SELECT songId, mediaStoreId, albumId, dateModified, waveformData, `like`, isIgnore, sort FROM song")
     suspend fun getAllScanInfo(): List<SongScanInfo>
 
-    @Query("SELECT songId, mediaStoreId, albumId, dateModified, `like`, isIgnore, sort FROM song WHERE mediaStoreId IN (:mediaStoreIds)")
+    @Query("SELECT songId, mediaStoreId, albumId, dateModified, waveformData, `like`, isIgnore, sort FROM song WHERE mediaStoreId IN (:mediaStoreIds)")
     suspend fun getScanInfoByMediaStoreIds(mediaStoreIds: List<Long>): List<SongScanInfo>
 
     /**

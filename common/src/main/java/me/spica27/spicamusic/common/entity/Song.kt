@@ -31,4 +31,5 @@ data class Song(
     val sortName: String,
     val codec: String,
     val album: String,
+    val waveformData: String? = "",
 ) : Parcelable
