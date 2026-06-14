@@ -198,6 +198,7 @@ fun ExpandedPlayerScreen(
             coverColor = coverColor,
             enabled = isAppInForeground,
             isDarkMode = MaterialTheme.colorScheme.surface.luminance() < 0.5f,
+            coverUri = { currentMediaItem?.mediaMetadata?.artworkUri },
         )
 
         // 内容层

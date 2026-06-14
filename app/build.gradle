@@ -194,7 +194,9 @@ dependencies {
   implementation libs.androidx.graphics.shapes
 
   implementation(libs.materialKolor)
+  implementation(libs.landscapist.transformation)
 }
+
 
 tasks.register('incrementBuildNumber') {
   doLast {

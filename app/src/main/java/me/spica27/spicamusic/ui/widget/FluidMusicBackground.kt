@@ -6,11 +6,13 @@ import android.graphics.PorterDuff
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.SurfaceTexture
+import android.net.Uri
 import android.view.TextureView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -22,6 +24,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.skydoves.landscapist.components.rememberImageComponent
+import com.skydoves.landscapist.crossfade.CrossfadePlugin
+import com.skydoves.landscapist.image.LandscapistImage
+import com.skydoves.landscapist.transformation.blur.BlurTransformationPlugin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
@@ -61,21 +67,17 @@ fun FluidMusicBackground(
     coverColor: Color = Color(0xFF2196F3),
     enabled: Boolean = true,
     isDarkMode: Boolean? = null,
+    coverUri: () -> Uri? = { null },
 ) {
     val playerViewModel = LocalPlayerViewModel.current
     val settingsViewModel: SettingsViewModel = koinViewModel()
 
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(enabled) {
-        if (enabled) {
-            playerViewModel.subscribeFFTDrawData()
-        } else {
-            playerViewModel.unsubscribeFFTDrawData()
-        }
-    }
-
     DisposableEffect(Unit) {
+        scope.launch {
+            playerViewModel.subscribeFFTDrawData()
+        }
         onDispose {
             // 组件销毁时取消订阅
             scope.launch(Dispatchers.Default) {
@@ -116,6 +118,35 @@ fun FluidMusicBackground(
 
         DynamicSpectrumBackground.OFF ->
             Box(modifier = modifier)
+
+        DynamicSpectrumBackground.BlurCover -> {
+            // 仅模糊封面，无动态效果
+            Box(
+                modifier = modifier,
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .background(MaterialTheme.colorScheme.surface),
+                )
+                LandscapistImage(
+                    modifier = Modifier.matchParentSize(),
+                    imageModel = { coverUri.invoke() },
+                    component =
+                        rememberImageComponent {
+                            +CrossfadePlugin(duration = 550)
+                            +BlurTransformationPlugin(radius = 150)
+                        },
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .matchParentSize()
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                )
+            }
+        }
     }
 }
 
@@ -177,7 +208,10 @@ private class TextureViewRenderLoop(
                             } catch (e: IllegalStateException) {
                                 Timber
                                     .tag("FluidMusicBackground")
-                                    .w(e, "TextureView unlockCanvasAndPost failed, stopping render loop")
+                                    .w(
+                                        e,
+                                        "TextureView unlockCanvasAndPost failed, stopping render loop",
+                                    )
                                 shouldContinue = false
                             }
                         }
@@ -217,11 +251,14 @@ private class TextureViewRenderLoop(
 
 /** 线程安全数据持有者，供 TopGlowBackground 绘制线程读取 */
 private class TopGlowHolder {
-    @Volatile var fftData: FloatArray = FloatArray(0)
+    @Volatile
+    var fftData: FloatArray = FloatArray(0)
 
-    @Volatile var colorA: Int = android.graphics.Color.BLUE
+    @Volatile
+    var colorA: Int = android.graphics.Color.BLUE
 
-    @Volatile var colorB: Int = android.graphics.Color.TRANSPARENT
+    @Volatile
+    var colorB: Int = android.graphics.Color.TRANSPARENT
 
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     val rectF = RectF()
@@ -304,7 +341,8 @@ private fun TopGlowBackground(
                             surface: SurfaceTexture,
                             width: Int,
                             height: Int,
-                        ) {}
+                        ) {
+                        }
 
                         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
                             renderLoop.stopAndAwait()
@@ -320,9 +358,11 @@ private fun TopGlowBackground(
 
 /** 线程安全数据持有者，供 LiquidAuroraBackground 绘制线程读取 */
 private class LiquidAuroraHolder {
-    @Volatile var fftData: FloatArray = FloatArray(0)
+    @Volatile
+    var fftData: FloatArray = FloatArray(0)
 
-    @Volatile var phase: Float = 0f
+    @Volatile
+    var phase: Float = 0f
 
     val layerColorA = IntArray(3)
     val layerColorB = IntArray(3)
@@ -412,8 +452,8 @@ private fun LiquidAuroraBackground(
                                             sin(progress * 6f + phaseShift).toFloat()
                                         val y =
                                             h * 0.35f -
-                                                amplitude * energy -
-                                                amplitude * 0.2f * wave
+                                                    amplitude * energy -
+                                                    amplitude * 0.2f * wave
                                         path.lineTo(progress * w, y)
                                     }
 
@@ -443,7 +483,8 @@ private fun LiquidAuroraBackground(
                             surface: SurfaceTexture,
                             width: Int,
                             height: Int,
-                        ) {}
+                        ) {
+                        }
 
                         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
                             renderLoop.stopAndAwait()
@@ -460,7 +501,8 @@ private fun LiquidAuroraBackground(
 /**
  * 计算颜色亮度（感知亮度）
  */
-private fun calculateLuminance(color: Color): Float = 0.299f * color.red + 0.587f * color.green + 0.114f * color.blue
+private fun calculateLuminance(color: Color): Float =
+    0.299f * color.red + 0.587f * color.green + 0.114f * color.blue
 
 /**
  * 色相偏移辅助函数

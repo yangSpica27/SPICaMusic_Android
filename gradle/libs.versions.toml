@@ -53,6 +53,7 @@ ksp = "2.3.7"
 roomVersion = "2.8.4"
 miuixAndroid = "0.9.0"
 androidautosize = "v1.2.1"
+version = "2.9.8"
 [libraries]
 androidautosize = { module = "com.github.JessYanCoding:AndroidAutoSize", version.ref = "androidautosize" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistVersion" }
@@ -96,6 +97,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-palette-ktx = { group = "androidx.palette", name = "palette-ktx", version.ref = "paletteVersion" }
 landscapist-core = { module = "com.github.skydoves:landscapist-core", version.ref = "landscapistCoreVersion" }
 landscapist-image = { module = "com.github.skydoves:landscapist-image", version.ref = "landscapistImageVersion" }
+landscapist-transformation = { module = "com.github.skydoves:landscapist-transformation", version.ref = "version" }
 miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference", version.ref = "miuixAndroid" }
 miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui", version.ref = "miuixAndroid" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
