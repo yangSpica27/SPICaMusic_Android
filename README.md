@@ -108,7 +108,10 @@ git clone https://github.com/yangSpica27/SPICaMusic_Android.git
 
 本仓库遵循 **MIT 协议**。
 
-WAV、ALAC 等格式的软解码依赖于 FFmpeg，需单独许可证。如需自行编译，请参考:
+WAV、ALAC 等格式的软解码依赖于FFmpeg，需单独许可证。
+项目默认引用[jellyfin-androidx-media](https://github.com/jellyfin/jellyfin-androidx-media/releases)中的完成制品
+
+如需自行编译，请参考:
 [decoder_ffmpeg](https://github.com/androidx/media/tree/release/libraries/decoder_ffmpeg)
 
 ## 📚 技术栈
