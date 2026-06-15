@@ -2,6 +2,7 @@ package me.spica27.spicamusic.ui.home.page
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -29,6 +30,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
@@ -40,12 +42,16 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -56,16 +62,22 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.star
@@ -126,6 +138,8 @@ fun MusicPage() {
             tabs.size
         }
 
+    val hapticFeedback = LocalHapticFeedback.current
+
     LaunchedEffect(selectTab) {
         val index = tabs.indexOf(selectTab)
         if (index != pagerState.targetPage) {
@@ -141,6 +155,7 @@ fun MusicPage() {
         if (page != selectTab) {
             selectTab = page
         }
+        hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
 
     val summaryText =
@@ -215,6 +230,34 @@ private fun MusicPageHeader(
                 MaterialTheme.colorScheme.surfaceContainerHigh
             },
         )
+
+    val indicatorRadius = remember { RoundedCornerShape(12.dp) }
+
+    val tabPositions = remember { mutableStateMapOf<MusicTab, Dp>() }
+    val tabWidths = remember { mutableStateMapOf<MusicTab, Dp>() }
+    val tabHeight = remember { mutableStateMapOf<MusicTab, Dp>() }
+
+    val indicatorOffset by animateDpAsState(
+        targetValue = tabPositions.getOrElse(selectTab) { 0.dp },
+        label = "",
+    )
+    val indicatorWidth by animateDpAsState(
+        targetValue = tabWidths.getOrElse(selectTab) { 0.dp },
+        label = "",
+    )
+    val indicatorHeight by animateDpAsState(
+        targetValue = tabHeight.getOrElse(selectTab) { 0.dp },
+        label = "",
+    )
+
+    val indicatorColor =
+        animateColorAsState(
+            targetValue = if (indicatorWidth > 0.dp && indicatorHeight > 0.dp) MaterialTheme.colorScheme.primary else Color.Transparent,
+            label = "",
+        ).value
+
+    val density = LocalDensity.current
+
     Box(
         modifier =
             modifier
@@ -265,12 +308,35 @@ private fun MusicPageHeader(
                         .clip(Shapes.ExtraLarge1CornerBasedShape)
                         .background(MaterialTheme.colorScheme.surfaceContainerLow)
                         .animateContentSize()
-                        .padding(LayoutTokens.MusicTabContainerPadding),
+                        .padding(LayoutTokens.MusicTabContainerPadding)
+                        .drawWithCache {
+                            onDrawWithContent {
+                                drawRoundRect(
+                                    color = indicatorColor,
+                                    topLeft = Offset(indicatorOffset.toPx(), 0f),
+                                    size = Size(indicatorWidth.toPx(), indicatorHeight.toPx()),
+                                    cornerRadius =
+                                        CornerRadius(
+                                            12.dp.toPx(),
+                                            12.dp.toPx(),
+                                        ),
+                                )
+                                drawContent()
+                            }
+                        },
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
             ) {
                 tabs.forEach { tab ->
                     TopTabItem(
-                        modifier = Modifier.weight(1f),
+                        modifier =
+                            Modifier
+                                .onGloballyPositioned { coordinates ->
+                                    val position = coordinates.positionInParent()
+                                    val size = coordinates.size.toSize()
+                                    tabPositions[tab] = with(density) { position.x.toDp() }
+                                    tabWidths[tab] = with(density) { size.width.toDp() }
+                                    tabHeight[tab] = with(density) { size.height.toDp() }
+                                }.weight(1f),
                         progress = progress,
                         selectTab = selectTab,
                         onSelectTab = onSelectTab,
@@ -306,15 +372,6 @@ private fun TopTabItem(
             selectTab == bandTab
         }
 
-    val containerColor =
-        animateColorAsState(
-            if (isSelected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                Color.Transparent
-            },
-        ).value
-
     val textColor =
         animateColorAsState(
             if (isSelected) {
@@ -337,10 +394,7 @@ private fun TopTabItem(
         modifier =
             modifier
                 .animateContentSize()
-                .clip(Shapes.LargeCornerBasedShape)
-                .background(
-                    containerColor,
-                ).clickable {
+                .clickable {
                     onSelectTab(bandTab)
                 }.padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall),
         verticalArrangement = Arrangement.Center,
