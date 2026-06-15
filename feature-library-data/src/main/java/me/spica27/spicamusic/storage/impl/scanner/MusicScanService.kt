@@ -84,15 +84,21 @@ class MusicScanService(
 
         // 支持的音频格式
         private val SUPPORTED_MIME_TYPES = setOf(
-            "audio/mpeg",      // MP3
-            "audio/mp4",       // M4A
-            "audio/flac",      // FLAC
-            "audio/ogg",       // OGG
-            "audio/wav",       // WAV
-            "audio/x-wav",     // WAV
-            "audio/x-flac",    // FLAC
-            "audio/aac",       // AAC
-            "audio/opus",      // OPUS
+            "audio/mpeg",
+            "audio/mp3",
+            "audio/flac",
+            "audio/wav",
+            "audio/x-wav",
+            "audio/mp4",
+            "audio/x-m4a",
+            "audio/aac",
+            "audio/ogg",
+            "audio/opus",
+            "audio/x-aiff",
+            "audio/alac",
+            "audio/aiff",
+            "audio/x-flac",
+            "audio/vnd.wave"
         )
 
         // 文件系统遍历时的音频扩展名过滤
@@ -434,9 +440,11 @@ class MusicScanService(
                             it.contains("flac", ignoreCase = true) -> "FLAC"
                             it.contains("alac", ignoreCase = true) -> "ALAC"
                             it.contains("opus", ignoreCase = true) -> "Opus"
-                            it.contains("vorbis", ignoreCase = true) -> "Vorbis"
+                            it.contains("vorbis", ignoreCase = true) -> "OGG"
+                            it.contains("ogg", ignoreCase = true) -> "OGG"
                             it.contains("wav", ignoreCase = true) -> "WAV"
                             it.contains("m4a", ignoreCase = true) -> "M4A"
+                            it.contains("evrc", ignoreCase = true) -> "EVRC"
                             else -> it.substringAfter("/").uppercase()
                         }
                     }
@@ -600,6 +608,7 @@ class MusicScanService(
 
                             if (!isMediaStoreSongEligible(mimeType, duration, path, ignorePrefixes)) {
                                 existingInfo?.albumId?.let(affectedAlbumIds::add)
+                                Timber.tag(TAG).d("MediaStore 变更文件不符合条件，跳过: $displayName")
                                 continue
                             }
 
