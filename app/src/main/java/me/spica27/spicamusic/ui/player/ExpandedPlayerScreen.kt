@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Lyrics
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -44,6 +45,7 @@ import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -97,6 +99,7 @@ import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import timber.log.Timber
@@ -214,9 +217,11 @@ fun ExpandedPlayerScreen(
         ) {
             // 顶部工具栏（带页面指示器）
             TopBar(
+                modifier = Modifier,
                 currentPage = pagerState.currentPage,
                 onCollapse = onCollapse,
                 progressProvider = progressProvider,
+                isPlaying = isPlaying,
             )
 
             // 水平 Pager 内容区域
@@ -295,12 +300,14 @@ private fun TopBar(
     currentPage: Int,
     onCollapse: () -> Unit,
     progressProvider: () -> Float,
+    modifier: Modifier,
+    isPlaying: Boolean,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Row(
+        Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -309,12 +316,19 @@ private fun TopBar(
                         val barAlpha = calculateFadeAlpha(progress, HERO_REVEAL_THRESHOLD)
                         alpha = barAlpha
                         translationY = (1f - barAlpha) * -20f
-                    }.padding(top = Spacing.Large)
-                    .padding(horizontal = Spacing.Large),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+                    }.padding(horizontal = Spacing.Large),
+            contentAlignment = Alignment.CenterStart,
         ) {
-            IconButton(onClick = onCollapse) {
+            IconButton(
+                onClick = {
+                    onCollapse.invoke()
+                },
+                colors =
+                    IconButtonDefaults.iconButtonColors().copy(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    ),
+            ) {
                 Icon(
                     imageVector = Icons.Rounded.KeyboardArrowDown,
                     contentDescription = stringResource(R.string.collapse),
@@ -322,15 +336,45 @@ private fun TopBar(
                     modifier = Modifier.size(32.dp),
                 )
             }
-
-            // 页面指示器
-            PageIndicator(
-                pageCount = 3,
-                currentPage = currentPage,
-            )
-
-            // 占位符，保持布局对称
-            Spacer(modifier = Modifier.size(48.dp))
+            AnimatedContent(
+                isPlaying,
+                modifier = Modifier.align(Alignment.Center),
+                transitionSpec = {
+                    materialSharedAxisZ(true)
+                },
+            ) { isPlaying ->
+                Text(
+                    text = if (isPlaying) stringResource(R.string.playing) else "未在播放",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Row(
+                modifier =
+                    Modifier
+                        .background(
+                            MaterialTheme.colorScheme.surfaceContainerHighest,
+                            shape = Shapes.SmallCornerBasedShape,
+                        ).padding(horizontal = 12.dp, vertical = 6.dp)
+                        .align(Alignment.CenterEnd),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Lyrics,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "歌词",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -1079,7 +1123,10 @@ private suspend fun loadAmplitudeData(
                         mediaId = mediaItem.mediaId.toLongOrNull() ?: 0L,
                         waveformData = result.joinToString(","),
                     )
-                    mediaItem.mediaMetadata.extras?.putString("waveformData", result.joinToString(","))
+                    mediaItem.mediaMetadata.extras?.putString(
+                        "waveformData",
+                        result.joinToString(","),
+                    )
                     result
                 } finally {
                     tempFile.delete()
