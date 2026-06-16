@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.ui.home
 
 import android.annotation.SuppressLint
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
@@ -146,8 +145,10 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
             )
         }
 
-        val collapsedOffsetPx = remember(screenHeightPx, miniBarHeightPx) { screenHeightPx - miniBarHeightPx }
-        val collapsedHorizontalInsetPx = with(density) { LayoutTokens.PlayerCollapsedHorizontalInset.toPx() }
+        val collapsedOffsetPx =
+            remember(screenHeightPx, miniBarHeightPx) { screenHeightPx - miniBarHeightPx }
+        val collapsedHorizontalInsetPx =
+            with(density) { LayoutTokens.PlayerCollapsedHorizontalInset.toPx() }
         val collapsedTopInsetPx = with(density) { LayoutTokens.PlayerCollapsedTopInset.toPx() }
         val progressProvider =
             remember(draggableState, collapsedOffsetPx) {
@@ -165,10 +166,10 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
             derivedStateOf { draggableState.currentValue == PlayerSheetValue.Expanded }
         }
 
-        // 展开时拦截系统返回键，将播放器收起
-        BackHandler(enabled = isExpanded) {
-            coroutineScope.launch { draggableState.animateTo(PlayerSheetValue.Collapsed) }
-        }
+//        // 展开时拦截系统返回键，将播放器收起
+//        BackHandler(enabled = isExpanded) {
+//            coroutineScope.launch { draggableState.animateTo(PlayerSheetValue.Collapsed) }
+//        }
 
         // 是否是单列模式
         var isSingleLineMode by rememberSaveable { mutableStateOf(true) }
@@ -184,6 +185,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
             AnimatedContent(
                 isSingleLineMode,
             ) { lineMode ->
+
                 if (!lineMode) {
                     Box(
                         modifier =
@@ -207,22 +209,42 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     .fillMaxSize()
                                     .graphicsLayer {
                                         val progress = progressProvider()
-                                        val sideInsetPx = floatLerp(collapsedHorizontalInsetPx, 0f, progress)
-                                        val topInsetPx = floatLerp(collapsedTopInsetPx, 0f, progress)
+                                        val sideInsetPx =
+                                            floatLerp(collapsedHorizontalInsetPx, 0f, progress)
+                                        val topInsetPx =
+                                            floatLerp(collapsedTopInsetPx, 0f, progress)
                                         val safeWidth = size.width.coerceAtLeast(1f)
                                         val safeHeight = size.height.coerceAtLeast(1f)
 
                                         translationX = sideInsetPx
                                         translationY = topInsetPx
-                                        scaleX = ((safeWidth - sideInsetPx * 2f) / safeWidth).coerceIn(0.85f, 1f)
-                                        scaleY = ((safeHeight - topInsetPx) / safeHeight).coerceIn(0.85f, 1f)
+                                        scaleX =
+                                            ((safeWidth - sideInsetPx * 2f) / safeWidth).coerceIn(
+                                                0.85f,
+                                                1f,
+                                            )
+                                        scaleY =
+                                            ((safeHeight - topInsetPx) / safeHeight).coerceIn(
+                                                0.85f,
+                                                1f,
+                                            )
                                         transformOrigin =
                                             androidx.compose.ui.graphics
                                                 .TransformOrigin(0.5f, 0f)
                                         shape =
                                             androidx.compose.foundation.shape.RoundedCornerShape(
-                                                topStart = lerp(LayoutTokens.PlayerCollapsedCornerRadius, 0.dp, progress),
-                                                topEnd = lerp(LayoutTokens.PlayerCollapsedCornerRadius, 0.dp, progress),
+                                                topStart =
+                                                    lerp(
+                                                        LayoutTokens.PlayerCollapsedCornerRadius,
+                                                        0.dp,
+                                                        progress,
+                                                    ),
+                                                topEnd =
+                                                    lerp(
+                                                        LayoutTokens.PlayerCollapsedCornerRadius,
+                                                        0.dp,
+                                                        progress,
+                                                    ),
                                             )
                                         clip = true
                                     },
@@ -242,9 +264,9 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                 )
                             }
                         }
-
                         // 迷你播放条 + Tab 切换区 —— 位于面板顶部
                         // 当面板收起时，面板整体下移使迷你条恰好出现在屏幕底部
+                        if (progressProvider.invoke() > 0.99f)return@AnimatedContent
                         Column(
                             modifier =
                                 Modifier
@@ -333,6 +355,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                         }
                     }
                 } else {
+                    if (progressProvider.invoke() > 0.99f)return@AnimatedContent
                     Row(
                         modifier =
                             Modifier

@@ -18,16 +18,14 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.BlurEffect
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import me.spica27.navkit.geometry.GeometryOccluders
@@ -166,8 +164,8 @@ private fun SceneContainer(
                 val fgProgress = scene.dialogForegroundProgress(path.scenes)
 
                 // ── 自身进场动画 ──────────────────────────────────────────
-                alpha = enter
-                translationX = (1f - enter) * size.width * ENTER_SLIDE_FRACTION
+//                alpha = enter
+                translationX = (1f - enter) * size.width
 
                 // ── StackScene 入场：背景压缩 + 左移 ─────────────────────
                 val compressionAhead = ahead.coerceIn(0f, 1f)
@@ -183,25 +181,36 @@ private fun SceneContainer(
                     renderEffect = BlurEffect(blurSigma, blurSigma, TileMode.Clamp)
                 }
 
+                if (enter > 0f) {
+                    val scale = .5f + 0.5f * enter
+                    scaleX = scale
+                    scaleY = scale
+                }
+
                 // ── DialogScene 入场：背景变暗 + 去饱和度 ──────────────────
                 if (fgProgress > 0f) {
-                    // alpha 1.0 → 0.3，乘以自身进度保持进场同步
-                    alpha *= lerp(1f, 0.3f, fgProgress)
-                    // Rec. 601 灰度化 ColorMatrix
-                    val g = fgProgress
-                    val c = 1f - g
-                    colorFilter = ColorFilter.colorMatrix(
-                        ColorMatrix(
-                            floatArrayOf(
-                                0.213f * g + c, 0.715f * g, 0.072f * g, 0f, 0f,
-                                0.213f * g, 0.715f * g + c, 0.072f * g, 0f, 0f,
-                                0.213f * g, 0.715f * g, 0.072f * g + c, 0f, 0f,
-                                0f, 0f, 0f, 1f, 0f,
-                            )
-                        )
+                    val blurSigma = fgProgress * density * BLUR_MAX_DP
+                    renderEffect = BlurEffect(
+                        blurSigma, blurSigma, TileMode.Clamp
                     )
+//                    // alpha 1.0 → 0.3，乘以自身进度保持进场同步
+//                    alpha *= lerp(1f, 0.3f, fgProgress)
+//                    // Rec. 601 灰度化 ColorMatrix
+//                    val g = fgProgress
+//                    val c = 1f - g
+//                    colorFilter = ColorFilter.colorMatrix(
+//                        ColorMatrix(
+//                            floatArrayOf(
+//                                0.213f * g + c, 0.715f * g, 0.072f * g, 0f, 0f,
+//                                0.213f * g, 0.715f * g + c, 0.072f * g, 0f, 0f,
+//                                0.213f * g, 0.715f * g, 0.072f * g + c, 0f, 0f,
+//                                0f, 0f, 0f, 1f, 0f,
+//                            )
+//                        )
+//                    )
                 }
             }
+            .shadow(2.dp)
 
         is DialogScene -> Modifier
             .fillMaxSize()
@@ -296,13 +305,13 @@ private fun GeometryOverlay(
 // ──────────────────────────────────────────────────────────────────────────
 
 /** 进场时从右侧偏移的宽度比例（1.0f = 完整屏宽） */
-private const val ENTER_SLIDE_FRACTION = 0.15f
+private const val ENTER_SLIDE_FRACTION = 0.75f
 
 /** 背景压缩最小缩放比（下层场景在上层完全进场时的最小缩放） */
-private const val COMPRESS_SCALE_MIN = 0.94f
+private const val COMPRESS_SCALE_MIN = 0.74f
 
 /** 背景压缩时的左移偏移比例 */
-private const val COMPRESS_TRANSLATE_FRACTION = 0.04f
+private const val COMPRESS_TRANSLATE_FRACTION = 0.06f
 
 /** StackScene 进场时对背景施加的最大模糊半径（dp） */
 private const val BLUR_MAX_DP = 24f

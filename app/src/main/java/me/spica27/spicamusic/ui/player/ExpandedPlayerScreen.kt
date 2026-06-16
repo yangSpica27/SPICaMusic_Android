@@ -3,6 +3,7 @@ package me.spica27.spicamusic.ui.player
 import android.os.Build
 import android.os.FileUtils
 import android.text.TextUtils
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -81,6 +82,7 @@ import com.linc.amplituda.Amplituda
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
@@ -89,6 +91,8 @@ import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
+import me.spica27.spicamusic.ui.player.scene.CurrentListScene
+import me.spica27.spicamusic.ui.player.scene.LyricScene
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCityVisualizer
@@ -169,6 +173,10 @@ fun ExpandedPlayerScreen(
 
     LaunchedEffect(songLikeState) {
         Timber.tag("ExpandedPlayerScreen").d("当前歌曲收藏状态: $songLikeState")
+    }
+
+    BackHandler(progressProvider.invoke() > .99f) {
+        onCollapse.invoke()
     }
 
     // 将播放位置同步到 seekbar：trueTimePosition 每秒更新多次，
@@ -302,6 +310,8 @@ private fun TopBar(
     modifier: Modifier,
     isPlaying: Boolean,
 ) {
+    val path = LocalNavigationPath.current
+
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -342,7 +352,14 @@ private fun TopBar(
             Row(
                 modifier =
                     Modifier
-                        .background(
+                        .clip(
+                            RoundedCornerShape(
+                                topStartPercent = 50,
+                                bottomStartPercent = 50,
+                                topEndPercent = 15,
+                                bottomEndPercent = 15,
+                            ),
+                        ).background(
                             MaterialTheme.colorScheme.surfaceContainer,
                             shape =
                                 RoundedCornerShape(
@@ -351,7 +368,9 @@ private fun TopBar(
                                     topEndPercent = 15,
                                     bottomEndPercent = 15,
                                 ),
-                        ).padding(horizontal = 12.dp, vertical = 10.dp),
+                        ).clickable {
+                            path.push(CurrentListScene())
+                        }.padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -371,7 +390,14 @@ private fun TopBar(
             Row(
                 modifier =
                     Modifier
-                        .background(
+                        .clip(
+                            RoundedCornerShape(
+                                topEndPercent = 50,
+                                bottomEndPercent = 50,
+                                topStartPercent = 15,
+                                bottomStartPercent = 15,
+                            ),
+                        ).background(
                             MaterialTheme.colorScheme.surfaceContainer,
                             shape =
                                 RoundedCornerShape(
@@ -380,7 +406,9 @@ private fun TopBar(
                                     topStartPercent = 15,
                                     bottomStartPercent = 15,
                                 ),
-                        ).padding(horizontal = 12.dp, vertical = 10.dp),
+                        ).clickable {
+                            path.push(LyricScene())
+                        }.padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
