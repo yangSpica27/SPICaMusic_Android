@@ -5,6 +5,7 @@ import android.os.FileUtils
 import android.text.TextUtils
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -15,8 +16,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -30,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
@@ -99,7 +99,6 @@ import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
-import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import timber.log.Timber
@@ -307,7 +306,8 @@ private fun TopBar(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
+        Spacer(modifier = Modifier.height(Spacing.Small))
+        Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -317,16 +317,18 @@ private fun TopBar(
                         alpha = barAlpha
                         translationY = (1f - barAlpha) * -20f
                     }.padding(horizontal = Spacing.Large),
-            contentAlignment = Alignment.CenterStart,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
+                modifier = Modifier,
                 onClick = {
                     onCollapse.invoke()
                 },
                 colors =
                     IconButtonDefaults.iconButtonColors().copy(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
                     ),
             ) {
                 Icon(
@@ -336,29 +338,20 @@ private fun TopBar(
                     modifier = Modifier.size(32.dp),
                 )
             }
-            AnimatedContent(
-                isPlaying,
-                modifier = Modifier.align(Alignment.Center),
-                transitionSpec = {
-                    materialSharedAxisZ(true)
-                },
-            ) { isPlaying ->
-                Text(
-                    text = if (isPlaying) stringResource(R.string.playing) else "未在播放",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
+            Spacer(modifier = Modifier.weight(1f))
             Row(
                 modifier =
                     Modifier
                         .background(
-                            MaterialTheme.colorScheme.surfaceContainerHighest,
-                            shape = Shapes.SmallCornerBasedShape,
-                        ).padding(horizontal = 12.dp, vertical = 6.dp)
-                        .align(Alignment.CenterEnd),
+                            MaterialTheme.colorScheme.surfaceContainer,
+                            shape =
+                                RoundedCornerShape(
+                                    topStartPercent = 50,
+                                    bottomStartPercent = 50,
+                                    topEndPercent = 15,
+                                    bottomEndPercent = 15,
+                                ),
+                        ).padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -368,11 +361,40 @@ private fun TopBar(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp),
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "播放列表",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Row(
+                modifier =
+                    Modifier
+                        .background(
+                            MaterialTheme.colorScheme.surfaceContainer,
+                            shape =
+                                RoundedCornerShape(
+                                    topEndPercent = 50,
+                                    bottomEndPercent = 50,
+                                    topStartPercent = 15,
+                                    bottomStartPercent = 15,
+                                ),
+                        ).padding(horizontal = 12.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
                     text = "歌词",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Rounded.Lyrics,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
@@ -460,58 +482,6 @@ private fun MediaItem?.toAudioQualityInfo(): AudioQualityInfo {
         bitRate = bitRate,
         isLossless = isLossless,
     )
-}
-
-/**
- * 音频质量标签组
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun AudioQualityTags(
-    audioQualityInfo: AudioQualityInfo,
-    modifier: Modifier = Modifier,
-) {
-    FlowRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        // 采样率标签
-        if (audioQualityInfo.sampleRate > 0) {
-            AudioTag(
-                text = "${audioQualityInfo.sampleRate / 1000}kHz",
-                color = if (audioQualityInfo.sampleRate >= 96000) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-
-        // 比特率标签
-        if (audioQualityInfo.bitRate > 0) {
-            val bitRateKbps = audioQualityInfo.bitRate / 1000
-            AudioTag(
-                text = "${bitRateKbps}kbps",
-                color = if (bitRateKbps >= 320) Color(0xFF2196F3) else MaterialTheme.colorScheme.secondary,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-
-        // 无损标签
-        if (audioQualityInfo.isLossless) {
-            AudioTag(
-                text = stringResource(R.string.lossless),
-                color = Color(0xFFFF9800),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-
-        // 高品质标签
-        if (audioQualityInfo.bitRate >= 320000 && !audioQualityInfo.isLossless) {
-            AudioTag(
-                text = stringResource(R.string.high_quality),
-                color = Color(0xFF9C27B0),
-            )
-        }
-    }
 }
 
 // ---------- 播放器页面 ----------
@@ -745,20 +715,6 @@ private fun PlayerPage(
                 },
         )
 
-        Spacer(modifier = Modifier.height(Spacing.Medium))
-
-        AudioQualityTags(
-            audioQualityInfo = audioQualityInfo,
-            modifier =
-                Modifier.graphicsLayer {
-                    val tagsReveal = calculateFadeAlpha(progressProvider(), TAGS_REVEAL_THRESHOLD)
-                    alpha = tagsReveal
-                    translationY = (1f - tagsReveal) * 20f
-                },
-        )
-
-        Spacer(modifier = Modifier.height(Spacing.Large))
-
         val amplituda: Amplituda = koinInject<Amplituda>()
 
         // 优化：使用缓存机制避免重复加载波形数据
@@ -786,6 +742,54 @@ private fun PlayerPage(
                 ampState = data
             }
         }
+        Spacer(modifier = Modifier.height(Spacing.Medium))
+        Row(
+            Modifier
+                .background(
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    shape = Shapes.LargeCornerBasedShape,
+                ).padding(horizontal = 10.dp, vertical = 4.dp)
+                .animateContentSize(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            // 采样率标签
+            if (audioQualityInfo.sampleRate > 0) {
+                Text(
+                    text = "${audioQualityInfo.sampleRate / 1000}kHz",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+
+            // 比特率标签
+            if (audioQualityInfo.bitRate > 0) {
+                val bitRateKbps = audioQualityInfo.bitRate / 1000
+                Text(
+                    text = "${bitRateKbps}kbps",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+
+            // 无损标签
+            if (audioQualityInfo.isLossless) {
+                Text(
+                    text = stringResource(R.string.lossless),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+
+            // 高品质标签
+            if (audioQualityInfo.bitRate >= 320000 && !audioQualityInfo.isLossless) {
+                Text(
+                    text = stringResource(R.string.high_quality),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(Spacing.Medium))
         // 进度条
         Column(
             modifier =
@@ -812,48 +816,55 @@ private fun PlayerPage(
                         .fillMaxWidth()
                         .height(80.dp),
             )
+            Spacer(modifier = Modifier.height(Spacing.Small))
             // 当前位置 和 总时长
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(),
+                contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = formatTime(realPosition.toLong()),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // 滑动到的地方
-                AnimatedVisibility(
-                    visible = isSeekingState,
+                Row(
+                    modifier = Modifier.align(Alignment.CenterStart),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        modifier =
-                            Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.inversePrimary,
-                                    shape = Shapes.SmallCornerBasedShape,
-                                ).padding(vertical = 4.dp, horizontal = 8.dp),
-                        text = formatTime(seekPosition.toLong()),
+                        text = formatTime(realPosition.toLong()),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    // 滑动到的地方
+                    AnimatedVisibility(
+                        visible = isSeekingState,
+                    ) {
+                        Text(
+                            modifier =
+                                Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.inversePrimary,
+                                        shape = Shapes.SmallCornerBasedShape,
+                                    ).padding(vertical = 4.dp, horizontal = 8.dp),
+                            text = formatTime(seekPosition.toLong()),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
                 }
-
-                Spacer(modifier = Modifier.weight(1f))
-
                 Text(
                     text = formatTime(duration),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+                    modifier =
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(vertical = 4.dp, horizontal = 8.dp),
                 )
             }
         }
-        Spacer(modifier = Modifier.height(Spacing.Small))
+        Spacer(modifier = Modifier.height(Spacing.Medium))
         // 控制按钮
         PlayerControls(
             modifier =
