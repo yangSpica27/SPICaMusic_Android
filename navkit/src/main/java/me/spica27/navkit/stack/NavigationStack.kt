@@ -18,7 +18,6 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -40,6 +39,7 @@ import me.spica27.navkit.scene.SceneKeySet
 import me.spica27.navkit.scene.SceneStage
 import me.spica27.navkit.scene.StackScene
 import me.spica27.navkit.viewmodel.EntryViewModel
+import kotlin.math.pow
 
 /**
  * 导航栈的顶层容器 Composable。
@@ -180,11 +180,14 @@ private fun SceneContainer(
                     val blurSigma = compressionAhead * density * BLUR_MAX_DP
                     renderEffect = BlurEffect(blurSigma, blurSigma, TileMode.Clamp)
                 }
-
                 if (enter > 0f) {
                     val scale = .5f + 0.5f * enter
                     scaleX = scale
                     scaleY = scale
+                    shape = RoundedCornerShape(
+                        ENTER_RADIUS.dp - (enter.toDouble().pow(2.0 * 4.0) * ENTER_RADIUS).dp
+                    )
+                    clip = true
                 }
 
                 // ── DialogScene 入场：背景变暗 + 去饱和度 ──────────────────
@@ -210,7 +213,6 @@ private fun SceneContainer(
 //                    )
                 }
             }
-            .shadow(2.dp)
 
         is DialogScene -> Modifier
             .fillMaxSize()
@@ -315,3 +317,6 @@ private const val COMPRESS_TRANSLATE_FRACTION = 0.06f
 
 /** StackScene 进场时对背景施加的最大模糊半径（dp） */
 private const val BLUR_MAX_DP = 24f
+
+
+private const val ENTER_RADIUS = 28
