@@ -324,4 +324,5 @@
   <string name="range_week">This Week</string>
   <string name="range_year">This Year</string>
   <string name="range_all_time">All Time</string>
+    <string name="audio_playback_attribution">\"This app plays audio\"</string>
 </resources>

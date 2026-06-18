@@ -6,6 +6,7 @@ import androidx.compose.animation.core.spring
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+
 /**
  * 支持进退场动画的堆栈式场景。
  *
@@ -28,6 +29,11 @@ abstract class StackScene : Scene() {
     /** 场景是否已完成首帧 Compose 布局 */
     private val _placed = MutableStateFlow(false)
     val placed: StateFlow<Boolean> = _placed
+
+    /** 进场动画是否已完成（enterProgress 达到 1f） */
+    private val _enterAnimEnd = MutableStateFlow(false)
+
+    val enterAnimEnd: StateFlow<Boolean> = _enterAnimEnd
 
     /**
      * 由 NavigationStack 在场景首次通过 onGloballyPositioned 完成布局后调用。
@@ -54,12 +60,16 @@ abstract class StackScene : Scene() {
     /** 进场动画：从 0f 弹簧动画到 1f */
     override suspend fun onAppear() {
         enterProgress.animateTo(
-            targetValue = 1f,
+            targetValue = 1.0f,
             animationSpec = spring(
                 stiffness = SPRING_STIFFNESS,
                 dampingRatio = Spring.DampingRatioNoBouncy
             )
-        )
+        ) {
+            if (this.value == targetValue) {
+                _enterAnimEnd.value = true
+            }
+        }
     }
 
     /** 退场动画：从当前进度弹簧动画到 0f */

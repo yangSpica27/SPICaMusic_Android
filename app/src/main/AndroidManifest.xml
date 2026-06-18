@@ -50,6 +50,8 @@
         </intent>
     </queries>
 
+    <attribution android:tag="audioPlayback" android:label="@string/audio_playback_attribution"/>
+
     <application
         android:name=".App"
         android:allowBackup="true"

@@ -70,6 +70,11 @@ abstract class DialogScene : Scene() {
     private val _placed = MutableStateFlow(false)
     val placed: StateFlow<Boolean> = _placed
 
+    /** 进场动画是否已完成（enterProgress 达到 1f） */
+    private val _enterAnimEnd = MutableStateFlow(false)
+
+    val enterAnimEnd: StateFlow<Boolean> = _enterAnimEnd
+
     /**
      * 由 [me.spica27.navkit.stack.NavigationStack] 在场景首次通过
      * onGloballyPositioned 完成布局后调用，触发 [waitAppear] 解除阻塞。
@@ -97,10 +102,14 @@ abstract class DialogScene : Scene() {
         enterProgress.animateTo(
             targetValue = 1f,
             animationSpec = tween(
-                375,
+                575,
                 easing = DIALOG_EASING
             )
-        )
+        ) {
+            if (this.value == targetValue) {
+                _enterAnimEnd.value = true
+            }
+        }
     }
 
     /** 退场动画：从当前进度弹簧到 0f */
@@ -108,7 +117,7 @@ abstract class DialogScene : Scene() {
         enterProgress.animateTo(
             targetValue = 0f,
             animationSpec = tween(
-                350,
+                550,
                 easing = DIALOG_EASING
             )
         )

@@ -2,13 +2,17 @@ package me.spica27.spicamusic.ui.player.scene
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
+import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 
 class LyricScene : StackScene() {
     @Composable
@@ -19,11 +23,18 @@ class LyricScene : StackScene() {
             path.popTop()
         }
 
+        val enterAnimEnd = enterAnimEnd.collectAsState()
+
         Scaffold {
-            Box(
-                modifier = Modifier.padding(it),
-            ) {
-                FullScreenLyricsPage()
+            ShowOnIdleContent(enterAnimEnd.value) {
+                Box(
+                    modifier = Modifier.padding(it),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    FullScreenLyricsPage(
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             }
         }
     }

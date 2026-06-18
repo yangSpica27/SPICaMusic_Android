@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -89,8 +88,6 @@ import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
-import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
-import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
 import me.spica27.spicamusic.ui.player.scene.CurrentListScene
 import me.spica27.spicamusic.ui.player.scene.LyricScene
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -232,64 +229,39 @@ fun ExpandedPlayerScreen(
             )
 
             // 水平 Pager 内容区域
-            HorizontalPager(
-                state = pagerState,
+            // 播放器页面
+            ShowOnIdleContent(
                 modifier = Modifier.weight(1f),
-                key = { it },
-            ) { page ->
-                when (page) {
-                    0 -> {
-                        // 当前播放列表页面
-                        ShowOnIdleContent(pagerState.currentPage == 0) {
-                            CurrentPlaylistPage(
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
-                    }
-
-                    1 -> {
-                        // 播放器页面
-                        ShowOnIdleContent(pagerState.currentPage == 1) {
-                            PlayerPage(
-                                isSeekingState = isSeekingState,
-                                currentMediaItem = { currentMediaItem },
-                                audioQualityInfo = audioQualityInfo,
-                                realPosition = trueTimePosition.toFloat(),
-                                seekPosition = seekValueState,
-                                duration = duration,
-                                isPlaying = isPlaying,
-                                isLike = songLikeState,
-                                playMode = playMode,
-                                onValueChange = {
-                                    isSeekingState = true
-                                    seekValueState = it * duration
-                                },
-                                onValueChangeFinished = {
-                                    viewModel.seekTo(seekValueState.toLong())
-                                    isSeekingState = false
-                                },
-                                onPlayPauseClick = { viewModel.togglePlayPause() },
-                                onPreviousClick = { viewModel.skipToPrevious() },
-                                onNextClick = { viewModel.skipToNext() },
-                                onPlayModeClick = { viewModel.togglePlayMode() },
-                                onFavoriteClick = {
-                                    viewModel.toggleLikeCurrentSong()
-                                },
-                                progressProvider = progressProvider,
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
-                    }
-
-                    2 -> {
-                        // 全屏歌词页面（占位）
-                        ShowOnIdleContent(pagerState.currentPage == 2) {
-                            FullScreenLyricsPage(
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
-                    }
-                }
+                visible = progressProvider.invoke() > .4f,
+            ) {
+                PlayerPage(
+                    isSeekingState = isSeekingState,
+                    currentMediaItem = { currentMediaItem },
+                    audioQualityInfo = audioQualityInfo,
+                    realPosition = trueTimePosition.toFloat(),
+                    seekPosition = seekValueState,
+                    duration = duration,
+                    isPlaying = isPlaying,
+                    isLike = songLikeState,
+                    playMode = playMode,
+                    onValueChange = {
+                        isSeekingState = true
+                        seekValueState = it * duration
+                    },
+                    onValueChangeFinished = {
+                        viewModel.seekTo(seekValueState.toLong())
+                        isSeekingState = false
+                    },
+                    onPlayPauseClick = { viewModel.togglePlayPause() },
+                    onPreviousClick = { viewModel.skipToPrevious() },
+                    onNextClick = { viewModel.skipToNext() },
+                    onPlayModeClick = { viewModel.togglePlayMode() },
+                    onFavoriteClick = {
+                        viewModel.toggleLikeCurrentSong()
+                    },
+                    progressProvider = progressProvider,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }

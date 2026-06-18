@@ -188,6 +188,7 @@ private fun SceneContainer(
                         ENTER_RADIUS.dp - (enter.toDouble().pow(2.0 * 4.0) * ENTER_RADIUS).dp
                     )
                     clip = true
+                    shadowElevation = 20f * (1f - enter)
                 }
 
                 // ── DialogScene 入场：背景变暗 + 去饱和度 ──────────────────

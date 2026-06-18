@@ -319,7 +319,7 @@ internal class SpicaNotificationProvider(
                         .getDrawable(
                             context,
                             R.drawable.default_cover,
-                        )?.toBitmap(),
+                        )?.toBitmap(64, 42),
                 )
             }
             onNotificationChangedCallback.onNotificationChanged(

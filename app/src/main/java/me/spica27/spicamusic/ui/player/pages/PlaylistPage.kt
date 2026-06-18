@@ -11,6 +11,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -30,20 +31,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.LocationSearching
-import androidx.compose.material.icons.filled.PlaylistRemove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -62,6 +65,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -91,6 +95,7 @@ import kotlin.math.floor
 fun CurrentPlaylistPage(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
+    scrollBehavior: TopAppBarScrollBehavior,
 ) {
     val panelViewModel: CurrentPlaylistPanelViewModel = koinViewModel()
     val currentPlaylist by viewModel.currentPlaylist.collectAsStateWithLifecycle()
@@ -135,15 +140,16 @@ fun CurrentPlaylistPage(
     val coroutineScope = rememberCoroutineScope()
 
     Column(
-        modifier = modifier.padding(horizontal = 16.dp),
+        modifier = modifier,
     ) {
         // 顶部标题和操作
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
                     .animateContentSize()
-                    .padding(vertical = 12.dp),
+                    .padding(vertical = 12.dp, horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -159,10 +165,19 @@ fun CurrentPlaylistPage(
                                 selectedCount,
                             )
                         } else {
-                            stringResource(R.string.playlist_count_format, currentPlaylist.size)
+                            "${currentPlayingIndex + 1} / ${currentPlaylist.size}"
                         },
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
+                    modifier =
+                        Modifier
+                            .background(
+                                MaterialTheme.colorScheme.surfaceContainerHighest,
+                                RoundedCornerShape(50),
+                            ).padding(
+                                horizontal = 12.dp,
+                                vertical = 6.dp,
+                            ),
                 )
             }
             AnimatedContent(isMultiSelectMode) { selectMode ->
@@ -177,38 +192,93 @@ fun CurrentPlaylistPage(
                     }
                 } else {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        IconButton(
-                            onClick = {
-                                if (currentPlayingIndex >= 0) {
-                                    coroutineScope.launch {
-                                        scrollState.animateScrollToItem(
-                                            index = currentPlayingIndex,
-                                            scrollOffset = -scrollState.layoutInfo.viewportSize.height / 2,
-                                        )
-                                    }
-                                }
-                            },
-                            modifier = Modifier.size(24.dp),
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier =
+                                Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        RoundedCornerShape(
+                                            topStartPercent = 50,
+                                            bottomStartPercent = 50,
+                                            topEndPercent = 15,
+                                            bottomEndPercent = 15,
+                                        ),
+                                    ).clip(
+                                        RoundedCornerShape(
+                                            topStartPercent = 50,
+                                            bottomStartPercent = 50,
+                                            topEndPercent = 15,
+                                            bottomEndPercent = 15,
+                                        ),
+                                    ).clickable {
+                                        if (currentPlayingIndex >= 0) {
+                                            coroutineScope.launch {
+                                                scrollState.animateScrollToItem(
+                                                    index = currentPlayingIndex,
+                                                    scrollOffset = -scrollState.layoutInfo.viewportSize.height / 2,
+                                                )
+                                            }
+                                        }
+                                    }.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.LocationSearching,
                                 contentDescription = stringResource(R.string.jump_to_playing),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp),
                             )
                         }
-                        IconButton(
-                            onClick = {
-                                viewModel.pause()
-                                viewModel.updatePlaylist(emptyList())
-                            },
-                            modifier = Modifier.size(24.dp),
+                        Box(
+                            modifier =
+                                Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        RoundedCornerShape(15),
+                                    ).clickable {
+                                        isMultiSelectMode = true
+                                    }.padding(horizontal = 8.dp, vertical = 8.dp),
                         ) {
                             Icon(
-                                imageVector = Icons.Default.PlaylistRemove,
+                                imageVector = Icons.Default.Checklist,
                                 contentDescription = stringResource(R.string.clear_playlist),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier =
+                                Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        RoundedCornerShape(
+                                            topStartPercent = 15,
+                                            bottomStartPercent = 15,
+                                            topEndPercent = 50,
+                                            bottomEndPercent = 50,
+                                        ),
+                                    ).clip(
+                                        RoundedCornerShape(
+                                            topStartPercent = 15,
+                                            bottomStartPercent = 15,
+                                            topEndPercent = 50,
+                                            bottomEndPercent = 50,
+                                        ),
+                                    ).clickable {
+                                        viewModel.pause()
+                                        viewModel.updatePlaylist(emptyList())
+                                    }.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ClearAll,
+                                contentDescription = stringResource(R.string.clear_playlist),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                     }
@@ -263,6 +333,7 @@ fun CurrentPlaylistPage(
                     Modifier
                         .fillMaxWidth()
                         .weight(1f)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
                         .drawBehind {
                             if (currentPlayingIndex < 0) return@drawBehind
                             val layoutInfo = scrollState.layoutInfo
@@ -305,8 +376,8 @@ fun CurrentPlaylistPage(
 
                             drawRoundRect(
                                 color = selectItemBackgroundColor,
-                                topLeft = Offset(0f, backgroundTop),
-                                size = Size(size.width, itemHeight),
+                                topLeft = Offset(0f + 16.dp.toPx(), backgroundTop),
+                                size = Size(size.width - 32.dp.toPx(), itemHeight),
                                 cornerRadius = CornerRadius(cornerRadius),
                                 style = Fill,
                             )
@@ -471,7 +542,7 @@ private fun PlaylistItemRow(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
                 ).height(80.dp)
-                .padding(vertical = 8.dp),
+                .padding(vertical = 8.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(
@@ -501,18 +572,16 @@ private fun PlaylistItemRow(
                         .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.surface),
                 success = { state, painter ->
-                    ShowOnIdleContent(true) {
+                    ShowOnIdleContent(true, delayMillis = 125) {
                         Image(painter, contentDescription = null, contentScale = ContentScale.Crop)
                     }
                 },
                 failure = {
-                    ShowOnIdleContent(true) {
-                        Image(
-                            painterResource(R.drawable.default_cover),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                        )
-                    }
+                    Image(
+                        painterResource(R.drawable.default_cover),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                    )
                 },
             )
             Column(

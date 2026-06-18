@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.service
 
+import android.os.Build
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -67,11 +68,16 @@ class PlaybackService : MediaLibraryService() {
                             setExtensionRendererMode(EXTENSION_RENDERER_MODE_PREFER)
                         }
             }
-
         exoPlayer =
             ExoPlayer
-                .Builder(this, renderersFactory)
-                .setWakeMode(C.WAKE_MODE_LOCAL)
+                .Builder(
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        createAttributionContext("audioPlayback")
+                    } else {
+                        this
+                    },
+                    renderersFactory,
+                ).setWakeMode(C.WAKE_MODE_LOCAL)
                 .setMaxSeekToPreviousPositionMs(Long.MAX_VALUE)
                 .setAudioAttributes(
                     AudioAttributes
@@ -115,10 +121,14 @@ class PlaybackService : MediaLibraryService() {
                             return serviceScope.future {
                                 val item = MediaLibrary.getItem(mediaId)
                                 if (item != null) {
-                                    Timber.tag("PlaybackService").d("onGetItem: Found item ${item.mediaMetadata.title}")
+                                    Timber
+                                        .tag("PlaybackService")
+                                        .d("onGetItem: Found item ${item.mediaMetadata.title}")
                                     LibraryResult.ofItem(item, null)
                                 } else {
-                                    Timber.tag("PlaybackService").e("onGetItem: Item not found for mediaId=$mediaId")
+                                    Timber
+                                        .tag("PlaybackService")
+                                        .e("onGetItem: Item not found for mediaId=$mediaId")
                                     LibraryResult.ofError(SessionError.ERROR_BAD_VALUE)
                                 }
                             }
