@@ -71,7 +71,6 @@ import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
-import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -704,16 +703,6 @@ private fun SongCover(song: Song) {
     LandscapistImage(
         imageModel = { coverUri },
         modifier = Modifier.fillMaxSize(),
-        success = { _, painter ->
-            ShowOnIdleContent(true) {
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
-        },
         failure = {
             Image(
                 painter = painterResource(R.drawable.default_cover),

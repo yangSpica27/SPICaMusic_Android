@@ -152,14 +152,6 @@ private fun MosaicCell(
     LandscapistImage(
         imageModel = { "content://media/external/audio/albumart/$albumId".toUri() },
         modifier = modifier,
-        success = { _, painter ->
-            Image(
-                painter = painter,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        },
         failure = {
             Box(
                 modifier =

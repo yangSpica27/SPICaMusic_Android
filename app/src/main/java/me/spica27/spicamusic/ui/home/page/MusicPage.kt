@@ -441,7 +441,7 @@ private fun AllSongPage(
                     .nestedScroll(LocalBottomBarScrollConnection.current),
             contentPadding = PaddingValues(bottom = 200.dp),
         ) {
-            items(allSong, key = { it.mediaStoreId }) { song ->
+            items(allSong, key = { it.mediaStoreId }, contentType = { 1 }) { song ->
                 AnimateOnEnter(
                     delayMillis = 150,
                     animationSpec =
@@ -511,34 +511,22 @@ private fun SongItem(
             imageModel = {
                 coverUri
             },
-            modifier = Modifier.size(64.dp),
-            success = { _, painter ->
-                ShowOnIdleContent(true) {
-                    Image(
-                        contentScale = ContentScale.Crop,
-                        painter = painter,
-                        contentDescription = null,
-                        modifier =
-                            Modifier
-                                .clip(clip)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceContainerHigh,
-                                ).fillMaxSize(),
-                    )
-                }
-            },
+            modifier =
+                Modifier
+                    .size(64.dp)
+                    .clip(clip)
+                    .background(
+                        MaterialTheme.colorScheme.surfaceContainerHigh,
+                    ),
             failure = {
-                ShowOnIdleContent(true) {
+                ShowOnIdleContent(true, delayMillis = 225) {
                     Image(
                         contentScale = ContentScale.Crop,
                         painter = painterResource(R.drawable.default_cover),
                         contentDescription = null,
                         modifier =
                             Modifier
-                                .clip(clip)
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceContainerHigh,
-                                ).fillMaxSize(),
+                                .fillMaxSize(),
                     )
                 }
             },
@@ -645,21 +633,10 @@ private fun AlbumGridItem(
                     .graphicsLayer {
                         alpha = if (transition.shouldShowSource()) 1f else 0f
                     },
-            success = { _, painter ->
-                ShowOnIdleContent(true) {
-                    Image(
-                        painter = painter,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            },
             failure = {
                 Box(
                     Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
                     Image(
@@ -774,14 +751,6 @@ private fun ArtistRow(
                 Modifier
                     .size(52.dp)
                     .clip(MaterialTheme.shapes.medium),
-            success = { _, painter ->
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            },
             failure = {
                 Box(
                     Modifier

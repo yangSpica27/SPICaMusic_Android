@@ -71,12 +71,15 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.skydoves.landscapist.components.rememberImageComponent
+import com.skydoves.landscapist.crossfade.CrossfadePlugin
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.launch
 import me.spica27.navkit.geometry.geometryOccluder
@@ -118,6 +121,12 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
 
     // 记录跳转到播放器的初始页（默认主页 or 播放列表页）
     var initialPage by remember { mutableIntStateOf(DEFAULT_PAGE) }
+
+    val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
+    val metadata = currentMediaItem?.mediaMetadata
+    val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
+    val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
+    val artworkUri = metadata?.artworkUri
 
     // 可拖拽锚点状态
     val draggableState =
@@ -266,7 +275,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                         }
                         // 迷你播放条 + Tab 切换区 —— 位于面板顶部
                         // 当面板收起时，面板整体下移使迷你条恰好出现在屏幕底部
-                        if (progressProvider.invoke() > 0.99f)return@AnimatedContent
+                        if (progressProvider.invoke() > 0.99f) return@AnimatedContent
                         Column(
                             modifier =
                                 Modifier
@@ -355,7 +364,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                         }
                     }
                 } else {
-                    if (progressProvider.invoke() > 0.99f)return@AnimatedContent
+                    if (progressProvider.invoke() > 0.99f) return@AnimatedContent
                     Row(
                         modifier =
                             Modifier
@@ -404,17 +413,35 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             LandscapistImage(
-                                imageModel = { R.drawable.default_cover },
+                                imageModel = { artworkUri },
+                                component =
+                                    rememberImageComponent {
+                                        +CrossfadePlugin(duration = 550)
+                                    },
                                 modifier =
                                     Modifier
                                         .fillMaxHeight()
                                         .aspectRatio(1f)
                                         .clip(CircleShape),
+                                failure = {
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .fillMaxSize()
+                                                .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            "🎵",
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        )
+                                    }
+                                },
                             )
                             Text(
                                 text =
                                     if (nowPlayingSong != null) {
-                                        nowPlayingSong.mediaMetadata.title.toString()
+                                        "$title - $artist"
                                     } else {
                                         "没有正在播放的歌曲"
                                     },
