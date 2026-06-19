@@ -89,7 +89,7 @@ class CurrentListScene : DialogScene() {
                 ) {
                     CurrentPlaylistPage(
                         modifier = Modifier.fillMaxSize(),
-                        scrollBehavior = scrollBehavior,
+//                        scrollBehavior = scrollBehavior,
                     )
                 }
             }

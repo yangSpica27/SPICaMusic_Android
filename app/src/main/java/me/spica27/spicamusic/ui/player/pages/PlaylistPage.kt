@@ -46,7 +46,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -59,13 +58,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Fill
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -95,7 +94,6 @@ import kotlin.math.floor
 fun CurrentPlaylistPage(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
-    scrollBehavior: TopAppBarScrollBehavior,
 ) {
     val panelViewModel: CurrentPlaylistPanelViewModel = koinViewModel()
     val currentPlaylist by viewModel.currentPlaylist.collectAsStateWithLifecycle()
@@ -333,7 +331,7 @@ fun CurrentPlaylistPage(
                     Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .clipToBounds()
                         .drawBehind {
                             if (currentPlayingIndex < 0) return@drawBehind
                             val layoutInfo = scrollState.layoutInfo

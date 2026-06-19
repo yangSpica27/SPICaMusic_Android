@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui.player
 
-import android.os.Build
 import android.os.FileUtils
 import android.text.TextUtils
 import androidx.activity.compose.BackHandler
@@ -8,12 +7,14 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,10 +28,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -43,14 +48,17 @@ import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -88,18 +96,17 @@ import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
-import me.spica27.spicamusic.ui.player.scene.CurrentListScene
-import me.spica27.spicamusic.ui.player.scene.LyricScene
+import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
+import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.widget.AudioCityVisualizer
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
-import me.spica27.spicamusic.ui.widget.ShiningStarsVisualizer
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
+import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import timber.log.Timber
@@ -115,8 +122,8 @@ import androidx.compose.ui.util.lerp as floatLerp
 // 展开动画透明度阈值常量
 private const val COVER_FADE_THRESHOLD = 0.8f
 private const val CONTROLS_FADE_THRESHOLD = 0.5f
-private const val PAGE_COUNT = 3
-const val DEFAULT_PAGE = 1
+private const val PAGE_COUNT = 2
+const val DEFAULT_PAGE = 0
 private const val HERO_REVEAL_THRESHOLD = 0.08f
 private const val META_REVEAL_THRESHOLD = 0.18f
 private const val TAGS_REVEAL_THRESHOLD = 0.28f
@@ -183,8 +190,19 @@ fun ExpandedPlayerScreen(
         }
     }
 
+    val coroutineScope = rememberCoroutineScope()
+
     // Pager 状态，使用传入的初始页面
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { PAGE_COUNT })
+
+    BackHandler(pagerState.currentPage == 1) {
+        coroutineScope.launch {
+            pagerState.animateScrollToPage(
+                0,
+                animationSpec = tween(durationMillis = 300, easing = EaseOutCubic),
+            )
+        }
+    }
 
     // 从封面提取主色调
     val coverColor =
@@ -212,56 +230,140 @@ fun ExpandedPlayerScreen(
         )
 
         // 内容层
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        VerticalPager(
+            modifier = Modifier.fillMaxSize(),
+            state = pagerState,
+            key = { it },
+            overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
+            flingBehavior =
+                PagerDefaults.flingBehavior(
+                    state = pagerState,
+                    snapPositionalThreshold = .2f,
+                ),
         ) {
-            // 顶部工具栏（带页面指示器）
-            TopBar(
-                modifier = Modifier,
-                currentPage = pagerState.currentPage,
-                onCollapse = onCollapse,
-                progressProvider = progressProvider,
-                isPlaying = isPlaying,
-            )
+            if (it == 0) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .statusBarsPadding(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    // 顶部工具栏（带页面指示器）
+                    TopBar(
+                        modifier = Modifier,
+                        currentPage = pagerState.currentPage,
+                        onCollapse = onCollapse,
+                        progressProvider = progressProvider,
+                        onLyricBtnClick = {
+                        },
+                        onPlaylistBtnClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(
+                                    1,
+                                    animationSpec =
+                                        tween(
+                                            durationMillis = 300,
+                                            easing = EaseOutCubic,
+                                        ),
+                                )
+                            }
+                        },
+                    )
 
-            // 水平 Pager 内容区域
-            // 播放器页面
-            ShowOnIdleContent(
-                modifier = Modifier.weight(1f),
-                visible = progressProvider.invoke() > .4f,
-            ) {
-                PlayerPage(
-                    isSeekingState = isSeekingState,
-                    currentMediaItem = { currentMediaItem },
-                    audioQualityInfo = audioQualityInfo,
-                    realPosition = trueTimePosition.toFloat(),
-                    seekPosition = seekValueState,
-                    duration = duration,
-                    isPlaying = isPlaying,
-                    isLike = songLikeState,
-                    playMode = playMode,
-                    onValueChange = {
-                        isSeekingState = true
-                        seekValueState = it * duration
+                    // 水平 Pager 内容区域
+                    // 播放器页面
+                    ShowOnIdleContent(
+                        modifier = Modifier.weight(1f),
+                        visible = progressProvider.invoke() > .4f,
+                    ) {
+                        PlayerPage(
+                            isSeekingState = isSeekingState,
+                            currentMediaItem = { currentMediaItem },
+                            audioQualityInfo = audioQualityInfo,
+                            realPosition = trueTimePosition.toFloat(),
+                            seekPosition = seekValueState,
+                            duration = duration,
+                            isPlaying = isPlaying,
+                            isLike = songLikeState,
+                            playMode = playMode,
+                            onValueChange = {
+                                isSeekingState = true
+                                seekValueState = it * duration
+                            },
+                            onValueChangeFinished = {
+                                viewModel.seekTo(seekValueState.toLong())
+                                isSeekingState = false
+                            },
+                            onPlayPauseClick = { viewModel.togglePlayPause() },
+                            onPreviousClick = { viewModel.skipToPrevious() },
+                            onNextClick = { viewModel.skipToNext() },
+                            onPlayModeClick = { viewModel.togglePlayMode() },
+                            onFavoriteClick = {
+                                viewModel.toggleLikeCurrentSong()
+                            },
+                            progressProvider = progressProvider,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+            } else {
+                // 播放列表
+                Scaffold(
+                    topBar = {
+                        @OptIn(ExperimentalMaterial3Api::class)
+                        TopAppBar(
+                            colors =
+                                TopAppBarDefaults.topAppBarColors().copy(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+                                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                    subtitleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                            navigationIcon = {
+                                IconButton(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(
+                                                0,
+                                                animationSpec =
+                                                    tween(
+                                                        durationMillis = 550,
+                                                        easing = EaseOutCubic,
+                                                    ),
+                                            )
+                                        }
+                                    },
+                                    colors =
+                                        IconButtonDefaults.iconButtonColors().copy(
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            contentColor = MaterialTheme.colorScheme.onSurface,
+                                        ),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowDown,
+                                        contentDescription = "返回",
+                                    )
+                                }
+                            },
+                            title = {
+                                Text("当前播放列表")
+                            },
+                        )
                     },
-                    onValueChangeFinished = {
-                        viewModel.seekTo(seekValueState.toLong())
-                        isSeekingState = false
-                    },
-                    onPlayPauseClick = { viewModel.togglePlayPause() },
-                    onPreviousClick = { viewModel.skipToPrevious() },
-                    onNextClick = { viewModel.skipToNext() },
-                    onPlayModeClick = { viewModel.togglePlayMode() },
-                    onFavoriteClick = {
-                        viewModel.toggleLikeCurrentSong()
-                    },
-                    progressProvider = progressProvider,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                ) {
+                    ShowOnIdleContent(true) {
+                        Box(
+                            modifier = Modifier.padding(it),
+                        ) {
+                            CurrentPlaylistPage(
+                                modifier = Modifier.fillMaxSize(),
+//                        scrollBehavior = scrollBehavior,
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -280,7 +382,8 @@ private fun TopBar(
     onCollapse: () -> Unit,
     progressProvider: () -> Float,
     modifier: Modifier,
-    isPlaying: Boolean,
+    onPlaylistBtnClick: () -> Unit = {},
+    onLyricBtnClick: () -> Unit = {},
 ) {
     val path = LocalNavigationPath.current
 
@@ -341,13 +444,13 @@ private fun TopBar(
                                     bottomEndPercent = 15,
                                 ),
                         ).clickable {
-                            path.push(CurrentListScene())
+                            onPlaylistBtnClick.invoke()
                         }.padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.Lyrics,
+                    imageVector = Icons.AutoMirrored.Default.PlaylistPlay,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(24.dp),
@@ -379,7 +482,7 @@ private fun TopBar(
                                     bottomStartPercent = 15,
                                 ),
                         ).clickable {
-                            path.push(LyricScene())
+                            onLyricBtnClick.invoke()
                         }.padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
@@ -519,19 +622,11 @@ private fun PlayerPage(
         remember(dynamicCoverTypeValue) {
             DynamicCoverType.fromString(dynamicCoverTypeValue)
         }
-    val isCoverFlipEnabled = dynamicCoverType !is DynamicCoverType.OFF
     val songUseCases = koinInject<SongUseCases>()
     // 翻转动画状态
     var isCoverFlipped by rememberSaveable { mutableStateOf(false) }
     val animDuration = 600
     val cameraDistance = 12f
-
-    // 当设置关闭时，自动重置翻转状态
-    LaunchedEffect(isCoverFlipEnabled) {
-        if (!isCoverFlipEnabled) {
-            isCoverFlipped = false
-        }
-    }
 
     // Y轴旋转角度动画
     val rotateY by animateFloatAsState(
@@ -565,11 +660,7 @@ private fun PlayerPage(
                         this.cameraDistance = cameraDistance * density
                     }.clip(Shapes.LargeCornerBasedShape)
                     .then(
-                        if (isCoverFlipEnabled) {
-                            Modifier.clickable { isCoverFlipped = !isCoverFlipped }
-                        } else {
-                            Modifier
-                        },
+                        Modifier.clickable { isCoverFlipped = !isCoverFlipped },
                     ),
         ) {
             // 根据旋转角度显示正面或背面
@@ -612,80 +703,17 @@ private fun PlayerPage(
                     )
                 }
             } else {
-                // 背面：3D 音频可视化器
-                Box(
+                // 背面：歌词
+                FullScreenLyricsPage(
                     modifier =
                         Modifier
                             .fillMaxSize()
+                            .clip(Shapes.LargeCornerBasedShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f))
                             .graphicsLayer {
-                                alpha = calculateFadeAlpha(progressProvider(), COVER_FADE_THRESHOLD)
-                                rotationY = 180f // 翻转背面使其正向显示
-                            }.clip(Shapes.LargeCornerBasedShape),
-                ) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        // Android 13+ 使用 AGSL 可视化器
-
-                        val playerViewModel = LocalPlayerViewModel.current
-                        val scope = rememberCoroutineScope()
-
-                        // 订阅 FFT 绘制数据
-                        LaunchedEffect(Unit) {
-                            withContext(Dispatchers.Default) {
-                                playerViewModel.subscribeFFTDrawData()
-                            }
-                        }
-                        DisposableEffect(Unit) {
-                            onDispose {
-                                scope.launch(Dispatchers.Default) {
-                                    playerViewModel.unsubscribeFFTDrawData()
-                                }
-                            }
-                        }
-
-                        val fftBands =
-                            playerViewModel.fftDrawData.collectAsStateWithLifecycle().value
-
-                        val coverColor =
-                            rememberDominantColorFromUri(
-                                uri = currentMediaItem.invoke()?.mediaMetadata?.artworkUri,
-                                fallbackColor = MaterialTheme.colorScheme.primary,
-                            )
-
-                        when (dynamicCoverType) {
-                            is DynamicCoverType.AudioCity -> {
-                                AudioCityVisualizer(
-                                    modifier = Modifier.fillMaxSize(),
-                                    fftBands = fftBands,
-                                    baseColor = coverColor,
-                                )
-                            }
-
-                            else -> {
-                                ShiningStarsVisualizer(
-                                    modifier = Modifier.fillMaxSize(),
-                                    fftBands = fftBands,
-                                    baseColor = coverColor,
-                                )
-                            }
-                        }
-                    } else {
-                        // Android 13 以下显示占位
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.visualization_requires_android13),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                }
+                                rotationY = 180f
+                            }.fillMaxSize(),
+                )
             }
         }
 
