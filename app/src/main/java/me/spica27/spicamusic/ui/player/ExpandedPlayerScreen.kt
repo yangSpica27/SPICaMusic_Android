@@ -98,6 +98,7 @@ import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
+import me.spica27.spicamusic.ui.player.scene.LyricScene
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -192,6 +193,8 @@ fun ExpandedPlayerScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
+    val path = LocalNavigationPath.current
+
     // Pager 状态，使用传入的初始页面
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { PAGE_COUNT })
 
@@ -256,6 +259,7 @@ fun ExpandedPlayerScreen(
                         onCollapse = onCollapse,
                         progressProvider = progressProvider,
                         onLyricBtnClick = {
+                            path.push(LyricScene())
                         },
                         onPlaylistBtnClick = {
                             coroutineScope.launch {
@@ -337,7 +341,7 @@ fun ExpandedPlayerScreen(
                                     },
                                     colors =
                                         IconButtonDefaults.iconButtonColors().copy(
-                                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                                             contentColor = MaterialTheme.colorScheme.onSurface,
                                         ),
                                 ) {

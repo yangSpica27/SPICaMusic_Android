@@ -434,7 +434,7 @@ fun CurrentPlaylistPage(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                        .padding(vertical = 12.dp, horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Button(
@@ -448,6 +448,7 @@ fun CurrentPlaylistPage(
                     },
                     enabled = selectedCount > 0,
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(15),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
@@ -464,6 +465,7 @@ fun CurrentPlaylistPage(
                     onClick = { showCreateDialog = true },
                     enabled = selectedCount > 0,
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(15),
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,

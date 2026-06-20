@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -52,19 +53,29 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.common.collect.ImmutableList
 import me.spica27.navkit.path.LocalNavigationPath
@@ -221,6 +232,29 @@ private fun LibraryPageHeader(
             },
         )
 
+    val tabPositions = remember { mutableStateMapOf<LibraryPageTab, Dp>() }
+    val tabWidths = remember { mutableStateMapOf<LibraryPageTab, Dp>() }
+    val tabHeight = remember { mutableStateMapOf<LibraryPageTab, Dp>() }
+    val density = LocalDensity.current
+    val indicatorOffset by animateDpAsState(
+        targetValue = tabPositions.getOrElse(selectTab) { 0.dp },
+        label = "",
+    )
+    val indicatorWidth by animateDpAsState(
+        targetValue = tabWidths.getOrElse(selectTab) { 0.dp },
+        label = "",
+    )
+    val indicatorHeight by animateDpAsState(
+        targetValue = tabHeight.getOrElse(selectTab) { 0.dp },
+        label = "",
+    )
+
+    val indicatorColor =
+        animateColorAsState(
+            targetValue = if (indicatorWidth > 0.dp && indicatorHeight > 0.dp) MaterialTheme.colorScheme.primary else Color.Transparent,
+            label = "",
+        ).value
+
     Box(
         modifier =
             modifier
@@ -320,12 +354,35 @@ private fun LibraryPageHeader(
                         .fillMaxWidth()
                         .clip(Shapes.ExtraLarge1CornerBasedShape)
                         .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                        .padding(LayoutTokens.MusicTabContainerPadding),
+                        .padding(LayoutTokens.MusicTabContainerPadding)
+                        .drawWithCache {
+                            onDrawWithContent {
+                                drawRoundRect(
+                                    color = indicatorColor,
+                                    topLeft = Offset(indicatorOffset.toPx(), 0f),
+                                    size = Size(indicatorWidth.toPx(), indicatorHeight.toPx()),
+                                    cornerRadius =
+                                        CornerRadius(
+                                            12.dp.toPx(),
+                                            12.dp.toPx(),
+                                        ),
+                                )
+                                drawContent()
+                            }
+                        },
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
             ) {
                 tabs.forEach { tab ->
                     LibraryTabItem(
-                        modifier = Modifier.weight(1f),
+                        modifier =
+                            Modifier
+                                .onGloballyPositioned { coordinates ->
+                                    val position = coordinates.positionInParent()
+                                    val size = coordinates.size.toSize()
+                                    tabPositions[tab] = with(density) { position.x.toDp() }
+                                    tabWidths[tab] = with(density) { size.width.toDp() }
+                                    tabHeight[tab] = with(density) { size.height.toDp() }
+                                }.weight(1f),
                         selectTab = selectTab,
                         onSelectTab = onSelectTab,
                         tab = tab,
@@ -356,11 +413,6 @@ private fun LibraryTabItem(
     progress: Float = 0f,
 ) {
     val isSelected = remember(tab, selectTab) { selectTab == tab }
-    val containerColor =
-        animateColorAsState(
-            if (isSelected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent,
-            label = "library_tab_container",
-        ).value
     val textColor =
         animateColorAsState(
             if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -377,9 +429,7 @@ private fun LibraryTabItem(
             modifier
                 .animateContentSize(
                     animationSpec = tween(durationMillis = 225),
-                ).clip(Shapes.LargeCornerBasedShape)
-                .background(containerColor)
-                .clickable { onSelectTab(tab) }
+                ).clickable { onSelectTab(tab) }
                 .padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -466,7 +516,7 @@ private fun PlaylistPage(
         item(
             span = { GridItemSpan(maxLineSpan) },
         ) {
-            Spacer(Modifier.height(150.dp))
+            Spacer(Modifier.height(250.dp))
         }
     }
 }
@@ -574,7 +624,7 @@ private fun FolderPage(
         }
 
         item {
-            Spacer(Modifier.height(150.dp))
+            Spacer(Modifier.height(250.dp))
         }
     }
 }
