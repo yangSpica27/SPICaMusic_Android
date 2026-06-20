@@ -13,6 +13,13 @@ fun AudioCover(
 ) {
     LandscapistImage(
         modifier = modifier,
+        requestBuilder = {
+            this
+                .model(uri)
+                .tag(uri.toString())
+                .progressiveEnabled(true)
+                .build()
+        },
         imageModel = { uri },
         failure = {
             placeHolder()

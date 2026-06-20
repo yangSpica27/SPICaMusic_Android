@@ -668,14 +668,15 @@ private fun PlayerPage(
                 // 正面：封面
 
                 AnimatedContent(
-                    currentMediaItem,
+                    currentMediaItem.invoke(),
                     modifier = Modifier.fillMaxSize(),
                     transitionSpec = {
                         materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
                     },
+                    contentKey = { it?.mediaId ?: "-1" },
                 ) { currentMediaItem ->
                     AudioCover(
-                        uri = currentMediaItem.invoke()?.mediaMetadata?.artworkUri,
+                        uri = currentMediaItem?.mediaMetadata?.artworkUri,
                         placeHolder = {
                             Box(
                                 modifier =
