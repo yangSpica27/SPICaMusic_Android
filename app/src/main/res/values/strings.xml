@@ -325,4 +325,48 @@
   <string name="range_year">This Year</string>
   <string name="range_all_time">All Time</string>
     <string name="audio_playback_attribution">\"This app plays audio\"</string>
+
+  <!-- Library Page -->
+  <string name="library_title">Media Library</string>
+  <string name="library_summary_playlists">%d playlists</string>
+  <string name="library_summary_scan_folders">%d scan folders</string>
+  <string name="library_summary_ignore_folders">%d ignore folders</string>
+  <string name="library_summary_this_week">This week %s</string>
+  <string name="scan_music">Scan Music</string>
+  <string name="tab_playlists">Playlists</string>
+  <string name="tab_folders">Folders</string>
+  <string name="my_playlists">My Playlists</string>
+  <string name="playlists_count_format">%d</string>
+  <string name="no_playlists_created">No playlists created</string>
+  <string name="create_first_playlist_hint">Click \"Create Playlist\" above to create your first playlist.</string>
+  <string name="extra_scan_folders">Extra Scan Folders</string>
+  <string name="no_extra_scan_folders">No extra scan folders</string>
+  <string name="add_extra_folder_hint">Click \"+\" to select folders. Audio files will be registered to the system media library.</string>
+  <string name="ignore_folders">Ignore Folders</string>
+  <string name="add_ignore_folder_hint">Click \"+\" to select folders. Audio files will be skipped during scan.</string>
+  <string name="add_folder">Add Folder</string>
+  <string name="weekly_listening_overview">Weekly Listening Overview</string>
+  <string name="no_stats_data">No stats data</string>
+  <string name="play_duration">Play Duration</string>
+  <string name="play_count">Play Count</string>
+  <string name="unique_songs">Unique Songs</string>
+  <string name="reauthorize">Re-authorize</string>
+  <string name="accessible">Accessible</string>
+  <string name="inaccessible">Inaccessible</string>
+  <string name="songs_count">%d songs</string>
+  <string name="hours_minutes">%dh %dm</string>
+  <string name="minutes">%dmin</string>
+  <string name="less_than_1_minute">Less than 1 min</string>
+  <string name="no_playlists_yet">No Playlists Yet</string>
+  <string name="library_no_ignore_folders">No Ignore Folders</string>
+
+  <!-- Music Page -->
+  <string name="music_page_title">Music</string>
+  <string name="music_summary_format">%1$d songs · %2$d albums · %3$d artists</string>
+  <string name="music_tab_songs">Songs</string>
+  <string name="music_tab_albums">Albums</string>
+  <string name="music_tab_artists">Artists</string>
+  <string name="music_tab_songs_count">%d</string>
+  <string name="music_tab_albums_count">%d</string>
+  <string name="music_tab_artists_count">%d</string>
 </resources>

@@ -323,4 +323,48 @@
   <string name="range_week">本週</string>
   <string name="range_year">本年</string>
   <string name="range_all_time">全部</string>
+
+  <!-- Library Page -->
+  <string name="library_title">資料庫</string>
+  <string name="library_summary_playlists">%d 個歌單</string>
+  <string name="library_summary_scan_folders">%d 個掃描目錄</string>
+  <string name="library_summary_ignore_folders">%d 個忽略目錄</string>
+  <string name="library_summary_this_week">本週 %s</string>
+  <string name="scan_music">掃描音樂</string>
+  <string name="tab_playlists">歌單</string>
+  <string name="tab_folders">資料夾</string>
+  <string name="my_playlists">我的歌單</string>
+  <string name="playlists_count_format">%d個</string>
+  <string name="no_playlists_created">暫未創建</string>
+  <string name="create_first_playlist_hint">點擊上方「新建歌單」創建第一張歌單。</string>
+  <string name="extra_scan_folders">額外掃描目錄</string>
+  <string name="no_extra_scan_folders">沒有額外掃描目錄</string>
+  <string name="add_extra_folder_hint">點擊右側「+」選擇資料夾，其中的音訊會註冊進系統媒體庫。</string>
+  <string name="ignore_folders">忽略目錄</string>
+  <string name="add_ignore_folder_hint">點擊右側「+」選擇資料夾，掃描時會跳過其中的音訊。</string>
+  <string name="add_folder">新增目錄</string>
+  <string name="weekly_listening_overview">本週聽歌概覽</string>
+  <string name="no_stats_data">暫無統計資料</string>
+  <string name="play_duration">播放時長</string>
+  <string name="play_count">播放次數</string>
+  <string name="unique_songs">不同歌曲</string>
+  <string name="reauthorize">重新授權</string>
+  <string name="accessible">可用</string>
+  <string name="inaccessible">失效</string>
+  <string name="songs_count">%d 首歌曲</string>
+  <string name="hours_minutes">%d小時%d分</string>
+  <string name="minutes">%d分鐘</string>
+  <string name="less_than_1_minute">少於1分鐘</string>
+  <string name="no_playlists_yet">還沒有歌單</string>
+  <string name="library_no_ignore_folders">沒有忽略目錄</string>
+
+  <!-- Music Page -->
+  <string name="music_page_title">音樂</string>
+  <string name="music_summary_format">%1$d 首歌曲 · %2$d 張專輯 · %3$d 位歌手</string>
+  <string name="music_tab_songs">全部歌曲</string>
+  <string name="music_tab_albums">專輯</string>
+  <string name="music_tab_artists">歌手</string>
+  <string name="music_tab_songs_count">%d首</string>
+  <string name="music_tab_albums_count">%d張</string>
+  <string name="music_tab_artists_count">%d位</string>
 </resources>

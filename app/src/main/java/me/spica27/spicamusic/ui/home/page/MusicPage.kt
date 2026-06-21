@@ -30,7 +30,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
@@ -71,6 +70,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
@@ -158,14 +158,10 @@ fun MusicPage() {
         hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
 
-    val summaryText =
-        remember(songCount, albumCount, artistCount) {
-            buildString {
-                append("$songCount 首歌曲")
-                append(" · $albumCount 张专辑")
-                append(" · $artistCount 位歌手")
-            }
-        }
+    val summaryText = stringResource(R.string.music_summary_format, songCount, albumCount, artistCount)
+    val songCountText = stringResource(R.string.music_tab_songs_count, songCount)
+    val albumCountText = stringResource(R.string.music_tab_albums_count, albumCount)
+    val artistCountText = stringResource(R.string.music_tab_artists_count, artistCount)
     val headerFollowDistancePx = with(density) { LayoutTokens.PageHeaderFollowDistance.toPx() }
     val headerProgress by remember(headerFollowDistancePx) {
         derivedStateOf {
@@ -191,9 +187,9 @@ fun MusicPage() {
             onSelectTab = { selectTab = it },
             extraText = { tab ->
                 when (tab) {
-                    MusicTab.SONG -> if (songCount > 0) "${songCount}首" else null
-                    MusicTab.ALBUM -> if (albumCount > 0) "${albumCount}张" else null
-                    MusicTab.ARTIST -> if (artistCount > 0) "${artistCount}位" else null
+                    MusicTab.SONG -> if (songCount > 0) songCountText else null
+                    MusicTab.ALBUM -> if (albumCount > 0) albumCountText else null
+                    MusicTab.ARTIST -> if (artistCount > 0) artistCountText else null
                 }
             },
         )
@@ -203,7 +199,7 @@ fun MusicPage() {
         ) {
             val page = tabs[it]
             when (page) {
-                MusicTab.SONG -> AllSongPage(Modifier, allSongListState)
+                MusicTab.SONG -> AllSongPage(Modifier, allSongListState, allSongs)
                 MusicTab.ALBUM -> AlbumPage(Modifier, albumGridState)
                 MusicTab.ARTIST -> ArtistsPage(Modifier, artistListState)
             }
@@ -230,8 +226,6 @@ private fun MusicPageHeader(
                 MaterialTheme.colorScheme.surfaceContainerHigh
             },
         )
-
-    val indicatorRadius = remember { RoundedCornerShape(12.dp) }
 
     val tabPositions = remember { mutableStateMapOf<MusicTab, Dp>() }
     val tabWidths = remember { mutableStateMapOf<MusicTab, Dp>() }
@@ -290,7 +284,7 @@ private fun MusicPageHeader(
                 verticalArrangement = Arrangement.spacedBy(Spacing.Small),
             ) {
                 Text(
-                    text = "音乐",
+                    text = stringResource(R.string.music_page_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -351,11 +345,11 @@ private fun MusicPageHeader(
 
 @Immutable
 private enum class MusicTab(
-    val title: String,
+    val titleRes: Int,
 ) {
-    SONG("全部歌曲"),
-    ALBUM("专辑"),
-    ARTIST("歌手"),
+    SONG(R.string.music_tab_songs),
+    ALBUM(R.string.music_tab_albums),
+    ARTIST(R.string.music_tab_artists),
 }
 
 @Composable
@@ -401,7 +395,7 @@ private fun TopTabItem(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = bandTab.title,
+            text = stringResource(bandTab.titleRes),
             color = textColor,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
@@ -424,13 +418,12 @@ private fun TopTabItem(
 private fun AllSongPage(
     modifier: Modifier = Modifier,
     listState: LazyListState,
+    allSongs: List<Song>,
 ) {
-    val homeViewModel: HomeViewModel = koinActivityViewModel()
-    val allSong = homeViewModel.allSongs.collectAsStateWithLifecycle().value
-    val density = LocalDensity.current
-
     val path = LocalNavigationPath.current
     val playerViewMode = LocalPlayerViewModel.current
+
+    val playlistIds = remember(allSongs) { allSongs.map { it.mediaStoreId.toString() } }
 
     Column(modifier) {
         LazyColumn(
@@ -441,7 +434,7 @@ private fun AllSongPage(
                     .nestedScroll(LocalBottomBarScrollConnection.current),
             contentPadding = PaddingValues(bottom = 200.dp),
         ) {
-            items(allSong, key = { it.mediaStoreId }, contentType = { 1 }) { song ->
+            items(allSongs, key = { it.mediaStoreId }, contentType = { 1 }) { song ->
                 AnimateOnEnter(
                     delayMillis = 150,
                     animationSpec =
@@ -464,7 +457,7 @@ private fun AllSongPage(
                                 }.animateItem()
                                 .clickable {
                                     playerViewMode.updatePlaylist(
-                                        allSong.map { it.mediaStoreId.toString() },
+                                        playlistIds,
                                         song.mediaStoreId.toString(),
                                         autoStart = true,
                                     )
@@ -777,7 +770,7 @@ private fun ArtistRow(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "${artist.songCount} 首歌曲",
+                text = stringResource(R.string.songs_count, artist.songCount),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

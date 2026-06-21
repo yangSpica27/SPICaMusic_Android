@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.home.page
 
+import androidx.annotation.StringRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
@@ -70,6 +71,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,6 +81,7 @@ import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.common.collect.ImmutableList
 import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
@@ -127,15 +130,26 @@ fun LibraryPage() {
         }
     }
 
+    val playlistsSummaryFormat = stringResource(R.string.library_summary_playlists)
+    val scanFoldersSummaryFormat = stringResource(R.string.library_summary_scan_folders)
+    val ignoreFoldersSummaryFormat = stringResource(R.string.library_summary_ignore_folders)
+    val thisWeekSummaryFormat = stringResource(R.string.library_summary_this_week)
+    val hoursMinutesFormat = stringResource(R.string.hours_minutes)
+    val minutesFormat = stringResource(R.string.minutes)
+    val lessThan1Min = stringResource(R.string.less_than_1_minute)
+    val playlistsCountFormat = stringResource(R.string.playlists_count_format)
+    val noPlaylistsCreatedText = stringResource(R.string.no_playlists_created)
+    val emptyText = stringResource(R.string.empty)
+
     val summaryText =
         remember(playlists.size, extraFolders.size, ignoreFolders.size, weeklyStats) {
             buildString {
-                append("${playlists.size} 个歌单")
-                if (extraFolders.isNotEmpty()) append(" · ${extraFolders.size} 个扫描目录")
-                if (ignoreFolders.isNotEmpty()) append(" · ${ignoreFolders.size} 个忽略目录")
+                append(playlistsSummaryFormat.format(playlists.size))
+                if (extraFolders.isNotEmpty()) append(" · ${scanFoldersSummaryFormat.format(extraFolders.size)}")
+                if (ignoreFolders.isNotEmpty()) append(" · ${ignoreFoldersSummaryFormat.format(ignoreFolders.size)}")
                 weeklyStats?.let { stats ->
                     if (stats.totalPlayedDuration > 0) {
-                        append(" · 本周 ${formatPlayDuration(stats.totalPlayedDuration)}")
+                        append(" · ${thisWeekSummaryFormat.format(formatPlayDuration(stats.totalPlayedDuration, hoursMinutesFormat, minutesFormat, lessThan1Min))}")
                     }
                 }
             }
@@ -176,11 +190,12 @@ fun LibraryPage() {
             onScanClick = { path.push(ScannerScene()) },
             onCreatePlaylistClick = { path.push(PlaylistCreatorScene()) },
             extraText = { tab ->
+                val playlistsCountFmt = playlistsCountFormat
                 when (tab) {
-                    LibraryPageTab.Playlist -> if (playlists.isNotEmpty()) "${playlists.size}个" else "暂未创建"
+                    LibraryPageTab.Playlist -> if (playlists.isNotEmpty()) playlistsCountFmt.format(playlists.size) else noPlaylistsCreatedText
                     LibraryPageTab.Folder -> {
                         val total = extraFolders.size + ignoreFolders.size
-                        if (total > 0) "${total}个" else "空空如也"
+                        if (total > 0) playlistsCountFmt.format(total) else emptyText
                     }
                 }
             },
@@ -290,7 +305,7 @@ private fun LibraryPageHeader(
                 verticalArrangement = Arrangement.spacedBy(Spacing.Small),
             ) {
                 Text(
-                    text = "资料库",
+                    text = stringResource(R.string.library_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -323,7 +338,7 @@ private fun LibraryPageHeader(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(Modifier.width(Spacing.ExtraSmall))
-                        Text("扫描音乐")
+                        Text(stringResource(R.string.scan_music))
                     }
                     FilledTonalButton(
                         onClick = onCreatePlaylistClick,
@@ -344,7 +359,7 @@ private fun LibraryPageHeader(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(Modifier.width(Spacing.ExtraSmall))
-                        Text("新建歌单")
+                        Text(stringResource(R.string.create_playlist))
                     }
                 }
             }
@@ -397,10 +412,10 @@ private fun LibraryPageHeader(
 
 @Immutable
 private enum class LibraryPageTab(
-    val title: String,
+    @StringRes val titleRes: Int,
 ) {
-    Playlist("歌单"),
-    Folder("文件夹"),
+    Playlist(R.string.tab_playlists),
+    Folder(R.string.tab_folders),
 }
 
 @Composable
@@ -435,7 +450,7 @@ private fun LibraryTabItem(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = tab.title,
+            text = stringResource(tab.titleRes),
             color = textColor,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
@@ -487,16 +502,16 @@ private fun PlaylistPage(
 
         item(span = { GridItemSpan(maxLineSpan) }) {
             SectionTitle(
-                title = "我的歌单",
-                subtitle = "${playlists.size} 个",
+                title = stringResource(R.string.my_playlists),
+                subtitle = stringResource(R.string.playlists_count_format, playlists.size),
             )
         }
 
         if (playlists.isEmpty()) {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 EmptyLibraryCard(
-                    title = "还没有歌单",
-                    subtitle = "点击上方「新建歌单」创建第一张歌单。",
+                    title = stringResource(R.string.no_playlists_yet),
+                    subtitle = stringResource(R.string.create_first_playlist_hint),
                 )
             }
         } else {
@@ -567,8 +582,8 @@ private fun FolderPage(
     ) {
         item {
             SectionTitle(
-                title = "额外扫描目录",
-                subtitle = "${extraFolders.size} 个",
+                title = stringResource(R.string.extra_scan_folders),
+                subtitle = stringResource(R.string.playlists_count_format, extraFolders.size),
                 onAddClick = { addExtraLauncher.launch(null) },
             )
         }
@@ -576,8 +591,8 @@ private fun FolderPage(
         if (extraFolders.isEmpty()) {
             item {
                 EmptyLibraryCard(
-                    title = "没有额外扫描目录",
-                    subtitle = "点击右侧「+」选择文件夹，其中的音频会注册进系统媒体库。",
+                    title = stringResource(R.string.no_extra_scan_folders),
+                    subtitle = stringResource(R.string.add_extra_folder_hint),
                 )
             }
         } else {
@@ -598,8 +613,8 @@ private fun FolderPage(
 
         item {
             SectionTitle(
-                title = "忽略目录",
-                subtitle = "${ignoreFolders.size} 个",
+                title = stringResource(R.string.ignore_folders),
+                subtitle = stringResource(R.string.playlists_count_format, ignoreFolders.size),
                 onAddClick = { addIgnoreLauncher.launch(null) },
             )
         }
@@ -607,8 +622,8 @@ private fun FolderPage(
         if (ignoreFolders.isEmpty()) {
             item {
                 EmptyLibraryCard(
-                    title = "没有忽略目录",
-                    subtitle = "点击右侧「+」选择文件夹，扫描时会跳过其中的音频。",
+                    title = stringResource(R.string.library_no_ignore_folders),
+                    subtitle = stringResource(R.string.add_ignore_folder_hint),
                 )
             }
         } else {
@@ -645,14 +660,14 @@ private fun WeeklyStatsCard(
         verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
         Text(
-            text = "本周听歌概览",
+            text = stringResource(R.string.weekly_listening_overview),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
         )
         if (weeklyStats == null) {
             Text(
-                text = "暂无统计数据",
+                text = stringResource(R.string.no_stats_data),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -661,19 +676,23 @@ private fun WeeklyStatsCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
             ) {
+                val hoursMinutesFmt = stringResource(R.string.hours_minutes)
+                val minutesFmt = stringResource(R.string.minutes)
+                val lessThan1MinText = stringResource(R.string.less_than_1_minute)
+
                 StatPill(
                     modifier = Modifier.weight(1f),
-                    title = "播放时长",
-                    value = formatPlayDuration(weeklyStats.totalPlayedDuration),
+                    title = stringResource(R.string.play_duration),
+                    value = formatPlayDuration(weeklyStats.totalPlayedDuration, hoursMinutesFmt, minutesFmt, lessThan1MinText),
                 )
                 StatPill(
                     modifier = Modifier.weight(1f),
-                    title = "播放次数",
+                    title = stringResource(R.string.play_count),
                     value = "${weeklyStats.playEventCount}",
                 )
                 StatPill(
                     modifier = Modifier.weight(1f),
-                    title = "不同歌曲",
+                    title = stringResource(R.string.unique_songs),
                     value = "${weeklyStats.uniqueSongCount}",
                 )
             }
@@ -738,7 +757,7 @@ private fun SectionTitle(
             IconButton(onClick = onAddClick) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "添加目录",
+                    contentDescription = stringResource(R.string.add_folder),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -782,6 +801,11 @@ private fun FolderRow(
     modifier: Modifier = Modifier,
     onReAuthorize: (() -> Unit)? = null,
 ) {
+    val reauthorizeText = stringResource(R.string.reauthorize)
+    val accessibleText = stringResource(R.string.accessible)
+    val inaccessibleText = stringResource(R.string.inaccessible)
+    val removeFolderText = stringResource(R.string.remove_folder)
+
     Row(
         modifier =
             modifier
@@ -820,7 +844,7 @@ private fun FolderRow(
         }
         if (!folder.isAccessible && onReAuthorize != null) {
             Text(
-                text = "重新授权",
+                text = reauthorizeText,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.error,
                 modifier =
@@ -831,7 +855,7 @@ private fun FolderRow(
             )
         } else {
             Text(
-                text = if (folder.isAccessible) "可用" else "失效",
+                text = if (folder.isAccessible) accessibleText else inaccessibleText,
                 style = MaterialTheme.typography.labelMedium,
                 color =
                     if (folder.isAccessible) {
@@ -847,7 +871,7 @@ private fun FolderRow(
         ) {
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "移除目录",
+                contentDescription = removeFolderText,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp),
             )
@@ -891,7 +915,7 @@ private fun PlaylistItem(
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = "${size.value} 首歌曲",
+            text = stringResource(R.string.songs_count, size.value),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -900,12 +924,17 @@ private fun PlaylistItem(
     }
 }
 
-private fun formatPlayDuration(durationMs: Long): String {
+private fun formatPlayDuration(
+    durationMs: Long,
+    hoursMinutesFormat: String,
+    minutesFormat: String,
+    lessThan1Min: String,
+): String {
     val hours = TimeUnit.MILLISECONDS.toHours(durationMs)
     val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMs) % 60
     return when {
-        hours > 0 -> "${hours}小时${minutes}分"
-        minutes > 0 -> "${minutes}分钟"
-        else -> "少于1分钟"
+        hours > 0 -> hoursMinutesFormat.format(hours, minutes)
+        minutes > 0 -> minutesFormat.format(minutes)
+        else -> lessThan1Min
     }
 }
