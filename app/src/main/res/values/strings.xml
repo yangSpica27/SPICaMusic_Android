@@ -369,4 +369,26 @@
   <string name="music_tab_songs_count">%d</string>
   <string name="music_tab_albums_count">%d</string>
   <string name="music_tab_artists_count">%d</string>
+
+  <!-- Finder Page -->
+  <string name="finder_title">Discover</string>
+  <string name="finder_summary_format">%1$d frequent · %2$d favorites · %3$d playlists</string>
+  <string name="finder_search_title">Search Music</string>
+  <string name="finder_search_subtitle">Quick search by song, artist, or album</string>
+  <string name="finder_no_local_music_title">No local music yet</string>
+  <string name="finder_no_local_music_subtitle">Scan your device for songs to start your music journey</string>
+  <string name="finder_go_to_scan">Go to Scan</string>
+  <string name="finder_library_title">My Library</string>
+  <string name="finder_library_subtitle">Manage playlists, scan music, and organize sources</string>
+  <string name="finder_all_music_title">All Music</string>
+  <string name="finder_all_music_subtitle">Browse by songs, albums, and artists</string>
+  <string name="finder_settings_title">Settings</string>
+  <string name="finder_settings_subtitle">Theme, background, and playback preferences</string>
+  <string name="finder_frequent_title">Most Played</string>
+  <string name="finder_no_frequent_title">No frequently played songs</string>
+  <string name="finder_no_frequent_subtitle">Start playing music and your most-played songs will appear here.</string>
+  <string name="finder_no_favorites_title">No favorite songs</string>
+  <string name="finder_no_favorites_subtitle">Favorite songs from the player or song menu and they will appear here.</string>
+  <string name="finder_playlists_overview_title">Playlist Overview</string>
+  <string name="finder_no_playlists_subtitle">Create a playlist in the library and it will appear here.</string>
 </resources>

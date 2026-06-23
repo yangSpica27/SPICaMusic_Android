@@ -91,24 +91,23 @@ fun FinderPage() {
     val playerViewModel = LocalPlayerViewModel.current
 
     val summaryText =
-        remember(frequentSongs.size, favoriteSongs.size, playlists.size) {
-            buildString {
-                append("${frequentSongs.size} 首常听")
-                append(" · ${favoriteSongs.size} 首收藏")
-                append(" · ${playlists.size} 个歌单")
-            }
-        }
+        stringResource(
+            R.string.finder_summary_format,
+            frequentSongs.size,
+            favoriteSongs.size,
+            playlists.size,
+        )
 
     Scaffold(
         topBar = {
             LargeTopAppBar(
-                title = { Text("发现") },
+                title = { Text(stringResource(R.string.finder_title)) },
                 scrollBehavior = scrollBehavior,
                 actions = {
                     IconButton(onClick = { path.push(SettingsScene()) }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "设置中心",
+                            contentDescription = stringResource(R.string.settings),
                         )
                     }
                 },
@@ -155,16 +154,16 @@ fun FinderPage() {
 
             item {
                 SectionTitle(
-                    title = "最近常听",
-                    subtitle = "${frequentSongs.size} 首",
+                    title = stringResource(R.string.finder_frequent_title),
+                    subtitle = stringResource(R.string.songs_count_format, frequentSongs.size),
                 )
             }
 
             item {
                 SongRail(
                     songs = frequentSongs,
-                    emptyTitle = "还没有常听歌曲",
-                    emptySubtitle = "开始播放音乐后，这里会出现你最常听的内容。",
+                    emptyTitle = stringResource(R.string.finder_no_frequent_title),
+                    emptySubtitle = stringResource(R.string.finder_no_frequent_subtitle),
                     onSongClick = { song ->
                         playerViewModel.updatePlaylistWithSongs(
                             songs = frequentSongs,
@@ -177,16 +176,16 @@ fun FinderPage() {
 
             item {
                 SectionTitle(
-                    title = "我的收藏",
-                    subtitle = "${favoriteSongs.size} 首",
+                    title = stringResource(R.string.my_favorites),
+                    subtitle = stringResource(R.string.songs_count_format, favoriteSongs.size),
                 )
             }
 
             item {
                 SongRail(
                     songs = favoriteSongs.take(10),
-                    emptyTitle = "还没有收藏歌曲",
-                    emptySubtitle = "在播放器或歌曲菜单中收藏喜欢的歌曲，它们会在这里展示。",
+                    emptyTitle = stringResource(R.string.finder_no_favorites_title),
+                    emptySubtitle = stringResource(R.string.finder_no_favorites_subtitle),
                     onSongClick = { song ->
                         playerViewModel.updatePlaylistWithSongs(
                             songs = favoriteSongs,
@@ -199,8 +198,8 @@ fun FinderPage() {
 
             item {
                 SectionTitle(
-                    title = "歌单速览",
-                    subtitle = "${playlists.size} 个",
+                    title = stringResource(R.string.finder_playlists_overview_title),
+                    subtitle = stringResource(R.string.library_summary_playlists, playlists.size),
                 )
             }
 
@@ -264,13 +263,13 @@ private fun FinderHeroSearchCard(
                 }
                 Column {
                     Text(
-                        text = "搜索音乐",
+                        text = stringResource(R.string.finder_search_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                     Text(
-                        text = "按歌曲、歌手、专辑快速查找",
+                        text = stringResource(R.string.finder_search_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
                     )
@@ -333,13 +332,13 @@ private fun ScanGuideCard(
                 }
                 Column {
                     Text(
-                        text = "还没有本地音乐",
+                        text = stringResource(R.string.finder_no_local_music_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
-                        text = "扫描设备中的歌曲，开始你的音乐之旅",
+                        text = stringResource(R.string.finder_no_local_music_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                     )
@@ -355,7 +354,7 @@ private fun ScanGuideCard(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
             ) {
                 Text(
-                    text = "前往扫描",
+                    text = stringResource(R.string.finder_go_to_scan),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimary,
@@ -386,8 +385,8 @@ private fun PrimaryActionGroup(
         verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
         FinderFeatureCard(
-            title = "我的资料库",
-            subtitle = "管理歌单、扫描音乐、整理来源",
+            title = stringResource(R.string.finder_library_title),
+            subtitle = stringResource(R.string.finder_library_subtitle),
             icon = Icons.Default.LibraryMusic,
             modifier = Modifier.fillMaxWidth(),
             onClick = onOpenLibrary,
@@ -402,15 +401,15 @@ private fun PrimaryActionGroup(
 
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)) {
             FinderFeatureCard(
-                title = "全部音乐",
-                subtitle = "按歌曲、专辑、歌手浏览",
+                title = stringResource(R.string.finder_all_music_title),
+                subtitle = stringResource(R.string.finder_all_music_subtitle),
                 icon = Icons.Default.MusicNote,
                 modifier = Modifier.weight(1f),
                 onClick = onOpenMusic,
             )
             FinderFeatureCard(
-                title = "设置中心",
-                subtitle = "主题、背景、播放偏好",
+                title = stringResource(R.string.finder_settings_title),
+                subtitle = stringResource(R.string.finder_settings_subtitle),
                 icon = Icons.Default.Settings,
                 modifier =
                     Modifier
@@ -563,8 +562,8 @@ private fun PlaylistRail(
 ) {
     if (playlists.isEmpty()) {
         EmptyFinderCard(
-            title = "还没有歌单",
-            subtitle = "前往资料库创建歌单后，这里会展示你的歌单速览。",
+            title = stringResource(R.string.no_playlists_yet),
+            subtitle = stringResource(R.string.finder_no_playlists_subtitle),
             modifier =
                 modifier
                     .fillMaxWidth()

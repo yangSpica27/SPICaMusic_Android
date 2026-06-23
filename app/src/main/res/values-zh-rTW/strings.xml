@@ -367,4 +367,26 @@
   <string name="music_tab_songs_count">%d首</string>
   <string name="music_tab_albums_count">%d張</string>
   <string name="music_tab_artists_count">%d位</string>
+
+  <!-- Finder Page -->
+  <string name="finder_title">發現</string>
+  <string name="finder_summary_format">%1$d 首常聽 · %2$d 首收藏 · %3$d 個歌單</string>
+  <string name="finder_search_title">搜尋音樂</string>
+  <string name="finder_search_subtitle">按歌曲、歌手、專輯快速查找</string>
+  <string name="finder_no_local_music_title">還沒有本地音樂</string>
+  <string name="finder_no_local_music_subtitle">掃描裝置中的歌曲，開始你的音樂之旅</string>
+  <string name="finder_go_to_scan">前往掃描</string>
+  <string name="finder_library_title">我的資料庫</string>
+  <string name="finder_library_subtitle">管理歌單、掃描音樂、整理來源</string>
+  <string name="finder_all_music_title">全部音樂</string>
+  <string name="finder_all_music_subtitle">按歌曲、專輯、歌手瀏覽</string>
+  <string name="finder_settings_title">設定中心</string>
+  <string name="finder_settings_subtitle">主題、背景、播放偏好</string>
+  <string name="finder_frequent_title">最近常聽</string>
+  <string name="finder_no_frequent_title">還沒有常聽歌曲</string>
+  <string name="finder_no_frequent_subtitle">開始播放音樂後，這裡會出現你最常聽的內容。</string>
+  <string name="finder_no_favorites_title">還沒有收藏歌曲</string>
+  <string name="finder_no_favorites_subtitle">在播放器或歌曲選單中收藏喜歡的歌曲，它們會在這裡展示。</string>
+  <string name="finder_playlists_overview_title">歌單速覽</string>
+  <string name="finder_no_playlists_subtitle">前往資料庫創建歌單後，這裡會展示你的歌單速覽。</string>
 </resources>
