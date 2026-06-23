@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -212,7 +213,7 @@ fun ArtistDetailScreen(artist: Artist) {
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "${artist.songCount} 首歌曲",
+                        text = stringResource(R.string.songs_count, artist.songCount),
                         style = MaterialTheme.typography.bodySmall,
                         color = onDominantColor.copy(alpha = 0.6f),
                     )
@@ -259,7 +260,7 @@ fun ArtistDetailScreen(artist: Artist) {
                 IconButton(onClick = { path.popTop() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "返回",
+                        contentDescription = stringResource(R.string.back),
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
@@ -337,7 +338,7 @@ private fun ArtistPlayButtons(
                 modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(4.dp))
-            Text("播放全部")
+            Text(stringResource(R.string.play_all_songs))
         }
         ElevatedButton(
             onClick = onShuffle,
@@ -349,7 +350,7 @@ private fun ArtistPlayButtons(
                 modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(4.dp))
-            Text("随机播放")
+            Text(stringResource(R.string.shuffle_play))
         }
     }
 }
@@ -420,7 +421,7 @@ private fun ArtistSongRow(
         IconButton(onClick = onMore) {
             Icon(
                 Icons.Default.MoreVert,
-                contentDescription = "更多",
+                contentDescription = stringResource(R.string.more),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

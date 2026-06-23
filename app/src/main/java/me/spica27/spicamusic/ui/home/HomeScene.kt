@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.home
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.home.page.FinderPage
 import me.spica27.spicamusic.ui.home.page.LibraryPage
 import me.spica27.spicamusic.ui.home.page.MusicPage
@@ -77,12 +79,12 @@ class HomeScene : StackScene() {
 
 @Immutable
 enum class HomePage(
-    val title: String,
+    @StringRes val titleRes: Int,
     val icon: ImageVector,
 ) {
-    Finder("发现", Icons.Default.AllInbox),
-    Music("音乐", Icons.Default.MusicNote),
-    Library("资料库", Icons.Default.LibraryMusic),
+    Finder(R.string.nav_tab_finder, Icons.Default.AllInbox),
+    Music(R.string.nav_tab_music, Icons.Default.MusicNote),
+    Library(R.string.nav_tab_library, Icons.Default.LibraryMusic),
 }
 
 val LocalBottomBarScrollConnection =

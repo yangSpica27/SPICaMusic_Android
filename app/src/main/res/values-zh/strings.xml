@@ -390,4 +390,113 @@
   <string name="finder_no_favorites_subtitle">在播放器或歌曲菜单中收藏喜欢的歌曲，它们会在这里展示。</string>
   <string name="finder_playlists_overview_title">歌单速览</string>
   <string name="finder_no_playlists_subtitle">前往资料库创建歌单后，这里会展示你的歌单速览。</string>
+
+  <!-- Crash screen -->
+  <string name="crash_app_crashed">应用崩溃了</string>
+  <string name="crash_share_log">分享日志</string>
+  <string name="crash_restart_app">重启应用</string>
+
+  <!-- Common actions -->
+  <string name="shuffle_play">随机播放</string>
+  <string name="no_song_playing">没有正在播放的歌曲</string>
+
+  <!-- Song menu -->
+  <string name="play_next">下一首播放</string>
+  <string name="view_album">查看专辑</string>
+  <string name="view_artist">查看歌手</string>
+  <string name="song_info_menu_title">查看歌曲信息</string>
+  <string name="song_info_menu_subtitle">文件、专辑与音频信息</string>
+  <string name="add_to_playlist_subtitle_menu">保存到已有歌单或新建歌单</string>
+  <string name="playlist_picker_subtitle">选择一个歌单保存这首歌曲</string>
+  <string name="no_playlists_hint">可以先新建一个歌单，再把当前歌曲添加进去。</string>
+  <string name="tap_to_add_to_playlist">点击添加到此歌单</string>
+  <string name="create_playlist_auto_add_subtitle">创建后会自动添加当前歌曲</string>
+  <string name="playlist_name_placeholder">我的歌单</string>
+  <string name="playlist_name_supporting">输入一个便于识别的名称</string>
+  <string name="create_empty_only">仅创建空歌单</string>
+  <string name="create_and_add">创建并添加</string>
+
+  <!-- Song info dialog -->
+  <string name="song_info_dialog_title">歌曲信息</string>
+  <string name="info_file_path">文件路径</string>
+  <string name="info_file_size">文件大小</string>
+  <string name="info_file_format">文件格式</string>
+
+  <!-- Scanner -->
+  <string name="scanner_hero_title">让 SPICa 发现你的音乐</string>
+  <string name="scanner_hero_subtitle">扫描只会读取设备上的音频文件，用来建立本地音乐库和播放列表。</string>
+  <string name="scanner_idle_title">准备整理你的音乐宇宙</string>
+  <string name="scanner_idle_subtitle">一次扫描 MediaStore 与额外文件夹，自动同步新增、更新和已移除的歌曲。</string>
+  <string name="scanner_running_title">正在捕捉音乐信号</string>
+  <string name="scanner_running_progress_format">%1$d / %2$d 首</string>
+  <string name="scanner_preparing">正在准备扫描队列…</string>
+  <string name="scanner_complete_title">曲库已经焕然一新</string>
+  <string name="scanner_complete_subtitle">本地媒体与额外目录已完成同步，回到资料库继续播放吧。</string>
+  <string name="scanner_error_title">没有完成本次整理</string>
+  <string name="scanner_error_default">扫描过程中发生未知错误，请稍后重试。</string>
+  <string name="scanner_permission_denied_msg">媒体权限被拒绝，请在系统设置中手动开启。</string>
+  <string name="scanner_go_to_settings">前往系统设置</string>
+  <string name="scanner_grant_permission">授予媒体权限</string>
+  <string name="scanner_audio_files_chip">音频文件</string>
+  <string name="scanner_extra_folders_chip">额外目录</string>
+  <string name="scanner_start">开始智能扫描</string>
+  <string name="scanner_rescan">重新扫描</string>
+  <string name="scanner_done">完成</string>
+  <string name="scanner_later">稍后再说</string>
+  <string name="scanner_current_file_label">当前文件</string>
+  <string name="scanner_waiting_file">等待下一个音频文件…</string>
+
+  <!-- Search -->
+  <string name="search_songs_albums_artists">搜索歌曲、专辑、歌手</string>
+  <string name="clear_input">清空</string>
+  <string name="search_your_music_title">搜索你的音乐</string>
+  <string name="search_your_music_subtitle">输入歌名、专辑或歌手名称来查找歌曲</string>
+  <string name="search_no_results_format">没有找到「%s」</string>
+  <string name="search_try_different_keywords">试试换个关键词，或检查拼写是否正确</string>
+
+  <!-- Playlist detail -->
+  <string name="search_in_playlist_hint">搜索歌单内歌曲</string>
+  <string name="search_songs_artists_albums">搜索歌曲、歌手或专辑</string>
+  <string name="close_search_cd">关闭搜索</string>
+  <string name="exit_multiselect_cd">退出多选</string>
+  <string name="selected_songs_count_format">已选 %d 首</string>
+  <string name="rename_playlist_dialog_title">重命名歌单</string>
+  <string name="add_songs_from_library_hint">从音乐库中选择要加入歌单的歌曲</string>
+  <string name="songs_count_to_add_format">已选择 %d 首歌曲</string>
+  <string name="will_add_songs_format">将添加 %d 首歌曲</string>
+  <string name="select_songs_button">选择歌曲</string>
+  <string name="add_n_songs_format">添加 %d 首</string>
+  <string name="confirm_delete_playlist_full">确定要删除歌单「%1$s」吗？此操作不可撤销。</string>
+
+  <!-- Settings -->
+  <string name="settings_hero_title">定制你的音乐空间</string>
+  <string name="settings_hero_subtitle">主题、动态背景与播放偏好统一管理</string>
+  <string name="settings_appearance_subtitle">塑造播放器的视觉氛围</string>
+  <string name="settings_dark_mode_title">深色模式</string>
+  <string name="settings_dark_mode_toggle_subtitle">切换深色 / 浅色主题</string>
+  <string name="settings_playback_subtitle">让收听体验更顺手</string>
+  <string name="settings_light_mode_label">浅色模式</string>
+
+  <!-- Lyrics -->
+  <string name="no_lyrics">暂无歌词</string>
+  <string name="seek_to_lyric_line">定位到此行</string>
+
+  <!-- Playlist creator -->
+  <string name="playlist_name_label">歌单名称</string>
+  <string name="playlist_name_default">我的歌单</string>
+  <string name="playlist_name_placeholder_hint">给歌单起个名字吧</string>
+  <string name="playlist_name_error_empty">请输入歌单名称</string>
+  <string name="playlist_name_suggestions_label">试试这些名字</string>
+  <string name="create_playlist_title">创建歌单</string>
+  <string name="playlist_suggestion_1">我喜欢的</string>
+  <string name="playlist_suggestion_2">通勤路上</string>
+  <string name="playlist_suggestion_3">运动节拍</string>
+  <string name="playlist_suggestion_4">深夜电台</string>
+  <string name="playlist_suggestion_5">学习专注</string>
+
+  <!-- Navigation tabs -->
+  <string name="nav_tab_finder">发现</string>
+  <string name="nav_tab_music">音乐</string>
+  <string name="nav_tab_library">资料库</string>
+
 </resources>

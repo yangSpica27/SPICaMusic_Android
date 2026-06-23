@@ -347,12 +347,12 @@ fun ExpandedPlayerScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.KeyboardArrowDown,
-                                        contentDescription = "返回",
+                                        contentDescription = stringResource(R.string.back),
                                     )
                                 }
                             },
                             title = {
-                                Text("当前播放列表")
+                                Text(stringResource(R.string.now_playinglist))
                             },
                         )
                     },
@@ -461,7 +461,7 @@ private fun TopBar(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "播放列表",
+                    text = stringResource(R.string.queue),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -492,7 +492,7 @@ private fun TopBar(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "歌词",
+                    text = stringResource(R.string.tab_lrc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

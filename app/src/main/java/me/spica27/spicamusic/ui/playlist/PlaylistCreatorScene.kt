@@ -59,6 +59,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,6 +67,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.roundToInt
@@ -74,7 +76,14 @@ import kotlin.math.roundToInt
 private const val MAX_NAME_LENGTH = 40
 
 /** 推荐歌单名 */
-private val NAME_SUGGESTIONS = listOf("我喜欢的", "通勤路上", "运动节拍", "深夜电台", "学习专注")
+private val NAME_SUGGESTION_RES =
+    listOf(
+        R.string.playlist_suggestion_1,
+        R.string.playlist_suggestion_2,
+        R.string.playlist_suggestion_3,
+        R.string.playlist_suggestion_4,
+        R.string.playlist_suggestion_5,
+    )
 
 /**
  * 创建歌单界面
@@ -151,12 +160,12 @@ class PlaylistCreatorScene : StackScene() {
                         IconButton(onClick = { path.popTop() }) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBackIosNew,
-                                contentDescription = "返回",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     },
-                    title = { Text("创建歌单") },
+                    title = { Text(stringResource(R.string.create_playlist_title)) },
                 )
             },
             bottomBar = {
@@ -179,7 +188,7 @@ class PlaylistCreatorScene : StackScene() {
                         shape = MaterialTheme.shapes.large,
                     ) {
                         Text(
-                            text = "创建歌单",
+                            text = stringResource(R.string.create_playlist_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -242,7 +251,7 @@ class PlaylistCreatorScene : StackScene() {
 
                 // 实时名称预览
                 AnimatedContent(
-                    targetState = name.ifBlank { "我的歌单" },
+                    targetState = name.ifBlank { stringResource(R.string.playlist_name_default) },
                     transitionSpec = {
                         (slideInVertically { it / 3 } + fadeIn(tween(180)))
                             .togetherWith(slideOutVertically { -it / 3 } + fadeOut(tween(120)))
@@ -280,13 +289,13 @@ class PlaylistCreatorScene : StackScene() {
                         Modifier
                             .fillMaxWidth()
                             .focusRequester(focusRequester),
-                    label = { Text("歌单名称") },
-                    placeholder = { Text("给歌单起个名字吧") },
+                    label = { Text(stringResource(R.string.playlist_name_label)) },
+                    placeholder = { Text(stringResource(R.string.playlist_name_placeholder_hint)) },
                     isError = showError,
                     supportingText = {
                         Row(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = if (showError) "请输入歌单名称" else "",
+                                text = if (showError) stringResource(R.string.playlist_name_error_empty) else "",
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.weight(1f),
                             )
@@ -303,7 +312,7 @@ class PlaylistCreatorScene : StackScene() {
                                 IconButton(onClick = { name = "" }) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
-                                        contentDescription = "清空",
+                                        contentDescription = stringResource(R.string.clear_input),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
@@ -326,7 +335,7 @@ class PlaylistCreatorScene : StackScene() {
 
                 // 推荐名称 Chips
                 Text(
-                    text = "试试这些名字",
+                    text = stringResource(R.string.playlist_name_suggestions_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.align(Alignment.Start),
@@ -339,7 +348,7 @@ class PlaylistCreatorScene : StackScene() {
                             .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    NAME_SUGGESTIONS.forEach { suggestion ->
+                    NAME_SUGGESTION_RES.map { stringResource(it) }.forEach { suggestion ->
                         SuggestionChip(
                             onClick = {
                                 name = suggestion

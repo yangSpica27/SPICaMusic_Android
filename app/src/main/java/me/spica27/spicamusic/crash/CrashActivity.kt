@@ -26,11 +26,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.MainActivity
+import me.spica27.spicamusic.R
 import kotlin.system.exitProcess
 
 @kotlin.OptIn(ExperimentalMaterial3Api::class)
@@ -70,7 +72,7 @@ class CrashActivity : ComponentActivity() {
                             }
                         },
                         title = {
-                            Text("应用崩溃了")
+                            Text(stringResource(R.string.crash_app_crashed))
                         },
                     )
                 },
@@ -95,7 +97,7 @@ class CrashActivity : ComponentActivity() {
                                     }
                                 },
                             ) {
-                                Text("分享日志")
+                                Text(stringResource(R.string.crash_share_log))
                             }
                             TextButton(
                                 onClick = {
@@ -107,7 +109,7 @@ class CrashActivity : ComponentActivity() {
                                     exitProcess(0)
                                 },
                             ) {
-                                Text("重启应用")
+                                Text(stringResource(R.string.crash_restart_app))
                             }
                         }
                         ListItem(

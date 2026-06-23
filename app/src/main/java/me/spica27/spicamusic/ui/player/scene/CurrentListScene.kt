@@ -26,12 +26,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.zIndex
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 
@@ -73,12 +75,12 @@ class CurrentListScene : DialogScene() {
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBackIosNew,
-                                contentDescription = "返回",
+                                contentDescription = stringResource(R.string.back),
                             )
                         }
                     },
                     title = {
-                        Text("当前播放列表")
+                        Text(stringResource(R.string.now_playinglist))
                     },
                 )
             },

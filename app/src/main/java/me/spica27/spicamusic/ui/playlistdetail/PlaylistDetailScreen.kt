@@ -92,6 +92,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -103,6 +104,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
@@ -272,7 +274,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "$songCount 首歌曲",
+                        text = stringResource(R.string.songs_count, songCount),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -361,7 +363,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                         IconButton(onClick = { path.popTop() }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }
@@ -379,11 +381,19 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         IconButton(onClick = viewModel::enterSearchMode) {
-                            Icon(Icons.Default.Search, contentDescription = "搜索", tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = stringResource(R.string.search),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
                         }
                         Box {
                             IconButton(onClick = viewModel::showMoreOptionsMenu) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "更多", tint = MaterialTheme.colorScheme.onSurface)
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.more),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                )
                             }
                             DropdownMenu(
                                 expanded = showMoreOptionsMenu,
@@ -395,7 +405,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                 shadowElevation = 8.dp,
                             ) {
                                 PlaylistDropdownMenuItem(
-                                    text = "添加歌曲",
+                                    text = stringResource(R.string.add_songs),
                                     icon = Icons.AutoMirrored.Filled.PlaylistAdd,
                                     onClick = {
                                         viewModel.hideMoreOptionsMenu()
@@ -404,7 +414,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                 )
                                 if (isMultiSelectMode) {
                                     PlaylistDropdownMenuItem(
-                                        text = "全选",
+                                        text = stringResource(R.string.select_all),
                                         icon = Icons.Default.CheckBox,
                                         onClick = {
                                             viewModel.hideMoreOptionsMenu()
@@ -412,7 +422,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                         },
                                     )
                                     PlaylistDropdownMenuItem(
-                                        text = "取消全选",
+                                        text = stringResource(R.string.deselect_all),
                                         icon = Icons.Default.CheckBoxOutlineBlank,
                                         onClick = {
                                             viewModel.hideMoreOptionsMenu()
@@ -421,7 +431,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                     )
                                 } else {
                                     PlaylistDropdownMenuItem(
-                                        text = "多选",
+                                        text = stringResource(R.string.multi_select),
                                         icon = Icons.Default.CheckBoxOutlineBlank,
                                         onClick = {
                                             viewModel.hideMoreOptionsMenu()
@@ -434,7 +444,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
                                 )
                                 PlaylistDropdownMenuItem(
-                                    text = "重命名",
+                                    text = stringResource(R.string.rename),
                                     icon = Icons.Default.Edit,
                                     onClick = {
                                         viewModel.hideMoreOptionsMenu()
@@ -442,7 +452,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                     },
                                 )
                                 PlaylistDropdownMenuItem(
-                                    text = "删除歌单",
+                                    text = stringResource(R.string.delete_playlist_title),
                                     icon = Icons.Default.Delete,
                                     destructive = true,
                                     onClick = {
@@ -494,6 +504,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
             initialName = displayName,
             onConfirm = viewModel::renamePlaylist,
             onDismiss = viewModel::hideRenameDialog,
+            title = stringResource(R.string.rename_playlist_dialog_title),
         )
     }
 
@@ -603,7 +614,7 @@ private fun PlayButtons(
                 modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(4.dp))
-            Text("播放全部")
+            Text(stringResource(R.string.play_all_songs))
         }
         ElevatedButton(onClick = onAddSongs, modifier = Modifier.weight(1f)) {
             Icon(
@@ -612,7 +623,7 @@ private fun PlayButtons(
                 modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(4.dp))
-            Text("添加歌曲")
+            Text(stringResource(R.string.add_songs))
         }
     }
 }
@@ -702,7 +713,7 @@ private fun SongRow(
             IconButton(onClick = onMore) {
                 Icon(
                     Icons.Default.MoreVert,
-                    contentDescription = "更多",
+                    contentDescription = stringResource(R.string.more),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -745,7 +756,7 @@ private fun SearchTopBar(
             IconButton(onClick = onClose, modifier = Modifier.size(40.dp)) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "关闭搜索",
+                    contentDescription = stringResource(R.string.close_search_cd),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -774,7 +785,7 @@ private fun SearchTopBar(
                         .focusRequester(focusRequester),
                 placeholder = {
                     Text(
-                        text = "搜索歌单内歌曲",
+                        text = stringResource(R.string.search_in_playlist_hint),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
                     )
                 },
@@ -792,7 +803,7 @@ private fun SearchTopBar(
                 IconButton(onClick = { onKeywordChange("") }, modifier = Modifier.size(40.dp)) {
                     Icon(
                         Icons.Default.Clear,
-                        contentDescription = "清除",
+                        contentDescription = stringResource(R.string.clear_input),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -826,15 +837,15 @@ private fun MultiSelectBar(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, contentDescription = "退出多选")
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.exit_multiselect_cd))
             }
             Text(
-                text = "已选 $selectedCount 首",
+                text = stringResource(R.string.selected_songs_count_format, selectedCount),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            TextButton(onClick = onSelectAll) { Text("全选") }
-            TextButton(onClick = onDeselectAll) { Text("取消") }
+            TextButton(onClick = onSelectAll) { Text(stringResource(R.string.select_all)) }
+            TextButton(onClick = onDeselectAll) { Text(stringResource(R.string.cancel)) }
             Button(
                 onClick = onRemove,
                 enabled = selectedCount > 0,
@@ -849,7 +860,7 @@ private fun MultiSelectBar(
                     modifier = Modifier.size(16.dp),
                 )
                 Spacer(Modifier.width(4.dp))
-                Text("移除")
+                Text(stringResource(R.string.remove))
             }
         }
     }
@@ -862,7 +873,7 @@ fun RenameDialog(
     initialName: String,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
-    title: String = "重命名歌单",
+    title: String,
 ) {
     var name by remember { mutableStateOf(initialName) }
     AlertDialog(
@@ -878,17 +889,17 @@ fun RenameDialog(
                     ),
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("歌单名称") },
+                label = { Text(stringResource(R.string.playlist_name_label)) },
                 singleLine = true,
             )
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(name) }, enabled = name.isNotBlank()) {
-                Text("确认")
+                Text(stringResource(R.string.confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -903,8 +914,8 @@ private fun DeleteConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("删除歌单") },
-        text = { Text("确定要删除歌单「$playlistName」吗？此操作不可撤销。") },
+        title = { Text(stringResource(R.string.delete_playlist_title)) },
+        text = { Text(stringResource(R.string.confirm_delete_playlist_full, playlistName)) },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
@@ -913,11 +924,11 @@ private fun DeleteConfirmDialog(
                         contentColor = MaterialTheme.colorScheme.error,
                     ),
             ) {
-                Text("删除")
+                Text(stringResource(R.string.delete))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -961,23 +972,23 @@ private fun SongPickerBottomSheet(
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(
-                        text = "添加歌曲",
+                        text = stringResource(R.string.add_songs),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         text =
                             if (selectedIds.isEmpty()) {
-                                "从音乐库中选择要加入歌单的歌曲"
+                                stringResource(R.string.add_songs_from_library_hint)
                             } else {
-                                "已选择 ${selectedIds.size} 首歌曲"
+                                stringResource(R.string.songs_count_to_add_format, selectedIds.size)
                             },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "关闭")
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                 }
             }
 
@@ -996,13 +1007,13 @@ private fun SongPickerBottomSheet(
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp),
-                placeholder = { Text("搜索歌曲、歌手或专辑") },
+                placeholder = { Text(stringResource(R.string.search_songs_artists_albums)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon =
                     if (pickerKeyword.isNotEmpty()) {
                         {
                             IconButton(onClick = { pickerKeyword = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "清除")
+                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear_input))
                             }
                         }
                     } else {
@@ -1036,13 +1047,13 @@ private fun SongPickerBottomSheet(
                                 modifier = Modifier.size(20.dp),
                             )
                             Text(
-                                text = "将添加 ${selectedIds.size} 首歌曲",
+                                text = stringResource(R.string.will_add_songs_format, selectedIds.size),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.weight(1f),
                             )
                             TextButton(onClick = { selectedIds = emptySet() }) {
-                                Text("清空")
+                                Text(stringResource(R.string.deselect_all))
                             }
                         }
                     }
@@ -1099,14 +1110,22 @@ private fun SongPickerBottomSheet(
                             onClick = onDismiss,
                             modifier = Modifier.weight(1f),
                         ) {
-                            Text("取消")
+                            Text(stringResource(R.string.cancel))
                         }
                         Button(
                             onClick = { viewModel.addSongsToPlaylist(selectedIds.toList()) },
                             enabled = selectedIds.isNotEmpty(),
                             modifier = Modifier.weight(1.5f),
                         ) {
-                            Text(if (selectedIds.isEmpty()) "选择歌曲" else "添加 ${selectedIds.size} 首")
+                            Text(
+                                if (selectedIds.isEmpty()) {
+                                    stringResource(
+                                        R.string.select_songs_button,
+                                    )
+                                } else {
+                                    stringResource(R.string.add_n_songs_format, selectedIds.size)
+                                },
+                            )
                         }
                     }
                 }

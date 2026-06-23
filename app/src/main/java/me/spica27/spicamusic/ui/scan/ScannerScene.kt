@@ -74,6 +74,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -85,6 +86,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.feature.library.domain.ScanProgress
 import me.spica27.spicamusic.feature.library.domain.ScanResult
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
@@ -114,12 +116,12 @@ class ScannerScene : StackScene() {
                         IconButton(onClick = { path.popTop() }) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBackIosNew,
-                                contentDescription = "返回",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     },
-                    title = { Text("扫描音乐") },
+                    title = { Text(stringResource(R.string.scan_music)) },
                     colors =
                         TopAppBarDefaults.topAppBarColors(
                             containerColor = Color.Transparent,
@@ -558,28 +560,28 @@ private fun ScannerStatusText(
             val (title, subtitle) =
                 when (p) {
                     DialPhase.Permission ->
-                        "让 SPICa 发现你的音乐" to
-                            "扫描只会读取设备上的音频文件，用来建立本地音乐库和播放列表。"
+                        stringResource(R.string.scanner_hero_title) to
+                            stringResource(R.string.scanner_hero_subtitle)
 
                     DialPhase.Idle ->
-                        "准备整理你的音乐宇宙" to
-                            "一次扫描 MediaStore 与额外文件夹，自动同步新增、更新和已移除的歌曲。"
+                        stringResource(R.string.scanner_idle_title) to
+                            stringResource(R.string.scanner_idle_subtitle)
 
                     DialPhase.Scanning ->
-                        "正在捕捉音乐信号" to
+                        stringResource(R.string.scanner_running_title) to
                             if (progress.total > 0) {
-                                "${progress.current} / ${progress.total} 首"
+                                stringResource(R.string.scanner_running_progress_format, progress.current, progress.total)
                             } else {
-                                "正在准备扫描队列…"
+                                stringResource(R.string.scanner_preparing)
                             }
 
                     DialPhase.Success ->
-                        "曲库已经焕然一新" to
-                            "本地媒体与额外目录已完成同步，回到资料库继续播放吧。"
+                        stringResource(R.string.scanner_complete_title) to
+                            stringResource(R.string.scanner_complete_subtitle)
 
                     DialPhase.Error ->
-                        "没有完成本次整理" to
-                            errorMessage.ifBlank { "扫描过程中发生未知错误，请稍后重试。" }
+                        stringResource(R.string.scanner_error_title) to
+                            errorMessage.ifBlank { stringResource(R.string.scanner_error_default) }
                 }
             Text(
                 text = title,
@@ -633,7 +635,7 @@ private fun ScannerActionPanel(
                 DialPhase.Permission -> {
                     if (shouldShowRationale) {
                         Text(
-                            text = "媒体权限被拒绝，请在系统设置中手动开启。",
+                            text = stringResource(R.string.scanner_permission_denied_msg),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
@@ -646,7 +648,7 @@ private fun ScannerActionPanel(
                                     .fillMaxWidth()
                                     .height(52.dp),
                         ) {
-                            Text("前往系统设置")
+                            Text(stringResource(R.string.scanner_go_to_settings))
                         }
                     } else {
                         Button(
@@ -656,7 +658,7 @@ private fun ScannerActionPanel(
                                     .fillMaxWidth()
                                     .height(52.dp),
                         ) {
-                            Text("授予媒体权限")
+                            Text(stringResource(R.string.scanner_grant_permission))
                         }
                     }
                 }
@@ -668,12 +670,12 @@ private fun ScannerActionPanel(
                     ) {
                         ScanFeatureChip(
                             icon = Icons.Default.LibraryMusic,
-                            label = "音频文件",
+                            label = stringResource(R.string.scanner_audio_files_chip),
                             modifier = Modifier.weight(1f),
                         )
                         ScanFeatureChip(
                             icon = Icons.Default.Folder,
-                            label = "额外目录",
+                            label = stringResource(R.string.scanner_extra_folders_chip),
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -690,7 +692,7 @@ private fun ScannerActionPanel(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(Modifier.width(Spacing.Small))
-                        Text("开始智能扫描")
+                        Text(stringResource(R.string.scanner_start))
                     }
                 }
 
@@ -707,7 +709,7 @@ private fun ScannerActionPanel(
                                 contentColor = MaterialTheme.colorScheme.error,
                             ),
                     ) {
-                        Text("停止扫描")
+                        Text(stringResource(R.string.stop_scanner))
                     }
                 }
 
@@ -727,7 +729,7 @@ private fun ScannerActionPanel(
                                     .weight(1f)
                                     .height(52.dp),
                         ) {
-                            Text("重新扫描")
+                            Text(stringResource(R.string.scanner_rescan))
                         }
                         Button(
                             onClick = onResetState,
@@ -736,7 +738,7 @@ private fun ScannerActionPanel(
                                     .weight(1f)
                                     .height(52.dp),
                         ) {
-                            Text("完成")
+                            Text(stringResource(R.string.scanner_done))
                         }
                     }
                 }
@@ -753,7 +755,7 @@ private fun ScannerActionPanel(
                                     .weight(1f)
                                     .height(52.dp),
                         ) {
-                            Text("稍后再说")
+                            Text(stringResource(R.string.scanner_later))
                         }
                         Button(
                             onClick = {
@@ -835,12 +837,12 @@ private fun CurrentFileCard(currentFile: String) {
             )
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)) {
                 Text(
-                    text = "当前文件",
+                    text = stringResource(R.string.scanner_current_file_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = currentFile.ifBlank { "等待下一个音频文件…" },
+                    text = currentFile.ifBlank { stringResource(R.string.scanner_waiting_file) },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -860,10 +862,10 @@ private fun ScanResultRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
-        ScanResultTile("共扫描", result.totalScanned.toString(), Modifier.weight(1f))
-        ScanResultTile("新增", result.newAdded.toString(), Modifier.weight(1f))
-        ScanResultTile("更新", result.updated.toString(), Modifier.weight(1f))
-        ScanResultTile("移除", result.removed.toString(), Modifier.weight(1f))
+        ScanResultTile(stringResource(R.string.total_scanned), result.totalScanned.toString(), Modifier.weight(1f))
+        ScanResultTile(stringResource(R.string.new_added), result.newAdded.toString(), Modifier.weight(1f))
+        ScanResultTile(stringResource(R.string.updated), result.updated.toString(), Modifier.weight(1f))
+        ScanResultTile(stringResource(R.string.removed), result.removed.toString(), Modifier.weight(1f))
     }
 }
 

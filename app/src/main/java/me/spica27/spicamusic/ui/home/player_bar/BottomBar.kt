@@ -447,7 +447,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     if (nowPlayingSong != null) {
                                         "$title - $artist"
                                     } else {
-                                        "没有正在播放的歌曲"
+                                        stringResource(R.string.no_song_playing)
                                     },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -576,7 +576,7 @@ private fun HomePageSwitcher(modifier: Modifier = Modifier) {
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 },
-                title = page.title,
+                title = stringResource(page.titleRes),
                 bandHomePage = page,
             )
         }

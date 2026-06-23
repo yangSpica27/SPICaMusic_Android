@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -23,6 +24,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.android.awaitFrame
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.player.LyricsViewModel
 import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsSwitcherSheet
@@ -109,7 +111,7 @@ fun FullScreenLyricsPage(modifier: Modifier = Modifier) {
             }
             else -> {
                 Text(
-                    text = "等待播放",
+                    text = stringResource(R.string.waiting_to_play),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                     textAlign = TextAlign.Center,

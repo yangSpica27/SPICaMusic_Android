@@ -61,12 +61,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.common.collect.ImmutableList
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.ui.theme.LayoutTokens
@@ -95,14 +97,14 @@ class SettingsScene : StackScene() {
                         IconButton(onClick = { path.popTop() }) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBackIosNew,
-                                contentDescription = "返回",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     },
                     title = {
                         Text(
-                            text = "设置中心",
+                            text = stringResource(R.string.finder_settings_title),
                             fontWeight = FontWeight.SemiBold,
                         )
                     },
@@ -154,17 +156,20 @@ class SettingsScene : StackScene() {
                     }
 
                     item {
-                        SettingsSectionCard(title = "外观", subtitle = "塑造播放器的视觉氛围") {
+                        SettingsSectionCard(
+                            title = stringResource(R.string.settings_appearance),
+                            subtitle = stringResource(R.string.settings_appearance_subtitle),
+                        ) {
                             ModernSettingsSwitchItem(
-                                title = "深色模式",
-                                subtitle = "切换深色 / 浅色主题",
+                                title = stringResource(R.string.settings_dark_mode_title),
+                                subtitle = stringResource(R.string.settings_dark_mode_toggle_subtitle),
                                 icon = Icons.Default.Brightness6,
                                 checked = darkMode,
                                 onCheckedChange = viewModel::setDarkMode,
                             )
                             SettingsItemDivider()
                             ModernSettingsSelectItem(
-                                title = "动态频谱背景",
+                                title = stringResource(R.string.settings_dynamic_spectrum),
                                 subtitle = DynamicSpectrumBackground.fromString(spectrumValue).name,
                                 icon = Icons.Default.GraphicEq,
                                 options =
@@ -178,7 +183,7 @@ class SettingsScene : StackScene() {
                             )
                             SettingsItemDivider()
                             ModernSettingsSelectItem(
-                                title = "动态封面效果",
+                                title = stringResource(R.string.settings_dynamic_cover),
                                 subtitle = DynamicCoverType.fromString(coverTypeValue).name,
                                 icon = Icons.Default.Album,
                                 options =
@@ -194,10 +199,13 @@ class SettingsScene : StackScene() {
                     }
 
                     item {
-                        SettingsSectionCard(title = "播放", subtitle = "让收听体验更顺手") {
+                        SettingsSectionCard(
+                            title = stringResource(R.string.settings_playback),
+                            subtitle = stringResource(R.string.settings_playback_subtitle),
+                        ) {
                             ModernSettingsSwitchItem(
-                                title = "屏幕常亮",
-                                subtitle = "播放时保持屏幕不熄灭",
+                                title = stringResource(R.string.settings_keep_screen_on),
+                                subtitle = stringResource(R.string.settings_keep_screen_on_subtitle),
                                 icon = Icons.Default.Visibility,
                                 checked = keepScreenOn,
                                 onCheckedChange = viewModel::setKeepScreenOn,
@@ -317,13 +325,13 @@ private fun SettingsHeroCard(
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)) {
                     Text(
-                        text = "定制你的音乐空间",
+                        text = stringResource(R.string.settings_hero_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
-                        text = "主题、动态背景与播放偏好统一管理",
+                        text = stringResource(R.string.settings_hero_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f),
                     )
@@ -331,7 +339,16 @@ private fun SettingsHeroCard(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
-                SettingsPill(label = if (darkMode) "深色模式" else "浅色模式")
+                SettingsPill(
+                    label =
+                        if (darkMode) {
+                            stringResource(
+                                R.string.settings_dark_mode_title,
+                            )
+                        } else {
+                            stringResource(R.string.settings_light_mode_label)
+                        },
+                )
                 SettingsPill(label = spectrumName)
                 SettingsPill(label = coverName)
             }
@@ -604,7 +621,7 @@ private fun SettingsSelectDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("关闭")
+                Text(stringResource(R.string.close))
             }
         },
     )

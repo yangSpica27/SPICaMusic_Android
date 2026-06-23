@@ -43,12 +43,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.player.formatTime
@@ -155,7 +157,7 @@ class SongInfoScene(
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "歌曲信息",
+                            text = stringResource(R.string.song_info_dialog_title),
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -173,7 +175,7 @@ class SongInfoScene(
                         IconButton(onClick = { path.pop(scene) }) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "关闭",
+                                contentDescription = stringResource(R.string.close),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -189,13 +191,13 @@ class SongInfoScene(
                             .padding(top = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    InfoItem(Icons.Default.MusicNote, "歌曲名称", song.displayName)
-                    InfoItem(Icons.Default.Person, "歌手", song.artist)
-                    InfoItem(Icons.Default.Album, "专辑", song.album)
-                    InfoItem(Icons.Default.Schedule, "时长", formatTime(song.duration))
-                    InfoItem(Icons.Default.Folder, "文件路径", song.path)
-                    InfoItem(Icons.Default.DataUsage, "文件大小", "${song.size / 1024 / 1024} MB")
-                    InfoItem(Icons.Default.Info, "文件格式", song.codec)
+                    InfoItem(Icons.Default.MusicNote, stringResource(R.string.song_displayname), song.displayName)
+                    InfoItem(Icons.Default.Person, stringResource(R.string.song_artist), song.artist)
+                    InfoItem(Icons.Default.Album, stringResource(R.string.song_album), song.album)
+                    InfoItem(Icons.Default.Schedule, stringResource(R.string.song_duration), formatTime(song.duration))
+                    InfoItem(Icons.Default.Folder, stringResource(R.string.info_file_path), song.path, isMultiline = true)
+                    InfoItem(Icons.Default.DataUsage, stringResource(R.string.info_file_size), "${song.size / 1024 / 1024} MB")
+                    InfoItem(Icons.Default.Info, stringResource(R.string.info_file_format), song.codec)
                 }
                 Spacer(Modifier.height(14.dp))
                 Button(
@@ -203,7 +205,7 @@ class SongInfoScene(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
                 ) {
-                    Text("关闭")
+                    Text(stringResource(R.string.close))
                 }
             }
         }
@@ -215,6 +217,7 @@ private fun InfoItem(
     icon: ImageVector,
     title: String,
     content: String,
+    isMultiline: Boolean = false,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -253,7 +256,7 @@ private fun InfoItem(
                     content,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = if (title == "文件路径") 2 else 1,
+                    maxLines = if (isMultiline) 2 else 1,
                 )
             }
         }

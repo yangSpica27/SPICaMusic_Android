@@ -55,6 +55,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -66,6 +67,7 @@ import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
@@ -198,7 +200,7 @@ private fun SearchHeader(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.Default.ArrowBackIosNew,
-                    contentDescription = "返回",
+                    contentDescription = stringResource(R.string.back),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp),
                 )
@@ -241,7 +243,7 @@ private fun SearchInputField(
         Box(modifier = Modifier.weight(1f)) {
             if (query.isEmpty()) {
                 Text(
-                    text = "搜索歌曲、专辑、歌手",
+                    text = stringResource(R.string.search_songs_albums_artists),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -278,7 +280,7 @@ private fun SearchInputField(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "清空",
+                    contentDescription = stringResource(R.string.clear_input),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(14.dp),
                 )
@@ -408,7 +410,7 @@ private fun SearchSongItem(
         IconButton(onClick = onMore) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
-                contentDescription = "更多",
+                contentDescription = stringResource(R.string.more),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -511,14 +513,14 @@ private fun SearchHint(modifier: Modifier = Modifier) {
         }
         Spacer(Modifier.height(Spacing.ExtraLarge))
         Text(
-            text = "搜索你的音乐",
+            text = stringResource(R.string.search_your_music_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(Modifier.height(Spacing.Small))
         Text(
-            text = "输入歌名、专辑或歌手名称来查找歌曲",
+            text = stringResource(R.string.search_your_music_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -557,13 +559,13 @@ private fun NoResultHint(
         }
         Spacer(Modifier.height(Spacing.Small))
         Text(
-            text = "没有找到「$query」",
+            text = stringResource(R.string.search_no_results_format, query),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = "试试换个关键词，或检查拼写是否正确",
+            text = stringResource(R.string.search_try_different_keywords),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

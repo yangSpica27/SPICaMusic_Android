@@ -391,4 +391,113 @@
   <string name="finder_no_favorites_subtitle">Favorite songs from the player or song menu and they will appear here.</string>
   <string name="finder_playlists_overview_title">Playlist Overview</string>
   <string name="finder_no_playlists_subtitle">Create a playlist in the library and it will appear here.</string>
+
+  <!-- Crash screen -->
+  <string name="crash_app_crashed">App Crashed</string>
+  <string name="crash_share_log">Share Log</string>
+  <string name="crash_restart_app">Restart App</string>
+
+  <!-- Common actions -->
+  <string name="shuffle_play">Shuffle</string>
+  <string name="no_song_playing">No song playing</string>
+
+  <!-- Song menu -->
+  <string name="play_next">Play Next</string>
+  <string name="view_album">View Album</string>
+  <string name="view_artist">View Artist</string>
+  <string name="song_info_menu_title">Song Info</string>
+  <string name="song_info_menu_subtitle">File, album &amp; audio details</string>
+  <string name="add_to_playlist_subtitle_menu">Save to an existing or new playlist</string>
+  <string name="playlist_picker_subtitle">Select a playlist to save this song</string>
+  <string name="no_playlists_hint">Create a new playlist first, then add this song to it.</string>
+  <string name="tap_to_add_to_playlist">Tap to add to this playlist</string>
+  <string name="create_playlist_auto_add_subtitle">The current song will be added automatically</string>
+  <string name="playlist_name_placeholder">My Playlist</string>
+  <string name="playlist_name_supporting">Enter a recognizable name</string>
+  <string name="create_empty_only">Create empty playlist only</string>
+  <string name="create_and_add">Create and Add</string>
+
+  <!-- Song info dialog -->
+  <string name="song_info_dialog_title">Song Info</string>
+  <string name="info_file_path">File Path</string>
+  <string name="info_file_size">File Size</string>
+  <string name="info_file_format">File Format</string>
+
+  <!-- Scanner -->
+  <string name="scanner_hero_title">Let SPICa discover your music</string>
+  <string name="scanner_hero_subtitle">Only audio files on your device are read to build your local library.</string>
+  <string name="scanner_idle_title">Ready to organize your music universe</string>
+  <string name="scanner_idle_subtitle">Scans MediaStore and extra folders, auto-syncing new, updated, and removed songs.</string>
+  <string name="scanner_running_title">Capturing music signals</string>
+  <string name="scanner_running_progress_format">%1$d / %2$d songs</string>
+  <string name="scanner_preparing">Preparing scan queue…</string>
+  <string name="scanner_complete_title">Your library is refreshed</string>
+  <string name="scanner_complete_subtitle">Local media and extra directories synced. Head back to the library.</string>
+  <string name="scanner_error_title">Scan did not complete</string>
+  <string name="scanner_error_default">An unknown error occurred during the scan. Please try again.</string>
+  <string name="scanner_permission_denied_msg">Media permission denied. Please enable it in system settings.</string>
+  <string name="scanner_go_to_settings">Go to System Settings</string>
+  <string name="scanner_grant_permission">Grant Media Permission</string>
+  <string name="scanner_audio_files_chip">Audio Files</string>
+  <string name="scanner_extra_folders_chip">Extra Folders</string>
+  <string name="scanner_start">Start Smart Scan</string>
+  <string name="scanner_rescan">Rescan</string>
+  <string name="scanner_done">Done</string>
+  <string name="scanner_later">Later</string>
+  <string name="scanner_current_file_label">Current File</string>
+  <string name="scanner_waiting_file">Waiting for next audio file…</string>
+
+  <!-- Search -->
+  <string name="search_songs_albums_artists">Search songs, albums, artists</string>
+  <string name="clear_input">Clear</string>
+  <string name="search_your_music_title">Search your music</string>
+  <string name="search_your_music_subtitle">Enter a song name, album, or artist to find songs</string>
+  <string name="search_no_results_format">No results for \"%s\"</string>
+  <string name="search_try_different_keywords">Try different keywords, or check your spelling</string>
+
+  <!-- Playlist detail -->
+  <string name="search_in_playlist_hint">Search songs in playlist</string>
+  <string name="search_songs_artists_albums">Search songs, artists, or albums</string>
+  <string name="close_search_cd">Close search</string>
+  <string name="exit_multiselect_cd">Exit multi-select</string>
+  <string name="selected_songs_count_format">%d songs selected</string>
+  <string name="rename_playlist_dialog_title">Rename Playlist</string>
+  <string name="add_songs_from_library_hint">Select songs from library to add to playlist</string>
+  <string name="songs_count_to_add_format">%d songs selected</string>
+  <string name="will_add_songs_format">Will add %d songs</string>
+  <string name="select_songs_button">Select songs</string>
+  <string name="add_n_songs_format">Add %d songs</string>
+  <string name="confirm_delete_playlist_full">Are you sure you want to delete \"%1$s\"? This cannot be undone.</string>
+
+  <!-- Settings -->
+  <string name="settings_hero_title">Customize your music space</string>
+  <string name="settings_hero_subtitle">Theme, dynamic background and playback in one place</string>
+  <string name="settings_appearance_subtitle">Shape the visual atmosphere of the player</string>
+  <string name="settings_dark_mode_title">Dark Mode</string>
+  <string name="settings_dark_mode_toggle_subtitle">Toggle dark / light theme</string>
+  <string name="settings_playback_subtitle">Make the listening experience smoother</string>
+  <string name="settings_light_mode_label">Light Mode</string>
+
+  <!-- Lyrics -->
+  <string name="no_lyrics">No lyrics</string>
+  <string name="seek_to_lyric_line">Seek to this line</string>
+
+  <!-- Playlist creator -->
+  <string name="playlist_name_label">Playlist Name</string>
+  <string name="playlist_name_default">My Playlist</string>
+  <string name="playlist_name_placeholder_hint">Give the playlist a name</string>
+  <string name="playlist_name_error_empty">Please enter a playlist name</string>
+  <string name="playlist_name_suggestions_label">Try these names</string>
+  <string name="create_playlist_title">Create Playlist</string>
+  <string name="playlist_suggestion_1">My Favorites</string>
+  <string name="playlist_suggestion_2">Commute</string>
+  <string name="playlist_suggestion_3">Workout</string>
+  <string name="playlist_suggestion_4">Late Night Radio</string>
+  <string name="playlist_suggestion_5">Study Focus</string>
+
+  <!-- Navigation tabs -->
+  <string name="nav_tab_finder">Discover</string>
+  <string name="nav_tab_music">Music</string>
+  <string name="nav_tab_library">Library</string>
+
 </resources>

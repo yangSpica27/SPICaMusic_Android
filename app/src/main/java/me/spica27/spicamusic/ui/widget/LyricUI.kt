@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -72,6 +73,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.findPlayingIndex
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -390,7 +392,7 @@ fun LyricsUI(
 private fun EmptyLyricState(modifier: Modifier = Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Text(
-            text = LyricUIConstants.EMPTY_LYRIC_TEXT,
+            text = stringResource(R.string.no_lyrics),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
@@ -859,7 +861,7 @@ private fun SeekPreview(
         ) {
             Icon(
                 imageVector = Icons.Rounded.PlayArrow,
-                contentDescription = "定位到此行",
+                contentDescription = stringResource(R.string.seek_to_lyric_line),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }

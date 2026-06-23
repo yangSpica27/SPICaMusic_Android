@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -66,6 +67,7 @@ import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
@@ -301,7 +303,7 @@ private fun SongMenuContent(
                     IconButton(onClick = onClose) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = "关闭",
+                            contentDescription = stringResource(R.string.close),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -316,7 +318,7 @@ private fun SongMenuContent(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 ControlButton(
-                    title = "下一首播放",
+                    title = stringResource(R.string.play_next),
                     icon = Icons.Default.PlayArrow,
                     modifier = Modifier.weight(1f),
                     onClick = onPlayNext,
@@ -324,7 +326,7 @@ private fun SongMenuContent(
                     iconTint = MaterialTheme.colorScheme.primary,
                 )
                 ControlButton(
-                    title = "加入队列",
+                    title = stringResource(R.string.add_to_queue),
                     icon = Icons.Default.PlaylistPlay,
                     modifier = Modifier.weight(1f),
                     onClick = onAddToQueue,
@@ -332,7 +334,7 @@ private fun SongMenuContent(
                     iconTint = MaterialTheme.colorScheme.secondary,
                 )
                 ControlButton(
-                    title = if (isLiked) "取消收藏" else "收藏",
+                    title = if (isLiked) stringResource(R.string.remove_from_favorites) else stringResource(R.string.favorite),
                     icon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     modifier = Modifier.weight(1f),
                     onClick = onToggleLike,
@@ -355,26 +357,26 @@ private fun SongMenuContent(
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
             )
             ControlItem(
-                title = "添加到歌单",
-                subtitle = "保存到已有歌单或新建歌单",
+                title = stringResource(R.string.add_to_playlist),
+                subtitle = stringResource(R.string.add_to_playlist_subtitle_menu),
                 icon = Icons.AutoMirrored.Default.PlaylistAdd,
                 onClick = onShowPlaylistDialog,
             )
             ControlItem(
-                title = "查看专辑",
+                title = stringResource(R.string.view_album),
                 subtitle = song.album,
                 icon = Icons.Default.Album,
                 onClick = onOpenAlbum,
             )
             ControlItem(
-                title = "查看歌手",
+                title = stringResource(R.string.view_artist),
                 subtitle = song.artist,
                 icon = Icons.Default.SportsMartialArts,
                 onClick = onOpenArtist,
             )
             ControlItem(
-                title = "查看歌曲信息",
-                subtitle = "文件、专辑与音频信息",
+                title = stringResource(R.string.song_info_menu_title),
+                subtitle = stringResource(R.string.song_info_menu_subtitle),
                 icon = Icons.Default.Info,
                 onClick = onOpenSongInfo,
             )
@@ -491,8 +493,8 @@ private fun PlaylistPickerDialog(
         tonalElevation = 6.dp,
         title = {
             DialogTitle(
-                title = "添加到歌单",
-                subtitle = "选择一个歌单保存这首歌曲",
+                title = stringResource(R.string.add_to_playlist),
+                subtitle = stringResource(R.string.playlist_picker_subtitle),
                 icon = Icons.AutoMirrored.Default.PlaylistAdd,
             )
         },
@@ -508,14 +510,14 @@ private fun PlaylistPickerDialog(
                 if (playlists.isEmpty()) {
                     EmptyDialogCard(
                         icon = Icons.Default.LibraryMusic,
-                        title = "还没有歌单",
-                        subtitle = "可以先新建一个歌单，再把当前歌曲添加进去。",
+                        title = stringResource(R.string.no_playlists_yet),
+                        subtitle = stringResource(R.string.no_playlists_hint),
                     )
                 } else {
                     playlists.forEach { playlist ->
                         PlaylistDialogRow(
                             title = playlist.playlistName,
-                            subtitle = "点击添加到此歌单",
+                            subtitle = stringResource(R.string.tap_to_add_to_playlist),
                             onClick = { onSelectPlaylist(playlist) },
                         )
                     }
@@ -533,12 +535,12 @@ private fun PlaylistPickerDialog(
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("新建歌单")
+                Text(stringResource(R.string.create_playlist))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         },
     )
@@ -559,8 +561,8 @@ private fun CreatePlaylistDialog(
         tonalElevation = 6.dp,
         title = {
             DialogTitle(
-                title = "新建歌单",
-                subtitle = "创建后会自动添加当前歌曲",
+                title = stringResource(R.string.create_playlist),
+                subtitle = stringResource(R.string.create_playlist_auto_add_subtitle),
                 icon = Icons.Default.Add,
             )
         },
@@ -569,9 +571,9 @@ private fun CreatePlaylistDialog(
                 OutlinedTextField(
                     value = playlistName,
                     onValueChange = { playlistName = it },
-                    label = { Text("歌单名称") },
-                    placeholder = { Text("我的歌单") },
-                    supportingText = { Text("输入一个便于识别的名称") },
+                    label = { Text(stringResource(R.string.playlist_name_label)) },
+                    placeholder = { Text(stringResource(R.string.playlist_name_placeholder)) },
+                    supportingText = { Text(stringResource(R.string.playlist_name_supporting)) },
                     singleLine = true,
                     shape = RoundedCornerShape(18.dp),
                     modifier = Modifier.fillMaxWidth(),
@@ -584,7 +586,7 @@ private fun CreatePlaylistDialog(
                         }),
                 )
                 TextButton(onClick = onOpenFullCreator) {
-                    Text("仅创建空歌单")
+                    Text(stringResource(R.string.create_empty_only))
                 }
             }
         },
@@ -594,12 +596,12 @@ private fun CreatePlaylistDialog(
                 enabled = playlistName.isNotBlank(),
                 shape = RoundedCornerShape(16.dp),
             ) {
-                Text("创建并添加")
+                Text(stringResource(R.string.create_and_add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.cancel))
             }
         },
     )

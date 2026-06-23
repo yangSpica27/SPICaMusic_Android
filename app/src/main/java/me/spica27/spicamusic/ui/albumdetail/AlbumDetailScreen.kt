@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -239,10 +240,11 @@ fun AlbumDetailScreen(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(Modifier.height(2.dp))
+                    val songCountText = stringResource(R.string.songs_count, album.numberOfSongs)
                     Text(
                         text =
                             buildString {
-                                append("${album.numberOfSongs}首歌曲")
+                                append(songCountText)
                                 if (album.year > 0) append(" · ${album.year}")
                             },
                         style = MaterialTheme.typography.bodySmall,
@@ -287,7 +289,7 @@ fun AlbumDetailScreen(
                 IconButton(onClick = { path.popTop() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "返回",
+                        contentDescription = stringResource(R.string.back),
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
@@ -420,7 +422,7 @@ private fun PlayButtons(
                 modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(4.dp))
-            Text("播放全部")
+            Text(stringResource(R.string.play_all_songs))
         }
         ElevatedButton(
             onClick = onShuffle,
@@ -432,7 +434,7 @@ private fun PlayButtons(
                 modifier = Modifier.size(18.dp),
             )
             Spacer(Modifier.width(4.dp))
-            Text("随机播放")
+            Text(stringResource(R.string.shuffle_play))
         }
     }
 }
@@ -505,7 +507,7 @@ private fun SongRow(
         IconButton(onClick = onMore) {
             Icon(
                 Icons.Default.MoreVert,
-                contentDescription = "更多",
+                contentDescription = stringResource(R.string.more),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

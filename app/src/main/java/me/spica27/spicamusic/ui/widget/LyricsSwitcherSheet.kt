@@ -114,7 +114,7 @@ fun LyricsSwitcherSheet(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Check,
-                        contentDescription = "确认选择",
+                        contentDescription = stringResource(R.string.confirm),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(22.dp),
                     )
