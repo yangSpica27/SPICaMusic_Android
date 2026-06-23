@@ -9,6 +9,7 @@ plugins {
   alias(libs.plugins.compose.compiler)
   id "org.jlleitschuh.gradle.ktlint" version "14.2.0"
   alias(libs.plugins.stability.analyzer)
+  alias(libs.plugins.androidx.baselineprofile)
 }
 
 android {
@@ -196,6 +197,7 @@ dependencies {
 
   implementation(libs.materialKolor)
   implementation(libs.landscapist.transformation)
+  baselineProfile(project(':baselineprofile'))
 }
 
 

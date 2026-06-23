@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.home.page
 
+import androidx.activity.compose.ReportDrawnWhen
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
@@ -69,6 +70,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -117,6 +119,9 @@ import kotlin.math.max
 fun MusicPage() {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val allSongs by homeViewModel.allSongs.collectAsStateWithLifecycle()
+
+    ReportDrawnWhen { allSongs.isNotEmpty() }
+
     val density = LocalDensity.current
 
     val songCount = allSongs.size
@@ -431,6 +436,7 @@ private fun AllSongPage(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .testTag("song_list")
                     .nestedScroll(LocalBottomBarScrollConnection.current),
             contentPadding = PaddingValues(bottom = 200.dp),
         ) {
@@ -569,6 +575,7 @@ fun AlbumPage(
         modifier =
             modifier
                 .fillMaxSize()
+                .testTag("album_grid")
                 .nestedScroll(LocalBottomBarScrollConnection.current),
         columns = GridCells.Fixed(2),
         contentPadding =

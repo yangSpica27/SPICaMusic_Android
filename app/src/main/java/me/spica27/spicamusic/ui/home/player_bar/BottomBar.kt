@@ -1,4 +1,4 @@
-package me.spica27.spicamusic.ui.home
+package me.spica27.spicamusic.ui.home.player_bar
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
@@ -64,6 +65,7 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -85,6 +87,9 @@ import kotlinx.coroutines.launch
 import me.spica27.navkit.geometry.geometryOccluder
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.home.HomePage
+import me.spica27.spicamusic.ui.home.HomeViewModel
+import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.player.DEFAULT_PAGE
 import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
 import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
@@ -238,10 +243,9 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                                 1f,
                                             )
                                         transformOrigin =
-                                            androidx.compose.ui.graphics
-                                                .TransformOrigin(0.5f, 0f)
+                                            TransformOrigin(0.5f, 0f)
                                         shape =
-                                            androidx.compose.foundation.shape.RoundedCornerShape(
+                                            RoundedCornerShape(
                                                 topStart =
                                                     lerp(
                                                         LayoutTokens.PlayerCollapsedCornerRadius,

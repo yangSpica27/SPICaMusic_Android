@@ -22,6 +22,9 @@ import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.ui.home.page.FinderPage
 import me.spica27.spicamusic.ui.home.page.LibraryPage
 import me.spica27.spicamusic.ui.home.page.MusicPage
+import me.spica27.spicamusic.ui.home.player_bar.BottomBarScrollConnection
+import me.spica27.spicamusic.ui.home.player_bar.BottomMediaBar
+import me.spica27.spicamusic.ui.home.player_bar.rememberBottomBarScrollConnection
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
 import org.koin.compose.viewmodel.koinActivityViewModel

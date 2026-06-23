@@ -1,8 +1,8 @@
 package me.spica27.spicamusic.ui.home.page
 
-import androidx.annotation.StringRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
@@ -71,8 +71,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -149,7 +149,11 @@ fun LibraryPage() {
                 if (ignoreFolders.isNotEmpty()) append(" · ${ignoreFoldersSummaryFormat.format(ignoreFolders.size)}")
                 weeklyStats?.let { stats ->
                     if (stats.totalPlayedDuration > 0) {
-                        append(" · ${thisWeekSummaryFormat.format(formatPlayDuration(stats.totalPlayedDuration, hoursMinutesFormat, minutesFormat, lessThan1Min))}")
+                        append(
+                            " · ${thisWeekSummaryFormat.format(
+                                formatPlayDuration(stats.totalPlayedDuration, hoursMinutesFormat, minutesFormat, lessThan1Min),
+                            )}",
+                        )
                     }
                 }
             }
@@ -192,7 +196,14 @@ fun LibraryPage() {
             extraText = { tab ->
                 val playlistsCountFmt = playlistsCountFormat
                 when (tab) {
-                    LibraryPageTab.Playlist -> if (playlists.isNotEmpty()) playlistsCountFmt.format(playlists.size) else noPlaylistsCreatedText
+                    LibraryPageTab.Playlist ->
+                        if (playlists.isNotEmpty()) {
+                            playlistsCountFmt.format(
+                                playlists.size,
+                            )
+                        } else {
+                            noPlaylistsCreatedText
+                        }
                     LibraryPageTab.Folder -> {
                         val total = extraFolders.size + ignoreFolders.size
                         if (total > 0) playlistsCountFmt.format(total) else emptyText

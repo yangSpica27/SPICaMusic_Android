@@ -111,6 +111,8 @@
             </intent-filter>
         </receiver>
 
+        <profileable android:shell="true" tools:targetApi="q" />
+
     </application>
 
 </manifest>
