@@ -487,6 +487,232 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
     }
 }
 
+/**
+ * 底部媒体控制栏（V2）
+ *
+ * 与 [BottomMediaBar] 行为一致，但两行收起态 ←→ 全屏播放器的拖拽展开改由自定义 Layout
+ * 组件 [BottomBarV2] 驱动；单行 inline 模式与共享元素过渡保持不变。
+ */
+@SuppressLint("ConfigurationScreenWidthHeight")
+@Composable
+fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = LocalBottomBarScrollConnection.current) {
+    val homeViewModel: HomeViewModel = koinActivityViewModel()
+    val playerViewModel = LocalPlayerViewModel.current
+    val navigationPath = LocalNavigationPath.current
+
+    val currentHomePage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
+    val nowPlayingSong = playerViewModel.currentMediaItem.collectAsStateWithLifecycle().value
+
+    val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
+    val metadata = currentMediaItem?.mediaMetadata
+    val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
+    val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
+    val artworkUri = metadata?.artworkUri
+
+    // 记录跳转到播放器的初始页（默认主页 or 播放列表页）
+    var initialPage by remember { mutableIntStateOf(DEFAULT_PAGE) }
+
+    // 全屏展开进度状态（由 BottomBarV2 驱动）
+    val sheetState = rememberBottomBarV2State()
+
+    // 是否是单列模式
+    var isSingleLineMode by rememberSaveable { mutableStateOf(true) }
+
+    LaunchedEffect(bottomBarScrollConnection.isInline) {
+        if (bottomBarScrollConnection.isInline != isSingleLineMode) {
+            isSingleLineMode = bottomBarScrollConnection.isInline
+        }
+    }
+
+    SharedTransitionLayout {
+        AnimatedContent(isSingleLineMode) { lineMode ->
+            if (!lineMode) {
+                BottomBarV2(
+                    modifier = Modifier.zIndex(2f),
+                    state = sheetState,
+                    navigationBar = {
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .navigationBarsPadding()
+                                    .padding(vertical = 8.dp),
+                        ) {
+                            HomePageSwitcher(
+                                modifier =
+                                    Modifier
+                                        .sharedElement(
+                                            sharedContentState = rememberSharedContentState("navigation_bar"),
+                                            animatedVisibilityScope = this@AnimatedContent,
+                                        ).weight(1f),
+                            )
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .sharedElement(
+                                            sharedContentState = rememberSharedContentState("plus_icon"),
+                                            animatedVisibilityScope = this@AnimatedContent,
+                                        ).size(56.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.tertiary)
+                                        .clickable {
+                                            navigationPath.push(PlaylistCreatorScene())
+                                        },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "Add",
+                                    tint = MaterialTheme.colorScheme.onTertiary,
+                                )
+                            }
+                        }
+                    },
+                    playBar = {
+                        LargeBottomPlayerBar(
+                            modifier =
+                                Modifier
+                                    .sharedElement(
+                                        sharedContentState = rememberSharedContentState("player_bar"),
+                                        animatedVisibilityScope = this@AnimatedContent,
+                                    ).clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                            onExpand = {
+                                initialPage = DEFAULT_PAGE
+                                sheetState.expand()
+                            },
+                            onExpandToPlaylist = {
+                                initialPage = 0
+                                sheetState.expand()
+                            },
+                        )
+                    },
+                    fullScreenPlayer = { progress, onCollapse ->
+                        ExpandedPlayerScreen(
+                            onCollapse = onCollapse,
+                            progressProvider = progress,
+                            initialPage = initialPage,
+                            modifier =
+                                Modifier
+                                    .fillMaxSize(),
+                        )
+                    },
+                )
+            } else {
+                if (sheetState.progress > 0.99f) return@AnimatedContent
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 16.dp)
+                            .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    IconButton(
+                        onClick = {
+                            isSingleLineMode = false
+                        },
+                        modifier =
+                            Modifier
+                                .sharedElement(
+                                    sharedContentState = rememberSharedContentState("navigation_bar"),
+                                    animatedVisibilityScope = this@AnimatedContent,
+                                ).size(56.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.secondaryContainer),
+                    ) {
+                        Icon(
+                            imageVector = currentHomePage.icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                    Row(
+                        modifier =
+                            Modifier
+                                .sharedElement(
+                                    sharedContentState = rememberSharedContentState("player_bar"),
+                                    animatedVisibilityScope = this@AnimatedContent,
+                                ).height(56.dp)
+                                .weight(1f)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .clickable {
+                                    isSingleLineMode = false
+                                }.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        LandscapistImage(
+                            imageModel = { artworkUri },
+                            component =
+                                rememberImageComponent {
+                                    +CrossfadePlugin(duration = 550)
+                                },
+                            modifier =
+                                Modifier
+                                    .fillMaxHeight()
+                                    .aspectRatio(1f)
+                                    .clip(CircleShape),
+                            failure = {
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxSize()
+                                            .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        "🎵",
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    )
+                                }
+                            },
+                        )
+                        Text(
+                            text =
+                                if (nowPlayingSong != null) {
+                                    "$title - $artist"
+                                } else {
+                                    stringResource(R.string.no_song_playing)
+                                },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .padding(end = 8.dp)
+                                    .basicMarquee(repeatDelayMillis = 0),
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            navigationPath.push(PlaylistCreatorScene())
+                        },
+                        modifier =
+                            Modifier
+                                .sharedElement(
+                                    sharedContentState = rememberSharedContentState("plus_icon"),
+                                    animatedVisibilityScope = this@AnimatedContent,
+                                ).size(56.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.tertiary),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiary,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun HomePageSwitcher(modifier: Modifier = Modifier) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()

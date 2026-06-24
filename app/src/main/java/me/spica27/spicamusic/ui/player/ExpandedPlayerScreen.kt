@@ -68,6 +68,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -114,6 +115,7 @@ import timber.log.Timber
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 import androidx.compose.ui.util.lerp as floatLerp
 
 // ============================================
@@ -205,6 +207,21 @@ fun ExpandedPlayerScreen(
                 animationSpec = tween(durationMillis = 300, easing = EaseOutCubic),
             )
         }
+    }
+
+    // 兜底吸附：快速向下滑动 / 手指滑出屏幕边缘导致手势被取消、未触发正常 fling 时，
+    // Pager 可能停在两页之间（offsetFraction != 0）。这里监听滚动结束，
+    // 若仍处于中间态则强制吸附到最近的页面，避免卡死在中间态。
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.isScrollInProgress }
+            .collect { scrolling ->
+                if (!scrolling && abs(pagerState.currentPageOffsetFraction) > 0.01f) {
+                    pagerState.animateScrollToPage(
+                        pagerState.currentPage,
+                        animationSpec = tween(durationMillis = 300, easing = EaseOutCubic),
+                    )
+                }
+            }
     }
 
     // 从封面提取主色调
