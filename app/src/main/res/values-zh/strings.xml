@@ -499,4 +499,49 @@
   <string name="nav_tab_music">音乐</string>
   <string name="nav_tab_library">资料库</string>
 
+  <!-- About -->
+  <string name="settings_about">关于</string>
+  <string name="settings_about_subtitle">版本、开源声明与隐私</string>
+  <string name="about_title">关于</string>
+  <string name="about_app_tagline">基于 Jetpack Compose 与 Media3 打造的现代化本地音乐播放器</string>
+  <string name="about_version_format">版本 %1$s</string>
+  <string name="about_section_intro">项目简介</string>
+  <string name="about_intro_body">本质是个compose的练手项目，更新节奏和功能开发随缘。\n\n项目会保持免费不会做任何的收费功能；</string>
+  <string name="about_section_more">更多</string>
+  <string name="about_open_source">开源许可证</string>
+  <string name="about_open_source_subtitle">本应用使用的第三方库</string>
+  <string name="about_app_license">应用许可证</string>
+  <string name="about_app_license_subtitle">基于 MIT 许可证发布</string>
+  <string name="about_privacy">隐私政策</string>
+  <string name="about_privacy_subtitle">本应用如何处理你的数据</string>
+  <string name="about_project_home">项目主页</string>
+  <string name="about_project_home_subtitle">在 GitHub 查看源代码</string>
+  <string name="about_cannot_open_link">无法打开链接</string>
+
+  <!-- Open-source licenses page -->
+  <string name="licenses_title">开源许可证</string>
+  <string name="licenses_header">本应用的实现离不开以下开源项目，在此感谢所有作者与贡献者。</string>
+  <string name="licenses_count_format">%1$d 个依赖库</string>
+
+  <!-- App license page -->
+  <string name="app_license_title">应用许可证</string>
+
+  <!-- Privacy policy page -->
+  <string name="privacy_title">隐私政策</string>
+  <string name="privacy_updated_format">最后更新：%1$s</string>
+  <string name="privacy_updated_value">2026 年 6 月</string>
+  <string name="privacy_intro">柠檬音乐尊重你的隐私。本应用被设计为完全在你的设备上运行。本政策说明应用会访问哪些数据以及如何使用。</string>
+  <string name="privacy_section_data_title">我们访问的数据</string>
+  <string name="privacy_section_data_body">• 你设备上的音频文件与媒体元数据，仅用于在本地扫描和播放你的音乐库。\n• 播放历史、收藏、歌单与设置，仅存储在应用本地数据库与偏好设置中。\n本应用无需账号，也不收集个人身份标识。</string>
+  <string name="privacy_section_network_title">网络使用</string>
+  <string name="privacy_section_network_body">仅当你主动在线搜索歌词时，应用才会访问网络。你搜索的歌曲名与艺术家会被发送给歌词服务以返回匹配结果，不会传输其他数据。若你从不搜索歌词，应用不会通过网络发送你的数据。</string>
+  <string name="privacy_section_storage_title">数据存储与留存</string>
+  <string name="privacy_section_storage_body">所有应用数据（音乐库索引、歌单、收藏、历史与设置）都存储在你的设备本地。卸载应用即会删除这些数据。应用不会将你的数据上传到任何服务器。</string>
+  <string name="privacy_section_permissions_title">权限说明</string>
+  <string name="privacy_section_permissions_body">• 媒体/音频访问：用于扫描和播放本地音乐。\n• 通知与前台服务：用于显示播放控制并在后台保持播放。\n• 网络：仅用于在线歌词搜索。\n• 振动与唤醒锁：用于播放相关反馈与稳定性。</string>
+  <string name="privacy_section_thirdparty_title">第三方服务</string>
+  <string name="privacy_section_thirdparty_body">在线歌词仅在你搜索时从第三方歌词服务获取，其如何处理请求请参阅该服务自身的条款。应用集成的开源库已列于「开源许可证」中，它们在设备本地运行，不会通过本应用收集你的数据。</string>
+  <string name="privacy_section_contact_title">联系方式</string>
+  <string name="privacy_section_contact_body">如对本隐私政策有任何疑问，请在项目的 GitHub 仓库提交 issue。</string>
+
 </resources>

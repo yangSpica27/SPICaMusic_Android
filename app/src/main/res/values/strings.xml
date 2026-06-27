@@ -500,4 +500,49 @@
   <string name="nav_tab_music">Music</string>
   <string name="nav_tab_library">Library</string>
 
+  <!-- About -->
+  <string name="settings_about">About</string>
+  <string name="settings_about_subtitle">Version, open-source notices, and privacy</string>
+  <string name="about_title">About</string>
+  <string name="about_app_tagline">A modern local music player built with Jetpack Compose &amp; Media3</string>
+  <string name="about_version_format">Version %1$s</string>
+  <string name="about_section_intro">Introduction</string>
+  <string name="about_intro_body">SPICa Music is a modern Android music player built on Media3 ExoPlayer, Jetpack Compose, and Koin. It plays your local audio in a wide range of high-quality formats (FLAC, ALAC, Opus, and more) and offers lyrics, an equalizer, spectrum visualization, playlists, and listening stats. Everything runs locally on your device — no account required.</string>
+  <string name="about_section_more">More</string>
+  <string name="about_open_source">Open-source licenses</string>
+  <string name="about_open_source_subtitle">Third-party libraries used in this app</string>
+  <string name="about_app_license">App license</string>
+  <string name="about_app_license_subtitle">Released under the MIT License</string>
+  <string name="about_privacy">Privacy policy</string>
+  <string name="about_privacy_subtitle">How this app handles your data</string>
+  <string name="about_project_home">Project homepage</string>
+  <string name="about_project_home_subtitle">View the source code on GitHub</string>
+  <string name="about_cannot_open_link">Could not open the link</string>
+
+  <!-- Open-source licenses page -->
+  <string name="licenses_title">Open-source licenses</string>
+  <string name="licenses_header">This app is made possible by the following open-source projects. Thanks to all their authors and contributors.</string>
+  <string name="licenses_count_format">%1$d libraries</string>
+
+  <!-- App license page -->
+  <string name="app_license_title">App license</string>
+
+  <!-- Privacy policy page -->
+  <string name="privacy_title">Privacy policy</string>
+  <string name="privacy_updated_format">Last updated: %1$s</string>
+  <string name="privacy_updated_value">June 2026</string>
+  <string name="privacy_intro">SPICa Music respects your privacy. This app is designed to work entirely on your device. This policy explains what data the app accesses and how it is used.</string>
+  <string name="privacy_section_data_title">Data we access</string>
+  <string name="privacy_section_data_body">• Audio files and media metadata on your device, used solely to scan and play your music library locally.\n• Playback history, favorites, playlists, and settings, stored only in the app’s local database and preferences on your device.\nThe app does not require an account and does not collect personal identifiers.</string>
+  <string name="privacy_section_network_title">Network usage</string>
+  <string name="privacy_section_network_body">The app accesses the network only when you actively search for lyrics online. The song title and artist you search for are sent to the lyrics provider to return matching results. No other data is transmitted. If you never search for lyrics, the app does not send your data over the network.</string>
+  <string name="privacy_section_storage_title">Data storage &amp; retention</string>
+  <string name="privacy_section_storage_body">All app data (library index, playlists, favorites, history, and settings) is stored locally on your device. Uninstalling the app removes this data. The app does not upload your data to any server.</string>
+  <string name="privacy_section_permissions_title">Permissions</string>
+  <string name="privacy_section_permissions_body">• Media/Audio access: to scan and play local music.\n• Notifications &amp; foreground service: to show playback controls and keep music playing in the background.\n• Network: only for online lyrics search.\n• Vibration &amp; wake lock: for playback-related feedback and stability.</string>
+  <string name="privacy_section_thirdparty_title">Third-party services</string>
+  <string name="privacy_section_thirdparty_body">Online lyrics are retrieved from a third-party lyrics provider only when you search. Please refer to that provider’s own terms for how it handles requests. The app integrates open-source libraries listed under Open-source licenses; they run on-device and do not collect your data through this app.</string>
+  <string name="privacy_section_contact_title">Contact</string>
+  <string name="privacy_section_contact_body">If you have any questions about this privacy policy, please open an issue on the project’s GitHub repository.</string>
+
 </resources>
