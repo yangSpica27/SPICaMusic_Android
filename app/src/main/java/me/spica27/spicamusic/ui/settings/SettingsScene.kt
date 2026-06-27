@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,6 +62,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,6 +73,7 @@ import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
+import me.spica27.spicamusic.ui.about.AboutScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
@@ -88,11 +91,12 @@ class SettingsScene : StackScene() {
         val keepScreenOn by viewModel.keepScreenOn.collectAsStateWithLifecycle()
         val spectrumValue by viewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
         val coverTypeValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
-
+        val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
+                    scrollBehavior = scrollBehavior,
                     navigationIcon = {
                         IconButton(onClick = { path.popTop() }) {
                             Icon(
@@ -136,13 +140,13 @@ class SettingsScene : StackScene() {
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .padding(paddingValues),
+                            .nestedScroll(scrollBehavior.nestedScrollConnection),
                     contentPadding =
                         PaddingValues(
                             start = LayoutTokens.MusicHeaderHorizontalPadding,
                             end = LayoutTokens.MusicHeaderHorizontalPadding,
-                            top = Spacing.Small,
-                            bottom = Spacing.Huge,
+                            top = Spacing.Small + paddingValues.calculateTopPadding(),
+                            bottom = Spacing.Huge + paddingValues.calculateBottomPadding(),
                         ),
                     verticalArrangement = Arrangement.spacedBy(Spacing.Large),
                     overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
@@ -209,6 +213,28 @@ class SettingsScene : StackScene() {
                                 icon = Icons.Default.Visibility,
                                 checked = keepScreenOn,
                                 onCheckedChange = viewModel::setKeepScreenOn,
+                            )
+                        }
+                    }
+
+                    item {
+                        SettingsSectionCard(
+                            title = stringResource(R.string.settings_about),
+                            subtitle = stringResource(R.string.settings_about_subtitle),
+                        ) {
+                            SettingsRow(
+                                title = stringResource(R.string.settings_about),
+                                subtitle = stringResource(R.string.settings_about_subtitle),
+                                icon = Icons.Default.Info,
+                                selected = false,
+                                onClick = { path.push(AboutScene()) },
+                                trailingContent = {
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                },
                             )
                         }
                     }

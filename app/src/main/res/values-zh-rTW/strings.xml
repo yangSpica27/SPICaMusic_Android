@@ -498,4 +498,49 @@
   <string name="nav_tab_music">音樂</string>
   <string name="nav_tab_library">資料庫</string>
 
+  <!-- About -->
+  <string name="settings_about">關於</string>
+  <string name="settings_about_subtitle">版本、開源聲明與隱私</string>
+  <string name="about_title">關於</string>
+  <string name="about_app_tagline">基於 Jetpack Compose 與 Media3 打造的現代化本地音樂播放器</string>
+  <string name="about_version_format">版本 %1$s</string>
+  <string name="about_section_intro">專案簡介</string>
+  <string name="about_intro_body">檸檬音樂是一款基於 Media3 ExoPlayer、Jetpack Compose 與 Koin 打造的現代化 Android 音樂播放器。它在本機播放你的音訊，支援 FLAC、ALAC、Opus 等多種高品質格式，並提供歌詞、等化器、頻譜視覺化、播放清單與聆聽統計等能力。所有功能均在裝置本機執行，無需帳號。</string>
+  <string name="about_section_more">更多</string>
+  <string name="about_open_source">開源授權</string>
+  <string name="about_open_source_subtitle">本應用使用的第三方函式庫</string>
+  <string name="about_app_license">應用授權</string>
+  <string name="about_app_license_subtitle">基於 MIT 授權條款發布</string>
+  <string name="about_privacy">隱私政策</string>
+  <string name="about_privacy_subtitle">本應用如何處理你的資料</string>
+  <string name="about_project_home">專案首頁</string>
+  <string name="about_project_home_subtitle">在 GitHub 檢視原始碼</string>
+  <string name="about_cannot_open_link">無法開啟連結</string>
+
+  <!-- Open-source licenses page -->
+  <string name="licenses_title">開源授權</string>
+  <string name="licenses_header">本應用的實現離不開以下開源專案，在此感謝所有作者與貢獻者。</string>
+  <string name="licenses_count_format">%1$d 個函式庫</string>
+
+  <!-- App license page -->
+  <string name="app_license_title">應用授權</string>
+
+  <!-- Privacy policy page -->
+  <string name="privacy_title">隱私政策</string>
+  <string name="privacy_updated_format">最後更新：%1$s</string>
+  <string name="privacy_updated_value">2026 年 6 月</string>
+  <string name="privacy_intro">檸檬音樂尊重你的隱私。本應用被設計為完全在你的裝置上執行。本政策說明應用會存取哪些資料以及如何使用。</string>
+  <string name="privacy_section_data_title">我們存取的資料</string>
+  <string name="privacy_section_data_body">• 你裝置上的音訊檔案與媒體中繼資料，僅用於在本機掃描和播放你的音樂庫。\n• 播放紀錄、收藏、播放清單與設定，僅儲存在應用本機資料庫與偏好設定中。\n本應用無需帳號，也不收集個人身分識別。</string>
+  <string name="privacy_section_network_title">網路使用</string>
+  <string name="privacy_section_network_body">僅當你主動在線搜尋歌詞時，應用才會存取網路。你搜尋的歌曲名與演出者會被傳送給歌詞服務以回傳符合的結果，不會傳輸其他資料。若你從不搜尋歌詞，應用不會透過網路傳送你的資料。</string>
+  <string name="privacy_section_storage_title">資料儲存與保留</string>
+  <string name="privacy_section_storage_body">所有應用資料（音樂庫索引、播放清單、收藏、紀錄與設定）都儲存在你的裝置本機。解除安裝應用即會刪除這些資料。應用不會將你的資料上傳到任何伺服器。</string>
+  <string name="privacy_section_permissions_title">權限說明</string>
+  <string name="privacy_section_permissions_body">• 媒體/音訊存取：用於掃描和播放本機音樂。\n• 通知與前景服務：用於顯示播放控制並在背景保持播放。\n• 網路：僅用於在線歌詞搜尋。\n• 震動與喚醒鎖定：用於播放相關回饋與穩定性。</string>
+  <string name="privacy_section_thirdparty_title">第三方服務</string>
+  <string name="privacy_section_thirdparty_body">在線歌詞僅在你搜尋時從第三方歌詞服務取得，其如何處理請求請參閱該服務自身的條款。應用整合的開源函式庫已列於「開源授權」中，它們在裝置本機執行，不會透過本應用收集你的資料。</string>
+  <string name="privacy_section_contact_title">聯絡方式</string>
+  <string name="privacy_section_contact_body">如對本隱私政策有任何疑問，請在專案的 GitHub 儲存庫提交 issue。</string>
+
 </resources>
