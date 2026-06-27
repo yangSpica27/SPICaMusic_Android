@@ -171,10 +171,12 @@ fun ExpandedPlayerScreen(
     // 当前播放位置（定时更新）
     // 使用 currentMediaItem?.mediaId 作为 key，切歌时自动重置 seek 状态
     val mediaId = currentMediaItem?.mediaId
-    var seekValueState by remember(mediaId) { mutableFloatStateOf(0f) }
+    // 注意：保留 State 引用而非用 by 解包，避免每秒的播放位置更新触发整个播放器树重组。
+    // 位置读取下沉到 SeekBarSection 叶子组件，通过 provider lambda 局部消费。
+    val seekValueState = remember(mediaId) { mutableFloatStateOf(0f) }
     var isSeekingState by remember(mediaId) { mutableStateOf(false) }
 
-    val trueTimePosition by viewModel.currentPosition.collectAsStateWithLifecycle()
+    val positionState = viewModel.currentPosition.collectAsStateWithLifecycle()
 
     val songLikeState by viewModel.currentSongIsLike.collectAsStateWithLifecycle()
 
@@ -186,11 +188,15 @@ fun ExpandedPlayerScreen(
         onCollapse.invoke()
     }
 
-    // 将播放位置同步到 seekbar：trueTimePosition 每秒更新多次，
-    LaunchedEffect(trueTimePosition) {
-        if (!isSeekingState) {
-            seekValueState = trueTimePosition.toFloat()
-        }
+    // 将播放位置同步到 seekbar：用 snapshotFlow 在协程中观察位置变化，
+    // 避免在组合作用域读取高频 state 而导致重组。
+    LaunchedEffect(mediaId) {
+        snapshotFlow { positionState.value }
+            .collect { position ->
+                if (!isSeekingState) {
+                    seekValueState.floatValue = position.toFloat()
+                }
+            }
     }
 
     val coroutineScope = rememberCoroutineScope()
@@ -302,18 +308,18 @@ fun ExpandedPlayerScreen(
                             isSeekingState = isSeekingState,
                             currentMediaItem = { currentMediaItem },
                             audioQualityInfo = audioQualityInfo,
-                            realPosition = trueTimePosition.toFloat(),
-                            seekPosition = seekValueState,
+                            realPositionProvider = { positionState.value.toFloat() },
+                            seekPositionProvider = { seekValueState.floatValue },
                             duration = duration,
                             isPlaying = isPlaying,
                             isLike = songLikeState,
                             playMode = playMode,
                             onValueChange = {
                                 isSeekingState = true
-                                seekValueState = it * duration
+                                seekValueState.floatValue = it * duration
                             },
                             onValueChangeFinished = {
-                                viewModel.seekTo(seekValueState.toLong())
+                                viewModel.seekTo(seekValueState.floatValue.toLong())
                                 isSeekingState = false
                             },
                             onPlayPauseClick = { viewModel.togglePlayPause() },
@@ -617,8 +623,8 @@ private fun MediaItem?.toAudioQualityInfo(): AudioQualityInfo {
 private fun PlayerPage(
     currentMediaItem: () -> MediaItem?,
     audioQualityInfo: AudioQualityInfo,
-    seekPosition: Float,
-    realPosition: Float,
+    seekPositionProvider: () -> Float,
+    realPositionProvider: () -> Float,
     duration: Long,
     isPlaying: Boolean,
     isLike: Boolean,
@@ -840,80 +846,17 @@ private fun PlayerPage(
             }
         }
         Spacer(modifier = Modifier.height(Spacing.Medium))
-        // 进度条
-        Column(
-            modifier =
-                Modifier.graphicsLayer {
-                    val seekbarReveal =
-                        calculateFadeAlpha(progressProvider(), SEEKBAR_REVEAL_THRESHOLD)
-                    alpha = seekbarReveal
-                    translationY = (1f - seekbarReveal) * 24f
-                },
-        ) {
-            AudioWaveSlider(
-                progress = if (duration > 0) (seekPosition / duration).coerceIn(0f, 1f) else 0f,
-                amplitudes = ampState,
-                onProgressChange = {
-                    onValueChange.invoke(it)
-                },
-                onProgressChangeFinished = {
-                    onValueChangeFinished.invoke()
-                },
-                waveformBrush = SolidColor(MaterialTheme.colorScheme.inverseOnSurface),
-                progressBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(80.dp),
-            )
-            Spacer(modifier = Modifier.height(Spacing.Small))
-            // 当前位置 和 总时长
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .animateContentSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(
-                    modifier = Modifier.align(Alignment.CenterStart),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = formatTime(realPosition.toLong()),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    // 滑动到的地方
-                    AnimatedVisibility(
-                        visible = isSeekingState,
-                    ) {
-                        Text(
-                            modifier =
-                                Modifier
-                                    .background(
-                                        MaterialTheme.colorScheme.inversePrimary,
-                                        shape = Shapes.SmallCornerBasedShape,
-                                    ).padding(vertical = 4.dp, horizontal = 8.dp),
-                            text = formatTime(seekPosition.toLong()),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                }
-                Text(
-                    text = formatTime(duration),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    modifier =
-                        Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(vertical = 4.dp, horizontal = 8.dp),
-                )
-            }
-        }
+        // 进度条（位置读取下沉到该子组件，避免每秒重组整个 PlayerPage）
+        SeekBarSection(
+            seekPositionProvider = seekPositionProvider,
+            realPositionProvider = realPositionProvider,
+            duration = duration,
+            amplitudes = ampState,
+            isSeekingState = isSeekingState,
+            onValueChange = onValueChange,
+            onValueChangeFinished = onValueChangeFinished,
+            progressProvider = progressProvider,
+        )
         Spacer(modifier = Modifier.height(Spacing.Medium))
         // 控制按钮
         PlayerControls(
@@ -935,6 +878,100 @@ private fun PlayerPage(
 // ============================================
 // UI 子组件
 // ============================================
+
+/**
+ * 进度条区块。
+ * 单独抽出该叶子组件，使每秒的播放位置更新只重组这里，
+ * 而不是连带整个 [PlayerPage] 一起重组。
+ */
+@Composable
+private fun SeekBarSection(
+    seekPositionProvider: () -> Float,
+    realPositionProvider: () -> Float,
+    duration: Long,
+    amplitudes: List<Int>,
+    isSeekingState: Boolean,
+    onValueChange: (Float) -> Unit,
+    onValueChangeFinished: () -> Unit,
+    progressProvider: () -> Float,
+    modifier: Modifier = Modifier,
+) {
+    val seekPosition = seekPositionProvider()
+    val realPosition = realPositionProvider()
+    Column(
+        modifier =
+            modifier.graphicsLayer {
+                val seekbarReveal =
+                    calculateFadeAlpha(progressProvider(), SEEKBAR_REVEAL_THRESHOLD)
+                alpha = seekbarReveal
+                translationY = (1f - seekbarReveal) * 24f
+            },
+    ) {
+        AudioWaveSlider(
+            progress = if (duration > 0) (seekPosition / duration).coerceIn(0f, 1f) else 0f,
+            amplitudes = amplitudes,
+            onProgressChange = {
+                onValueChange.invoke(it)
+            },
+            onProgressChangeFinished = {
+                onValueChangeFinished.invoke()
+            },
+            waveformBrush = SolidColor(MaterialTheme.colorScheme.inverseOnSurface),
+            progressBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(80.dp),
+        )
+        Spacer(modifier = Modifier.height(Spacing.Small))
+        // 当前位置 和 总时长
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .animateContentSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(
+                modifier = Modifier.align(Alignment.CenterStart),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = formatTime(realPosition.toLong()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                // 滑动到的地方
+                AnimatedVisibility(
+                    visible = isSeekingState,
+                ) {
+                    Text(
+                        modifier =
+                            Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.inversePrimary,
+                                    shape = Shapes.SmallCornerBasedShape,
+                                ).padding(vertical = 4.dp, horizontal = 8.dp),
+                        text = formatTime(seekPosition.toLong()),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+            Text(
+                text = formatTime(duration),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(vertical = 4.dp, horizontal = 8.dp),
+            )
+        }
+    }
+}
 
 // ---------- 播放器控制组件 ----------
 

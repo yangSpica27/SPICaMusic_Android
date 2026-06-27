@@ -198,11 +198,13 @@ class IOSOverscrollEffect(
         }
 }
 
+private val EmptyOverscrollOffset: (value: Float) -> Unit = {}
+
 @Composable
 fun rememberIOSOverScrollEffect(
     orientation: Orientation,
     scope: CoroutineScope = rememberCoroutineScope(),
-    onOverscrollOffset: (value: Float) -> Unit = {},
+    onOverscrollOffset: (value: Float) -> Unit = EmptyOverscrollOffset,
 ): OverscrollEffect =
     remember(
         scope,

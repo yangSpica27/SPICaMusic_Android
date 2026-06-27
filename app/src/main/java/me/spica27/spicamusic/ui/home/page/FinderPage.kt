@@ -37,7 +37,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -59,10 +58,10 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
-import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.ui.home.HomePage
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
+import me.spica27.spicamusic.ui.model.PlaylistWithCover
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
 import me.spica27.spicamusic.ui.scan.ScannerScene
@@ -73,7 +72,6 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -86,6 +84,7 @@ fun FinderPage() {
     val frequentSongs by homeViewModel.frequentSongs.collectAsStateWithLifecycle()
     val favoriteSongs by homeViewModel.favoriteSongs.collectAsStateWithLifecycle()
     val playlists by homeViewModel.playlists.collectAsStateWithLifecycle()
+    val playlistsWithCover by homeViewModel.playlistsWithCover.collectAsStateWithLifecycle()
     val allSongs by homeViewModel.allSongs.collectAsStateWithLifecycle()
 
     val playerViewModel = LocalPlayerViewModel.current
@@ -205,7 +204,7 @@ fun FinderPage() {
 
             item {
                 PlaylistRail(
-                    playlists = playlists.take(8),
+                    playlists = playlistsWithCover,
                     onPlaylistClick = { playlist ->
                         path.push(PlaylistDetailScene(playlist))
                     },
@@ -555,7 +554,7 @@ private fun FinderSongCard(
 
 @Composable
 private fun PlaylistRail(
-    playlists: List<Playlist>,
+    playlists: List<PlaylistWithCover>,
     onPlaylistClick: (Playlist) -> Unit,
     onEmptyClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -579,11 +578,15 @@ private fun PlaylistRail(
         ) {
             items(
                 items = playlists,
-                key = { it.playlistId ?: it.playlistName.hashCode().toLong() },
-            ) { playlist ->
+                key = {
+                    it.playlist.playlistId ?: it.playlist.playlistName
+                        .hashCode()
+                        .toLong()
+                },
+            ) { item ->
                 FinderPlaylistCard(
-                    playlist = playlist,
-                    onClick = { onPlaylistClick(playlist) },
+                    item = item,
+                    onClick = { onPlaylistClick(item.playlist) },
                 )
             }
         }
@@ -592,20 +595,10 @@ private fun PlaylistRail(
 
 @Composable
 private fun FinderPlaylistCard(
-    playlist: Playlist,
+    item: PlaylistWithCover,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val playlistUseCases = koinInject<PlaylistUseCases>()
-    val albumIds =
-        playlistUseCases
-            .getPlaylistCoverAlbumIds(playlist.playlistId ?: 0L)
-            .collectAsState(initial = emptyList())
-    val size =
-        playlistUseCases
-            .getSongSizeInPlaylist(playlist.playlistId ?: 0L)
-            .collectAsState(initial = 0)
-
     Column(
         modifier =
             modifier
@@ -619,17 +612,17 @@ private fun FinderPlaylistCard(
                     .fillMaxWidth()
                     .aspectRatio(1f)
                     .clip(Shapes.ExtraLargeCornerBasedShape),
-            albumIds = albumIds.value,
+            albumIds = item.coverAlbumIds,
         )
         Text(
-            text = playlist.playlistName,
+            text = item.playlist.playlistName,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
-            text = stringResource(R.string.songs_count, size.value),
+            text = stringResource(R.string.songs_count, item.songCount),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
