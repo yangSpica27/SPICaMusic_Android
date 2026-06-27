@@ -44,8 +44,6 @@ fun LargeBottomPlayerBar(
 ) {
     val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
-    val currentPosition = viewModel.currentPosition.collectAsStateWithLifecycle().value
-    val currentDuration by viewModel.currentDuration.collectAsStateWithLifecycle()
 
     val metadata = currentMediaItem?.mediaMetadata
     val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)

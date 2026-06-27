@@ -4,11 +4,13 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import me.spica27.spicamusic.common.entity.Playlist
@@ -17,6 +19,7 @@ import me.spica27.spicamusic.common.entity.SongFilter
 import me.spica27.spicamusic.common.entity.SongSortOrder
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
+import me.spica27.spicamusic.ui.model.PlaylistWithCover
 
 /**
  * 首页 ViewModel
@@ -92,6 +95,37 @@ class HomeViewModel(
         playlistRepository
             .getAllPlaylistsFlow()
             .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
+            )
+
+    /**
+     * 首页"发现"页用的歌单 + 封面/歌曲数聚合。
+     * 发现页只展示前 8 个，这里同样只为前 8 个订阅封面/数量，避免无谓订阅。
+     * 订阅集中在 ViewModel，列表项纯展示，消除滚动时的 DB 订阅抖动。
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val playlistsWithCover: StateFlow<List<PlaylistWithCover>> =
+        playlists
+            .flatMapLatest { list ->
+                val limited = list.take(8)
+                if (limited.isEmpty()) {
+                    flowOf(emptyList())
+                } else {
+                    combine(
+                        limited.map { playlist ->
+                            val id = playlist.playlistId ?: 0L
+                            combine(
+                                playlistRepository.getPlaylistCoverAlbumIds(id),
+                                playlistRepository.getSongSizeInPlaylist(id),
+                            ) { albumIds, size ->
+                                PlaylistWithCover(playlist, albumIds, size)
+                            }
+                        },
+                    ) { it.toList() }
+                }
+            }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList(),

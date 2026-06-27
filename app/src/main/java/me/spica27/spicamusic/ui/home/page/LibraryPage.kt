@@ -83,11 +83,10 @@ import com.google.common.collect.ImmutableList
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.PlayStats
-import me.spica27.spicamusic.common.entity.Playlist
-import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.ScanFolder
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
+import me.spica27.spicamusic.ui.model.PlaylistWithCover
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
 import me.spica27.spicamusic.ui.scan.ScannerScene
@@ -98,7 +97,6 @@ import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
-import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
 import java.util.concurrent.TimeUnit
 
@@ -108,6 +106,7 @@ fun LibraryPage() {
     val viewModel: LibraryPageViewModel = koinActivityViewModel()
 
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val playlistsWithCover by viewModel.playlistsWithCover.collectAsStateWithLifecycle()
     val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle()
     val extraFolders by viewModel.extraFolders.collectAsStateWithLifecycle()
     val ignoreFolders by viewModel.ignoreFolders.collectAsStateWithLifecycle()
@@ -220,7 +219,7 @@ fun LibraryPage() {
             when (tabs[page]) {
                 LibraryPageTab.Playlist ->
                     PlaylistPage(
-                        playlists = ImmutableList.copyOf(playlists),
+                        playlists = playlistsWithCover,
                         weeklyStats = weeklyStats,
                         gridState = playlistState,
                     )
@@ -482,7 +481,7 @@ private fun LibraryTabItem(
 
 @Composable
 private fun PlaylistPage(
-    playlists: ImmutableList<Playlist>,
+    playlists: List<PlaylistWithCover>,
     weeklyStats: PlayStats?,
     modifier: Modifier = Modifier,
     gridState: LazyGridState,
@@ -528,14 +527,18 @@ private fun PlaylistPage(
         } else {
             items(
                 items = playlists,
-                key = { it.playlistId ?: it.playlistName.hashCode().toLong() },
-            ) { playlist ->
+                key = {
+                    it.playlist.playlistId ?: it.playlist.playlistName
+                        .hashCode()
+                        .toLong()
+                },
+            ) { item ->
                 PlaylistItem(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .clickable { navigationPath.push(PlaylistDetailScene(playlist)) },
-                    playlist = playlist,
+                            .clickable { navigationPath.push(PlaylistDetailScene(item.playlist)) },
+                    item = item,
                 )
             }
         }
@@ -892,19 +895,9 @@ private fun FolderRow(
 
 @Composable
 private fun PlaylistItem(
+    item: PlaylistWithCover,
     modifier: Modifier = Modifier,
-    playlist: Playlist,
 ) {
-    val playlistUseCases = koinInject<PlaylistUseCases>()
-    val albumIds =
-        playlistUseCases
-            .getPlaylistCoverAlbumIds(playlist.playlistId ?: 0L)
-            .collectAsStateWithLifecycle(initialValue = emptyList())
-    val size =
-        playlistUseCases
-            .getSongSizeInPlaylist(playlist.playlistId ?: 0L)
-            .collectAsStateWithLifecycle(initialValue = 0)
-
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(Spacing.Small),
@@ -915,10 +908,10 @@ private fun PlaylistItem(
                     .fillMaxWidth()
                     .aspectRatio(1f)
                     .clip(Shapes.ExtraLargeCornerBasedShape),
-            albumIds = albumIds.value,
+            albumIds = item.coverAlbumIds,
         )
         Text(
-            text = playlist.playlistName,
+            text = item.playlist.playlistName,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
@@ -926,7 +919,7 @@ private fun PlaylistItem(
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = stringResource(R.string.songs_count, size.value),
+            text = stringResource(R.string.songs_count, item.songCount),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
