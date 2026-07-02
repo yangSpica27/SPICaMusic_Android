@@ -32,7 +32,8 @@ val storageModule = module {
         ).addMigrations(
             AppDatabase.MIGRATION_5_6,
             AppDatabase.MIGRATION_9_10,
-            AppDatabase.MIGRATION_12_13
+            AppDatabase.MIGRATION_12_13,
+            AppDatabase.MIGRATION_13_14,
         )
             // 开发阶段允许破坏性迁移，发布时应添加正式的 Migration
             .fallbackToDestructiveMigration(false)

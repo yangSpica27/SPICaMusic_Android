@@ -22,7 +22,7 @@ import me.spica27.spicamusic.storage.impl.entity.SongEntity
     entities = [SongEntity::class, PlaylistEntity::class, PlaylistSongCrossRefEntity::class,
         ExtraInfoEntity::class, PlayHistoryEntity::class, AlbumEntity::class,
         ScanFolderEntity::class],
-    version = 13,
+    version = 15,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -70,6 +70,25 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             }
 
+        }
+
+        /** v13 -> v14: PlaylistSongCrossRef 新增 sortOrder，用于自定义歌单手动排序 */
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    ALTER TABLE PlaylistSongCrossRef
+                    ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0
+                    """.trimIndent()
+                )
+                db.execSQL("UPDATE PlaylistSongCrossRef SET sortOrder = insertTime * 1000000")
+                db.execSQL(
+                    """
+                    CREATE INDEX IF NOT EXISTS index_PlaylistSongCrossRef_playlistId_sortOrder
+                    ON PlaylistSongCrossRef(playlistId, sortOrder)
+                    """.trimIndent()
+                )
+            }
         }
     }
 }

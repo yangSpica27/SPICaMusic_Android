@@ -35,6 +35,10 @@ class PlaylistDetailViewModel(
     private val player: PlayerUseCases,
     private val songRepository: SongUseCases,
 ) : ViewModel() {
+    companion object {
+        const val SORT_MODE_FULL_LIST_LIMIT = 5000
+    }
+
     // 歌单信息
     val playlist: StateFlow<Playlist?> =
         playlistRepository.getPlaylistByIdFlow(playlistId).stateIn(
@@ -66,6 +70,15 @@ class PlaylistDetailViewModel(
     private val _searchKeyword = MutableStateFlow("")
     val searchKeyword = _searchKeyword.asStateFlow()
 
+    private val _isSortMode = MutableStateFlow(false)
+    val isSortMode = _isSortMode.asStateFlow()
+
+    private val _sortModeSongs = MutableStateFlow<List<Song>>(emptyList())
+    val sortModeSongs = _sortModeSongs.asStateFlow()
+
+    private val _sortModeLimitExceeded = MutableStateFlow(false)
+    val sortModeLimitExceeded = _sortModeLimitExceeded.asStateFlow()
+
     /** 展示用歌曲列表：搜索模式+关键字非空时返回过滤结果，否则返回完整列表 */
     @OptIn(ExperimentalCoroutinesApi::class)
     val displayedSongs: StateFlow<PagingData<Song>> =
@@ -83,6 +96,7 @@ class PlaylistDetailViewModel(
             )
 
     fun enterSearchMode() {
+        cancelSortMode()
         _isSearchMode.value = true
     }
 
@@ -225,7 +239,12 @@ class PlaylistDetailViewModel(
      * 切换多选模式
      */
     fun toggleMultiSelectMode() {
-        _isMultiSelectMode.value = !_isMultiSelectMode.value
+        val shouldEnter = !_isMultiSelectMode.value
+        if (shouldEnter) {
+            cancelSortMode()
+            exitSearchMode()
+        }
+        _isMultiSelectMode.value = shouldEnter
         if (!_isMultiSelectMode.value) {
             // 退出多选模式时清空选择
             _selectedSongs.value = emptySet()
@@ -265,6 +284,82 @@ class PlaylistDetailViewModel(
      */
     fun deselectAll() {
         _selectedSongs.value = emptySet()
+    }
+
+    fun enterSortMode() {
+        exitSearchMode()
+        _isMultiSelectMode.value = false
+        _selectedSongs.value = emptySet()
+        _showMoreOptionsMenu.value = false
+
+        viewModelScope.launch {
+            try {
+                val count = playlistRepository.getSongSizeInPlaylistOnce(playlistId)
+                if (count > SORT_MODE_FULL_LIST_LIMIT) {
+                    _sortModeLimitExceeded.value = true
+                    Timber.w("歌单歌曲数量 $count 超过排序模式上限 $SORT_MODE_FULL_LIST_LIMIT")
+                    return@launch
+                }
+
+                _sortModeSongs.value = playlistRepository.getSongsByPlaylistIdList(playlistId)
+                _isSortMode.value = true
+            } catch (e: Exception) {
+                Timber.e(e, "进入排序模式失败")
+            }
+        }
+    }
+
+    fun cancelSortMode() {
+        _isSortMode.value = false
+        _sortModeSongs.value = emptyList()
+    }
+
+    fun finishSortMode() {
+        val mediaIds = _sortModeSongs.value.map { it.mediaStoreId }
+        if (!_isSortMode.value || mediaIds.isEmpty()) {
+            cancelSortMode()
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                playlistRepository.reorderPlaylistSongs(playlistId, mediaIds)
+                Timber.d("保存歌单歌曲顺序成功: ${mediaIds.size} 首")
+                cancelSortMode()
+            } catch (e: Exception) {
+                Timber.e(e, "保存歌单歌曲顺序失败")
+            }
+        }
+    }
+
+    fun moveSortModeSong(
+        fromMediaId: Long,
+        toMediaId: Long,
+        insertAfterTarget: Boolean,
+    ) {
+        if (fromMediaId == toMediaId || !_isSortMode.value) return
+
+        val songs = _sortModeSongs.value.toMutableList()
+        val fromIndex = songs.indexOfFirst { it.mediaStoreId == fromMediaId }
+        if (fromIndex < 0) {
+            Timber.w("排序源歌曲不在本地列表中: $fromMediaId")
+            return
+        }
+
+        val movedSong = songs.removeAt(fromIndex)
+        val targetIndex = songs.indexOfFirst { it.mediaStoreId == toMediaId }
+        if (targetIndex < 0) {
+            Timber.w("排序目标歌曲不在本地列表中: $toMediaId")
+            return
+        }
+
+        val insertIndex = if (insertAfterTarget) targetIndex + 1 else targetIndex
+        songs.add(insertIndex.coerceIn(0, songs.size), movedSong)
+        _sortModeSongs.value = songs
+    }
+
+    fun hideSortModeLimitExceeded() {
+        _sortModeLimitExceeded.value = false
     }
 
     fun showDeleteConfirmDialog() {

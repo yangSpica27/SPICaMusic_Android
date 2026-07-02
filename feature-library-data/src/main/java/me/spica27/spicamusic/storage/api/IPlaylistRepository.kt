@@ -27,6 +27,11 @@ interface IPlaylistRepository {
     fun getSongsByPlaylistIdFlow(playlistId: Long, keyword: String): Flow<PagingData<Song>>
 
     /**
+     * 根据歌单ID一次性获取完整有序歌曲列表
+     */
+    suspend fun getSongsByPlaylistIdList(playlistId: Long): List<Song>
+
+    /**
      * 根据歌单ID获取歌单信息 Flow
      */
     fun getPlaylistByIdFlow(playlistId: Long): Flow<Playlist?>
@@ -88,6 +93,21 @@ interface IPlaylistRepository {
     suspend fun addSongsToPlaylist(playlistId: Long, mediaIds: List<Long>)
 
     /**
+     * 调整歌单内歌曲顺序
+     */
+    suspend fun reorderPlaylistSong(
+        playlistId: Long,
+        fromMediaId: Long,
+        toMediaId: Long,
+        insertAfterTarget: Boolean,
+    )
+
+    /**
+     * 按传入的完整歌曲 ID 顺序保存歌单排序
+     */
+    suspend fun reorderPlaylistSongs(playlistId: Long, orderedMediaIds: List<Long>)
+
+    /**
      * 获取歌单封面所需的前 4 个不同专辑 ID（Flow），用于马赛克封面渲染。
      * 结果列表长度 0–4，调用方根据长度选择渲染策略。
      */
@@ -98,6 +118,11 @@ interface IPlaylistRepository {
      * 获取歌单内歌曲数量 Flow
      */
     fun getSongSizeInPlaylist(playlistId: Long): Flow<Int>
+
+    /**
+     * 获取歌单内歌曲数量
+     */
+    suspend fun getSongSizeInPlaylistOnce(playlistId: Long): Int
 
     /**
      * 获取歌单内所有歌曲ID Flow

@@ -46,10 +46,10 @@ interface PlaylistDao {
     @Query("SELECT * FROM Playlist WHERE playlistId == :playlistId")
     fun getPlaylistsWithSongsWithPlayListIdFlow(playlistId: Long): Flow<PlaylistWithSongsEntity?>
 
-    @Query("SELECT s.* FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId ORDER BY psc.insertTime DESC")
+    @Query("SELECT s.* FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId ORDER BY psc.sortOrder DESC, psc.insertTime DESC, psc.mediaId DESC")
     fun getSongsByPlaylistIdFlow(playlistId: Long): Flow<List<SongEntity>>
 
-    @Query("SELECT s.* FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId ORDER BY psc.insertTime DESC")
+    @Query("SELECT s.* FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId ORDER BY psc.sortOrder DESC, psc.insertTime DESC, psc.mediaId DESC")
     fun getSongsByPlaylistId(playlistId: Long): List<SongEntity>
 
     @Query("SELECT * FROM Playlist WHERE playlistId IN (SELECT playlistId FROM PlaylistSongCrossRef WHERE mediaId == :mediaId)")
@@ -100,6 +100,9 @@ interface PlaylistDao {
     @Query("SELECT COUNT(*) FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId")
     fun getSongSizeByPlaylistId(playlistId: Long): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId")
+    fun getSongSizeByPlaylistIdOnce(playlistId: Long): Int
+
     /**
      * 获取歌单前 4 个不同专辑 ID，用于封面马赛克渲染。
      * 按歌曲加入时间倒序取最新的 4 个不同 albumId。
@@ -108,19 +111,19 @@ interface PlaylistDao {
         """SELECT DISTINCT s.albumId FROM Song AS s
            JOIN PlaylistSongCrossRef AS psc ON s.mediaStoreId = psc.mediaId
            WHERE psc.playlistId = :playlistId
-           ORDER BY psc.insertTime DESC
+           ORDER BY psc.sortOrder DESC, psc.insertTime DESC, psc.mediaId DESC
            LIMIT 4"""
     )
     fun getCoverAlbumIds(playlistId: Long): Flow<List<Long>>
 
-    /** 在指定歌单内按关键字（曲名 / 艺术家）过滤歌曲，按加入时间倒序 */
+    /** 在指定歌单内按关键字（曲名 / 艺术家）过滤歌曲，按自定义顺序 */
     @Query(
         """SELECT s.* FROM Song AS s
            JOIN PlaylistSongCrossRef AS psc ON s.mediaStoreId = psc.mediaId
            WHERE psc.playlistId = :playlistId
              AND (s.displayName LIKE '%' || :keyword || '%'
                   OR s.artist LIKE '%' || :keyword || '%')
-           ORDER BY psc.insertTime DESC"""
+           ORDER BY psc.sortOrder DESC, psc.insertTime DESC, psc.mediaId DESC"""
     )
     fun searchSongsByPlaylistId(playlistId: Long, keyword: String): Flow<List<SongEntity>>
 
@@ -130,11 +133,16 @@ interface PlaylistDao {
            WHERE psc.playlistId = :playlistId
                       AND (s.displayName LIKE '%' || :keyword || '%'
                   OR s.artist LIKE '%' || :keyword || '%')
-           ORDER BY psc.insertTime DESC"""
+           ORDER BY psc.sortOrder DESC, psc.insertTime DESC, psc.mediaId DESC"""
     )
     fun getSongsPagingByPlaylistId(playlistId: Long, keyword: String): PagingSource<Int, SongEntity>
 
+    @Query("SELECT MAX(sortOrder) FROM PlaylistSongCrossRef WHERE playlistId = :playlistId")
+    fun getMaxSortOrderByPlaylistId(playlistId: Long): Long?
 
-    @Query("SELECT s.mediaStoreId FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId ORDER BY psc.insertTime DESC")
+    @Query("UPDATE PlaylistSongCrossRef SET sortOrder = :sortOrder WHERE playlistId = :playlistId AND mediaId = :mediaId")
+    fun updateSortOrder(playlistId: Long, mediaId: Long, sortOrder: Long)
+
+    @Query("SELECT s.mediaStoreId FROM Song as s JOIN PlaylistSongCrossRef as psc ON s.mediaStoreId = psc.mediaId WHERE psc.playlistId = :playlistId ORDER BY psc.sortOrder DESC, psc.insertTime DESC, psc.mediaId DESC")
     fun getMediaIdsByPlaylistId(playlistId: Long): List<Long>
 }

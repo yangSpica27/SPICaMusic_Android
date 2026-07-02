@@ -199,6 +199,7 @@ dependencies {
   implementation(libs.materialKolor)
   implementation(libs.landscapist.transformation)
   baselineProfile(project(':baselineprofile'))
+  implementation(libs.reorderable)
 }
 
 

@@ -236,6 +236,11 @@
   <string name="play_recommendation">Play recommendations</string>
   <string name="add_songs_to_playlist">Add songs to playlist</string>
   <string name="add_songs">Add songs</string>
+  <string name="sort_songs">Sort songs</string>
+  <string name="done_sorting">Done</string>
+  <string name="drag_to_reorder">Drag to reorder</string>
+  <string name="sort_mode_limit_title">Playlist is too large</string>
+  <string name="sort_mode_limit_message">Sorting is currently supported for playlists with up to %d songs.</string>
   <string name="playlist_detail_title">Playlist Details</string>
   <string name="play_count_format">%d plays</string>
 

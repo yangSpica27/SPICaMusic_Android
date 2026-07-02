@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
@@ -113,6 +114,8 @@ import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 // ── 滚动驱动常量（像素）────────────────────────────────────────────────────────
 private const val SCROLL_ART_RANGE = 460f
@@ -139,6 +142,9 @@ fun PlaylistDetailScreen(playlist: Playlist) {
     val coverAlbumIds by viewModel.coverAlbumIds.collectAsStateWithLifecycle()
     val songCount by viewModel.songCount.collectAsStateWithLifecycle()
     val isSearchMode by viewModel.isSearchMode.collectAsStateWithLifecycle()
+    val isSortMode by viewModel.isSortMode.collectAsStateWithLifecycle()
+    val sortModeSongs by viewModel.sortModeSongs.collectAsStateWithLifecycle()
+    val sortModeLimitExceeded by viewModel.sortModeLimitExceeded.collectAsStateWithLifecycle()
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedSongs by viewModel.selectedSongs.collectAsStateWithLifecycle()
@@ -157,6 +163,10 @@ fun PlaylistDetailScreen(playlist: Playlist) {
         viewModel.toggleMultiSelectMode()
     }
 
+    BackHandler(isSortMode) {
+        viewModel.cancelSortMode()
+    }
+
     val displayName = currentPlaylist?.playlistName ?: playlist.playlistName
     BackHandler(enabled = isSearchMode) {
         viewModel.exitSearchMode()
@@ -164,6 +174,16 @@ fun PlaylistDetailScreen(playlist: Playlist) {
 
     // ── 滚动状态与动画 ──────────────────────────────────────────────────────
     val lazyListState = rememberLazyListState()
+    val reorderableLazyListState =
+        rememberReorderableLazyListState(lazyListState) { from, to ->
+            val fromMediaId = from.key as? Long ?: return@rememberReorderableLazyListState
+            val toMediaId = to.key as? Long ?: return@rememberReorderableLazyListState
+            viewModel.moveSortModeSong(
+                fromMediaId = fromMediaId,
+                toMediaId = toMediaId,
+                insertAfterTarget = from.index < to.index,
+            )
+        }
     val statusBarTopDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val screenWidthDp = 375.dp
 
@@ -286,31 +306,63 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                 PlayButtons(
                     onPlayAll = viewModel::playAll,
                     onAddSongs = viewModel::showAddSongsSheet,
+                    enabled = !isSortMode,
                 )
             }
 
-            // 歌曲列表
-            items(count = songs.itemCount) { index ->
-                val song = songs[index]
-                if (song != null) {
-                    SongRow(
-                        song = song,
-                        isMultiSelectMode = isMultiSelectMode,
-                        isSelected = selectedSongs.contains(song.mediaStoreId),
-                        onClick = {
-                            if (isMultiSelectMode) {
+            if (isSortMode) {
+                items(
+                    count = sortModeSongs.size,
+                    key = { index -> sortModeSongs[index].mediaStoreId },
+                ) { index ->
+                    val song = sortModeSongs[index]
+                    ReorderableItem(
+                        state = reorderableLazyListState,
+                        key = song.mediaStoreId,
+                    ) { isDragging ->
+                        SongRow(
+                            song = song,
+                            isMultiSelectMode = false,
+                            isSelected = false,
+                            isDragging = isDragging,
+                            isReorderEnabled = true,
+                            dragHandleModifier = Modifier.draggableHandle(),
+                            onClick = {},
+                            onLongClick = {},
+                            onMore = {},
+                        )
+                    }
+                }
+            } else {
+                // 歌曲列表
+                items(
+                    count = songs.itemCount,
+                    key = { index -> songs.peek(index)?.mediaStoreId ?: "song_placeholder_$index" },
+                ) { index ->
+                    val song = songs[index]
+                    if (song != null) {
+                        SongRow(
+                            song = song,
+                            isMultiSelectMode = isMultiSelectMode,
+                            isSelected = selectedSongs.contains(song.mediaStoreId),
+                            isDragging = false,
+                            isReorderEnabled = false,
+                            dragHandleModifier = Modifier,
+                            onClick = {
+                                if (isMultiSelectMode) {
+                                    viewModel.toggleSongSelection(song.mediaStoreId)
+                                } else {
+                                    viewModel.playSongInList(song)
+                                }
+                            },
+                            onLongClick = {
+                                if (!isMultiSelectMode) viewModel.toggleMultiSelectMode()
                                 viewModel.toggleSongSelection(song.mediaStoreId)
-                            } else {
-                                viewModel.playSongInList(song)
-                            }
-                        },
-                        onLongClick = {
-                            if (!isMultiSelectMode) viewModel.toggleMultiSelectMode()
-                            viewModel.toggleSongSelection(song.mediaStoreId)
-                        },
-                        onMore = { path.push(SongMenuScene(song)) },
-                        modifier = Modifier.animateItem(),
-                    )
+                            },
+                            onMore = { path.push(SongMenuScene(song)) },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
                 }
             }
             item {
@@ -380,86 +432,97 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                             overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
-                        IconButton(onClick = viewModel::enterSearchMode) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = stringResource(R.string.search),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                        Box {
-                            IconButton(onClick = viewModel::showMoreOptionsMenu) {
+                        if (isSortMode) {
+                            TextButton(onClick = viewModel::finishSortMode) {
+                                Text(stringResource(R.string.done_sorting))
+                            }
+                        } else {
+                            IconButton(onClick = viewModel::enterSearchMode) {
                                 Icon(
-                                    Icons.Default.MoreVert,
-                                    contentDescription = stringResource(R.string.more),
+                                    Icons.Default.Search,
+                                    contentDescription = stringResource(R.string.search),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                 )
                             }
-                            DropdownMenu(
-                                expanded = showMoreOptionsMenu,
-                                onDismissRequest = viewModel::hideMoreOptionsMenu,
-                                shape = RoundedCornerShape(22.dp),
-                                offset = DpOffset(x = (-12).dp, y = 0.dp),
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                tonalElevation = 6.dp,
-                                shadowElevation = 8.dp,
-                            ) {
-                                PlaylistDropdownMenuItem(
-                                    text = stringResource(R.string.add_songs),
-                                    icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                                    onClick = {
-                                        viewModel.hideMoreOptionsMenu()
-                                        viewModel.showAddSongsSheet()
-                                    },
-                                )
-                                if (isMultiSelectMode) {
+                            Box {
+                                IconButton(onClick = viewModel::showMoreOptionsMenu) {
+                                    Icon(
+                                        Icons.Default.MoreVert,
+                                        contentDescription = stringResource(R.string.more),
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = showMoreOptionsMenu,
+                                    onDismissRequest = viewModel::hideMoreOptionsMenu,
+                                    shape = RoundedCornerShape(22.dp),
+                                    offset = DpOffset(x = (-12).dp, y = 0.dp),
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    tonalElevation = 6.dp,
+                                    shadowElevation = 8.dp,
+                                ) {
                                     PlaylistDropdownMenuItem(
-                                        text = stringResource(R.string.select_all),
-                                        icon = Icons.Default.CheckBox,
+                                        text = stringResource(R.string.add_songs),
+                                        icon = Icons.AutoMirrored.Filled.PlaylistAdd,
                                         onClick = {
                                             viewModel.hideMoreOptionsMenu()
-                                            viewModel.selectAll()
+                                            viewModel.showAddSongsSheet()
+                                        },
+                                    )
+                                    if (isMultiSelectMode) {
+                                        PlaylistDropdownMenuItem(
+                                            text = stringResource(R.string.select_all),
+                                            icon = Icons.Default.CheckBox,
+                                            onClick = {
+                                                viewModel.hideMoreOptionsMenu()
+                                                viewModel.selectAll()
+                                            },
+                                        )
+                                        PlaylistDropdownMenuItem(
+                                            text = stringResource(R.string.deselect_all),
+                                            icon = Icons.Default.CheckBoxOutlineBlank,
+                                            onClick = {
+                                                viewModel.hideMoreOptionsMenu()
+                                                viewModel.deselectAll()
+                                            },
+                                        )
+                                    } else {
+                                        PlaylistDropdownMenuItem(
+                                            text = stringResource(R.string.sort_songs),
+                                            icon = Icons.Default.Menu,
+                                            onClick = viewModel::enterSortMode,
+                                        )
+                                        PlaylistDropdownMenuItem(
+                                            text = stringResource(R.string.multi_select),
+                                            icon = Icons.Default.CheckBoxOutlineBlank,
+                                            onClick = {
+                                                viewModel.hideMoreOptionsMenu()
+                                                viewModel.toggleMultiSelectMode()
+                                            },
+                                        )
+                                    }
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                                    )
+                                    PlaylistDropdownMenuItem(
+                                        text = stringResource(R.string.rename),
+                                        icon = Icons.Default.Edit,
+                                        onClick = {
+                                            viewModel.hideMoreOptionsMenu()
+                                            viewModel.showRenameDialog()
                                         },
                                     )
                                     PlaylistDropdownMenuItem(
-                                        text = stringResource(R.string.deselect_all),
-                                        icon = Icons.Default.CheckBoxOutlineBlank,
+                                        text = stringResource(R.string.delete_playlist_title),
+                                        icon = Icons.Default.Delete,
+                                        destructive = true,
                                         onClick = {
                                             viewModel.hideMoreOptionsMenu()
-                                            viewModel.deselectAll()
-                                        },
-                                    )
-                                } else {
-                                    PlaylistDropdownMenuItem(
-                                        text = stringResource(R.string.multi_select),
-                                        icon = Icons.Default.CheckBoxOutlineBlank,
-                                        onClick = {
-                                            viewModel.hideMoreOptionsMenu()
-                                            viewModel.toggleMultiSelectMode()
+                                            viewModel.showDeleteConfirmDialog()
                                         },
                                     )
                                 }
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
-                                )
-                                PlaylistDropdownMenuItem(
-                                    text = stringResource(R.string.rename),
-                                    icon = Icons.Default.Edit,
-                                    onClick = {
-                                        viewModel.hideMoreOptionsMenu()
-                                        viewModel.showRenameDialog()
-                                    },
-                                )
-                                PlaylistDropdownMenuItem(
-                                    text = stringResource(R.string.delete_playlist_title),
-                                    icon = Icons.Default.Delete,
-                                    destructive = true,
-                                    onClick = {
-                                        viewModel.hideMoreOptionsMenu()
-                                        viewModel.showDeleteConfirmDialog()
-                                    },
-                                )
                             }
                         }
                     }
@@ -522,6 +585,26 @@ fun PlaylistDetailScreen(playlist: Playlist) {
         SongPickerBottomSheet(
             viewModel = viewModel,
             onDismiss = viewModel::hideAddSongsSheet,
+        )
+    }
+
+    if (sortModeLimitExceeded) {
+        AlertDialog(
+            onDismissRequest = viewModel::hideSortModeLimitExceeded,
+            title = { Text(stringResource(R.string.sort_mode_limit_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.sort_mode_limit_message,
+                        PlaylistDetailViewModel.SORT_MODE_FULL_LIST_LIMIT,
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::hideSortModeLimitExceeded) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
         )
     }
 }
@@ -598,6 +681,7 @@ private fun PlaylistDropdownMenuItem(
 private fun PlayButtons(
     onPlayAll: () -> Unit,
     onAddSongs: () -> Unit,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -607,7 +691,11 @@ private fun PlayButtons(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        ElevatedButton(onClick = onPlayAll, modifier = Modifier.weight(1f)) {
+        ElevatedButton(
+            onClick = onPlayAll,
+            enabled = enabled,
+            modifier = Modifier.weight(1f),
+        ) {
             Icon(
                 Icons.Default.PlayArrow,
                 contentDescription = null,
@@ -616,7 +704,11 @@ private fun PlayButtons(
             Spacer(Modifier.width(4.dp))
             Text(stringResource(R.string.play_all_songs))
         }
-        ElevatedButton(onClick = onAddSongs, modifier = Modifier.weight(1f)) {
+        ElevatedButton(
+            onClick = onAddSongs,
+            enabled = enabled,
+            modifier = Modifier.weight(1f),
+        ) {
             Icon(
                 Icons.AutoMirrored.Filled.PlaylistAdd,
                 contentDescription = null,
@@ -635,13 +727,18 @@ private fun SongRow(
     song: Song,
     isMultiSelectMode: Boolean,
     isSelected: Boolean,
+    isDragging: Boolean,
+    isReorderEnabled: Boolean,
+    dragHandleModifier: Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val rowBackground =
-        if (isSelected) {
+        if (isDragging) {
+            MaterialTheme.colorScheme.surfaceContainerHighest
+        } else if (isSelected) {
             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         } else {
             MaterialTheme.colorScheme.background
@@ -650,8 +747,11 @@ private fun SongRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-                .background(rowBackground)
+                .combinedClickable(
+                    enabled = !isReorderEnabled,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                ).background(rowBackground)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -710,12 +810,26 @@ private fun SongRow(
             )
         }
         if (!isMultiSelectMode) {
-            IconButton(onClick = onMore) {
+            if (isReorderEnabled) {
                 Icon(
-                    Icons.Default.MoreVert,
-                    contentDescription = stringResource(R.string.more),
+                    Icons.Default.Menu,
+                    contentDescription = stringResource(R.string.drag_to_reorder),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier =
+                        dragHandleModifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .padding(10.dp)
+                            .size(22.dp),
                 )
+            }
+            if (!isReorderEnabled) {
+                IconButton(onClick = onMore) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.more),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
