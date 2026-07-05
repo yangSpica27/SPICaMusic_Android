@@ -5,6 +5,8 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -50,6 +52,20 @@ object LayoutTokens {
     val PlayerCollapsedCornerRadius = 28.dp
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProvideAppInteractionIndication(content: @Composable () -> Unit) {
+    val clickHighlightIndication =
+        rememberClickHighlightIndication(
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    CompositionLocalProvider(
+        LocalIndication provides clickHighlightIndication,
+        LocalRippleConfiguration provides null,
+        content = content,
+    )
+}
+
 @RequiresApi(Build.VERSION_CODES.S)
 @Composable
 fun SPICaMusicTheme(
@@ -64,13 +80,6 @@ fun SPICaMusicTheme(
         specVersion = ColorSpec.SpecVersion.SPEC_2025,
         style = PaletteStyle.TonalSpot,
     ) {
-        val clickHighlightIndication =
-            rememberClickHighlightIndication(
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        CompositionLocalProvider(
-            LocalIndication provides clickHighlightIndication,
-            content = content,
-        )
+        ProvideAppInteractionIndication(content = content)
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.HoverInteraction
 import androidx.compose.foundation.interaction.InteractionSource
@@ -61,6 +62,32 @@ fun Modifier.clickHighlight(
             enabled = enabled,
             onClickLabel = onClickLabel,
             role = role,
+            interactionSource = source,
+            indication = rememberClickHighlightIndication(),
+            onClick = onClick,
+        )
+    }
+
+@Stable
+fun Modifier.combinedClickHighlight(
+    enabled: Boolean = true,
+    onClickLabel: String? = null,
+    role: Role? = null,
+    onLongClickLabel: String? = null,
+    interactionSource: MutableInteractionSource? = null,
+    onLongClick: (() -> Unit)? = null,
+    onDoubleClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
+): Modifier =
+    composed {
+        val source = interactionSource ?: remember { MutableInteractionSource() }
+        combinedClickable(
+            enabled = enabled,
+            onClickLabel = onClickLabel,
+            role = role,
+            onLongClickLabel = onLongClickLabel,
+            onLongClick = onLongClick,
+            onDoubleClick = onDoubleClick,
             interactionSource = source,
             indication = rememberClickHighlightIndication(),
             onClick = onClick,

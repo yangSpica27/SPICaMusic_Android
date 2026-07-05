@@ -393,6 +393,14 @@
   <string name="finder_no_frequent_subtitle">开始播放音乐后，这里会出现你最常听的内容。</string>
   <string name="finder_no_favorites_title">还没有收藏歌曲</string>
   <string name="finder_no_favorites_subtitle">在播放器或歌曲菜单中收藏喜欢的歌曲，它们会在这里展示。</string>
+  <string name="finder_more">更多</string>
+  <string name="favorites_title">我的收藏</string>
+  <string name="favorites_subtitle_count">%d 首收藏歌曲</string>
+  <string name="favorites_play_all">全部播放</string>
+  <string name="favorites_search_hint">搜索收藏…</string>
+  <string name="favorites_empty_title">还没有收藏</string>
+  <string name="favorites_empty_subtitle">点击任意歌曲上的爱心，即可加入收藏。</string>
+  <string name="favorites_search_empty">没有找到匹配的收藏歌曲。</string>
   <string name="finder_playlists_overview_title">歌单速览</string>
   <string name="finder_no_playlists_subtitle">前往资料库创建歌单后，这里会展示你的歌单速览。</string>
 

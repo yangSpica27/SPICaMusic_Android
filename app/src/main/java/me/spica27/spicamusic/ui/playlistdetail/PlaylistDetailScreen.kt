@@ -16,7 +16,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -111,6 +110,8 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
+import me.spica27.spicamusic.ui.widget.combinedClickHighlight
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -386,11 +387,9 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                         .align(Alignment.BottomCenter),
                 transitionSpec = {
                     if (targetState) {
-                        (fadeIn() + slideInHorizontally { it / 3 }) togetherWith
-                            (fadeOut() + slideOutHorizontally { -it / 3 })
+                        (fadeIn() + slideInHorizontally { it / 3 }) togetherWith (fadeOut() + slideOutHorizontally { -it / 3 })
                     } else {
-                        (fadeIn() + slideInHorizontally { -it / 3 }) togetherWith
-                            (fadeOut() + slideOutHorizontally { it / 3 })
+                        (fadeIn() + slideInHorizontally { -it / 3 }) togetherWith (fadeOut() + slideOutHorizontally { it / 3 })
                     }
                 },
                 label = "playlistSearchTopBar",
@@ -502,7 +501,11 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                         )
                                     }
                                     HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                        modifier =
+                                            Modifier.padding(
+                                                horizontal = 14.dp,
+                                                vertical = 6.dp,
+                                            ),
                                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
                                     )
                                     PlaylistDropdownMenuItem(
@@ -684,38 +687,42 @@ private fun PlayButtons(
     enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        ElevatedButton(
-            onClick = onPlayAll,
-            enabled = enabled,
-            modifier = Modifier.weight(1f),
+    AnimatedContent(enabled, modifier = Modifier.fillMaxWidth(), transitionSpec = {
+        materialSharedAxisZ(forward = true)
+    }) { enabled ->
+        Row(
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Icon(
-                Icons.Default.PlayArrow,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.play_all_songs))
-        }
-        ElevatedButton(
-            onClick = onAddSongs,
-            enabled = enabled,
-            modifier = Modifier.weight(1f),
-        ) {
-            Icon(
-                Icons.AutoMirrored.Filled.PlaylistAdd,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.add_songs))
+            ElevatedButton(
+                onClick = onPlayAll,
+                enabled = enabled,
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(R.string.play_all_songs))
+            }
+            ElevatedButton(
+                onClick = onAddSongs,
+                enabled = enabled,
+                modifier = Modifier.weight(1f),
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.PlaylistAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(R.string.add_songs))
+            }
         }
     }
 }
@@ -747,7 +754,7 @@ private fun SongRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .combinedClickable(
+                .combinedClickHighlight(
                     enabled = !isReorderEnabled,
                     onClick = onClick,
                     onLongClick = onLongClick,
@@ -951,7 +958,10 @@ private fun MultiSelectBar(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.exit_multiselect_cd))
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = stringResource(R.string.exit_multiselect_cd),
+                )
             }
             Text(
                 text = stringResource(R.string.selected_songs_count_format, selectedCount),
@@ -1127,7 +1137,10 @@ private fun SongPickerBottomSheet(
                     if (pickerKeyword.isNotEmpty()) {
                         {
                             IconButton(onClick = { pickerKeyword = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear_input))
+                                Icon(
+                                    Icons.Default.Clear,
+                                    contentDescription = stringResource(R.string.clear_input),
+                                )
                             }
                         }
                     } else {
@@ -1161,7 +1174,11 @@ private fun SongPickerBottomSheet(
                                 modifier = Modifier.size(20.dp),
                             )
                             Text(
-                                text = stringResource(R.string.will_add_songs_format, selectedIds.size),
+                                text =
+                                    stringResource(
+                                        R.string.will_add_songs_format,
+                                        selectedIds.size,
+                                    ),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.weight(1f),

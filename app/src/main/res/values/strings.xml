@@ -394,6 +394,14 @@
   <string name="finder_no_frequent_subtitle">Start playing music and your most-played songs will appear here.</string>
   <string name="finder_no_favorites_title">No favorite songs</string>
   <string name="finder_no_favorites_subtitle">Favorite songs from the player or song menu and they will appear here.</string>
+  <string name="finder_more">More</string>
+  <string name="favorites_title">Favorites</string>
+  <string name="favorites_subtitle_count">%d favorite songs</string>
+  <string name="favorites_play_all">Play all</string>
+  <string name="favorites_search_hint">Search favorites…</string>
+  <string name="favorites_empty_title">No favorites yet</string>
+  <string name="favorites_empty_subtitle">Tap the heart on any song to add it to your favorites.</string>
+  <string name="favorites_search_empty">No favorites match your search.</string>
   <string name="finder_playlists_overview_title">Playlist Overview</string>
   <string name="finder_no_playlists_subtitle">Create a playlist in the library and it will appear here.</string>
 

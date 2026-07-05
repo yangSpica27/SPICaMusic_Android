@@ -12,8 +12,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,6 +81,7 @@ import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.player.formatTime
 import me.spica27.spicamusic.ui.playlistdetail.RenameDialog
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
+import me.spica27.spicamusic.ui.widget.combinedClickHighlight
 import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.floor
 
@@ -536,11 +535,9 @@ private fun PlaylistItemRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .combinedClickable(
+                .combinedClickHighlight(
                     onClick = onClick,
                     onLongClick = onLongClick,
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() },
                 ).height(80.dp)
                 .padding(vertical = 8.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center,

@@ -102,7 +102,7 @@ abstract class DialogScene : Scene() {
         enterProgress.animateTo(
             targetValue = 1f,
             animationSpec = tween(
-                575,
+                375,
                 easing = DIALOG_EASING
             )
         ) {
@@ -117,7 +117,7 @@ abstract class DialogScene : Scene() {
         enterProgress.animateTo(
             targetValue = 0f,
             animationSpec = tween(
-                550,
+                350,
                 easing = DIALOG_EASING
             )
         )

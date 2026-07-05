@@ -141,6 +141,13 @@ class FavoriteViewModel(
         _selectedSongIds.value = emptySet()
     }
 
+    /** 取消收藏单首歌曲（分页流会自动移除该项） */
+    fun toggleFavorite(song: Song) {
+        viewModelScope.launch {
+            songRepository.toggleLikeByMediaStoreId(song.mediaStoreId)
+        }
+    }
+
     /** 批量取消收藏选中歌曲 */
     fun dislikeSelectedSongs() {
         viewModelScope.launch {
