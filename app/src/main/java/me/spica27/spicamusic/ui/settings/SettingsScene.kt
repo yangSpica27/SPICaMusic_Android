@@ -73,6 +73,7 @@ import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
+import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.ui.about.AboutScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -91,6 +92,23 @@ class SettingsScene : StackScene() {
         val keepScreenOn by viewModel.keepScreenOn.collectAsStateWithLifecycle()
         val spectrumValue by viewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
         val coverTypeValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
+        val progressBarStyleValue by viewModel.progressBarStyle.collectAsStateWithLifecycle()
+        val dynamicWaveformLabel = stringResource(R.string.progress_bar_style_dynamic_waveform)
+        val timeDomainWaveformLabel = stringResource(R.string.progress_bar_style_time_domain_waveform)
+        val progressBarStyleName =
+            when (ProgressBarStyle.fromString(progressBarStyleValue)) {
+                ProgressBarStyle.DynamicWaveform -> dynamicWaveformLabel
+                ProgressBarStyle.TimeDomainWaveform -> timeDomainWaveformLabel
+            }
+        val progressBarStyleOptions =
+            remember(dynamicWaveformLabel, timeDomainWaveformLabel) {
+                ImmutableList.copyOf(
+                    listOf(
+                        SelectOption(ProgressBarStyle.DynamicWaveform.value, dynamicWaveformLabel),
+                        SelectOption(ProgressBarStyle.TimeDomainWaveform.value, timeDomainWaveformLabel),
+                    ),
+                )
+            }
         val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
         Scaffold(
             containerColor = Color.Transparent,
@@ -198,6 +216,15 @@ class SettingsScene : StackScene() {
                                     ),
                                 currentValue = coverTypeValue,
                                 onValueChange = viewModel::setDynamicCoverType,
+                            )
+                            SettingsItemDivider()
+                            ModernSettingsSelectItem(
+                                title = stringResource(R.string.settings_progress_bar_style),
+                                subtitle = progressBarStyleName,
+                                icon = Icons.Default.GraphicEq,
+                                options = progressBarStyleOptions,
+                                currentValue = progressBarStyleValue,
+                                onValueChange = viewModel::setProgressBarStyle,
                             )
                         }
                     }

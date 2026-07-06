@@ -88,12 +88,14 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
+import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
@@ -105,6 +107,7 @@ import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
+import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioDynamicWaveSlider
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
@@ -133,6 +136,7 @@ private const val TAGS_REVEAL_THRESHOLD = 0.28f
 private const val SEEKBAR_REVEAL_THRESHOLD = 0.34f
 private const val PLAYER_CONTROLS_REVEAL_THRESHOLD = 0.48f
 private const val COLLAPSED_HERO_SCALE = 0.82f
+private val EmptyFftDrawData = FloatArray(0)
 
 // ============================================
 // 主屏幕组件
@@ -305,6 +309,7 @@ fun ExpandedPlayerScreen(
                         visible = progressProvider.invoke() > .4f,
                     ) {
                         PlayerPage(
+                            playerViewModel = viewModel,
                             isSeekingState = isSeekingState,
                             currentMediaItem = { currentMediaItem },
                             audioQualityInfo = audioQualityInfo,
@@ -330,6 +335,7 @@ fun ExpandedPlayerScreen(
                                 viewModel.toggleLikeCurrentSong()
                             },
                             progressProvider = progressProvider,
+                            isAppInForeground = isAppInForeground,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -621,6 +627,7 @@ private fun MediaItem?.toAudioQualityInfo(): AudioQualityInfo {
  */
 @Composable
 private fun PlayerPage(
+    playerViewModel: PlayerViewModel,
     currentMediaItem: () -> MediaItem?,
     audioQualityInfo: AudioQualityInfo,
     seekPositionProvider: () -> Float,
@@ -637,6 +644,7 @@ private fun PlayerPage(
     onPlayModeClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     progressProvider: () -> Float,
+    isAppInForeground: Boolean,
     modifier: Modifier = Modifier,
     isSeekingState: Boolean = false,
 ) {
@@ -648,6 +656,13 @@ private fun PlayerPage(
     val dynamicCoverType =
         remember(dynamicCoverTypeValue) {
             DynamicCoverType.fromString(dynamicCoverTypeValue)
+        }
+    val progressBarStyleValue by preferencesManager
+        .getString(PreferencesManager.Keys.PROGRESS_BAR_STYLE, ProgressBarStyle.TimeDomainWaveform.value)
+        .collectAsStateWithLifecycle(initialValue = ProgressBarStyle.TimeDomainWaveform.value)
+    val progressBarStyle =
+        remember(progressBarStyleValue) {
+            ProgressBarStyle.fromString(progressBarStyleValue)
         }
     val songUseCases = koinInject<SongUseCases>()
     // 翻转动画状态
@@ -778,7 +793,11 @@ private fun PlayerPage(
         var ampState by remember { mutableStateOf(listOf<Int>()) }
 
         // 音频波形数据
-        LaunchedEffect(currentMediaItem.invoke()?.mediaId) {
+        LaunchedEffect(currentMediaItem.invoke()?.mediaId, progressBarStyle) {
+            if (progressBarStyle != ProgressBarStyle.TimeDomainWaveform) {
+                ampState = emptyList()
+                return@LaunchedEffect
+            }
             val mediaId = currentMediaItem.invoke()?.mediaId ?: return@LaunchedEffect
 
             // 检查缓存
@@ -852,6 +871,9 @@ private fun PlayerPage(
             realPositionProvider = realPositionProvider,
             duration = duration,
             amplitudes = ampState,
+            progressBarStyle = progressBarStyle,
+            playerViewModel = playerViewModel,
+            isAppInForeground = isAppInForeground,
             isSeekingState = isSeekingState,
             onValueChange = onValueChange,
             onValueChangeFinished = onValueChangeFinished,
@@ -890,6 +912,9 @@ private fun SeekBarSection(
     realPositionProvider: () -> Float,
     duration: Long,
     amplitudes: List<Int>,
+    progressBarStyle: ProgressBarStyle,
+    playerViewModel: PlayerViewModel,
+    isAppInForeground: Boolean,
     isSeekingState: Boolean,
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit,
@@ -898,6 +923,18 @@ private fun SeekBarSection(
 ) {
     val seekPosition = seekPositionProvider()
     val realPosition = realPositionProvider()
+    val useDynamicWaveform = progressBarStyle == ProgressBarStyle.DynamicWaveform && isAppInForeground
+    LaunchedEffect(useDynamicWaveform, playerViewModel) {
+        if (!useDynamicWaveform) {
+            return@LaunchedEffect
+        }
+        playerViewModel.subscribeFFTDrawData()
+        try {
+            awaitCancellation()
+        } finally {
+            playerViewModel.unsubscribeFFTDrawData()
+        }
+    }
     Column(
         modifier =
             modifier.graphicsLayer {
@@ -907,22 +944,53 @@ private fun SeekBarSection(
                 translationY = (1f - seekbarReveal) * 24f
             },
     ) {
-        AudioWaveSlider(
-            progress = if (duration > 0) (seekPosition / duration).coerceIn(0f, 1f) else 0f,
-            amplitudes = amplitudes,
-            onProgressChange = {
-                onValueChange.invoke(it)
-            },
-            onProgressChangeFinished = {
-                onValueChangeFinished.invoke()
-            },
-            waveformBrush = SolidColor(MaterialTheme.colorScheme.inverseOnSurface),
-            progressBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(80.dp),
-        )
+        val sliderProgress = if (duration > 0) (seekPosition / duration).coerceIn(0f, 1f) else 0f
+        when (progressBarStyle) {
+            ProgressBarStyle.DynamicWaveform -> {
+                val fftDrawData =
+                    if (useDynamicWaveform) {
+                        val drawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
+                        drawData
+                    } else {
+                        EmptyFftDrawData
+                    }
+                AudioDynamicWaveSlider(
+                    progress = sliderProgress,
+                    fftAmplitudes = fftDrawData,
+                    onProgressChange = {
+                        onValueChange.invoke(it)
+                    },
+                    onProgressChangeFinished = {
+                        onValueChangeFinished.invoke()
+                    },
+                    waveformBrush = SolidColor(MaterialTheme.colorScheme.inverseOnSurface),
+                    progressBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(80.dp),
+                )
+            }
+
+            ProgressBarStyle.TimeDomainWaveform -> {
+                AudioWaveSlider(
+                    progress = sliderProgress,
+                    amplitudes = amplitudes,
+                    onProgressChange = {
+                        onValueChange.invoke(it)
+                    },
+                    onProgressChangeFinished = {
+                        onValueChangeFinished.invoke()
+                    },
+                    waveformBrush = SolidColor(MaterialTheme.colorScheme.inverseOnSurface),
+                    progressBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(80.dp),
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(Spacing.Small))
         // 当前位置 和 总时长
         Box(

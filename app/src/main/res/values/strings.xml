@@ -322,6 +322,9 @@
   <string name="settings_dynamic_spectrum">Dynamic Spectrum Background</string>
   <string name="settings_dynamic_cover">Dynamic Cover</string>
   <string name="settings_dynamic_cover_subtitle">Flip effect on back of player cover</string>
+  <string name="settings_progress_bar_style">Progress Bar Style</string>
+  <string name="progress_bar_style_dynamic_waveform">Dynamic Waveform</string>
+  <string name="progress_bar_style_time_domain_waveform">Time-domain Waveform</string>
   <string name="settings_media_library">Media Library</string>
   <string name="settings_media_library_source_subtitle">Manage music scan paths</string>
 

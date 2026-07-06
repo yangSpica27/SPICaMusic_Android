@@ -21,6 +21,7 @@ class PreferencesManager(
         val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
         val DYNAMIC_SPECTRUM_BACKGROUND = stringPreferencesKey("dynamic_spectrum_background")
         val DYNAMIC_COVER_TYPE = stringPreferencesKey("dynamic_cover_type")
+        val PROGRESS_BAR_STYLE = stringPreferencesKey("progress_bar_style")
         val EQ_ENABLED = booleanPreferencesKey("eq_enabled")
         val EQ_BANDS = stringPreferencesKey("eq_bands")
         val REVERB_ENABLED = booleanPreferencesKey("reverb_enabled")

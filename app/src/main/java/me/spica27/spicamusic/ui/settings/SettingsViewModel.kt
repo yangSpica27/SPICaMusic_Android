@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
+import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 
 /**
@@ -66,6 +67,20 @@ class SettingsViewModel(
     fun setDynamicCoverType(value: String) {
         viewModelScope.launch {
             settingsUseCases.setString(SettingsUseCases.Keys.DYNAMIC_COVER_TYPE, value)
+        }
+    }
+
+    // 进度条样式
+    val progressBarStyle =
+        settingsUseCases
+            .getString(
+                SettingsUseCases.Keys.PROGRESS_BAR_STYLE,
+                ProgressBarStyle.TimeDomainWaveform.value,
+            ).stateIn(viewModelScope, SharingStarted.Eagerly, ProgressBarStyle.TimeDomainWaveform.value)
+
+    fun setProgressBarStyle(value: String) {
+        viewModelScope.launch {
+            settingsUseCases.setString(SettingsUseCases.Keys.PROGRESS_BAR_STYLE, value)
         }
     }
 }

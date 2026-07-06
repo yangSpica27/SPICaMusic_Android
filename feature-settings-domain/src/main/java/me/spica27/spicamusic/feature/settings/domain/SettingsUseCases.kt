@@ -12,6 +12,7 @@ class SettingsUseCases(
         val KEEP_SCREEN_ON = PreferencesManager.Keys.KEEP_SCREEN_ON
         val DYNAMIC_SPECTRUM_BACKGROUND = PreferencesManager.Keys.DYNAMIC_SPECTRUM_BACKGROUND
         val DYNAMIC_COVER_TYPE = PreferencesManager.Keys.DYNAMIC_COVER_TYPE
+        val PROGRESS_BAR_STYLE = PreferencesManager.Keys.PROGRESS_BAR_STYLE
         val EQ_ENABLED = PreferencesManager.Keys.EQ_ENABLED
         val EQ_BANDS = PreferencesManager.Keys.EQ_BANDS
         val REVERB_ENABLED = PreferencesManager.Keys.REVERB_ENABLED

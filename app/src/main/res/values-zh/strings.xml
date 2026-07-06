@@ -322,6 +322,9 @@
   <string name="settings_dynamic_spectrum">动态频谱背景</string>
   <string name="settings_dynamic_cover">动态封面</string>
   <string name="settings_dynamic_cover_subtitle">播放器封面点击翻转后的背面效果</string>
+  <string name="settings_progress_bar_style">进度条样式</string>
+  <string name="progress_bar_style_dynamic_waveform">动态波形</string>
+  <string name="progress_bar_style_time_domain_waveform">时域波形</string>
   <string name="settings_media_library">媒体库</string>
   <string name="settings_media_library_source_subtitle">管理音乐扫描路径</string>
 
