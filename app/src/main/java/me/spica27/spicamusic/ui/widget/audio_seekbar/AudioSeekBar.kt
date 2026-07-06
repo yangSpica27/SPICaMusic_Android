@@ -236,7 +236,7 @@ fun AudioDynamicWaveSlider(
     val progress =
         animateFloatAsState(
             progress.coerceIn(MinProgress, MaxProgress),
-            tween(125, easing = LinearEasing),
+            tween(60, easing = LinearEasing),
             label = "",
         ).value
 
