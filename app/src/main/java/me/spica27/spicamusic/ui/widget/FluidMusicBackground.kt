@@ -27,7 +27,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.components.rememberImageComponent
 import com.skydoves.landscapist.crossfade.CrossfadePlugin
 import com.skydoves.landscapist.image.LandscapistImage
-import com.skydoves.landscapist.transformation.blur.BlurTransformationPlugin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.Job
@@ -41,6 +40,7 @@ import kotlinx.coroutines.runBlocking
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.settings.SettingsViewModel
+import me.spica27.spicamusic.utils.blurhash.BlurHashTransformationPlugin
 import org.koin.compose.viewmodel.koinViewModel
 import timber.log.Timber
 import java.util.concurrent.Executors
@@ -142,7 +142,7 @@ fun FluidMusicBackground(
                     component =
                         rememberImageComponent {
                             +CrossfadePlugin(duration = 550)
-                            +BlurTransformationPlugin(radius = 150)
+                            +BlurHashTransformationPlugin()
                         },
                 )
                 Box(
