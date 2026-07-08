@@ -64,6 +64,7 @@ import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.playlist.AllPlaylistsScene
 import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
 import me.spica27.spicamusic.ui.scan.ScannerScene
 import me.spica27.spicamusic.ui.search.SearchScene
@@ -202,6 +203,8 @@ fun FinderPage() {
                 SectionTitle(
                     title = stringResource(R.string.finder_playlists_overview_title),
                     subtitle = stringResource(R.string.library_summary_playlists, playlists.size),
+                    actionLabel = stringResource(R.string.finder_more).takeIf { playlists.size >= 2 },
+                    onActionClick = { path.push(AllPlaylistsScene()) }.takeIf { playlists.size >= 2 },
                 )
             }
 

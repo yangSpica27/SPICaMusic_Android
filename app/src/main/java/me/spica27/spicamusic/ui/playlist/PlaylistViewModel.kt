@@ -3,14 +3,19 @@ package me.spica27.spicamusic.ui.playlist
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
+import me.spica27.spicamusic.ui.model.PlaylistWithCover
 import timber.log.Timber
 
 /**
@@ -27,6 +32,31 @@ class PlaylistViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList(),
         )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val playlistsWithCover: StateFlow<List<PlaylistWithCover>> =
+        playlists
+            .flatMapLatest { list ->
+                if (list.isEmpty()) {
+                    flowOf(emptyList())
+                } else {
+                    combine(
+                        list.map { playlist ->
+                            val id = playlist.playlistId ?: 0L
+                            combine(
+                                playlistRepository.getPlaylistCoverAlbumIds(id),
+                                playlistRepository.getSongSizeInPlaylist(id),
+                            ) { albumIds, size ->
+                                PlaylistWithCover(playlist, albumIds, size)
+                            }
+                        },
+                    ) { it.toList() }
+                }
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
+            )
 
     // 是否显示创建歌单对话框
     private val _showCreateDialog = MutableStateFlow(false)
