@@ -23,7 +23,7 @@ android {
   def BUILD_VERSION = Integer.parseInt(props["BUILD_VERSION"])
   rootProject.ext.buildVersionCode =
       (MAJOR_VERSION) * 1_000_000 + (MINOR_VERSION) * 10_000 + BUILD_VERSION
-  rootProject.ext.buildVersionName = "$MAJOR_VERSION.$MINOR_VERSION.$BUILD_VERSION BETA"
+  rootProject.ext.buildVersionName = "$MAJOR_VERSION.$MINOR_VERSION.$BUILD_VERSION BETA2"
 
   println("buildVersionCode = ${rootProject.ext.buildVersionCode}")
   println("buildVersionName= ${rootProject.ext.buildVersionName}")
