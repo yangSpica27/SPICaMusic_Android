@@ -584,10 +584,10 @@ private class EffectShaderRenderer : GLSurfaceView.Renderer {
                 float time = uAnimTime * 0.1;
                 float dist = length(p);
 
-                vec2 offset1 = vec2(time * 0.5 * (1.0 + uBeat * 0.3), time * 0.3);
+                vec2 offset1 = vec2(time * 0.5 + uBeat * 0.15, time * 0.3);
                 float n1 = snoise(p * (2.0 + uBeat * 0.3) + offset1);
 
-                vec2 offset2 = vec2(-time * 0.3, time * 0.4 * (1.0 + uMidFreq * 0.2));
+                vec2 offset2 = vec2(-time * 0.3, time * 0.4 + uMidFreq * 0.12);
                 float n2 = snoise(p * (3.0 + uMidFreq * 0.5) + offset2 + vec2(n1 * 0.5));
 
                 vec2 offset3 = vec2(time * 0.4, -time * 0.35);
@@ -599,7 +599,7 @@ private class EffectShaderRenderer : GLSurfaceView.Renderer {
                     n3 * (0.2 + uHighFreq * 0.05);
 
                 float rippleNormalized = (ripple + 1.0) * 0.5;
-                float rippleStrength = 0.15 + uMusicLevel * 0.3 + uBeat * 0.15 + uMidFreq * 0.08;
+                float rippleStrength = 0.14 + uMusicLevel * 0.02 + uBeat * 0.03 + uMidFreq * 0.05;
 
                 vec3 hsv = rgb2hsv(uColor.rgb);
                 float hueShift =
@@ -616,15 +616,15 @@ private class EffectShaderRenderer : GLSurfaceView.Renderer {
                     vec3 rippleColor = mix(dynamicColor, uColor.rgb, 0.5);
                     col = mix(darkBg, rippleColor, rippleNormalized * rippleStrength);
                     float centerGlow = radialGrad * radialGrad;
-                    col += dynamicColor * centerGlow * (0.15 + uBeat * 0.25);
+                    col += dynamicColor * centerGlow * (0.1 + uBeat * 0.08);
                     float sparkle = pow(max(0.0, n3), 3.0) * uHighFreq;
-                    col += vec3(1.0, 0.9, 0.8) * sparkle * 0.18;
+                    col += vec3(1.0, 0.9, 0.8) * sparkle * 0.06;
                 } else {
                     vec3 lightBg = vec3(0.98, 0.98, 0.98);
                     vec3 softColor = mix(lightBg, dynamicColor, 0.6);
                     col = mix(lightBg, softColor, rippleNormalized * rippleStrength * 0.65);
                     float centerGlow = 1.0 - smoothstep(0.0, 1.0, dist);
-                    col = mix(col, softColor, centerGlow * (0.1 + uBeat * 0.12));
+                    col = mix(col, softColor, centerGlow * (0.07 + uBeat * 0.04));
                 }
 
                 gl_FragColor = vec4(col, 1.0);
