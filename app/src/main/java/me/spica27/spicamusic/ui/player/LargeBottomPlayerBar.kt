@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.rememberPlayingCoverShape
 
 /**
  * 底部迷你播放条
@@ -49,6 +50,7 @@ fun LargeBottomPlayerBar(
     val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
     val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
     val artworkUri = metadata?.artworkUri
+    val coverShape = rememberPlayingCoverShape(isPlaying)
 
     Box(
         modifier =
@@ -73,7 +75,7 @@ fun LargeBottomPlayerBar(
                         modifier =
                             Modifier
                                 .size(48.dp)
-                                .clip(me.spica27.spicamusic.ui.theme.Shapes.LargeCornerBasedShape)
+                                .clip(coverShape)
                                 .background(
                                     MaterialTheme.colorScheme.tertiaryContainer,
                                 ),

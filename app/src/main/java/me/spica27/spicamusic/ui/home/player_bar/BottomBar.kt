@@ -97,6 +97,7 @@ import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.widget.rememberPlayingCoverShape
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.roundToInt
 import androidx.compose.ui.util.lerp as floatLerp
@@ -132,6 +133,8 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
     val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
     val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
     val artworkUri = metadata?.artworkUri
+    val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
+    val coverShape = rememberPlayingCoverShape(isPlaying)
 
     // 可拖拽锚点状态
     val draggableState =
@@ -426,7 +429,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     Modifier
                                         .fillMaxHeight()
                                         .aspectRatio(1f)
-                                        .clip(CircleShape),
+                                        .clip(coverShape),
                                 failure = {
                                     Box(
                                         modifier =
@@ -508,6 +511,8 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
     val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
     val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
     val artworkUri = metadata?.artworkUri
+    val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
+    val coverShape = rememberPlayingCoverShape(isPlaying)
 
     // 记录跳转到播放器的初始页（默认主页 or 播放列表页）
     var initialPage by remember { mutableIntStateOf(DEFAULT_PAGE) }
@@ -655,7 +660,7 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                                 Modifier
                                     .fillMaxHeight()
                                     .aspectRatio(1f)
-                                    .clip(CircleShape),
+                                    .clip(coverShape),
                             failure = {
                                 Box(
                                     modifier =
