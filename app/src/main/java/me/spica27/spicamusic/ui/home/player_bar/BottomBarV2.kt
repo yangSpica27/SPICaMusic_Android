@@ -3,7 +3,8 @@ package me.spica27.spicamusic.ui.home.player_bar
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import kotlin.math.roundToInt
 import androidx.compose.ui.util.lerp as floatLerp
@@ -36,6 +36,10 @@ class BottomBarV2State internal constructor(
     internal val fraction: Animatable<Float, AnimationVector1D>,
     private val scope: CoroutineScope,
 ) {
+    init {
+        fraction.updateBounds(0f, 1f)
+    }
+
     /** 当前展开进度（0f..1f），可在布局/绘制阶段读取。 */
     val progress: Float get() = fraction.value
 
@@ -51,7 +55,11 @@ class BottomBarV2State internal constructor(
     }
 
     internal companion object {
-        fun snapSpec() = tween<Float>(durationMillis = 400, easing = EaseInOutCubic)
+        fun snapSpec() =
+            spring<Float>(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+            )
     }
 }
 

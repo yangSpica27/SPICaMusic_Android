@@ -38,7 +38,9 @@ import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.LocationSearching
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -101,6 +103,8 @@ fun CurrentPlaylistPage(
     var isMultiSelectMode by remember { mutableStateOf(false) }
     val selectedMediaIds = remember { mutableStateListOf<String>() }
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var showClearConfirmDialog by remember { mutableStateOf(false) }
 
     val selectedCount by remember { derivedStateOf { selectedMediaIds.size } }
 
@@ -266,8 +270,7 @@ fun CurrentPlaylistPage(
                                             bottomEndPercent = 50,
                                         ),
                                     ).clickable {
-                                        viewModel.pause()
-                                        viewModel.updatePlaylist(emptyList())
+                                        showClearConfirmDialog = true
                                     }.padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -438,12 +441,7 @@ fun CurrentPlaylistPage(
             ) {
                 Button(
                     onClick = {
-                        val toRemove = selectedMediaIds.toList()
-                        toRemove.forEach { mediaId ->
-                            viewModel.removeFromPlaylist(mediaId)
-                        }
-                        selectedMediaIds.clear()
-                        isMultiSelectMode = false
+                        showDeleteConfirmDialog = true
                     },
                     enabled = selectedCount > 0,
                     modifier = Modifier.weight(1f),
@@ -503,11 +501,76 @@ fun CurrentPlaylistPage(
             },
         )
     }
+
+    if (showDeleteConfirmDialog) {
+        CurrentPlaylistConfirmDialog(
+            title = stringResource(R.string.delete_selected_title),
+            message = stringResource(R.string.delete_selected_message, selectedCount),
+            confirmText = stringResource(R.string.delete),
+            onConfirm = {
+                val toRemove = selectedMediaIds.toList()
+                toRemove.forEach { mediaId ->
+                    viewModel.removeFromPlaylist(mediaId)
+                }
+                selectedMediaIds.clear()
+                isMultiSelectMode = false
+                showDeleteConfirmDialog = false
+            },
+            onDismiss = {
+                showDeleteConfirmDialog = false
+            },
+        )
+    }
+
+    if (showClearConfirmDialog) {
+        CurrentPlaylistConfirmDialog(
+            title = stringResource(R.string.clear_current_playlist_title),
+            message = stringResource(R.string.clear_current_playlist_message),
+            confirmText = stringResource(R.string.clear_playlist),
+            onConfirm = {
+                viewModel.pause()
+                viewModel.updatePlaylist(emptyList())
+                showClearConfirmDialog = false
+            },
+            onDismiss = {
+                showClearConfirmDialog = false
+            },
+        )
+    }
 }
 
-/**
- * 播放列表项
- */
+@Composable
+private fun CurrentPlaylistConfirmDialog(
+    title: String,
+    message: String,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors =
+                    ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+            ) {
+                Text(confirmText)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        },
+    )
+}
+
+// 播放列表项
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PlaylistItemRow(

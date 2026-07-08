@@ -70,7 +70,7 @@ internal class VerticalDragGestureHandler(
             }
         val distance = dragDistancePx.coerceAtLeast(1f)
         // 把像素速度换算成“进度/秒”，让吸附动画衔接松手时的惯性
-        val initialFractionVelocity = -velocity / distance
+        val initialFractionVelocity = (-velocity / distance).coerceIn(-8f, 8f)
         dragSnapJob =
             scope.launch {
                 fraction.animateTo(
