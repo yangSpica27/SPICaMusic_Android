@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.exponentialDecay
@@ -95,7 +96,6 @@ import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
 import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
-import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.roundToInt
@@ -138,7 +138,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
         remember {
             AnchoredDraggableState(
                 initialValue = PlayerSheetValue.Collapsed,
-                snapAnimationSpec = tween(400, easing = EaseInOutCubic),
+                snapAnimationSpec = tween(125, easing = EaseOutCubic),
                 decayAnimationSpec = exponentialDecay(),
                 positionalThreshold = { totalDistance -> totalDistance * 0.45f },
                 velocityThreshold = { with(density) { 150.dp.toPx() } },

@@ -268,6 +268,10 @@
   <string name="playlist_count_format">播放列表 (%d)</string>
   <string name="jump_to_playing">跳转到正在播放</string>
   <string name="clear_playlist">清空播放列表</string>
+  <string name="delete_selected_title">删除已选歌曲</string>
+  <string name="delete_selected_message">确定从当前播放列表中移除已选的 %1$d 首歌曲吗？</string>
+  <string name="clear_current_playlist_title">清空当前播放列表</string>
+  <string name="clear_current_playlist_message">确定移除当前播放列表中的所有歌曲吗？</string>
 
   <!-- Metadata fallbacks -->
   <string name="unknown_song">未知歌曲</string>

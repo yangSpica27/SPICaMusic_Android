@@ -268,6 +268,10 @@
   <string name="playlist_count_format">Playlist (%d)</string>
   <string name="jump_to_playing">Jump to playing</string>
   <string name="clear_playlist">Clear playlist</string>
+  <string name="delete_selected_title">Delete selected songs</string>
+  <string name="delete_selected_message">Remove %1$d selected songs from the current playlist?</string>
+  <string name="clear_current_playlist_title">Clear current playlist</string>
+  <string name="clear_current_playlist_message">Remove all songs from the current playlist?</string>
 
   <!-- Metadata fallbacks -->
   <string name="unknown_song">Unknown Song</string>
