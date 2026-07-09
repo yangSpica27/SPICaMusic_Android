@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -37,6 +38,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -87,13 +89,9 @@ private object LyricUIConstants {
     const val EMPTY_LYRIC_TEXT = "暂无歌词"
     const val EMPTY_WORD_PLACEHOLDER = " · · · "
 
-    const val LYRIC_ITEM_SPACING = 12
     const val LYRIC_CORNER_RADIUS = 32
-    const val LYRIC_HORIZONTAL_PADDING = 24
-    const val LYRIC_VERTICAL_PADDING = 16
     const val SEEK_PREVIEW_END_PADDING = 16
 
-    const val ACTIVE_SCALE = 1.12f
     const val INACTIVE_SCALE = 1f
     const val SCALE_ANIMATION_DURATION = 850
 
@@ -106,6 +104,7 @@ private object LyricUIConstants {
     const val SEEK_OVERLAY_HIDE_DELAY = 450L
 
     const val SCROLL_ANIMATION_DURATION = 550
+    const val SCROLL_CORRECTION_DURATION = 250
     const val SCROLL_VIEWPORT_OFFSET_RATIO = 0.35f
 
     const val BASE_TEXT_ALPHA = 0.24f
@@ -119,6 +118,66 @@ private object LyricUIConstants {
     const val WORD_HIGHLIGHT_FADE_DURATION = 220
 }
 
+// ==================== 显示模式 ====================
+
+/**
+ * 歌词展示形态
+ *
+ * [Fullscreen] 用于全屏页面；[Compact] 用于卡片等小尺寸容器，
+ * 采用更小的字号与间距，避免文字溢出视口
+ */
+enum class LyricsDisplayMode {
+    Fullscreen,
+    Compact,
+}
+
+/**
+ * 随展示形态变化的排版参数
+ */
+@Immutable
+private data class LyricsUIStyle(
+    val mainTextStyle: TextStyle,
+    val translationTextStyle: TextStyle,
+    val wordsTextStyle: TextStyle,
+    val wordsTranslationTextStyle: TextStyle,
+    val activeScale: Float,
+    val itemSpacing: Dp,
+    val horizontalPadding: Dp,
+    val verticalPadding: Dp,
+)
+
+@Composable
+private fun rememberLyricsUIStyle(displayMode: LyricsDisplayMode): LyricsUIStyle {
+    val typography = MaterialTheme.typography
+    return remember(typography, displayMode) {
+        when (displayMode) {
+            LyricsDisplayMode.Fullscreen ->
+                LyricsUIStyle(
+                    mainTextStyle = typography.headlineMedium,
+                    translationTextStyle = typography.titleMedium,
+                    wordsTextStyle = typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                    wordsTranslationTextStyle = typography.bodySmall,
+                    activeScale = 1.12f,
+                    itemSpacing = 12.dp,
+                    horizontalPadding = 24.dp,
+                    verticalPadding = 16.dp,
+                )
+
+            LyricsDisplayMode.Compact ->
+                LyricsUIStyle(
+                    mainTextStyle = typography.titleLarge,
+                    translationTextStyle = typography.bodyMedium,
+                    wordsTextStyle = typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                    wordsTranslationTextStyle = typography.bodySmall,
+                    activeScale = 1.06f,
+                    itemSpacing = 6.dp,
+                    horizontalPadding = 16.dp,
+                    verticalPadding = 8.dp,
+                )
+        }
+    }
+}
+
 // ==================== 主组件 ====================
 
 /**
@@ -130,6 +189,7 @@ fun LyricsUI(
     modifier: Modifier = Modifier,
     lyric: ImmutableList<LyricItem>,
     currentTime: Long,
+    displayMode: LyricsDisplayMode = LyricsDisplayMode.Fullscreen,
     onSeekToTime: (Long) -> Unit = {},
 ) {
     val lyricLines = remember(lyric) { lyric.sortedBy { it.time } }
@@ -139,9 +199,12 @@ fun LyricsUI(
         return
     }
 
+    val style = rememberLyricsUIStyle(displayMode)
     val lazyListState = rememberLazyListState()
     var isAutoScrolling by remember { mutableStateOf(false) }
     var showSeekOverlay by remember { mutableStateOf(false) }
+    // 首次显示时列表停在顶部，需要一次无动画的精确定位；之后的行切换才走动画滚动
+    var hasSyncedInitialPosition by remember(lyricLines) { mutableStateOf(false) }
     var leavingPlayingIndex by remember(lyricLines) { mutableIntStateOf(Int.MAX_VALUE) }
     var lastSettledPlayingIndex by remember(lyricLines) { mutableIntStateOf(Int.MAX_VALUE) }
     // currentTime 每帧变化，用 rememberUpdatedState 包装后作为稳定实例供 derivedStateOf 读取；
@@ -153,9 +216,8 @@ fun LyricsUI(
 
     // 逐字行测量缓存：按行 key 复用。滚动时 item 被回收重建不再重新测量，
     // 避免「占位文本 -> 逐字渲染」的反复切换闪烁
-    val wordsMeasureCache = remember(lyricLines) { HashMap<String, List<MeasuredWord>>() }
-    val wordsTextStyle =
-        MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold)
+    val wordsTextStyle = style.wordsTextStyle
+    val wordsMeasureCache = remember(lyricLines, wordsTextStyle) { HashMap<String, List<MeasuredWord>>() }
     val prewarmTextMeasurer = rememberTextMeasurer(cacheSize = 0)
 
     // 后台预热全部逐字行的测量结果，行首次进入视口时即可同步命中缓存
@@ -195,6 +257,8 @@ fun LyricsUI(
     LaunchedEffect(lazyListState) {
         snapshotFlow { lazyListState.isScrollInProgress }.collectLatest { inProgress ->
             if (inProgress && !isAutoScrolling) {
+                // 用户已手动定位，后续行切换直接走动画滚动，不再无动画跳转
+                hasSyncedInitialPosition = true
                 showSeekOverlay = true
             } else if (!inProgress) {
                 if (!isAutoScrolling) {
@@ -233,10 +297,19 @@ fun LyricsUI(
             }
             isAutoScrolling = true
             try {
-                lazyListState.slowScrollToIndex(
-                    targetIndex = target,
-                    viewportHeightPx = constraints.maxHeight,
-                )
+                if (hasSyncedInitialPosition) {
+                    lazyListState.slowScrollToIndex(
+                        targetIndex = target,
+                        viewportHeightPx = constraints.maxHeight,
+                    )
+                } else {
+                    // 首次同步：目标行大概率在视口外，动画+估算必然有落点偏差，直接精确跳转
+                    lazyListState.snapToLyricIndex(
+                        targetIndex = target,
+                        viewportHeightPx = constraints.maxHeight,
+                    )
+                }
+                hasSyncedInitialPosition = true
             } finally {
                 isAutoScrolling = false
             }
@@ -249,7 +322,7 @@ fun LyricsUI(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(LyricUIConstants.LYRIC_ITEM_SPACING.dp),
+            verticalArrangement = Arrangement.spacedBy(style.itemSpacing),
             contentPadding =
                 PaddingValues(
                     vertical = with(density) { constraints.maxHeight.toDp() / 2 },
@@ -264,7 +337,7 @@ fun LyricsUI(
                 val distanceFromActive = calculateDistance(index, highlightedIndex)
                 val emphasis = calculateEmphasis(distanceFromActive)
                 val scale by animateFloatAsState(
-                    targetValue = if (distanceFromActive == 0) LyricUIConstants.ACTIVE_SCALE else LyricUIConstants.INACTIVE_SCALE,
+                    targetValue = if (distanceFromActive == 0) style.activeScale else LyricUIConstants.INACTIVE_SCALE,
                     label = "lyricScale",
                     animationSpec = tween(LyricUIConstants.SCALE_ANIMATION_DURATION),
                 )
@@ -309,13 +382,14 @@ fun LyricsUI(
                                 alpha = alpha,
                                 scale = scale,
                                 blurRadius = blurRadius,
+                                style = style,
                             )
 
                         is LyricItem.WordsLyric -> {
                             val renderPhase =
-                                when {
-                                    index == playingIndex -> LyricRenderPhase.Active
-                                    index == leavingPlayingIndex -> LyricRenderPhase.Leaving
+                                when (index) {
+                                    playingIndex -> LyricRenderPhase.Active
+                                    leavingPlayingIndex -> LyricRenderPhase.Leaving
                                     else -> LyricRenderPhase.Inactive
                                 }
                             WordsLyricLine(
@@ -325,7 +399,7 @@ fun LyricsUI(
                                 alpha = alpha,
                                 scale = scale,
                                 blurRadius = blurRadius,
-                                textStyle = wordsTextStyle,
+                                style = style,
                                 measureCache = wordsMeasureCache,
                             )
                         }
@@ -431,6 +505,7 @@ private fun LyricLine(
     alpha: Float,
     scale: Float,
     blurRadius: Dp,
+    style: LyricsUIStyle,
 ) {
     val inactiveTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
     val activeTextColor = MaterialTheme.colorScheme.onSurface
@@ -446,13 +521,13 @@ private fun LyricLine(
                     scaleY = scale
                 }.blur(blurRadius)
                 .padding(
-                    horizontal = LyricUIConstants.LYRIC_HORIZONTAL_PADDING.dp,
-                    vertical = LyricUIConstants.LYRIC_VERTICAL_PADDING.dp,
+                    horizontal = style.horizontalPadding,
+                    vertical = style.verticalPadding,
                 ),
     ) {
         Text(
             text = lyric.content.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
-            style = MaterialTheme.typography.headlineMedium,
+            style = style.mainTextStyle,
             fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Medium,
             color = if (isActive) activeTextColor else inactiveTextColor,
             textAlign = TextAlign.Start,
@@ -463,7 +538,7 @@ private fun LyricLine(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = lyric.translation!!,
-                style = MaterialTheme.typography.titleMedium,
+                style = style.translationTextStyle,
                 color =
                     if (isActive) {
                         activeTextColor.copy(alpha = LyricUIConstants.ACTIVE_TRANSLATION_ALPHA)
@@ -559,7 +634,7 @@ private fun WordsLyricLine(
     alpha: Float,
     scale: Float,
     blurRadius: Dp,
-    textStyle: TextStyle,
+    style: LyricsUIStyle,
     measureCache: MutableMap<String, List<MeasuredWord>>,
 ) {
     val activeTextColor = MaterialTheme.colorScheme.onSurface
@@ -622,8 +697,8 @@ private fun WordsLyricLine(
                     scaleX = scale
                     scaleY = scale
                 }.padding(
-                    horizontal = LyricUIConstants.LYRIC_HORIZONTAL_PADDING.dp,
-                    vertical = LyricUIConstants.LYRIC_VERTICAL_PADDING.dp,
+                    horizontal = style.horizontalPadding,
+                    vertical = style.verticalPadding,
                 ),
     ) {
         ProgressiveWordsText(
@@ -632,7 +707,7 @@ private fun WordsLyricLine(
             progressProvider = { range -> wordProgress(range.word, displayTime) },
             // 测量样式不含颜色：颜色随强调度逐帧动画，
             // 若参与测量 key 会导致滚动时测量结果每帧失效引发闪烁
-            textStyle = textStyle,
+            textStyle = style.wordsTextStyle,
             baseColor = baseTextColor,
             activeColor = activeTextColor,
             modifier = Modifier.fillMaxWidth(),
@@ -646,7 +721,7 @@ private fun WordsLyricLine(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = translation,
-                style = MaterialTheme.typography.bodySmall,
+                style = style.wordsTranslationTextStyle,
                 color = translationColor,
                 textAlign = TextAlign.Start,
                 overflow = TextOverflow.Ellipsis,
@@ -871,11 +946,40 @@ private fun SeekPreview(
 // ==================== 工具函数 ====================
 
 /**
+ * 计算把目标行顶对齐到视口锚点(35% 高度处)所需的滚动距离
+ */
+private fun LazyListState.distanceToAnchor(
+    itemOffset: Int,
+    viewportHeightPx: Int,
+): Float {
+    val anchorY =
+        layoutInfo.viewportStartOffset +
+            viewportHeightPx * LyricUIConstants.SCROLL_VIEWPORT_OFFSET_RATIO
+    return itemOffset - anchorY
+}
+
+/**
+ * 无动画精确定位到目标歌词行
+ *
+ * 先跳转让目标行完成布局，再按真实偏移对齐到视口锚点，
+ * 不依赖平均行高估算，任意距离都能准确落位。用于打开歌词时的首次同步
+ */
+private suspend fun LazyListState.snapToLyricIndex(
+    targetIndex: Int,
+    viewportHeightPx: Int,
+) {
+    if (viewportHeightPx <= 0 || targetIndex < 0) return
+    scrollToItem(targetIndex)
+    val targetItem = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex } ?: return
+    scrollBy(distanceToAnchor(targetItem.offset, viewportHeightPx))
+}
+
+/**
  * LazyListState 缓慢滚动扩展函数
  * 实现平滑的歌词切换动画
  *
  * 目标行可见时使用真实布局偏移，行高差异不会造成落点漂移；
- * 不可见时退回平均行高估算
+ * 不可见时按平均行高估算滚动，结束后再按真实布局二次校正落点
  */
 private suspend fun LazyListState.slowScrollToIndex(
     targetIndex: Int,
@@ -885,35 +989,51 @@ private suspend fun LazyListState.slowScrollToIndex(
     if (viewportHeightPx <= 0 || targetIndex < 0) return
     val layoutInfoSnapshot = layoutInfo
     val targetItem = layoutInfoSnapshot.visibleItemsInfo.firstOrNull { it.index == targetIndex }
+    val firstVisibleItem = layoutInfoSnapshot.visibleItemsInfo.firstOrNull() ?: return
 
     val distance =
         if (targetItem != null) {
             // 目标行已可见：用真实偏移把行顶对齐到视口锚点
-            val anchorY =
-                layoutInfoSnapshot.viewportStartOffset +
-                    viewportHeightPx * LyricUIConstants.SCROLL_VIEWPORT_OFFSET_RATIO
-            targetItem.offset - anchorY
+            distanceToAnchor(targetItem.offset, viewportHeightPx)
         } else {
+            // 目标行不可见：以首个可见行的真实偏移为基准，按平均行高外推
             val averageItemSize =
                 layoutInfoSnapshot.visibleItemsInfo
-                    .takeIf { it.isNotEmpty() }
-                    ?.map { it.size }
-                    ?.average()
-                    ?.toFloat()
-                    ?.takeIf { it > 0f } ?: (viewportHeightPx / 6f)
-
-            val currentOffsetPx = firstVisibleItemIndex * averageItemSize + firstVisibleItemScrollOffset
-            val targetOffsetPx = targetIndex * averageItemSize
-            val desiredOffsetPx =
-                targetOffsetPx + viewportHeightPx * LyricUIConstants.SCROLL_VIEWPORT_OFFSET_RATIO
-            desiredOffsetPx - currentOffsetPx
+                    .map { it.size }
+                    .average()
+                    .toFloat()
+                    .takeIf { it > 0f } ?: (viewportHeightPx / 6f)
+            val estimatedTargetOffset =
+                firstVisibleItem.offset + (targetIndex - firstVisibleItem.index) * averageItemSize
+            distanceToAnchor(estimatedTargetOffset.toInt(), viewportHeightPx)
         }
 
-    if (abs(distance) < 0.5f) return
-    animateScrollBy(
-        value = distance,
-        animationSpec = tween(durationMillis = durationMillis, easing = LinearOutSlowInEasing),
-    )
+    if (abs(distance) >= 0.5f) {
+        animateScrollBy(
+            value = distance,
+            animationSpec = tween(durationMillis = durationMillis, easing = LinearOutSlowInEasing),
+        )
+    }
+
+    if (targetItem != null) return
+
+    // 估算滚动的落点校正：此时目标行应已可见，按真实偏移修正残差
+    val settledItem = layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }
+    if (settledItem == null) {
+        snapToLyricIndex(targetIndex, viewportHeightPx)
+        return
+    }
+    val residual = distanceToAnchor(settledItem.offset, viewportHeightPx)
+    if (abs(residual) >= 0.5f) {
+        animateScrollBy(
+            value = residual,
+            animationSpec =
+                tween(
+                    durationMillis = LyricUIConstants.SCROLL_CORRECTION_DURATION,
+                    easing = LinearOutSlowInEasing,
+                ),
+        )
+    }
 }
 
 /**

@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
-import me.spica27.spicamusic.ui.player.pages.FullScreenLyricsPage
+import me.spica27.spicamusic.ui.player.LyricsPanel
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 
 class LyricScene : StackScene() {
@@ -31,7 +31,7 @@ class LyricScene : StackScene() {
                     modifier = Modifier.padding(it),
                     contentAlignment = Alignment.Center,
                 ) {
-                    FullScreenLyricsPage(
+                    LyricsPanel(
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
