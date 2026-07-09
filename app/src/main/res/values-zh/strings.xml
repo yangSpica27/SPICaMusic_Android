@@ -410,6 +410,8 @@
   <string name="favorites_empty_title">还没有收藏</string>
   <string name="favorites_empty_subtitle">点击任意歌曲上的爱心，即可加入收藏。</string>
   <string name="favorites_search_empty">没有找到匹配的收藏歌曲。</string>
+  <string name="favorites_count_total">共 %d 首</string>
+  <string name="favorites_count_found">找到 %d 首</string>
   <string name="finder_playlists_overview_title">歌单速览</string>
   <string name="finder_no_playlists_subtitle">前往资料库创建歌单后，这里会展示你的歌单速览。</string>
 

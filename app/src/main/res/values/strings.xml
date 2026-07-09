@@ -411,6 +411,8 @@
   <string name="favorites_empty_title">No favorites yet</string>
   <string name="favorites_empty_subtitle">Tap the heart on any song to add it to your favorites.</string>
   <string name="favorites_search_empty">No favorites match your search.</string>
+  <string name="favorites_count_total">%d songs in total</string>
+  <string name="favorites_count_found">Found %d songs</string>
   <string name="finder_playlists_overview_title">Playlist Overview</string>
   <string name="finder_no_playlists_subtitle">Create a playlist in the library and it will appear here.</string>
 

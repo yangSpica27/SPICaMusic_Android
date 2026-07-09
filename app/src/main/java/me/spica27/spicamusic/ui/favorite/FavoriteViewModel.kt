@@ -108,6 +108,22 @@ class FavoriteViewModel(
         }
     }
 
+    /** 随机播放所有收藏歌曲 */
+    fun shufflePlayAllSongs() {
+        viewModelScope.launch {
+            val keyword = _searchKeyword.value.ifBlank { null }
+            val allIds = songRepository.getLikeMediaStoreIds(keyword).map { it.toString() }.shuffled()
+            if (allIds.isEmpty()) return@launch
+            player.doAction(
+                PlayerAction.UpdateList(
+                    mediaIds = allIds,
+                    mediaId = allIds.first(),
+                    start = true,
+                ),
+            )
+        }
+    }
+
     fun enterMultiSelectMode(initialSelectedId: Long? = null) {
         _isMultiSelectMode.value = true
         if (initialSelectedId != null) {
