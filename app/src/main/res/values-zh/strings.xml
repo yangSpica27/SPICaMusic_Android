@@ -400,6 +400,7 @@
   <string name="finder_no_frequent_title">还没有常听歌曲</string>
   <string name="finder_no_frequent_subtitle">开始播放音乐后，这里会出现你最常听的内容。</string>
   <string name="finder_no_favorites_title">还没有收藏歌曲</string>
+  <string name="finder_favorites_playlist_name">我的收藏歌曲</string>
   <string name="finder_no_favorites_subtitle">在播放器或歌曲菜单中收藏喜欢的歌曲，它们会在这里展示。</string>
   <string name="finder_more">更多</string>
   <string name="favorites_title">我的收藏</string>

@@ -91,6 +91,8 @@ import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinActivityViewModel
 
+private const val FavoritePreviewSongCount = 5
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinderPage() {
@@ -108,6 +110,7 @@ fun FinderPage() {
 
     val playerViewModel = LocalPlayerViewModel.current
     val frequentPlaylistName = stringResource(R.string.finder_frequent_playlist_name)
+    val favoritePlaylistName = stringResource(R.string.finder_favorites_playlist_name)
 
     LaunchedEffect(snackbarMessage) {
         val message = snackbarMessage ?: return@LaunchedEffect
@@ -217,6 +220,31 @@ fun FinderPage() {
             }
 
             item {
+                FavoriteSongList(
+                    songs = ImmutableList.copyOf(favoriteSongs.take(5)),
+                    emptyTitle = stringResource(R.string.finder_no_favorites_title),
+                    emptySubtitle = stringResource(R.string.finder_no_favorites_subtitle),
+                    onCreatePlaylist = {
+                        homeViewModel.createPlaylistFromSongs(
+                            songs = favoriteSongs,
+                            playlistName = favoritePlaylistName,
+                        )
+                    },
+                    onPlayAll = {
+                        playerViewModel.updatePlaylistWithSongs(
+                            songs = favoriteSongs,
+                            startSong = favoriteSongs.firstOrNull(),
+                            autoStart = true,
+                        )
+                    },
+                    onSongClick = { song ->
+                        playerViewModel.updatePlaylistWithSongs(
+                            songs = favoriteSongs,
+                            startSong = song,
+                            autoStart = true,
+                        )
+                    },
+                )
             }
 
             item {
@@ -500,6 +528,168 @@ private fun FinderFeatureCard(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+@Composable
+private fun FavoriteSongList(
+    songs: ImmutableList<Song>,
+    emptyTitle: String,
+    emptySubtitle: String,
+    onCreatePlaylist: () -> Unit,
+    onPlayAll: () -> Unit,
+    onSongClick: (Song) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (songs.isEmpty()) {
+        EmptyFinderCard(
+            title = emptyTitle,
+            subtitle = emptySubtitle,
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
+        )
+        return
+    }
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                .clip(Shapes.ExtraLargeCornerBasedShape)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .padding(Spacing.Medium),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+        ) {
+            songs.take(FavoritePreviewSongCount).forEachIndexed { index, song ->
+                FavoriteSongRow(
+                    index = index,
+                    song = song,
+                    onClick = { onSongClick(song) },
+                )
+            }
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+        ) {
+            FavoriteActionPill(
+                text = stringResource(R.string.play_all),
+                icon = Icons.Default.PlayArrow,
+                modifier = Modifier.weight(1f),
+                onClick = onPlayAll,
+            )
+            FavoriteActionPill(
+                text = stringResource(R.string.create_playlist),
+                icon = Icons.Default.Add,
+                modifier = Modifier.weight(1f),
+                onClick = onCreatePlaylist,
+            )
+        }
+    }
+}
+
+@Composable
+private fun FavoriteActionPill(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .clip(Shapes.MediumCornerBasedShape)
+                .background(MaterialTheme.colorScheme.secondaryContainer)
+                .clickHighlight(onClick = onClick)
+                .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+        )
+        Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun FavoriteSongRow(
+    index: Int,
+    song: Song,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(Shapes.LargeCornerBasedShape)
+                .clickHighlight(onClick = onClick)
+                .padding(Spacing.Small),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+    ) {
+        AudioCover(
+            uri = song.getCoverUri(),
+            modifier =
+                Modifier
+                    .size(48.dp)
+                    .clip(Shapes.MediumCornerBasedShape),
+            placeHolder = {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.MusicNote,
+                        contentDescription = stringResource(R.string.cover_placeholder),
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = song.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "${song.artist} · ${song.album}",
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.PlayArrow,
+            contentDescription = stringResource(R.string.play),
+            tint = MaterialTheme.colorScheme.primary,
+        )
     }
 }
 

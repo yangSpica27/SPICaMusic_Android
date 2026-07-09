@@ -399,6 +399,7 @@
   <string name="finder_no_frequent_title">還沒有常聽歌曲</string>
   <string name="finder_no_frequent_subtitle">開始播放音樂後，這裡會出現你最常聽的內容。</string>
   <string name="finder_no_favorites_title">還沒有收藏歌曲</string>
+  <string name="finder_favorites_playlist_name">我的收藏歌曲</string>
   <string name="finder_no_favorites_subtitle">在播放器或歌曲選單中收藏喜歡的歌曲，它們會在這裡展示。</string>
   <string name="finder_more">更多</string>
   <string name="favorites_title">我的收藏</string>
