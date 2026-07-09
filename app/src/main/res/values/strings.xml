@@ -397,6 +397,7 @@
   <string name="finder_settings_title">Settings</string>
   <string name="finder_settings_subtitle">Theme, background, and playback preferences</string>
   <string name="finder_frequent_title">Most Played</string>
+  <string name="finder_frequent_playlist_name">Most Played Songs</string>
   <string name="finder_no_frequent_title">No frequently played songs</string>
   <string name="finder_no_frequent_subtitle">Start playing music and your most-played songs will appear here.</string>
   <string name="finder_no_favorites_title">No favorite songs</string>

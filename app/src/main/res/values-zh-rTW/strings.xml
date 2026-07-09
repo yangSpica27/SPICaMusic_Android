@@ -395,6 +395,7 @@
   <string name="finder_settings_title">設定中心</string>
   <string name="finder_settings_subtitle">主題、背景、播放偏好</string>
   <string name="finder_frequent_title">最近常聽</string>
+  <string name="finder_frequent_playlist_name">最近常聽歌曲</string>
   <string name="finder_no_frequent_title">還沒有常聽歌曲</string>
   <string name="finder_no_frequent_subtitle">開始播放音樂後，這裡會出現你最常聽的內容。</string>
   <string name="finder_no_favorites_title">還沒有收藏歌曲</string>

@@ -111,6 +111,7 @@ object AppModule {
             // 首页 ViewModel
             viewModel {
                 HomeViewModel(
+                    app = androidApplication(),
                     songRepository = get<SongUseCases>(),
                     playlistRepository = get<PlaylistUseCases>(),
                 )

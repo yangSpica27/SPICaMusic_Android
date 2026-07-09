@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.home.page
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -7,11 +8,15 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,11 +26,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,10 +41,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -52,8 +63,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.common.collect.ImmutableList
 import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
@@ -72,7 +85,9 @@ import me.spica27.spicamusic.ui.settings.SettingsScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
+import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinActivityViewModel
 
@@ -88,8 +103,17 @@ fun FinderPage() {
     val playlists by homeViewModel.playlists.collectAsStateWithLifecycle()
     val playlistsWithCover by homeViewModel.playlistsWithCover.collectAsStateWithLifecycle()
     val allSongs by homeViewModel.allSongs.collectAsStateWithLifecycle()
+    val snackbarMessage by homeViewModel.snackbarMessage.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val playerViewModel = LocalPlayerViewModel.current
+    val frequentPlaylistName = stringResource(R.string.finder_frequent_playlist_name)
+
+    LaunchedEffect(snackbarMessage) {
+        val message = snackbarMessage ?: return@LaunchedEffect
+        Toast.makeText(App.getInstance(), message, Toast.LENGTH_SHORT).show()
+        homeViewModel.clearSnackbar()
+    }
 
     val summaryText =
         stringResource(
@@ -114,6 +138,7 @@ fun FinderPage() {
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         LazyColumn(
             modifier =
@@ -162,13 +187,20 @@ fun FinderPage() {
 
             item {
                 SongRail(
-                    songs = frequentSongs,
+                    songs = ImmutableList.copyOf(frequentSongs),
                     emptyTitle = stringResource(R.string.finder_no_frequent_title),
                     emptySubtitle = stringResource(R.string.finder_no_frequent_subtitle),
-                    onSongClick = { song ->
+                    onCardClick = {},
+                    onCreateBtnClick = {
+                        homeViewModel.createPlaylistFromSongs(
+                            songs = frequentSongs,
+                            playlistName = frequentPlaylistName,
+                        )
+                    },
+                    onPlayBtnClick = {
                         playerViewModel.updatePlaylistWithSongs(
                             songs = frequentSongs,
-                            startSong = song,
+                            startSong = frequentSongs.firstOrNull(),
                             autoStart = true,
                         )
                     },
@@ -185,18 +217,6 @@ fun FinderPage() {
             }
 
             item {
-                SongRail(
-                    songs = favoriteSongs.take(10),
-                    emptyTitle = stringResource(R.string.finder_no_favorites_title),
-                    emptySubtitle = stringResource(R.string.finder_no_favorites_subtitle),
-                    onSongClick = { song ->
-                        playerViewModel.updatePlaylistWithSongs(
-                            songs = favoriteSongs,
-                            startSong = song,
-                            autoStart = true,
-                        )
-                    },
-                )
             }
 
             item {
@@ -485,11 +505,13 @@ private fun FinderFeatureCard(
 
 @Composable
 private fun SongRail(
-    songs: List<Song>,
+    modifier: Modifier = Modifier,
+    songs: ImmutableList<Song>,
     emptyTitle: String,
     emptySubtitle: String,
-    onSongClick: (Song) -> Unit,
-    modifier: Modifier = Modifier,
+    onCardClick: () -> Unit,
+    onCreateBtnClick: (() -> Unit)? = null,
+    onPlayBtnClick: (() -> Unit)? = null,
 ) {
     if (songs.isEmpty()) {
         EmptyFinderCard(
@@ -501,60 +523,136 @@ private fun SongRail(
                     .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
         )
     } else {
-        LazyRow(
-            modifier = modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
-            overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Horizontal),
-        ) {
-            items(
-                items = songs,
-                key = { it.mediaStoreId },
-            ) { song ->
-                FinderSongCard(
-                    song = song,
-                    onClick = { onSongClick(song) },
-                )
-            }
-        }
+        FinderSongCard(
+            songs = songs,
+            onClick = { onCardClick() },
+            onCreateBtnClick = onCreateBtnClick,
+            onPlayBtnClick = onPlayBtnClick,
+        )
     }
 }
 
 @Composable
 private fun FinderSongCard(
-    song: Song,
+    songs: ImmutableList<Song>,
     onClick: () -> Unit,
+    onCreateBtnClick: (() -> Unit)?,
+    onPlayBtnClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier
-                .width(160.dp)
-                .clickable(onClick = onClick),
-        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+    Card(
+        modifier
+            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+            .clip(Shapes.ExtraLargeCornerBasedShape)
+            .clickable(onClick = onClick),
+        shape = Shapes.ExtraLargeCornerBasedShape,
     ) {
-        Card(
-            modifier =
-                Modifier
-                    .size(160.dp)
-                    .clip(Shapes.ExtraLargeCornerBasedShape),
+        Column(
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            SongCover(song)
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(Spacing.Medium),
+            ) {
+                // 封面
+                Column(
+                    modifier =
+                        Modifier
+                            .width(80.dp)
+                            .fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+                ) {
+                    AudioCover(
+                        uri = songs.firstOrNull()?.getCoverUri(),
+                        modifier =
+                            Modifier
+                                .width(80.dp)
+                                .aspectRatio(0.78f)
+                                .clip(Shapes.MediumCornerBasedShape),
+                        placeHolder = {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .clip(Shapes.LargeCornerBasedShape)
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.MusicNote,
+                                    contentDescription = stringResource(R.string.cover_placeholder),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier =
+                                        Modifier
+                                            .size(64.dp)
+                                            .align(Alignment.Center),
+                                )
+                            }
+                        },
+                    )
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .clip(Shapes.ExtraLargeCornerBasedShape)
+                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                .clickHighlight {
+                                    onCreateBtnClick?.invoke()
+                                },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = stringResource(R.string.create_playlist),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .clip(Shapes.ExtraLargeCornerBasedShape)
+                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                .clickHighlight {
+                                    onPlayBtnClick?.invoke()
+                                },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = stringResource(R.string.play),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                }
+                // 歌曲信息
+                Column(
+                    modifier =
+                        Modifier
+                            .padding(start = Spacing.Medium)
+                            .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+                ) {
+                    songs.forEachIndexed { index, song ->
+                        Text(
+                            text = "#${index + 1} ${song.displayName}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+            Row { }
         }
-        Text(
-            text = song.displayName,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = song.artist,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 
@@ -609,7 +707,10 @@ private fun FinderPlaylistCard(
         modifier =
             modifier
                 .width(168.dp)
-                .clickable(onClick = onClick),
+                .clip(Shapes.ExtraLargeCornerBasedShape)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .clickHighlight(onClick = onClick)
+                .padding(Spacing.Medium),
         verticalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
         PlaylistCoverView(
@@ -617,9 +718,10 @@ private fun FinderPlaylistCard(
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(Shapes.ExtraLargeCornerBasedShape),
+                    .clip(MaterialTheme.shapes.large),
             albumIds = item.coverAlbumIds,
         )
+        Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
         Text(
             text = item.playlist.playlistName,
             style = MaterialTheme.typography.bodyMedium,

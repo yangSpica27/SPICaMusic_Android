@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.home
 
+import android.app.Application
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,11 +9,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.SongFilter
@@ -20,6 +24,7 @@ import me.spica27.spicamusic.common.entity.SongSortOrder
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
+import timber.log.Timber
 
 /**
  * 首页 ViewModel
@@ -28,6 +33,7 @@ import me.spica27.spicamusic.ui.model.PlaylistWithCover
  */
 @Stable
 class HomeViewModel(
+    private val app: Application,
     private val songRepository: SongUseCases,
     private val playlistRepository: PlaylistUseCases,
 ) : ViewModel() {
@@ -45,6 +51,9 @@ class HomeViewModel(
     private val _showCreateMenu = MutableStateFlow(false)
 
     val showCreateMenu: StateFlow<Boolean> = _showCreateMenu
+
+    private val _snackbarMessage = MutableStateFlow<String?>(null)
+    val snackbarMessage: StateFlow<String?> = _snackbarMessage.asStateFlow()
 
     // 筛选条件
     private val _filter = MutableStateFlow(SongFilter.EMPTY)
@@ -177,6 +186,30 @@ class HomeViewModel(
      */
     fun toggleCreateMenu() {
         _showCreateMenu.value = !_showCreateMenu.value
+    }
+
+    fun createPlaylistFromSongs(
+        songs: List<Song>,
+        playlistName: String,
+    ) {
+        if (songs.isEmpty()) return
+        viewModelScope.launch {
+            try {
+                val playlistId = playlistRepository.createPlaylist(playlistName)
+                playlistRepository.addSongsToPlaylist(
+                    playlistId = playlistId,
+                    mediaIds = songs.map { it.mediaStoreId },
+                )
+                _snackbarMessage.value = app.getString(R.string.saved_as_playlist_format, playlistName)
+            } catch (e: Exception) {
+                Timber.e(e, "创建常听歌曲歌单失败")
+                _snackbarMessage.value = app.getString(R.string.save_failed)
+            }
+        }
+    }
+
+    fun clearSnackbar() {
+        _snackbarMessage.value = null
     }
 
     /**
