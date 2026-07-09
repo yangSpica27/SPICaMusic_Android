@@ -4,6 +4,8 @@ import android.os.Parcelable
 import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 /**
  * 歌曲实体 - 通用数据类
@@ -32,4 +34,16 @@ data class Song(
     val codec: String,
     val album: String,
     val waveformData: String? = "",
-) : Parcelable
+) : Parcelable {
+
+    private fun formatTime(millis: Long): String {
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
+        return String.format(Locale.CHINESE, "%d:%02d", minutes, seconds)
+    }
+
+    fun getFormattedDuration(): String {
+        return formatTime(duration)
+    }
+
+}

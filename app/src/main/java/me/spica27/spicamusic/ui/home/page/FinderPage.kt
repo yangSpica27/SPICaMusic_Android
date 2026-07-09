@@ -678,17 +678,20 @@ private fun FavoriteSongRow(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "${song.artist} · ${song.album}",
+                text = song.artist,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Icon(
-            imageVector = Icons.Default.PlayArrow,
-            contentDescription = stringResource(R.string.play),
-            tint = MaterialTheme.colorScheme.primary,
+        Text(
+            song.getFormattedDuration(),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(30.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End,
         )
     }
 }
