@@ -7,6 +7,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Android](https://img.shields.io/badge/Android-29+-green.svg)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3+-purple.svg)](https://kotlinlang.org)
+[![GitHub release](https://img.shields.io/github/v/release/yangSpica27/SPICaMusic_Android?include_prereleases)](https://github.com/yangSpica27/SPICaMusic_Android/releases)
+
+[下载最新版](https://github.com/yangSpica27/SPICaMusic_Android/releases) ·
+[查看源码](https://github.com/yangSpica27/SPICaMusic_Android) ·
+[反馈问题](https://github.com/yangSpica27/SPICaMusic_Android/issues)
 
 </div>
 
@@ -32,9 +37,9 @@
 
 ## 📖 项目简介
 
-柠檬音乐是一款基于 **Media3 ExoPlayer**、**Jetpack Compose** 与 **Koin** 打造的现代化 Android 音乐播放器。
+柠檬音乐是一款面向本地音乐播放的现代化 Android 应用，基于 **Media3 ExoPlayer**、**Jetpack Compose** 与 **Koin** 构建，支持 Android 10 及以上系统。
 
-当前仓库采用**分层 + 多模块**架构：`app` 负责 Compose UI、应用级 DI 与后台播放服务；`feature-*-domain` 暴露 use case / facade；`feature-*-data` 提供数据实现；`common` 与 `core-preferences` 提供跨模块共享能力。支持多种高品质音频格式（FLAC / ALAC / Opus 等），并提供歌词、EQ、频谱分析、歌单与听歌统计等能力。
+应用可扫描设备中的音乐文件，并提供收藏、歌单、播放历史、在线歌词、均衡器、混响和实时频谱等功能。项目采用**分层 + 多模块**架构：`app` 负责 Compose UI、应用级 DI 与后台播放服务；`feature-*-domain` 暴露 use case / facade；`feature-*-data` 提供数据实现；`common` 与 `core-preferences` 提供跨模块共享能力。
 
 ## 🏗️ 架构设计
 
@@ -53,17 +58,20 @@
 | `feature-lyrics-domain` | 歌词查询 facade |
 | `feature-settings-domain` | 设置读写 facade，复用 `core-preferences` |
 
+依赖方向保持为 `app → feature-*-domain → feature-*-data → common / core-*`。播放器界面通过 `IMusicPlayer` 与 `MediaBrowser` 连接 `PlaybackService`，由服务统一管理 ExoPlayer、MediaSession 和音频处理链。
+
 ## 🎵 功能特性
 
 | 功能类别 | 具体特性 |
 |----------|----------|
-| 🎧 音频格式 | FLAC, ALAC, Opus, Vorbis, MP3, AAC, WAV, AC3, EAC3, DCA, MLP, TrueHD 等 |
-| 📝 歌单管理 | 新增 / 编辑 / 删除歌单，智能分类 |
+| 📚 本地音乐库 | MediaStore 扫描、指定文件夹扫描、歌曲 / 专辑 / 艺术家分类 |
+| 🎧 音频格式 | FLAC、ALAC、Opus、Vorbis、MP3、AAC、WAV、AC3、EAC3、DCA、MLP、TrueHD 等 |
+| 📝 音乐管理 | 收藏歌曲，新增 / 编辑 / 删除歌单，最近播放与最常播放 |
 | 🎨 主题切换 | 亮色 / 暗色模式，动态取色 |
 | 🎤 歌词功能 | 在线歌词搜索与同步显示 |
-| 🎛️ 音效调节 | 自定义 EQ 均衡器，频谱可视化 |
+| 🎛️ 音效调节 | 自定义 EQ 均衡器与混响效果 |
 | 📊 音频分析 | FFT 频谱分析，振幅波形显示 |
-| 🔄 播放模式 | 顺序 / 随机 / 单曲循环 |
+| 🔄 播放体验 | 后台播放、媒体通知、顺序 / 随机 / 单曲循环 |
 
 ## 🚧 开发计划
 
@@ -77,13 +85,18 @@
 
 ## 🚀 快速开始
 
+### 安装
+
+从 [Releases](https://github.com/yangSpica27/SPICaMusic_Android/releases) 下载最新 APK 并安装。目前 APK 仅提供 `arm64-v8a` 架构，设备需运行 Android 10（API 29）或更高版本。
+
+### 从源码构建
+
 ```bash
 # 1. 克隆仓库
 git clone https://github.com/yangSpica27/SPICaMusic_Android.git
 
-# 2. 使用 Android Studio 打开项目
-
-# 3. Windows 下调试构建
+# 2. 进入项目并执行调试构建（Windows）
+cd SPICaMusic_Android
 .\gradlew.bat :app:assembleDebug
 ```
 
@@ -101,18 +114,18 @@ git clone https://github.com/yangSpica27/SPICaMusic_Android.git
 | Kotlin 格式化 | `.\gradlew.bat :app:ktlintFormat` |
 | Kotlin 检查 | `.\gradlew.bat :app:ktlintCheck` |
 | App 单元测试 | `.\gradlew.bat :app:testDebugUnitTest` |
+| 生成 Baseline Profile | `.\gradlew.bat :app:generateBaselineProfile` |
 
 > `app` 模块的 `preBuild` 会自动依赖 `:app:ktlintFormat`，因此构建前会先格式化 Kotlin 源码。
 
 ## ⚠️ 注意事项
 
-本仓库遵循 **MIT 协议**。
+本仓库源码遵循 [MIT 协议](LICENSE)。
 
-WAV、ALAC 等格式的软解码依赖于FFmpeg，需单独许可证。
-项目默认引用[jellyfin-androidx-media](https://github.com/jellyfin/jellyfin-androidx-media/releases)中的完成制品
-
-如需自行编译，请参考:
-[decoder_ffmpeg](https://github.com/androidx/media/tree/release/libraries/decoder_ffmpeg)
+部分音频格式的软解码依赖 FFmpeg，其许可条款与本项目不同。项目默认使用
+[jellyfin-androidx-media](https://github.com/jellyfin/jellyfin-androidx-media/releases)
+提供的预编译产物；如需自行编译，请参考 Media3 的
+[FFmpeg 解码器文档](https://github.com/androidx/media/tree/release/libraries/decoder_ffmpeg)。
 
 ## 📚 技术栈
 
