@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.ChevronRight
@@ -202,20 +201,6 @@ class SettingsScene : StackScene() {
                                     ),
                                 currentValue = spectrumValue,
                                 onValueChange = viewModel::setDynamicSpectrumBackground,
-                            )
-                            SettingsItemDivider()
-                            ModernSettingsSelectItem(
-                                title = stringResource(R.string.settings_dynamic_cover),
-                                subtitle = DynamicCoverType.fromString(coverTypeValue).name,
-                                icon = Icons.Default.Album,
-                                options =
-                                    ImmutableList.copyOf(
-                                        DynamicCoverType.presets.map {
-                                            SelectOption(it.value, it.name)
-                                        },
-                                    ),
-                                currentValue = coverTypeValue,
-                                onValueChange = viewModel::setDynamicCoverType,
                             )
                             SettingsItemDivider()
                             ModernSettingsSelectItem(
