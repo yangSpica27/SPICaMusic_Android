@@ -671,7 +671,13 @@ private fun FinderMasthead(
                 label = "finderSummaryRoll",
             ) { (frequent, favorite, playlist) ->
                 Text(
-                    text = stringResource(R.string.finder_summary_format, frequent, favorite, playlist),
+                    text =
+                        stringResource(
+                            R.string.finder_summary_format,
+                            frequent,
+                            favorite,
+                            playlist,
+                        ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -870,13 +876,15 @@ private fun FrequentHeroCard(
                 )
             }
         }
-        Column {
-            songs.take(3).forEachIndexed { index, song ->
-                HeroSongRow(
-                    index = index,
-                    song = song,
-                    onClick = { onSongClick(song) },
-                )
+        AnimatedContent(songs.take(3), label = "frequentHeroSongs") { songs ->
+            Column {
+                songs.forEachIndexed { index, song ->
+                    HeroSongRow(
+                        index = index,
+                        song = song,
+                        onClick = { onSongClick(song) },
+                    )
+                }
             }
         }
         FinderActionPill(
@@ -1072,7 +1080,11 @@ private fun FinderActionPill(
                 .clickHighlight(interactionSource = interactionSource, onClick = onClick)
                 .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall, Alignment.CenterHorizontally),
+        horizontalArrangement =
+            Arrangement.spacedBy(
+                Spacing.ExtraSmall,
+                Alignment.CenterHorizontally,
+            ),
     ) {
         Icon(
             imageVector = icon,
