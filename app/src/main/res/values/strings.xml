@@ -382,6 +382,36 @@
   <string name="music_tab_songs_count">%d</string>
   <string name="music_tab_albums_count">%d</string>
   <string name="music_tab_artists_count">%d</string>
+  <string name="music_search_songs_hint">Search songs…</string>
+  <string name="music_search_albums_hint">Search albums…</string>
+  <string name="music_search_artists_hint">Search artists…</string>
+  <string name="music_sort_cd">Sort</string>
+  <string name="sort_song_title_az">Title A–Z</string>
+  <string name="sort_song_title_za">Title Z–A</string>
+  <string name="sort_song_artist_az">Artist A–Z</string>
+  <string name="sort_song_artist_za">Artist Z–A</string>
+  <string name="sort_song_duration_asc">Duration ↑</string>
+  <string name="sort_song_duration_desc">Duration ↓</string>
+  <string name="sort_album_title_az">Title A–Z</string>
+  <string name="sort_album_title_za">Title Z–A</string>
+  <string name="sort_album_artist_az">Artist A–Z</string>
+  <string name="sort_album_artist_za">Artist Z–A</string>
+  <string name="sort_album_count_desc">Most Songs</string>
+  <string name="sort_album_count_asc">Fewest Songs</string>
+  <string name="sort_artist_name_az">Name A–Z</string>
+  <string name="sort_artist_name_za">Name Z–A</string>
+  <string name="sort_artist_count_desc">Most Songs</string>
+  <string name="sort_artist_count_asc">Fewest Songs</string>
+  <string name="music_empty_songs_title">No songs found</string>
+  <string name="music_empty_songs_subtitle">Try different keywords</string>
+  <string name="music_empty_albums_title">No albums found</string>
+  <string name="music_empty_albums_subtitle">Try different keywords</string>
+  <string name="music_empty_artists_title">No artists found</string>
+  <string name="music_empty_artists_subtitle">Try different keywords</string>
+  <string name="music_no_songs_title">No songs yet</string>
+  <string name="music_no_songs_subtitle">Scan your device to find music</string>
+  <string name="music_no_albums_title">No albums yet</string>
+  <string name="music_no_artists_title">No artists yet</string>
 
   <!-- Finder Page -->
   <string name="finder_title">Discover</string>

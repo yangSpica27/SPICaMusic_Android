@@ -113,10 +113,6 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
  * 发现页
- *
- * 「刊头发现」排版（与资料库/收藏页同一代设计语言）：杂志刊头大标题 + 搜索胶囊 +
- * 常听榜单渐变主卡为页面主角，收藏预览与歌单横滑列随后，导航性质的快捷入口沉底为页尾分区。
- * 单一 LazyColumn 承载全部内容，头部折叠由滚动偏移直接驱动（Draw 阶段读取，零重组）。
  */
 
 /** 大标题收缩归一化距离的上限（实际取刊头实测滚出高度，见 mastheadCollapse） */
@@ -200,7 +196,6 @@ fun FinderPage() {
                     bottom = 200.dp,
                 ),
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
-            overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
         ) {
             item(key = "masthead", contentType = "masthead") {
                 val entrance = rememberEntrance(order = 0, play = playEntrance)

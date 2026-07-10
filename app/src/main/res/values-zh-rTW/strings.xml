@@ -380,6 +380,36 @@
   <string name="music_tab_songs_count">%d首</string>
   <string name="music_tab_albums_count">%d張</string>
   <string name="music_tab_artists_count">%d位</string>
+  <string name="music_search_songs_hint">搜尋歌曲…</string>
+  <string name="music_search_albums_hint">搜尋專輯…</string>
+  <string name="music_search_artists_hint">搜尋歌手…</string>
+  <string name="music_sort_cd">排序</string>
+  <string name="sort_song_title_az">標題 A–Z</string>
+  <string name="sort_song_title_za">標題 Z–A</string>
+  <string name="sort_song_artist_az">歌手 A–Z</string>
+  <string name="sort_song_artist_za">歌手 Z–A</string>
+  <string name="sort_song_duration_asc">時長 短→長</string>
+  <string name="sort_song_duration_desc">時長 長→短</string>
+  <string name="sort_album_title_az">標題 A–Z</string>
+  <string name="sort_album_title_za">標題 Z–A</string>
+  <string name="sort_album_artist_az">歌手 A–Z</string>
+  <string name="sort_album_artist_za">歌手 Z–A</string>
+  <string name="sort_album_count_desc">歌曲最多</string>
+  <string name="sort_album_count_asc">歌曲最少</string>
+  <string name="sort_artist_name_az">姓名 A–Z</string>
+  <string name="sort_artist_name_za">姓名 Z–A</string>
+  <string name="sort_artist_count_desc">歌曲最多</string>
+  <string name="sort_artist_count_asc">歌曲最少</string>
+  <string name="music_empty_songs_title">沒有找到歌曲</string>
+  <string name="music_empty_songs_subtitle">換個關鍵詞試試</string>
+  <string name="music_empty_albums_title">沒有找到專輯</string>
+  <string name="music_empty_albums_subtitle">換個關鍵詞試試</string>
+  <string name="music_empty_artists_title">沒有找到歌手</string>
+  <string name="music_empty_artists_subtitle">換個關鍵詞試試</string>
+  <string name="music_no_songs_title">還沒有歌曲</string>
+  <string name="music_no_songs_subtitle">掃描裝置以查找音樂</string>
+  <string name="music_no_albums_title">還沒有專輯</string>
+  <string name="music_no_artists_title">還沒有歌手</string>
 
   <!-- Finder Page -->
   <string name="finder_title">發現</string>

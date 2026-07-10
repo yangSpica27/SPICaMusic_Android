@@ -48,3 +48,9 @@
 - `App` 会按应用前后台生命周期启动/停止 `IMusicScanService` 的 MediaStore 监听，这不是某个页面局部逻辑；涉及扫描或库刷新时要考虑生命周期影响。
 - `SpicaPlayer.createModule(PlaybackService::class.java)` 是 app 与 `feature-player-data` 的接缝点；如果播放器能力改动需要依赖服务类型或 DSP 处理链，优先从这里往两边追踪。
 - 歌曲筛选统一使用 `SongFilter` 数据类（`common` 模块），支持 `artists`、`albums`、`keyword`、`onlyLiked` 等字段，通过 `ISongRepository.getSongsFlow(filter = ...)` 消费。
+
+## Jetpack Compose
+For Compose/Android UI work, follow the skill instructions in
+`skills/compose-expert/SKILL.md`. Consult reference files in
+`skills/compose-expert/references/` for patterns, pitfalls,
+and source-code-backed guidance.
