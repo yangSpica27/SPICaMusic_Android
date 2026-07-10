@@ -69,7 +69,7 @@
 
 - [ ] 播放队列管理
 - [x] 指定文件夹扫描
-- [ ] 最常播放、最近播放等智能歌单能力
+- [x] 最常播放、最近播放等智能歌单能力
 - [ ] 新的 EQ 和音效增强功能
 - [ ] 更多在线歌词源支持
 - [ ] 主题和界面自定义功能
@@ -120,7 +120,6 @@ WAV、ALAC 等格式的软解码依赖于FFmpeg，需单独许可证。
 |------|------|
 | **UI 框架** | [Jetpack Compose](https://developer.android.com/compose) - 声明式 UI |
 | **媒体播放** | [Media3 ExoPlayer](https://github.com/androidx/media) + MediaSession / MediaLibraryService |
-| **组件库** | [MIUIX](https://github.com/compose-miuix-ui/miuix) - 仿MIUI组件库 |
 | **依赖注入** | [Koin](https://github.com/InsertKoinIO/koin) - 轻量级 DI 框架 |
 | **本地存储** | [Room](https://developer.android.com/training/data-storage/room) + DataStore |
 | **网络请求** | [Retrofit](https://github.com/square/retrofit) + [OkHttp](https://github.com/square/okhttp) |

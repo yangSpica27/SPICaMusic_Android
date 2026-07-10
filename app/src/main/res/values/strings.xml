@@ -416,6 +416,9 @@
   <string name="favorites_count_found">Found %d songs</string>
   <string name="finder_playlists_overview_title">Playlist Overview</string>
   <string name="finder_no_playlists_subtitle">Create a playlist in the library and it will appear here.</string>
+  <string name="finder_save_as_playlist">Save as Playlist</string>
+  <string name="finder_search_action">Search</string>
+  <string name="finder_quick_entries_title">Quick Access</string>
 
   <!-- Crash screen -->
   <string name="crash_app_crashed">App Crashed</string>

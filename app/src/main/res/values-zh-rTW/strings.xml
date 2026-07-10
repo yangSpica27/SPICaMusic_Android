@@ -414,6 +414,9 @@
   <string name="favorites_count_found">找到 %d 首</string>
   <string name="finder_playlists_overview_title">歌單速覽</string>
   <string name="finder_no_playlists_subtitle">前往資料庫創建歌單後，這裡會展示你的歌單速覽。</string>
+  <string name="finder_save_as_playlist">存為歌單</string>
+  <string name="finder_search_action">搜尋</string>
+  <string name="finder_quick_entries_title">快捷入口</string>
 
   <!-- Crash screen -->
   <string name="crash_app_crashed">應用程式崩潰了</string>
