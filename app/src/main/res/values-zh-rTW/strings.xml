@@ -357,6 +357,8 @@
   <string name="ignore_folders">忽略目錄</string>
   <string name="add_ignore_folder_hint">點擊右側「+」選擇資料夾，掃描時會跳過其中的音訊。</string>
   <string name="add_folder">新增目錄</string>
+  <string name="scan_folders_dialog_title">掃描目錄</string>
+  <string name="scan_folders_dialog_subtitle">管理額外掃描目錄與忽略目錄</string>
   <string name="weekly_listening_overview">本週聽歌概覽</string>
   <string name="no_stats_data">暫無統計資料</string>
   <string name="play_duration">播放時長</string>

@@ -358,6 +358,8 @@
   <string name="ignore_folders">忽略目录</string>
   <string name="add_ignore_folder_hint">点击右侧「+」选择文件夹，扫描时会跳过其中的音频。</string>
   <string name="add_folder">添加目录</string>
+  <string name="scan_folders_dialog_title">扫描目录</string>
+  <string name="scan_folders_dialog_subtitle">管理额外扫描目录和忽略目录</string>
   <string name="weekly_listening_overview">本周听歌概览</string>
   <string name="no_stats_data">暂无统计数据</string>
   <string name="play_duration">播放时长</string>

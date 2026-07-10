@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.EaseOutCubic
@@ -86,6 +87,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.feature.library.domain.ScanProgress
 import me.spica27.spicamusic.feature.library.domain.ScanResult
@@ -94,6 +96,7 @@ import me.spica27.spicamusic.ui.settings.ScanState
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.widget.clickHighlight
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
@@ -150,6 +153,7 @@ class ScannerScene : StackScene() {
                     onStartScan = { viewModel.startFullScan() },
                     onCancelScan = { viewModel.cancelScan() },
                     onResetState = { viewModel.resetState() },
+                    onOpenScanFolders = { path.push(ScanFoldersScene()) },
                     modifier =
                         Modifier
                             .fillMaxSize()
@@ -180,6 +184,7 @@ private fun ScannerBody(
     onStartScan: () -> Unit,
     onCancelScan: () -> Unit,
     onResetState: () -> Unit,
+    onOpenScanFolders: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -255,6 +260,7 @@ private fun ScannerBody(
             onStartScan = onStartScan,
             onCancelScan = onCancelScan,
             onResetState = onResetState,
+            onOpenScanFolders = onOpenScanFolders,
         )
 
         Spacer(Modifier.height(Spacing.Huge))
@@ -496,8 +502,13 @@ private fun ScannerDial(
             AnimatedContent(
                 targetState = phase to (isScanning && hasDeterminateProgress),
                 transitionSpec = {
-                    (fadeIn(tween(220)) + scaleIn(spring(stiffness = Spring.StiffnessMedium), initialScale = 0.7f))
-                        .togetherWith(fadeOut(tween(160)))
+                    (
+                        fadeIn(tween(220)) +
+                            scaleIn(
+                                spring(stiffness = Spring.StiffnessMedium),
+                                initialScale = 0.7f,
+                            )
+                    ).togetherWith(fadeOut(tween(160)))
                 },
                 label = "dial_center",
             ) { (p, determinate) ->
@@ -570,7 +581,11 @@ private fun ScannerStatusText(
                     DialPhase.Scanning ->
                         stringResource(R.string.scanner_running_title) to
                             if (progress.total > 0) {
-                                stringResource(R.string.scanner_running_progress_format, progress.current, progress.total)
+                                stringResource(
+                                    R.string.scanner_running_progress_format,
+                                    progress.current,
+                                    progress.total,
+                                )
                             } else {
                                 stringResource(R.string.scanner_preparing)
                             }
@@ -616,6 +631,7 @@ private fun ScannerActionPanel(
     onStartScan: () -> Unit,
     onCancelScan: () -> Unit,
     onResetState: () -> Unit,
+    onOpenScanFolders: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AnimatedContent(
@@ -672,10 +688,19 @@ private fun ScannerActionPanel(
                             icon = Icons.Default.LibraryMusic,
                             label = stringResource(R.string.scanner_audio_files_chip),
                             modifier = Modifier.weight(1f),
+                            onClick = {
+                                Toast
+                                    .makeText(
+                                        App.getInstance(),
+                                        "用于调节音频的其他扫描条件，比如体积、时长、格式，还没写",
+                                        Toast.LENGTH_LONG,
+                                    ).show()
+                            },
                         )
                         ScanFeatureChip(
                             icon = Icons.Default.Folder,
                             label = stringResource(R.string.scanner_extra_folders_chip),
+                            onClick = onOpenScanFolders,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -781,9 +806,17 @@ private fun ScanFeatureChip(
     icon: ImageVector,
     label: String,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
     Surface(
-        modifier = modifier,
+        modifier =
+            if (onClick == null) {
+                modifier
+            } else {
+                modifier
+                    .clip(Shapes.LargeCornerBasedShape)
+                    .clickHighlight(onClick = onClick)
+            },
         shape = Shapes.LargeCornerBasedShape,
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f),
     ) {
@@ -862,10 +895,26 @@ private fun ScanResultRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
-        ScanResultTile(stringResource(R.string.total_scanned), result.totalScanned.toString(), Modifier.weight(1f))
-        ScanResultTile(stringResource(R.string.new_added), result.newAdded.toString(), Modifier.weight(1f))
-        ScanResultTile(stringResource(R.string.updated), result.updated.toString(), Modifier.weight(1f))
-        ScanResultTile(stringResource(R.string.removed), result.removed.toString(), Modifier.weight(1f))
+        ScanResultTile(
+            stringResource(R.string.total_scanned),
+            result.totalScanned.toString(),
+            Modifier.weight(1f),
+        )
+        ScanResultTile(
+            stringResource(R.string.new_added),
+            result.newAdded.toString(),
+            Modifier.weight(1f),
+        )
+        ScanResultTile(
+            stringResource(R.string.updated),
+            result.updated.toString(),
+            Modifier.weight(1f),
+        )
+        ScanResultTile(
+            stringResource(R.string.removed),
+            result.removed.toString(),
+            Modifier.weight(1f),
+        )
     }
 }
 

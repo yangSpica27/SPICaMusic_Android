@@ -359,6 +359,8 @@
   <string name="ignore_folders">Ignore Folders</string>
   <string name="add_ignore_folder_hint">Click \"+\" to select folders. Audio files will be skipped during scan.</string>
   <string name="add_folder">Add Folder</string>
+  <string name="scan_folders_dialog_title">Scan Folders</string>
+  <string name="scan_folders_dialog_subtitle">Manage extra scan folders and ignored folders</string>
   <string name="weekly_listening_overview">Weekly Listening Overview</string>
   <string name="no_stats_data">No stats data</string>
   <string name="play_duration">Play Duration</string>
