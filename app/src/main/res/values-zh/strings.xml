@@ -277,6 +277,7 @@
   <!-- Metadata fallbacks -->
   <string name="unknown_song">未知歌曲</string>
   <string name="unknown_artist">未知艺术家</string>
+  <string name="unknown_album">未知专辑</string>
   <string name="unknown_format">未知格式</string>
   <string name="cover_placeholder">封面占位符</string>
 

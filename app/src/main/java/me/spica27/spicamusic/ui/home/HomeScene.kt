@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.home.page.FinderPage
@@ -35,8 +34,6 @@ class HomeScene : StackScene() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
-        val navigationPath = LocalNavigationPath.current
-
         val homeViewModel: HomeViewModel = koinActivityViewModel()
 
         val currentPage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
