@@ -163,6 +163,7 @@
   <string name="no_extra_folders">No extra scan folders added</string>
   <string name="no_ignore_folders">No ignore folders added</string>
   <string name="folder_inaccessible">Permission revoked — tap to re-authorize</string>
+  <string name="library_folders_inaccessible_notice">Some folders lost access — tap to view</string>
   <string name="reauthorize_folder">Re-authorize</string>
   <string name="full_scan">Full Scan</string>
   <string name="full_scan_desc">Scan MediaStore + extra folders</string>

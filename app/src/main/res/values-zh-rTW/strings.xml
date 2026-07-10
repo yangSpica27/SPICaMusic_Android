@@ -162,6 +162,7 @@
   <string name="no_extra_folders">暫未新增額外掃描資料夾</string>
   <string name="no_ignore_folders">暫未新增忽略資料夾</string>
   <string name="folder_inaccessible">權限已撤銷 — 點擊重新授權</string>
+  <string name="library_folders_inaccessible_notice">部分目錄權限已失效 — 點按查看</string>
   <string name="reauthorize_folder">重新授權</string>
   <string name="full_scan">全量掃描</string>
   <string name="full_scan_desc">掃描 MediaStore + 額外資料夾</string>

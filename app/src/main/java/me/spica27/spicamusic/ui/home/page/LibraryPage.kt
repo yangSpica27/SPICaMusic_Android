@@ -122,7 +122,7 @@ import java.util.concurrent.TimeUnit
  * 单一 LazyVerticalGrid 承载全部内容，头部折叠由滚动偏移直接驱动（Draw 阶段读取，零重组）。
  */
 
-/** 大标题完全收进顶栏所需的滚动距离 */
+/** 大标题收缩归一化距离的上限（实际取刊头实测滚出高度，见 mastheadCollapse） */
 private val MastheadCollapseDistance = 140.dp
 
 /** 首屏入场交错间隔 */
@@ -179,8 +179,10 @@ fun LibraryPage() {
     var playEntrance by remember { mutableStateOf(!libraryEntrancePlayed) }
     LaunchedEffect(Unit) {
         if (playEntrance) {
-            delay(950)
+            // 立即置位进程级守卫：编舞期间切走页面（组合销毁、本协程取消）也不会在切回时重播
             libraryEntrancePlayed = true
+            // 本地翻转推迟到最后一张卡的弹簧收尾之后，只用于让此后新组合的项直接呈现
+            delay(1400)
             playEntrance = false
         }
     }
@@ -189,13 +191,11 @@ fun LibraryPage() {
     val scope = rememberCoroutineScope()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    // 布尔量化的派生状态：只在刊头完全滚出首位时翻转一次
-    val mastheadGone by remember { derivedStateOf { gridState.firstVisibleItemIndex > 0 } }
-
     val showStats = (weeklyStats?.totalPlayedDuration ?: 0L) > 0L
+    // 只有额外扫描目录会因 SAF 权限被撤销而失效；忽略目录仅存路径做过滤、不参与授权
     val hasInaccessibleFolders =
-        remember(extraFolders, ignoreFolders) {
-            extraFolders.any { !it.isAccessible } || ignoreFolders.any { !it.isAccessible }
+        remember(extraFolders) {
+            extraFolders.any { !it.isAccessible }
         }
 
     Box(
@@ -275,9 +275,15 @@ fun LibraryPage() {
                 item(key = "sources_alert", span = { GridItemSpan(maxLineSpan) }, contentType = "alert") {
                     InaccessibleFoldersNotice(
                         onClick = {
-                            // 目标 = 刊头 + 操作行 + 本警示条 + [统计条] + 歌单区头 + 歌单项 之后的「媒体库来源」区头
+                            // 逐项对应本 Grid 在「媒体库来源」区头之前的 item 声明，增删分区时须同步
                             val sourcesHeaderIndex =
-                                4 + (if (showStats) 1 else 0) + maxOf(playlists.size, 1)
+                                listOf(
+                                    true, // masthead
+                                    true, // actions
+                                    true, // sources_alert（本回调触发时必然存在）
+                                    showStats, // weekly_stats
+                                    true, // playlists_header
+                                ).count { it } + maxOf(playlists.size, 1)
                             scope.launch { gridState.animateScrollToItem(sourcesHeaderIndex) }
                         },
                         modifier =
@@ -344,26 +350,33 @@ fun LibraryPage() {
                     },
                     contentType = { _, _ -> "playlist" },
                 ) { index, item ->
-                    val entrance =
-                        rememberEntrance(
-                            order = ENTRANCE_ORDER_CARD_BASE + index,
-                            play = playEntrance && index < ENTRANCE_MAX_CARD,
+                    val cardModifier =
+                        Modifier.animateItem(
+                            fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                            placementSpec =
+                                spring(
+                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                    stiffness = Spring.StiffnessMediumLow,
+                                    visibilityThreshold = IntOffset.VisibilityThreshold,
+                                ),
+                            fadeOutSpec = tween(durationMillis = 160),
                         )
+                    // 编舞只覆盖首屏前几张卡；播完后不再为滚动进场的卡片挂空操作 graphicsLayer
+                    val entranceModifier =
+                        if (playEntrance && index < ENTRANCE_MAX_CARD) {
+                            val entrance =
+                                rememberEntrance(
+                                    order = ENTRANCE_ORDER_CARD_BASE + index,
+                                    play = true,
+                                )
+                            cardModifier.entranceGraphics(entrance)
+                        } else {
+                            cardModifier
+                        }
                     PlaylistCard(
                         item = item,
                         onClick = { path.push(PlaylistDetailScene(item.playlist)) },
-                        modifier =
-                            Modifier
-                                .animateItem(
-                                    fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
-                                    placementSpec =
-                                        spring(
-                                            dampingRatio = Spring.DampingRatioLowBouncy,
-                                            stiffness = Spring.StiffnessMediumLow,
-                                            visibilityThreshold = IntOffset.VisibilityThreshold,
-                                        ),
-                                    fadeOutSpec = tween(durationMillis = 160),
-                                ).entranceGraphics(entrance),
+                        modifier = entranceModifier,
                     )
                 }
             }
@@ -458,20 +471,27 @@ fun LibraryPage() {
 
         LibraryTopBar(
             gridState = gridState,
-            solid = mastheadGone,
             onCreateClick = { path.push(PlaylistCreatorScene()) },
             modifier = Modifier.align(Alignment.TopStart),
         )
     }
 }
 
-/** 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在 Draw 阶段读取，滚动零重组） */
-private fun Density.mastheadCollapse(gridState: LazyGridState): Float =
-    if (gridState.firstVisibleItemIndex > 0) {
-        1f
-    } else {
-        (gridState.firstVisibleItemScrollOffset / MastheadCollapseDistance.toPx()).coerceIn(0f, 1f)
-    }
+/**
+ * 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在 Draw 阶段读取，滚动零重组）。
+ * 归一化距离取刊头实测滚出高度（含行距），保证进度在 firstVisibleItemIndex 翻转前
+ * 自然到达 1f、不产生跳变；[MastheadCollapseDistance] 仅作异常高度的上限防御。
+ */
+private fun Density.mastheadCollapse(gridState: LazyGridState): Float {
+    if (gridState.firstVisibleItemIndex > 0) return 1f
+    val layoutInfo = gridState.layoutInfo
+    val masthead = layoutInfo.visibleItemsInfo.firstOrNull() ?: return 0f
+    val scrollOutDistance =
+        (masthead.size.height + layoutInfo.mainAxisItemSpacing)
+            .toFloat()
+            .coerceIn(1f, MastheadCollapseDistance.toPx())
+    return (gridState.firstVisibleItemScrollOffset / scrollOutDistance).coerceIn(0f, 1f)
+}
 
 /** 首屏入场：延迟 [order] 个节拍后弹入，[play] 为 false 时直接呈现（配方同收藏页） */
 @Composable
@@ -508,12 +528,13 @@ private fun Modifier.entranceGraphics(entrance: Animatable<Float, AnimationVecto
 @Composable
 private fun LibraryTopBar(
     gridState: LazyGridState,
-    solid: Boolean,
     onCreateClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val backgroundColor = MaterialTheme.colorScheme.background
+    // 布尔量化派生状态放在顶栏自身作用域：翻转只重组顶栏，不波及页面根
+    val solid by remember { derivedStateOf { gridState.firstVisibleItemIndex > 0 } }
     // 容器只做绘制不挂任何点击 Modifier：透明态不得拦截刊头与操作行的触摸
     Box(
         modifier =
@@ -726,7 +747,7 @@ private fun InaccessibleFoldersNotice(
             modifier = Modifier.size(18.dp),
         )
         Text(
-            text = stringResource(R.string.folder_inaccessible),
+            text = stringResource(R.string.library_folders_inaccessible_notice),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onErrorContainer,
