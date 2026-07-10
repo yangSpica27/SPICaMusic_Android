@@ -77,7 +77,7 @@ fun SPICaMusicTheme(
         seedColor = themeColor,
         isDark = darkTheme,
         animate = true,
-        specVersion = ColorSpec.SpecVersion.SPEC_2025,
+        specVersion = ColorSpec.SpecVersion.SPEC_2021,
         style = PaletteStyle.TonalSpot,
     ) {
         ProvideAppInteractionIndication(content = content)

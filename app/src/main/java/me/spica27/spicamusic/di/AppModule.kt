@@ -188,8 +188,6 @@ object AppModule {
             // 媒体库
             viewModel {
                 LibraryPageViewModel(
-                    songRepositoryImpl = get<SongUseCases>(),
-                    albumRepositoryImpl = get<AlbumUseCases>(),
                     playlistRepositoryImpl = get<PlaylistUseCases>(),
                     historyRepository = get<PlayHistoryUseCases>(),
                     scanFolderUseCases = get<ScanFolderUseCases>(),
