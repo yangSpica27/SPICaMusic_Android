@@ -53,10 +53,18 @@ fun PlaylistCoverView(
     modifier: Modifier = Modifier,
     iconSize: Dp = 32.dp,
 ) {
-    when {
-        albumIds.isEmpty() -> EmptyPlaylistCover(modifier, iconSize)
-        albumIds.size < 4 -> SingleAlbumCover(albumIds.first(), modifier)
-        else -> MosaicCover(albumIds.take(4), modifier)
+    Box(modifier = modifier) {
+        ShowOnIdleContent(
+            true,
+            enter = materialSharedAxisYIn(true),
+            exit = materialSharedAxisYOut(true),
+        ) {
+            when {
+                albumIds.isEmpty() -> EmptyPlaylistCover(Modifier, iconSize)
+                albumIds.size < 4 -> SingleAlbumCover(albumIds.first(), Modifier)
+                else -> MosaicCover(albumIds.take(4), Modifier)
+            }
+        }
     }
 }
 
@@ -133,13 +141,33 @@ private fun MosaicCover(
     Row(modifier = modifier) {
         // 左列：第 0、2 张
         Column(modifier = Modifier.weight(1f)) {
-            MosaicCell(albumIds[0], Modifier.weight(1f).fillMaxWidth())
-            MosaicCell(albumIds[2], Modifier.weight(1f).fillMaxWidth())
+            MosaicCell(
+                albumIds[0],
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+            MosaicCell(
+                albumIds[2],
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
         }
         // 右列：第 1、3 张
         Column(modifier = Modifier.weight(1f)) {
-            MosaicCell(albumIds[1], Modifier.weight(1f).fillMaxWidth())
-            MosaicCell(albumIds[3], Modifier.weight(1f).fillMaxWidth())
+            MosaicCell(
+                albumIds[1],
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+            MosaicCell(
+                albumIds[3],
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
         }
     }
 }

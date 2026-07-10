@@ -130,13 +130,6 @@ private const val ENTRANCE_MAX_CARD = 6
 /** 首屏元素在编排中的槽位：刊头=0 操作行=1 统计条=2 歌单区头=3 歌单卡从 4 开始 */
 private const val ENTRANCE_ORDER_CARD_BASE = 4
 
-/**
- * 入场编舞进程内只播一次。HomeScene 用 AnimatedContent 切换三个 page，离开即销毁组合，
- * 且未包 SaveableStateHolder，rememberSaveable 无法跨切页保值——只能用进程级守卫，
- * 否则每次切回本页都会重播编舞并叠加在页面切换转场上。
- */
-private var libraryEntrancePlayed = false
-
 @Composable
 fun LibraryPage() {
     val path = LocalNavigationPath.current
@@ -172,11 +165,9 @@ fun LibraryPage() {
             pendingReauthFolderId = -1L
         }
 
-    var playEntrance by remember { mutableStateOf(!libraryEntrancePlayed) }
+    var playEntrance by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         if (playEntrance) {
-            // 立即置位进程级守卫：编舞期间切走页面（组合销毁、本协程取消）也不会在切回时重播
-            libraryEntrancePlayed = true
             // 本地翻转推迟到最后一张卡的弹簧收尾之后，只用于让此后新组合的项直接呈现
             delay(1400)
             playEntrance = false

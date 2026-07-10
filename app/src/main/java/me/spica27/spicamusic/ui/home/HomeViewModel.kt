@@ -94,7 +94,7 @@ class HomeViewModel(
             .getOftenListenSong10Flow()
             .stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
+                started = SharingStarted.Eagerly,
                 initialValue = emptyList(),
             )
 

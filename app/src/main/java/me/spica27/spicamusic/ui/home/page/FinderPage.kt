@@ -1148,7 +1148,8 @@ private fun FinderPlaylistCard(
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clip(Shapes.ExtraLargeCornerBasedShape),
+                    .clip(Shapes.ExtraLargeCornerBasedShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         )
         Column(
             modifier = Modifier.padding(bottom = Spacing.Small),

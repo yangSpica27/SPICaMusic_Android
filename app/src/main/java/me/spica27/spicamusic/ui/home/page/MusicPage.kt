@@ -108,8 +108,6 @@ private val MastheadCollapseDistance = 140.dp
 
 private const val ENTRANCE_STAGGER_MILLIS = 55L
 
-private var musicEntrancePlayed = false
-
 @Immutable
 private enum class MusicBrowserTab(
     val titleRes: Int,
@@ -160,10 +158,9 @@ fun MusicPage() {
 
     var selectedTab by rememberSaveable { mutableStateOf(MusicBrowserTab.Songs) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
-    var playEntrance by remember { mutableStateOf(!musicEntrancePlayed) }
+    var playEntrance by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         if (playEntrance) {
-            musicEntrancePlayed = true
             delay(1400)
             playEntrance = false
         }
