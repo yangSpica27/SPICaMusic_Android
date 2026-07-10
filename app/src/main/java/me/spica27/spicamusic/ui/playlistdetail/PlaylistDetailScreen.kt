@@ -84,6 +84,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -226,6 +227,11 @@ fun PlaylistDetailScreen(playlist: Playlist) {
         targetValue = lerp(artStartExpanded.value, artStartCollapsed.value, artProgress).dp,
         animationSpec = springDp,
         label = "coverStart",
+    )
+    val coverAlpha by animateFloatAsState(
+        targetValue = if (isSearchMode) 0f else 1f,
+        animationSpec = springFloat,
+        label = "coverAlpha",
     )
     val cornerRad by animateDpAsState(
         targetValue = lerp(16f, 8f, artProgress).dp,
@@ -538,6 +544,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
             Modifier
                 .padding(start = coverStart, top = coverTop)
                 .size(coverSize)
+                .alpha(alpha = coverAlpha)
                 .clip(RoundedCornerShape(cornerRad)),
         ) {
             PlaylistCoverView(
