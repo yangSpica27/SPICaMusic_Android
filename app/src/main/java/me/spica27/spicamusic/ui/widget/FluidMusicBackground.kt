@@ -96,7 +96,7 @@ fun FluidMusicBackground(
 
     val fftDrawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
     val fftSnapshot = if (enable) fftDrawData else FloatArray(fftDrawData.size)
-
+    val surfaceColor = MaterialTheme.colorScheme.surface
     when (backgroundMode) {
         DynamicSpectrumBackground.TopGlow ->
             TopGlowBackground(
@@ -137,7 +137,9 @@ fun FluidMusicBackground(
                             .background(MaterialTheme.colorScheme.surface),
                 )
                 LandscapistImage(
-                    modifier = Modifier.matchParentSize(),
+                    modifier =
+                        Modifier
+                            .matchParentSize(),
                     imageModel = { coverUri.invoke() },
                     component =
                         rememberImageComponent {
