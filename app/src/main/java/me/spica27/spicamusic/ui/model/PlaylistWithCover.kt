@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui.model
 
 import androidx.compose.runtime.Immutable
+import com.google.common.collect.ImmutableList
 import me.spica27.spicamusic.common.entity.Playlist
 
 /**
@@ -13,6 +14,6 @@ import me.spica27.spicamusic.common.entity.Playlist
 @Immutable
 data class PlaylistWithCover(
     val playlist: Playlist,
-    val coverAlbumIds: List<Long>,
+    val coverAlbumIds: ImmutableList<Long>,
     val songCount: Int,
 )

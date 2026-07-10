@@ -3,10 +3,14 @@ package me.spica27.spicamusic.ui.search
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -61,6 +65,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.skydoves.landscapist.ImageOptions
@@ -119,8 +124,15 @@ class SearchScene : StackScene() {
                 AnimatedContent(
                     targetState = searchKey.isEmpty(),
                     transitionSpec = {
-                        (fadeIn(tween(220, easing = EaseOutCubic)) + slideInVertically(tween(220, easing = EaseOutCubic)) { it / 12 })
-                            .togetherWith(fadeOut(tween(120)))
+                        (
+                            fadeIn(tween(220, easing = EaseOutCubic)) +
+                                slideInVertically(
+                                    tween(
+                                        220,
+                                        easing = EaseOutCubic,
+                                    ),
+                                ) { it / 12 }
+                        ).togetherWith(fadeOut(tween(120)))
                     },
                     label = "search_content",
                 ) { isEmptyQuery ->
@@ -158,7 +170,21 @@ class SearchScene : StackScene() {
                                             keyword = searchKey,
                                             onPlay = { playerViewModel.playSong(item.song) },
                                             onMore = { path.push(SongMenuScene(item.song)) },
-                                            modifier = Modifier.animateItem(),
+                                            modifier =
+                                                Modifier.animateItem(
+                                                    fadeInSpec =
+                                                        tween(
+                                                            durationMillis = 240,
+                                                            easing = FastOutSlowInEasing,
+                                                        ),
+                                                    placementSpec =
+                                                        spring(
+                                                            dampingRatio = Spring.DampingRatioLowBouncy,
+                                                            stiffness = Spring.StiffnessMediumLow,
+                                                            visibilityThreshold = IntOffset.VisibilityThreshold,
+                                                        ),
+                                                    fadeOutSpec = tween(durationMillis = 160),
+                                                ),
                                         )
                                 }
                             }

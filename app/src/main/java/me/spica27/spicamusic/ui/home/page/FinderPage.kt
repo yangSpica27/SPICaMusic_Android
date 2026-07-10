@@ -135,13 +135,6 @@ private val ItemPlacementSpec: FiniteAnimationSpec<IntOffset> =
         visibilityThreshold = IntOffset.VisibilityThreshold,
     )
 
-/**
- * 入场编舞进程内只播一次。HomeScene 用 AnimatedContent 切换三个 page，离开即销毁组合，
- * 且未包 SaveableStateHolder，rememberSaveable 无法跨切页保值——只能用进程级守卫，
- * 否则每次切回本页都会重播编舞并叠加在页面切换转场上（同 LibraryPage）。
- */
-private var finderEntrancePlayed = false
-
 @Composable
 fun FinderPage() {
     val path = LocalNavigationPath.current
@@ -154,6 +147,11 @@ fun FinderPage() {
     val playlistsWithCover by homeViewModel.playlistsWithCover.collectAsStateWithLifecycle()
     val allSongs by homeViewModel.allSongs.collectAsStateWithLifecycle()
     val snackbarMessage by homeViewModel.snackbarMessage.collectAsStateWithLifecycle()
+    val frequentCardSongs = remember(frequentSongs) { ImmutableList.copyOf(frequentSongs) }
+    val favoritePreviewSongs =
+        remember(favoriteSongs) {
+            ImmutableList.copyOf(favoriteSongs.take(FavoritePreviewSongCount))
+        }
 
     val frequentPlaylistName = stringResource(R.string.finder_frequent_playlist_name)
     val favoritePlaylistName = stringResource(R.string.finder_favorites_playlist_name)
@@ -164,12 +162,9 @@ fun FinderPage() {
         homeViewModel.clearSnackbar()
     }
 
-    var playEntrance by remember { mutableStateOf(!finderEntrancePlayed) }
+    var playEntrance by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         if (playEntrance) {
-            // 立即置位进程级守卫：编舞期间切走页面（组合销毁、本协程取消）也不会在切回时重播
-            finderEntrancePlayed = true
-            // 本地翻转推迟到最后一拍的弹簧收尾之后，只用于让此后新组合的项直接呈现
             delay(1400)
             playEntrance = false
         }
@@ -265,7 +260,7 @@ fun FinderPage() {
                 item(key = "frequent_hero", contentType = "hero") {
                     val entrance = rememberEntrance(order = 3, play = playEntrance)
                     FrequentHeroCard(
-                        songs = ImmutableList.copyOf(frequentSongs),
+                        songs = frequentCardSongs,
                         onPlayAll = {
                             playerViewModel.updatePlaylistWithSongs(
                                 songs = frequentSongs,
@@ -334,7 +329,7 @@ fun FinderPage() {
                 item(key = "favorites_card", contentType = "favorites") {
                     val entrance = rememberEntrance(order = 5, play = playEntrance)
                     FavoritesCard(
-                        songs = ImmutableList.copyOf(favoriteSongs.take(FavoritePreviewSongCount)),
+                        songs = favoritePreviewSongs,
                         onPlayAll = {
                             playerViewModel.updatePlaylistWithSongs(
                                 songs = favoriteSongs,
@@ -494,17 +489,11 @@ fun FinderPage() {
 
 /**
  * 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在 Draw 阶段读取，滚动零重组）。
- * 归一化距离取刊头实测滚出高度（含行距），保证进度在 firstVisibleItemIndex 翻转前
- * 自然到达 1f、不产生跳变；[MastheadCollapseDistance] 仅作异常高度的上限防御。
+ * 使用固定折叠距离，避免滚动帧内反复读取 LazyList layoutInfo。
  */
 private fun Density.mastheadCollapse(listState: LazyListState): Float {
     if (listState.firstVisibleItemIndex > 0) return 1f
-    val layoutInfo = listState.layoutInfo
-    val masthead = layoutInfo.visibleItemsInfo.firstOrNull() ?: return 0f
-    val scrollOutDistance =
-        (masthead.size + layoutInfo.mainAxisItemSpacing)
-            .toFloat()
-            .coerceIn(1f, MastheadCollapseDistance.toPx())
+    val scrollOutDistance = MastheadCollapseDistance.toPx().coerceAtLeast(1f)
     return (listState.firstVisibleItemScrollOffset / scrollOutDistance).coerceIn(0f, 1f)
 }
 

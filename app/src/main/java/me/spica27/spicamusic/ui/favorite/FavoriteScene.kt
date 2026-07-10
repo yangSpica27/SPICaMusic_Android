@@ -33,6 +33,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -147,6 +148,7 @@ private const val ENTRANCE_ORDER_ROW_BASE = 3
 /** 大标题完全收进顶栏所需的滚动距离 */
 private val MastheadCollapseDistance = 140.dp
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FavoriteScreenContent() {
     val path = LocalNavigationPath.current

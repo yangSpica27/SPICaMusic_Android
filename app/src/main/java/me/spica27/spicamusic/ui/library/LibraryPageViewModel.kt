@@ -3,6 +3,7 @@ package me.spica27.spicamusic.ui.library
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -51,7 +52,7 @@ class LibraryPageViewModel(
                                 playlistRepositoryImpl.getPlaylistCoverAlbumIds(id),
                                 playlistRepositoryImpl.getSongSizeInPlaylist(id),
                             ) { albumIds, size ->
-                                PlaylistWithCover(playlist, albumIds, size)
+                                PlaylistWithCover(playlist, ImmutableList.copyOf(albumIds), size)
                             }
                         },
                     ) { it.toList() }

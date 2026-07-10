@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -129,7 +130,7 @@ class HomeViewModel(
                                 playlistRepository.getPlaylistCoverAlbumIds(id),
                                 playlistRepository.getSongSizeInPlaylist(id),
                             ) { albumIds, size ->
-                                PlaylistWithCover(playlist, albumIds, size)
+                                PlaylistWithCover(playlist, ImmutableList.copyOf(albumIds), size)
                             }
                         },
                     ) { it.toList() }
