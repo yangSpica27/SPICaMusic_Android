@@ -1,8 +1,11 @@
 package me.spica27.spicamusic.ui.playlistdetail
 
+import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
@@ -103,6 +106,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
@@ -137,6 +142,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.skydoves.landscapist.image.LandscapistImage
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import me.spica27.navkit.path.LocalNavigationPath
@@ -159,6 +165,7 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import kotlin.math.min
 
 // ── 布局尺寸常量（全部 dp，px 一律在 draw/layout 阶段经 density 换算）──────────
 private val HEADER_HEIGHT = 56.dp // 固定顶栏内容区高度（不含状态栏）
@@ -286,7 +293,8 @@ fun PlaylistDetailScreen(playlist: Playlist) {
         val coverStartExpanded = (maxWidth - coverExpanded) / 2
 
         val browseListState = rememberLazyListState()
-
+        val headerEntrance = rememberEntrance(order = 2)
+        val actionRowEntrance = rememberEntrance(order = 3)
         // 折叠进度：只在 draw/graphicsLayer 阶段调用 → 滚动全程零重组
         val collapseProgress: Density.() -> Float =
             remember(browseListState, coverBlock) {
@@ -353,7 +361,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                         .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                         .graphicsLayer {
                             alpha = (1f - collapseProgress() * 2.5f).coerceIn(0f, 1f)
-                        },
+                        }.entranceGraphics(headerEntrance),
                 ) {
                     Text(
                         text = displayName,
@@ -379,6 +387,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                     playEnabled = !isPlaylistEmpty,
                     onPlayAll = viewModel::playAll,
                     onAddSongs = viewModel::showAddSongsSheet,
+                    modifier = Modifier.entranceGraphics(actionRowEntrance),
                 )
             }
 
@@ -430,6 +439,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                     },
                     contentType = { "song" },
                 ) { index ->
+                    val entrance = rememberEntrance(min(4 + index, 8))
                     val song = browseSongs[index]
                     if (song == null) {
                         SongSkeletonRow(modifier = Modifier.animateItem())
@@ -458,16 +468,17 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                             },
                             onMore = { path.push(SongMenuScene(song)) },
                             modifier =
-                                Modifier.animateItem(
-                                    fadeInSpec = tween(240, easing = FastOutSlowInEasing),
-                                    placementSpec =
-                                        spring(
-                                            dampingRatio = Spring.DampingRatioLowBouncy,
-                                            stiffness = Spring.StiffnessMediumLow,
-                                            visibilityThreshold = IntOffset.VisibilityThreshold,
-                                        ),
-                                    fadeOutSpec = tween(160),
-                                ),
+                                Modifier
+                                    .animateItem(
+                                        fadeInSpec = tween(240, easing = FastOutSlowInEasing),
+                                        placementSpec =
+                                            spring(
+                                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                                stiffness = Spring.StiffnessMediumLow,
+                                                visibilityThreshold = IntOffset.VisibilityThreshold,
+                                            ),
+                                        fadeOutSpec = tween(160),
+                                    ).entranceGraphics(entrance),
                         )
                     }
                 }
@@ -700,7 +711,9 @@ private fun BrowseTopBar(
     viewModel: PlaylistDetailViewModel,
 ) {
     Row(
-        Modifier.fillMaxWidth().fillMaxHeight(),
+        Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onBack) {
@@ -715,8 +728,7 @@ private fun BrowseTopBar(
             modifier =
                 Modifier
                     .weight(1f)
-                    // 48dp 为返回按钮宽度：起点与折叠封面终点严丝合缝
-                    .padding(start = COLLAPSED_TITLE_START - 48.dp, end = Spacing.ExtraSmall)
+                    .padding(end = Spacing.ExtraSmall)
                     .graphicsLayer {
                         val a = ((collapseProgress() - 0.6f) / 0.3f).coerceIn(0f, 1f)
                         alpha = a
@@ -1231,6 +1243,7 @@ private fun PlaylistSongRow(
     isSelected: Boolean,
     isDragging: Boolean,
     isReorderEnabled: Boolean,
+    @SuppressLint("ModifierParameter")
     dragHandleModifier: Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -1576,8 +1589,14 @@ private fun SearchResultList(
             contentType = { "song" },
         ) { index ->
             val song = searchResults[index]
+            val entrance = rememberEntrance(min(index, 8))
             if (song == null) {
-                SongSkeletonRow(modifier = Modifier.animateItem())
+                SongSkeletonRow(
+                    modifier =
+                        Modifier
+                            .animateItem()
+                            .entranceGraphics(entrance),
+                )
             } else {
                 SearchResultRow(
                     song = song,
@@ -1585,7 +1604,10 @@ private fun SearchResultList(
                     isPlaying = playingMediaId == song.mediaStoreId.toString(),
                     onPlay = { onPlay(song) },
                     onMore = { onMore(song) },
-                    modifier = Modifier.animateItem(),
+                    modifier =
+                        Modifier
+                            .animateItem()
+                            .entranceGraphics(entrance),
                 )
             }
         }
@@ -2160,3 +2182,29 @@ private fun PickerSongRow(
         }
     }
 }
+
+/** 首屏入场：延迟 [order] 个节拍后弹入*/
+@Composable
+private fun rememberEntrance(order: Int): Animatable<Float, AnimationVector1D> {
+    val entrance = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(order * 55L)
+        entrance.animateTo(
+            targetValue = 1f,
+            animationSpec =
+                spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = 380f,
+                ),
+        )
+    }
+    return entrance
+}
+
+/** 入场位移+淡入，动画值全部在 Draw 阶段读取 */
+private fun Modifier.entranceGraphics(entrance: Animatable<Float, AnimationVector1D>): Modifier =
+    graphicsLayer {
+        val enter = entrance.value
+        alpha = enter
+        translationY = (1f - enter) * 28.dp.toPx()
+    }.blur(radius = ((1f - entrance.value) * 4).dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
