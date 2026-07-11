@@ -295,6 +295,13 @@ fun PlaylistDetailScreen(playlist: Playlist) {
         val browseListState = rememberLazyListState()
         val headerEntrance = rememberEntrance(order = 2)
         val actionRowEntrance = rememberEntrance(order = 3)
+        var listEntrancePlay by remember { mutableStateOf(true) }
+        LaunchedEffect(listEntrancePlay) {
+            if (listEntrancePlay) {
+                delay(55)
+                listEntrancePlay = false
+            }
+        }
         // 折叠进度：只在 draw/graphicsLayer 阶段调用 → 滚动全程零重组
         val collapseProgress: Density.() -> Float =
             remember(browseListState, coverBlock) {
@@ -439,7 +446,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                     },
                     contentType = { "song" },
                 ) { index ->
-                    val entrance = rememberEntrance(min(4 + index, 8))
+                    val entrance = rememberEntrance(min(4 + index, 8), needAnim = listEntrancePlay)
                     val song = browseSongs[index]
                     if (song == null) {
                         SongSkeletonRow(modifier = Modifier.animateItem())
@@ -1568,6 +1575,11 @@ private fun SearchResultList(
     onMore: (Song) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val needAnim = remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(55)
+        needAnim.value = false
+    }
     LazyColumn(
         state = listState,
         modifier = modifier,
@@ -1589,7 +1601,7 @@ private fun SearchResultList(
             contentType = { "song" },
         ) { index ->
             val song = searchResults[index]
-            val entrance = rememberEntrance(min(index, 8))
+            val entrance = rememberEntrance(min(index, 8), needAnim = needAnim.value)
             if (song == null) {
                 SongSkeletonRow(
                     modifier =
@@ -2185,8 +2197,11 @@ private fun PickerSongRow(
 
 /** 首屏入场：延迟 [order] 个节拍后弹入*/
 @Composable
-private fun rememberEntrance(order: Int): Animatable<Float, AnimationVector1D> {
-    val entrance = remember { Animatable(0f) }
+private fun rememberEntrance(
+    order: Int,
+    needAnim: Boolean = true,
+): Animatable<Float, AnimationVector1D> {
+    val entrance = remember { Animatable(if (needAnim) 0f else 1f) }
     LaunchedEffect(Unit) {
         delay(order * 55L)
         entrance.animateTo(
