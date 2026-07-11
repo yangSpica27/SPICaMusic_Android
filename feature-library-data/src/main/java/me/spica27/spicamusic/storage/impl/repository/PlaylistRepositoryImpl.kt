@@ -125,6 +125,16 @@ class PlaylistRepositoryImpl(
             }
         }
 
+    override suspend fun removeSongsFromPlaylist(playlistId: Long, mediaIds: List<Long>) =
+        withContext(Dispatchers.IO) {
+            database.withTransaction {
+                mediaIds.forEach { mediaId ->
+                    playlistDao.deleteListItem(PlaylistSongCrossRefEntity(playlistId, mediaId))
+                }
+                playlistDao.setNeedUpdate(playlistId)
+            }
+        }
+
     override suspend fun addSongsToPlaylist(playlistId: Long, mediaIds: List<Long>) =
         withContext(Dispatchers.IO) {
             database.withTransaction {

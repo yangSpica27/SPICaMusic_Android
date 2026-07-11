@@ -3,18 +3,24 @@ package me.spica27.spicamusic.ui.playlistdetail
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.LoadState
+import androidx.paging.LoadStates
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Playlist
@@ -79,30 +85,75 @@ class PlaylistDetailViewModel(
     private val _sortModeLimitExceeded = MutableStateFlow(false)
     val sortModeLimitExceeded = _sortModeLimitExceeded.asStateFlow()
 
-    /** 展示用歌曲列表：搜索模式+关键字非空时返回过滤结果，否则返回完整列表 */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val displayedSongs: StateFlow<PagingData<Song>> =
-        combine(_isSearchMode, _searchKeyword) { isSearch, keyword -> isSearch to keyword }
-            .flatMapLatest { (isSearch, keyword) ->
-                if (isSearch) {
-                    playlistRepository.getSongsByPlaylistIdFlow(playlistId, keyword)
-                } else {
-                    playlistRepository.getSongsByPlaylistIdFlow(playlistId, "")
-                }
-            }.stateIn(
+    /**
+     * 浏览态主列表：keyword 恒为空，Pager 整个生命周期只创建一次，
+     * 搜索输入不会触及它 —— 主列表滚动位置与内容因此永不跳变。
+     */
+    val browseSongs: Flow<PagingData<Song>> =
+        playlistRepository
+            .getSongsByPlaylistIdFlow(playlistId, "")
+            .cachedIn(viewModelScope)
+
+    /**
+     * 防抖后的搜索关键字。UI 用它做两件事：
+     * 1. 判定加载态（输入 != 防抖值 → 展示骨架，杜绝防抖窗口内旧结果停留）
+     * 2. 结果高亮（保证高亮词与实际查询一致）
+     */
+    @OptIn(FlowPreview::class)
+    val debouncedKeyword: StateFlow<String> =
+        _searchKeyword
+            .debounce(300)
+            .map { it.trim() }
+            .distinctUntilChanged()
+            .stateIn(
                 scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = PagingData.empty(),
+                started = SharingStarted.Eagerly,
+                initialValue = "",
             )
 
+    /**
+     * 搜索结果流（与主列表完全独立）。
+     * 空关键字发射停驻 Loading 的空 PagingData，
+     * 使 UI 在防抖窗口内显示骨架而非"无结果"闪现。
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val searchResults: Flow<PagingData<Song>> =
+        debouncedKeyword
+            .flatMapLatest { keyword ->
+                if (keyword.isBlank()) {
+                    flowOf(
+                        PagingData.empty(
+                            sourceLoadStates =
+                                LoadStates(
+                                    refresh = LoadState.Loading,
+                                    prepend = LoadState.NotLoading(endOfPaginationReached = true),
+                                    append = LoadState.NotLoading(endOfPaginationReached = true),
+                                ),
+                        ),
+                    )
+                } else {
+                    playlistRepository.getSongsByPlaylistIdFlow(playlistId, keyword)
+                }
+            }.cachedIn(viewModelScope)
+
     fun enterSearchMode() {
+        // 多选中不可进入搜索（selectAll 的全歌单语义与过滤视图冲突）
+        if (_isMultiSelectMode.value) return
         cancelSortMode()
         _isSearchMode.value = true
     }
 
-    /** 退出搜索模式，同时清空关键字 */
+    /**
+     * 退出搜索模式。注意：这里不清空关键字 ——
+     * 覆盖层退场动画期间仍需渲染旧结果，避免闪现空态；
+     * 关键字由 UI 在退场动画结束后调用 [clearSearchKeyword] 清理。
+     */
     fun exitSearchMode() {
         _isSearchMode.value = false
+    }
+
+    /** 覆盖层完全退场后清空关键字，下次进入搜索从全新 Idle 开始 */
+    fun clearSearchKeyword() {
         _searchKeyword.value = ""
     }
 
@@ -392,9 +443,8 @@ class PlaylistDetailViewModel(
 
         viewModelScope.launch {
             try {
-                selected.forEach { mediaId ->
-                    playlistRepository.removeSongFromPlaylist(playlistId, mediaId)
-                }
+                // 单事务批量移除：只触发一次 Room 失效，列表只做一次退场动画
+                playlistRepository.removeSongsFromPlaylist(playlistId, selected.toList())
                 Timber.d("从歌单移除 ${selected.size} 首歌曲")
                 // 退出多选模式
                 _isMultiSelectMode.value = false

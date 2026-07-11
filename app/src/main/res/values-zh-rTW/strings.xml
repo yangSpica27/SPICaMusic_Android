@@ -239,6 +239,7 @@
   <string name="sort_songs">排序歌曲</string>
   <string name="done_sorting">完成</string>
   <string name="drag_to_reorder">拖曳以排序</string>
+  <string name="sort_mode_hint">長按手柄拖曳調整順序</string>
   <string name="sort_mode_limit_title">歌單過大</string>
   <string name="sort_mode_limit_message">目前最多支援對 %d 首以內的歌單進行排序。</string>
   <string name="playlist_detail_title">歌单详情</string>

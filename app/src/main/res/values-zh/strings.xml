@@ -240,6 +240,7 @@
   <string name="sort_songs">排序歌曲</string>
   <string name="done_sorting">完成</string>
   <string name="drag_to_reorder">拖动以排序</string>
+  <string name="sort_mode_hint">长按手柄拖动调整顺序</string>
   <string name="sort_mode_limit_title">歌单过大</string>
   <string name="sort_mode_limit_message">当前最多支持对 %d 首以内的歌单进行排序。</string>
   <string name="playlist_detail_title">歌单详情</string>

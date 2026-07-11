@@ -88,6 +88,11 @@ interface IPlaylistRepository {
     suspend fun removeSongFromPlaylist(playlistId: Long, mediaId: Long)
 
     /**
+     * 批量从歌单中移除歌曲（单事务，只触发一次数据失效）
+     */
+    suspend fun removeSongsFromPlaylist(playlistId: Long, mediaIds: List<Long>)
+
+    /**
      * 批量添加歌曲到歌单
      */
     suspend fun addSongsToPlaylist(playlistId: Long, mediaIds: List<Long>)

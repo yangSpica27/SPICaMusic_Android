@@ -240,6 +240,7 @@
   <string name="sort_songs">Sort songs</string>
   <string name="done_sorting">Done</string>
   <string name="drag_to_reorder">Drag to reorder</string>
+  <string name="sort_mode_hint">Long-press a handle and drag to reorder</string>
   <string name="sort_mode_limit_title">Playlist is too large</string>
   <string name="sort_mode_limit_message">Sorting is currently supported for playlists with up to %d songs.</string>
   <string name="playlist_detail_title">Playlist Details</string>
