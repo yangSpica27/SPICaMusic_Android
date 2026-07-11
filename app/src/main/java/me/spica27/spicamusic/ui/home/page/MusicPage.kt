@@ -37,7 +37,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -66,6 +65,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,6 +74,8 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -83,6 +85,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
@@ -183,7 +186,18 @@ fun MusicPage() {
 
     val listState = rememberLazyListState()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-
+    var needListAnim by remember { mutableStateOf(true) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    // 用户开始滚动结果时自动收起键盘，把屏幕还给内容
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }
+            .filter { it }
+            .collect {
+                keyboardController?.hide()
+                focusManager.clearFocus()
+            }
+    }
     Box(
         modifier =
             Modifier
@@ -235,6 +249,7 @@ fun MusicPage() {
                     onSelect = {
                         selectedTab = it
                         searchQuery = ""
+                        needListAnim = true
                     },
                     modifier =
                         Modifier
@@ -325,6 +340,8 @@ fun MusicPage() {
                             key = { _, song -> song.mediaStoreId },
                             contentType = { _, _ -> "song" },
                         ) { index, song ->
+                            val entrance =
+                                rememberEntrance(order = minOf(index + 4, 10), play = needListAnim)
                             MusicSongRow(
                                 index = index,
                                 song = song,
@@ -337,20 +354,26 @@ fun MusicPage() {
                                     )
                                 },
                                 modifier =
-                                    Modifier.animateItem(
-                                        fadeInSpec =
-                                            tween(
-                                                durationMillis = 240,
-                                                easing = FastOutSlowInEasing,
-                                            ),
-                                        placementSpec =
-                                            spring(
-                                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                                stiffness = Spring.StiffnessMediumLow,
-                                                visibilityThreshold = IntOffset.VisibilityThreshold,
-                                            ),
-                                        fadeOutSpec = tween(durationMillis = 160),
-                                    ),
+                                    Modifier
+                                        .animateItem(
+                                            fadeInSpec =
+                                                tween(
+                                                    durationMillis = 240,
+                                                    easing = FastOutSlowInEasing,
+                                                ),
+                                            placementSpec =
+                                                spring(
+                                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                                    stiffness = Spring.StiffnessMediumLow,
+                                                    visibilityThreshold = IntOffset.VisibilityThreshold,
+                                                ),
+                                            fadeOutSpec = tween(durationMillis = 160),
+                                        ).graphicsLayer {
+                                            val enter = entrance.value
+                                            transformOrigin = TransformOrigin(0f, 0f)
+                                            alpha = enter
+                                            translationY = (1f - enter) * 28.dp.toPx()
+                                        },
                             )
                         }
                     }
@@ -372,29 +395,37 @@ fun MusicPage() {
                             )
                         }
                     } else {
-                        items(
+                        itemsIndexed(
                             items = filteredAlbums,
-                            key = { album -> album.id },
-                            contentType = { "album" },
-                        ) { album ->
+                            key = { index, album -> album.id },
+                            contentType = { index, _ -> "album" },
+                        ) { index, album ->
+                            val entrance =
+                                rememberEntrance(order = minOf(index + 4, 10), play = needListAnim)
                             MusicAlbumRow(
                                 album = album,
                                 onClick = { path.push(AlbumDetailScene(album)) },
                                 modifier =
-                                    Modifier.animateItem(
-                                        fadeInSpec =
-                                            tween(
-                                                durationMillis = 240,
-                                                easing = FastOutSlowInEasing,
-                                            ),
-                                        placementSpec =
-                                            spring(
-                                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                                stiffness = Spring.StiffnessMediumLow,
-                                                visibilityThreshold = IntOffset.VisibilityThreshold,
-                                            ),
-                                        fadeOutSpec = tween(durationMillis = 160),
-                                    ),
+                                    Modifier
+                                        .animateItem(
+                                            fadeInSpec =
+                                                tween(
+                                                    durationMillis = 240,
+                                                    easing = FastOutSlowInEasing,
+                                                ),
+                                            placementSpec =
+                                                spring(
+                                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                                    stiffness = Spring.StiffnessMediumLow,
+                                                    visibilityThreshold = IntOffset.VisibilityThreshold,
+                                                ),
+                                            fadeOutSpec = tween(durationMillis = 160),
+                                        ).graphicsLayer {
+                                            val enter = entrance.value
+                                            transformOrigin = TransformOrigin(0f, 0f)
+                                            alpha = enter
+                                            translationY = (1f - enter) * 28.dp.toPx()
+                                        },
                             )
                         }
                     }
@@ -416,29 +447,37 @@ fun MusicPage() {
                             )
                         }
                     } else {
-                        items(
+                        itemsIndexed(
                             items = filteredArtists,
-                            key = { artist -> artist.name },
-                            contentType = { "artist" },
-                        ) { artist ->
+                            key = { index, artist -> artist.name },
+                            contentType = { index, _ -> "artist" },
+                        ) { index, artist ->
+                            val entrance =
+                                rememberEntrance(order = minOf(index + 4, 10), play = needListAnim)
                             MusicArtistRow(
                                 artist = artist,
                                 onClick = { path.push(ArtistDetailScene(artist)) },
                                 modifier =
-                                    Modifier.animateItem(
-                                        fadeInSpec =
-                                            tween(
-                                                durationMillis = 240,
-                                                easing = FastOutSlowInEasing,
-                                            ),
-                                        placementSpec =
-                                            spring(
-                                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                                stiffness = Spring.StiffnessMediumLow,
-                                                visibilityThreshold = IntOffset.VisibilityThreshold,
-                                            ),
-                                        fadeOutSpec = tween(durationMillis = 160),
-                                    ),
+                                    Modifier
+                                        .animateItem(
+                                            fadeInSpec =
+                                                tween(
+                                                    durationMillis = 240,
+                                                    easing = FastOutSlowInEasing,
+                                                ),
+                                            placementSpec =
+                                                spring(
+                                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                                    stiffness = Spring.StiffnessMediumLow,
+                                                    visibilityThreshold = IntOffset.VisibilityThreshold,
+                                                ),
+                                            fadeOutSpec = tween(durationMillis = 160),
+                                        ).graphicsLayer {
+                                            val enter = entrance.value
+                                            transformOrigin = TransformOrigin(0f, 0f)
+                                            alpha = enter
+                                            translationY = (1f - enter) * 28.dp.toPx()
+                                        },
                             )
                         }
                     }
@@ -649,13 +688,13 @@ private fun MusicTabChip(
     val pressScale by rememberPressScale(interactionSource)
     val container =
         if (selected) {
-            MaterialTheme.colorScheme.primaryContainer
+            MaterialTheme.colorScheme.tertiaryContainer
         } else {
             MaterialTheme.colorScheme.surfaceContainerHigh
         }
     val content =
         if (selected) {
-            MaterialTheme.colorScheme.onPrimaryContainer
+            MaterialTheme.colorScheme.onTertiaryContainer
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         }

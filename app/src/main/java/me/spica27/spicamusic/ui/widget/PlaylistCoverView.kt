@@ -60,9 +60,9 @@ fun PlaylistCoverView(
             exit = materialSharedAxisYOut(true),
         ) {
             when {
-                albumIds.isEmpty() -> EmptyPlaylistCover(Modifier, iconSize)
-                albumIds.size < 4 -> SingleAlbumCover(albumIds.first(), Modifier)
-                else -> MosaicCover(albumIds.take(4), Modifier)
+                albumIds.isEmpty() -> EmptyPlaylistCover(Modifier.fillMaxSize(), iconSize)
+                albumIds.size < 4 -> SingleAlbumCover(albumIds.first(), Modifier.fillMaxSize())
+                else -> MosaicCover(albumIds.take(4), Modifier.fillMaxSize())
             }
         }
     }
