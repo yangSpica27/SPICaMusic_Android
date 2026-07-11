@@ -319,15 +319,17 @@ interface SongDao {
 
     /**
      * 分页获取歌曲（按 sortName 排序，用于 SearchPage 分组）
+     * 匹配歌名、歌手和专辑，与搜索框提示文案一致
      */
     @Query(
         """
-        SELECT * FROM song 
+        SELECT * FROM song
         WHERE isIgnore == 0
         AND (
             :keyword IS NULL OR :keyword = ''
-            OR displayName LIKE '%' || :keyword || '%' 
+            OR displayName LIKE '%' || :keyword || '%'
             OR artist LIKE '%' || :keyword || '%'
+            OR album LIKE '%' || :keyword || '%'
         )
         ORDER BY 
             CASE 

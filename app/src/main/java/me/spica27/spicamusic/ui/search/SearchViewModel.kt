@@ -3,6 +3,8 @@ package me.spica27.spicamusic.ui.search
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.LoadState
+import androidx.paging.LoadStates
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.insertSeparators
@@ -55,8 +57,16 @@ class SearchViewModel(
             .debounce(300)
             .flatMapLatest { keyword ->
                 if (keyword.isBlank()) {
-                    // 空关键词 → 不查询，返回空 PagingData
-                    flowOf(PagingData.empty<SearchListItem>())
+                    flowOf(
+                        PagingData.empty(
+                            sourceLoadStates =
+                                LoadStates(
+                                    refresh = LoadState.Loading,
+                                    prepend = LoadState.NotLoading(endOfPaginationReached = true),
+                                    append = LoadState.NotLoading(endOfPaginationReached = true),
+                                ),
+                        ),
+                    )
                 } else {
                     songRepository
                         .getSongsBySortNamePagingFlow(keyword)

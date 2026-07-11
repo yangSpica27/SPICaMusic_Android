@@ -553,6 +553,7 @@ private fun LibraryTopBar(
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier =
                     Modifier
                         .weight(1f)
