@@ -952,7 +952,7 @@ private fun SeekBarSection(
                     onProgressChangeFinished = {
                         onValueChangeFinished.invoke()
                     },
-                    waveformBrush = SolidColor(MaterialTheme.colorScheme.inverseOnSurface),
+                    waveformBrush = SolidColor(MaterialTheme.colorScheme.surfaceContainerHighest),
                     progressBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
                     modifier =
                         Modifier
