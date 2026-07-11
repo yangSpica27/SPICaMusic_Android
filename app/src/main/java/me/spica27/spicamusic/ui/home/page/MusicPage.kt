@@ -2,6 +2,7 @@
 
 package me.spica27.spicamusic.ui.home.page
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
@@ -162,10 +163,18 @@ fun MusicPage() {
     var selectedTab by rememberSaveable { mutableStateOf(MusicBrowserTab.Songs) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var playEntrance by remember { mutableStateOf(true) }
+    var playlistEntrance by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         if (playEntrance) {
             delay(1400)
             playEntrance = false
+        }
+    }
+
+    LaunchedEffect(playlistEntrance) {
+        if (playlistEntrance) {
+            delay(55)
+            playlistEntrance = false
         }
     }
 
@@ -186,7 +195,6 @@ fun MusicPage() {
 
     val listState = rememberLazyListState()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    var needListAnim by remember { mutableStateOf(true) }
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     // 用户开始滚动结果时自动收起键盘，把屏幕还给内容
@@ -249,7 +257,7 @@ fun MusicPage() {
                     onSelect = {
                         selectedTab = it
                         searchQuery = ""
-                        needListAnim = true
+                        playlistEntrance = true
                     },
                     modifier =
                         Modifier
@@ -341,7 +349,10 @@ fun MusicPage() {
                             contentType = { _, _ -> "song" },
                         ) { index, song ->
                             val entrance =
-                                rememberEntrance(order = minOf(index + 4, 10), play = needListAnim)
+                                rememberEntrance(
+                                    order = minOf(index + 4, 10),
+                                    play = playlistEntrance,
+                                )
                             MusicSongRow(
                                 index = index,
                                 song = song,
@@ -401,7 +412,10 @@ fun MusicPage() {
                             contentType = { index, _ -> "album" },
                         ) { index, album ->
                             val entrance =
-                                rememberEntrance(order = minOf(index + 4, 10), play = needListAnim)
+                                rememberEntrance(
+                                    order = minOf(index + 4, 10),
+                                    play = playlistEntrance,
+                                )
                             MusicAlbumRow(
                                 album = album,
                                 onClick = { path.push(AlbumDetailScene(album)) },
@@ -453,7 +467,10 @@ fun MusicPage() {
                             contentType = { index, _ -> "artist" },
                         ) { index, artist ->
                             val entrance =
-                                rememberEntrance(order = minOf(index + 4, 10), play = needListAnim)
+                                rememberEntrance(
+                                    order = minOf(index + 4, 10),
+                                    play = playlistEntrance,
+                                )
                             MusicArtistRow(
                                 artist = artist,
                                 onClick = { path.push(ArtistDetailScene(artist)) },
@@ -509,6 +526,7 @@ private fun rememberEntrance(
     play: Boolean,
 ): Animatable<Float, AnimationVector1D> {
     val entrance = remember { Animatable(if (play) 0f else 1f) }
+    Log.e("yangweizhi", "rememberEntrance: $order, play: $play, entrance: ${entrance.value}")
     LaunchedEffect(Unit) {
         if (entrance.value < 1f) {
             delay(order * ENTRANCE_STAGGER_MILLIS)
