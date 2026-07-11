@@ -8,13 +8,19 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.EaseOutCubic
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +30,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -54,7 +61,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -72,7 +78,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -126,8 +131,6 @@ import androidx.compose.ui.util.lerp as floatLerp
 // ============================================
 
 // 展开动画透明度阈值常量
-private const val COVER_FADE_THRESHOLD = 0.8f
-private const val CONTROLS_FADE_THRESHOLD = 0.5f
 private const val PAGE_COUNT = 2
 const val DEFAULT_PAGE = 0
 private const val HERO_REVEAL_THRESHOLD = 0.08f
@@ -279,10 +282,9 @@ fun ExpandedPlayerScreen(
                             .statusBarsPadding(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    // 顶部工具栏（带页面指示器）
+                    // 顶部工具栏
                     TopBar(
                         modifier = Modifier,
-                        currentPage = pagerState.currentPage,
                         onCollapse = onCollapse,
                         progressProvider = progressProvider,
                         onLyricBtnClick = {
@@ -407,19 +409,16 @@ fun ExpandedPlayerScreen(
 // ============================================
 
 /**
- * 顶部工具栏（带页面指示器）
+ * 顶部工具栏
  */
 @Composable
 private fun TopBar(
-    currentPage: Int,
     onCollapse: () -> Unit,
     progressProvider: () -> Float,
     modifier: Modifier,
     onPlaylistBtnClick: () -> Unit = {},
     onLyricBtnClick: () -> Unit = {},
 ) {
-    val path = LocalNavigationPath.current
-
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -537,64 +536,7 @@ private fun TopBar(
     }
 }
 
-/**
- * 页面指示器
- */
-@Composable
-private fun PageIndicator(
-    pageCount: Int,
-    currentPage: Int,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        repeat(pageCount) { index ->
-            val isSelected = index == currentPage
-            val width by animateDpAsState(
-                targetValue = if (isSelected) 20.dp else 6.dp,
-                label = "indicatorWidth",
-            )
-            val alpha = if (isSelected) 1f else 0.3f
-
-            Box(
-                modifier =
-                    Modifier
-                        .size(width = width, height = 6.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)),
-            )
-        }
-    }
-}
-
 // ---------- 音频信息组件 ----------
-
-/**
- * 音频标签
- */
-@Composable
-private fun AudioTag(
-    text: String,
-    color: Color,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier,
-        shape = Shapes.MediumCornerBasedShape,
-        color = color.copy(alpha = 0.15f),
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.titleMedium,
-            color = color,
-            fontWeight = FontWeight.SemiBold,
-        )
-    }
-}
 
 @Immutable
 private data class AudioQualityInfo(
@@ -679,85 +621,95 @@ private fun PlayerPage(
 
     Column(
         modifier =
-            modifier.padding(
-                vertical = Spacing.ExtraLarge,
-                horizontal = Spacing.ExtraLarge,
-            ),
+            modifier
+                .navigationBarsPadding()
+                .padding(horizontal = Spacing.ExtraLarge)
+                .padding(top = Spacing.Medium, bottom = Spacing.Large),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 封面（带翻转动画）
+        // 封面区：弹性吸收剩余高度——矮屏上封面自动缩小而不挤压下方控件，
+        // 高屏上封面在区域内垂直居中，信息与控制区始终贴底对齐
         Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .graphicsLayer {
-                        val heroReveal =
-                            calculateFadeAlpha(progressProvider(), HERO_REVEAL_THRESHOLD)
-                        alpha = heroReveal
-                        translationY = (1f - heroReveal) * 48f
-                        scaleX = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
-                        scaleY = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
-                        rotationY = rotateY
-                        this.cameraDistance = cameraDistance * density
-                    }.clip(Shapes.LargeCornerBasedShape)
-                    .then(
-                        Modifier.clickable { isCoverFlipped = !isCoverFlipped },
-                    ),
+                    .weight(1f)
+                    .padding(vertical = Spacing.Medium),
+            contentAlignment = Alignment.Center,
         ) {
-            // 根据旋转角度显示正面或背面
-            if (rotateY <= 90f) {
-                // 正面：封面
+            // 封面（带翻转动画）
+            Box(
+                modifier =
+                    Modifier
+                        .aspectRatio(1f)
+                        .graphicsLayer {
+                            val heroReveal =
+                                calculateFadeAlpha(progressProvider(), HERO_REVEAL_THRESHOLD)
+                            alpha = heroReveal
+                            translationY = (1f - heroReveal) * 48f
+                            scaleX = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
+                            scaleY = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
+                            rotationY = rotateY
+                            this.cameraDistance = cameraDistance * density
+                        }.clip(Shapes.LargeCornerBasedShape)
+                        .then(
+                            Modifier.clickable { isCoverFlipped = !isCoverFlipped },
+                        ),
+            ) {
+                // 根据旋转角度显示正面或背面
+                if (rotateY <= 90f) {
+                    // 正面：封面
 
-                AnimatedContent(
-                    currentMediaItem.invoke(),
-                    modifier = Modifier.fillMaxSize(),
-                    transitionSpec = {
-                        materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
-                    },
-                    contentKey = { it?.mediaId ?: "-1" },
-                ) { currentMediaItem ->
-                    AudioCover(
-                        uri = currentMediaItem?.mediaMetadata?.artworkUri,
-                        placeHolder = {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxSize()
-                                        .clip(Shapes.LargeCornerBasedShape)
-                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.MusicNote,
-                                    contentDescription = stringResource(R.string.cover_placeholder),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    AnimatedContent(
+                        currentMediaItem.invoke(),
+                        modifier = Modifier.fillMaxSize(),
+                        transitionSpec = {
+                            materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
+                        },
+                        contentKey = { it?.mediaId ?: "-1" },
+                    ) { currentMediaItem ->
+                        AudioCover(
+                            uri = currentMediaItem?.mediaMetadata?.artworkUri,
+                            placeHolder = {
+                                Box(
                                     modifier =
                                         Modifier
-                                            .size(64.dp)
-                                            .align(Alignment.Center),
-                                )
-                            }
-                        },
+                                            .fillMaxSize()
+                                            .clip(Shapes.LargeCornerBasedShape)
+                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.MusicNote,
+                                        contentDescription = stringResource(R.string.cover_placeholder),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier =
+                                            Modifier
+                                                .size(64.dp)
+                                                .align(Alignment.Center),
+                                    )
+                                }
+                            },
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .clip(Shapes.LargeCornerBasedShape)
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                        )
+                    }
+                } else {
+                    // 背面：歌词（卡片场景用紧凑排版）
+                    LyricsPanel(
+                        displayMode = LyricsDisplayMode.Compact,
                         modifier =
                             Modifier
                                 .fillMaxSize()
                                 .clip(Shapes.LargeCornerBasedShape)
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f))
+                                .graphicsLayer {
+                                    rotationY = 180f
+                                }.fillMaxSize(),
                     )
                 }
-            } else {
-                // 背面：歌词（卡片场景用紧凑排版）
-                LyricsPanel(
-                    displayMode = LyricsDisplayMode.Compact,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .clip(Shapes.LargeCornerBasedShape)
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f))
-                            .graphicsLayer {
-                                rotationY = 180f
-                            }.fillMaxSize(),
-                )
             }
         }
 
@@ -819,50 +771,61 @@ private fun PlayerPage(
             }
         }
         Spacer(modifier = Modifier.height(Spacing.Medium))
-        Row(
-            Modifier
-                .background(
-                    MaterialTheme.colorScheme.tertiaryContainer,
-                    shape = Shapes.LargeCornerBasedShape,
-                ).padding(horizontal = 10.dp, vertical = 4.dp)
-                .animateContentSize(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        // 音质标签：固定高度槽位保持版面节奏，无标签时留白而不是显示空药丸
+        val qualityTags =
+            buildList {
+                if (audioQualityInfo.sampleRate > 0) {
+                    add("${audioQualityInfo.sampleRate / 1000}kHz")
+                }
+                if (audioQualityInfo.bitRate > 0) {
+                    add("${audioQualityInfo.bitRate / 1000}kbps")
+                }
+                if (audioQualityInfo.isLossless) {
+                    add(stringResource(R.string.lossless))
+                }
+                if (audioQualityInfo.bitRate >= 320000 && !audioQualityInfo.isLossless) {
+                    add(stringResource(R.string.high_quality))
+                }
+            }
+        Box(
+            modifier =
+                Modifier
+                    .height(28.dp)
+                    .graphicsLayer {
+                        val tagsReveal =
+                            calculateFadeAlpha(progressProvider(), TAGS_REVEAL_THRESHOLD)
+                        alpha = tagsReveal
+                        translationY = (1f - tagsReveal) * 24f
+                    },
+            contentAlignment = Alignment.Center,
         ) {
-            // 采样率标签
-            if (audioQualityInfo.sampleRate > 0) {
-                Text(
-                    text = "${audioQualityInfo.sampleRate / 1000}kHz",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            }
-
-            // 比特率标签
-            if (audioQualityInfo.bitRate > 0) {
-                val bitRateKbps = audioQualityInfo.bitRate / 1000
-                Text(
-                    text = "${bitRateKbps}kbps",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            }
-
-            // 无损标签
-            if (audioQualityInfo.isLossless) {
-                Text(
-                    text = stringResource(R.string.lossless),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            }
-
-            // 高品质标签
-            if (audioQualityInfo.bitRate >= 320000 && !audioQualityInfo.isLossless) {
-                Text(
-                    text = stringResource(R.string.high_quality),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
+            if (qualityTags.isNotEmpty()) {
+                Row(
+                    modifier =
+                        Modifier
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.tertiaryContainer)
+                            .padding(horizontal = Spacing.Medium, vertical = 5.dp)
+                            .animateContentSize(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    qualityTags.forEachIndexed { index, tag ->
+                        if (index > 0) {
+                            Text(
+                                text = "·",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.55f),
+                            )
+                        }
+                        Text(
+                            text = tag,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                    }
+                }
             }
         }
         Spacer(modifier = Modifier.height(Spacing.Medium))
@@ -880,12 +843,18 @@ private fun PlayerPage(
             onValueChangeFinished = onValueChangeFinished,
             progressProvider = progressProvider,
         )
-        Spacer(modifier = Modifier.height(Spacing.Medium))
-        // 控制按钮
+        Spacer(modifier = Modifier.height(Spacing.Large))
+        // 控制按钮（补全展开揭示编排，与封面/信息/进度条同一套节奏）
         PlayerControls(
             modifier =
                 Modifier
-                    .weight(1f),
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        val controlsReveal =
+                            calculateFadeAlpha(progressProvider(), PLAYER_CONTROLS_REVEAL_THRESHOLD)
+                        alpha = controlsReveal
+                        translationY = (1f - controlsReveal) * 24f
+                    },
             isPlaying = isPlaying,
             playMode = playMode,
             isLike = isLike,
@@ -993,7 +962,11 @@ private fun SeekBarSection(
             }
         }
         Spacer(modifier = Modifier.height(Spacing.Small))
-        // 当前位置 和 总时长
+        // 当前位置 和 总时长（等宽数字避免走时跳动，两端与波形边缘对齐）
+        val timeStyle =
+            MaterialTheme.typography.labelMedium.copy(
+                fontFeatureSettings = "tnum",
+            )
         Box(
             modifier =
                 Modifier
@@ -1004,14 +977,14 @@ private fun SeekBarSection(
             Row(
                 modifier = Modifier.align(Alignment.CenterStart),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
             ) {
                 Text(
                     text = formatTime(realPosition.toLong()),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+                    style = timeStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 4.dp),
                 )
-                Spacer(modifier = Modifier.width(8.dp))
                 // 滑动到的地方
                 AnimatedVisibility(
                     visible = isSeekingState,
@@ -1024,19 +997,19 @@ private fun SeekBarSection(
                                     shape = Shapes.SmallCornerBasedShape,
                                 ).padding(vertical = 4.dp, horizontal = 8.dp),
                         text = formatTime(seekPosition.toLong()),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = timeStyle,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }
             Text(
                 text = formatTime(duration),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                style = timeStyle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier =
                     Modifier
                         .align(Alignment.CenterEnd)
-                        .padding(vertical = 4.dp, horizontal = 8.dp),
+                        .padding(vertical = 4.dp),
             )
         }
     }
@@ -1066,7 +1039,7 @@ private fun SongInfo(
         ) { title ->
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -1075,7 +1048,7 @@ private fun SongInfo(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
         AnimatedContent(
             artist,
             contentKey = { it },
@@ -1086,7 +1059,7 @@ private fun SongInfo(
             Text(
                 text = artist,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -1095,8 +1068,19 @@ private fun SongInfo(
     }
 }
 
+/** 控制按钮图标切换：淡入 + 弹性缩放（全屏播放器统一节奏） */
+private fun controlIconTransform() =
+    (
+        fadeIn(tween(160)) +
+            scaleIn(
+                animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                initialScale = 0.7f,
+            )
+    ).togetherWith(fadeOut(tween(120)))
+
 /**
- * 播放控制按钮
+ * 播放控制按钮：两端为次级操作（播放模式/收藏），中间为主传输组，
+ * 避免此前 Center 排列下按钮总宽超出容器、次级按钮与传输键粘连的问题
  */
 @Composable
 private fun PlayerControls(
@@ -1110,102 +1094,123 @@ private fun PlayerControls(
     onPlayModeClick: () -> Unit,
     onFavoriteClick: () -> Unit,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 主控制行
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // 播放模式
-            IconButton(onClick = onPlayModeClick) {
+        // 播放模式
+        IconButton(onClick = onPlayModeClick) {
+            AnimatedContent(
+                targetState = playMode,
+                transitionSpec = { controlIconTransform() },
+                label = "playModeIcon",
+            ) { mode ->
                 Icon(
                     imageVector =
-                        when (playMode) {
+                        when (mode) {
                             PlayMode.LOOP -> Icons.Rounded.Repeat
                             PlayMode.LIST -> Icons.Rounded.RepeatOne
                             PlayMode.SHUFFLE -> Icons.Rounded.Shuffle
                         },
                     contentDescription = stringResource(R.string.play_mode),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(26.dp),
                 )
             }
-
-            // 上一首
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+        ) {
             IconButton(
                 onClick = onPreviousClick,
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier.size(56.dp),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.SkipPrevious,
                     contentDescription = stringResource(R.string.previous_track),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(36.dp),
                 )
             }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // 播放/暂停
+            val playInteraction = remember { MutableInteractionSource() }
+            val playPressed by playInteraction.collectIsPressedAsState()
+            val playScale by animateFloatAsState(
+                targetValue = if (playPressed) 0.92f else 1f,
+                animationSpec =
+                    spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = 1100f,
+                    ),
+                label = "playPressScale",
+            )
             IconButton(
                 onClick = onPlayPauseClick,
+                interactionSource = playInteraction,
                 modifier =
                     Modifier
                         .size(80.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)),
+                        .graphicsLayer {
+                            scaleX = playScale
+                            scaleY = playScale
+                        }.clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
             ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    contentDescription =
-                        if (isPlaying) {
-                            stringResource(R.string.pause)
-                        } else {
-                            stringResource(
-                                R.string.play,
-                            )
-                        },
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(48.dp),
-                )
+                AnimatedContent(
+                    targetState = isPlaying,
+                    transitionSpec = { controlIconTransform() },
+                    label = "playPauseIcon",
+                ) { playing ->
+                    Icon(
+                        imageVector = if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                        contentDescription =
+                            if (playing) {
+                                stringResource(R.string.pause)
+                            } else {
+                                stringResource(R.string.play)
+                            },
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(44.dp),
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // 下一首
             IconButton(
                 onClick = onNextClick,
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier.size(56.dp),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.SkipNext,
                     contentDescription = stringResource(R.string.next_track),
                     tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(36.dp),
                 )
             }
+        }
 
-            // 收藏
-            IconButton(onClick = onFavoriteClick) {
+        // 收藏
+        IconButton(onClick = onFavoriteClick) {
+            AnimatedContent(
+                targetState = isLike,
+                transitionSpec = { controlIconTransform() },
+                label = "favoriteIcon",
+            ) { liked ->
                 Icon(
                     imageVector =
-                        if (isLike) {
+                        if (liked) {
                             Icons.Rounded.Favorite
                         } else {
                             Icons.Rounded.FavoriteBorder
                         },
                     contentDescription = stringResource(R.string.favorite),
                     tint =
-                        if (isLike) {
-                            Color.Red
+                        if (liked) {
+                            MaterialTheme.colorScheme.error
                         } else {
                             MaterialTheme.colorScheme.onSurface
                         },
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(26.dp),
                 )
             }
         }
