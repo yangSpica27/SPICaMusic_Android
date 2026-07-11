@@ -1920,6 +1920,7 @@ private fun SongPickerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        sheetGesturesEnabled = false,
     ) {
         Column(
             modifier =
