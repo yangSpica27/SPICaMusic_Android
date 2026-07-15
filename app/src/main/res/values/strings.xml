@@ -332,6 +332,9 @@
   <string name="settings_progress_bar_style">Progress Bar Style</string>
   <string name="progress_bar_style_dynamic_waveform">Dynamic Waveform</string>
   <string name="progress_bar_style_time_domain_waveform">Time-domain Waveform</string>
+  <string name="settings_theme_color_style">Theme Color Style</string>
+  <string name="theme_color_style_textured">Textured</string>
+  <string name="theme_color_style_flat">Flat</string>
   <string name="settings_media_library">Media Library</string>
   <string name="settings_media_library_source_subtitle">Manage music scan paths</string>
 

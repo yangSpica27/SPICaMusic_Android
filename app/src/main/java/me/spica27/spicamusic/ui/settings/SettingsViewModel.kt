@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
+import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 
 /**
@@ -27,6 +28,20 @@ class SettingsViewModel(
     fun setDarkMode(enabled: Boolean) {
         viewModelScope.launch {
             settingsUseCases.setBoolean(SettingsUseCases.Keys.DARK_MODE, enabled)
+        }
+    }
+
+    // 主题色风格
+    val themeColorStyle =
+        settingsUseCases
+            .getString(
+                SettingsUseCases.Keys.THEME_COLOR_STYLE,
+                ThemeColorStyle.Textured.value,
+            ).stateIn(viewModelScope, SharingStarted.Eagerly, ThemeColorStyle.Textured.value)
+
+    fun setThemeColorStyle(value: String) {
+        viewModelScope.launch {
+            settingsUseCases.setString(SettingsUseCases.Keys.THEME_COLOR_STYLE, value)
         }
     }
 

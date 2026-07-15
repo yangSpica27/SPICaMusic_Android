@@ -10,6 +10,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.navkit.stack.NavigationStack
+import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.ui.home.HomeScene
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
@@ -31,6 +32,11 @@ fun AppScaffold() {
             .getBoolean(PreferencesManager.Keys.DARK_MODE)
             .collectAsStateWithLifecycle(false)
 
+    val themeColorStyleValue by
+        preferencesManager
+            .getString(PreferencesManager.Keys.THEME_COLOR_STYLE, ThemeColorStyle.Textured.value)
+            .collectAsStateWithLifecycle(ThemeColorStyle.Textured.value)
+
     val playerViewModel: PlayerViewModel = koinActivityViewModel()
     val color by playerViewModel.playerThemeColor.collectAsStateWithLifecycle()
     val keepScreenOn by
@@ -50,6 +56,7 @@ fun AppScaffold() {
     SPICaMusicTheme(
         darkTheme = isDarkMode,
         themeColor = color,
+        themeColorStyle = ThemeColorStyle.fromString(themeColorStyleValue),
     ) {
         CompositionLocalProvider(LocalPlayerViewModel provides playerViewModel) {
             NavigationStack(

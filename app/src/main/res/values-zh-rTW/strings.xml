@@ -331,6 +331,9 @@
   <string name="settings_progress_bar_style">進度條樣式</string>
   <string name="progress_bar_style_dynamic_waveform">動態波形</string>
   <string name="progress_bar_style_time_domain_waveform">時域波形</string>
+  <string name="settings_theme_color_style">主題色風格</string>
+  <string name="theme_color_style_textured">質感化</string>
+  <string name="theme_color_style_flat">扁平化</string>
   <string name="settings_media_library">媒體庫</string>
   <string name="settings_media_library_source_subtitle">管理音樂掃描路徑</string>
 

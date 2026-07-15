@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,6 +74,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
+import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.ui.about.AboutScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -92,6 +94,23 @@ class SettingsScene : StackScene() {
         val spectrumValue by viewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
         val coverTypeValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
         val progressBarStyleValue by viewModel.progressBarStyle.collectAsStateWithLifecycle()
+        val themeColorStyleValue by viewModel.themeColorStyle.collectAsStateWithLifecycle()
+        val texturedLabel = stringResource(R.string.theme_color_style_textured)
+        val flatLabel = stringResource(R.string.theme_color_style_flat)
+        val themeColorStyleName =
+            when (ThemeColorStyle.fromString(themeColorStyleValue)) {
+                ThemeColorStyle.Textured -> texturedLabel
+                ThemeColorStyle.Flat -> flatLabel
+            }
+        val themeColorStyleOptions =
+            remember(texturedLabel, flatLabel) {
+                ImmutableList.copyOf(
+                    listOf(
+                        SelectOption(ThemeColorStyle.Textured.value, texturedLabel),
+                        SelectOption(ThemeColorStyle.Flat.value, flatLabel),
+                    ),
+                )
+            }
         val dynamicWaveformLabel = stringResource(R.string.progress_bar_style_dynamic_waveform)
         val timeDomainWaveformLabel = stringResource(R.string.progress_bar_style_time_domain_waveform)
         val progressBarStyleName =
@@ -187,6 +206,15 @@ class SettingsScene : StackScene() {
                                 icon = Icons.Default.Brightness6,
                                 checked = darkMode,
                                 onCheckedChange = viewModel::setDarkMode,
+                            )
+                            SettingsItemDivider()
+                            ModernSettingsSelectItem(
+                                title = stringResource(R.string.settings_theme_color_style),
+                                subtitle = themeColorStyleName,
+                                icon = Icons.Default.Palette,
+                                options = themeColorStyleOptions,
+                                currentValue = themeColorStyleValue,
+                                onValueChange = viewModel::setThemeColorStyle,
                             )
                             SettingsItemDivider()
                             ModernSettingsSelectItem(

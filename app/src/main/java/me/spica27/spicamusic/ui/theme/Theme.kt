@@ -2,6 +2,8 @@ package me.spica27.spicamusic.ui.theme
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,11 +12,14 @@ import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.materialkolor.DynamicMaterialTheme
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
+import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.ui.widget.rememberClickHighlightIndication
 
 object Shapes {
@@ -71,15 +76,38 @@ fun ProvideAppInteractionIndication(content: @Composable () -> Unit) {
 fun SPICaMusicTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     themeColor: Color,
+    themeColorStyle: ThemeColorStyle = ThemeColorStyle.Textured,
     content: @Composable () -> Unit,
 ) {
-    DynamicMaterialTheme(
-        seedColor = themeColor,
-        isDark = darkTheme,
-        animate = true,
-        specVersion = ColorSpec.SpecVersion.SPEC_2021,
-        style = PaletteStyle.TonalSpot,
-    ) {
-        ProvideAppInteractionIndication(content = content)
+    when (themeColorStyle) {
+        ThemeColorStyle.Textured ->
+            DynamicMaterialTheme(
+                seedColor = themeColor,
+                isDark = darkTheme,
+                animate = true,
+                specVersion = ColorSpec.SpecVersion.SPEC_2021,
+                style = PaletteStyle.TonalSpot,
+            ) {
+                ProvideAppInteractionIndication(content = content)
+            }
+
+        ThemeColorStyle.Flat -> {
+            // 与质感化的 animate 行为对齐:对种子色做动画,派生色板随之平滑过渡
+            val animatedSeedColor by animateColorAsState(
+                targetValue = themeColor,
+                animationSpec = tween(durationMillis = 500),
+                label = "flat_theme_seed_color",
+            )
+            val colorScheme =
+                remember(animatedSeedColor, darkTheme) {
+                    antFlatColorScheme(
+                        seedColor = animatedSeedColor,
+                        darkTheme = darkTheme,
+                    )
+                }
+            MaterialTheme(colorScheme = colorScheme) {
+                ProvideAppInteractionIndication(content = content)
+            }
+        }
     }
 }
