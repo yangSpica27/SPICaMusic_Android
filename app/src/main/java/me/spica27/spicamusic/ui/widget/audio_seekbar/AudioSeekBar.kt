@@ -35,6 +35,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
@@ -141,7 +142,9 @@ fun AudioWaveSlider(
 
     Slider(
         modifier =
-        modifier,
+            modifier.graphicsLayer(
+                compositingStrategy = CompositingStrategy.Offscreen,
+            ),
         value = progress,
         thumb = {
         },
@@ -282,7 +285,10 @@ fun AudioDynamicWaveSlider(
         )
 
     Slider(
-        modifier = modifier,
+        modifier =
+            modifier.graphicsLayer(
+                compositingStrategy = CompositingStrategy.Offscreen,
+            ),
         value = progress,
         thumb = {
         },

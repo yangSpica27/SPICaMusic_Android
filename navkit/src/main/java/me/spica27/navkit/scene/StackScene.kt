@@ -63,7 +63,8 @@ abstract class StackScene : Scene() {
             targetValue = 1.0f,
             animationSpec = spring(
                 stiffness = SPRING_STIFFNESS,
-                dampingRatio = Spring.DampingRatioNoBouncy
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                visibilityThreshold = PROGRESS_VISIBILITY_THRESHOLD
             )
         ) {
             if (this.value == targetValue) {
@@ -78,7 +79,8 @@ abstract class StackScene : Scene() {
             targetValue = 0f,
             animationSpec = spring(
                 stiffness = SPRING_STIFFNESS,
-                dampingRatio = Spring.DampingRatioNoBouncy
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                visibilityThreshold = PROGRESS_VISIBILITY_THRESHOLD
             )
         )
     }
@@ -139,5 +141,15 @@ abstract class StackScene : Scene() {
     companion object {
         /** 进退场弹簧刚度（300 ≈ 较硬，快速响应） */
         private const val SPRING_STIFFNESS = 300f
+
+        /**
+         * 进场进度弹簧的收敛阈值。
+         *
+         * enterProgress 是 0..1 的归一化值，会放大到整屏宽度的位移
+         * （translationX = (1 - enter) * width）：默认阈值 0.01 意味着弹簧在
+         * 离终点还差约 1% 屏宽（~10px）时即判定完成并在最后一帧吸附到终点，
+         * 表现为进/退场动画结尾整页跳一下。收紧到亚像素级消除吸附感。
+         */
+        private const val PROGRESS_VISIBILITY_THRESHOLD = 0.0005f
     }
 }

@@ -103,8 +103,18 @@ class NavigationPath(
      * 5. [Scene.onPop]：释放资源
      */
     fun pop(scene: Scene) {
+        // 幂等保护：已在退场流程中（或已退场）的场景直接忽略，
+        // 避免退场动画期间连按返回对同一场景重复执行退场钩子
+        // （共享元素动画会被重复触发，导致源节点闪烁）
+        if (scene.stage.value == SceneStage.Disappearing ||
+            scene.stage.value == SceneStage.Disappeared
+        ) {
+            return
+        }
         animationScope.launch {
             scene.withStageLock {
+                // 二次检查：排队等锁期间场景可能已被并发 pop 完成
+                if (scene.stage.value == SceneStage.Disappeared) return@withStageLock
                 scene.stage.value = SceneStage.Disappearing
                 scene.waitDisappear()
                 scene.onDisappear()

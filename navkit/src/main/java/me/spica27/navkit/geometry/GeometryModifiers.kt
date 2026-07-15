@@ -24,12 +24,18 @@ import androidx.compose.ui.platform.InspectorInfo
  * 典型用法：在列表行上附加此 modifier，当用户点击后触发导航，
  * NavigationStack 会以 [transition] 做共享元素过渡。
  *
+ * 仅在静止（Source）阶段记录：飞行中/被上层场景覆盖期间，
+ * 祖先场景的过渡变换（背景压缩、位移）会污染窗口坐标，
+ * 冻结矩形保证返回飞行始终落在源节点的静止位置。
+ *
  * @param transition 要关联的 [GeometryTransition] 实例
  */
 fun Modifier.geometrySource(transition: GeometryTransition): Modifier =
     this.onGloballyPositioned { coords ->
-        transition.sourceRect.value = coords.unclippedBoundsInWindow()
-        transition.sourceVisibleRect.value = coords.boundsInWindow()
+        if (transition.phase.value == GeometryTransition.GeometryPhase.Source) {
+            transition.sourceRect.value = coords.unclippedBoundsInWindow()
+            transition.sourceVisibleRect.value = coords.boundsInWindow()
+        }
     }
 
 /**
@@ -90,6 +96,8 @@ internal class GeometryStateNode(
     override val shouldAutoInvalidate: Boolean get() = false
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {
+        // 与 Modifier.geometrySource 保持一致：源矩形仅在静止阶段记录
+        if (isSource && transition.phase.value != GeometryTransition.GeometryPhase.Source) return
         val bounds: Rect = coordinates.unclippedBoundsInWindow()
         val visibleBounds: Rect = coordinates.boundsInWindow()
         if (isSource) {

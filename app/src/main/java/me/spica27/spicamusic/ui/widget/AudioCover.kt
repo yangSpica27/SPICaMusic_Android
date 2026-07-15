@@ -10,6 +10,7 @@ fun AudioCover(
     modifier: Modifier = Modifier,
     placeHolder: @Composable () -> Unit = { },
     uri: Uri? = null,
+    progressiveEnabled: Boolean = false,
 ) {
     LandscapistImage(
         modifier = modifier,
@@ -17,7 +18,7 @@ fun AudioCover(
             this
                 .model(uri)
                 .tag(uri.toString())
-                .progressiveEnabled(true)
+                .progressiveEnabled(progressiveEnabled)
                 .build()
         },
         imageModel = { uri },

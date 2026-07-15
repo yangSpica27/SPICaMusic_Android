@@ -2,6 +2,7 @@ package me.spica27.spicamusic.common.utils
 
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.getSentenceContent
+import kotlin.math.abs
 
 // 参考LMusic https://github.com/cy745/lmusic
 object LrcParser {
@@ -14,6 +15,12 @@ object LrcParser {
    * 匹配<00:00.00>格式时间标签的正则表达式
    */
   private val REGEX_TIME_EX = Regex("<(\\d\\d):(\\d\\d)\\.(\\d{1,5})>")
+
+  /**
+   * 逐字时间戳相对[..]行时间标签允许的最大偏差（毫秒），
+   * 超过则认为逐字时间轴不可信（部分歌词源生成的逐字时间戳整体错位）
+   */
+  private const val MAX_WORD_TIME_DEVIATION_MS = 1000L
 
   /**
    * 解析LRC格式的歌词字符串
@@ -110,6 +117,12 @@ object LrcParser {
       .findAll(lyricLine)
       .toList()
 
+    // 增强型LRC（[行时间]<逐字时间>...）中[..]标签定义整句时间，
+    // <..>标签仅用于逐字高亮；整句时间必须取行标签，
+    // 才能与共享同一行时间标签的翻译行配对
+    var lineTime: Long? = null
+    var firstWordTagTime: Long? = null
+
     // 当歌词中有一个[00:00.000]类型的时间标签时尝试匹配<00:00.000>格式的时间标签
     if (findResult.size == 1) {
       val temp = REGEX_TIME_EX
@@ -118,6 +131,8 @@ object LrcParser {
 
       // 当存在<00:00.000>格式的时间标签时，则使用<00:00.000>格式的时间标签
       if (temp.isNotEmpty()) {
+        lineTime = timeTagToTime(findResult.first().value).takeIf { it >= 0 }
+        firstWordTagTime = timeTagToTime(temp.first().value).takeIf { it >= 0 }
         findResult = temp
       }
     }
@@ -166,13 +181,32 @@ object LrcParser {
     val firstWord = words[0]
     val lastWord = words.last()
 
+    // 整句时间优先取[..]行标签，否则退回第一个逐字时间
+    val sentenceTime = lineTime ?: firstWord.startTime
+
     // 若只有一个词/句，且其开始时间等于其结束时间，则认为其就是一个普通句子
     if (words.size == 1 && firstWord.startTime == firstWord.endTime) {
       return listOf(
         LyricItem.NormalLyric(
           content = firstWord.content,
-          time = firstWord.startTime,
-          key = "${firstWord.startTime}"
+          time = sentenceTime,
+          key = "$sentenceTime"
+        )
+      )
+    }
+
+    // 逐字时间轴与行时间严重偏离时视为不可信，
+    // 降级为普通句子，避免整句在播放期间永远处于未唱状态。
+    // 偏差以首个<..>标签为准：正常歌词的首个逐字标签与行标签一致
+    // （人声晚进的行不受影响），错位歌词的首个标签即已偏离
+    if (lineTime != null && firstWordTagTime != null &&
+      abs(firstWordTagTime - lineTime) > MAX_WORD_TIME_DEVIATION_MS
+    ) {
+      return listOf(
+        LyricItem.NormalLyric(
+          content = words.joinToString(separator = "") { it.content },
+          time = lineTime,
+          key = "$lineTime"
         )
       )
     }
@@ -182,9 +216,9 @@ object LrcParser {
       LyricItem.WordsLyric(
         words = words,
         translation = emptyList(),
-        startTime = firstWord.startTime,
-        endTime = lastWord.endTime,
-        key = "${firstWord.startTime}"
+        startTime = sentenceTime,
+        endTime = maxOf(lastWord.endTime, sentenceTime),
+        key = "$sentenceTime"
       )
     )
   }

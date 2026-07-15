@@ -24,6 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -74,7 +76,9 @@ fun LargeBottomPlayerBar(
                         uri = artworkUri,
                         modifier =
                             Modifier
-                                .size(48.dp)
+                                .graphicsLayer(
+                                    compositingStrategy = CompositingStrategy.Offscreen,
+                                ).size(48.dp)
                                 .clip(coverShape)
                                 .background(
                                     MaterialTheme.colorScheme.tertiaryContainer,

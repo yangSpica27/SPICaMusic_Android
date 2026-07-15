@@ -6,7 +6,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -39,14 +38,12 @@ import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.Lyrics
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -72,7 +69,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -96,6 +92,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import me.spica27.navkit.geometry.GeometryTransition
+import me.spica27.navkit.geometry.GeometryTransition.GeometryPhase
+import me.spica27.navkit.geometry.geometrySource
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
@@ -110,7 +109,6 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
-import me.spica27.spicamusic.ui.widget.LyricsDisplayMode
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioDynamicWaveSlider
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
@@ -135,6 +133,7 @@ private const val PAGE_COUNT = 2
 const val DEFAULT_PAGE = 0
 private const val HERO_REVEAL_THRESHOLD = 0.08f
 private const val META_REVEAL_THRESHOLD = 0.18f
+private const val MINI_LYRIC_REVEAL_THRESHOLD = 0.24f
 private const val TAGS_REVEAL_THRESHOLD = 0.28f
 private const val SEEKBAR_REVEAL_THRESHOLD = 0.34f
 private const val PLAYER_CONTROLS_REVEAL_THRESHOLD = 0.48f
@@ -207,8 +206,6 @@ fun ExpandedPlayerScreen(
     }
 
     val coroutineScope = rememberCoroutineScope()
-
-    val path = LocalNavigationPath.current
 
     // Pager 状态，使用传入的初始页面
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { PAGE_COUNT })
@@ -287,9 +284,6 @@ fun ExpandedPlayerScreen(
                         modifier = Modifier,
                         onCollapse = onCollapse,
                         progressProvider = progressProvider,
-                        onLyricBtnClick = {
-                            path.push(LyricScene())
-                        },
                         onPlaylistBtnClick = {
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(
@@ -417,7 +411,6 @@ private fun TopBar(
     progressProvider: () -> Float,
     modifier: Modifier,
     onPlaylistBtnClick: () -> Unit = {},
-    onLyricBtnClick: () -> Unit = {},
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -459,22 +452,10 @@ private fun TopBar(
             Row(
                 modifier =
                     Modifier
-                        .clip(
-                            RoundedCornerShape(
-                                topStartPercent = 50,
-                                bottomStartPercent = 50,
-                                topEndPercent = 15,
-                                bottomEndPercent = 15,
-                            ),
-                        ).background(
+                        .clip(CircleShape)
+                        .background(
                             MaterialTheme.colorScheme.surfaceContainer,
-                            shape =
-                                RoundedCornerShape(
-                                    topStartPercent = 50,
-                                    bottomStartPercent = 50,
-                                    topEndPercent = 15,
-                                    bottomEndPercent = 15,
-                                ),
+                            shape = CircleShape,
                         ).clickable {
                             onPlaylistBtnClick.invoke()
                         }.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -492,44 +473,6 @@ private fun TopBar(
                     text = stringResource(R.string.queue),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Row(
-                modifier =
-                    Modifier
-                        .clip(
-                            RoundedCornerShape(
-                                topEndPercent = 50,
-                                bottomEndPercent = 50,
-                                topStartPercent = 15,
-                                bottomStartPercent = 15,
-                            ),
-                        ).background(
-                            MaterialTheme.colorScheme.surfaceContainer,
-                            shape =
-                                RoundedCornerShape(
-                                    topEndPercent = 50,
-                                    bottomEndPercent = 50,
-                                    topStartPercent = 15,
-                                    bottomStartPercent = 15,
-                                ),
-                        ).clickable {
-                            onLyricBtnClick.invoke()
-                        }.padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.tab_lrc),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Icon(
-                    imageVector = Icons.Rounded.Lyrics,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp),
                 )
             }
         }
@@ -607,17 +550,34 @@ private fun PlayerPage(
             ProgressBarStyle.fromString(progressBarStyleValue)
         }
     val songUseCases = koinInject<SongUseCases>()
-    // 翻转动画状态
-    var isCoverFlipped by rememberSaveable { mutableStateOf(false) }
-    val animDuration = 600
-    val cameraDistance = 12f
 
-    // Y轴旋转角度动画
-    val rotateY by animateFloatAsState(
-        targetValue = if (isCoverFlipped) 180f else 0f,
-        animationSpec = tween(durationMillis = animDuration, easing = EaseInOut),
-        label = "coverRotation",
-    )
+    val path = LocalNavigationPath.current
+
+    val coverTransition =
+        remember {
+            GeometryTransition(
+                key = "lyric_hero_cover",
+                sourceClipRadius = 16.dp,
+                targetClipRadius = 12.dp,
+            )
+        }
+    val titleTransition = remember { GeometryTransition(key = "lyric_hero_title", sourceClipRadius = 0.dp) }
+    val artistTransition = remember { GeometryTransition(key = "lyric_hero_artist", sourceClipRadius = 0.dp) }
+
+    val title =
+        currentMediaItem
+            .invoke()
+            ?.mediaMetadata
+            ?.title
+            ?.toString()
+            ?: stringResource(R.string.unknown_song)
+    val artist =
+        currentMediaItem
+            .invoke()
+            ?.mediaMetadata
+            ?.artist
+            ?.toString()
+            ?: stringResource(R.string.unknown_artist)
 
     Column(
         modifier =
@@ -637,7 +597,7 @@ private fun PlayerPage(
                     .padding(vertical = Spacing.Medium),
             contentAlignment = Alignment.Center,
         ) {
-            // 封面（带翻转动画）
+            // 封面（跳转全屏歌词时作为共享元素飞入歌词页 header）
             Box(
                 modifier =
                     Modifier
@@ -645,69 +605,48 @@ private fun PlayerPage(
                         .graphicsLayer {
                             val heroReveal =
                                 calculateFadeAlpha(progressProvider(), HERO_REVEAL_THRESHOLD)
-                            alpha = heroReveal
+                            // 飞行期间本体隐藏，由浮层接管显示
+                            alpha = if (coverTransition.shouldShowSource()) heroReveal else 0f
                             translationY = (1f - heroReveal) * 48f
                             scaleX = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
                             scaleY = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
-                            rotationY = rotateY
-                            this.cameraDistance = cameraDistance * density
-                        }.clip(Shapes.LargeCornerBasedShape)
-                        .then(
-                            Modifier.clickable { isCoverFlipped = !isCoverFlipped },
-                        ),
+                        }.geometrySource(coverTransition)
+                        .clip(Shapes.LargeCornerBasedShape),
             ) {
-                // 根据旋转角度显示正面或背面
-                if (rotateY <= 90f) {
-                    // 正面：封面
-
-                    AnimatedContent(
-                        currentMediaItem.invoke(),
-                        modifier = Modifier.fillMaxSize(),
-                        transitionSpec = {
-                            materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
-                        },
-                        contentKey = { it?.mediaId ?: "-1" },
-                    ) { currentMediaItem ->
-                        AudioCover(
-                            uri = currentMediaItem?.mediaMetadata?.artworkUri,
-                            placeHolder = {
-                                Box(
+                AnimatedContent(
+                    currentMediaItem.invoke(),
+                    modifier = Modifier.fillMaxSize(),
+                    transitionSpec = {
+                        materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
+                    },
+                    contentKey = { it?.mediaId ?: "-1" },
+                ) { currentMediaItem ->
+                    AudioCover(
+                        uri = currentMediaItem?.mediaMetadata?.artworkUri,
+                        placeHolder = {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .clip(Shapes.LargeCornerBasedShape)
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.MusicNote,
+                                    contentDescription = stringResource(R.string.cover_placeholder),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier =
                                         Modifier
-                                            .fillMaxSize()
-                                            .clip(Shapes.LargeCornerBasedShape)
-                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.MusicNote,
-                                        contentDescription = stringResource(R.string.cover_placeholder),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier =
-                                            Modifier
-                                                .size(64.dp)
-                                                .align(Alignment.Center),
-                                    )
-                                }
-                            },
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .clip(Shapes.LargeCornerBasedShape)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                        )
-                    }
-                } else {
-                    // 背面：歌词（卡片场景用紧凑排版）
-                    LyricsPanel(
-                        displayMode = LyricsDisplayMode.Compact,
+                                            .size(64.dp)
+                                            .align(Alignment.Center),
+                                )
+                            }
+                        },
                         modifier =
                             Modifier
                                 .fillMaxSize()
                                 .clip(Shapes.LargeCornerBasedShape)
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f))
-                                .graphicsLayer {
-                                    rotationY = 180f
-                                }.fillMaxSize(),
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                     )
                 }
             }
@@ -717,26 +656,48 @@ private fun PlayerPage(
 
         // 歌曲信息
         SongInfo(
-            title =
-                currentMediaItem
-                    .invoke()
-                    ?.mediaMetadata
-                    ?.title
-                    ?.toString()
-                    ?: stringResource(R.string.unknown_song),
-            artist =
-                currentMediaItem
-                    .invoke()
-                    ?.mediaMetadata
-                    ?.artist
-                    ?.toString()
-                    ?: stringResource(R.string.unknown_artist),
+            title = title,
+            artist = artist,
+            titleTransition = titleTransition,
+            artistTransition = artistTransition,
             modifier =
                 Modifier.graphicsLayer {
                     val metaReveal = calculateFadeAlpha(progressProvider(), META_REVEAL_THRESHOLD)
                     alpha = metaReveal
                     translationY = (1f - metaReveal) * 24f
                 },
+        )
+
+        Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+
+        // mini 歌词：点击跳转全屏歌词页面
+        MiniLyric(
+            onClick = {
+                // 防止重复点击！！
+                if (path.scenes.none { it is LyricScene } &&
+                    coverTransition.phase.value == GeometryPhase.Source
+                ) {
+                    path.push(
+                        LyricScene(
+                            heroArtworkUri =
+                                currentMediaItem
+                                    .invoke()
+                                    ?.mediaMetadata
+                                    ?.artworkUri,
+                            coverTransition = coverTransition,
+                        ),
+                    )
+                }
+            },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        val lyricReveal =
+                            calculateFadeAlpha(progressProvider(), MINI_LYRIC_REVEAL_THRESHOLD)
+                        alpha = lyricReveal
+                        translationY = (1f - lyricReveal) * 24f
+                    },
         )
 
         val amplituda: Amplituda = koinInject<Amplituda>()
@@ -770,7 +731,7 @@ private fun PlayerPage(
                 ampState = data
             }
         }
-        Spacer(modifier = Modifier.height(Spacing.Medium))
+        Spacer(modifier = Modifier.height(Spacing.Small))
         // 音质标签：固定高度槽位保持版面节奏，无标签时留白而不是显示空药丸
         val qualityTags =
             buildList {
@@ -1019,12 +980,17 @@ private fun SeekBarSection(
 
 /**
  * 歌曲信息
+ *
+ * [titleTransition] / [artistTransition] 非 null 时，歌名与作者文本作为
+ * 跳转全屏歌词的共享元素源节点：飞行期间本体隐藏，静止阶段记录源矩形。
  */
 @Composable
 private fun SongInfo(
     title: String,
     artist: String,
     modifier: Modifier = Modifier,
+    titleTransition: GeometryTransition? = null,
+    artistTransition: GeometryTransition? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -1036,6 +1002,7 @@ private fun SongInfo(
                 materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
             },
             contentKey = { it },
+            modifier = Modifier.geometrySourceFor(titleTransition),
         ) { title ->
             Text(
                 text = title,
@@ -1055,6 +1022,7 @@ private fun SongInfo(
             transitionSpec = {
                 materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
             },
+            modifier = Modifier.geometrySourceFor(artistTransition),
         ) { artist ->
             Text(
                 text = artist,
@@ -1067,6 +1035,16 @@ private fun SongInfo(
         }
     }
 }
+
+private fun Modifier.geometrySourceFor(transition: GeometryTransition?): Modifier =
+    if (transition == null) {
+        this
+    } else {
+        this
+            .graphicsLayer {
+                alpha = if (transition.shouldShowSource()) 1f else 0f
+            }.geometrySource(transition)
+    }
 
 /** 控制按钮图标切换：淡入 + 弹性缩放（全屏播放器统一节奏） */
 private fun controlIconTransform() =

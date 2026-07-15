@@ -29,7 +29,7 @@ import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsDisplayMode
 import me.spica27.spicamusic.ui.widget.LyricsSwitcherSheet
 import me.spica27.spicamusic.ui.widget.LyricsUI
-import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
  * 歌词面板
@@ -47,7 +47,9 @@ fun LyricsPanel(
     modifier: Modifier = Modifier,
     displayMode: LyricsDisplayMode = LyricsDisplayMode.Fullscreen,
 ) {
-    val viewModel: LyricsViewModel = koinViewModel()
+    // Activity 作用域共享实例：与 mini 歌词同源，
+    // 此处切换歌词源 / 调整偏移量会同步反映到 mini 歌词
+    val viewModel: LyricsViewModel = koinActivityViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     // 歌词切换面板的纯 UI 状态（不需要持久化）

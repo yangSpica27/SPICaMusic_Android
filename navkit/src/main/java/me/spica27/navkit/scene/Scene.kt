@@ -53,12 +53,32 @@ abstract class Scene {
     open val geometryTransition: GeometryTransition? get() = null
 
     /**
+     * 场景持有的全部几何过渡。默认包装单个 [geometryTransition]；
+     * 需要多个共享元素同时飞行（如 封面 + 标题 + 副标题）的场景重写此属性，
+     * 并在 [FloatingContent] 中按 [GeometryTransition.key] 分发各自的浮层内容。
+     */
+    open val geometryTransitions: List<GeometryTransition>
+        get() = listOfNotNull(geometryTransition)
+
+    /**
      * 几何过渡期间渲染的浮层内容（飞行封面动画中的图像）。
-     * 仅当 [geometryTransition] 非 null 时由 NavigationStack 调用。
-     * 子类重写此方法以提供自定义浮层内容。
+     *
+     * NavigationStack 实际调用的是带 key 的 [FloatingContent]（每个过渡一次）；
+     * 只持有单个 [geometryTransition] 的场景重写本方法即可（默认委托会转发到这里），
+     * 多过渡场景必须改为重写带 key 的变体按 key 分发内容。
      */
     @Composable
     open fun FloatingContent() {}
+
+    /**
+     * 多几何过渡场景的浮层内容入口：NavigationStack 为 [geometryTransitions] 中的
+     * 每个过渡渲染一个浮层，并以该过渡的 key 调用此方法。
+     * 默认委托给无参 [FloatingContent]，保持单过渡场景兼容。
+     */
+    @Composable
+    open fun FloatingContent(key: String) {
+        FloatingContent()
+    }
 
     // ──────────────────────────────────────────────────────────────────────
     // 生命周期钩子（由 NavigationPath 的协程调用，子类可重写）

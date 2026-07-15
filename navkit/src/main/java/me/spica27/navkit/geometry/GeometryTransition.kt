@@ -6,6 +6,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 /**
  * 几何过渡动画的状态容器，用于实现"共享元素"式的位置/尺寸过渡。
@@ -16,8 +18,15 @@ import androidx.compose.ui.geometry.Rect
  * 3. [getBounds] 在每帧根据 [progress.value] 计算插值后的 [Rect]
  *
  * @param key 标识此过渡的唯一字符串，供 NavigationStack 匹配源/目标节点
+ * @param sourceClipRadius 源节点侧的圆角裁剪半径；飞行中按进度向 [targetClipRadius] 插值，
+ *   两端与源/目标节点的真实圆角一致即可避免交接瞬间的圆角突变。文本类内容传 0.dp 避免裁掉字形边缘
+ * @param targetClipRadius 目标节点侧的圆角裁剪半径，默认与 [sourceClipRadius] 相同
  */
-class GeometryTransition(val key: String) {
+class GeometryTransition(
+    val key: String,
+    val sourceClipRadius: Dp = 16.dp,
+    val targetClipRadius: Dp = sourceClipRadius,
+) {
     /**
      * 共享元素当前的可见所有权阶段。
      *
@@ -71,7 +80,8 @@ class GeometryTransition(val key: String) {
             targetValue = 1f,
             animationSpec = spring(
                 stiffness = SPRING_STIFFNESS,
-                dampingRatio = Spring.DampingRatioNoBouncy
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                visibilityThreshold = PROGRESS_VISIBILITY_THRESHOLD
             )
         )
         phase.value = GeometryPhase.Target
@@ -86,7 +96,8 @@ class GeometryTransition(val key: String) {
             targetValue = 0f,
             animationSpec = spring(
                 stiffness = SPRING_STIFFNESS,
-                dampingRatio = Spring.DampingRatioNoBouncy
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                visibilityThreshold = PROGRESS_VISIBILITY_THRESHOLD
             )
         )
         phase.value = GeometryPhase.Source
@@ -195,6 +206,16 @@ class GeometryTransition(val key: String) {
     companion object {
         /** 几何过渡弹簧刚度（250 ≈ 略软于导航弹簧 300，视觉上更流畅） */
         private const val SPRING_STIFFNESS = 250f
+
+        /**
+         * 飞行进度弹簧的收敛阈值。
+         *
+         * 进度是 0..1 的归一化值，最终会放大到近千像素的飞行距离：
+         * 默认阈值 0.01 意味着弹簧在离终点还差约 1%（可达 ~10px）时即判定完成，
+         * 最后一帧直接吸附到终点值，交接瞬间产生可见跳变。
+         * 收紧到 0.0005（≈0.5px）后落点在亚像素级，交接无感。
+         */
+        private const val PROGRESS_VISIBILITY_THRESHOLD = 0.0005f
 
         /**
          * 正向飞行开始时源节点延迟交棒的进度阈值。
