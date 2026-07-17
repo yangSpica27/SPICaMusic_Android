@@ -51,10 +51,10 @@ suspend fun extractDominantColorFromUri(
                 val palette = Palette.from(bitmap).maximumColorCount(16).generate()
                 bitmap.recycle()
 
-                // 优先主色彩
+                // 优先鲜艳色
                 val dominantSwatch =
-                    palette.dominantSwatch
-                        ?: palette.vibrantSwatch
+                    palette.vibrantSwatch
+                        ?: palette.dominantSwatch
                         ?: palette.mutedSwatch
 
                 dominantSwatch?.let {
