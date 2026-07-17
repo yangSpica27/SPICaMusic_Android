@@ -621,10 +621,10 @@ private class EffectShaderRenderer : GLSurfaceView.Renderer {
                     col += vec3(1.0, 0.9, 0.8) * sparkle * 0.06;
                 } else {
                     vec3 lightBg = vec3(0.98, 0.98, 0.98);
-                    vec3 softColor = mix(lightBg, dynamicColor, 0.6);
+                    vec3 softColor = mix(lightBg, dynamicColor, 0.5);
                     col = mix(lightBg, softColor, rippleNormalized * rippleStrength * 0.65);
                     float centerGlow = 1.0 - smoothstep(0.0, 1.0, dist);
-                    col = mix(col, softColor, centerGlow * (0.07 + uBeat * 0.04));
+                    col = mix(col, softColor, centerGlow * (0.17 + uBeat * 0.04));
                 }
 
                 gl_FragColor = vec4(col, 1.0);

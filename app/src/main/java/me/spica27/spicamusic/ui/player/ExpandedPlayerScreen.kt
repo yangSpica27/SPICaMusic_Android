@@ -112,6 +112,7 @@ import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioDynamicWaveSlider
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
+import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
@@ -646,7 +647,23 @@ private fun PlayerPage(
                             Modifier
                                 .fillMaxSize()
                                 .clip(Shapes.LargeCornerBasedShape)
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                .clickHighlight {
+                                    // 防止重复点击！！
+                                    if (path.scenes.none { it is LyricScene } &&
+                                        coverTransition.phase.value == GeometryPhase.Source
+                                    ) {
+                                        path.push(
+                                            LyricScene(
+                                                heroArtworkUri =
+                                                    currentMediaItem
+                                                        ?.mediaMetadata
+                                                        ?.artworkUri,
+                                                coverTransition = coverTransition,
+                                            ),
+                                        )
+                                    }
+                                },
                     )
                 }
             }
