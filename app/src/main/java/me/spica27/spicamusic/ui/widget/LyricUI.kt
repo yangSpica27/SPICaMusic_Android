@@ -105,7 +105,7 @@ private object LyricUIConstants {
 
     const val SCROLL_ANIMATION_DURATION = 550
     const val SCROLL_CORRECTION_DURATION = 250
-    const val SCROLL_VIEWPORT_OFFSET_RATIO = 0.35f
+    const val SCROLL_VIEWPORT_OFFSET_RATIO = 0.18f
 
     const val BASE_TEXT_ALPHA = 0.24f
     const val TRANSLATION_TEXT_ALPHA = 0.72f
