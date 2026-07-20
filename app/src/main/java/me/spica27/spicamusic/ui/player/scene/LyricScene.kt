@@ -270,21 +270,23 @@ private fun LyricsHeader(
 // 飞行浮层内容
 // ============================================
 
-/** 飞行中的封面：跟随浮层矩形缩放，与源/目标使用同一图像模型保证视觉连续 */
+/**
+ * 飞行中的封面：跟随浮层矩形缩放，与源/目标使用同一图像模型保证视觉连续。
+ */
 @Composable
 private fun FlyingCover(uri: Uri?) {
     Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        modifier = Modifier.fillMaxSize(),
     ) {
         AudioCover(
             progressiveEnabled = false,
             uri = uri,
             placeHolder = {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
