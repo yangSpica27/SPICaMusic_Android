@@ -10,11 +10,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -23,9 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.TileMode
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import kotlin.math.cos
 import kotlin.math.sin
@@ -53,27 +48,17 @@ fun CompactMusicBackground(
             }
 
     val playerViewModel = LocalPlayerViewModel.current
-    val scope = rememberCoroutineScope()
-
-    // 订阅和取消订阅 FFT 绘制数据
-    LaunchedEffect(enabled) {
-        if (enabled) {
-            withContext(Dispatchers.Default) {
-                playerViewModel.subscribeFFTDrawData()
-            }
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            scope.launch(Dispatchers.Default) {
-                playerViewModel.unsubscribeFFTDrawData()
-            }
-        }
-    }
 
     // 收集插值后的 FFT 数据
-    val fftDrawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
+    // 插值计算随收集自动启停（WhileSubscribed），无需手动订阅/解绑；
+    // 动画关闭时不收集，插值循环不会运行
+    val fftDrawData =
+        if (enabled) {
+            val drawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
+            drawData
+        } else {
+            remember { FloatArray(IFFTProcessor.BAND_COUNT) }
+        }
 
     // 缓慢呼吸动画 - 模拟 Apple Music 的光晕效果
     val infiniteTransition = rememberInfiniteTransition(label = "glow_animation")

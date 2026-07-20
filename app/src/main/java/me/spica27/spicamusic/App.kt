@@ -14,6 +14,7 @@ import me.spica27.spicamusic.feature.library.domain.libraryDomainModule
 import me.spica27.spicamusic.feature.lyrics.domain.lyricsDomainModule
 import me.spica27.spicamusic.feature.player.domain.playerDomainModule
 import me.spica27.spicamusic.feature.settings.domain.settingsDomainModule
+import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.impl.SpicaPlayer
 import me.spica27.spicamusic.service.PlaybackService
 import me.spica27.spicamusic.storage.impl.di.storageModule
@@ -29,6 +30,8 @@ import timber.log.Timber
  */
 class App : Application() {
     private val musicScanService: MusicScanUseCases by inject()
+
+    private val musicPlayer: IMusicPlayer by inject()
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
@@ -58,7 +61,30 @@ class App : Application() {
 
         // 启动 MediaStore 变更监听
         setupMediaStoreObserver()
+        // FFT 采样跟随应用前后台状态
+        setupFftLifecycle()
         CrashHandler.init(this)
+    }
+
+    /**
+     * FFT 频谱采样跟随应用前后台切换：
+     * 前台开启采样供可视化使用，后台停止采样以降低功耗。
+     * 处理器默认关闭，进程在后台被拉起（如媒体恢复）时不会采样。
+     */
+    private fun setupFftLifecycle() {
+        ProcessLifecycleOwner.get().lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) {
+                    musicPlayer.fftProcessor.enable()
+                    Timber.d("应用进入前台，FFT 采样已开启")
+                }
+
+                override fun onStop(owner: LifecycleOwner) {
+                    musicPlayer.fftProcessor.disable()
+                    Timber.d("应用进入后台，FFT 采样已停止")
+                }
+            },
+        )
     }
 
     /**

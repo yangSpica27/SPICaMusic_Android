@@ -1,174 +1,103 @@
 package me.spica27.spicamusic.ui.player
 
+import android.os.SystemClock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import me.spica27.spicamusic.player.api.IFFTProcessor
-import me.spica27.spicamusic.player.api.IMusicPlayer
 
 /**
  * FFT 数据插值器
  *
- * 负责将 FFT 原始数据平滑插值为适合每帧绘制的数据
- * 特性:
- * - 自动插值，保证动画流畅（60fps）
- * - 支持订阅管理，无订阅时自动停止计算节约性能
- * - 线程安全的数据访问
+ * 将低刷新率的 FFT 原始数据平滑插值为约120fps 的绘制数据。
+ *
+ * 生命周期完全由 Flow 订阅驱动，无需手动订阅/解绑：
+ * - UI 通过 collectAsStateWithLifecycle 收集 [interpolatedData] 时自动开始计算
+ * - 页面不可见或应用进入后台时收集停止，计算随之自动结束
+ * - 输出已收敛且无新 FFT 帧时（暂停/静音），循环挂起等待，不空转耗电
  */
 class FFTInterpolator(
-    private val player: IMusicPlayer,
     private val fftProcessor: IFFTProcessor,
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
 ) {
-    // 频段数量
+    companion object {
+        // 绘制帧间隔（约 60fps）
+        private const val FRAME_INTERVAL_MS = 8L
+
+        // FFT 帧间隔的插值时长上下限
+        private const val MIN_TRANSITION_MS = 8L
+        private const val MAX_TRANSITION_MS = 250L
+
+        // 无订阅者后延迟停止，避免页面切换瞬间反复重启
+        private const val STOP_TIMEOUT_MS = 2_000L
+    }
+
     private val bandCount = IFFTProcessor.BAND_COUNT
 
-    // 当前 FFT 原始数据
-    private val currentBands = FloatArray(bandCount)
-
-    // 上一帧 FFT 数据
-    private val lastBands = FloatArray(bandCount)
-
-    // 插值后的绘制数据
-    private val _interpolatedData = MutableStateFlow(FloatArray(bandCount))
-    private val interpolatedBuffers = arrayOf(FloatArray(bandCount), FloatArray(bandCount))
-    private var activeInterpolatedBufferIndex = 0
-
     /**
-     * 插值后的绘制数据
-     * 适合直接用于 UI 绘制，60fps 更新
+     * 插值后的绘制数据 (31个频段, 0.0-1.0)
+     * 适合直接用于 UI 绘制，约120fps 平滑更新
      */
-    val interpolatedData: StateFlow<FloatArray> = _interpolatedData.asStateFlow()
+    val interpolatedData: StateFlow<FloatArray> =
+        flow {
+            // 全部状态为流内局部变量，单协程执行，无需加锁
+            val fromBands = FloatArray(bandCount)
+            val toBands = FloatArray(bandCount)
+            var lastOutput = FloatArray(bandCount)
+            var lastFrame: FloatArray? = null
+            var transitionStart = 0L
+            var transitionDuration = 100L
 
-    // 上次 FFT 更新时间
-    private var lastUpdateTime = 0L
+            while (true) {
+                val now = SystemClock.elapsedRealtime()
 
-    // 两次更新的时间间隔
-    private var updateInterval = 16L
-
-    // 数据锁，保证线程安全
-    private val dataLock = Mutex()
-
-    // 插值计算任务
-    private var interpolationJob: Job? = null
-
-    // FFT 数据监听任务
-    private var fftListenerJob: Job? = null
-
-    // 订阅数量
-    private var subscriberCount = 0
-    private val subscriberLock = Mutex()
-
-    /**
-     * 订阅插值数据
-     * 当有订阅者时，开始计算；所有订阅者取消后，停止计算以节约性能
-     */
-    suspend fun subscribe() {
-        subscriberLock.withLock {
-            subscriberCount++
-            if (subscriberCount == 1) {
-                // 第一个订阅者，启动计算
-                startInterpolation()
-            }
-        }
-    }
-
-    /**
-     * 取消订阅
-     * 当所有订阅者都取消后，自动停止计算
-     */
-    suspend fun unsubscribe() {
-        subscriberLock.withLock {
-            subscriberCount = (subscriberCount - 1).coerceAtLeast(0)
-            if (subscriberCount == 0) {
-                // 最后一个订阅者取消，停止计算
-                stopInterpolation()
-            }
-        }
-    }
-
-    /**
-     * 启动插值计算
-     */
-    private fun startInterpolation() {
-        // 启动 FFT 数据监听
-        fftListenerJob =
-            scope.launch(Dispatchers.Default) {
-                fftProcessor.bands.collect { newBands ->
-                    dataLock.withLock {
-                        // 保存上一帧数据
-                        currentBands.copyInto(lastBands)
-                        // 更新当前数据
-                        newBands.copyInto(currentBands)
-                        // 更新时间间隔
-                        val currentTime = System.currentTimeMillis()
-                        updateInterval = (currentTime - lastUpdateTime).coerceAtLeast(16L)
-                        lastUpdateTime = currentTime
+                val target = fftProcessor.bands.value
+                if (target !== lastFrame) {
+                    // 收到新 FFT 帧：以当前输出为起点，向新数据过渡
+                    lastOutput.copyInto(fromBands)
+                    target.copyInto(toBands)
+                    if (lastFrame != null) {
+                        transitionDuration =
+                            (now - transitionStart)
+                                .coerceIn(MIN_TRANSITION_MS, MAX_TRANSITION_MS)
                     }
+                    transitionStart = now
+                    lastFrame = target
+                }
+
+                val progress =
+                    ((now - transitionStart) / transitionDuration.toFloat()).coerceIn(0f, 1f)
+
+                // 每帧发射全新数组：TextureView 渲染线程等消费方会跨帧持有引用，
+                // 复用缓冲区会被本协程并发改写导致撕裂帧（31 个 float 的分配开销可忽略）
+                val frame = FloatArray(bandCount)
+                for (i in 0 until bandCount) {
+                    frame[i] = fromBands[i] + (toBands[i] - fromBands[i]) * progress
+                }
+                lastOutput = frame
+                emit(frame)
+
+                if (progress >= 1f) {
+                    // 已收敛且暂无新数据：挂起等待下一帧 FFT，避免空转
+                    fftProcessor.bands.first { it !== lastFrame }
+                } else {
+                    delay(FRAME_INTERVAL_MS)
                 }
             }
-
-        // 启动插值任务（60fps）
-        interpolationJob =
-            scope.launch(Dispatchers.Default) {
-                val frameInterval = 8L // 约 60fps
-
-                while (isActive) {
-                    dataLock.withLock {
-                        val currentTime = System.currentTimeMillis()
-                        val safeInterval = updateInterval.coerceAtLeast(16L)
-
-                        // 计算插值进度 (0.0 - 1.0)
-                        val progress =
-                            ((currentTime - lastUpdateTime) / safeInterval.toFloat())
-                                .coerceIn(0f, 1f)
-
-                        // 使用双缓冲复用数组，避免每帧分配新的 FloatArray。
-                        val nextBufferIndex = activeInterpolatedBufferIndex xor 1
-                        val newData = interpolatedBuffers[nextBufferIndex]
-                        for (index in 0 until bandCount) {
-                            newData[index] =
-                                lastBands[index] + (currentBands[index] - lastBands[index]) * progress
-                        }
-                        activeInterpolatedBufferIndex = nextBufferIndex
-
-                        // 更新插值数据
-                        _interpolatedData.value = newData
-                    }
-
-                    delay(frameInterval)
-                }
-            }
-    }
-
-    /**
-     * 停止插值计算
-     */
-    private fun stopInterpolation() {
-        interpolationJob?.cancel()
-        interpolationJob = null
-
-        fftListenerJob?.cancel()
-        fftListenerJob = null
-
-        // 重置数据为全0，并切换缓冲区以保证 StateFlow 发出新引用。
-        interpolatedBuffers.forEach { it.fill(0f) }
-        activeInterpolatedBufferIndex = activeInterpolatedBufferIndex xor 1
-        _interpolatedData.value = interpolatedBuffers[activeInterpolatedBufferIndex]
-    }
-
-    /**
-     * 清理资源
-     */
-    fun dispose() {
-        stopInterpolation()
-    }
+        }.flowOn(Dispatchers.Default)
+            .stateIn(
+                scope,
+                SharingStarted.WhileSubscribed(
+                    stopTimeoutMillis = STOP_TIMEOUT_MS,
+                    // 停止后清除缓存值，重新订阅时从全 0 开始
+                    replayExpirationMillis = 0,
+                ),
+                FloatArray(bandCount),
+            )
 }

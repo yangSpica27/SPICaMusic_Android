@@ -3,19 +3,11 @@ package me.spica27.spicamusic.player.api
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * FFT 频谱分析结果监听器
- */
-fun interface FFTListener {
-    /**
-     * 接收频谱数据
-     * @param bands 31个频段的响度值，范围 0.0 - 1.0
-     */
-    fun onFFTData(bands: FloatArray)
-}
-
-/**
  * FFT 音频处理器接口
  * 实时分析音频频谱数据
+ *
+ * 消费方式：收集 [bands] StateFlow（无监听器注册机制）。
+ * 采样开关由应用前后台生命周期驱动：前台 [enable]，后台 [disable] 以降低功耗。
  */
 interface IFFTProcessor {
     /**
@@ -27,41 +19,39 @@ interface IFFTProcessor {
     val bands: StateFlow<FloatArray>
 
     /**
-     * 是否启用 FFT 分析
+     * 是否启用 FFT 采样分析
      */
     val isEnabled: StateFlow<Boolean>
 
     /**
-     * 启用 FFT 分析
+     * 启用 FFT 采样（应用进入前台时调用）
      */
     fun enable()
 
     /**
-     * 禁用 FFT 分析
+     * 禁用 FFT 采样并清空频谱数据（应用进入后台时调用）
      */
     fun disable()
 
     /**
-     * 添加监听器
-     */
-    fun addListener(listener: FFTListener)
-
-    /**
-     * 移除监听器
-     */
-    fun removeListener(listener: FFTListener)
-
-    /**
      * 处理音频数据
-     * @param audioData PCM 音频数据
+     * @param audioData 交错线性 PCM 音频数据
      * @param sampleRate 采样率
      * @param channelCount 声道数
+     * @param encoding PCM 编码，取值为 androidx.media3.common.C.ENCODING_PCM_*
+     *                 （支持 8/16/24/32-bit 整型与 32-bit 浮点，含大端变体）
      * @param audioDataSize 有效字节数，默认为 audioData.size；传入复用缓冲区时需指定实际大小
      */
-    fun process(audioData: ByteArray, sampleRate: Int, channelCount: Int, audioDataSize: Int = audioData.size)
+    fun process(
+        audioData: ByteArray,
+        sampleRate: Int,
+        channelCount: Int,
+        encoding: Int,
+        audioDataSize: Int = audioData.size,
+    )
 
     /**
-     * 重置处理器状态
+     * 重置处理器状态并清空频谱数据
      */
     fun reset()
 

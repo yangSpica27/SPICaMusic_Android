@@ -89,7 +89,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.navkit.geometry.GeometryTransition
@@ -871,18 +870,8 @@ private fun SeekBarSection(
 ) {
     val seekPosition = seekPositionProvider()
     val realPosition = realPositionProvider()
+    // FFT 插值计算随下方 collectAsStateWithLifecycle 收集自动启停，无需手动订阅/解绑
     val useDynamicWaveform = progressBarStyle == ProgressBarStyle.DynamicWaveform && isAppInForeground
-    LaunchedEffect(useDynamicWaveform, playerViewModel) {
-        if (!useDynamicWaveform) {
-            return@LaunchedEffect
-        }
-        playerViewModel.subscribeFFTDrawData()
-        try {
-            awaitCancellation()
-        } finally {
-            playerViewModel.unsubscribeFFTDrawData()
-        }
-    }
     Column(
         modifier =
             modifier.graphicsLayer {

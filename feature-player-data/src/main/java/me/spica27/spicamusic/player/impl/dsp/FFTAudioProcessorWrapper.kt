@@ -1,9 +1,7 @@
 package me.spica27.spicamusic.player.impl.dsp
 
-import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
-import me.spica27.spicamusic.player.api.IFFTProcessor
 import java.nio.ByteBuffer
 
 /**
@@ -12,7 +10,7 @@ import java.nio.ByteBuffer
  */
 @UnstableApi
 class FFTAudioProcessorWrapper(
-    private val fftProcessor: IFFTProcessor,
+    private val fftProcessor: FFTAudioProcessor,
 ) : AudioProcessor {
 
     private var inputAudioFormat = AudioProcessor.AudioFormat.NOT_SET
@@ -26,8 +24,8 @@ class FFTAudioProcessorWrapper(
     private var audioDataBuffer = ByteArray(0)
 
     override fun configure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
-        // 只处理 16-bit PCM 数据
-        if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
+        // 支持所有线性 PCM 编码（16/24/32-bit 整型及浮点，兼容 Hi-Res 音源）
+        if (!PcmMonoDecoder.isSupported(inputAudioFormat.encoding)) {
             this.inputAudioFormat = AudioProcessor.AudioFormat.NOT_SET
             return AudioProcessor.AudioFormat.NOT_SET
         }
@@ -43,7 +41,9 @@ class FFTAudioProcessorWrapper(
 
     override fun queueInput(inputBuffer: ByteBuffer) {
         // 将音频数据传递给 FFT 处理器进行频谱分析
-        if (isActive && inputBuffer.hasRemaining() && fftProcessor.isEnabled.value) {
+        // isSamplingActive = 应用在前台 && 正在播放：
+        // 后台或暂停（暂停中 seek/切歌仍会预缓冲）时直接透传，不做任何拷贝
+        if (isActive && inputBuffer.hasRemaining() && fftProcessor.isSamplingActive) {
             val position = inputBuffer.position()
             val size = inputBuffer.remaining()
 
@@ -61,6 +61,7 @@ class FFTAudioProcessorWrapper(
                 audioData = audioDataBuffer,
                 sampleRate = inputAudioFormat.sampleRate,
                 channelCount = inputAudioFormat.channelCount,
+                encoding = inputAudioFormat.encoding,
                 audioDataSize = size,
             )
         }

@@ -354,6 +354,12 @@ class SpicaPlayer(
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         this@SpicaPlayer._isPlaying.value = isPlaying
+        // 采样跟随播放状态：暂停时停止采样（暂停中 seek/切歌的管线预缓冲不会被采样）
+        _fftProcessor.setPlaybackActive(isPlaying)
+        if (!isPlaying) {
+            // 暂停/停止时清空频谱数据，可视化平滑归零后插值循环自动挂起
+            _fftProcessor.reset()
+        }
         if (isPlaying) {
             startPlaySession(
                 mediaId = _currentMediaItem.value?.mediaId,

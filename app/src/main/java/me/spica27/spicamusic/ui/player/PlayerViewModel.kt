@@ -26,8 +26,6 @@ import me.spica27.spicamusic.App
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
-import me.spica27.spicamusic.player.api.FFTListener
-import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.utils.extractDominantColorFromUri
@@ -136,7 +134,6 @@ class PlayerViewModel(
 
     init {
         player.init()
-        enableFFT()
     }
 
     // ==================== FFT 插值器 ====================
@@ -145,42 +142,16 @@ class PlayerViewModel(
      * FFT 数据插值器
      * 自动将原始 FFT 数据插值为适合绘制的 60fps 数据
      */
-    private val fftInterpolator = FFTInterpolator(player, player.fftProcessor, viewModelScope)
+    private val fftInterpolator = FFTInterpolator(player.fftProcessor, viewModelScope)
 
     /**
      * 插值后的 FFT 绘制数据 (31个频段, 0.0-1.0)
-     * 适合直接用于 UI 绘制，60fps 平滑更新
+     * 适合直接用于 UI 绘制，约 60fps 平滑更新
      *
-     * 使用方式:
-     * ```
-     * val drawData by playerViewModel.fftDrawData.collectAsState()
-     * FluidMusicBackground(fftBands = drawData)
-     * ```
-     *
-     * 注意: 必须配合 subscribeFFTDrawData() 和 unsubscribeFFTDrawData() 使用
+     * 直接通过 collectAsStateWithLifecycle 收集即可：
+     * 计算随收集自动启停，页面不可见/应用后台时自动停止，无需手动订阅管理。
      */
     val fftDrawData: StateFlow<FloatArray> = fftInterpolator.interpolatedData
-
-    /**
-     * 订阅 FFT 绘制数据
-     * 当页面可见时调用，开始计算插值数据
-     */
-    suspend fun subscribeFFTDrawData() {
-        fftInterpolator.subscribe()
-    }
-
-    /**
-     * 取消订阅 FFT 绘制数据
-     * 当页面不可见时调用，停止计算以节约性能
-     */
-    suspend fun unsubscribeFFTDrawData() {
-        fftInterpolator.unsubscribe()
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        fftInterpolator.dispose()
-    }
 
     /**
      * 播放
@@ -350,55 +321,6 @@ class PlayerViewModel(
      * 判断指定歌曲是否正在播放
      */
     fun isSongPlaying(song: Song): Boolean = song.songId?.let { isItemPlaying(it.toString()) } ?: false
-
-    // ==================== FFT 频谱分析 ====================
-
-    /**
-     * FFT 频谱数据 (31个频段, 0.0-1.0)
-     * 频段: 20, 25, 32, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630,
-     *       800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000,
-     *       12500, 16000, 20000 Hz
-     */
-    val fftBands: StateFlow<FloatArray> = player.fftProcessor.bands
-
-    /**
-     * FFT 是否启用
-     */
-    val fftEnabled: StateFlow<Boolean> = player.fftProcessor.isEnabled
-
-    /**
-     * 启用 FFT 分析
-     */
-    fun enableFFT() {
-        player.fftProcessor.enable()
-    }
-
-    /**
-     * 禁用 FFT 分析
-     */
-    fun disableFFT() {
-        player.fftProcessor.disable()
-    }
-
-    /**
-     * 添加 FFT 监听器
-     * @param listener 频谱数据回调
-     */
-    fun addFFTListener(listener: FFTListener) {
-        player.fftProcessor.addListener(listener)
-    }
-
-    /**
-     * 移除 FFT 监听器
-     */
-    fun removeFFTListener(listener: FFTListener) {
-        player.fftProcessor.removeListener(listener)
-    }
-
-    /**
-     * 获取频段信息
-     */
-    val frequencyBands: FloatArray = IFFTProcessor.FREQUENCY_BANDS
 
     fun getCurrentPositionMs(): Long = player.currentPosition
 

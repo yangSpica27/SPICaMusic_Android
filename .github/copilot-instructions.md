@@ -46,7 +46,7 @@
 - Compose 页面主要在 `app/src/main/java/me/spica27/spicamusic/ui/**`，可复用组件集中在 `app/src/main/java/me/spica27/spicamusic/ui/widget`；不要把业务逻辑塞回 Composable，本仓库默认通过 ViewModel 持有状态与接口依赖。
 - 播放控制共享同一个 Activity 级 `PlayerViewModel`：它在 `AppScaffold` 中通过 `koinActivityViewModel()` 创建，并通过 `LocalPlayerViewModel` 下发给整棵 Compose 树。需要播放器状态或播放操作时，优先复用这个实例，不要在子页面重新创建一个播放器 ViewModel。
 - 播放器里的 `mediaId` 约定上就是 `song.mediaStoreId.toString()`；无论是 `PlayerAction.PlayById`、`AddToNext` 还是 `UpdateList(mediaIds, mediaId)`，都沿用这个映射。新增播放入口时不要引入另一套 ID 规则。
-- 使用 FFT 可视化的页面不要只收集 `fftDrawData`；按现有模式，需要在页面可见时调用 `subscribeFFTDrawData()`，离开时调用 `unsubscribeFFTDrawData()`，否则会额外保留插值计算开销。
+- 使用 FFT 可视化的页面直接通过 `collectAsStateWithLifecycle` 收集 `fftDrawData` 即可：插值计算随收集自动启停（`SharingStarted.WhileSubscribed`），无需手动订阅/解绑；FFT 采样本身由应用前后台生命周期驱动（前台采样、后台停止，见 `App.setupFftLifecycle`）。
 - 设置持久化统一走 `PreferencesManager` 的 DataStore Flow；像 `AudioEffectsViewModel` 这样的页面会先写入偏好，再通过 Flow 收集结果把 EQ/混响应用到播放器，新增设置时优先复用这个模式。
 - `App` 会按应用前后台生命周期启动/停止 `IMusicScanService` 的 MediaStore 监听，这不是某个页面局部逻辑；涉及扫描或库刷新时要考虑生命周期影响。额外/忽略扫描目录持久化在 Room 的 `ScanFolder` 表中，`IMusicScanService.scanFolders(folderPaths)` 已废弃，改用 `scanExtraFolders()`。
 - `SpicaPlayer.createModule(PlaybackService::class.java)` 是 app 与 `feature-player-data` 的接缝点；如果播放器能力改动需要依赖服务类型或 DSP 处理链，优先从这里往两边追踪。

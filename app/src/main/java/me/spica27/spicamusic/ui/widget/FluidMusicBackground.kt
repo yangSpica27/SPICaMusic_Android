@@ -16,7 +16,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
@@ -38,6 +37,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
+import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.settings.SettingsViewModel
 import me.spica27.spicamusic.utils.blurhash.BlurHashTransformationPlugin
@@ -71,31 +71,24 @@ fun FluidMusicBackground(
     val settingsViewModel: SettingsViewModel = koinViewModel()
     val modeValue by settingsViewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
     val backgroundMode = remember(modeValue) { DynamicSpectrumBackground.fromString(modeValue) }
-    val scope = rememberCoroutineScope()
 
+    // 只有真正消费 FFT 数据的动态模式才收集；OFF 和纯静态的 BlurCover 不收集，
+    // 避免驱动无意义的插值计算与每帧重组
     val enable =
         remember(backgroundMode) {
-            backgroundMode != DynamicSpectrumBackground.OFF
+            backgroundMode != DynamicSpectrumBackground.OFF &&
+                backgroundMode != DynamicSpectrumBackground.BlurCover
         }
 
-    DisposableEffect(backgroundMode) {
-        scope.launch {
-            if (enable) {
-                Timber.tag("FluidMusicBackground").d("Subscribing to FFT data for mode: $backgroundMode")
-                playerViewModel.subscribeFFTDrawData()
-            }
+    // FFT 插值计算随收集自动启停（WhileSubscribed），无需手动订阅/解绑；
+    // 动态背景关闭时不收集，插值循环不会运行
+    val fftSnapshot =
+        if (enable) {
+            val fftDrawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
+            fftDrawData
+        } else {
+            remember { FloatArray(IFFTProcessor.BAND_COUNT) }
         }
-        onDispose {
-            // 组件销毁时取消订阅
-            scope.launch {
-                Timber.tag("FluidMusicBackground").d("Unsubscribing from FFT data for mode: $backgroundMode")
-                playerViewModel.unsubscribeFFTDrawData()
-            }
-        }
-    }
-
-    val fftDrawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
-    val fftSnapshot = if (enable) fftDrawData else FloatArray(fftDrawData.size)
     val surfaceColor = MaterialTheme.colorScheme.surface
     when (backgroundMode) {
         DynamicSpectrumBackground.TopGlow ->

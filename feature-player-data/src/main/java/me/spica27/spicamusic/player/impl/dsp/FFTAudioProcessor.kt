@@ -10,10 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.player.api.FFTListener
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import timber.log.Timber
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -25,6 +23,16 @@ import kotlin.math.sqrt
  * FFT 音频处理器实现
  * 使用 TarsosDSP 进行实时傅里叶变换，分析 31 个频段的响度
  * 使用独立线程异步处理，避免阻塞音频流
+ *
+ * 高采样率（>48kHz，如 Hi-Res 88.2/96/176.4/192kHz）音源会先做整数倍
+ * 均值抽取，将有效采样率压回 ≤48kHz：既保证 4096 点 FFT 的低频分辨率
+ * （避免 20-40Hz 频段落入直流 bin 产生异常数据），也等比例降低计算量。
+ *
+ * 结果通过 [bands] StateFlow 发布，无监听器注册机制。
+ * 实际采样需同时满足两个条件（见 [isSamplingActive]）：
+ * - 应用在前台：由前后台生命周期通过 [enable]/[disable] 驱动；
+ * - 正在播放：由播放器通过 [setPlaybackActive] 驱动
+ *   （暂停时 ExoPlayer 仍会向管线预缓冲数据，不应采样）。
  */
 class FFTAudioProcessor : IFFTProcessor {
 
@@ -39,28 +47,65 @@ class FFTAudioProcessor : IFFTProcessor {
 
         // 最大分贝值
         private const val MAX_DB = 60f
-    }
 
-    private val listeners = CopyOnWriteArrayList<FFTListener>()
+        // 抽取后的最大有效采样率：44.1/48kHz 原样处理，Hi-Res 按整数倍抽取
+        private const val MAX_EFFECTIVE_SAMPLE_RATE = 48000
+    }
 
     private val _bands = MutableStateFlow(FloatArray(IFFTProcessor.BAND_COUNT))
     override val bands: StateFlow<FloatArray> = _bands.asStateFlow()
 
-    private val _isEnabled = MutableStateFlow(true)
+    // 默认关闭：应用进入前台后由生命周期观察者调用 enable() 开启，
+    // 避免进程在后台被拉起（如媒体恢复播放）时白白采样耗电
+    private val _isEnabled = MutableStateFlow(false)
     override val isEnabled: StateFlow<Boolean> = _isEnabled.asStateFlow()
+
+    // 播放状态门控：暂停时 ExoPlayer 仍会通过管线预缓冲音频（暂停中 seek/切歌
+    // 会预填充约 250ms 数据），不加此门控这些数据会推翻暂停时的清零
+    @Volatile
+    private var isPlaybackActive = false
+
+    /**
+     * 当前是否实际采样（应用在前台且正在播放）
+     * 供包装器在拷贝音频数据前快速判断，避免无谓拷贝
+     */
+    val isSamplingActive: Boolean
+        get() = _isEnabled.value && isPlaybackActive
+
+    /**
+     * 播放状态变化时由播放器调用；暂停/停止时停止采样
+     */
+    fun setPlaybackActive(active: Boolean) {
+        isPlaybackActive = active
+    }
 
     private val stateLock = Any()
 
-    // FFT 实例 (延迟初始化)
-    private var fft: FFT? = null
-    private var currentSampleRate = 44100
+    // FFT 实例与采样率无关，仅取决于窗口大小，全程复用
+    private val fft = FFT(FFT_SIZE, HammingWindow())
 
-    // 音频缓冲区
+    // ==== 以下采样缓冲状态由音频线程（process 调用方）独占读写 ====
+    // reset() 不直接触碰这些字段（避免跨线程数据竞争），而是递增
+    // processingGeneration，由音频线程在下次 process() 时检测到代际变化后自行清零
+
+    // 输入采样率与抽取参数
+    private var inputSampleRate = 44100
+    private var decimationFactor = 1
+    private var effectiveSampleRate = 44100
+
+    // 抽取分组的跨调用累计状态
+    private var decimAccum = 0f
+    private var decimCount = 0
+
+    // 音频缓冲区（抽取后的单声道样本环形填充）
     private val audioBuffer = FloatArray(FFT_SIZE)
     private var bufferIndex = 0
 
+    // 音频线程最后一次观察到的 reset 代际
+    private var lastSeenGeneration = 0
+
     // 预分配复用缓冲区，避免热路径中重复分配 FloatArray
-    // 用于 bytesToFloats 的转换输出（最大可容纳一次 process 调用的样本数）
+    // 用于 PCM 解码的转换输出（最大可容纳一次 process 调用的样本数）
     private var convertBuffer = FloatArray(FFT_SIZE)
 
     // 用于传递给 performFFT 的独立拷贝（防止 audioBuffer 被下次 process 覆盖）
@@ -116,14 +161,6 @@ class FFTAudioProcessor : IFFTProcessor {
         fftExecutor.shutdown()
     }
 
-    override fun addListener(listener: FFTListener) {
-        listeners.add(listener)
-    }
-
-    override fun removeListener(listener: FFTListener) {
-        listeners.remove(listener)
-    }
-
     /**
      * 处理音频数据
      * 如果正在处理FFT，丢弃当前音频数据，避免阻塞
@@ -132,31 +169,75 @@ class FFTAudioProcessor : IFFTProcessor {
         audioData: ByteArray,
         sampleRate: Int,
         channelCount: Int,
+        encoding: Int,
         audioDataSize: Int
     ) {
+        if (!isSamplingActive) {
+            return
+        }
+
         // 如果正在处理FFT，丢弃当前音频数据，避免阻塞
         if (isProcessing.get()) {
             return
         }
 
-        // 更新采样率
-        if (sampleRate != currentSampleRate) {
-            currentSampleRate = sampleRate
-            fft = FFT(FFT_SIZE, HammingWindow())
+        val bytesPerSample = PcmMonoDecoder.bytesPerSample(encoding)
+        if (bytesPerSample == 0 || channelCount <= 0 || sampleRate <= 0) {
+            return
         }
 
-        val fftInstance = fft ?: FFT(FFT_SIZE, HammingWindow()).also { fft = it }
-
-        // 将字节数组转换为浮点数组 (16-bit PCM)，复用 convertBuffer 避免分配
-        val sampleCount = audioDataSize / 2 / channelCount
-        if (convertBuffer.size < sampleCount) {
-            convertBuffer = FloatArray(sampleCount)
+        // 在填充数据之前读取代际快照：
+        // 1. 检测到 reset() 发生过时，先清空本线程独占的采样缓冲状态；
+        // 2. 快照传给 FFT 任务，发布前在 stateLock 下复验，保证本次调用期间
+        //    发生的 reset 一定能使过期频谱的发布失败（不会覆盖刚清零的 bands）
+        val generation = processingGeneration.get()
+        if (generation != lastSeenGeneration) {
+            lastSeenGeneration = generation
+            bufferIndex = 0
+            decimAccum = 0f
+            decimCount = 0
         }
-        bytesToFloats(audioData, channelCount, convertBuffer, sampleCount)
 
-        // 填充缓冲区
+        // 采样率变化时更新抽取参数并重置累计状态
+        if (sampleRate != inputSampleRate || decimationFactor == 0) {
+            inputSampleRate = sampleRate
+            decimationFactor = ((sampleRate + MAX_EFFECTIVE_SAMPLE_RATE - 1) / MAX_EFFECTIVE_SAMPLE_RATE)
+                .coerceAtLeast(1)
+            effectiveSampleRate = sampleRate / decimationFactor
+            decimAccum = 0f
+            decimCount = 0
+            bufferIndex = 0
+        }
+
+        // 解码第一个声道为浮点样本，复用 convertBuffer 避免分配
+        val maxSampleCount = audioDataSize / (bytesPerSample * channelCount)
+        if (maxSampleCount <= 0) {
+            return
+        }
+        if (convertBuffer.size < maxSampleCount) {
+            convertBuffer = FloatArray(maxSampleCount)
+        }
+        val sampleCount = PcmMonoDecoder.decodeFirstChannel(
+            data = audioData,
+            sizeBytes = audioDataSize,
+            channelCount = channelCount,
+            encoding = encoding,
+            out = convertBuffer,
+        )
+
+        // 均值抽取后填充缓冲区
+        val factor = decimationFactor
         for (i in 0 until sampleCount) {
-            audioBuffer[bufferIndex] = convertBuffer[i]
+            decimAccum += convertBuffer[i]
+            decimCount++
+            if (decimCount < factor) {
+                continue
+            }
+            val sample = decimAccum / factor
+            decimAccum = 0f
+            decimCount = 0
+
+            audioBuffer[bufferIndex] = sample
             bufferIndex++
 
             // 缓冲区满时异步执行 FFT 分析
@@ -166,14 +247,14 @@ class FFTAudioProcessor : IFFTProcessor {
                 // 将 audioBuffer 拷贝到 processBuffer，避免异步执行时被主路径覆盖
                 if (isProcessing.compareAndSet(false, true)) {
                     audioBuffer.copyInto(processBuffer)
-                    val generation = processingGeneration.get()
-                    val fftSampleRate = currentSampleRate
+                    // 使用 process() 入口处的代际快照（而非此刻重读），
+                    // 本次调用期间发生的 reset 会使发布校验失败
+                    val fftSampleRate = effectiveSampleRate
                     // 在独立线程中异步处理FFT
                     fftScope.launch {
                         try {
                             performFFT(
                                 fftData = processBuffer,
-                                fftInstance = fftInstance,
                                 sampleRate = fftSampleRate,
                                 generation = generation,
                             )
@@ -191,9 +272,9 @@ class FFTAudioProcessor : IFFTProcessor {
 
     override fun reset() {
         synchronized(stateLock) {
+            // 递增代际：使在途 FFT 任务的发布校验失败；采样缓冲状态由音频线程
+            // 在下次 process() 时检测到代际变化后自行清空（不跨线程写共享字段）
             processingGeneration.incrementAndGet()
-            bufferIndex = 0
-            audioBuffer.fill(0f)
             _bands.value = FloatArray(IFFTProcessor.BAND_COUNT)
         }
     }
@@ -202,18 +283,16 @@ class FFTAudioProcessor : IFFTProcessor {
      * 执行 FFT 分析（在独立线程中执行）
      * 所有中间缓冲区均为预分配字段，零堆分配热路径。
      * @param fftData 已填充的音频数据
-     * @param fftInstance 本次任务使用的 FFT 实例快照
-     * @param sampleRate 本次任务对应的采样率快照
+     * @param sampleRate 本次任务对应的有效采样率快照（抽取后）
      * @param generation 本次任务启动时的 reset 代际
      */
     private fun performFFT(
         fftData: FloatArray,
-        fftInstance: FFT,
         sampleRate: Int,
         generation: Int,
     ) {
         // 执行 FFT
-        fftInstance.forwardTransform(fftData)
+        fft.forwardTransform(fftData)
 
         // 计算频谱幅度（复用预分配的 magnitudesBuffer，零分配）
         for (i in 0 until FFT_SIZE / 2) {
@@ -225,34 +304,19 @@ class FFTAudioProcessor : IFFTProcessor {
         // 映射到 31 个频段（结果写入 bandValuesBuffer，零分配）
         mapToBands(magnitudesBuffer, sampleRate, bandValuesBuffer)
 
-        val result =
-            synchronized(stateLock) {
-                if (generation != processingGeneration.get()) {
-                    return
-                }
-
-                // 双缓冲：切换到下一个结果缓冲区，避免外部持有引用时被覆盖
-                val nextIndex = activeBandResultIndex xor 1
-                val nextResult = bandResultBuffers[nextIndex]
-                bandValuesBuffer.copyInto(nextResult)
-                activeBandResultIndex = nextIndex
-
-                // 更新状态（发出已复制的缓冲区引用，零额外分配）
-                _bands.value = nextResult
-                nextResult
+        synchronized(stateLock) {
+            if (generation != processingGeneration.get()) {
+                return
             }
 
-        if (generation != processingGeneration.get()) {
-            return
-        }
+            // 双缓冲：切换到下一个结果缓冲区，避免外部持有引用时被覆盖
+            val nextIndex = activeBandResultIndex xor 1
+            val nextResult = bandResultBuffers[nextIndex]
+            bandValuesBuffer.copyInto(nextResult)
+            activeBandResultIndex = nextIndex
 
-        // 通知监听器
-        for (listener in listeners) {
-            try {
-                listener.onFFTData(result)
-            } catch (e: Exception) {
-                Timber.e(e, "FFT listener error")
-            }
+            // 更新状态（发出已复制的缓冲区引用，零额外分配）
+            _bands.value = nextResult
         }
     }
 
@@ -261,6 +325,7 @@ class FFTAudioProcessor : IFFTProcessor {
      */
     private fun mapToBands(magnitudes: FloatArray, sampleRate: Int, result: FloatArray) {
         val frequencyResolution = sampleRate.toFloat() / FFT_SIZE
+        val nyquist = sampleRate / 2f
 
         for (bandIndex in 0 until IFFTProcessor.BAND_COUNT) {
             val centerFreq = IFFTProcessor.FREQUENCY_BANDS[bandIndex]
@@ -278,9 +343,16 @@ class FFTAudioProcessor : IFFTProcessor {
                 sqrt(centerFreq * IFFTProcessor.FREQUENCY_BANDS[bandIndex + 1])
             }
 
-            // 计算 FFT bin 范围
-            val lowBin = max(0, (lowFreq / frequencyResolution).toInt())
-            val highBin = min(magnitudes.size - 1, (highFreq / frequencyResolution).toInt())
+            // 超出奈奎斯特频率的频段无有效数据（低采样率音源）
+            if (lowFreq >= nyquist) {
+                result[bandIndex] = 0f
+                continue
+            }
+
+            // 计算 FFT bin 范围；跳过 bin 0（直流分量），避免直流偏置污染低频段
+            val lowBin = max(1, (lowFreq / frequencyResolution).toInt())
+            val highBin = (min(highFreq, nyquist) / frequencyResolution).toInt()
+                .coerceIn(lowBin, magnitudes.size - 1)
 
             // 计算该频段的平均能量
             var sum = 0f
@@ -302,36 +374,6 @@ class FFTAudioProcessor : IFFTProcessor {
             // 归一化到 0-1 范围
             val normalized = (db - MIN_DB) / (MAX_DB - MIN_DB)
             result[bandIndex] = max(0f, min(1f, normalized))
-        }
-
-        return
-    }
-
-    /**
-     * 将 PCM 字节数组转换为浮点数组，结果写入 out（复用，不分配新数组）
-     * @param data 16-bit PCM 数据
-     * @param channelCount 声道数
-     * @param out 输出目标数组
-     * @param sampleCount 有效样本数
-     */
-    private fun bytesToFloats(
-        data: ByteArray,
-        channelCount: Int,
-        out: FloatArray,
-        sampleCount: Int
-    ) {
-        var byteIndex = 0
-        for (i in 0 until sampleCount) {
-            // 读取第一个声道的样本 (16-bit little-endian)
-            val low = data[byteIndex].toInt() and 0xFF
-            val high = data[byteIndex + 1].toInt()
-            val sample = (high shl 8) or low
-
-            // 归一化到 -1.0 到 1.0
-            out[i] = sample / 32768f
-
-            // 跳过其他声道
-            byteIndex += 2 * channelCount
         }
     }
 }
