@@ -352,8 +352,15 @@ class SongRepositoryImpl(
             pagingData.map { Artist(name = it.name, songCount = it.songCount, coverAlbumId = it.coverAlbumId) }
         }
 
-    override suspend fun updateSongWaveform(mediaId: Long, waveformData: String) {
+    override suspend fun updateSongWaveform(mediaId: Long, waveformData: String) = withContext(Dispatchers.IO) {
         songDao.updateWaveformDataByMediaStoreId(mediaId, waveformData)
+    }
+
+    override suspend fun updateSongIgnoreStatus(
+        mediaStoreId: Long,
+        isIgnore: Boolean
+    )= withContext(Dispatchers.IO) {
+        songDao.ignoreByMediaStoreId(mediaStoreId, isIgnore)
     }
 
 }

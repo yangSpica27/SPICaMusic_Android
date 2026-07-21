@@ -261,4 +261,9 @@ interface ISongRepository {
      * 更新歌曲的波形信息
      */
     suspend fun updateSongWaveform(mediaId: Long, waveformData: String)
+
+    /**
+     * 更新歌曲的ignore状态
+     */
+    suspend fun updateSongIgnoreStatus(mediaStoreId: Long, isIgnore: Boolean)
 }

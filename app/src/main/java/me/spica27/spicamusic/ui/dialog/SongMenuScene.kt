@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.SportsMartialArts
@@ -44,6 +45,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +58,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -99,6 +103,14 @@ class SongMenuScene(
 
         var showPlaylistDialog by remember { mutableStateOf(false) }
         var showCreatePlaylistDialog by remember { mutableStateOf(false) }
+
+        val keyboardController = LocalSoftwareKeyboardController.current
+        val focusManager = LocalFocusManager.current
+
+        SideEffect {
+            keyboardController?.hide()
+            focusManager.clearFocus()
+        }
 
         fun closeMenu() {
             path.pop(scene)
@@ -168,6 +180,10 @@ class SongMenuScene(
                     onOpenSongInfo = {
                         closeAndNavigate { path.push(SongInfoScene(song)) }
                     },
+                    onIgnoreSong = {
+                        viewModel.ignoreSong()
+                        closeMenu()
+                    },
                 )
             }
         }
@@ -222,6 +238,7 @@ private fun SongMenuContent(
     onOpenAlbum: () -> Unit,
     onOpenArtist: () -> Unit,
     onOpenSongInfo: () -> Unit,
+    onIgnoreSong: () -> Unit,
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -334,7 +351,14 @@ private fun SongMenuContent(
                     iconTint = MaterialTheme.colorScheme.secondary,
                 )
                 ControlButton(
-                    title = if (isLiked) stringResource(R.string.remove_from_favorites) else stringResource(R.string.favorite),
+                    title =
+                        if (isLiked) {
+                            stringResource(R.string.remove_from_favorites)
+                        } else {
+                            stringResource(
+                                R.string.favorite,
+                            )
+                        },
                     icon = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     modifier = Modifier.weight(1f),
                     onClick = onToggleLike,
@@ -361,6 +385,12 @@ private fun SongMenuContent(
                 subtitle = stringResource(R.string.add_to_playlist_subtitle_menu),
                 icon = Icons.AutoMirrored.Default.PlaylistAdd,
                 onClick = onShowPlaylistDialog,
+            )
+            ControlItem(
+                title = stringResource(R.string.title_add_to_ignore_list),
+                subtitle = stringResource(R.string.desc_add_to_ignore_list),
+                icon = Icons.Default.MusicOff,
+                onClick = onIgnoreSong,
             )
             ControlItem(
                 title = stringResource(R.string.view_album),

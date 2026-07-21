@@ -115,6 +115,7 @@
   <string name="title_remove_from_ignore_list">从忽略清单移除</string>
   <string name="sure_remove_from_ignore_list">确认从忽略清单中移除吗？</string>
   <string name="title_add_to_ignore_list">添加到忽略清单</string>
+  <string name="desc_add_to_ignore_list">添加到忽略清單後，將不再出現在搜索結果和數據流中</string>
   <string name="start_scanner">开始扫描</string>
   <string name="stop_scanner">停止扫描</string>
   <string name="is_scanner">正在扫描</string>

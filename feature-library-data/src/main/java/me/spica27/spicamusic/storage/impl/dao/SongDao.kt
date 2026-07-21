@@ -217,6 +217,10 @@ interface SongDao {
     @Query("UPDATE song SET isIgnore = :isIgnore WHERE songId == :id")
     fun ignore(id: Long, isIgnore: Boolean)
 
+
+    @Query("UPDATE song SET isIgnore = :isIgnore WHERE mediaStoreId == :mediaStoreId")
+    fun ignoreByMediaStoreId(mediaStoreId: Long, isIgnore: Boolean)
+
     @Query("UPDATE song SET isIgnore = :isIgnore WHERE songId IN (:ids)")
     fun ignoreSongs(ids: List<Long>,isIgnore: Boolean)
 

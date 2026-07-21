@@ -133,6 +133,7 @@
   <string name="add_to_now_playing_list">Add To Now Playing List</string>
   <string name="add_to_playlist">Add To Playlist</string>
   <string name="remove_from_playlist">Remove From Playlist</string>
+  <string name="desc_add_to_ignore_list">After adding to the ignore list, it will no longer appear in search results and data streams</string>
   <string name="add_to_ignore_list">Add To Ignore List</string>
   <string name="copy_success">Copy Success</string>
   <string name="title_dialog_lrc_ui_setting">Lyrics UI Setting</string>

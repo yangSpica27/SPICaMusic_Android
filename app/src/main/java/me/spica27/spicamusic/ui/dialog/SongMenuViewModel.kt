@@ -97,6 +97,12 @@ class SongMenuViewModel(
         }
     }
 
+    fun ignoreSong() {
+        viewModelScope.launch {
+            songRepository.updateSongIgnoreStatus(song.mediaStoreId, true)
+        }
+    }
+
     fun addToPlaylist(playlistId: Long) {
         viewModelScope.launch {
             playlistRepository.addSongToPlaylist(playlistId, song.mediaStoreId)
