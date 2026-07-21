@@ -21,6 +21,11 @@ sealed class DynamicSpectrumBackground(
         "流体效果",
     )
 
+    object FluidWarp : DynamicSpectrumBackground(
+        "fluid_warp",
+        "动态流体封面",
+    )
+
     object BlurCover : DynamicSpectrumBackground(
         "blur_cover",
         "模糊封面",
@@ -37,6 +42,7 @@ sealed class DynamicSpectrumBackground(
             is TopGlow -> "顶部流光"
             is LiquidAurora -> "液态极光"
             is EffectShader -> "流体效果"
+            is FluidWarp -> "动态流体封面"
             is BlurCover -> "模糊封面"
             is OFF -> "关闭"
         }
@@ -48,6 +54,7 @@ sealed class DynamicSpectrumBackground(
                 TopGlow.value -> TopGlow
                 LiquidAurora.value -> LiquidAurora
                 EffectShader.value -> EffectShader
+                FluidWarp.value -> FluidWarp
                 BlurCover.value -> BlurCover
                 OFF.value -> OFF
                 else -> OFF
@@ -55,7 +62,7 @@ sealed class DynamicSpectrumBackground(
         }
 
         val presets: List<DynamicSpectrumBackground>
-            get() = listOf(TopGlow, LiquidAurora, EffectShader, BlurCover, OFF)
+            get() = listOf(TopGlow, LiquidAurora, EffectShader, FluidWarp, BlurCover, OFF)
     }
 
 }

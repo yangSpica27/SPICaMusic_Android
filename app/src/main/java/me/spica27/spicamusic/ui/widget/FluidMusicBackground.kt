@@ -115,6 +115,16 @@ fun FluidMusicBackground(
             )
         }
 
+        DynamicSpectrumBackground.FluidWarp -> {
+            FluidWarpBackground(
+                modifier = modifier,
+                coverColor = coverColor,
+                fftDrawData = fftSnapshot,
+                isDarkMode = isDarkMode,
+                coverUri = coverUri,
+            )
+        }
+
         DynamicSpectrumBackground.OFF ->
             Box(modifier = modifier)
 
