@@ -51,11 +51,13 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOff
+import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.HorizontalDivider
@@ -98,6 +100,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.feature.library.domain.ScanFolder
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
+import me.spica27.spicamusic.ui.ignoredsongs.IgnoredSongsScene
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
@@ -141,6 +144,7 @@ fun LibraryPage() {
     val weeklyStats by viewModel.weeklyStats.collectAsStateWithLifecycle()
     val extraFolders by viewModel.extraFolders.collectAsStateWithLifecycle()
     val ignoreFolders by viewModel.ignoreFolders.collectAsStateWithLifecycle()
+    val ignoredSongsCount by viewModel.ignoredSongsCount.collectAsStateWithLifecycle()
 
     // weeklyStats 只在 VM init 拉取一次，进程长驻后会陈旧；每次进入页面刷新
     LaunchedEffect(Unit) { viewModel.refreshWeeklyStats() }
@@ -453,6 +457,26 @@ fun LibraryPage() {
                             ),
                     )
                 }
+            }
+
+            item(key = "ignored_songs_entry", span = { GridItemSpan(maxLineSpan) }, contentType = "ignored_songs_entry") {
+                IgnoredSongsEntryRow(
+                    count = ignoredSongsCount,
+                    onClick = { path.push(IgnoredSongsScene()) },
+                    modifier =
+                        Modifier
+                            .padding(top = Spacing.Small)
+                            .animateItem(
+                                fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                placementSpec =
+                                    spring(
+                                        dampingRatio = Spring.DampingRatioLowBouncy,
+                                        stiffness = Spring.StiffnessMediumLow,
+                                        visibilityThreshold = IntOffset.VisibilityThreshold,
+                                    ),
+                                fadeOutSpec = tween(durationMillis = 160),
+                            ),
+                )
             }
         }
 
@@ -1127,6 +1151,70 @@ private fun FolderRow(
                 modifier = Modifier.size(18.dp),
             )
         }
+    }
+}
+
+/**
+ * 已忽略歌曲
+ */
+@Composable
+private fun IgnoredSongsEntryRow(
+    count: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val badgeColor = MaterialTheme.colorScheme.primary
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(Shapes.ExtraLargeCornerBasedShape)
+                .clickHighlight(onClick = onClick)
+                .padding(horizontal = Spacing.Small, vertical = Spacing.Small),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(badgeColor.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.MusicOff,
+                contentDescription = null,
+                tint = badgeColor,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.setting_ignore_music),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = stringResource(R.string.songs_count, count),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp),
+        )
     }
 }
 

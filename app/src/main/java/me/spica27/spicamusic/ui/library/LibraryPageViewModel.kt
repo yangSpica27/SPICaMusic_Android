@@ -19,6 +19,7 @@ import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.ScanFolder
 import me.spica27.spicamusic.feature.library.domain.ScanFolderUseCases
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
 
 @Stable
@@ -26,6 +27,7 @@ class LibraryPageViewModel(
     private val playlistRepositoryImpl: PlaylistUseCases,
     private val historyRepository: PlayHistoryUseCases,
     private val scanFolderUseCases: ScanFolderUseCases,
+    private val songRepository: SongUseCases,
 ) : ViewModel() {
     val playlists =
         playlistRepositoryImpl.getAllPlaylistsFlow().stateIn(
@@ -74,6 +76,17 @@ class LibraryPageViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList(),
         )
+
+    /** 已忽略歌曲数量 */
+    val ignoredSongsCount: StateFlow<Int> =
+        songRepository
+            .getIgnoredSongsCountFlow()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = 0,
+            )
+
     private val _weeklyStats = MutableStateFlow<PlayStats?>(null)
     val weeklyStats: StateFlow<PlayStats?> = _weeklyStats.asStateFlow()
 

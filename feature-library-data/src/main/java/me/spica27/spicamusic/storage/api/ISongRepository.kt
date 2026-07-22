@@ -124,6 +124,11 @@ interface ISongRepository {
     fun getIgnoreSongsFlow(): Flow<List<Song>>
 
     /**
+     * 获取被忽略的歌曲数量 Flow（仅计数，不物化整行）
+     */
+    fun getIgnoredSongsCountFlow(): Flow<Int>
+
+    /**
      * 获取歌曲列表（支持排序和筛选）
      * @param sortOrder 排序方式
      * @param filter 筛选条件
@@ -227,6 +232,13 @@ interface ISongRepository {
      * 隐藏歌曲（将歌曲标记为隐藏，通常用于删除或忽略）
      */
     suspend fun ignoreSongs(ids: List<Long>, ignore: Boolean = true)
+
+    /**
+     * 批量按 MediaStore ID 设置歌曲忽略状态
+     * @param mediaStoreIds 歌曲的 MediaStore ID 列表
+     * @param ignore 是否忽略
+     */
+    suspend fun ignoreSongsByMediaStoreIds(mediaStoreIds: List<Long>, ignore: Boolean = true)
 
     // ===== 收藏歌曲分页 API =====
 

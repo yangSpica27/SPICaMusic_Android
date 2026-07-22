@@ -24,6 +24,7 @@ import me.spica27.spicamusic.ui.audioeffects.AudioEffectsViewModel
 import me.spica27.spicamusic.ui.dialog.SongMenuViewModel
 import me.spica27.spicamusic.ui.favorite.FavoriteViewModel
 import me.spica27.spicamusic.ui.home.HomeViewModel
+import me.spica27.spicamusic.ui.ignoredsongs.IgnoredSongsViewModel
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.listeningstats.ListeningStatsViewModel
 import me.spica27.spicamusic.ui.mostedplayed.MostPlayedViewModel
@@ -191,6 +192,7 @@ object AppModule {
                     playlistRepositoryImpl = get<PlaylistUseCases>(),
                     historyRepository = get<PlayHistoryUseCases>(),
                     scanFolderUseCases = get<ScanFolderUseCases>(),
+                    songRepository = get<SongUseCases>(),
                 )
             }
 
@@ -251,6 +253,13 @@ object AppModule {
                     songRepository = get<SongUseCases>(),
                     player = get<PlayerUseCases>(),
                     playlistRepository = get<PlaylistUseCases>(),
+                )
+            }
+
+            // 已忽略歌曲管理页面 ViewModel
+            viewModel {
+                IgnoredSongsViewModel(
+                    songRepository = get<SongUseCases>(),
                 )
             }
         }

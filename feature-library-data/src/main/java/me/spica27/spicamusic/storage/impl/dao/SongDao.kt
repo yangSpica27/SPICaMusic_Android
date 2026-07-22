@@ -211,6 +211,9 @@ interface SongDao {
     @Query("SELECT * FROM song WHERE isIgnore == 1")
     fun getIgnoreSongsFlow(): Flow<List<SongEntity>>
 
+    @Query("SELECT COUNT(*) FROM song WHERE isIgnore == 1")
+    fun getIgnoredSongsCountFlow(): Flow<Int>
+
     @Query("SELECT * FROM song WHERE isIgnore == 1")
     fun getIgnoreSongs(): List<SongEntity>
 
@@ -223,6 +226,9 @@ interface SongDao {
 
     @Query("UPDATE song SET isIgnore = :isIgnore WHERE songId IN (:ids)")
     fun ignoreSongs(ids: List<Long>,isIgnore: Boolean)
+
+    @Query("UPDATE song SET isIgnore = :isIgnore WHERE mediaStoreId IN (:mediaStoreIds)")
+    fun ignoreSongsByMediaStoreIds(mediaStoreIds: List<Long>, isIgnore: Boolean)
 
     /**
      * 搜索歌曲（关键词匹配）

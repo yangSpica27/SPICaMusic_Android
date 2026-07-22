@@ -136,6 +136,12 @@
   <string name="add_to_playlist">添加到歌单</string>
   <string name="remove_from_playlist">从歌单中移除</string>
   <string name="add_to_ignore_list">添加到忽略清单</string>
+  <string name="ignored_songs_count_total">已忽略 %d 首</string>
+  <string name="ignored_songs_count_found">找到 %d 首</string>
+  <string name="ignored_songs_empty_title">没有已忽略的歌曲</string>
+  <string name="ignored_songs_empty_subtitle">从歌曲菜单「添加到忽略清单」的歌曲会出现在这里。</string>
+  <string name="ignored_songs_search_empty">没有匹配的已忽略歌曲</string>
+  <string name="ignored_songs_search_hint">搜索已忽略的歌曲</string>
   <string name="copy_success">复制成功</string>
   <string name="title_dialog_lrc_ui_setting">歌词显示设置</string>
   <string name="lrc_setting_font_size">字号 %s</string>

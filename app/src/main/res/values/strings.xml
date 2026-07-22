@@ -135,6 +135,12 @@
   <string name="remove_from_playlist">Remove From Playlist</string>
   <string name="desc_add_to_ignore_list">After adding to the ignore list, it will no longer appear in search results and data streams</string>
   <string name="add_to_ignore_list">Add To Ignore List</string>
+  <string name="ignored_songs_count_total">%d songs ignored</string>
+  <string name="ignored_songs_count_found">Found %d songs</string>
+  <string name="ignored_songs_empty_title">No ignored songs</string>
+  <string name="ignored_songs_empty_subtitle">Songs you ignore from the song menu will show up here.</string>
+  <string name="ignored_songs_search_empty">No matching ignored songs</string>
+  <string name="ignored_songs_search_hint">Search ignored songs</string>
   <string name="copy_success">Copy Success</string>
   <string name="title_dialog_lrc_ui_setting">Lyrics UI Setting</string>
   <string name="lrc_setting_font_size">Font Size %s</string>

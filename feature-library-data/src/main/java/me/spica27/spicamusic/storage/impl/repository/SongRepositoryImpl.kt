@@ -113,6 +113,9 @@ class SongRepositoryImpl(
         songDao.getIgnoreSongsFlow().distinctUntilChanged()
             .map { list -> list.map { it.toCommon() } }
 
+    override fun getIgnoredSongsCountFlow(): Flow<Int> =
+        songDao.getIgnoredSongsCountFlow().distinctUntilChanged()
+
     override fun getSongsFlow(sortOrder: SongSortOrder, filter: SongFilter): Flow<List<Song>> {
         val keyword = filter.keyword
         return if (keyword.isNullOrEmpty()) {
@@ -312,6 +315,16 @@ class SongRepositoryImpl(
         withContext(Dispatchers.IO) {
             songDao.ignoreSongs(ids, ignore)
         }
+
+    override suspend fun ignoreSongsByMediaStoreIds(
+        mediaStoreIds: List<Long>,
+        ignore: Boolean,
+    ) = withContext(Dispatchers.IO) {
+        // Room IN 参数上限 999，分批更新
+        mediaStoreIds.chunked(500).forEach { chunk ->
+            songDao.ignoreSongsByMediaStoreIds(chunk, ignore)
+        }
+    }
 
     // ===== 收藏歌曲分页 API 实现 =====
 
