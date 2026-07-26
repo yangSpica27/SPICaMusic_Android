@@ -92,6 +92,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
 import me.spica27.spicamusic.ui.artistdetail.ArtistDetailScene
@@ -890,6 +891,7 @@ private fun MusicSongRow(
         )
         AudioCover(
             uri = song.getCoverUri(),
+            fallbackUri = song.getAlbumCoverUri(),
             modifier =
                 Modifier
                     .size(56.dp)

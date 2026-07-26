@@ -8,6 +8,7 @@ import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IPlayHistoryRepository
 import me.spica27.spicamusic.storage.api.IPlaylistRepository
 import me.spica27.spicamusic.storage.api.IScanFolderRepository
+import me.spica27.spicamusic.storage.api.IScanRulesRepository
 import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.storage.impl.db.AppDatabase
 import me.spica27.spicamusic.storage.impl.repository.AlbumRepositoryImpl
@@ -15,6 +16,7 @@ import me.spica27.spicamusic.storage.impl.repository.LyricRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.PlayHistoryRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.PlaylistRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.ScanFolderRepositoryImpl
+import me.spica27.spicamusic.storage.impl.repository.ScanRulesRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.SongRepositoryImpl
 import me.spica27.spicamusic.storage.impl.scanner.MusicScanService
 import org.koin.dsl.module
@@ -55,7 +57,8 @@ val storageModule = module {
     single<IAlbumRepository> { AlbumRepositoryImpl(get()) }
     single<ILyricRepository> { LyricRepositoryImpl(get()) }
     single<IScanFolderRepository> { ScanFolderRepositoryImpl(get()) }
+    single<IScanRulesRepository> { ScanRulesRepositoryImpl(get()) }
 
     // 扫描服务
-    single<IMusicScanService> { MusicScanService(get(), get(), get(), get()) }
+    single<IMusicScanService> { MusicScanService(get(), get(), get(), get(), get()) }
 }

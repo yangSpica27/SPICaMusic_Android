@@ -19,6 +19,11 @@ interface ISongRepository {
     fun getAllSongsFlow(): Flow<List<Song>>
 
     /**
+     * 曲库歌曲总数（不含已忽略）的 Flow
+     */
+    fun getSongsCountFlow(): Flow<Int>
+
+    /**
      * 获取所有歌曲（同步）
      */
     suspend fun getAllSongs(): List<Song>

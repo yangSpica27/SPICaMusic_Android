@@ -28,6 +28,10 @@ class PreferencesManager(
         val REVERB_ENABLED = booleanPreferencesKey("reverb_enabled")
         val REVERB_LEVEL = stringPreferencesKey("reverb_level")
         val REVERB_ROOM_SIZE = stringPreferencesKey("reverb_room_size")
+        val SCAN_MIN_DURATION_SEC = stringPreferencesKey("scan_min_duration_sec")
+        val SCAN_MIN_FILE_SIZE_KB = stringPreferencesKey("scan_min_file_size_kb")
+        val SCAN_ENABLED_FORMATS = stringPreferencesKey("scan_enabled_formats")
+        val SCAN_LAST_COMPLETED_AT = stringPreferencesKey("scan_last_completed_at")
     }
 
     fun getBoolean(

@@ -518,6 +518,31 @@
   <string name="scanner_later">Later</string>
   <string name="scanner_current_file_label">Current File</string>
   <string name="scanner_waiting_file">Waiting for next audio file…</string>
+  <string name="scanner_retry">Retry</string>
+  <string name="scanner_permission_title">Media permission required</string>
+  <string name="scanner_setup_group">Scan Setup</string>
+  <string name="scanner_rules_row_title">Scan Rules</string>
+  <string name="scanner_folders_row_subtitle">%1$d extra · %2$d ignored</string>
+  <string name="scanner_library_count">%1$d songs in your library</string>
+  <string name="scanner_last_scan_at">Last scan: %1$s</string>
+  <string name="scanner_never_scanned">No scans yet — start your first scan below.</string>
+  <string name="scanner_rules_sheet_subtitle">Decide what gets into your library. Changes apply on the next scan.</string>
+  <string name="scanner_rule_min_duration_title">Minimum duration</string>
+  <string name="scanner_rule_min_duration_desc">Skip ringtones and voice clips shorter than this</string>
+  <string name="scanner_rule_min_size_title">Minimum file size</string>
+  <string name="scanner_rule_min_size_desc">Skip incomplete or low-quality files</string>
+  <string name="scanner_rule_formats_title">Audio formats</string>
+  <string name="scanner_rule_formats_desc">Only selected formats are added — keep at least one</string>
+  <string name="scanner_rule_any">Unlimited</string>
+  <string name="scanner_rule_seconds_format">%1$d s</string>
+  <string name="scanner_size_kb_format">%1$d KB</string>
+  <string name="scanner_size_mb_format">%1$d MB</string>
+  <string name="scanner_rules_summary_duration_any">Any duration</string>
+  <string name="scanner_rules_summary_duration">≥%1$d s</string>
+  <string name="scanner_rules_summary_size_any">Any size</string>
+  <string name="scanner_rules_summary_size">≥%1$s</string>
+  <string name="scanner_rules_summary_formats_all">All formats</string>
+  <string name="scanner_rules_summary_formats">%1$d formats</string>
 
   <!-- Search -->
   <string name="search_songs_albums_artists">Search songs, albums, artists</string>

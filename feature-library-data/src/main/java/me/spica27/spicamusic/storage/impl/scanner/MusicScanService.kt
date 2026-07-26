@@ -31,10 +31,12 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IScanFolderRepository
+import me.spica27.spicamusic.storage.api.IScanRulesRepository
 import me.spica27.spicamusic.storage.api.MediaStoreChangeEvent
 import me.spica27.spicamusic.storage.api.MediaStoreChangeType
 import me.spica27.spicamusic.storage.api.ScanProgress
 import me.spica27.spicamusic.storage.api.ScanResult
+import me.spica27.spicamusic.storage.api.ScanRules
 import me.spica27.spicamusic.storage.impl.dao.AlbumDao
 import me.spica27.spicamusic.storage.impl.dao.SongDao
 import me.spica27.spicamusic.storage.impl.entity.AlbumEntity
@@ -51,6 +53,7 @@ class MusicScanService(
     private val songDao: SongDao,
     private val albumDao: AlbumDao,
     private val scanFolderRepository: IScanFolderRepository,
+    private val scanRulesRepository: IScanRulesRepository,
 ) : IMusicScanService {
 
     private val _scanProgress = MutableStateFlow<ScanProgress?>(null)
@@ -81,31 +84,47 @@ class MusicScanService(
     companion object {
         private const val TAG = "MusicScanService"
         private const val MAX_FOLDER_DEPTH = 20
-
-        // 支持的音频格式
-        private val SUPPORTED_MIME_TYPES = setOf(
-            "audio/mpeg",
-            "audio/mp3",
-            "audio/flac",
-            "audio/wav",
-            "audio/x-wav",
-            "audio/mp4",
-            "audio/x-m4a",
-            "audio/aac",
-            "audio/ogg",
-            "audio/opus",
-            "audio/x-aiff",
-            "audio/alac",
-            "audio/aiff",
-            "audio/x-flac",
-            "audio/vnd.wave"
-        )
-
-        // 文件系统遍历时的音频扩展名过滤
-        private val SUPPORTED_EXTENSIONS = setOf(
-            "mp3", "m4a", "flac", "ogg", "wav", "aac", "opus"
-        )
     }
+
+    /**
+     * 把一份扫描规则展开成可高频调用的匹配器（mime/扩展名集合只算一次）
+     */
+    private class ScanRuleMatcher(
+        val rules: ScanRules,
+    ) {
+        private val allowedMimeTypes = rules.allowedMimeTypes()
+        private val allowedExtensions = rules.allowedExtensions()
+
+        /** MediaStore 行：mime 命中即通过；mime 不认识时回退扩展名判断 */
+        fun matchesFormat(
+            mimeType: String,
+            path: String,
+        ): Boolean {
+            if (mimeType.lowercase() in allowedMimeTypes) return true
+            val ext = path.substringAfterLast('.', "").lowercase()
+            return ext.isNotEmpty() && ext in allowedExtensions
+        }
+
+        /** SAF 文件：只有扩展名可用 */
+        fun matchesExtension(fileName: String): Boolean =
+            fileName.substringAfterLast('.', "").lowercase() in allowedExtensions
+
+        fun matchesDuration(durationMs: Long): Boolean = durationMs >= rules.minDurationMs
+
+        /** size <= 0 视为未知，放行（后续 MediaStore 行会带真实体积再判） */
+        fun matchesSize(sizeBytes: Long): Boolean =
+            rules.minFileSizeBytes <= 0 || sizeBytes <= 0 || sizeBytes >= rules.minFileSizeBytes
+    }
+
+    private suspend fun loadScanRuleMatcher(): ScanRuleMatcher =
+        ScanRuleMatcher(
+            try {
+                scanRulesRepository.getRulesSync()
+            } catch (e: Exception) {
+                Timber.tag(TAG).w(e, "读取扫描规则失败，使用默认规则")
+                ScanRules.DEFAULT
+            },
+        )
 
     // 用于读取音频的响度增益信息
     private val TRACK_GAIN_KEYS = listOf(
@@ -323,6 +342,9 @@ class MusicScanService(
             emptyList()
         }
 
+        // 加载用户配置的扫描规则（时长/体积/格式）
+        val ruleMatcher = loadScanRuleMatcher()
+
         try {
             val albums = loadAlbums()
             albumDao.replaceAll(albums)
@@ -354,7 +376,15 @@ class MusicScanService(
             )
 
             val selection =
-                "${MediaStore.Audio.Media.IS_MUSIC} = 1 AND ${MediaStore.Audio.Media.DURATION} > 10000"
+                buildString {
+                    append("${MediaStore.Audio.Media.IS_MUSIC} = 1")
+                    if (ruleMatcher.rules.minDurationMs > 0) {
+                        append(" AND ${MediaStore.Audio.Media.DURATION} >= ${ruleMatcher.rules.minDurationMs}")
+                    }
+                    if (ruleMatcher.rules.minFileSizeBytes > 0) {
+                        append(" AND ${MediaStore.Audio.Media.SIZE} >= ${ruleMatcher.rules.minFileSizeBytes}")
+                    }
+                }
             val sortOrder = "${MediaStore.Audio.Media.DATE_ADDED} DESC"
 
             val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -402,18 +432,8 @@ class MusicScanService(
                     val path = cursor.getString(dataColumn) ?: ""
                     val dateModified = cursor.getLong(dateModifiedColumn)
 
-                    // 过滤不支持的格式
-                    if (!SUPPORTED_MIME_TYPES.contains(mimeType)) {
-                        continue
-                    }
-
-                    // 过滤太短的音频（小于 10 秒）
-                    if (duration < 10000) {
-                        continue
-                    }
-
-                    // 跳过忽略文件夹中的文件
-                    if (path.isNotEmpty() && ignorePrefixes.any { path.startsWith(it) }) {
+                    // 按用户扫描规则过滤（格式/时长/体积），并跳过忽略文件夹中的文件
+                    if (!isMediaStoreSongEligible(ruleMatcher, mimeType, duration, size, path, ignorePrefixes)) {
                         continue
                     }
 
@@ -445,26 +465,7 @@ class MusicScanService(
                     val finalArtist = audioInfo.artist ?: artist
                     val finalAlbum = audioInfo.album ?: albumName
                     val sortName = generateSortName(finalDisplayName)
-
-
-                    var codec = mimeType.let {
-                        when {
-                            it.contains("mp3", ignoreCase = true) -> "MP3"
-                            it.contains("aac", ignoreCase = true) -> "AAC"
-                            it.contains("flac", ignoreCase = true) -> "FLAC"
-                            it.contains("alac", ignoreCase = true) -> "ALAC"
-                            it.contains("opus", ignoreCase = true) -> "Opus"
-                            it.contains("vorbis", ignoreCase = true) -> "OGG"
-                            it.contains("ogg", ignoreCase = true) -> "OGG"
-                            it.contains("wav", ignoreCase = true) -> "WAV"
-                            it.contains("m4a", ignoreCase = true) -> "M4A"
-                            it.contains("evrc", ignoreCase = true) -> "EVRC"
-                            else -> it.substringAfter("/").uppercase()
-                        }
-                    }
-                    if (codec == "M4A") {
-                        codec = if (audioInfo.bitRate >= 700000) "ALAC" else "AAC"
-                    }
+                    val codec = resolveCodec(mimeType, audioInfo.bitRate)
 
                     val song = SongEntity(
                         songId = existingInfo?.songId, // 保留已有主键，Upsert 会更新而非插入
@@ -582,6 +583,7 @@ class MusicScanService(
         var updated = 0
 
         val ignorePrefixes = loadIgnorePrefixes()
+        val ruleMatcher = loadScanRuleMatcher()
         val existingInfoMap =
                     songDao
                         .getScanInfoByMediaStoreIds(candidateIds.toList())
@@ -620,7 +622,7 @@ class MusicScanService(
                             val dateModified = cursor.getLong(dateModifiedColumn)
                             val existingInfo = existingInfoMap[mediaStoreId]
 
-                            if (!isMediaStoreSongEligible(mimeType, duration, path, ignorePrefixes)) {
+                            if (!isMediaStoreSongEligible(ruleMatcher, mimeType, duration, size, path, ignorePrefixes)) {
                                 existingInfo?.albumId?.let(affectedAlbumIds::add)
                                 Timber.tag(TAG).d("MediaStore 变更文件不符合条件，跳过: $displayName")
                                 continue
@@ -748,8 +750,9 @@ class MusicScanService(
         }
         if (extraFolders.isEmpty()) return@withContext ScanResult(0, 0, 0, 0)
 
-        // 加载忽略路径前缀
+        // 加载忽略路径前缀与扫描规则
         val ignorePrefixes = loadIgnorePrefixes()
+        val ruleMatcher = loadScanRuleMatcher()
 
         // 第一层防御：预校验 persistedUriPermissions
         val validUris = context.contentResolver.persistedUriPermissions
@@ -784,7 +787,7 @@ class MusicScanService(
                 try {
                     // 第二层防御：每个文件夹独立 try-catch
                     val treeUri = Uri.parse(folder.uriString)
-                    val audioFiles = walkDocumentTree(treeUri, ignorePrefixes)
+                    val audioFiles = walkDocumentTree(treeUri, ignorePrefixes, ruleMatcher)
 
                     for (fileInfo in audioFiles) {
                         if (isCancelled) break
@@ -880,13 +883,16 @@ class MusicScanService(
     }
 
     private fun isMediaStoreSongEligible(
+        ruleMatcher: ScanRuleMatcher,
         mimeType: String,
         duration: Long,
+        size: Long,
         path: String,
         ignorePrefixes: List<String>,
     ): Boolean {
-        if (!SUPPORTED_MIME_TYPES.contains(mimeType)) return false
-        if (duration < 10000) return false
+        if (!ruleMatcher.matchesFormat(mimeType, path)) return false
+        if (!ruleMatcher.matchesDuration(duration)) return false
+        if (!ruleMatcher.matchesSize(size)) return false
         if (path.isNotEmpty() && ignorePrefixes.any { path.startsWith(it) }) return false
         return true
     }
@@ -948,12 +954,14 @@ class MusicScanService(
      * 递归遍历 SAF 目录树，收集所有音频文件信息
      * @param treeUri  SAF tree URI
      * @param ignorePrefixes 忽略文件夹的绝对路径前缀列表（以 "/" 结尾）
+     * @param ruleMatcher 扫描规则匹配器（扩展名 / 最小体积过滤）
      * @param parentDocId  当前递归层级的 document ID，首次调用传 null 使用 tree root
      * @param depth  当前递归深度，超过 MAX_FOLDER_DEPTH 时停止
      */
     private fun walkDocumentTree(
         treeUri: Uri,
         ignorePrefixes: List<String>,
+        ruleMatcher: ScanRuleMatcher,
         parentDocId: String? = null,
         depth: Int = 0,
     ): List<DocumentFileInfo> {
@@ -999,15 +1007,16 @@ class MusicScanService(
                     if (folderPath != null && ignorePrefixes.any { folderPath.startsWith(it) }) {
                         continue // 跳过此子目录整棵树
                     }
-                    results.addAll(walkDocumentTree(treeUri, ignorePrefixes, childDocId, depth + 1))
+                    results.addAll(walkDocumentTree(treeUri, ignorePrefixes, ruleMatcher, childDocId, depth + 1))
                 } else {
-                    // 是文件：按扩展名过滤
-                    val ext = displayName.substringAfterLast('.', "").lowercase()
-                    if (ext !in SUPPORTED_EXTENSIONS) continue
+                    // 是文件：按扫描规则过滤扩展名与最小体积
+                    if (!ruleMatcher.matchesExtension(displayName)) continue
+                    if (!ruleMatcher.matchesSize(size)) continue
 
                     // 忽略文件夹过滤
                     if (absolutePath != null && ignorePrefixes.any { absolutePath.startsWith(it) }) continue
 
+                    val ext = displayName.substringAfterLast('.', "").lowercase()
                     results.add(
                         DocumentFileInfo(
                             displayName = displayName,
@@ -1306,11 +1315,7 @@ class MusicScanService(
                     val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
                     val songsCount = cursor.getInt(songsCountColumn)
                     val year = cursor.getInt(yearColumn)
-                    val albumArtUri =
-                        ContentUris.withAppendedId(
-                            MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
-                            id,
-                        ).toString()
+                    val albumArtUri = "content://media/external/audio/albumart/$id"
                     albums.add(
                         AlbumEntity(
                             id = id.toString(),

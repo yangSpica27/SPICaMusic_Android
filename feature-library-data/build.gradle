@@ -45,6 +45,7 @@ ksp {
 dependencies {
   // Common module
   api project(':common')
+  implementation project(':core-preferences')
   implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
   implementation libs.androidx.core.ktx
   implementation libs.androidx.lifecycle.runtime.ktx

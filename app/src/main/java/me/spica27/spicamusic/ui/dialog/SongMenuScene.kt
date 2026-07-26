@@ -73,10 +73,12 @@ import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
 import me.spica27.spicamusic.ui.artistdetail.ArtistDetailScene
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
+import me.spica27.spicamusic.ui.widget.CoverFallback
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.time.Duration.Companion.milliseconds
@@ -286,6 +288,12 @@ private fun SongMenuContent(
                     LandscapistImage(
                         imageModel = { song.getCoverUri() },
                         modifier = Modifier.fillMaxSize(),
+                        failure = {
+                            CoverFallback(
+                                fallbackUri = song.getAlbumCoverUri(),
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        },
                     )
                 }
                 Column(

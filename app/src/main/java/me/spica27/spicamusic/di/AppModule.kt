@@ -11,6 +11,7 @@ import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
 import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.ScanFolderUseCases
+import me.spica27.spicamusic.feature.library.domain.ScanRulesUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.feature.lyrics.domain.LyricsUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
@@ -138,6 +139,9 @@ object AppModule {
                     app = androidApplication(),
                     scanService = get<MusicScanUseCases>(),
                     folderRepository = get<ScanFolderUseCases>(),
+                    scanRulesUseCases = get<ScanRulesUseCases>(),
+                    settingsUseCases = get<SettingsUseCases>(),
+                    songRepository = get<SongUseCases>(),
                 )
             }
 

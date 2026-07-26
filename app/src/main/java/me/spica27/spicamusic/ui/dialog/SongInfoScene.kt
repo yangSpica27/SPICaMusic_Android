@@ -52,8 +52,10 @@ import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.player.formatTime
+import me.spica27.spicamusic.ui.widget.CoverFallback
 
 class SongInfoScene(
     val song: Song,
@@ -153,6 +155,12 @@ class SongInfoScene(
                         LandscapistImage(
                             imageModel = { song.getCoverUri() },
                             modifier = Modifier.fillMaxSize(),
+                            failure = {
+                                CoverFallback(
+                                    fallbackUri = song.getAlbumCoverUri(),
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            },
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {

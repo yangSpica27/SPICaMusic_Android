@@ -10,4 +10,5 @@ val libraryDomainModule =
         single { PlayHistoryUseCases(get()) }
         single { MusicScanUseCases(get()) }
         single { ScanFolderUseCases(get()) }
+        single { ScanRulesUseCases(get()) }
     }

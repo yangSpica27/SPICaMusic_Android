@@ -516,6 +516,31 @@
   <string name="scanner_later">稍後再說</string>
   <string name="scanner_current_file_label">當前檔案</string>
   <string name="scanner_waiting_file">等待下一個音訊檔案…</string>
+  <string name="scanner_retry">重試</string>
+  <string name="scanner_permission_title">需要媒體存取權限</string>
+  <string name="scanner_setup_group">掃描配置</string>
+  <string name="scanner_rules_row_title">掃描規則</string>
+  <string name="scanner_folders_row_subtitle">額外目錄 %1$d 個 · 忽略 %2$d 個</string>
+  <string name="scanner_library_count">曲庫現有 %1$d 首歌曲</string>
+  <string name="scanner_last_scan_at">上次掃描：%1$s</string>
+  <string name="scanner_never_scanned">還沒有掃描過，從下方開始第一次掃描。</string>
+  <string name="scanner_rules_sheet_subtitle">決定哪些音訊會進入曲庫，修改將在下次掃描時生效。</string>
+  <string name="scanner_rule_min_duration_title">最短時長</string>
+  <string name="scanner_rule_min_duration_desc">過濾短於該時長的鈴聲與語音片段</string>
+  <string name="scanner_rule_min_size_title">最小檔案體積</string>
+  <string name="scanner_rule_min_size_desc">過濾殘缺或低品質的音訊檔案</string>
+  <string name="scanner_rule_formats_title">音訊格式</string>
+  <string name="scanner_rule_formats_desc">只有選中的格式會被收錄，至少保留一種</string>
+  <string name="scanner_rule_any">不限制</string>
+  <string name="scanner_rule_seconds_format">%1$d 秒</string>
+  <string name="scanner_size_kb_format">%1$d KB</string>
+  <string name="scanner_size_mb_format">%1$d MB</string>
+  <string name="scanner_rules_summary_duration_any">不限時長</string>
+  <string name="scanner_rules_summary_duration">時長 ≥%1$d 秒</string>
+  <string name="scanner_rules_summary_size_any">不限體積</string>
+  <string name="scanner_rules_summary_size">體積 ≥%1$s</string>
+  <string name="scanner_rules_summary_formats_all">全部格式</string>
+  <string name="scanner_rules_summary_formats">%1$d 種格式</string>
 
   <!-- Search -->
   <string name="search_songs_albums_artists">搜尋歌曲、專輯、歌手</string>

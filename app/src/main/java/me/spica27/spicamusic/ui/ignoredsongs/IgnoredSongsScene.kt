@@ -94,6 +94,7 @@ import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -653,6 +654,7 @@ private fun IgnoredSongRow(
         }
         AudioCover(
             uri = song.getCoverUri(),
+            fallbackUri = song.getAlbumCoverUri(),
             modifier =
                 Modifier
                     .size(48.dp)

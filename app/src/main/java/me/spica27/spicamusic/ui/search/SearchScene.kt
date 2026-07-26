@@ -89,6 +89,7 @@ import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
@@ -573,6 +574,7 @@ private fun SearchSongItem(
     ) {
         AudioCover(
             uri = song.getCoverUri(),
+            fallbackUri = song.getAlbumCoverUri(),
             modifier =
                 Modifier
                     .size(56.dp)

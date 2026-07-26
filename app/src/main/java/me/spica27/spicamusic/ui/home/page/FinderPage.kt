@@ -90,6 +90,7 @@ import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.favorite.FavoriteScene
 import me.spica27.spicamusic.ui.home.HomePage
@@ -930,6 +931,7 @@ private fun HeroSongRow(
         )
         AudioCover(
             uri = song.getCoverUri(),
+            fallbackUri = song.getAlbumCoverUri(),
             modifier =
                 Modifier
                     .size(48.dp)
@@ -1026,6 +1028,7 @@ private fun FavoriteSongRow(
     ) {
         AudioCover(
             uri = song.getCoverUri(),
+            fallbackUri = song.getAlbumCoverUri(),
             modifier =
                 Modifier
                     .size(48.dp)
