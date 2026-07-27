@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -112,13 +113,16 @@ class SongInfoScene(
     override fun DialogContent() {
         val path = LocalNavigationPath.current
         val scene = LocalScene.current
+        val density = LocalDensity.current
+        val screenHeight =
+            with(density) {
+                LocalWindowInfo.current.containerSize.height
+                    .toDp()
+            }
         Surface(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .navigationBarsPadding()
-                    .padding(bottom = 12.dp),
+                    .fillMaxWidth(),
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,
@@ -136,7 +140,7 @@ class SongInfoScene(
                             .width(44.dp)
                             .height(4.dp)
                             .clip(RoundedCornerShape(50))
-                            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f))
+                            .background(MaterialTheme.colorScheme.onSurface)
                             .align(Alignment.CenterHorizontally),
                 )
                 Row(
@@ -189,23 +193,48 @@ class SongInfoScene(
                         }
                     }
                 }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
                 Column(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 420.dp)
+                            .heightIn(max = screenHeight * 0.8f)
                             .verticalScroll(rememberScrollState())
                             .padding(top = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    InfoItem(Icons.Default.MusicNote, stringResource(R.string.song_displayname), song.displayName)
-                    InfoItem(Icons.Default.Person, stringResource(R.string.song_artist), song.artist)
+                    InfoItem(
+                        Icons.Default.MusicNote,
+                        stringResource(R.string.song_displayname),
+                        song.displayName,
+                    )
+                    InfoItem(
+                        Icons.Default.Person,
+                        stringResource(R.string.song_artist),
+                        song.artist,
+                    )
                     InfoItem(Icons.Default.Album, stringResource(R.string.song_album), song.album)
-                    InfoItem(Icons.Default.Schedule, stringResource(R.string.song_duration), formatTime(song.duration))
-                    InfoItem(Icons.Default.Folder, stringResource(R.string.info_file_path), song.path, isMultiline = true)
-                    InfoItem(Icons.Default.DataUsage, stringResource(R.string.info_file_size), "${song.size / 1024 / 1024} MB")
-                    InfoItem(Icons.Default.Info, stringResource(R.string.info_file_format), song.codec)
+                    InfoItem(
+                        Icons.Default.Schedule,
+                        stringResource(R.string.song_duration),
+                        formatTime(song.duration),
+                    )
+                    InfoItem(
+                        Icons.Default.Folder,
+                        stringResource(R.string.info_file_path),
+                        song.path,
+                        isMultiline = true,
+                    )
+                    InfoItem(
+                        Icons.Default.DataUsage,
+                        stringResource(R.string.info_file_size),
+                        "${song.size / 1024 / 1024} MB",
+                    )
+                    InfoItem(
+                        Icons.Default.Info,
+                        stringResource(R.string.info_file_format),
+                        song.codec,
+                    )
                 }
                 Spacer(Modifier.height(14.dp))
                 Button(
@@ -215,6 +244,7 @@ class SongInfoScene(
                 ) {
                     Text(stringResource(R.string.close))
                 }
+                Spacer(Modifier.navigationBarsPadding())
             }
         }
     }

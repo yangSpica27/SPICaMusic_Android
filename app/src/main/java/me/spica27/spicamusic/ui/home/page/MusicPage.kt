@@ -96,6 +96,7 @@ import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
 import me.spica27.spicamusic.ui.artistdetail.ArtistDetailScene
+import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
@@ -105,6 +106,7 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.clickHighlight
+import me.spica27.spicamusic.ui.widget.combinedClickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinActivityViewModel
 import java.util.concurrent.TimeUnit
@@ -358,6 +360,9 @@ fun MusicPage() {
                                 index = index,
                                 song = song,
                                 isPlaying = currentMediaItem?.mediaId == song.mediaStoreId.toString(),
+                                onLongClick = {
+                                    path.push(SongMenuScene(song))
+                                },
                                 onClick = {
                                     playerViewModel.updatePlaylistWithSongs(
                                         songs = filteredSongs,
@@ -853,11 +858,12 @@ private fun MusicSectionHeader(
 
 @Composable
 private fun MusicSongRow(
+    modifier: Modifier = Modifier,
     index: Int,
     song: Song,
     isPlaying: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    onLongClick: () -> Unit = {},
 ) {
     Row(
         modifier =
@@ -871,8 +877,10 @@ private fun MusicSongRow(
                     } else {
                         MaterialTheme.colorScheme.surfaceContainerLow
                     },
-                ).clickHighlight(onClick = onClick)
-                .padding(Spacing.Small),
+                ).combinedClickHighlight(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                ).padding(Spacing.Small),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
