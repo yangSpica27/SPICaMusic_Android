@@ -4,6 +4,7 @@ package me.spica27.spicamusic.ui.home.page
 
 import android.util.Log
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
@@ -15,6 +16,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -44,6 +47,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
@@ -64,6 +68,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -87,6 +92,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
@@ -578,6 +584,7 @@ private fun MusicTopBar(
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val backgroundColor = MaterialTheme.colorScheme.background
     val solid by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+    val scope = rememberCoroutineScope()
     Box(
         modifier =
             modifier
@@ -593,13 +600,12 @@ private fun MusicTopBar(
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.14f),
             )
         }
-        Row(
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(top = statusBarTop)
                     .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = stringResource(R.string.music_page_title),
@@ -610,9 +616,55 @@ private fun MusicTopBar(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier =
                     Modifier
-                        .weight(1f)
+                        .align(Alignment.CenterStart)
                         .graphicsLayer { alpha = mastheadCollapse(listState) },
             )
+            AnimatedVisibility(
+                modifier = Modifier.align(Alignment.CenterEnd),
+                visible = solid,
+                enter =
+                    scaleIn(
+                        animationSpec =
+                            spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
+                        initialScale = 0.6f,
+                    ) + fadeIn(tween(durationMillis = 160)),
+                exit =
+                    scaleOut(
+                        animationSpec = tween(durationMillis = 140),
+                        targetScale = 0.8f,
+                    ) + fadeOut(tween(durationMillis = 140)),
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .clickHighlight(onClick = {
+                                scope.launch {
+                                    listState.animateScrollToItem(0)
+                                }
+                            })
+                            .padding(horizontal = Spacing.Medium, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowUpward,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = stringResource(R.string.scroll_to_top_hint),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
+            }
         }
     }
 }

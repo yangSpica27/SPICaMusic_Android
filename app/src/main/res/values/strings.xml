@@ -7,7 +7,7 @@
   <string name="next">Next</string>
   <string name="previous">Previous</string>
   <string name="quick_action">Quick Action</string>
-
+  <string name="scroll_to_top_hint">Scroll to Top</string>
   <string name="play_action">Play Action</string>
   <string name="play_list_header">Swipe down to go back to details</string>
   <string name="playing">Now Playing</string>
