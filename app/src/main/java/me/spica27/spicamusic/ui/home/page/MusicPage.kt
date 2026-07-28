@@ -2,7 +2,6 @@
 
 package me.spica27.spicamusic.ui.home.page
 
-import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
@@ -46,14 +45,18 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Scanner
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -94,6 +97,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.navkit.popup.PopupMenuAnchorState
+import me.spica27.navkit.popup.popupMenuAnchor
+import me.spica27.navkit.popup.rememberPopupMenuAnchorState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
@@ -103,6 +109,8 @@ import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
 import me.spica27.spicamusic.ui.artistdetail.ArtistDetailScene
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
+import me.spica27.spicamusic.ui.dialog.SortMenuOption
+import me.spica27.spicamusic.ui.dialog.SortMenuScene
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
@@ -148,6 +156,95 @@ private enum class MusicBrowserTab(
     ),
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// 各 Tab 的排序方式
+// ──────────────────────────────────────────────────────────────────────────
+
+@Immutable
+private enum class SongSortMode(
+    val option: SortMenuOption,
+    val comparator: Comparator<Song>,
+) {
+    TitleAsc(
+        SortMenuOption("title_asc", R.string.sort_song_title_az, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName },
+    ),
+    TitleDesc(
+        SortMenuOption("title_desc", R.string.sort_song_title_za, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER, Song::displayName).reversed(),
+    ),
+    ArtistAsc(
+        SortMenuOption("artist_asc", R.string.sort_song_artist_az, Icons.Default.Person),
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.artist },
+    ),
+    ArtistDesc(
+        SortMenuOption("artist_desc", R.string.sort_song_artist_za, Icons.Default.Person),
+        compareBy(String.CASE_INSENSITIVE_ORDER, Song::artist).reversed(),
+    ),
+    DurationAsc(
+        SortMenuOption("duration_asc", R.string.sort_song_duration_asc, Icons.Default.Schedule),
+        compareBy { it.duration },
+    ),
+    DurationDesc(
+        SortMenuOption("duration_desc", R.string.sort_song_duration_desc, Icons.Default.Schedule),
+        compareByDescending { it.duration },
+    ),
+}
+
+@Immutable
+private enum class AlbumSortMode(
+    val option: SortMenuOption,
+    val comparator: Comparator<Album>,
+) {
+    TitleAsc(
+        SortMenuOption("title_asc", R.string.sort_album_title_az, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.title },
+    ),
+    TitleDesc(
+        SortMenuOption("title_desc", R.string.sort_album_title_za, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER, Album::title).reversed(),
+    ),
+    ArtistAsc(
+        SortMenuOption("artist_asc", R.string.sort_album_artist_az, Icons.Default.Person),
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.artist },
+    ),
+    ArtistDesc(
+        SortMenuOption("artist_desc", R.string.sort_album_artist_za, Icons.Default.Person),
+        compareBy(String.CASE_INSENSITIVE_ORDER, Album::artist).reversed(),
+    ),
+    CountDesc(
+        SortMenuOption("count_desc", R.string.sort_album_count_desc, Icons.Default.FormatListNumbered),
+        compareByDescending { it.numberOfSongs },
+    ),
+    CountAsc(
+        SortMenuOption("count_asc", R.string.sort_album_count_asc, Icons.Default.FormatListNumbered),
+        compareBy { it.numberOfSongs },
+    ),
+}
+
+@Immutable
+private enum class ArtistSortMode(
+    val option: SortMenuOption,
+    val comparator: Comparator<Artist>,
+) {
+    NameAsc(
+        SortMenuOption("name_asc", R.string.sort_artist_name_az, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.name },
+    ),
+    NameDesc(
+        SortMenuOption("name_desc", R.string.sort_artist_name_za, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER, Artist::name).reversed(),
+    ),
+    CountDesc(
+        SortMenuOption("count_desc", R.string.sort_artist_count_desc, Icons.Default.FormatListNumbered),
+        compareByDescending { it.songCount },
+    ),
+    CountAsc(
+        SortMenuOption("count_asc", R.string.sort_artist_count_asc, Icons.Default.FormatListNumbered),
+        compareBy { it.songCount },
+    ),
+}
+
 @Composable
 fun MusicPage() {
     val path = LocalNavigationPath.current
@@ -171,6 +268,9 @@ fun MusicPage() {
 
     var selectedTab by rememberSaveable { mutableStateOf(MusicBrowserTab.Songs) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    var songSortMode by rememberSaveable { mutableStateOf(SongSortMode.TitleAsc) }
+    var albumSortMode by rememberSaveable { mutableStateOf(AlbumSortMode.TitleAsc) }
+    var artistSortMode by rememberSaveable { mutableStateOf(ArtistSortMode.NameAsc) }
     var playEntrance by remember { mutableStateOf(true) }
     var playlistEntrance by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
@@ -188,24 +288,76 @@ fun MusicPage() {
     }
 
     val filteredSongs =
-        remember(allSongs, searchQuery) {
+        remember(allSongs, searchQuery, songSortMode) {
             allSongs
                 .filterSongsBy(searchQuery)
-                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName })
+                .sortedWith(songSortMode.comparator)
         }
     val filteredAlbums =
-        remember(albums, searchQuery) {
-            albums.filterAlbumsBy(searchQuery)
+        remember(albums, searchQuery, albumSortMode) {
+            albums
+                .filterAlbumsBy(searchQuery)
+                .sortedWith(albumSortMode.comparator)
         }
     val filteredArtists =
-        remember(artists, searchQuery) {
-            artists.filterArtistsBy(searchQuery)
+        remember(artists, searchQuery, artistSortMode) {
+            artists
+                .filterArtistsBy(searchQuery)
+                .sortedWith(artistSortMode.comparator)
         }
 
     val listState = rememberLazyListState()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    // 排序菜单锚点：挂在页面作用域，锚点图标本身在 Lazy item 内
+    val sortAnchor = rememberPopupMenuAnchorState()
+
+    fun openSortMenu() {
+        if (sortAnchor.isOpen) return
+        val scene =
+            when (selectedTab) {
+                MusicBrowserTab.Songs ->
+                    SortMenuScene(
+                        anchorState = sortAnchor,
+                        anchorIcon = Icons.AutoMirrored.Filled.Sort,
+                        options = SongSortMode.entries.map { it.option },
+                        selectedId = songSortMode.option.id,
+                        onSelect = { id ->
+                            SongSortMode.entries
+                                .firstOrNull { it.option.id == id }
+                                ?.let { songSortMode = it }
+                        },
+                    )
+
+                MusicBrowserTab.Albums ->
+                    SortMenuScene(
+                        anchorState = sortAnchor,
+                        anchorIcon = Icons.AutoMirrored.Filled.Sort,
+                        options = AlbumSortMode.entries.map { it.option },
+                        selectedId = albumSortMode.option.id,
+                        onSelect = { id ->
+                            AlbumSortMode.entries
+                                .firstOrNull { it.option.id == id }
+                                ?.let { albumSortMode = it }
+                        },
+                    )
+
+                MusicBrowserTab.Artists ->
+                    SortMenuScene(
+                        anchorState = sortAnchor,
+                        anchorIcon = Icons.AutoMirrored.Filled.Sort,
+                        options = ArtistSortMode.entries.map { it.option },
+                        selectedId = artistSortMode.option.id,
+                        onSelect = { id ->
+                            ArtistSortMode.entries
+                                .firstOrNull { it.option.id == id }
+                                ?.let { artistSortMode = it }
+                        },
+                    )
+            }
+        path.push(scene)
+    }
     // 用户开始滚动结果时自动收起键盘，把屏幕还给内容
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }
@@ -312,6 +464,8 @@ fun MusicPage() {
                             MusicBrowserTab.Albums -> filteredAlbums.size
                             MusicBrowserTab.Artists -> filteredArtists.size
                         },
+                    sortAnchor = sortAnchor,
+                    onSortClick = ::openSortMenu,
                     modifier =
                         Modifier.animateItem(
                             fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
@@ -538,7 +692,6 @@ private fun rememberEntrance(
     play: Boolean,
 ): Animatable<Float, AnimationVector1D> {
     val entrance = remember { Animatable(if (play) 0f else 1f) }
-    Log.e("yangweizhi", "rememberEntrance: $order, play: $play, entrance: ${entrance.value}")
     LaunchedEffect(Unit) {
         if (entrance.value < 1f) {
             delay(order * ENTRANCE_STAGGER_MILLIS)
@@ -869,6 +1022,8 @@ private fun MusicSearchBar(
 private fun MusicSectionHeader(
     tab: MusicBrowserTab,
     count: Int,
+    sortAnchor: PopupMenuAnchorState,
+    onSortClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -894,17 +1049,25 @@ private fun MusicSectionHeader(
                 maxLines = 1,
             )
         }
-        Icon(
-            imageVector = tab.icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+        // 排序锚点：点击后图标原地过渡成排序菜单（SortMenuScene）
+        Box(
             modifier =
                 Modifier
+                    .popupMenuAnchor(sortAnchor)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(Spacing.Small)
-                    .size(18.dp),
-        )
+                    .clickHighlight(
+                        onClickLabel = stringResource(R.string.music_sort_cd),
+                        onClick = onSortClick,
+                    ).padding(Spacing.Small),
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Sort,
+                contentDescription = stringResource(R.string.music_sort_cd),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
     }
 }
 

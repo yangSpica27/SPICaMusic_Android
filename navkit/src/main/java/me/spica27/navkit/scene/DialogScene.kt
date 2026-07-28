@@ -1,6 +1,7 @@
 package me.spica27.navkit.scene
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -67,6 +68,14 @@ abstract class DialogScene : Scene() {
     /** 进场进度：0f = 完全不可见，1f = 完全呈现 */
     val enterProgress = Animatable(0f)
 
+    /** 进场动画 spec；子类（如 PopupMenuScene）可覆写以改变节奏 */
+    protected open val enterAnimationSpec: AnimationSpec<Float>
+        get() = tween(375, easing = DIALOG_EASING)
+
+    /** 退场动画 spec；子类可覆写 */
+    protected open val exitAnimationSpec: AnimationSpec<Float>
+        get() = tween(350, easing = DIALOG_EASING)
+
     private val _placed = MutableStateFlow(false)
     val placed: StateFlow<Boolean> = _placed
 
@@ -101,10 +110,7 @@ abstract class DialogScene : Scene() {
     override suspend fun onAppear() {
         enterProgress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(
-                375,
-                easing = DIALOG_EASING
-            )
+            animationSpec = enterAnimationSpec
         ) {
             if (this.value == targetValue) {
                 _enterAnimEnd.value = true
@@ -116,10 +122,7 @@ abstract class DialogScene : Scene() {
     override suspend fun onDisappear() {
         enterProgress.animateTo(
             targetValue = 0f,
-            animationSpec = tween(
-                350,
-                easing = DIALOG_EASING
-            )
+            animationSpec = exitAnimationSpec
         )
     }
 

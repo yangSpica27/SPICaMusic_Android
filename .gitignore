@@ -19,3 +19,4 @@ local.properties
 /docs/
 /.kotlin/
 /common/build/
+/.claude/
