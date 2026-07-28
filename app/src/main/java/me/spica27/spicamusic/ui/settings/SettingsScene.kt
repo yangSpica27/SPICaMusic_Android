@@ -33,9 +33,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Brightness6
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LensBlur
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Percent
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -220,7 +221,7 @@ class SettingsScene : StackScene() {
                             ModernSettingsSelectItem(
                                 title = stringResource(R.string.settings_dynamic_spectrum),
                                 subtitle = DynamicSpectrumBackground.fromString(spectrumValue).name,
-                                icon = Icons.Default.GraphicEq,
+                                icon = Icons.Default.LensBlur,
                                 options =
                                     ImmutableList.copyOf(
                                         DynamicSpectrumBackground.presets.map {
@@ -234,7 +235,7 @@ class SettingsScene : StackScene() {
                             ModernSettingsSelectItem(
                                 title = stringResource(R.string.settings_progress_bar_style),
                                 subtitle = progressBarStyleName,
-                                icon = Icons.Default.GraphicEq,
+                                icon = Icons.Default.Percent,
                                 options = progressBarStyleOptions,
                                 currentValue = progressBarStyleValue,
                                 onValueChange = viewModel::setProgressBarStyle,
