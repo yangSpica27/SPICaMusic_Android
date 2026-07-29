@@ -97,6 +97,8 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
+import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -294,14 +296,14 @@ private fun IgnoredSongsScreenContent() {
                         modifier =
                             Modifier
                                 .animateItem(
-                                    fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                    fadeInSpec = ListItemFadeInSpec,
                                     placementSpec =
                                         spring(
                                             dampingRatio = Spring.DampingRatioLowBouncy,
                                             stiffness = Spring.StiffnessMediumLow,
                                             visibilityThreshold = IntOffset.VisibilityThreshold,
                                         ),
-                                    fadeOutSpec = tween(durationMillis = 160),
+                                    fadeOutSpec = ListItemFadeOutSpec,
                                 ).entranceGraphics(entrance),
                     )
                 }

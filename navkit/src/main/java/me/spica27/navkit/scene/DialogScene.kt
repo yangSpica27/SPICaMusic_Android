@@ -2,7 +2,6 @@ package me.spica27.navkit.scene
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +18,8 @@ import androidx.compose.ui.zIndex
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import me.spica27.navkit.motion.EaseOutEmphasized
+import me.spica27.navkit.motion.EaseOutStrong
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene.Companion.DIALOG_SCALE_MIN
@@ -28,9 +29,8 @@ import me.spica27.navkit.scene.DialogScene.Companion.SCRIM_MAX_ALPHA
  *
  * ## 动画模型
  * - [enterProgress]：进场进度，0f = 完全不可见，1f = 完全呈现
- * - 弹簧刚度 600（快速弹出，比 StackScene 300f 更急促）
- * - 进场：从中心缩放（[DIALOG_SCALE_MIN] → 1f）+ alpha 渐显
- * - 退场：反向
+ * - 进场：375ms emphasized-decelerate，从中心缩放（[DIALOG_SCALE_MIN] → 1f）+ alpha 渐显
+ * - 退场：200ms 强 ease-out——关闭是系统响应，短时长、起步即动
  *
  * ## placed 机制
  * 与 [StackScene] 一致：[NavigationStack][me.spica27.navkit.stack.NavigationStack]
@@ -70,11 +70,11 @@ abstract class DialogScene : Scene() {
 
     /** 进场动画 spec；子类（如 PopupMenuScene）可覆写以改变节奏 */
     protected open val enterAnimationSpec: AnimationSpec<Float>
-        get() = tween(375, easing = DIALOG_EASING)
+        get() = tween(375, easing = EaseOutEmphasized)
 
-    /** 退场动画 spec；子类可覆写 */
+    /** 退场动画 spec；子类可覆写。关闭是系统响应：短时长、起步即动 */
     protected open val exitAnimationSpec: AnimationSpec<Float>
-        get() = tween(350, easing = DIALOG_EASING)
+        get() = tween(200, easing = EaseOutStrong)
 
     private val _placed = MutableStateFlow(false)
     val placed: StateFlow<Boolean> = _placed
@@ -106,7 +106,7 @@ abstract class DialogScene : Scene() {
         _placed.first { it }
     }
 
-    /** 进场动画：从 0f 弹簧到 1f */
+    /** 进场动画：从 0f 动画到 1f */
     override suspend fun onAppear() {
         enterProgress.animateTo(
             targetValue = 1f,
@@ -118,7 +118,7 @@ abstract class DialogScene : Scene() {
         }
     }
 
-    /** 退场动画：从当前进度弹簧到 0f */
+    /** 退场动画：从当前进度动画到 0f（Animatable 可中断重定向） */
     override suspend fun onDisappear() {
         enterProgress.animateTo(
             targetValue = 0f,
@@ -195,15 +195,5 @@ abstract class DialogScene : Scene() {
 
         /** 进场起始缩放比（0.92 → 1.0，产生"弹出"感） */
         private const val DIALOG_SCALE_MIN = 0.92f
-
-        /** 进场/退场动画的 easing，前半段稍慢，后半段加速 */
-        private val DIALOG_EASING = Easing { fraction ->
-            // 自定义 easing，前半段稍慢，后半段加速
-            if (fraction < 0.5f) {
-                2f * fraction * fraction
-            } else {
-                -1f + (4f - 2f * fraction) * fraction
-            }
-        }
     }
 }

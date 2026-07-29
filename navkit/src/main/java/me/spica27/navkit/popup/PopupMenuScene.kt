@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.zIndex
+import me.spica27.navkit.motion.EaseOutEmphasized
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
@@ -95,7 +96,7 @@ abstract class PopupMenuScene(
     open val scrimMaxAlpha: Float = 0.35f
 
     override val enterAnimationSpec: AnimationSpec<Float>
-        get() = tween(ENTER_DURATION_MILLIS, easing = POPUP_ENTER_EASING)
+        get() = tween(ENTER_DURATION_MILLIS, easing = EaseOutEmphasized)
 
     override val exitAnimationSpec: AnimationSpec<Float>
         get() = tween(EXIT_DURATION_MILLIS, easing = POPUP_EXIT_EASING)
@@ -306,9 +307,6 @@ abstract class PopupMenuScene(
     companion object {
         private const val ENTER_DURATION_MILLIS = 340
         private const val EXIT_DURATION_MILLIS = 220
-
-        /** Material emphasized-decelerate：菜单弹出快速起步、柔和落定 */
-        private val POPUP_ENTER_EASING = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
 
         /** Material emphasized-accelerate：收回时迅速离场 */
         private val POPUP_EXIT_EASING = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)

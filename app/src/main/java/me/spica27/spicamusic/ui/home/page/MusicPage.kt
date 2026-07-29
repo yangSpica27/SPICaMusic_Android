@@ -7,7 +7,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloatAsState
@@ -115,7 +114,10 @@ import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.scan.ScannerScene
+import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
+import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -424,12 +426,9 @@ fun MusicPage() {
                         Modifier
                             .animateItem(
                                 fadeInSpec =
-                                    tween(
-                                        durationMillis = 240,
-                                        easing = FastOutSlowInEasing,
-                                    ),
+                                ListItemFadeInSpec,
                                 placementSpec = null,
-                                fadeOutSpec = tween(durationMillis = 160),
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ).entranceGraphics(entrance),
                 )
             }
@@ -445,12 +444,9 @@ fun MusicPage() {
                         Modifier
                             .animateItem(
                                 fadeInSpec =
-                                    tween(
-                                        durationMillis = 240,
-                                        easing = FastOutSlowInEasing,
-                                    ),
+                                ListItemFadeInSpec,
                                 placementSpec = null,
-                                fadeOutSpec = tween(durationMillis = 160),
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ).entranceGraphics(entrance),
                 )
             }
@@ -468,14 +464,14 @@ fun MusicPage() {
                     onSortClick = ::openSortMenu,
                     modifier =
                         Modifier.animateItem(
-                            fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                            fadeInSpec = ListItemFadeInSpec,
                             placementSpec =
                                 spring(
                                     dampingRatio = Spring.DampingRatioLowBouncy,
                                     stiffness = Spring.StiffnessMediumLow,
                                     visibilityThreshold = IntOffset.VisibilityThreshold,
                                 ),
-                            fadeOutSpec = tween(durationMillis = 160),
+                            fadeOutSpec = ListItemFadeOutSpec,
                         ),
                 )
             }
@@ -534,17 +530,14 @@ fun MusicPage() {
                                     Modifier
                                         .animateItem(
                                             fadeInSpec =
-                                                tween(
-                                                    durationMillis = 240,
-                                                    easing = FastOutSlowInEasing,
-                                                ),
+                                            ListItemFadeInSpec,
                                             placementSpec =
                                                 spring(
                                                     dampingRatio = Spring.DampingRatioLowBouncy,
                                                     stiffness = Spring.StiffnessMediumLow,
                                                     visibilityThreshold = IntOffset.VisibilityThreshold,
                                                 ),
-                                            fadeOutSpec = tween(durationMillis = 160),
+                                            fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
                                             val enter = entrance.value
                                             transformOrigin = TransformOrigin(0f, 0f)
@@ -589,17 +582,14 @@ fun MusicPage() {
                                     Modifier
                                         .animateItem(
                                             fadeInSpec =
-                                                tween(
-                                                    durationMillis = 240,
-                                                    easing = FastOutSlowInEasing,
-                                                ),
+                                            ListItemFadeInSpec,
                                             placementSpec =
                                                 spring(
                                                     dampingRatio = Spring.DampingRatioLowBouncy,
                                                     stiffness = Spring.StiffnessMediumLow,
                                                     visibilityThreshold = IntOffset.VisibilityThreshold,
                                                 ),
-                                            fadeOutSpec = tween(durationMillis = 160),
+                                            fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
                                             val enter = entrance.value
                                             transformOrigin = TransformOrigin(0f, 0f)
@@ -644,17 +634,14 @@ fun MusicPage() {
                                     Modifier
                                         .animateItem(
                                             fadeInSpec =
-                                                tween(
-                                                    durationMillis = 240,
-                                                    easing = FastOutSlowInEasing,
-                                                ),
+                                            ListItemFadeInSpec,
                                             placementSpec =
                                                 spring(
                                                     dampingRatio = Spring.DampingRatioLowBouncy,
                                                     stiffness = Spring.StiffnessMediumLow,
                                                     visibilityThreshold = IntOffset.VisibilityThreshold,
                                                 ),
-                                            fadeOutSpec = tween(durationMillis = 160),
+                                            fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
                                             val enter = entrance.value
                                             transformOrigin = TransformOrigin(0f, 0f)
@@ -775,15 +762,13 @@ private fun MusicTopBar(
             AnimatedVisibility(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 visible = solid,
+                // 高频触发（滚动过阈值即出现）：短时长强 ease-out，不带弹性；
+                // 淡入与缩放同时长，时间轴对齐
                 enter =
                     scaleIn(
-                        animationSpec =
-                            spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
-                        initialScale = 0.6f,
-                    ) + fadeIn(tween(durationMillis = 160)),
+                        animationSpec = tween(durationMillis = 180, easing = EaseOutEmphasized),
+                        initialScale = 0.92f,
+                    ) + fadeIn(tween(durationMillis = 180, easing = EaseOutEmphasized)),
                 exit =
                     scaleOut(
                         animationSpec = tween(durationMillis = 140),

@@ -2,6 +2,21 @@ package me.spica27.spicamusic.ui.theme
 
 import androidx.compose.animation.core.Easing
 import kotlin.math.pow
+import me.spica27.navkit.motion.EaseOutEmphasized as NavkitEaseOutEmphasized
+import me.spica27.navkit.motion.EaseOutStrong as NavkitEaseOutStrong
+
+/**
+ * Material emphasized-decelerate（强 ease-out）
+ *
+ * 快速起步、柔和落定：进/出场元素的标准缓动——用户注视的起始时刻即时响应，
+ * 收尾平滑不生硬。UI 进场一律优先用它，避免 ease-in 类曲线的迟钝起步。
+ *
+ * 用法：
+ *   tween(durationMillis = 180, easing = EaseOutEmphasized)
+ */
+val EaseOutEmphasized: Easing = NavkitEaseOutEmphasized
+
+val EaseOutStrong: Easing = NavkitEaseOutStrong
 
 /**
  * 三次方缓入缓出（EaseInOutCubic）
