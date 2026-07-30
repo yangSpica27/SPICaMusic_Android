@@ -66,7 +66,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.image.LandscapistImage
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
@@ -81,7 +80,6 @@ import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.widget.CoverFallback
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import kotlin.time.Duration.Companion.milliseconds
 
 class SongMenuScene(
     val song: Song,
@@ -121,7 +119,6 @@ class SongMenuScene(
         fun closeAndNavigate(navigate: () -> Unit) {
             scope.launch {
                 path.pop(scene)
-                delay(360.milliseconds)
                 navigate()
             }
         }

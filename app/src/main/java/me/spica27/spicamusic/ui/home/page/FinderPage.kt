@@ -6,7 +6,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
@@ -101,6 +100,8 @@ import me.spica27.spicamusic.ui.scan.ScannerScene
 import me.spica27.spicamusic.ui.search.SearchScene
 import me.spica27.spicamusic.ui.settings.SettingsScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
+import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -123,9 +124,6 @@ private const val ENTRANCE_STAGGER_MILLIS = 55L
 private const val FavoritePreviewSongCount = 5
 
 /** 列表项增删的统一动画配方（同资料库页） */
-private val ItemFadeInSpec: FiniteAnimationSpec<Float> =
-    tween(durationMillis = 240, easing = FastOutSlowInEasing)
-private val ItemFadeOutSpec: FiniteAnimationSpec<Float> = tween(durationMillis = 160)
 private val ItemPlacementSpec: FiniteAnimationSpec<IntOffset> =
     spring(
         dampingRatio = Spring.DampingRatioLowBouncy,
@@ -223,9 +221,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                         modifier =
                             Modifier
                                 .animateItem(
-                                    fadeInSpec = ItemFadeInSpec,
+                                    fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
-                                    fadeOutSpec = ItemFadeOutSpec,
+                                    fadeOutSpec = ListItemFadeOutSpec,
                                 ).entranceGraphics(entrance),
                     )
                 }
@@ -286,9 +284,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                     modifier =
                         Modifier
                             .animateItem(
-                                fadeInSpec = ItemFadeInSpec,
+                                fadeInSpec = ListItemFadeInSpec,
                                 placementSpec = ItemPlacementSpec,
-                                fadeOutSpec = ItemFadeOutSpec,
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ).padding(top = Spacing.Medium)
                             .entranceGraphics(entrance),
                 )
@@ -303,9 +301,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                         modifier =
                             Modifier
                                 .animateItem(
-                                    fadeInSpec = ItemFadeInSpec,
+                                    fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
-                                    fadeOutSpec = ItemFadeOutSpec,
+                                    fadeOutSpec = ListItemFadeOutSpec,
                                 ).entranceGraphics(entrance),
                     )
                 }
@@ -337,9 +335,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                         modifier =
                             Modifier
                                 .animateItem(
-                                    fadeInSpec = ItemFadeInSpec,
+                                    fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
-                                    fadeOutSpec = ItemFadeOutSpec,
+                                    fadeOutSpec = ListItemFadeOutSpec,
                                 ).entranceGraphics(entrance),
                     )
                 }
@@ -355,9 +353,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                     modifier =
                         Modifier
                             .animateItem(
-                                fadeInSpec = ItemFadeInSpec,
+                                fadeInSpec = ListItemFadeInSpec,
                                 placementSpec = ItemPlacementSpec,
-                                fadeOutSpec = ItemFadeOutSpec,
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ).padding(top = Spacing.Medium)
                             .entranceGraphics(entrance),
                 )
@@ -373,9 +371,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                         modifier =
                             Modifier
                                 .animateItem(
-                                    fadeInSpec = ItemFadeInSpec,
+                                    fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
-                                    fadeOutSpec = ItemFadeOutSpec,
+                                    fadeOutSpec = ListItemFadeOutSpec,
                                 ).entranceGraphics(entrance),
                     )
                 }
@@ -388,9 +386,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                         modifier =
                             Modifier
                                 .animateItem(
-                                    fadeInSpec = ItemFadeInSpec,
+                                    fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
-                                    fadeOutSpec = ItemFadeOutSpec,
+                                    fadeOutSpec = ListItemFadeOutSpec,
                                 ).entranceGraphics(entrance),
                     )
                 }
@@ -406,9 +404,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                     modifier =
                         Modifier
                             .animateItem(
-                                fadeInSpec = ItemFadeInSpec,
+                                fadeInSpec = ListItemFadeInSpec,
                                 placementSpec = ItemPlacementSpec,
-                                fadeOutSpec = ItemFadeOutSpec,
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ).padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.ExtraLarge),
                 )
@@ -423,9 +421,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                     onClick = { homeViewModel.navigateToPage(HomePage.Library) },
                     modifier =
                         Modifier.animateItem(
-                            fadeInSpec = ItemFadeInSpec,
+                            fadeInSpec = ListItemFadeInSpec,
                             placementSpec = ItemPlacementSpec,
-                            fadeOutSpec = ItemFadeOutSpec,
+                            fadeOutSpec = ListItemFadeOutSpec,
                         ),
                 )
             }
@@ -439,9 +437,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                     onClick = { homeViewModel.navigateToPage(HomePage.Music) },
                     modifier =
                         Modifier.animateItem(
-                            fadeInSpec = ItemFadeInSpec,
+                            fadeInSpec = ListItemFadeInSpec,
                             placementSpec = ItemPlacementSpec,
-                            fadeOutSpec = ItemFadeOutSpec,
+                            fadeOutSpec = ListItemFadeOutSpec,
                         ),
                 )
             }
@@ -455,9 +453,9 @@ fun FinderPage(playEntrance: Boolean = true) {
                     onClick = { path.push(SettingsScene()) },
                     modifier =
                         Modifier.animateItem(
-                            fadeInSpec = ItemFadeInSpec,
+                            fadeInSpec = ListItemFadeInSpec,
                             placementSpec = ItemPlacementSpec,
-                            fadeOutSpec = ItemFadeOutSpec,
+                            fadeOutSpec = ListItemFadeOutSpec,
                         ),
                 )
             }
@@ -1244,9 +1242,9 @@ private fun PlaylistRail(
                 onClick = { onPlaylistClick(item) },
                 modifier =
                     Modifier.animateItem(
-                        fadeInSpec = ItemFadeInSpec,
+                        fadeInSpec = ListItemFadeInSpec,
                         placementSpec = ItemPlacementSpec,
-                        fadeOutSpec = ItemFadeOutSpec,
+                        fadeOutSpec = ListItemFadeOutSpec,
                     ),
             )
         }

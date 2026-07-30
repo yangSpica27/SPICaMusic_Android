@@ -2,12 +2,11 @@
 
 package me.spica27.spicamusic.ui.home.page
 
-import android.util.Log
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloatAsState
@@ -15,6 +14,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -43,13 +44,18 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Scanner
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -64,6 +70,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -87,7 +94,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.navkit.popup.PopupMenuAnchorState
+import me.spica27.navkit.popup.popupMenuAnchor
+import me.spica27.navkit.popup.rememberPopupMenuAnchorState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
@@ -96,15 +107,22 @@ import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
 import me.spica27.spicamusic.ui.artistdetail.ArtistDetailScene
+import me.spica27.spicamusic.ui.dialog.SongMenuScene
+import me.spica27.spicamusic.ui.dialog.SortMenuOption
+import me.spica27.spicamusic.ui.dialog.SortMenuScene
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.scan.ScannerScene
+import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
+import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.clickHighlight
+import me.spica27.spicamusic.ui.widget.combinedClickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinActivityViewModel
 import java.util.concurrent.TimeUnit
@@ -140,6 +158,95 @@ private enum class MusicBrowserTab(
     ),
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// 各 Tab 的排序方式
+// ──────────────────────────────────────────────────────────────────────────
+
+@Immutable
+private enum class SongSortMode(
+    val option: SortMenuOption,
+    val comparator: Comparator<Song>,
+) {
+    TitleAsc(
+        SortMenuOption("title_asc", R.string.sort_song_title_az, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName },
+    ),
+    TitleDesc(
+        SortMenuOption("title_desc", R.string.sort_song_title_za, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER, Song::displayName).reversed(),
+    ),
+    ArtistAsc(
+        SortMenuOption("artist_asc", R.string.sort_song_artist_az, Icons.Default.Person),
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.artist },
+    ),
+    ArtistDesc(
+        SortMenuOption("artist_desc", R.string.sort_song_artist_za, Icons.Default.Person),
+        compareBy(String.CASE_INSENSITIVE_ORDER, Song::artist).reversed(),
+    ),
+    DurationAsc(
+        SortMenuOption("duration_asc", R.string.sort_song_duration_asc, Icons.Default.Schedule),
+        compareBy { it.duration },
+    ),
+    DurationDesc(
+        SortMenuOption("duration_desc", R.string.sort_song_duration_desc, Icons.Default.Schedule),
+        compareByDescending { it.duration },
+    ),
+}
+
+@Immutable
+private enum class AlbumSortMode(
+    val option: SortMenuOption,
+    val comparator: Comparator<Album>,
+) {
+    TitleAsc(
+        SortMenuOption("title_asc", R.string.sort_album_title_az, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.title },
+    ),
+    TitleDesc(
+        SortMenuOption("title_desc", R.string.sort_album_title_za, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER, Album::title).reversed(),
+    ),
+    ArtistAsc(
+        SortMenuOption("artist_asc", R.string.sort_album_artist_az, Icons.Default.Person),
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.artist },
+    ),
+    ArtistDesc(
+        SortMenuOption("artist_desc", R.string.sort_album_artist_za, Icons.Default.Person),
+        compareBy(String.CASE_INSENSITIVE_ORDER, Album::artist).reversed(),
+    ),
+    CountDesc(
+        SortMenuOption("count_desc", R.string.sort_album_count_desc, Icons.Default.FormatListNumbered),
+        compareByDescending { it.numberOfSongs },
+    ),
+    CountAsc(
+        SortMenuOption("count_asc", R.string.sort_album_count_asc, Icons.Default.FormatListNumbered),
+        compareBy { it.numberOfSongs },
+    ),
+}
+
+@Immutable
+private enum class ArtistSortMode(
+    val option: SortMenuOption,
+    val comparator: Comparator<Artist>,
+) {
+    NameAsc(
+        SortMenuOption("name_asc", R.string.sort_artist_name_az, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER) { it.name },
+    ),
+    NameDesc(
+        SortMenuOption("name_desc", R.string.sort_artist_name_za, Icons.Default.SortByAlpha),
+        compareBy(String.CASE_INSENSITIVE_ORDER, Artist::name).reversed(),
+    ),
+    CountDesc(
+        SortMenuOption("count_desc", R.string.sort_artist_count_desc, Icons.Default.FormatListNumbered),
+        compareByDescending { it.songCount },
+    ),
+    CountAsc(
+        SortMenuOption("count_asc", R.string.sort_artist_count_asc, Icons.Default.FormatListNumbered),
+        compareBy { it.songCount },
+    ),
+}
+
 @Composable
 fun MusicPage() {
     val path = LocalNavigationPath.current
@@ -163,6 +270,9 @@ fun MusicPage() {
 
     var selectedTab by rememberSaveable { mutableStateOf(MusicBrowserTab.Songs) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    var songSortMode by rememberSaveable { mutableStateOf(SongSortMode.TitleAsc) }
+    var albumSortMode by rememberSaveable { mutableStateOf(AlbumSortMode.TitleAsc) }
+    var artistSortMode by rememberSaveable { mutableStateOf(ArtistSortMode.NameAsc) }
     var playEntrance by remember { mutableStateOf(true) }
     var playlistEntrance by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
@@ -180,24 +290,76 @@ fun MusicPage() {
     }
 
     val filteredSongs =
-        remember(allSongs, searchQuery) {
+        remember(allSongs, searchQuery, songSortMode) {
             allSongs
                 .filterSongsBy(searchQuery)
-                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName })
+                .sortedWith(songSortMode.comparator)
         }
     val filteredAlbums =
-        remember(albums, searchQuery) {
-            albums.filterAlbumsBy(searchQuery)
+        remember(albums, searchQuery, albumSortMode) {
+            albums
+                .filterAlbumsBy(searchQuery)
+                .sortedWith(albumSortMode.comparator)
         }
     val filteredArtists =
-        remember(artists, searchQuery) {
-            artists.filterArtistsBy(searchQuery)
+        remember(artists, searchQuery, artistSortMode) {
+            artists
+                .filterArtistsBy(searchQuery)
+                .sortedWith(artistSortMode.comparator)
         }
 
     val listState = rememberLazyListState()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    // 排序菜单锚点：挂在页面作用域，锚点图标本身在 Lazy item 内
+    val sortAnchor = rememberPopupMenuAnchorState()
+
+    fun openSortMenu() {
+        if (sortAnchor.isOpen) return
+        val scene =
+            when (selectedTab) {
+                MusicBrowserTab.Songs ->
+                    SortMenuScene(
+                        anchorState = sortAnchor,
+                        anchorIcon = Icons.AutoMirrored.Filled.Sort,
+                        options = SongSortMode.entries.map { it.option },
+                        selectedId = songSortMode.option.id,
+                        onSelect = { id ->
+                            SongSortMode.entries
+                                .firstOrNull { it.option.id == id }
+                                ?.let { songSortMode = it }
+                        },
+                    )
+
+                MusicBrowserTab.Albums ->
+                    SortMenuScene(
+                        anchorState = sortAnchor,
+                        anchorIcon = Icons.AutoMirrored.Filled.Sort,
+                        options = AlbumSortMode.entries.map { it.option },
+                        selectedId = albumSortMode.option.id,
+                        onSelect = { id ->
+                            AlbumSortMode.entries
+                                .firstOrNull { it.option.id == id }
+                                ?.let { albumSortMode = it }
+                        },
+                    )
+
+                MusicBrowserTab.Artists ->
+                    SortMenuScene(
+                        anchorState = sortAnchor,
+                        anchorIcon = Icons.AutoMirrored.Filled.Sort,
+                        options = ArtistSortMode.entries.map { it.option },
+                        selectedId = artistSortMode.option.id,
+                        onSelect = { id ->
+                            ArtistSortMode.entries
+                                .firstOrNull { it.option.id == id }
+                                ?.let { artistSortMode = it }
+                        },
+                    )
+            }
+        path.push(scene)
+    }
     // 用户开始滚动结果时自动收起键盘，把屏幕还给内容
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }
@@ -264,12 +426,9 @@ fun MusicPage() {
                         Modifier
                             .animateItem(
                                 fadeInSpec =
-                                    tween(
-                                        durationMillis = 240,
-                                        easing = FastOutSlowInEasing,
-                                    ),
+                                ListItemFadeInSpec,
                                 placementSpec = null,
-                                fadeOutSpec = tween(durationMillis = 160),
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ).entranceGraphics(entrance),
                 )
             }
@@ -285,12 +444,9 @@ fun MusicPage() {
                         Modifier
                             .animateItem(
                                 fadeInSpec =
-                                    tween(
-                                        durationMillis = 240,
-                                        easing = FastOutSlowInEasing,
-                                    ),
+                                ListItemFadeInSpec,
                                 placementSpec = null,
-                                fadeOutSpec = tween(durationMillis = 160),
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ).entranceGraphics(entrance),
                 )
             }
@@ -304,16 +460,18 @@ fun MusicPage() {
                             MusicBrowserTab.Albums -> filteredAlbums.size
                             MusicBrowserTab.Artists -> filteredArtists.size
                         },
+                    sortAnchor = sortAnchor,
+                    onSortClick = ::openSortMenu,
                     modifier =
                         Modifier.animateItem(
-                            fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                            fadeInSpec = ListItemFadeInSpec,
                             placementSpec =
                                 spring(
                                     dampingRatio = Spring.DampingRatioLowBouncy,
                                     stiffness = Spring.StiffnessMediumLow,
                                     visibilityThreshold = IntOffset.VisibilityThreshold,
                                 ),
-                            fadeOutSpec = tween(durationMillis = 160),
+                            fadeOutSpec = ListItemFadeOutSpec,
                         ),
                 )
             }
@@ -358,6 +516,9 @@ fun MusicPage() {
                                 index = index,
                                 song = song,
                                 isPlaying = currentMediaItem?.mediaId == song.mediaStoreId.toString(),
+                                onLongClick = {
+                                    path.push(SongMenuScene(song))
+                                },
                                 onClick = {
                                     playerViewModel.updatePlaylistWithSongs(
                                         songs = filteredSongs,
@@ -369,17 +530,14 @@ fun MusicPage() {
                                     Modifier
                                         .animateItem(
                                             fadeInSpec =
-                                                tween(
-                                                    durationMillis = 240,
-                                                    easing = FastOutSlowInEasing,
-                                                ),
+                                            ListItemFadeInSpec,
                                             placementSpec =
                                                 spring(
                                                     dampingRatio = Spring.DampingRatioLowBouncy,
                                                     stiffness = Spring.StiffnessMediumLow,
                                                     visibilityThreshold = IntOffset.VisibilityThreshold,
                                                 ),
-                                            fadeOutSpec = tween(durationMillis = 160),
+                                            fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
                                             val enter = entrance.value
                                             transformOrigin = TransformOrigin(0f, 0f)
@@ -424,17 +582,14 @@ fun MusicPage() {
                                     Modifier
                                         .animateItem(
                                             fadeInSpec =
-                                                tween(
-                                                    durationMillis = 240,
-                                                    easing = FastOutSlowInEasing,
-                                                ),
+                                            ListItemFadeInSpec,
                                             placementSpec =
                                                 spring(
                                                     dampingRatio = Spring.DampingRatioLowBouncy,
                                                     stiffness = Spring.StiffnessMediumLow,
                                                     visibilityThreshold = IntOffset.VisibilityThreshold,
                                                 ),
-                                            fadeOutSpec = tween(durationMillis = 160),
+                                            fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
                                             val enter = entrance.value
                                             transformOrigin = TransformOrigin(0f, 0f)
@@ -479,17 +634,14 @@ fun MusicPage() {
                                     Modifier
                                         .animateItem(
                                             fadeInSpec =
-                                                tween(
-                                                    durationMillis = 240,
-                                                    easing = FastOutSlowInEasing,
-                                                ),
+                                            ListItemFadeInSpec,
                                             placementSpec =
                                                 spring(
                                                     dampingRatio = Spring.DampingRatioLowBouncy,
                                                     stiffness = Spring.StiffnessMediumLow,
                                                     visibilityThreshold = IntOffset.VisibilityThreshold,
                                                 ),
-                                            fadeOutSpec = tween(durationMillis = 160),
+                                            fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
                                             val enter = entrance.value
                                             transformOrigin = TransformOrigin(0f, 0f)
@@ -527,7 +679,6 @@ private fun rememberEntrance(
     play: Boolean,
 ): Animatable<Float, AnimationVector1D> {
     val entrance = remember { Animatable(if (play) 0f else 1f) }
-    Log.e("yangweizhi", "rememberEntrance: $order, play: $play, entrance: ${entrance.value}")
     LaunchedEffect(Unit) {
         if (entrance.value < 1f) {
             delay(order * ENTRANCE_STAGGER_MILLIS)
@@ -573,6 +724,7 @@ private fun MusicTopBar(
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val backgroundColor = MaterialTheme.colorScheme.background
     val solid by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+    val scope = rememberCoroutineScope()
     Box(
         modifier =
             modifier
@@ -588,13 +740,12 @@ private fun MusicTopBar(
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.14f),
             )
         }
-        Row(
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(top = statusBarTop)
                     .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = stringResource(R.string.music_page_title),
@@ -605,9 +756,53 @@ private fun MusicTopBar(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier =
                     Modifier
-                        .weight(1f)
+                        .align(Alignment.CenterStart)
                         .graphicsLayer { alpha = mastheadCollapse(listState) },
             )
+            AnimatedVisibility(
+                modifier = Modifier.align(Alignment.CenterEnd),
+                visible = solid,
+                // 高频触发（滚动过阈值即出现）：短时长强 ease-out，不带弹性；
+                // 淡入与缩放同时长，时间轴对齐
+                enter =
+                    scaleIn(
+                        animationSpec = tween(durationMillis = 180, easing = EaseOutEmphasized),
+                        initialScale = 0.92f,
+                    ) + fadeIn(tween(durationMillis = 180, easing = EaseOutEmphasized)),
+                exit =
+                    scaleOut(
+                        animationSpec = tween(durationMillis = 140),
+                        targetScale = 0.8f,
+                    ) + fadeOut(tween(durationMillis = 140)),
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .clickHighlight(onClick = {
+                                scope.launch {
+                                    listState.animateScrollToItem(0)
+                                }
+                            })
+                            .padding(horizontal = Spacing.Medium, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowUpward,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = stringResource(R.string.scroll_to_top_hint),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
+            }
         }
     }
 }
@@ -812,6 +1007,8 @@ private fun MusicSearchBar(
 private fun MusicSectionHeader(
     tab: MusicBrowserTab,
     count: Int,
+    sortAnchor: PopupMenuAnchorState,
+    onSortClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -837,27 +1034,36 @@ private fun MusicSectionHeader(
                 maxLines = 1,
             )
         }
-        Icon(
-            imageVector = tab.icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+        // 排序锚点：点击后图标原地过渡成排序菜单（SortMenuScene）
+        Box(
             modifier =
                 Modifier
+                    .popupMenuAnchor(sortAnchor)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(Spacing.Small)
-                    .size(18.dp),
-        )
+                    .clickHighlight(
+                        onClickLabel = stringResource(R.string.music_sort_cd),
+                        onClick = onSortClick,
+                    ).padding(Spacing.Small),
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Sort,
+                contentDescription = stringResource(R.string.music_sort_cd),
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
     }
 }
 
 @Composable
 private fun MusicSongRow(
+    modifier: Modifier = Modifier,
     index: Int,
     song: Song,
     isPlaying: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    onLongClick: () -> Unit = {},
 ) {
     Row(
         modifier =
@@ -871,8 +1077,10 @@ private fun MusicSongRow(
                     } else {
                         MaterialTheme.colorScheme.surfaceContainerLow
                     },
-                ).clickHighlight(onClick = onClick)
-                .padding(Spacing.Small),
+                ).combinedClickHighlight(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                ).padding(Spacing.Small),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {

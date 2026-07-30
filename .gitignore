@@ -21,3 +21,6 @@ local.properties
 /docs/
 /.kotlin/
 /common/build/
+/.claude/
+/.idea/
+/.idea/shelf/

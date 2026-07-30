@@ -109,6 +109,8 @@ import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
 import me.spica27.spicamusic.ui.scan.ScannerScene
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
+import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
@@ -288,9 +290,9 @@ fun LibraryPage() {
                         },
                         modifier =
                             Modifier.animateItem(
-                                fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                fadeInSpec = ListItemFadeInSpec,
                                 placementSpec = null,
-                                fadeOutSpec = tween(durationMillis = 160),
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ),
                     )
                 }
@@ -304,9 +306,9 @@ fun LibraryPage() {
                         modifier =
                             Modifier
                                 .animateItem(
-                                    fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                    fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
-                                    fadeOutSpec = tween(durationMillis = 160),
+                                    fadeOutSpec = ListItemFadeOutSpec,
                                 ).entranceGraphics(entrance),
                     )
                 }
@@ -334,9 +336,9 @@ fun LibraryPage() {
                                 .fillMaxWidth()
                                 // 空态与歌单卡跨 span 形态切换，只做淡入淡出，不做位移动画
                                 .animateItem(
-                                    fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                    fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
-                                    fadeOutSpec = tween(durationMillis = 160),
+                                    fadeOutSpec = ListItemFadeOutSpec,
                                 ),
                     )
                 }
@@ -352,14 +354,14 @@ fun LibraryPage() {
                 ) { index, item ->
                     val cardModifier =
                         Modifier.animateItem(
-                            fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                            fadeInSpec = ListItemFadeInSpec,
                             placementSpec =
                                 spring(
                                     dampingRatio = Spring.DampingRatioLowBouncy,
                                     stiffness = Spring.StiffnessMediumLow,
                                     visibilityThreshold = IntOffset.VisibilityThreshold,
                                 ),
-                            fadeOutSpec = tween(durationMillis = 160),
+                            fadeOutSpec = ListItemFadeOutSpec,
                         )
                     // 编舞只覆盖首屏前几张卡；播完后不再为滚动进场的卡片挂空操作 graphicsLayer
                     val entranceModifier =
@@ -417,14 +419,14 @@ fun LibraryPage() {
                         },
                         modifier =
                             Modifier.animateItem(
-                                fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                fadeInSpec = ListItemFadeInSpec,
                                 placementSpec =
                                     spring(
                                         dampingRatio = Spring.DampingRatioLowBouncy,
                                         stiffness = Spring.StiffnessMediumLow,
                                         visibilityThreshold = IntOffset.VisibilityThreshold,
                                     ),
-                                fadeOutSpec = tween(durationMillis = 160),
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ),
                     )
                 }
@@ -455,14 +457,14 @@ fun LibraryPage() {
                         onRemove = { sourceViewModel.removeFolder(context, folder) },
                         modifier =
                             Modifier.animateItem(
-                                fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                fadeInSpec = ListItemFadeInSpec,
                                 placementSpec =
                                     spring(
                                         dampingRatio = Spring.DampingRatioLowBouncy,
                                         stiffness = Spring.StiffnessMediumLow,
                                         visibilityThreshold = IntOffset.VisibilityThreshold,
                                     ),
-                                fadeOutSpec = tween(durationMillis = 160),
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ),
                     )
                 }
@@ -476,14 +478,14 @@ fun LibraryPage() {
                         Modifier
                             .padding(top = Spacing.Small)
                             .animateItem(
-                                fadeInSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+                                fadeInSpec = ListItemFadeInSpec,
                                 placementSpec =
                                     spring(
                                         dampingRatio = Spring.DampingRatioLowBouncy,
                                         stiffness = Spring.StiffnessMediumLow,
                                         visibilityThreshold = IntOffset.VisibilityThreshold,
                                     ),
-                                fadeOutSpec = tween(durationMillis = 160),
+                                fadeOutSpec = ListItemFadeOutSpec,
                             ),
                 )
             }
