@@ -208,10 +208,18 @@ class SpicaPlayer(
 
                     PlayerAction.SkipToNext -> {
                         browser.seekToNext()
+                        if (browser.playbackState == Player.STATE_IDLE) {
+                            browser.prepare()
+                        }
+                        browser.play()
                     }
 
                     PlayerAction.SkipToPrevious -> {
                         browser.seekToPrevious()
+                        if (browser.playbackState == Player.STATE_IDLE) {
+                            browser.prepare()
+                        }
+                        browser.play()
                     }
 
                     is PlayerAction.RemoveWithMediaId -> {

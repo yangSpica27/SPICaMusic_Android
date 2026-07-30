@@ -7,14 +7,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -38,7 +37,6 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,8 +45,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.theme.rememberThemeRevealOriginState
 import me.spica27.spicamusic.ui.theme.themeRevealOrigin
-import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.MusicCoverPlaceholder
+import me.spica27.spicamusic.ui.widget.StableAudioCover
+import me.spica27.spicamusic.utils.albumCoverFallbackUri
 
 /**
  * 底部迷你播放条
@@ -66,6 +65,7 @@ fun LargeBottomPlayerBar(
     coverShape: Shape,
     coverPainter: Painter? = null,
     onCoverPainterReady: (Painter) -> Unit = {},
+    onCoverPainterFailed: () -> Unit = {},
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
     onExpand: () -> Unit,
     onNext: () -> Unit = viewModel::skipToNext,
@@ -76,7 +76,7 @@ fun LargeBottomPlayerBar(
     val metadata = currentMediaItem?.mediaMetadata
     val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
     val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
-    val artworkUri = metadata?.artworkUri
+    val artworkUri = metadata?.artworkUri ?: metadata?.albumCoverFallbackUri()
     val nextRevealOrigin = rememberThemeRevealOriginState()
     Box(
         modifier =
@@ -107,28 +107,21 @@ fun LargeBottomPlayerBar(
                         .background(
                             MaterialTheme.colorScheme.tertiaryContainer,
                         )
-                if (coverPainter != null) {
-                    Image(
-                        painter = coverPainter,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = resolvedCoverModifier,
-                    )
-                } else {
-                    AudioCover(
-                        uri = artworkUri,
-                        modifier = resolvedCoverModifier,
-                        onPainterReady = onCoverPainterReady,
-                        placeHolder = {
-                            MusicCoverPlaceholder(
-                                modifier = Modifier.fillMaxSize(),
-                                containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                                contentDescription = stringResource(R.string.cover_placeholder),
-                            )
-                        },
-                    )
-                }
+                StableAudioCover(
+                    uri = artworkUri,
+                    retainedPainter = coverPainter,
+                    modifier = resolvedCoverModifier,
+                    onPainterReady = onCoverPainterReady,
+                    onPainterFailed = onCoverPainterFailed,
+                    placeHolder = {
+                        MusicCoverPlaceholder(
+                            modifier = Modifier.fillMaxSize(),
+                            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            contentDescription = stringResource(R.string.cover_placeholder),
+                        )
+                    },
+                )
 
                 Spacer(modifier = Modifier.width(12.dp))
 

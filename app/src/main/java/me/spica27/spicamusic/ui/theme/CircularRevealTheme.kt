@@ -2,13 +2,19 @@ package me.spica27.spicamusic.ui.theme
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.graphics.Bitmap
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
+import android.util.Log
+import android.view.PixelCopy
 import android.view.View
 import android.view.ViewAnimationUtils
 import android.view.ViewGroup
 import android.view.animation.PathInterpolator
-import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -31,10 +37,9 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalView
-import androidx.core.view.drawToBitmap
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.math.hypot
 import kotlin.coroutines.resume
+import kotlin.math.hypot
 
 /**
  * CircularRevealSwitch-style theme transition without recreating the Activity.
@@ -129,7 +134,10 @@ fun CircularRevealThemeHost(
         if (!darkChanged && !colorChanged) return@LaunchedEffect
 
         val armedOrigin = controller.consumeOrigin()
-        val shouldReveal = darkChanged || armedOrigin != null
+        // Preference restoration and cold-start player metadata can update the target shortly
+        // after the first frame. Only a real user gesture is allowed to start a reveal; otherwise
+        // a fixed app theme on a differently themed system would animate from the fallback corner.
+        val shouldReveal = armedOrigin != null
         if (!shouldReveal || view.width <= 0 || view.height <= 0) {
             displayedDarkTheme = targetDarkTheme
             displayedThemeColor = targetThemeColor
@@ -138,7 +146,9 @@ fun CircularRevealThemeHost(
 
         val oldFrame =
             runCatching {
-                view.drawToBitmap(Bitmap.Config.ARGB_8888)
+                captureWindowFrame(view)
+            }.onFailure {
+                Log.e(REVEAL_LOG_TAG, "Unable to capture old frame", it)
             }.getOrNull()
         if (oldFrame == null) {
             displayedDarkTheme = targetDarkTheme
@@ -146,13 +156,7 @@ fun CircularRevealThemeHost(
             return@LaunchedEffect
         }
 
-        val defaultInset = 48f * view.resources.displayMetrics.density
-        val revealOrigin =
-            armedOrigin
-                ?: Offset(
-                    x = (view.width - defaultInset).coerceAtLeast(0f),
-                    y = defaultInset.coerceAtMost(view.height.toFloat()),
-                )
+        val revealOrigin = requireNotNull(armedOrigin)
         val revealMode =
             if (darkChanged && !targetDarkTheme) {
                 RevealMode.Shrink
@@ -166,7 +170,10 @@ fun CircularRevealThemeHost(
                     anchor = view,
                     oldFrame = oldFrame,
                     originInWindow = revealOrigin,
+                    revealMode = revealMode,
                 )
+            }.onFailure {
+                Log.e(REVEAL_LOG_TAG, "Unable to attach reveal transition", it)
             }.getOrNull()
 
         if (transition == null) {
@@ -184,20 +191,11 @@ fun CircularRevealThemeHost(
             withFrameNanos { }
 
             when (revealMode) {
-                RevealMode.Expand -> {
-                    runCatching {
-                        view.drawToBitmap(Bitmap.Config.ARGB_8888)
-                    }.getOrNull()?.let { newFrame ->
-                        transition.expandNewFrame(
-                            newFrame = newFrame,
-                            durationMillis = durationMillis,
-                        )
-                    }
-                }
+                RevealMode.Expand ->
+                    transition.revealNewContent(durationMillis = durationMillis)
 
-                RevealMode.Shrink -> {
+                RevealMode.Shrink ->
                     transition.shrinkOldFrame(durationMillis = durationMillis)
-                }
             }
         } finally {
             transition.close()
@@ -211,8 +209,7 @@ fun CircularRevealThemeHost(
                     .fillMaxSize()
                     .onGloballyPositioned { coordinates ->
                         hostOriginInWindow = coordinates.boundsInWindow().topLeft
-                    }
-                    .pointerInput(controller) {
+                    }.pointerInput(controller) {
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             controller.recordPointer(hostOriginInWindow + down.position)
@@ -224,115 +221,135 @@ fun CircularRevealThemeHost(
     }
 }
 
+private const val REVEAL_LOG_TAG = "SPICaThemeReveal"
+
 private enum class RevealMode {
     Expand,
     Shrink,
 }
 
 /**
- * Window-level screenshot layers matching CircularRevealSwitch's implementation strategy.
+ * Screenshot layer matching CircularRevealSwitch's implementation strategy.
  *
- * The old frame is attached before Compose receives the new theme, preventing a one-frame flash.
- * For expand transitions a screenshot of the new frame is revealed above it. For shrink
- * transitions the old screenshot itself shrinks while the live new UI remains underneath.
+ * The retained old frame is inserted into DecorView beside `android.R.id.content`, matching the
+ * reference library. For EXPAND it sits underneath the temporarily hidden live content, then the
+ * live new theme is circular-revealed. For SHRINK it sits above the already-updated live content
+ * and shrinks away.
  */
 private class NativeRevealTransition private constructor(
-    private val root: ViewGroup,
-    private val anchor: View,
+    private val decorView: ViewGroup,
+    private val contentView: View,
     private val oldFrame: Bitmap,
-    private val originInAnchor: Offset,
+    private val originInDecor: Offset,
+    private val originInContent: Offset,
+    private val revealMode: RevealMode,
 ) {
-    private val ownedLayers = mutableListOf<ImageView>()
-    private val ownedBitmaps = mutableListOf(oldFrame)
+    private val originalContentVisibility = contentView.visibility
+    private val originalContentBackground = contentView.background
+    private val installedContentBackground =
+        revealMode == RevealMode.Expand && originalContentBackground == null
     private val oldLayer =
-        createLayer(oldFrame, initiallyVisible = true).also { layer ->
-            ownedLayers += layer
+        createOldFrameLayer().also { layer ->
+            val contentIndex = decorView.indexOfChild(contentView)
+            val insertIndex =
+                when (revealMode) {
+                    RevealMode.Expand -> contentIndex.takeIf { it >= 0 } ?: 0
+                    RevealMode.Shrink ->
+                        if (contentIndex >= 0) contentIndex + 1 else decorView.childCount
+                }
+            decorView.addView(layer, insertIndex)
         }
 
-    suspend fun expandNewFrame(
-        newFrame: Bitmap,
-        durationMillis: Long,
-    ) {
-        ownedBitmaps += newFrame
-        val newLayer = createLayer(newFrame, initiallyVisible = false)
-        ownedLayers += newLayer
+    init {
+        if (installedContentBackground) {
+            contentView.background = decorView.background
+        }
+        if (revealMode == RevealMode.Expand) {
+            // Compose can recompose while invisible; the retained frame remains visible underneath.
+            contentView.visibility = View.INVISIBLE
+        }
+    }
 
-        // Give DecorView one frame to measure and position the new screenshot layer.
+    suspend fun revealNewContent(durationMillis: Long) {
+        require(revealMode == RevealMode.Expand)
+        // Give the new Compose theme time to commit before making the live view visible.
         withFrameNanos { }
-        val animator = createRevealAnimator(newLayer, startRadius = 0f, endRadius = maximumRadius())
+        val animator =
+            createRevealAnimator(
+                layer = contentView,
+                center = originInContent,
+                startRadius = 0f,
+                endRadius = maximumRadius(contentView, originInContent),
+            )
         animator.duration = durationMillis
-        newLayer.visibility = View.VISIBLE
+        contentView.visibility = View.VISIBLE
         animator.awaitEnd()
     }
 
     suspend fun shrinkOldFrame(durationMillis: Long) {
-        val animator = createRevealAnimator(oldLayer, startRadius = maximumRadius(), endRadius = 0f)
+        require(revealMode == RevealMode.Shrink)
+        val animator =
+            createRevealAnimator(
+                layer = oldLayer,
+                center = originInDecor,
+                startRadius = maximumRadius(oldLayer, originInDecor),
+                endRadius = 0f,
+            )
         animator.duration = durationMillis
         animator.awaitEnd()
     }
 
     fun close() {
-        ownedLayers.asReversed().forEach { layer ->
-            layer.setImageDrawable(null)
-            (layer.parent as? ViewGroup)?.removeView(layer)
+        contentView.visibility = originalContentVisibility
+        if (installedContentBackground) {
+            contentView.background = originalContentBackground
         }
-        ownedLayers.clear()
-        ownedBitmaps.forEach { bitmap ->
-            if (!bitmap.isRecycled) bitmap.recycle()
-        }
-        ownedBitmaps.clear()
+        oldLayer.setImageDrawable(null)
+        (oldLayer.parent as? ViewGroup)?.removeView(oldLayer)
+        if (!oldFrame.isRecycled) oldFrame.recycle()
     }
 
-    private fun createLayer(
-        bitmap: Bitmap,
-        initiallyVisible: Boolean,
-    ): ImageView {
-        val anchorLocation = IntArray(2).also(anchor::getLocationInWindow)
-        val rootLocation = IntArray(2).also(root::getLocationInWindow)
-        val params =
-            FrameLayout.LayoutParams(anchor.width, anchor.height).apply {
-                leftMargin = anchorLocation[0] - rootLocation[0]
-                topMargin = anchorLocation[1] - rootLocation[1]
-            }
-        val layer =
-            ImageView(anchor.context).apply {
-                layoutParams = params
-                scaleType = ImageView.ScaleType.FIT_XY
-                setImageBitmap(bitmap)
-                isClickable = true
-                isFocusable = true
-                visibility = if (initiallyVisible) View.VISIBLE else View.INVISIBLE
-                setLayerType(View.LAYER_TYPE_HARDWARE, null)
-            }
-        root.addView(layer)
-        layer.bringToFront()
-        return layer
-    }
+    private fun createOldFrameLayer(): ImageView =
+        ImageView(contentView.context).apply {
+            layoutParams =
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                )
+            scaleType = ImageView.ScaleType.FIT_XY
+            setImageBitmap(oldFrame)
+            isClickable = true
+            isFocusable = true
+        }
 
     private fun createRevealAnimator(
         layer: View,
+        center: Offset,
         startRadius: Float,
         endRadius: Float,
     ): Animator =
         ViewAnimationUtils
             .createCircularReveal(
                 layer,
-                originInAnchor.x.toInt(),
-                originInAnchor.y.toInt(),
+                center.x.toInt(),
+                center.y.toInt(),
                 startRadius,
                 endRadius,
             ).apply {
                 interpolator = REFERENCE_INTERPOLATOR
             }
 
-    private fun maximumRadius(): Float {
-        val x = originInAnchor.x
-        val y = originInAnchor.y
+    private fun maximumRadius(
+        target: View,
+        center: Offset,
+    ): Float {
+        val x = center.x
+        val y = center.y
         return maxOf(
             hypot(x, y),
-            hypot(anchor.width - x, y),
-            hypot(x, anchor.height - y),
-            hypot(anchor.width - x, anchor.height - y),
+            hypot(target.width - x, y),
+            hypot(x, target.height - y),
+            hypot(target.width - x, target.height - y),
         )
     }
 
@@ -343,23 +360,84 @@ private class NativeRevealTransition private constructor(
             anchor: View,
             oldFrame: Bitmap,
             originInWindow: Offset,
+            revealMode: RevealMode,
         ): NativeRevealTransition {
             require(anchor.width > 0 && anchor.height > 0)
-            val root = anchor.rootView as? ViewGroup ?: error("Decor root is not a ViewGroup")
-            val anchorLocation = IntArray(2).also(anchor::getLocationInWindow)
-            val localOrigin =
+            val decorView =
+                anchor.rootView as? ViewGroup
+                    ?: error("Window DecorView is not a ViewGroup")
+            val contentView =
+                decorView.findViewById<View>(android.R.id.content)
+                    ?: error("Activity content view is unavailable")
+            val decorLocation = IntArray(2).also(decorView::getLocationInWindow)
+            val contentLocation = IntArray(2).also(contentView::getLocationInWindow)
+            val originInDecor =
                 Offset(
-                    x = (originInWindow.x - anchorLocation[0]).coerceIn(0f, anchor.width.toFloat()),
-                    y = (originInWindow.y - anchorLocation[1]).coerceIn(0f, anchor.height.toFloat()),
+                    x =
+                        (originInWindow.x - decorLocation[0])
+                            .coerceIn(0f, decorView.width.toFloat()),
+                    y =
+                        (originInWindow.y - decorLocation[1])
+                            .coerceIn(0f, decorView.height.toFloat()),
+                )
+            val originInContent =
+                Offset(
+                    x =
+                        (originInWindow.x - contentLocation[0])
+                            .coerceIn(0f, contentView.width.toFloat()),
+                    y =
+                        (originInWindow.y - contentLocation[1])
+                            .coerceIn(0f, contentView.height.toFloat()),
                 )
             return NativeRevealTransition(
-                root = root,
-                anchor = anchor,
+                decorView = decorView,
+                contentView = contentView,
                 oldFrame = oldFrame,
-                originInAnchor = localOrigin,
+                originInDecor = originInDecor,
+                originInContent = originInContent,
+                revealMode = revealMode,
             )
         }
     }
+}
+
+/**
+ * Captures the composed window through SurfaceFlinger so hardware-backed album art can be copied.
+ * Drawing DecorView into a software canvas throws as soon as a hardware bitmap is visible.
+ */
+private suspend fun captureWindowFrame(view: View): Bitmap? {
+    val activity = view.context.findActivity() ?: return null
+    val root = activity.window.decorView.rootView
+    if (root.width <= 0 || root.height <= 0) return null
+    val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+    return suspendCancellableCoroutine { continuation ->
+        PixelCopy.request(
+            activity.window,
+            bitmap,
+            { result ->
+                if (result == PixelCopy.SUCCESS) {
+                    if (continuation.isActive) {
+                        continuation.resume(bitmap)
+                    } else if (!bitmap.isRecycled) {
+                        bitmap.recycle()
+                    }
+                } else {
+                    if (!bitmap.isRecycled) bitmap.recycle()
+                    if (continuation.isActive) continuation.resume(null)
+                }
+            },
+            Handler(Looper.getMainLooper()),
+        )
+    }
+}
+
+private fun Context.findActivity(): Activity? {
+    var current = this
+    while (current is ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    return current as? Activity
 }
 
 private suspend fun Animator.awaitEnd() {

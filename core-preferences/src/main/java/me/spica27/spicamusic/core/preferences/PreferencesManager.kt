@@ -9,7 +9,9 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 
 class PreferencesManager(
     private val context: Context,
@@ -73,6 +75,23 @@ class PreferencesManager(
             .apply()
     }
 
+    /**
+     * Theme mode is needed before DataStore can emit its first value; otherwise a fixed light app
+     * on a dark system renders one dark frame during cold start. The SharedPreferences entry is a
+     * first-frame cache only, while DataStore remains the source of truth.
+     */
+    fun getInitialThemeMode(): String {
+        renderCache.getString(RENDER_CACHE_THEME_MODE, null)?.let { return it }
+        val storedMode =
+            runBlocking {
+                context.dataStore.data.first()[Keys.THEME_MODE].orEmpty()
+            }
+        if (storedMode.isNotBlank()) {
+            renderCache.edit().putString(RENDER_CACHE_THEME_MODE, storedMode).commit()
+        }
+        return storedMode
+    }
+
     fun getBoolean(
         key: Preferences.Key<Boolean>,
         defaultValue: Boolean = false,
@@ -104,6 +123,9 @@ class PreferencesManager(
     ) {
         context.dataStore.edit { preferences ->
             preferences[key] = value
+        }
+        if (key == Keys.THEME_MODE) {
+            renderCache.edit().putString(RENDER_CACHE_THEME_MODE, value).apply()
         }
     }
 
@@ -149,6 +171,7 @@ class PreferencesManager(
     private companion object {
         const val RENDER_CACHE_ARTWORK_URI = "player_theme_artwork_uri"
         const val RENDER_CACHE_THEME_ARGB = "player_theme_argb"
+        const val RENDER_CACHE_THEME_MODE = "theme_mode"
         const val DEFAULT_PLAYER_THEME_ARGB = 0xFF2196F3.toInt()
     }
 }

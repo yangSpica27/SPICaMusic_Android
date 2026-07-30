@@ -196,6 +196,7 @@ private fun decodeCoverBitmap(
             } else {
                 null
             }
+
         fun openCoverStream() =
             remoteBytes?.let(::ByteArrayInputStream)
                 ?: context.contentResolver.openInputStream(uri)

@@ -17,7 +17,6 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -77,7 +76,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
@@ -94,6 +92,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.components.rememberImageComponent
 import com.skydoves.landscapist.crossfade.CrossfadePlugin
 import com.skydoves.landscapist.image.LandscapistImage
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -115,9 +114,10 @@ import me.spica27.spicamusic.ui.player.rememberPlayerArtworkMorphState
 import me.spica27.spicamusic.ui.player.sourceArtworkAlpha
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
-import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.MusicCoverPlaceholder
+import me.spica27.spicamusic.ui.widget.StableAudioCover
 import me.spica27.spicamusic.ui.widget.rememberPlayingCoverShape
+import me.spica27.spicamusic.utils.albumCoverFallbackUri
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.roundToInt
 import androidx.compose.ui.util.lerp as floatLerp
@@ -126,6 +126,7 @@ import androidx.compose.ui.util.lerp as floatLerp
 private enum class PlayerSheetValue { Collapsed, Expanded }
 
 private const val BOTTOM_FLOATING_CONTAINER_ALPHA = 1f
+private const val COVER_CLEAR_GRACE_PERIOD_MS = 300L
 
 /**
  * 底部媒体控制栏
@@ -154,7 +155,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
     val metadata = currentMediaItem?.mediaMetadata
     val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
     val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
-    val artworkUri = metadata?.artworkUri
+    val artworkUri = metadata?.artworkUri ?: metadata?.albumCoverFallbackUri()
     val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
     val coverShape = rememberPlayingCoverShape(isPlaying)
 
@@ -558,8 +559,16 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
     val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
     val metadata = currentMediaItem?.mediaMetadata
     val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
-    val artworkUri = metadata?.artworkUri
-    var stableCoverPainter by remember(artworkUri) { mutableStateOf<Painter?>(null) }
+    val artworkUri = metadata?.artworkUri ?: metadata?.albumCoverFallbackUri()
+    var stableCoverPainter by remember { mutableStateOf<Painter?>(null) }
+    LaunchedEffect(artworkUri) {
+        if (artworkUri == null) {
+            // Media3 may briefly publish a null item while seeking to an adjacent queue entry.
+            // Keep the decoded cover through that hand-off and clear it only for a real empty queue.
+            delay(COVER_CLEAR_GRACE_PERIOD_MS)
+            stableCoverPainter = null
+        }
+    }
     val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
 
     // 记录跳转到播放器的初始页（默认主页 or 播放列表页）
@@ -706,6 +715,7 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                                     ),
                                 coverPainter = stableCoverPainter,
                                 onCoverPainterReady = { stableCoverPainter = it },
+                                onCoverPainterFailed = { stableCoverPainter = null },
                                 modifier = Modifier.fillMaxWidth(),
                                 onExpand = {
                                     initialPage = DEFAULT_PAGE
@@ -823,6 +833,7 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                                 uri = artworkUri,
                                 painter = stableCoverPainter,
                                 onPainterReady = { stableCoverPainter = it },
+                                onPainterFailed = { stableCoverPainter = null },
                                 modifier =
                                     Modifier
                                         .sharedElement(
@@ -957,24 +968,18 @@ private fun StableHeroCover(
     uri: Uri?,
     painter: Painter?,
     onPainterReady: (Painter) -> Unit,
+    onPainterFailed: () -> Unit,
     modifier: Modifier,
     placeHolder: @Composable () -> Unit,
 ) {
-    if (painter != null) {
-        Image(
-            painter = painter,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = modifier,
-        )
-    } else {
-        AudioCover(
-            uri = uri,
-            modifier = modifier,
-            onPainterReady = onPainterReady,
-            placeHolder = placeHolder,
-        )
-    }
+    StableAudioCover(
+        uri = uri,
+        retainedPainter = painter,
+        modifier = modifier,
+        onPainterReady = onPainterReady,
+        onPainterFailed = onPainterFailed,
+        placeHolder = placeHolder,
+    )
 }
 
 @Composable

@@ -144,8 +144,7 @@ class SubsonicClient(
     fun streamUrl(
         account: RemoteMusicAccount,
         songId: String,
-    ): String =
-        apiUrl(account, "stream", mapOf("id" to songId, "format" to "raw")).toString()
+    ): String = apiUrl(account, "stream", mapOf("id" to songId, "format" to "raw")).toString()
 
     private fun parseSongs(
         account: RemoteMusicAccount,
@@ -201,7 +200,12 @@ class SubsonicClient(
         endpoint: String,
         parameters: Map<String, String> = emptyMap(),
     ): HttpUrl {
-        val salt = UUID.randomUUID().toString().replace("-", "").take(12)
+        val salt =
+            UUID
+                .randomUUID()
+                .toString()
+                .replace("-", "")
+                .take(12)
         val token = md5(account.secret + salt)
         val builder =
             "${account.normalizedServerUrl}/rest/$endpoint.view"
@@ -231,8 +235,9 @@ class SubsonicClient(
     }
 
     private fun normalizeServerUrl(value: String): String {
-        val url = value.trim().trimEnd('/').toHttpUrlOrNull()
-            ?: throw IllegalArgumentException("Invalid server URL")
+        val url =
+            value.trim().trimEnd('/').toHttpUrlOrNull()
+                ?: throw IllegalArgumentException("Invalid server URL")
         require(url.scheme == "http" || url.scheme == "https") { "Only HTTP or HTTPS is supported" }
         return url.toString().trimEnd('/')
     }
@@ -298,9 +303,10 @@ class NeteaseClient(
             if (query.isNotBlank()) {
                 search(account, query, offset, limit)
             } else {
-                val library = libraryCache[account.id] ?: loadLibrary(account).also {
-                    libraryCache[account.id] = it
-                }
+                val library =
+                    libraryCache[account.id] ?: loadLibrary(account).also {
+                        libraryCache[account.id] = it
+                    }
                 val songs = library.drop(offset).take(limit)
                 RemoteSongPage(songs, (offset + songs.size).takeIf { it < library.size })
             }
@@ -500,9 +506,10 @@ class QqMusicClient(
             if (query.isNotBlank()) {
                 search(account, query, offset, limit)
             } else {
-                val library = libraryCache[account.id] ?: loadLibrary(account).also {
-                    libraryCache[account.id] = it
-                }
+                val library =
+                    libraryCache[account.id] ?: loadLibrary(account).also {
+                        libraryCache[account.id] = it
+                    }
                 val songs = library.drop(offset).take(limit)
                 RemoteSongPage(songs, (offset + songs.size).takeIf { it < library.size })
             }
@@ -617,7 +624,11 @@ class QqMusicClient(
                 ?.optJSONArray("disslist")
         val playlistIds = LinkedHashSet<Long>()
         for (index in 0 until (created?.length() ?: 0)) {
-            created?.optJSONObject(index)?.optLong("tid")?.takeIf { it > 0L }?.let(playlistIds::add)
+            created
+                ?.optJSONObject(index)
+                ?.optLong("tid")
+                ?.takeIf { it > 0L }
+                ?.let(playlistIds::add)
         }
         val result = LinkedHashMap<String, RemoteSong>()
         playlistIds.take(MAX_LIBRARY_PLAYLISTS).forEach { playlistId ->
@@ -676,9 +687,11 @@ class QqMusicClient(
                             },
                         artist = artistNames.joinToString(" / ").ifBlank { "Unknown artist" },
                         album =
-                            item.optString("albumname").ifBlank {
-                                albumObject?.optString("name").orEmpty()
-                            }.ifBlank { "Unknown album" },
+                            item
+                                .optString("albumname")
+                                .ifBlank {
+                                    albumObject?.optString("name").orEmpty()
+                                }.ifBlank { "Unknown album" },
                         durationMs = item.optLong("interval").coerceAtLeast(0L) * 1_000L,
                         mimeType = "audio/mp4",
                         artworkUrl =

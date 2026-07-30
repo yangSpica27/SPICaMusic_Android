@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -157,12 +156,11 @@ class PlayerViewModel(
         // 封面主色只提取一次：先同步恢复上次缓存，切歌后再在 IO 线程更新。
         // 空媒体项时保留旧颜色，避免冷启动先蓝色、恢复播放后又整页换色。
         viewModelScope.launch {
-            merge(
-                currentMediaItem.map { it?.mediaMetadata },
-                currentMediaMetadata,
-            ).map { metadata ->
-                metadata?.artworkUri ?: metadata?.albumCoverFallbackUri()
-            }.filterNotNull()
+            currentMediaItem
+                .map { it?.mediaMetadata }
+                .map { metadata ->
+                    metadata?.artworkUri ?: metadata?.albumCoverFallbackUri()
+                }.filterNotNull()
                 .distinctUntilChanged()
                 .collectLatest { artworkUri ->
                     val artworkKey = artworkUri.toString()

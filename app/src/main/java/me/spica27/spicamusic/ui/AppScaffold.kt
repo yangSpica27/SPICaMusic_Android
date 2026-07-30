@@ -7,6 +7,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,11 +30,15 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 @Composable
 fun AppScaffold() {
     val preferencesManager = koinInject<PreferencesManager>()
+    val initialThemeMode =
+        remember(preferencesManager) {
+            preferencesManager.getInitialThemeMode()
+        }
 
     val savedThemeMode by
         preferencesManager
             .getString(PreferencesManager.Keys.THEME_MODE, "")
-            .collectAsStateWithLifecycle("")
+            .collectAsStateWithLifecycle(initialThemeMode)
     val legacyDarkMode by
         preferencesManager
             .getBoolean(PreferencesManager.Keys.DARK_MODE)
@@ -62,16 +67,16 @@ fun AppScaffold() {
 
     KeepScreenOnEffect(enabled = keepScreenOn && isPlaying)
 
-    val view = LocalView.current
-    LaunchedEffect(isDarkMode) {
-        val window = (view.context as Activity).window
-        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDarkMode
-    }
-
     CircularRevealThemeHost(
         targetDarkTheme = isDarkMode,
         targetThemeColor = color,
     ) { revealedDarkTheme, revealedThemeColor ->
+        val themedView = LocalView.current
+        LaunchedEffect(revealedDarkTheme) {
+            val window = (themedView.context as Activity).window
+            WindowCompat.getInsetsController(window, themedView).isAppearanceLightStatusBars =
+                !revealedDarkTheme
+        }
         SPICaMusicTheme(
             darkTheme = revealedDarkTheme,
             themeColor = revealedThemeColor,

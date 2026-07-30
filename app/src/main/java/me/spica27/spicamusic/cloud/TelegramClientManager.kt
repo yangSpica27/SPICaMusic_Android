@@ -152,7 +152,6 @@ class TelegramClientManager(
                 Timber.e(it, "TDLib native library is unavailable")
                 false
             }
-
     }
 }
 

@@ -57,7 +57,10 @@ object BundledTelegramCredentials {
             )
         val certificate =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                packageInfo.signingInfo?.apkContentsSigners?.firstOrNull()?.toByteArray()
+                packageInfo.signingInfo
+                    ?.apkContentsSigners
+                    ?.firstOrNull()
+                    ?.toByteArray()
             } else {
                 packageInfo.signatures?.firstOrNull()?.toByteArray()
             } ?: error("Application signing certificate is unavailable")

@@ -92,10 +92,10 @@ import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.player.scene.LyricsPlayerPage
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.widget.AudioCover
-import me.spica27.spicamusic.ui.widget.MusicCoverPlaceholder
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
+import me.spica27.spicamusic.ui.widget.MusicCoverPlaceholder
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
+import me.spica27.spicamusic.ui.widget.StableAudioCover
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioDynamicWaveSlider
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.clickHighlight
@@ -103,6 +103,7 @@ import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import me.spica27.spicamusic.ui.widget.resolvePlayerBackdropColor
+import me.spica27.spicamusic.utils.albumCoverFallbackUri
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
 import timber.log.Timber
@@ -188,7 +189,7 @@ fun ExpandedPlayerScreen(
 
     val songLikeState by viewModel.currentSongIsLike.collectAsStateWithLifecycle()
     val sleepTimerRemainingMs by viewModel.sleepTimerRemainingMs.collectAsStateWithLifecycle()
-    var lyricsArtworkPainter by remember(mediaId) { mutableStateOf<Painter?>(null) }
+    var lyricsArtworkPainter by remember { mutableStateOf<Painter?>(null) }
 
     LaunchedEffect(songLikeState) {
         Timber.tag("ExpandedPlayerScreen").d("当前歌曲收藏状态: $songLikeState")
@@ -441,6 +442,10 @@ fun ExpandedPlayerScreen(
                                         onArtworkPainterReady = { painter ->
                                             lyricsArtworkPainter = painter
                                         },
+                                        onArtworkPainterFailed = {
+                                            lyricsArtworkPainter = null
+                                        },
+                                        artworkPainter = lyricsArtworkPainter,
                                         progressProvider = { 1f },
                                         morphProgressProvider = morphProgressProvider,
                                         artworkMorphState = artworkMorphState,
@@ -809,6 +814,8 @@ private fun PlayerPage(
     onOpenLyrics: () -> Unit,
     onPlaybackVisualsChanged: (ProgressBarStyle, List<Int>) -> Unit,
     onArtworkPainterReady: (Painter) -> Unit,
+    onArtworkPainterFailed: () -> Unit,
+    artworkPainter: Painter?,
     progressProvider: () -> Float,
     morphProgressProvider: () -> Float,
     artworkMorphState: PlayerArtworkMorphState?,
@@ -926,9 +933,13 @@ private fun PlayerPage(
                     },
                     contentKey = { it?.mediaId ?: "-1" },
                 ) { currentMediaItem ->
-                    AudioCover(
-                        uri = currentMediaItem?.mediaMetadata?.artworkUri,
+                    StableAudioCover(
+                        uri =
+                            currentMediaItem?.mediaMetadata?.artworkUri
+                                ?: currentMediaItem?.mediaMetadata?.albumCoverFallbackUri(),
+                        retainedPainter = artworkPainter,
                         onPainterReady = onArtworkPainterReady,
+                        onPainterFailed = onArtworkPainterFailed,
                         placeHolder = {
                             MusicCoverPlaceholder(
                                 modifier =
