@@ -297,7 +297,13 @@ class TelegramViewModel(
                 onSuccess = { _state.update { it.copy(isWorking = false) } },
                 onFailure = { error ->
                     _state.update {
-                        it.copy(isWorking = false, error = error.message ?: "Telegram 操作失败")
+                        val message =
+                            if (error is TelegramRequestException) {
+                                telegramErrorMessage(error.errorCode, error.message.orEmpty())
+                            } else {
+                                error.message ?: "Telegram 操作失败"
+                            }
+                        it.copy(isWorking = false, error = message)
                     }
                 },
             )

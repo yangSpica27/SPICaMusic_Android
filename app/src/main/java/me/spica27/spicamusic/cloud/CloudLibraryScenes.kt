@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -50,13 +51,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
@@ -460,6 +466,22 @@ private fun TelegramContent(
 ) {
     var firstValue by rememberSaveable { mutableStateOf("") }
     var secondValue by rememberSaveable { mutableStateOf("") }
+    val authorizationStep =
+        when {
+            !state.hasConfig -> "config"
+            authState is TdApi.AuthorizationStateWaitPhoneNumber -> "phone"
+            authState is TdApi.AuthorizationStateWaitCode -> "code"
+            authState is TdApi.AuthorizationStateWaitPassword -> "password"
+            authState is TdApi.AuthorizationStateReady -> "ready"
+            else -> "connecting"
+        }
+
+    // The same field has a different meaning in each authorization step. Clear it when TDLib
+    // advances so a phone number can never be submitted as the verification code.
+    LaunchedEffect(authorizationStep) {
+        firstValue = ""
+        secondValue = ""
+    }
 
     LazyColumn(
         modifier = modifier,
@@ -497,6 +519,7 @@ private fun TelegramContent(
                     secondPassword = true,
                     actionText = stringResource(R.string.save_and_continue),
                     isWorking = state.isWorking,
+                    submitEnabled = firstValue.isNotBlank() && secondValue.isNotBlank(),
                     onSubmit = { onSaveConfig(firstValue, secondValue) },
                 )
             }
@@ -657,6 +680,7 @@ private fun TelegramContent(
                         keyboardType = KeyboardType.Phone,
                         actionText = stringResource(R.string.send_code),
                         isWorking = state.isWorking,
+                        submitEnabled = firstValue.isNotBlank(),
                         onSubmit = { onSendPhone(firstValue) },
                     )
                 }
@@ -672,6 +696,8 @@ private fun TelegramContent(
                         keyboardType = KeyboardType.NumberPassword,
                         actionText = stringResource(R.string.verify),
                         isWorking = state.isWorking,
+                        submitEnabled = firstValue.isNotBlank(),
+                        autoFocus = true,
                         onSubmit = { onCheckCode(firstValue) },
                     )
                 }
@@ -687,6 +713,8 @@ private fun TelegramContent(
                         firstPassword = true,
                         actionText = stringResource(R.string.verify),
                         isWorking = state.isWorking,
+                        submitEnabled = firstValue.isNotBlank(),
+                        autoFocus = true,
                         onSubmit = { onCheckPassword(firstValue) },
                     )
                 }
@@ -805,7 +833,19 @@ private fun CloudForm(
     firstPassword: Boolean = false,
     secondPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
+    submitEnabled: Boolean = true,
+    autoFocus: Boolean = false,
 ) {
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(autoFocus) {
+        if (autoFocus) {
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
     Surface(
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -823,10 +863,23 @@ private fun CloudForm(
             OutlinedTextField(
                 value = firstValue,
                 onValueChange = onFirstChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
                 label = { Text(firstLabel) },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = keyboardType,
+                        imeAction = ImeAction.Done,
+                    ),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            if (!isWorking && submitEnabled) onSubmit()
+                        },
+                    ),
                 visualTransformation =
                     if (firstPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
             )
@@ -841,7 +894,7 @@ private fun CloudForm(
                         if (secondPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
                 )
             }
-            Button(onClick = onSubmit, enabled = !isWorking) {
+            Button(onClick = onSubmit, enabled = !isWorking && submitEnabled) {
                 if (isWorking) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {
