@@ -8,17 +8,27 @@ import android.graphics.Shader
 import android.graphics.SurfaceTexture
 import android.net.Uri
 import android.view.TextureView
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -35,7 +45,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
@@ -57,7 +66,7 @@ import kotlin.math.sin
  *
  * @param modifier 修饰符
  * @param coverColor 封面主色，用于色彩调整
- * @param enabled 是否启用动画
+ * @param active 页面当前是否可见；false 时停止动态渲染并保留纯色底。
  * @param isDarkMode 暗色模式（true）或亮色模式（false），null时自动判断
  */
 @Composable
@@ -66,87 +75,89 @@ fun FluidMusicBackground(
     coverColor: Color = Color(0xFF2196F3),
     isDarkMode: Boolean? = null,
     coverUri: () -> Uri? = { null },
+    active: Boolean = true,
+    visibilityProgressProvider: () -> Float = { 1f },
 ) {
     val playerViewModel = LocalPlayerViewModel.current
     val settingsViewModel: SettingsViewModel = koinViewModel()
     val modeValue by settingsViewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
     val backgroundMode = remember(modeValue) { DynamicSpectrumBackground.fromString(modeValue) }
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val effectiveDarkMode = isDarkMode ?: (surfaceColor.luminance() < 0.5f)
 
-    // 只有真正消费 FFT 数据的动态模式才收集；OFF 和纯静态的 BlurCover 不收集，
-    // 避免驱动无意义的插值计算与每帧重组
-    val enable =
-        remember(backgroundMode) {
+    // 动态效果暂停时不订阅 FFT。GL 背景本身会保留最后一帧，收起后只停止连续渲染。
+    val enableFft =
+        active &&
             backgroundMode != DynamicSpectrumBackground.OFF &&
-                backgroundMode != DynamicSpectrumBackground.BlurCover
-        }
-
-    // FFT 插值计算随收集自动启停（WhileSubscribed），无需手动订阅/解绑；
-    // 动态背景关闭时不收集，插值循环不会运行
+            backgroundMode != DynamicSpectrumBackground.BlurCover
     val fftSnapshot =
-        if (enable) {
+        if (enableFft) {
             val fftDrawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
             fftDrawData
         } else {
             remember { FloatArray(IFFTProcessor.BAND_COUNT) }
         }
-    val surfaceColor = MaterialTheme.colorScheme.surface
-    when (backgroundMode) {
-        DynamicSpectrumBackground.TopGlow ->
-            TopGlowBackground(
-                modifier = modifier.blur(72.dp),
-                fftDrawData = fftSnapshot,
-                coverColor = coverColor,
-            )
 
-        DynamicSpectrumBackground.LiquidAurora ->
-            LiquidAuroraBackground(
-                modifier = modifier.blur(40.dp),
-                fftDrawData = fftSnapshot,
-                coverColor = coverColor,
-                isDarkMode = isDarkMode,
-            )
-
-        DynamicSpectrumBackground.EffectShader -> {
-            EffectShaderBackground(
-                modifier = modifier,
-                coverColor = coverColor,
-                fftDrawData = fftSnapshot,
-                isDarkMode = isDarkMode,
+    var dynamicReady by
+        remember(backgroundMode) {
+            mutableStateOf(
+                backgroundMode == DynamicSpectrumBackground.OFF ||
+                    backgroundMode == DynamicSpectrumBackground.BlurCover,
             )
         }
 
-        DynamicSpectrumBackground.FluidWarp -> {
-            FluidWarpBackground(
-                modifier = modifier,
-                coverColor = coverColor,
-                fftDrawData = fftSnapshot,
-                isDarkMode = isDarkMode,
-                coverUri = coverUri,
+    // TextureView 模式在收起后会释放组合；下一次打开重新等待它的首帧。
+    // FluidWarp / EffectShader 则常驻并冻结最后一帧，不重置 ready。
+    LaunchedEffect(active, backgroundMode) {
+        if (
+            active &&
+            (
+                backgroundMode == DynamicSpectrumBackground.TopGlow ||
+                    backgroundMode == DynamicSpectrumBackground.LiquidAurora
             )
+        ) {
+            dynamicReady = false
+        }
+    }
+
+    val dynamicAlphaState =
+        animateFloatAsState(
+            targetValue = if (dynamicReady) 1f else 0f,
+            animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+            label = "DynamicBackgroundCrossfade",
+        )
+    val dynamicSurfaceAlphaProvider =
+        remember(dynamicAlphaState, visibilityProgressProvider) {
+            {
+                dynamicAlphaState.value * visibilityProgressProvider().coerceIn(0f, 1f)
+            }
         }
 
-        DynamicSpectrumBackground.OFF ->
-            Box(modifier = modifier)
-
-        DynamicSpectrumBackground.BlurCover -> {
-            // 仅模糊封面，无动态效果
-            Box(
-                modifier = modifier,
-            ) {
+    Box(modifier = modifier) {
+        when (backgroundMode) {
+            DynamicSpectrumBackground.OFF -> {
                 Box(
                     modifier =
                         Modifier
                             .matchParentSize()
-                            .background(MaterialTheme.colorScheme.surface),
+                            .background(surfaceColor),
                 )
-                LandscapistImage(
+            }
+
+            DynamicSpectrumBackground.BlurCover -> {
+                // 仅模糊封面，无动态效果；图片插件自身执行交叉淡化。
+                Box(
                     modifier =
                         Modifier
-                            .matchParentSize(),
+                            .matchParentSize()
+                            .background(surfaceColor),
+                )
+                LandscapistImage(
+                    modifier = Modifier.matchParentSize(),
                     imageModel = { coverUri.invoke() },
                     component =
                         rememberImageComponent {
-                            +CrossfadePlugin(duration = 550)
+                            +CrossfadePlugin(duration = 320)
                             +BlurHashTransformationPlugin()
                         },
                 )
@@ -154,11 +165,130 @@ fun FluidMusicBackground(
                     modifier =
                         Modifier
                             .matchParentSize()
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                            .background(surfaceColor.copy(alpha = 0.5f)),
                 )
+            }
+
+            else -> {
+                // 始终先绘制同色静态底。动态层真正完成首帧后再做 240ms 交叉淡化，
+                // 不会再从纯色一帧跳到动态封面。
+                StaticPlayerBackdrop(
+                    modifier = Modifier.matchParentSize(),
+                    coverColor = coverColor,
+                    surfaceColor = surfaceColor,
+                    isDarkMode = effectiveDarkMode,
+                )
+
+                when (backgroundMode) {
+                    DynamicSpectrumBackground.TopGlow -> {
+                        if (active) {
+                            TopGlowBackground(
+                                modifier = Modifier.matchParentSize().blur(72.dp),
+                                fftDrawData = fftSnapshot,
+                                coverColor = coverColor,
+                                visualAlpha = dynamicAlphaState.value,
+                                onFirstFrame = { dynamicReady = true },
+                            )
+                        }
+                    }
+
+                    DynamicSpectrumBackground.LiquidAurora -> {
+                        if (active) {
+                            LiquidAuroraBackground(
+                                modifier = Modifier.matchParentSize().blur(40.dp),
+                                fftDrawData = fftSnapshot,
+                                coverColor = coverColor,
+                                isDarkMode = effectiveDarkMode,
+                                visualAlpha = dynamicAlphaState.value,
+                                onFirstFrame = { dynamicReady = true },
+                            )
+                        }
+                    }
+
+                    DynamicSpectrumBackground.EffectShader -> {
+                        EffectShaderBackground(
+                            modifier = Modifier.matchParentSize(),
+                            coverColor = coverColor,
+                            fftDrawData = fftSnapshot,
+                            isDarkMode = effectiveDarkMode,
+                            active = active,
+                            visualAlphaProvider = dynamicSurfaceAlphaProvider,
+                            onFirstFrame = { dynamicReady = true },
+                        )
+                    }
+
+                    DynamicSpectrumBackground.FluidWarp -> {
+                        FluidWarpBackground(
+                            modifier = Modifier.matchParentSize(),
+                            coverColor = coverColor,
+                            fftDrawData = fftSnapshot,
+                            isDarkMode = effectiveDarkMode,
+                            coverUri = coverUri,
+                            active = active,
+                            visualAlphaProvider = dynamicSurfaceAlphaProvider,
+                            onFirstFrame = { dynamicReady = true },
+                        )
+                    }
+
+                    DynamicSpectrumBackground.OFF,
+                    DynamicSpectrumBackground.BlurCover,
+                    -> Unit
+                }
             }
         }
     }
+}
+
+/**
+ * 播放器形变容器和全屏播放器共用的静态底色。
+ *
+ * 亮色主题提高封面色占比，暗色主题保留更多 surface；动态背景尚未绘出首帧时，
+ * 画面仍与最终色调接近，并保持文字对比度。
+ */
+internal fun resolvePlayerBackdropColor(
+    coverColor: Color,
+    surfaceColor: Color,
+): Color {
+    val coverWeight = if (surfaceColor.luminance() < 0.5f) 0.48f else 0.66f
+    return lerp(surfaceColor, coverColor.copy(alpha = 1f), coverWeight).copy(alpha = 1f)
+}
+
+@Composable
+private fun StaticPlayerBackdrop(
+    modifier: Modifier,
+    coverColor: Color,
+    surfaceColor: Color,
+    isDarkMode: Boolean,
+) {
+    val base =
+        remember(coverColor, surfaceColor) {
+            resolvePlayerBackdropColor(coverColor, surfaceColor)
+        }
+    val top =
+        remember(base, isDarkMode) {
+            lerp(
+                base,
+                if (isDarkMode) Color.Black else Color.White,
+                if (isDarkMode) 0.12f else 0.16f,
+            )
+        }
+    val bottom =
+        remember(base, coverColor, isDarkMode) {
+            lerp(
+                base,
+                if (isDarkMode) Color.Black else coverColor,
+                if (isDarkMode) 0.18f else 0.10f,
+            )
+        }
+
+    Box(
+        modifier =
+            modifier.background(
+                Brush.verticalGradient(
+                    colors = listOf(top, base, bottom),
+                ),
+            ),
+    )
 }
 
 private const val RENDER_FRAME_DELAY_MS = 8L
@@ -183,7 +313,7 @@ private class TextureViewRenderLoop(
         textureView: TextureView,
         drawFrame: (android.graphics.Canvas) -> Unit,
     ) {
-        stopAndAwait()
+        stop()
         surfaceActive.set(true)
         val token = generation.incrementAndGet()
 
@@ -237,24 +367,16 @@ private class TextureViewRenderLoop(
         }
     }
 
-    fun stopAndAwait() {
+    fun stop() {
         surfaceActive.set(false)
         generation.incrementAndGet()
-        val job =
-            synchronized(stateLock) {
-                drawJob.also { drawJob = null }
-            }
-
-        job?.cancel()
-        if (job != null) {
-            runBlocking {
-                job.join()
-            }
-        }
+        synchronized(stateLock) {
+            drawJob.also { drawJob = null }
+        }?.cancel()
     }
 
     fun release() {
-        stopAndAwait()
+        stop()
         renderScope.coroutineContext.cancel()
         renderDispatcher.close()
     }
@@ -280,9 +402,13 @@ private fun TopGlowBackground(
     modifier: Modifier,
     fftDrawData: FloatArray,
     coverColor: Color,
+    visualAlpha: Float,
+    onFirstFrame: () -> Unit,
 ) {
     val holder = remember { TopGlowHolder() }
     val renderLoop = remember { TextureViewRenderLoop("TopGlow-Renderer") }
+    val currentOnFirstFrame = rememberUpdatedState(onFirstFrame)
+    val firstFrameDispatched = remember { AtomicBoolean(false) }
 
     SideEffect {
         holder.fftData = fftDrawData
@@ -303,6 +429,7 @@ private fun TopGlowBackground(
         factory = { ctx ->
             TextureView(ctx).also { tv ->
                 tv.isOpaque = false
+                tv.alpha = visualAlpha.coerceIn(0f, 1f)
                 tv.surfaceTextureListener =
                     object : TextureView.SurfaceTextureListener {
                         override fun onSurfaceTextureAvailable(
@@ -356,13 +483,20 @@ private fun TopGlowBackground(
                         }
 
                         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                            renderLoop.stopAndAwait()
+                            renderLoop.stop()
                             return true
                         }
 
-                        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
+                        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
+                            if (firstFrameDispatched.compareAndSet(false, true)) {
+                                currentOnFirstFrame.value.invoke()
+                            }
+                        }
                     }
             }
+        },
+        update = { textureView ->
+            textureView.alpha = visualAlpha.coerceIn(0f, 1f)
         },
     )
 }
@@ -387,9 +521,13 @@ private fun LiquidAuroraBackground(
     fftDrawData: FloatArray,
     coverColor: Color,
     isDarkMode: Boolean?,
+    visualAlpha: Float,
+    onFirstFrame: () -> Unit,
 ) {
     val holder = remember { LiquidAuroraHolder() }
     val renderLoop = remember { TextureViewRenderLoop("LiquidAurora-Renderer") }
+    val currentOnFirstFrame = rememberUpdatedState(onFirstFrame)
+    val firstFrameDispatched = remember { AtomicBoolean(false) }
 
     SideEffect {
         holder.fftData = fftDrawData
@@ -417,6 +555,7 @@ private fun LiquidAuroraBackground(
         factory = { ctx ->
             TextureView(ctx).also { tv ->
                 tv.isOpaque = true
+                tv.alpha = visualAlpha.coerceIn(0f, 1f)
                 tv.surfaceTextureListener =
                     object : TextureView.SurfaceTextureListener {
                         override fun onSurfaceTextureAvailable(
@@ -498,13 +637,20 @@ private fun LiquidAuroraBackground(
                         }
 
                         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                            renderLoop.stopAndAwait()
+                            renderLoop.stop()
                             return true
                         }
 
-                        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
+                        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
+                            if (firstFrameDispatched.compareAndSet(false, true)) {
+                                currentOnFirstFrame.value.invoke()
+                            }
+                        }
                     }
             }
+        },
+        update = { textureView ->
+            textureView.alpha = visualAlpha.coerceIn(0f, 1f)
         },
     )
 }

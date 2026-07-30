@@ -4,6 +4,22 @@ import com.linc.amplituda.Amplituda
 import com.skydoves.sandwich.retrofit.adapters.ApiResponseCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import me.spica27.spicamusic.cloud.CloudAccountStore
+import me.spica27.spicamusic.cloud.MediaServerClient
+import me.spica27.spicamusic.cloud.MediaServerType
+import me.spica27.spicamusic.cloud.MediaServerViewModel
+import me.spica27.spicamusic.cloud.NeteaseClient
+import me.spica27.spicamusic.cloud.QqMusicClient
+import me.spica27.spicamusic.cloud.RemoteMusicClientRegistry
+import me.spica27.spicamusic.cloud.RemoteMusicProvider
+import me.spica27.spicamusic.cloud.RemoteMusicStreamProxy
+import me.spica27.spicamusic.cloud.RemoteMusicViewModel
+import me.spica27.spicamusic.cloud.SubsonicClient
+import me.spica27.spicamusic.cloud.TelegramChannelViewModel
+import me.spica27.spicamusic.cloud.TelegramClientManager
+import me.spica27.spicamusic.cloud.TelegramRepository
+import me.spica27.spicamusic.cloud.TelegramStreamProxy
+import me.spica27.spicamusic.cloud.TelegramViewModel
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
@@ -42,6 +58,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -55,6 +72,7 @@ object AppModule {
         module {
             // PreferencesManager
             single { PreferencesManager(androidContext()) }
+            single { CloudAccountStore(androidContext()) }
 
             single<OkHttpClient>(
                 createdAtStart = true,
@@ -67,6 +85,16 @@ object AppModule {
                     .readTimeout(3000L, TimeUnit.MILLISECONDS)
                     .callTimeout(3000L, TimeUnit.MILLISECONDS)
                     .writeTimeout(3000L, TimeUnit.MILLISECONDS)
+                    .build()
+            }
+            single<OkHttpClient>(named("cloudHttpClient")) {
+                OkHttpClient
+                    .Builder()
+                    .retryOnConnectionFailure(true)
+                    .connectTimeout(15L, TimeUnit.SECONDS)
+                    .readTimeout(45L, TimeUnit.SECONDS)
+                    .callTimeout(60L, TimeUnit.SECONDS)
+                    .writeTimeout(15L, TimeUnit.SECONDS)
                     .build()
             }
             single<Retrofit>(
@@ -84,6 +112,51 @@ object AppModule {
                     .build()
             }
 
+            single { MediaServerClient(get(named("cloudHttpClient"))) }
+            single { SubsonicClient(get(named("cloudHttpClient"))) }
+            single { NeteaseClient(get(named("cloudHttpClient"))) }
+            single { QqMusicClient(get(named("cloudHttpClient"))) }
+            single { RemoteMusicClientRegistry(get(), get(), get()) }
+            single {
+                RemoteMusicStreamProxy(
+                    baseClient = get(named("cloudHttpClient")),
+                    accountStore = get(),
+                    clients = get(),
+                )
+            }
+            single { TelegramClientManager(androidContext(), get()) }
+            single { TelegramRepository(get(), get()) }
+            single { TelegramStreamProxy(get()) }
+
+            viewModel { parameters ->
+                MediaServerViewModel(
+                    type = parameters.get<MediaServerType>(),
+                    accountStore = get(),
+                    client = get(),
+                    player = get(),
+                )
+            }
+            viewModel {
+                TelegramViewModel(repository = get())
+            }
+            viewModel { parameters ->
+                RemoteMusicViewModel(
+                    provider = parameters.get<RemoteMusicProvider>(),
+                    accountStore = get(),
+                    clients = get(),
+                    proxy = get(),
+                    player = get(),
+                )
+            }
+            viewModel { parameters ->
+                TelegramChannelViewModel(
+                    chatId = parameters.get<Long>(),
+                    repository = get(),
+                    proxy = get(),
+                    player = get(),
+                )
+            }
+
             // Amplituda 分析工具
             single { Amplituda(androidContext()) }
 
@@ -92,12 +165,14 @@ object AppModule {
                 PlayerViewModel(
                     player = get<PlayerUseCases>(),
                     songRepository = get<SongUseCases>(),
+                    preferencesManager = get<PreferencesManager>(),
                 )
             }
 
             // 歌词页面 ViewModel
             viewModel {
                 LyricsViewModel(
+                    context = androidContext(),
                     player = get<PlayerUseCases>(),
                     lyricsUseCases = get<LyricsUseCases>(),
                 )

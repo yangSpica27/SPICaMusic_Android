@@ -8,6 +8,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -54,7 +55,7 @@ object LayoutTokens {
     val PageHeaderCollapsedTabHeight = 52.dp
     val PlayerCollapsedHorizontalInset = 16.dp
     val PlayerCollapsedTopInset = 12.dp
-    val PlayerCollapsedCornerRadius = 28.dp
+    val PlayerCollapsedCornerRadius = 30.dp
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +67,7 @@ fun ProvideAppInteractionIndication(content: @Composable () -> Unit) {
         )
     CompositionLocalProvider(
         LocalIndication provides clickHighlightIndication,
+        LocalContentColor provides MaterialTheme.colorScheme.onSurface,
         LocalRippleConfiguration provides null,
         content = content,
     )

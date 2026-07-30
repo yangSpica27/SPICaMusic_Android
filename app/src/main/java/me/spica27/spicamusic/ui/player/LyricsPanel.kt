@@ -1,5 +1,9 @@
 package me.spica27.spicamusic.ui.player
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -24,6 +28,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.delay
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsDisplayMode
@@ -56,6 +61,18 @@ fun LyricsPanel(
     var showSwitcherSheet by remember { mutableStateOf(false) }
 
     // 监听应用生命周期状态，仅前台时更新播放进度
+    var isUserScrollingLyrics by remember { mutableStateOf(false) }
+    var showFloatingToolbar by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isUserScrollingLyrics) {
+        if (isUserScrollingLyrics) {
+            showFloatingToolbar = true
+        } else if (showFloatingToolbar) {
+            delay(3_000)
+            showFloatingToolbar = false
+        }
+    }
+
     val lifecycleOwner = LocalLifecycleOwner.current
     val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsStateWithLifecycle()
     val isAppInForeground =
@@ -64,7 +81,7 @@ fun LyricsPanel(
         }
 
     // 当前播放时间（帧级更新，保留在 Composable 中因为依赖 awaitFrame）
-    var currentTime by remember { mutableLongStateOf(0L) }
+    var currentTime by remember { mutableLongStateOf(viewModel.getCurrentPositionMs()) }
     LaunchedEffect(isAppInForeground) {
         if (!isAppInForeground) return@LaunchedEffect
         while (isAppInForeground) {
@@ -116,6 +133,9 @@ fun LyricsPanel(
                     onSeekToTime = { posMs ->
                         viewModel.seekTo(posMs - uiState.lyricsOffsetMs)
                     },
+                    onUserScrollStateChanged = { isScrolling ->
+                        isUserScrollingLyrics = isScrolling
+                    },
                 )
             }
             else -> {
@@ -131,17 +151,23 @@ fun LyricsPanel(
         // 浮动工具栏（右下角）
         if (uiState.lyrics != null || uiState.errorMessage != null) {
             val toolbarEndPadding = if (displayMode == LyricsDisplayMode.Compact) 12.dp else 16.dp
-            val toolbarBottomPadding = if (displayMode == LyricsDisplayMode.Compact) 12.dp else 24.dp
-            FloatingLyricsToolbar(
-                offsetMs = uiState.lyricsOffsetMs,
-                onOffsetChange = { viewModel.updateOffset(it) },
-                onOpenLyricsSwitcher = { showSwitcherSheet = true },
-                hasMultipleSources = uiState.allLyricSources.size > 1,
+            val toolbarBottomPadding = if (displayMode == LyricsDisplayMode.Compact) 12.dp else 112.dp
+            AnimatedVisibility(
+                visible = showFloatingToolbar || uiState.errorMessage != null,
                 modifier =
                     Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = toolbarEndPadding, bottom = toolbarBottomPadding),
-            )
+                enter = fadeIn(animationSpec = tween(160)),
+                exit = fadeOut(animationSpec = tween(220)),
+            ) {
+                FloatingLyricsToolbar(
+                    offsetMs = uiState.lyricsOffsetMs,
+                    onOffsetChange = { viewModel.updateOffset(it) },
+                    onOpenLyricsSwitcher = { showSwitcherSheet = true },
+                    hasMultipleSources = uiState.allLyricSources.size > 1,
+                )
+            }
         }
     }
 }

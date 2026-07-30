@@ -9,10 +9,12 @@
 /.idea/assetWizardSettings.xml
 .DS_Store
 /build
+**/build/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+/config/telegram-api.properties
 /decoder_flac/build/
 /player-core/build/
 /storage-core/build/

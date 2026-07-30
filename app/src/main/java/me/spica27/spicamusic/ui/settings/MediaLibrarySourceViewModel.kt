@@ -140,7 +140,24 @@ class MediaLibrarySourceViewModel(
 
     fun setMinDurationSec(seconds: Int) {
         viewModelScope.launch {
-            scanRulesUseCases.setMinDurationSec(seconds)
+            val sanitized = seconds.coerceAtLeast(0)
+            val current = scanRulesUseCases.getRulesFlow().first()
+            if (current.maxDurationSec > 0 && current.maxDurationSec < sanitized) {
+                // 先抬高上限再更新下限，避免 DataStore 短暂产生“下限大于上限”的规则。
+                scanRulesUseCases.setMaxDurationSec(sanitized)
+            }
+            scanRulesUseCases.setMinDurationSec(sanitized)
+        }
+    }
+
+    fun setMaxDurationSec(seconds: Int) {
+        viewModelScope.launch {
+            val sanitized = seconds.coerceAtLeast(0)
+            val current = scanRulesUseCases.getRulesFlow().first()
+            if (sanitized > 0 && sanitized < current.minDurationSec) {
+                scanRulesUseCases.setMinDurationSec(sanitized)
+            }
+            scanRulesUseCases.setMaxDurationSec(sanitized)
         }
     }
 

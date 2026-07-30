@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PriorityHigh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.HorizontalDivider
@@ -125,6 +126,9 @@ private val MastheadCollapseDistance = 140.dp
 
 /** 最短时长预设（秒），0 = 不限制 */
 private val DURATION_PRESETS_SEC = listOf(0, 5, 10, 30, 60)
+
+/** 最长时长预设（秒），0 = 不限制 */
+private val MAX_DURATION_PRESETS_SEC = listOf(0, 300, 600, 1800, 3600)
 
 /** 最小体积预设（KB），0 = 不限制 */
 private val SIZE_PRESETS_KB = listOf(0, 100, 500, 1024, 5120)
@@ -276,6 +280,7 @@ private fun ScannerScreenContent() {
             listState = listState,
             solid = mastheadGone,
             onBack = { path.popTop() },
+            onOpenRules = { path.push(ScanRulesScene()) },
             modifier = Modifier.align(Alignment.TopStart),
         )
 
@@ -345,6 +350,7 @@ private fun ScannerTopBar(
     listState: LazyListState,
     solid: Boolean,
     onBack: () -> Unit,
+    onOpenRules: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -389,6 +395,12 @@ private fun ScannerTopBar(
                         .weight(1f)
                         .graphicsLayer { alpha = mastheadCollapse(listState) },
             )
+            IconButton(onClick = onOpenRules) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = stringResource(R.string.scanner_rules_row_title),
+                )
+            }
         }
     }
 }
@@ -934,11 +946,17 @@ private fun ScannerSetupSection(
 /** 规则摘要：时长 · 体积 · 格式 */
 @Composable
 private fun rulesSummary(rules: ScanRules): String {
-    val durationPart =
+    val minDurationPart =
         if (rules.minDurationSec <= 0) {
-            stringResource(R.string.scanner_rules_summary_duration_any)
+            stringResource(R.string.scanner_rules_summary_min_duration_any)
         } else {
-            stringResource(R.string.scanner_rules_summary_duration, rules.minDurationSec)
+            stringResource(R.string.scanner_rules_summary_min_duration, rules.minDurationSec)
+        }
+    val maxDurationPart =
+        if (rules.maxDurationSec <= 0) {
+            stringResource(R.string.scanner_rules_summary_max_duration_any)
+        } else {
+            stringResource(R.string.scanner_rules_summary_max_duration, rules.maxDurationSec)
         }
     val sizePart =
         if (rules.minFileSizeKb <= 0) {
@@ -952,7 +970,7 @@ private fun rulesSummary(rules: ScanRules): String {
         } else {
             stringResource(R.string.scanner_rules_summary_formats, rules.enabledFormatKeys.size)
         }
-    return "$durationPart · $sizePart · $formatsPart"
+    return "$minDurationPart · $maxDurationPart · $sizePart · $formatsPart"
 }
 
 @Composable
@@ -1169,5 +1187,6 @@ private fun ScannerActionPill(
 
 internal object ScanRulePresets {
     val durationSecOptions: List<Int> = DURATION_PRESETS_SEC
+    val maxDurationSecOptions: List<Int> = MAX_DURATION_PRESETS_SEC
     val sizeKbOptions: List<Int> = SIZE_PRESETS_KB
 }

@@ -3,6 +3,7 @@ package me.spica27.spicamusic.utils
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.LruCache
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -10,10 +11,31 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.palette.graphics.Palette
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+private const val ARTWORK_COLOR_CACHE_SIZE = 32
+private val artworkColorCache = LruCache<String, Int>(ARTWORK_COLOR_CACHE_SIZE)
+
+/** 返回内存中已经提取过的封面主色；不会触发文件读取。 */
+fun getCachedDominantColorFromUri(uri: Uri?): Color? =
+    uri
+        ?.toString()
+        ?.takeIf { it.isNotBlank() }
+        ?.let(artworkColorCache::get)
+        ?.let { Color(it) }
+
+/** 将已知封面主色写入进程内缓存，供首帧和多个播放器页面复用。 */
+fun cacheDominantColorForUri(
+    uri: Uri?,
+    color: Color,
+) {
+    val key = uri?.toString()?.takeIf { it.isNotBlank() } ?: return
+    artworkColorCache.put(key, color.toArgb())
+}
 
 /**
  * 从 URI 提取主色调
@@ -25,6 +47,7 @@ suspend fun extractDominantColorFromUri(
 ): Color =
     withContext(Dispatchers.IO) {
         if (uri == null) return@withContext fallbackColor
+        getCachedDominantColorFromUri(uri)?.let { return@withContext it }
 
         try {
             // 第一次 pass：仅读取图片尺寸，不分配像素内存
@@ -57,9 +80,12 @@ suspend fun extractDominantColorFromUri(
                         ?: palette.dominantSwatch
                         ?: palette.mutedSwatch
 
-                dominantSwatch?.let {
-                    Color(it.rgb)
-                } ?: fallbackColor
+                val result =
+                    dominantSwatch?.let {
+                        Color(it.rgb)
+                    } ?: fallbackColor
+                cacheDominantColorForUri(uri, result)
+                result
             } else {
                 fallbackColor
             }
@@ -77,7 +103,10 @@ fun rememberDominantColorFromUri(
     fallbackColor: Color = Color(0xFF2196F3),
 ): Color {
     val context = LocalContext.current
-    var dominantColor by remember(uri) { mutableStateOf(fallbackColor) }
+    var dominantColor by
+        remember(uri, fallbackColor) {
+            mutableStateOf(getCachedDominantColorFromUri(uri) ?: fallbackColor)
+        }
 
     LaunchedEffect(uri) {
         dominantColor = extractDominantColorFromUri(context, uri, fallbackColor)

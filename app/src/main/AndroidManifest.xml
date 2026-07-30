@@ -32,10 +32,6 @@
         tools:ignore="SmsAndCallLogPolicy"
         tools:node="remove" />
 
-    <uses-permission
-        android:name="android.permission.ACCESS_NETWORK_STATE"
-        tools:node="remove" />
-
     <queries>
         <intent>
             <action android:name="android.intent.action.PICK" />

@@ -10,6 +10,11 @@ sealed class ProgressBarStyle(
     val value: String,
     val name: String,
 ) {
+    object ExpressiveWavy : ProgressBarStyle(
+        "expressive_wavy",
+        "流动波浪",
+    )
+
     object DynamicWaveform : ProgressBarStyle(
         "dynamic_waveform",
         "动态波形",
@@ -25,12 +30,13 @@ sealed class ProgressBarStyle(
     companion object {
         fun fromString(value: String): ProgressBarStyle =
             when (value) {
+                ExpressiveWavy.value -> ExpressiveWavy
                 DynamicWaveform.value -> DynamicWaveform
                 TimeDomainWaveform.value -> TimeDomainWaveform
-                else -> TimeDomainWaveform
+                else -> ExpressiveWavy
             }
 
         val presets: List<ProgressBarStyle>
-            get() = listOf(DynamicWaveform, TimeDomainWaveform)
+            get() = listOf(ExpressiveWavy, DynamicWaveform, TimeDomainWaveform)
     }
 }

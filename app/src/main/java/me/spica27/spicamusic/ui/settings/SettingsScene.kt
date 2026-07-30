@@ -75,6 +75,7 @@ import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
+import me.spica27.spicamusic.common.entity.ThemeMode
 import me.spica27.spicamusic.ui.about.AboutScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -89,7 +90,8 @@ class SettingsScene : StackScene() {
         val path = LocalNavigationPath.current
         val viewModel: SettingsViewModel = koinViewModel()
 
-        val darkMode by viewModel.darkMode.collectAsStateWithLifecycle()
+        val themeModeValue by viewModel.themeMode.collectAsStateWithLifecycle()
+        val themeMode = ThemeMode.fromString(themeModeValue)
         val keepScreenOn by viewModel.keepScreenOn.collectAsStateWithLifecycle()
         val spectrumValue by viewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
         val coverTypeValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
@@ -111,17 +113,39 @@ class SettingsScene : StackScene() {
                     ),
                 )
             }
+        val themeModeSystemLabel = stringResource(R.string.settings_theme_mode_system)
+        val themeModeLightLabel = stringResource(R.string.settings_theme_mode_light)
+        val themeModeDarkLabel = stringResource(R.string.settings_theme_mode_dark)
+        val themeModeName =
+            when (themeMode) {
+                ThemeMode.SYSTEM -> themeModeSystemLabel
+                ThemeMode.LIGHT -> themeModeLightLabel
+                ThemeMode.DARK -> themeModeDarkLabel
+            }
+        val themeModeOptions =
+            remember(themeModeSystemLabel, themeModeLightLabel, themeModeDarkLabel) {
+                ImmutableList.copyOf(
+                    listOf(
+                        SelectOption(ThemeMode.SYSTEM.value, themeModeSystemLabel),
+                        SelectOption(ThemeMode.LIGHT.value, themeModeLightLabel),
+                        SelectOption(ThemeMode.DARK.value, themeModeDarkLabel),
+                    ),
+                )
+            }
         val dynamicWaveformLabel = stringResource(R.string.progress_bar_style_dynamic_waveform)
         val timeDomainWaveformLabel = stringResource(R.string.progress_bar_style_time_domain_waveform)
+        val expressiveWavyLabel = stringResource(R.string.progress_bar_style_expressive_wavy)
         val progressBarStyleName =
             when (ProgressBarStyle.fromString(progressBarStyleValue)) {
+                ProgressBarStyle.ExpressiveWavy -> expressiveWavyLabel
                 ProgressBarStyle.DynamicWaveform -> dynamicWaveformLabel
                 ProgressBarStyle.TimeDomainWaveform -> timeDomainWaveformLabel
             }
         val progressBarStyleOptions =
-            remember(dynamicWaveformLabel, timeDomainWaveformLabel) {
+            remember(expressiveWavyLabel, dynamicWaveformLabel, timeDomainWaveformLabel) {
                 ImmutableList.copyOf(
                     listOf(
+                        SelectOption(ProgressBarStyle.ExpressiveWavy.value, expressiveWavyLabel),
                         SelectOption(ProgressBarStyle.DynamicWaveform.value, dynamicWaveformLabel),
                         SelectOption(ProgressBarStyle.TimeDomainWaveform.value, timeDomainWaveformLabel),
                     ),
@@ -189,7 +213,7 @@ class SettingsScene : StackScene() {
                 ) {
                     item {
                         SettingsHeroCard(
-                            darkMode = darkMode,
+                            themeMode = themeMode,
                             spectrumName = DynamicSpectrumBackground.fromString(spectrumValue).name,
                             coverName = DynamicCoverType.fromString(coverTypeValue).name,
                         )
@@ -200,12 +224,13 @@ class SettingsScene : StackScene() {
                             title = stringResource(R.string.settings_appearance),
                             subtitle = stringResource(R.string.settings_appearance_subtitle),
                         ) {
-                            ModernSettingsSwitchItem(
-                                title = stringResource(R.string.settings_dark_mode_title),
-                                subtitle = stringResource(R.string.settings_dark_mode_toggle_subtitle),
+                            ModernSettingsSelectItem(
+                                title = stringResource(R.string.settings_theme_mode_title),
+                                subtitle = themeModeName,
                                 icon = Icons.Default.Brightness6,
-                                checked = darkMode,
-                                onCheckedChange = viewModel::setDarkMode,
+                                options = themeModeOptions,
+                                currentValue = themeMode.value,
+                                onValueChange = viewModel::setThemeMode,
                             )
                             SettingsItemDivider()
                             ModernSettingsSelectItem(
@@ -349,7 +374,7 @@ private fun AmbientOrb(
 
 @Composable
 private fun SettingsHeroCard(
-    darkMode: Boolean,
+    themeMode: ThemeMode,
     spectrumName: String,
     coverName: String,
     modifier: Modifier = Modifier,
@@ -407,12 +432,10 @@ private fun SettingsHeroCard(
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
                 SettingsPill(
                     label =
-                        if (darkMode) {
-                            stringResource(
-                                R.string.settings_dark_mode_title,
-                            )
-                        } else {
-                            stringResource(R.string.settings_light_mode_label)
+                        when (themeMode) {
+                            ThemeMode.SYSTEM -> stringResource(R.string.settings_theme_mode_system)
+                            ThemeMode.LIGHT -> stringResource(R.string.settings_theme_mode_light)
+                            ThemeMode.DARK -> stringResource(R.string.settings_theme_mode_dark)
                         },
                 )
                 SettingsPill(label = spectrumName)

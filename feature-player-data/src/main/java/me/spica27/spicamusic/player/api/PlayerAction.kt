@@ -1,5 +1,7 @@
 package me.spica27.spicamusic.player.api
 
+import androidx.media3.common.MediaItem
+
 /**
  * 播放器操作基类
  */
@@ -74,6 +76,16 @@ sealed class PlayerAction {
         val mediaIds: List<String>,
         val mediaId: String? = null,
         val start: Boolean = false,
+    ) : PlayerAction()
+
+    /**
+     * 播放已经解析好的媒体项。
+     *
+     * 云端媒体的地址和鉴权信息不是 MediaStore ID，不能再经由本地资料库反查。
+     */
+    data class PlayMediaItems(
+        val items: List<MediaItem>,
+        val startIndex: Int = 0,
     ) : PlayerAction()
 
     /**

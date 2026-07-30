@@ -1,0 +1,4 @@
+# Copy this file to telegram-api.properties in the same directory.
+# telegram-api.properties is ignored by Git and must never be committed.
+TELEGRAM_API_ID=123456
+TELEGRAM_API_HASH=replace_with_your_api_hash

@@ -266,15 +266,21 @@ val ossLibraries: List<OssLibrary> =
             "https://github.com/JakeWharton/timber",
         ),
         OssLibrary(
-            "Pinyin4j",
-            "com.belerweb:pinyin4j",
-            "Apache-2.0",
-            "https://github.com/belerweb/pinyin4j",
-        ),
-        OssLibrary(
             "PrettyTime",
             "org.ocpsoft.prettytime:prettytime",
             "Apache-2.0",
             "https://github.com/ocpsoft/prettytime",
+        ),
+        OssLibrary(
+            "Ktor Server (Core / CIO)",
+            "io.ktor:ktor-server-cio-jvm",
+            "Apache-2.0",
+            "https://github.com/ktorio/ktor",
+        ),
+        OssLibrary(
+            "TDLib Java bindings",
+            "com.github.tdlibx:td",
+            "Boost Software License 1.0",
+            "https://github.com/tdlib/td",
         ),
     )

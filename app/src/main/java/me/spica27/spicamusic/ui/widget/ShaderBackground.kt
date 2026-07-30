@@ -5,6 +5,8 @@ import android.graphics.RuntimeShader
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.LinearEasing
@@ -17,10 +19,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
@@ -34,6 +39,7 @@ import org.intellij.lang.annotations.Language
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.sqrt
@@ -169,10 +175,23 @@ fun EffectShaderBackground(
     coverColor: Color = Color(0xFF2196F3),
     fftDrawData: FloatArray = FloatArray(0),
     isDarkMode: Boolean? = false,
+    active: Boolean = true,
+    visualAlphaProvider: () -> Float = { 1f },
+    onFirstFrame: () -> Unit = {},
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnFirstFrame = rememberUpdatedState(onFirstFrame)
+    val currentVisualAlphaProvider = rememberUpdatedState(visualAlphaProvider)
+    val mainHandler = remember { Handler(Looper.getMainLooper()) }
     val surfaceViewHolder = remember { mutableStateOf<EffectShaderSurfaceView?>(null) }
-    val renderer = remember { EffectShaderRenderer() }
+    val renderer =
+        remember {
+            EffectShaderRenderer {
+                mainHandler.post {
+                    currentOnFirstFrame.value.invoke()
+                }
+            }
+        }
     val effectiveIsDarkMode = isDarkMode ?: (MaterialTheme.colorScheme.background.luminance() < 0.5f)
 
     SideEffect {
@@ -181,6 +200,14 @@ fun EffectShaderBackground(
             spectrum = analyzeEffectSpectrum(fftDrawData),
             isDarkMode = effectiveIsDarkMode,
         )
+    }
+
+    LaunchedEffect(surfaceViewHolder.value) {
+        snapshotFlow {
+            currentVisualAlphaProvider.value.invoke().coerceIn(0f, 1f)
+        }.collect { alpha ->
+            surfaceViewHolder.value?.alpha = alpha
+        }
     }
 
     DisposableEffect(lifecycleOwner, surfaceViewHolder.value) {
@@ -213,10 +240,14 @@ fun EffectShaderBackground(
         modifier = modifier,
         factory = { context ->
             EffectShaderSurfaceView(context, renderer).also {
+                it.setAnimationActive(active)
+                it.alpha = currentVisualAlphaProvider.value.invoke().coerceIn(0f, 1f)
                 surfaceViewHolder.value = it
             }
         },
         update = { surfaceView ->
+            surfaceView.setAnimationActive(active)
+            surfaceView.alpha = currentVisualAlphaProvider.value.invoke().coerceIn(0f, 1f)
             surfaceViewHolder.value = surfaceView
         },
     )
@@ -277,15 +308,31 @@ private class EffectShaderSurfaceView(
     context: Context,
     renderer: EffectShaderRenderer,
 ) : GLSurfaceView(context) {
+    private var animationActive = true
+
     init {
         setEGLContextClientVersion(2)
         preserveEGLContextOnPause = true
         setRenderer(renderer)
         renderMode = RENDERMODE_CONTINUOUSLY
     }
+
+    fun setAnimationActive(active: Boolean) {
+        if (animationActive == active) {
+            if (active) requestRender()
+            return
+        }
+        animationActive = active
+        renderMode = if (active) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
+        requestRender()
+    }
 }
 
-private class EffectShaderRenderer : GLSurfaceView.Renderer {
+private class EffectShaderRenderer(
+    private val onFirstFrame: () -> Unit,
+) : GLSurfaceView.Renderer {
+    private val firstFrameDispatched = AtomicBoolean(false)
+
     @Volatile
     private var musicLevel: Float = 0f
 
@@ -427,6 +474,10 @@ private class EffectShaderRenderer : GLSurfaceView.Renderer {
         GLES20.glUniform4f(colorHandle, colorR, colorG, colorB, colorA)
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+
+        if (firstFrameDispatched.compareAndSet(false, true)) {
+            onFirstFrame.invoke()
+        }
 
         GLES20.glDisableVertexAttribArray(positionHandle)
         GLES20.glDisableVertexAttribArray(texCoordHandle)

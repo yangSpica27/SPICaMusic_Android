@@ -1,33 +1,43 @@
 package me.spica27.spicamusic.ui.player
 
+import android.os.SystemClock
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.App
+import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
+import me.spica27.spicamusic.utils.albumCoverFallbackUri
 import me.spica27.spicamusic.utils.extractDominantColorFromUri
 import timber.log.Timber
 
@@ -40,20 +50,14 @@ import timber.log.Timber
 class PlayerViewModel(
     private val player: PlayerUseCases,
     private val songRepository: SongUseCases,
+    private val preferencesManager: PreferencesManager,
 ) : ViewModel() {
     // ==================== 播放状态 ====================
 
     /**
      * 是否正在播放
      */
-    @OptIn(FlowPreview::class)
-    val isPlaying: StateFlow<Boolean> =
-        player.isPlaying
-            .debounce(250)
-            .distinctUntilChanged()
-            .conflate()
-            .flowOn(Dispatchers.Default)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val isPlaying: StateFlow<Boolean> = player.isPlaying
 
     /**
      * 当前播放模式
@@ -116,24 +120,65 @@ class PlayerViewModel(
                 initialValue = 0L,
             )
 
-    val playerThemeColor: StateFlow<Color> =
-        currentMediaItem
-            .map {
-                extractDominantColorFromUri(
-                    context = App.getInstance(),
-                    uri = it?.mediaMetadata?.artworkUri,
-                )
-            }.flowOn(Dispatchers.IO)
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                Color(0xFF2196F3),
-            )
+    private val initialCachedTheme = preferencesManager.getCachedPlayerTheme()
+    private val _playerThemeColor =
+        MutableStateFlow(
+            initialCachedTheme?.let { Color(it.argb) } ?: Color(0xFF2196F3),
+        )
+    val playerThemeColor: StateFlow<Color> = _playerThemeColor.asStateFlow()
+
+    private val _sleepTimerRemainingMs = MutableStateFlow<Long?>(null)
+    val sleepTimerRemainingMs: StateFlow<Long?> = _sleepTimerRemainingMs.asStateFlow()
+    private var sleepTimerJob: Job? = null
 
     // ==================== 基础播放控制 ====================
 
     init {
         player.init()
+
+        // 新波浪进度条发布时只迁移一次；之后尊重用户在设置页的手动选择。
+        viewModelScope.launch {
+            val migrationApplied =
+                preferencesManager
+                    .getBoolean(PreferencesManager.Keys.WAVY_PROGRESS_DEFAULT_APPLIED)
+                    .first()
+            if (!migrationApplied) {
+                preferencesManager.setString(
+                    PreferencesManager.Keys.PROGRESS_BAR_STYLE,
+                    ProgressBarStyle.ExpressiveWavy.value,
+                )
+                preferencesManager.setBoolean(
+                    PreferencesManager.Keys.WAVY_PROGRESS_DEFAULT_APPLIED,
+                    true,
+                )
+            }
+        }
+
+        // 封面主色只提取一次：先同步恢复上次缓存，切歌后再在 IO 线程更新。
+        // 空媒体项时保留旧颜色，避免冷启动先蓝色、恢复播放后又整页换色。
+        viewModelScope.launch {
+            merge(
+                currentMediaItem.map { it?.mediaMetadata },
+                currentMediaMetadata,
+            ).map { metadata ->
+                metadata?.artworkUri ?: metadata?.albumCoverFallbackUri()
+            }.filterNotNull()
+                .distinctUntilChanged()
+                .collectLatest { artworkUri ->
+                    val artworkKey = artworkUri.toString()
+                    val extractedColor =
+                        extractDominantColorFromUri(
+                            context = App.getInstance(),
+                            uri = artworkUri,
+                            fallbackColor = _playerThemeColor.value,
+                        )
+                    _playerThemeColor.value = extractedColor
+                    preferencesManager.setCachedPlayerTheme(
+                        artworkUri = artworkKey,
+                        argb = extractedColor.toArgb(),
+                    )
+                }
+        }
     }
 
     // ==================== FFT 插值器 ====================
@@ -165,6 +210,33 @@ class PlayerViewModel(
      */
     fun pause() {
         player.doAction(PlayerAction.Pause)
+    }
+
+    fun setSleepTimer(durationMinutes: Int) {
+        sleepTimerJob?.cancel()
+        if (durationMinutes <= 0) {
+            _sleepTimerRemainingMs.value = null
+            return
+        }
+        val durationMs = durationMinutes * 60_000L
+        sleepTimerJob =
+            viewModelScope.launch {
+                val endAt = SystemClock.elapsedRealtime() + durationMs
+                while (true) {
+                    val remaining = (endAt - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+                    _sleepTimerRemainingMs.value = remaining
+                    if (remaining == 0L) break
+                    kotlinx.coroutines.delay(minOf(1_000L, remaining))
+                }
+                pause()
+                _sleepTimerRemainingMs.value = null
+            }
+    }
+
+    fun cancelSleepTimer() {
+        sleepTimerJob?.cancel()
+        sleepTimerJob = null
+        _sleepTimerRemainingMs.value = null
     }
 
     /**

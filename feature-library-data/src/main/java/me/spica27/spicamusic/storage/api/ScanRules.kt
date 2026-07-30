@@ -34,6 +34,8 @@ enum class ScanFormat(
  */
 data class ScanRules(
     val minDurationMs: Long,
+    /** 0 表示不限制最长时长。 */
+    val maxDurationMs: Long,
     val minFileSizeBytes: Long,
     val enabledFormatKeys: Set<String>,
 ) {
@@ -45,10 +47,12 @@ data class ScanRules(
 
     companion object {
         const val DEFAULT_MIN_DURATION_SEC = 10
+        const val DEFAULT_MAX_DURATION_SEC = 0
 
         val DEFAULT =
             ScanRules(
                 minDurationMs = DEFAULT_MIN_DURATION_SEC * 1000L,
+                maxDurationMs = DEFAULT_MAX_DURATION_SEC * 1000L,
                 minFileSizeBytes = 0L,
                 enabledFormatKeys = ScanFormat.allKeys,
             )
@@ -61,6 +65,8 @@ interface IScanRulesRepository {
     suspend fun getRulesSync(): ScanRules
 
     suspend fun setMinDurationSec(seconds: Int)
+
+    suspend fun setMaxDurationSec(seconds: Int)
 
     suspend fun setMinFileSizeKb(kb: Int)
 

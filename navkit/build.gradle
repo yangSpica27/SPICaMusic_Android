@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace 'me.spica27.navkit'
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk 29

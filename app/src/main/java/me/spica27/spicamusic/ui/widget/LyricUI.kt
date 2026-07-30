@@ -191,6 +191,7 @@ fun LyricsUI(
     currentTime: Long,
     displayMode: LyricsDisplayMode = LyricsDisplayMode.Fullscreen,
     onSeekToTime: (Long) -> Unit = {},
+    onUserScrollStateChanged: (Boolean) -> Unit = {},
 ) {
     val lyricLines = remember(lyric) { lyric.sortedBy { it.time } }
 
@@ -202,7 +203,9 @@ fun LyricsUI(
     val style = rememberLyricsUIStyle(displayMode)
     val lazyListState = rememberLazyListState()
     var isAutoScrolling by remember { mutableStateOf(false) }
+    var isUserScrolling by remember { mutableStateOf(false) }
     var showSeekOverlay by remember { mutableStateOf(false) }
+    val latestOnUserScrollStateChanged by rememberUpdatedState(onUserScrollStateChanged)
     // 首次显示时列表停在顶部，需要一次无动画的精确定位；之后的行切换才走动画滚动
     var hasSyncedInitialPosition by remember(lyricLines) { mutableStateOf(false) }
     var leavingPlayingIndex by remember(lyricLines) { mutableIntStateOf(Int.MAX_VALUE) }
@@ -257,10 +260,18 @@ fun LyricsUI(
     LaunchedEffect(lazyListState) {
         snapshotFlow { lazyListState.isScrollInProgress }.collectLatest { inProgress ->
             if (inProgress && !isAutoScrolling) {
+                if (!isUserScrolling) {
+                    isUserScrolling = true
+                    latestOnUserScrollStateChanged(true)
+                }
                 // 用户已手动定位，后续行切换直接走动画滚动，不再无动画跳转
                 hasSyncedInitialPosition = true
                 showSeekOverlay = true
             } else if (!inProgress) {
+                if (isUserScrolling) {
+                    isUserScrolling = false
+                    latestOnUserScrollStateChanged(false)
+                }
                 if (!isAutoScrolling) {
                     delay(LyricUIConstants.SEEK_OVERLAY_HIDE_DELAY)
                 }

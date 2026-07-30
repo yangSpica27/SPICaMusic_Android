@@ -63,16 +63,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -137,12 +134,14 @@ private val ItemPlacementSpec: FiniteAnimationSpec<IntOffset> =
     )
 
 @Composable
-fun FinderPage() {
+fun FinderPage(playEntrance: Boolean = true) {
     val path = LocalNavigationPath.current
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
 
     val frequentSongs by homeViewModel.frequentSongs.collectAsStateWithLifecycle()
+    val frequentSongsInitialized by homeViewModel.frequentSongsInitialized.collectAsStateWithLifecycle()
+    val allSongsInitialized by homeViewModel.allSongsInitialized.collectAsStateWithLifecycle()
     val favoriteSongs by homeViewModel.favoriteSongs.collectAsStateWithLifecycle()
     val playlists by homeViewModel.playlists.collectAsStateWithLifecycle()
     val playlistsWithCover by homeViewModel.playlistsWithCover.collectAsStateWithLifecycle()
@@ -161,14 +160,6 @@ fun FinderPage() {
         val message = snackbarMessage ?: return@LaunchedEffect
         Toast.makeText(App.getInstance(), message, Toast.LENGTH_SHORT).show()
         homeViewModel.clearSnackbar()
-    }
-
-    var playEntrance by remember { mutableStateOf(true) }
-    LaunchedEffect(Unit) {
-        if (playEntrance) {
-            delay(1400)
-            playEntrance = false
-        }
     }
 
     val listState = rememberLazyListState()
@@ -199,19 +190,18 @@ fun FinderPage() {
                     frequentCount = frequentSongs.size,
                     favoriteCount = favoriteSongs.size,
                     playlistCount = playlists.size,
+                    summaryReady = frequentSongsInitialized,
                     modifier =
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.Large)
                             .graphicsLayer {
-                                // 跟手收缩：大标题缩小、上移、淡出，直接耦合滚动偏移
+                                // 不再缩放文字。滚动时对 Text 做位图缩放会产生重影和字形变形；
+                                // 这里只做互斥淡出，位置由 LazyColumn 自然滚动，保证字形始终清晰。
                                 val t = mastheadCollapse(listState)
                                 val enter = entrance.value
-                                transformOrigin = TransformOrigin(0f, 0f)
-                                alpha = (1f - t) * enter
-                                translationY = -t * 16.dp.toPx() + (1f - enter) * 28.dp.toPx()
-                                scaleX = 1f - 0.18f * t
-                                scaleY = 1f - 0.18f * t
+                                alpha = expandedTitleAlpha(t) * enter
+                                translationY = (1f - enter) * 28.dp.toPx()
                             },
                 )
             }
@@ -225,7 +215,7 @@ fun FinderPage() {
             }
 
             // 数据库没有本地音乐时，引导用户前往扫描页面
-            if (allSongs.isEmpty()) {
+            if (allSongsInitialized && allSongs.isEmpty()) {
                 item(key = "scan_guide", contentType = "scan_guide") {
                     val entrance = rememberEntrance(order = 2, play = playEntrance)
                     ScanGuideCard(
@@ -241,20 +231,19 @@ fun FinderPage() {
                 }
             }
 
-            // 常听榜单：页面主角。空态与内容卡形态差异大，只做淡入淡出交换
-            if (frequentSongs.isEmpty()) {
+            // 常听榜单：冷启动查询完成后直接呈现，避免 Lazy 条目首次插入淡入导致整卡闪黑。
+            // 从其他 Tab 切回发现页时仍由 entranceGraphics 负责统一的控件入场动画。
+            if (!frequentSongsInitialized) {
+                item(key = "frequent_loading", contentType = "loading") {
+                    FrequentHeroPlaceholder()
+                }
+            } else if (frequentSongs.isEmpty()) {
                 item(key = "frequent_empty", contentType = "empty") {
                     val entrance = rememberEntrance(order = 3, play = playEntrance)
                     FinderEmptyRow(
                         title = stringResource(R.string.finder_no_frequent_title),
                         subtitle = stringResource(R.string.finder_no_frequent_subtitle),
-                        modifier =
-                            Modifier
-                                .animateItem(
-                                    fadeInSpec = ItemFadeInSpec,
-                                    placementSpec = null,
-                                    fadeOutSpec = ItemFadeOutSpec,
-                                ).entranceGraphics(entrance),
+                        modifier = Modifier.entranceGraphics(entrance),
                     )
                 }
             } else {
@@ -282,13 +271,7 @@ fun FinderPage() {
                                 playlistName = frequentPlaylistName,
                             )
                         },
-                        modifier =
-                            Modifier
-                                .animateItem(
-                                    fadeInSpec = ItemFadeInSpec,
-                                    placementSpec = null,
-                                    fadeOutSpec = ItemFadeOutSpec,
-                                ).entranceGraphics(entrance),
+                        modifier = Modifier.entranceGraphics(entrance),
                     )
                 }
             }
@@ -498,6 +481,12 @@ private fun Density.mastheadCollapse(listState: LazyListState): Float {
     return (listState.firstVisibleItemScrollOffset / scrollOutDistance).coerceIn(0f, 1f)
 }
 
+/** 大标题在 72% 折叠进度前完全淡出，固定标题随后接管，两个标题不交叠。 */
+private fun expandedTitleAlpha(progress: Float): Float = (1f - progress / 0.72f).coerceIn(0f, 1f)
+
+/** 固定标题从 72% 折叠进度开始淡入。 */
+private fun collapsedTitleAlpha(progress: Float): Float = ((progress - 0.72f) / 0.28f).coerceIn(0f, 1f)
+
 /** 首屏入场：延迟 [order] 个节拍后弹入，[play] 为 false 时直接呈现（配方同资料库页） */
 @Composable
 private fun rememberEntrance(
@@ -505,8 +494,8 @@ private fun rememberEntrance(
     play: Boolean,
 ): Animatable<Float, AnimationVector1D> {
     val entrance = remember { Animatable(if (play) 0f else 1f) }
-    LaunchedEffect(Unit) {
-        if (entrance.value < 1f) {
+    if (play) {
+        LaunchedEffect(Unit) {
             delay(order * ENTRANCE_STAGGER_MILLIS)
             entrance.animateTo(
                 targetValue = 1f,
@@ -590,7 +579,10 @@ private fun FinderTopBar(
                 modifier =
                     Modifier
                         .weight(1f)
-                        .graphicsLayer { alpha = mastheadCollapse(listState) },
+                        .graphicsLayer {
+                            // 等大标题基本消失后再显示固定标题，避免两个“发现”叠在一起。
+                            alpha = collapsedTitleAlpha(mastheadCollapse(listState))
+                        },
             )
             AnimatedVisibility(
                 visible = solid,
@@ -643,6 +635,7 @@ private fun FinderMasthead(
     frequentCount: Int,
     favoriteCount: Int,
     playlistCount: Int,
+    summaryReady: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -654,38 +647,155 @@ private fun FinderMasthead(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        Box(modifier = Modifier.padding(top = 6.dp)) {
-            AnimatedContent(
-                targetState = Triple(frequentCount, favoriteCount, playlistCount),
-                transitionSpec = {
-                    val targetSum = targetState.first + targetState.second + targetState.third
-                    val initialSum = initialState.first + initialState.second + initialState.third
-                    val direction = if (targetSum >= initialSum) 1 else -1
-                    (
-                        slideInVertically { height -> direction * height / 2 } +
-                            fadeIn(tween(durationMillis = 240))
-                    ) togetherWith
+        Box(
+            modifier = Modifier.padding(top = 6.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            if (summaryReady) {
+                AnimatedContent(
+                    targetState = Triple(frequentCount, favoriteCount, playlistCount),
+                    transitionSpec = {
+                        val targetSum = targetState.first + targetState.second + targetState.third
+                        val initialSum = initialState.first + initialState.second + initialState.third
+                        val direction = if (targetSum >= initialSum) 1 else -1
                         (
-                            slideOutVertically { height -> -direction * height / 2 } +
-                                fadeOut(tween(durationMillis = 160))
-                        ) using SizeTransform(clip = false)
-                },
-                label = "finderSummaryRoll",
-            ) { (frequent, favorite, playlist) ->
+                            slideInVertically { height -> direction * height / 2 } +
+                                fadeIn(tween(durationMillis = 240))
+                        ) togetherWith
+                            (
+                                slideOutVertically { height -> -direction * height / 2 } +
+                                    fadeOut(tween(durationMillis = 160))
+                            ) using SizeTransform(clip = false)
+                    },
+                    label = "finderSummaryRoll",
+                ) { (frequent, favorite, playlist) ->
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.finder_summary_format,
+                                frequent,
+                                favorite,
+                                playlist,
+                            ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+            } else {
                 Text(
-                    text =
-                        stringResource(
-                            R.string.finder_summary_format,
-                            frequent,
-                            favorite,
-                            playlist,
-                        ),
+                    text = " ",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                 )
             }
         }
+    }
+}
+
+/**
+ * 冷启动查询常听记录时保留主卡的最终高度，避免先画“还没有常听歌曲”，
+ * 紧接着又把下方所有分区推开，造成整页闪动。
+ */
+@Composable
+private fun FrequentHeroPlaceholder(modifier: Modifier = Modifier) {
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(344.dp)
+                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                .clip(Shapes.ExtraLarge1CornerBasedShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .background(
+                    Brush.verticalGradient(
+                        0f to MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.32f),
+                        1f to Color.Transparent,
+                    ),
+                ).padding(Spacing.Large),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.finder_frequent_title),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = " ",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
+            )
+        }
+        Column {
+            repeat(3) { index ->
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(Spacing.Small),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                ) {
+                    Text(
+                        text = "${index + 1}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                        modifier = Modifier.width(24.dp),
+                        textAlign = TextAlign.Center,
+                    )
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(48.dp)
+                                .clip(Shapes.MediumCornerBasedShape)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(0.62f)
+                                    .height(12.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)),
+                        )
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(0.42f)
+                                    .height(9.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f)),
+                        )
+                    }
+                }
+            }
+        }
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(36.dp)
+                    .clip(Shapes.MediumCornerBasedShape)
+                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f)),
+        )
     }
 }
 

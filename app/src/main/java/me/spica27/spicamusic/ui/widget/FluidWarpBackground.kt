@@ -11,6 +11,8 @@ import android.net.Uri
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
+import android.os.Handler
+import android.os.Looper
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -18,6 +20,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -32,6 +36,7 @@ import kotlinx.coroutines.withContext
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -56,10 +61,23 @@ fun FluidWarpBackground(
     fftDrawData: FloatArray = FloatArray(0),
     isDarkMode: Boolean? = null,
     coverUri: () -> Uri? = { null },
+    active: Boolean = true,
+    visualAlphaProvider: () -> Float = { 1f },
+    onFirstFrame: () -> Unit = {},
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val renderer = remember { FluidWarpRenderer() }
+    val currentOnFirstFrame = rememberUpdatedState(onFirstFrame)
+    val currentVisualAlphaProvider = rememberUpdatedState(visualAlphaProvider)
+    val mainHandler = remember { Handler(Looper.getMainLooper()) }
+    val renderer =
+        remember {
+            FluidWarpRenderer {
+                mainHandler.post {
+                    currentOnFirstFrame.value.invoke()
+                }
+            }
+        }
     val surfaceViewHolder = remember { mutableStateOf<FluidWarpSurfaceView?>(null) }
     val effectiveIsDarkMode = isDarkMode ?: (MaterialTheme.colorScheme.background.luminance() < 0.5f)
 
@@ -80,6 +98,17 @@ fun FluidWarpBackground(
                 decodeCoverBitmap(context, uri) ?: createGradientFallback(coverColor)
             }
         renderer.submitCover(bitmap)
+        // 即使当前处于收起态（WHEN_DIRTY），也预绘制并保留一帧。
+        // 下一次展开可直接显示同一张动态背景，不需要重新创建 Surface。
+        surfaceViewHolder.value?.requestRender()
+    }
+
+    LaunchedEffect(surfaceViewHolder.value) {
+        snapshotFlow {
+            currentVisualAlphaProvider.value.invoke().coerceIn(0f, 1f)
+        }.collect { alpha ->
+            surfaceViewHolder.value?.alpha = alpha
+        }
     }
 
     DisposableEffect(lifecycleOwner, surfaceViewHolder.value) {
@@ -112,10 +141,14 @@ fun FluidWarpBackground(
         modifier = modifier,
         factory = { ctx ->
             FluidWarpSurfaceView(ctx, renderer).also {
+                it.setAnimationActive(active)
+                it.alpha = currentVisualAlphaProvider.value.invoke().coerceIn(0f, 1f)
                 surfaceViewHolder.value = it
             }
         },
         update = { surfaceView ->
+            surfaceView.setAnimationActive(active)
+            surfaceView.alpha = currentVisualAlphaProvider.value.invoke().coerceIn(0f, 1f)
             surfaceViewHolder.value = surfaceView
         },
     )
@@ -205,15 +238,35 @@ private class FluidWarpSurfaceView(
     context: Context,
     renderer: FluidWarpRenderer,
 ) : GLSurfaceView(context) {
+    private var animationActive = true
+
     init {
         setEGLContextClientVersion(2)
         preserveEGLContextOnPause = true
         setRenderer(renderer)
         renderMode = RENDERMODE_CONTINUOUSLY
     }
+
+    /**
+     * 收起播放器时不销毁 Surface，只切到按需渲染并保留最后一帧。
+     * 这样既没有持续 GPU 开销，重新展开时也不会先闪纯色背景。
+     */
+    fun setAnimationActive(active: Boolean) {
+        if (animationActive == active) {
+            if (active) requestRender()
+            return
+        }
+        animationActive = active
+        renderMode = if (active) RENDERMODE_CONTINUOUSLY else RENDERMODE_WHEN_DIRTY
+        requestRender()
+    }
 }
 
-private class FluidWarpRenderer : GLSurfaceView.Renderer {
+private class FluidWarpRenderer(
+    private val onFirstFrame: () -> Unit,
+) : GLSurfaceView.Renderer {
+    private val firstFrameDispatched = AtomicBoolean(false)
+
     // ── UI 线程写入、GL 线程读取的输入 ──
     private val pendingCover = AtomicReference<Bitmap?>(null)
 
@@ -507,6 +560,10 @@ private class FluidWarpRenderer : GLSurfaceView.Renderer {
         GLES20.glUniform2f(uOutResolution, surfaceWidth.toFloat(), surfaceHeight.toFloat())
         GLES20.glUniform1f(uOutDark, if (isDarkMode) 1f else 0f)
         drawQuad(texCoordBuffer)
+
+        if (firstFrameDispatched.compareAndSet(false, true)) {
+            onFirstFrame.invoke()
+        }
     }
 
     /** 上传封面 → tint+模糊到 nextAlbum，必要时启动交叉淡化（kawarp processNewImage） */

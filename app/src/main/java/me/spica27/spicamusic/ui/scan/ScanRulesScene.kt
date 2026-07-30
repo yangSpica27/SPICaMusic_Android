@@ -21,24 +21,34 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,7 +64,7 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
  * 扫描规则配置：底部弹层（与 ScanFoldersScene 同一套呈现），
- * 配置最短时长 / 最小文件体积 / 收录格式，改动即时持久化，下次扫描生效。
+ * 配置最短/最长时长、最小文件体积与收录格式，改动即时持久化，下次扫描生效。
  */
 class ScanRulesScene : DialogScene() {
     @Composable
@@ -62,9 +72,11 @@ class ScanRulesScene : DialogScene() {
         val path = LocalNavigationPath.current
         val scene = LocalScene.current
         val density = LocalDensity.current
+        val focusManager = LocalFocusManager.current
         val slideOffsetPx = with(density) { 80.dp.toPx() }
 
         BackHandler(true) {
+            focusManager.clearFocus()
             path.pop(scene)
         }
 
@@ -83,7 +95,10 @@ class ScanRulesScene : DialogScene() {
                         .clickable(
                             interactionSource = interactionSource,
                             indication = null,
-                        ) { path.pop(scene) },
+                        ) {
+                            focusManager.clearFocus()
+                            path.pop(scene)
+                        },
             )
 
             Box(
@@ -106,6 +121,7 @@ class ScanRulesScene : DialogScene() {
     override fun DialogContent() {
         val path = LocalNavigationPath.current
         val scene = LocalScene.current
+        val focusManager = LocalFocusManager.current
         val viewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
         val rules by viewModel.scanRules.collectAsStateWithLifecycle()
 
@@ -160,7 +176,12 @@ class ScanRulesScene : DialogScene() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    IconButton(onClick = { path.pop(scene) }) {
+                    IconButton(
+                        onClick = {
+                            focusManager.clearFocus()
+                            path.pop(scene)
+                        },
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = stringResource(R.string.close),
@@ -173,7 +194,7 @@ class ScanRulesScene : DialogScene() {
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 560.dp)
+                            .heightIn(max = 640.dp)
                             .verticalScroll(rememberScrollState())
                             .padding(bottom = Spacing.Large),
                     verticalArrangement = Arrangement.spacedBy(Spacing.Large),
@@ -199,6 +220,37 @@ class ScanRulesScene : DialogScene() {
                                 )
                             }
                         }
+                        ScanDurationInput(
+                            value = rules.minDurationSec,
+                            onValueChange = viewModel::setMinDurationSec,
+                        )
+                    }
+
+                    ScanRuleSection(
+                        title = stringResource(R.string.scanner_rule_max_duration_title),
+                        description = stringResource(R.string.scanner_rule_max_duration_desc),
+                    ) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+                        ) {
+                            ScanRulePresets.maxDurationSecOptions.forEach { seconds ->
+                                ScanRuleChip(
+                                    label =
+                                        if (seconds <= 0) {
+                                            stringResource(R.string.scanner_rule_any)
+                                        } else {
+                                            stringResource(R.string.scanner_rule_seconds_format, seconds)
+                                        },
+                                    selected = rules.maxDurationSec == seconds,
+                                    onClick = { viewModel.setMaxDurationSec(seconds) },
+                                )
+                            }
+                        }
+                        ScanDurationInput(
+                            value = rules.maxDurationSec,
+                            onValueChange = viewModel::setMaxDurationSec,
+                        )
                     }
 
                     ScanRuleSection(
@@ -245,6 +297,72 @@ class ScanRulesScene : DialogScene() {
             }
         }
     }
+}
+
+/** 任意秒数输入；预设用于快速选择，输入框用于精确配置。 */
+@Composable
+private fun ScanDurationInput(
+    value: Int,
+    onValueChange: (Int) -> Unit,
+) {
+    var text by remember { mutableStateOf(value.toString()) }
+    var focused by remember { mutableStateOf(false) }
+    var dirty by remember { mutableStateOf(false) }
+    var observedValue by remember { mutableStateOf(value) }
+    val focusManager = LocalFocusManager.current
+
+    fun commitValue() {
+        val committed = text.toIntOrNull()?.coerceAtLeast(0) ?: 0
+        text = committed.toString()
+        dirty = false
+        observedValue = committed
+        if (committed != value) {
+            onValueChange(committed)
+        }
+    }
+
+    // 预设按钮或另一输入框改动规则时，立即同步外部值，避免失焦后被旧文本覆盖。
+    LaunchedEffect(value) {
+        if (value != observedValue) {
+            observedValue = value
+            text = value.toString()
+            dirty = false
+        }
+    }
+
+    OutlinedTextField(
+        value = text,
+        onValueChange = { raw ->
+            text = raw.filter(Char::isDigit).take(7)
+            dirty = true
+        },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .onFocusChanged { state ->
+                    val wasFocused = focused
+                    focused = state.isFocused
+                    if (wasFocused && !state.isFocused && dirty) {
+                        commitValue()
+                    }
+                },
+        label = { Text(stringResource(R.string.scanner_rule_custom_seconds)) },
+        suffix = { Text(stringResource(R.string.scanner_rule_seconds_unit)) },
+        singleLine = true,
+        keyboardOptions =
+            KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done,
+            ),
+        keyboardActions =
+            KeyboardActions(
+                onDone = {
+                    commitValue()
+                    focusManager.clearFocus()
+                },
+            ),
+        shape = RoundedCornerShape(16.dp),
+    )
 }
 
 @Composable

@@ -7,7 +7,7 @@ plugins {
 
 android {
   namespace 'me.spica27.spicamusic.storage'
-  compileSdk = 36
+  compileSdk = 37
 
   defaultConfig {
     minSdk 29
@@ -46,7 +46,6 @@ dependencies {
   // Common module
   api project(':common')
   implementation project(':core-preferences')
-  implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
   implementation libs.androidx.core.ktx
   implementation libs.androidx.lifecycle.runtime.ktx
 

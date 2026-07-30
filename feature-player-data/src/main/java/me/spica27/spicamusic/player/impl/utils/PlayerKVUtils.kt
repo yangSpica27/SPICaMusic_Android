@@ -24,6 +24,7 @@ class PlayerKVUtils(
     companion object {
       private const val KEY_HISTORY_IDS = "history_ids"
       private const val KEY_HISTORY_POSITION = "history_position"
+      private const val KEY_CURRENT_MEDIA_ID = "current_media_id"
       private const val KEY_PLAY_MODE = "play_mode"
     }
 
@@ -69,9 +70,26 @@ class PlayerKVUtils(
     /**
      * 设置播放的到第几个的index到缓存
      */
-    fun getHistoryPosition(position: Int) {
-        sharedPreferences.getInt(KEY_HISTORY_POSITION, 0)
+    fun getHistoryPosition(): Int = sharedPreferences.getInt(KEY_HISTORY_POSITION, 0)
+
+    /**
+     * Persist the actual media id as well as its queue position. The id is the
+     * authoritative restore key because the queue can be filtered or reordered
+     * while the app process is not running.
+     */
+    fun setCurrentMediaId(mediaId: String?) {
+        sharedPreferences
+            .edit()
+            .apply {
+                if (mediaId == null) {
+                    remove(KEY_CURRENT_MEDIA_ID)
+                } else {
+                    putString(KEY_CURRENT_MEDIA_ID, mediaId)
+                }
+            }.commit()
     }
+
+    fun getCurrentMediaId(): String? = sharedPreferences.getString(KEY_CURRENT_MEDIA_ID, null)
 
     /**
      * 播放模式

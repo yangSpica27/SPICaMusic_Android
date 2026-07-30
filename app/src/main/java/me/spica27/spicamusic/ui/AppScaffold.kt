@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui
 
 import android.app.Activity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -11,6 +12,7 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.navkit.stack.NavigationStack
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
+import me.spica27.spicamusic.common.entity.ThemeMode
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.ui.home.HomeScene
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
@@ -27,10 +29,22 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 fun AppScaffold() {
     val preferencesManager = koinInject<PreferencesManager>()
 
-    val isDarkMode by
+    val savedThemeMode by
+        preferencesManager
+            .getString(PreferencesManager.Keys.THEME_MODE, "")
+            .collectAsStateWithLifecycle("")
+    val legacyDarkMode by
         preferencesManager
             .getBoolean(PreferencesManager.Keys.DARK_MODE)
             .collectAsStateWithLifecycle(false)
+    val systemDarkMode = isSystemInDarkTheme()
+    val themeMode =
+        if (savedThemeMode.isBlank()) {
+            if (legacyDarkMode) ThemeMode.DARK else ThemeMode.SYSTEM
+        } else {
+            ThemeMode.fromString(savedThemeMode)
+        }
+    val isDarkMode = themeMode.resolve(systemDarkMode)
 
     val themeColorStyleValue by
         preferencesManager

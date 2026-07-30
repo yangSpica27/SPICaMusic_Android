@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.player
 
+import android.content.Context
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -27,9 +28,12 @@ import timber.log.Timber
  */
 @Stable
 class LyricsViewModel(
+    context: Context,
     private val player: PlayerUseCases,
     private val lyricsUseCases: LyricsUseCases,
 ) : ViewModel() {
+    private val embeddedLyricsReader = EmbeddedLyricsReader(context.applicationContext)
+
     data class UiState(
         val isLoading: Boolean = false,
         val lyrics: List<LyricItem>? = null,
@@ -53,7 +57,13 @@ class LyricsViewModel(
                         emit(mediaItem)
                     }
                 }.collect { mediaItem ->
-                    loadLyrics(mediaItem?.mediaId, mediaItem?.mediaMetadata?.title?.toString())
+                    loadLyrics(
+                        mediaId = mediaItem?.mediaId,
+                        title = mediaItem?.mediaMetadata?.title?.toString(),
+                        artist = mediaItem?.mediaMetadata?.artist?.toString(),
+                        album = mediaItem?.mediaMetadata?.albumTitle?.toString(),
+                        durationMs = mediaItem?.mediaMetadata?.durationMs ?: 0L,
+                    )
                 }
         }
     }
@@ -61,6 +71,9 @@ class LyricsViewModel(
     private fun loadLyrics(
         mediaId: String?,
         title: String?,
+        artist: String?,
+        album: String?,
+        durationMs: Long,
     ) {
         viewModelScope.launch {
             if (mediaId == null) {
@@ -83,19 +96,41 @@ class LyricsViewModel(
             }
 
             try {
-                // 1. 优先从缓存读取
+                // 本地音频标签优先。网络源仍会在后台加载，供用户手动切换。
+                val rawEmbeddedLyrics = embeddedLyricsReader.read(mediaStoreId)
+                val parsedEmbeddedLyrics =
+                    rawEmbeddedLyrics?.let { lyricsText ->
+                        parseEmbeddedLyricsInBackground(lyricsText, durationMs)
+                    }
+                val embeddedLyricsText =
+                    rawEmbeddedLyrics?.takeIf { !parsedEmbeddedLyrics.isNullOrEmpty() }
+                val embeddedSource =
+                    embeddedLyricsText?.let { lyricsText ->
+                        SongLyrics(
+                            id = -mediaStoreId.coerceAtLeast(1L),
+                            name = LOCAL_LYRICS_NAME,
+                            artist = LOCAL_LYRICS_ARTIST,
+                            album = listOfNotNull(artist, album).joinToString(" · "),
+                            albumArt = "",
+                            duration = (durationMs / 1000L).toInt(),
+                            lyrics = lyricsText,
+                        )
+                    }
+
                 val cached =
                     withContext(Dispatchers.IO) {
                         lyricsUseCases.getCachedLyrics(mediaStoreId)
                     }
 
                 var currentLyrics: List<LyricItem>? = null
-                var currentOffset = 0L
+                var currentOffset = cached?.delay ?: 0L
                 var errorMsg: String? = null
 
-                if (cached != null && cached.lyrics.isNotBlank()) {
+                if (embeddedLyricsText != null) {
+                    currentLyrics = parsedEmbeddedLyrics
+                    Timber.d("使用本地内嵌歌词: mediaId=$mediaStoreId")
+                } else if (cached != null && cached.lyrics.isNotBlank()) {
                     Timber.d("使用缓存歌词: mediaId=$mediaStoreId, source=${cached.lyricSourceName}")
-                    currentOffset = cached.delay
                     currentLyrics = parseLyricsInBackground(cached.lyrics)
                     if (currentLyrics.isNullOrEmpty()) {
                         errorMsg = "歌词解析失败"
@@ -103,16 +138,45 @@ class LyricsViewModel(
                     }
                 }
 
-                // 2. 始终搜索所有源（用于切换面板）
-                val results =
-                    withContext(Dispatchers.IO) {
-                        lyricsUseCases.searchAllLyrics(title)
+                // 本地或缓存歌词一旦解析完成就立即交给 UI；在线源只负责稍后补全切换列表。
+                if (!currentLyrics.isNullOrEmpty()) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            lyrics = currentLyrics,
+                            errorMessage = null,
+                            lyricsOffsetMs = currentOffset,
+                            allLyricSources = listOfNotNull(embeddedSource),
+                            allParsedLyrics = listOfNotNull(parsedEmbeddedLyrics),
+                            currentSourceIndex = 0,
+                        )
                     }
+                }
+
+                val remoteResults =
+                    runCatching {
+                        withContext(Dispatchers.IO) {
+                            lyricsUseCases.searchAllLyrics(title)
+                        }
+                    }.onFailure {
+                        Timber.w(it, "在线歌词搜索失败，本地歌词仍可使用")
+                    }.getOrDefault(emptyList())
+                val results = listOfNotNull(embeddedSource) + remoteResults
                 val parsedAll = parseLyricsSourcesInBackground(results)
 
-                // 3. 无缓存时使用第一个结果
                 val sourceIndex: Int
-                if (cached == null || cached.lyrics.isBlank()) {
+                if (embeddedSource != null) {
+                    sourceIndex = 0
+                    errorMsg = null
+                    withContext(Dispatchers.IO) {
+                        lyricsUseCases.saveLyricsSource(
+                            mediaStoreId = mediaStoreId,
+                            lyrics = embeddedSource.lyrics,
+                            sourceName = "$LOCAL_LYRICS_ARTIST - $LOCAL_LYRICS_NAME",
+                            delayMs = currentOffset,
+                        )
+                    }
+                } else if (cached == null || cached.lyrics.isBlank()) {
                     sourceIndex = 0
                     if (results.isEmpty()) {
                         errorMsg = "暂无歌词"
@@ -203,12 +267,50 @@ class LyricsViewModel(
             parseLyrics(lyricsText)
         }
 
+    /**
+     * 普通 LRC/YRC 按时间轴解析；只有纯文本歌词时，为每行生成均匀时间点，
+     * 保证音频标签里的 USLT/UNSYNCEDLYRICS 也能在歌词页阅读。
+     */
+    private suspend fun parseEmbeddedLyricsInBackground(
+        lyricsText: String,
+        durationMs: Long,
+    ): List<LyricItem>? =
+        withContext(Dispatchers.Default) {
+            parseLyrics(lyricsText)?.takeIf { it.isNotEmpty() }
+                ?: lyricsText
+                    .lineSequence()
+                    .map(String::trim)
+                    .filter(String::isNotBlank)
+                    .filterNot { line -> line.startsWith("[") && line.endsWith("]") }
+                    .toList()
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { lines ->
+                        val interval =
+                            if (durationMs > 0L) {
+                                (durationMs / (lines.size + 1)).coerceAtLeast(1L)
+                            } else {
+                                4_000L
+                            }
+                        lines.mapIndexed { index, line ->
+                            val time = index * interval
+                            LyricItem.NormalLyric(
+                                content = line,
+                                time = time,
+                                key = "embedded-$index-$time",
+                            )
+                        }
+                    }
+        }
+
     private suspend fun parseLyricsSourcesInBackground(results: List<SongLyrics>): List<List<LyricItem>> =
         withContext(Dispatchers.Default) {
             results.map { parseLyrics(it.lyrics).orEmpty() }
         }
 
     companion object {
+        private const val LOCAL_LYRICS_NAME = "本地歌词"
+        private const val LOCAL_LYRICS_ARTIST = "内嵌标签"
+
         private fun String.isYrcFormat(): Boolean =
             lineSequence().any { line ->
                 line.startsWith("[") && line.contains("](")

@@ -97,6 +97,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.cloud.CloudLibraryScene
 import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.feature.library.domain.ScanFolder
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
@@ -262,6 +263,13 @@ fun LibraryPage() {
                 }
             }
 
+            item(key = "cloud_library", span = { GridItemSpan(maxLineSpan) }, contentType = "cloud_library") {
+                CloudLibraryEntryCard(
+                    onClick = { path.push(CloudLibraryScene()) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             if (hasInaccessibleFolders) {
                 item(key = "sources_alert", span = { GridItemSpan(maxLineSpan) }, contentType = "alert") {
                     InaccessibleFoldersNotice(
@@ -271,6 +279,7 @@ fun LibraryPage() {
                                 listOf(
                                     true, // masthead
                                     true, // actions
+                                    true, // cloud_library
                                     true, // sources_alert（本回调触发时必然存在）
                                     showStats, // weekly_stats
                                     true, // playlists_header
@@ -926,6 +935,7 @@ private fun PlaylistsEmptyState(modifier: Modifier = Modifier) {
             text = stringResource(R.string.no_playlists_yet),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = stringResource(R.string.create_first_playlist_hint),

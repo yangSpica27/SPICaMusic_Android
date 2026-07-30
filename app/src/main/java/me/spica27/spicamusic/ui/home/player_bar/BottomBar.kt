@@ -1,9 +1,11 @@
 package me.spica27.spicamusic.ui.home.player_bar
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.Spring
@@ -15,6 +17,7 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -43,6 +46,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -59,22 +63,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -84,6 +94,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.components.rememberImageComponent
 import com.skydoves.landscapist.crossfade.CrossfadePlugin
 import com.skydoves.landscapist.image.LandscapistImage
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import me.spica27.navkit.geometry.geometryOccluder
 import me.spica27.navkit.path.LocalNavigationPath
@@ -95,8 +107,15 @@ import me.spica27.spicamusic.ui.player.DEFAULT_PAGE
 import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
 import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.player.MorphingPlayPauseIcon
+import me.spica27.spicamusic.ui.player.PlayerArtworkMorphOverlay
+import me.spica27.spicamusic.ui.player.playerArtworkMorphHost
+import me.spica27.spicamusic.ui.player.playerArtworkMorphSource
+import me.spica27.spicamusic.ui.player.rememberPlayerArtworkMorphState
+import me.spica27.spicamusic.ui.player.sourceArtworkAlpha
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.rememberPlayingCoverShape
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.roundToInt
@@ -104,6 +123,8 @@ import androidx.compose.ui.util.lerp as floatLerp
 
 /** 播放器面板的两个锚点状态 */
 private enum class PlayerSheetValue { Collapsed, Expanded }
+
+private const val BOTTOM_FLOATING_CONTAINER_ALPHA = 1f
 
 /**
  * 底部媒体控制栏
@@ -307,26 +328,35 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                         ) {
                             // 实际播放条
                             LargeBottomPlayerBar(
+                                coverShape = coverShape,
+                                coverModifier =
+                                    Modifier.sharedElement(
+                                        sharedContentState = rememberSharedContentState("player_cover"),
+                                        animatedVisibilityScope = this@AnimatedContent,
+                                    ),
                                 modifier =
                                     Modifier
-                                        .sharedElement(
+                                        .sharedBounds(
                                             sharedContentState = rememberSharedContentState("player_bar"),
                                             animatedVisibilityScope = this@AnimatedContent,
+                                            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
                                         ).padding(horizontal = 16.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                        .graphicsLayer {
+                                            shape = CircleShape
+                                            clip = true
+                                            shadowElevation = 0f
+                                        }.background(
+                                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+                                                alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                                            ),
+                                        ),
                                 onExpand = {
                                     initialPage = DEFAULT_PAGE
                                     coroutineScope.launch {
                                         draggableState.animateTo(PlayerSheetValue.Expanded)
                                     }
                                 },
-                                onExpandToPlaylist = {
-                                    initialPage = 0
-                                    coroutineScope.launch {
-                                        draggableState.animateTo(PlayerSheetValue.Expanded)
-                                    }
-                                },
+                                onNext = playerViewModel::skipToNext,
                             )
 
                             Row(
@@ -353,8 +383,11 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                                 animatedVisibilityScope = this@AnimatedContent,
                                             ).size(56.dp)
                                             .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.tertiary)
-                                            .clickable {
+                                            .background(
+                                                MaterialTheme.colorScheme.tertiary.copy(
+                                                    alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                                                ),
+                                            ).clickable {
                                                 navigationPath.push(
                                                     PlaylistCreatorScene(),
                                                 )
@@ -388,30 +421,42 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                             },
                             modifier =
                                 Modifier
-                                    .sharedElement(
+                                    .sharedBounds(
                                         sharedContentState = rememberSharedContentState("navigation_bar"),
                                         animatedVisibilityScope = this@AnimatedContent,
+                                        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
                                     ).size(56.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                                    .background(
+                                        MaterialTheme.colorScheme.primaryContainer.copy(
+                                            alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                                        ),
+                                    ),
                         ) {
                             Icon(
                                 imageVector = currentHomePage.icon,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             )
                         }
                         Row(
                             modifier =
                                 Modifier
-                                    .sharedElement(
+                                    .sharedBounds(
                                         sharedContentState = rememberSharedContentState("player_bar"),
                                         animatedVisibilityScope = this@AnimatedContent,
+                                        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
                                     ).height(56.dp)
                                     .weight(1f)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                    .clickable {
+                                    .graphicsLayer {
+                                        shape = CircleShape
+                                        clip = true
+                                        shadowElevation = 0f
+                                    }.background(
+                                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+                                            alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                                        ),
+                                    ).clickable {
                                         isSingleLineMode = false
                                     }.padding(
                                         8.dp,
@@ -427,7 +472,10 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     },
                                 modifier =
                                     Modifier
-                                        .fillMaxHeight()
+                                        .sharedElement(
+                                            sharedContentState = rememberSharedContentState("player_cover"),
+                                            animatedVisibilityScope = this@AnimatedContent,
+                                        ).fillMaxHeight()
                                         .aspectRatio(1f)
                                         .clip(coverShape),
                                 failure = {
@@ -475,7 +523,11 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                         animatedVisibilityScope = this@AnimatedContent,
                                     ).size(56.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.tertiary),
+                                    .background(
+                                        MaterialTheme.colorScheme.tertiary.copy(
+                                            alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                                        ),
+                                    ),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
@@ -509,32 +561,48 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
     val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
     val metadata = currentMediaItem?.mediaMetadata
     val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
-    val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
     val artworkUri = metadata?.artworkUri
+    var stableCoverPainter by remember(artworkUri) { mutableStateOf<Painter?>(null) }
     val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
-    val coverShape = rememberPlayingCoverShape(isPlaying)
 
     // 记录跳转到播放器的初始页（默认主页 or 播放列表页）
     var initialPage by remember { mutableIntStateOf(DEFAULT_PAGE) }
 
     // 全屏展开进度状态（由 BottomBarV2 驱动）
     val sheetState = rememberBottomBarV2State()
+    val coverShape =
+        rememberPlayingCoverShape(
+            isPlaying = isPlaying,
+            lockToTransitionShape = sheetState.artworkShapeLocked,
+        )
+    val artworkMorphState = rememberPlayerArtworkMorphState()
+    LaunchedEffect(sheetState, isPlaying) {
+        snapshotFlow {
+            sheetState.progress >= 0.999f && !sheetState.isMorphInFlight
+        }.distinctUntilChanged()
+            .filter { it }
+            .collect {
+                sheetState.syncExpandedArtworkShape(isPlaying)
+            }
+    }
 
     // 是否是单列模式
-    var isSingleLineMode by rememberSaveable { mutableStateOf(true) }
-
-    LaunchedEffect(bottomBarScrollConnection.isInline) {
-        if (bottomBarScrollConnection.isInline != isSingleLineMode) {
-            isSingleLineMode = bottomBarScrollConnection.isInline
-        }
-    }
+    // The scroll connection is the single source of truth for this transition.
+    // Mirroring it through LaunchedEffect lets stale effects race an interrupted transition.
+    val isSingleLineMode = bottomBarScrollConnection.isInline
 
     SharedTransitionLayout {
         AnimatedContent(isSingleLineMode) { lineMode ->
             if (!lineMode) {
                 BottomBarV2(
-                    modifier = Modifier.zIndex(2f),
+                    modifier =
+                        Modifier
+                            .zIndex(2f)
+                            .playerArtworkMorphHost(artworkMorphState),
                     state = sheetState,
+                    isPlaying = isPlaying,
+                    onMorphStart = artworkMorphState::freezeSourceBounds,
+                    onCollapsed = artworkMorphState::resumeSourceCapture,
                     navigationBar = {
                         Row(
                             modifier =
@@ -546,9 +614,10 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                             HomePageSwitcher(
                                 modifier =
                                     Modifier
-                                        .sharedElement(
+                                        .sharedBounds(
                                             sharedContentState = rememberSharedContentState("navigation_bar"),
                                             animatedVisibilityScope = this@AnimatedContent,
+                                            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
                                         ).weight(1f),
                             )
                             Box(
@@ -559,8 +628,11 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                                             animatedVisibilityScope = this@AnimatedContent,
                                         ).size(56.dp)
                                         .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.tertiary)
-                                        .clickable {
+                                        .background(
+                                            MaterialTheme.colorScheme.tertiary.copy(
+                                                alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                                            ),
+                                        ).clickable {
                                             navigationPath.push(PlaylistCreatorScene())
                                         },
                                 contentAlignment = Alignment.Center,
@@ -574,32 +646,105 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                         }
                     },
                     playBar = {
-                        LargeBottomPlayerBar(
-                            modifier =
-                                Modifier
-                                    .sharedElement(
-                                        sharedContentState = rememberSharedContentState("player_bar"),
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .sharedElement(
+                                            sharedContentState = rememberSharedContentState("player_surface"),
+                                            animatedVisibilityScope = this@AnimatedContent,
+                                        ).matchParentSize()
+                                        .graphicsLayer {
+                                            shape = CircleShape
+                                            clip = true
+                                            shadowElevation = 0f
+                                        }.background(
+                                            MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+                                                alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                                            ),
+                                        ),
+                            )
+                            LargeBottomPlayerBar(
+                                coverShape = coverShape,
+                                coverModifier =
+                                    Modifier
+                                        .sharedElement(
+                                            sharedContentState = rememberSharedContentState("player_cover"),
+                                            animatedVisibilityScope = this@AnimatedContent,
+                                        ).playerArtworkMorphSource(artworkMorphState)
+                                        .graphicsLayer {
+                                            alpha =
+                                                sourceArtworkAlpha(
+                                                    progress = sheetState.progress,
+                                                    inFlight = sheetState.isMorphInFlight,
+                                                    hasUsableBounds = artworkMorphState.hasUsableBounds,
+                                                )
+                                        },
+                                titleModifier =
+                                    Modifier.sharedElement(
+                                        sharedContentState = rememberSharedContentState("player_title"),
                                         animatedVisibilityScope = this@AnimatedContent,
-                                    ).clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                            onExpand = {
-                                initialPage = DEFAULT_PAGE
-                                sheetState.expand()
-                            },
-                            onExpandToPlaylist = {
-                                initialPage = 0
-                                sheetState.expand()
-                            },
-                        )
+                                    ),
+                                artistModifier =
+                                    Modifier.sharedElement(
+                                        sharedContentState = rememberSharedContentState("player_artist"),
+                                        animatedVisibilityScope = this@AnimatedContent,
+                                    ),
+                                infoModifier =
+                                    Modifier.sharedBounds(
+                                        sharedContentState = rememberSharedContentState("player_info_bounds"),
+                                        animatedVisibilityScope = this@AnimatedContent,
+                                        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+                                    ),
+                                playButtonModifier =
+                                    Modifier.sharedElement(
+                                        sharedContentState = rememberSharedContentState("player_play_button"),
+                                        animatedVisibilityScope = this@AnimatedContent,
+                                    ),
+                                nextButtonModifier =
+                                    Modifier.sharedBounds(
+                                        sharedContentState = rememberSharedContentState("player_next_button"),
+                                        animatedVisibilityScope = this@AnimatedContent,
+                                        resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+                                    ),
+                                coverPainter = stableCoverPainter,
+                                onCoverPainterReady = { stableCoverPainter = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                onExpand = {
+                                    initialPage = DEFAULT_PAGE
+                                    artworkMorphState.freezeSourceBounds()
+                                    sheetState.expand(isPlaying)
+                                },
+                                onNext = playerViewModel::skipToNext,
+                            )
+                        }
                     },
-                    fullScreenPlayer = { progress, onCollapse ->
+                    fullScreenPlayer = { morphProgress, morphInFlight, onCollapse, dragToCollapseModifier ->
                         ExpandedPlayerScreen(
                             onCollapse = onCollapse,
-                            progressProvider = progress,
+                            dragToCollapseModifier = dragToCollapseModifier,
+                            progressProvider = morphProgress,
+                            morphProgressProvider = morphProgress,
                             initialPage = initialPage,
+                            isActive = sheetState.contentActive,
+                            dynamicEffectsActive = sheetState.dynamicEffectsActive,
+                            preloadContent = true,
+                            artworkMorphState = artworkMorphState,
+                            artworkMorphInFlightProvider = morphInFlight,
                             modifier =
                                 Modifier
                                     .fillMaxSize(),
+                        )
+                    },
+                    transitionOverlay = { morphProgress, inFlight ->
+                        PlayerArtworkMorphOverlay(
+                            state = artworkMorphState,
+                            artworkUri = artworkUri,
+                            artworkPainter = stableCoverPainter,
+                            sourceShape = coverShape,
+                            isPlaying = isPlaying,
+                            progressProvider = morphProgress,
+                            inFlightProvider = inFlight,
                         )
                     },
                 )
@@ -617,81 +762,173 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                 ) {
                     IconButton(
                         onClick = {
-                            isSingleLineMode = false
+                            bottomBarScrollConnection.expand()
                         },
                         modifier =
                             Modifier
-                                .sharedElement(
+                                .sharedBounds(
                                     sharedContentState = rememberSharedContentState("navigation_bar"),
                                     animatedVisibilityScope = this@AnimatedContent,
+                                    resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
                                 ).size(56.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.secondaryContainer),
+                                .background(
+                                    MaterialTheme.colorScheme.primaryContainer.copy(
+                                        alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                                    ),
+                                ),
                     ) {
                         Icon(
                             imageVector = currentHomePage.icon,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                     }
-                    Row(
+                    Box(
                         modifier =
                             Modifier
-                                .sharedElement(
-                                    sharedContentState = rememberSharedContentState("player_bar"),
-                                    animatedVisibilityScope = this@AnimatedContent,
-                                ).height(56.dp)
+                                .height(56.dp)
                                 .weight(1f)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .clickable {
-                                    isSingleLineMode = false
-                                }.padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        LandscapistImage(
-                            imageModel = { artworkUri },
-                            component =
-                                rememberImageComponent {
-                                    +CrossfadePlugin(duration = 550)
+                                    bottomBarScrollConnection.expand()
                                 },
+                    ) {
+                        Box(
                             modifier =
                                 Modifier
-                                    .fillMaxHeight()
-                                    .aspectRatio(1f)
-                                    .clip(coverShape),
-                            failure = {
-                                Box(
+                                    .sharedElement(
+                                        sharedContentState = rememberSharedContentState("player_surface"),
+                                        animatedVisibilityScope = this@AnimatedContent,
+                                    ).matchParentSize()
+                                    .graphicsLayer {
+                                        shape = CircleShape
+                                        clip = true
+                                        shadowElevation = 0f
+                                    }.background(
+                                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+                                            alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                                        ),
+                                    ),
+                        )
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        shape = CircleShape
+                                        clip = true
+                                    }.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            StableHeroCover(
+                                uri = artworkUri,
+                                painter = stableCoverPainter,
+                                onPainterReady = { stableCoverPainter = it },
+                                modifier =
+                                    Modifier
+                                        .sharedElement(
+                                            sharedContentState = rememberSharedContentState("player_cover"),
+                                            animatedVisibilityScope = this@AnimatedContent,
+                                        ).fillMaxHeight()
+                                        .aspectRatio(1f)
+                                        .clip(coverShape),
+                                placeHolder = {
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .fillMaxSize()
+                                                .background(MaterialTheme.colorScheme.tertiaryContainer),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            "🎵",
+                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        )
+                                    }
+                                },
+                            )
+                            if (nowPlayingSong != null) {
+                                Row(
                                     modifier =
                                         Modifier
-                                            .fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.tertiaryContainer),
-                                    contentAlignment = Alignment.Center,
+                                            .weight(1f)
+                                            .padding(end = 8.dp)
+                                            .sharedBounds(
+                                                sharedContentState =
+                                                    rememberSharedContentState("player_info_bounds"),
+                                                animatedVisibilityScope = this@AnimatedContent,
+                                                resizeMode =
+                                                    SharedTransitionScope.ResizeMode.RemeasureToBounds,
+                                            ).clipToBounds()
+                                            .clip(CircleShape),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Text(
-                                        "🎵",
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        text = title,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier =
+                                            Modifier
+                                                .sharedElement(
+                                                    sharedContentState = rememberSharedContentState("player_title"),
+                                                    animatedVisibilityScope = this@AnimatedContent,
+                                                ).weight(1f),
                                     )
                                 }
-                            },
-                        )
-                        Text(
-                            text =
-                                if (nowPlayingSong != null) {
-                                    "$title - $artist"
-                                } else {
-                                    stringResource(R.string.no_song_playing)
-                                },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .padding(end = 8.dp)
-                                    .basicMarquee(repeatDelayMillis = 0),
-                        )
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.no_song_playing),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    modifier =
+                                        Modifier
+                                            .weight(1f)
+                                            .padding(end = 8.dp)
+                                            .basicMarquee(repeatDelayMillis = 0),
+                                )
+                            }
+                            Box(modifier = Modifier.size(40.dp)) {
+                                IconButton(
+                                    onClick = { playerViewModel.togglePlayPause() },
+                                    modifier =
+                                        Modifier
+                                            .sharedElement(
+                                                sharedContentState = rememberSharedContentState("player_play_button"),
+                                                animatedVisibilityScope = this@AnimatedContent,
+                                            ).fillMaxSize(),
+                                ) {
+                                    MorphingPlayPauseIcon(
+                                        isPlaying = isPlaying,
+                                        playContentDescription = stringResource(R.string.play),
+                                        pauseContentDescription = stringResource(R.string.pause),
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Rounded.SkipNext,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier =
+                                        Modifier
+                                            .sharedBounds(
+                                                sharedContentState =
+                                                    rememberSharedContentState("player_next_button"),
+                                                animatedVisibilityScope = this@AnimatedContent,
+                                                resizeMode =
+                                                    SharedTransitionScope.ResizeMode.RemeasureToBounds,
+                                            ).fillMaxSize()
+                                            .graphicsLayer {
+                                                alpha = 0f
+                                            },
+                                )
+                            }
+                        }
                     }
                     IconButton(
                         onClick = {
@@ -704,7 +941,11 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                                     animatedVisibilityScope = this@AnimatedContent,
                                 ).size(56.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.tertiary),
+                                .background(
+                                    MaterialTheme.colorScheme.tertiary.copy(
+                                        alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                                    ),
+                                ),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -715,6 +956,31 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StableHeroCover(
+    uri: Uri?,
+    painter: Painter?,
+    onPainterReady: (Painter) -> Unit,
+    modifier: Modifier,
+    placeHolder: @Composable () -> Unit,
+) {
+    if (painter != null) {
+        Image(
+            painter = painter,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier,
+        )
+    } else {
+        AudioCover(
+            uri = uri,
+            modifier = modifier,
+            onPainterReady = onPainterReady,
+            placeHolder = placeHolder,
+        )
     }
 }
 
@@ -755,7 +1021,10 @@ private fun HomePageSwitcher(modifier: Modifier = Modifier) {
                 dampingRatio = Spring.DampingRatioLowBouncy,
             ),
     )
-    val indicatorColor = MaterialTheme.colorScheme.primaryContainer
+    val indicatorColor =
+        MaterialTheme.colorScheme.primaryContainer.copy(
+            alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+        )
 
     Row(
         modifier =
@@ -763,8 +1032,11 @@ private fun HomePageSwitcher(modifier: Modifier = Modifier) {
                 .height(56.dp)
                 .padding(end = 12.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .drawWithCache {
+                .background(
+                    MaterialTheme.colorScheme.surfaceContainerHigh.copy(
+                        alpha = BOTTOM_FLOATING_CONTAINER_ALPHA,
+                    ),
+                ).drawWithCache {
                     val paddingValues = 6.dp.toPx()
                     onDrawBehind {
                         if (indicatorWidth > 0.dp && indicatorHeight > 0.dp) {
@@ -803,7 +1075,7 @@ private fun HomePageSwitcher(modifier: Modifier = Modifier) {
                 icon = {
                     Icon(
                         page.icon,
-                        contentDescription = "Discover",
+                        contentDescription = stringResource(page.titleRes),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 },
@@ -833,6 +1105,7 @@ private fun HomePageSwitchItem(
     Row(
         modifier =
             modifier
+                .clip(CircleShape)
                 .clickable {
                     if (!isSelected) {
                         homeViewModel.navigateToPage(bandHomePage)

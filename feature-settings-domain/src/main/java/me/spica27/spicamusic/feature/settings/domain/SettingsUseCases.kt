@@ -9,6 +9,7 @@ class SettingsUseCases(
 ) {
     object Keys {
         val DARK_MODE = PreferencesManager.Keys.DARK_MODE
+        val THEME_MODE = PreferencesManager.Keys.THEME_MODE
         val THEME_COLOR_STYLE = PreferencesManager.Keys.THEME_COLOR_STYLE
         val KEEP_SCREEN_ON = PreferencesManager.Keys.KEEP_SCREEN_ON
         val DYNAMIC_SPECTRUM_BACKGROUND = PreferencesManager.Keys.DYNAMIC_SPECTRUM_BACKGROUND

@@ -13,3 +13,10 @@
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 -keep,allowobfuscation,allowshrinking interface com.skydoves.sandwich.ApiResponse
+# TDLib dispatches generated Java API objects through JNI and reflection.
+-keep class org.drinkless.tdlib.** { *; }
+-dontwarn org.drinkless.tdlib.**
+
+# Ktor's optional IDE debugger detector probes these desktop-JVM classes.
+-dontwarn java.lang.management.ManagementFactory
+-dontwarn java.lang.management.RuntimeMXBean

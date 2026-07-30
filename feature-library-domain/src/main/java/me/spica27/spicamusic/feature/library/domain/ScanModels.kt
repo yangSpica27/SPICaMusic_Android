@@ -43,10 +43,13 @@ data class ScanProgress(
 @Immutable
 data class ScanRules(
     val minDurationMs: Long,
+    val maxDurationMs: Long,
     val minFileSizeBytes: Long,
     val enabledFormatKeys: Set<String>,
 ) {
     val minDurationSec: Int get() = (minDurationMs / 1000L).toInt()
+
+    val maxDurationSec: Int get() = (maxDurationMs / 1000L).toInt()
 
     val minFileSizeKb: Int get() = (minFileSizeBytes / 1024L).toInt()
 
@@ -56,6 +59,7 @@ data class ScanRules(
         val DEFAULT =
             ScanRules(
                 minDurationMs = StorageScanRules.DEFAULT.minDurationMs,
+                maxDurationMs = StorageScanRules.DEFAULT.maxDurationMs,
                 minFileSizeBytes = StorageScanRules.DEFAULT.minFileSizeBytes,
                 enabledFormatKeys = StorageScanRules.DEFAULT.enabledFormatKeys,
             )
@@ -117,6 +121,7 @@ internal fun StorageScanProgress.toDomain(): ScanProgress =
 internal fun StorageScanRules.toDomain(): ScanRules =
     ScanRules(
         minDurationMs = minDurationMs,
+        maxDurationMs = maxDurationMs,
         minFileSizeBytes = minFileSizeBytes,
         enabledFormatKeys = enabledFormatKeys,
     )

@@ -4,7 +4,9 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import com.skydoves.landscapist.image.LandscapistImage
 
@@ -19,6 +21,7 @@ fun AudioCover(
     uri: Uri? = null,
     fallbackUri: Uri? = null,
     progressiveEnabled: Boolean = false,
+    onPainterReady: (Painter) -> Unit = {},
 ) {
     LandscapistImage(
         modifier = modifier,
@@ -30,6 +33,17 @@ fun AudioCover(
                 .build()
         },
         imageModel = { uri },
+        success = { _, painter ->
+            LaunchedEffect(painter) {
+                onPainterReady(painter)
+            }
+            Image(
+                painter = painter,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        },
         failure = {
             if (fallbackUri != null && fallbackUri != uri) {
                 CoverFallback(

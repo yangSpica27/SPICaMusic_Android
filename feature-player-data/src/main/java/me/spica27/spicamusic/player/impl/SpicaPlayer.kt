@@ -161,7 +161,13 @@ class SpicaPlayer(
                 applyPlayMode(browser, savedPlayMode)
 
                 browser.playWhenReady = false
-                browser.setMediaItems(items)
+                val savedMediaId = playerKVUtils.getCurrentMediaId()
+                val savedIndex =
+                    items
+                        .indexOfFirst { it.mediaId == savedMediaId }
+                        .takeIf { it >= 0 }
+                        ?: playerKVUtils.getHistoryPosition().coerceIn(items.indices)
+                browser.setMediaItems(items, savedIndex, 0L)
                 browser.prepare()
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Failed to initialize player")
@@ -306,6 +312,14 @@ class SpicaPlayer(
                         }
                     }
 
+                    is PlayerAction.PlayMediaItems -> {
+                        if (action.items.isEmpty()) return@launch
+                        val startIndex = action.startIndex.coerceIn(action.items.indices)
+                        browser.setMediaItems(action.items, startIndex, 0L)
+                        browser.prepare()
+                        browser.playWhenReady = true
+                    }
+
                     PlayerAction.ReloadAndPlay -> {
                         Timber.tag(TAG).w("ReloadAndPlay not implemented yet")
                         // TODO: 实现重新加载并播放逻辑
@@ -374,10 +388,10 @@ class SpicaPlayer(
                 // Cap to song duration as a safety net.
                 val playedDuration = if (dur > 0) rawPlayedDuration.coerceAtMost(dur) else rawPlayedDuration
                 val completed = dur > 0 && playedDuration >= (dur * 0.9)
-                if (mediaId != null && playedDuration > 0L) {
+                if (mediaId?.toLongOrNull() != null && playedDuration > 0L) {
                     val extra = buildExtraFromMetadata(_currentMediaMetadata.value)
                     val ph = PlayHistory(
-                        songId = mediaId.toLongOrNull() ?: 0L,
+                        songId = mediaId.toLong(),
                         playTime = System.currentTimeMillis(),
                         playCount = 1,
                         userId = null,
@@ -469,6 +483,10 @@ class SpicaPlayer(
 
         Timber.e("onMediaItemTransition $mediaItem $reason")
         _currentMediaItem.value = mediaItem
+        browserInstance?.currentMediaItemIndex?.takeIf { it >= 0 }?.let {
+            playerKVUtils.setHistoryPosition(it)
+        }
+        playerKVUtils.setCurrentMediaId(mediaItem?.mediaId)
         // 切歌时立即重置 duration，避免旧时长污染新歌曲的进度计算
         _currentDuration.value = 0L
         // 尝试从 browser 实例获取新歌曲的时长（可能此时已就绪）

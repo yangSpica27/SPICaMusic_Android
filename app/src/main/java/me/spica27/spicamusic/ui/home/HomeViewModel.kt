@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
@@ -56,6 +57,12 @@ class HomeViewModel(
     private val _snackbarMessage = MutableStateFlow<String?>(null)
     val snackbarMessage: StateFlow<String?> = _snackbarMessage.asStateFlow()
 
+    private val _frequentSongsInitialized = MutableStateFlow(false)
+    val frequentSongsInitialized: StateFlow<Boolean> = _frequentSongsInitialized.asStateFlow()
+
+    private val _allSongsInitialized = MutableStateFlow(false)
+    val allSongsInitialized: StateFlow<Boolean> = _allSongsInitialized.asStateFlow()
+
     // 筛选条件
     private val _filter = MutableStateFlow(SongFilter.EMPTY)
     val filter: StateFlow<SongFilter> = _filter
@@ -68,6 +75,7 @@ class HomeViewModel(
             songRepository.getSongsFlow(sort, filter)
         }.flatMapLatest { it }
             .flowOn(Dispatchers.IO)
+            .onEach { _allSongsInitialized.value = true }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -92,6 +100,7 @@ class HomeViewModel(
     val frequentSongs: StateFlow<List<Song>> =
         songRepository
             .getOftenListenSong10Flow()
+            .onEach { _frequentSongsInitialized.value = true }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.Eagerly,

@@ -168,7 +168,13 @@ private fun SceneContainer(
 
                 // ── 自身进场动画 ──────────────────────────────────────────
 //                alpha = enter
-                translationX = (1f - enter) * size.width
+                translationX =
+                    if (scene.transitionSlideEnabled) {
+                        (1f - enter) * size.width
+                    } else {
+                        0f
+                    }
+                alpha = if (scene.transitionFadeEnabled) enter else 1f
 
                 // ── StackScene 入场：背景压缩 + 左移 ─────────────────────
                 val compressionAhead = ahead.coerceIn(0f, 1f)
@@ -184,14 +190,21 @@ private fun SceneContainer(
                     renderEffect = BlurEffect(blurSigma, blurSigma, TileMode.Clamp)
                 }
                 if (enter > 0f) {
-                    val scale = .5f + 0.5f * enter
-                    scaleX = scale
-                    scaleY = scale
-                    shape = RoundedCornerShape(
-                        ENTER_RADIUS.dp - (enter.toDouble().pow(2.0 * 4.0) * ENTER_RADIUS).dp
-                    )
-                    clip = true
-                    shadowElevation = 20f * (1f - enter)
+                    if (scene.transitionScaleEnabled) {
+                        val scale = .5f + 0.5f * enter
+                        scaleX = scale
+                        scaleY = scale
+                        shape = RoundedCornerShape(
+                            ENTER_RADIUS.dp - (enter.toDouble().pow(2.0 * 4.0) * ENTER_RADIUS).dp
+                        )
+                        clip = true
+                    }
+                    shadowElevation =
+                        if (scene.transitionShadowEnabled) {
+                            20f * (1f - enter)
+                        } else {
+                            0f
+                        }
                 }
 
                 // ── DialogScene 入场：背景变暗 + 去饱和度 ──────────────────

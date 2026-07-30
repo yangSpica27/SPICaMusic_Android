@@ -19,11 +19,13 @@ class ScanRulesRepositoryImpl(
     override fun getRulesFlow(): Flow<ScanRules> =
         combine(
             preferencesManager.getString(PreferencesManager.Keys.SCAN_MIN_DURATION_SEC),
+            preferencesManager.getString(PreferencesManager.Keys.SCAN_MAX_DURATION_SEC),
             preferencesManager.getString(PreferencesManager.Keys.SCAN_MIN_FILE_SIZE_KB),
             preferencesManager.getString(PreferencesManager.Keys.SCAN_ENABLED_FORMATS),
-        ) { minDurationSec, minFileSizeKb, enabledFormats ->
+        ) { minDurationSec, maxDurationSec, minFileSizeKb, enabledFormats ->
             ScanRules(
                 minDurationMs = parseMinDurationSec(minDurationSec) * 1000L,
+                maxDurationMs = parseMaxDurationSec(maxDurationSec) * 1000L,
                 minFileSizeBytes = (minFileSizeKb.toLongOrNull()?.coerceAtLeast(0L) ?: 0L) * 1024L,
                 enabledFormatKeys = parseFormatKeys(enabledFormats),
             )
@@ -34,6 +36,13 @@ class ScanRulesRepositoryImpl(
     override suspend fun setMinDurationSec(seconds: Int) {
         preferencesManager.setString(
             PreferencesManager.Keys.SCAN_MIN_DURATION_SEC,
+            seconds.coerceAtLeast(0).toString(),
+        )
+    }
+
+    override suspend fun setMaxDurationSec(seconds: Int) {
+        preferencesManager.setString(
+            PreferencesManager.Keys.SCAN_MAX_DURATION_SEC,
             seconds.coerceAtLeast(0).toString(),
         )
     }
@@ -55,6 +64,9 @@ class ScanRulesRepositoryImpl(
 
     private fun parseMinDurationSec(raw: String): Long =
         raw.toLongOrNull()?.coerceAtLeast(0L) ?: ScanRules.DEFAULT_MIN_DURATION_SEC.toLong()
+
+    private fun parseMaxDurationSec(raw: String): Long =
+        raw.toLongOrNull()?.coerceAtLeast(0L) ?: ScanRules.DEFAULT_MAX_DURATION_SEC.toLong()
 
     /** 未设置过 → 全部格式；解析结果为空（异常数据）也回退到全部格式 */
     private fun parseFormatKeys(raw: String): Set<String> {

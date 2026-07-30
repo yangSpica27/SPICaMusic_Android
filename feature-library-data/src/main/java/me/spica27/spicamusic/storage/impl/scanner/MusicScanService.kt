@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
 import android.database.ContentObserver
+import android.icu.text.Transliterator
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -13,7 +14,6 @@ import android.os.Looper
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import androidx.core.net.toUri
-import com.ibm.icu.text.Transliterator
 import com.kyant.taglib.AudioPropertiesReadStyle
 import com.kyant.taglib.TagLib
 import kotlinx.coroutines.CoroutineScope
@@ -59,6 +59,15 @@ class MusicScanService(
     private val _scanProgress = MutableStateFlow<ScanProgress?>(null)
     private val _isScanning = MutableStateFlow(false)
     private var isCancelled = false
+
+    // Android 系统已内置 ICU。每个扫描线程复用自己的转换器，既避免每首歌重复创建规则对象，
+    // 也避免多个 IO 线程共享同一个 Transliterator 带来的线程安全问题。
+    private val hanLatinTransliterator =
+        ThreadLocal.withInitial { Transliterator.getInstance("Han-Latin; Latin-ASCII") }
+    private val hiraganaLatinTransliterator =
+        ThreadLocal.withInitial { Transliterator.getInstance("Hiragana-Latin") }
+    private val katakanaLatinTransliterator =
+        ThreadLocal.withInitial { Transliterator.getInstance("Katakana-Latin") }
 
     // MediaStore 变更事件流
     private val _mediaStoreChanges =
@@ -109,7 +118,10 @@ class MusicScanService(
         fun matchesExtension(fileName: String): Boolean =
             fileName.substringAfterLast('.', "").lowercase() in allowedExtensions
 
-        fun matchesDuration(durationMs: Long): Boolean = durationMs >= rules.minDurationMs
+        fun matchesDuration(durationMs: Long): Boolean {
+            if (durationMs < rules.minDurationMs) return false
+            return rules.maxDurationMs <= 0L || durationMs <= rules.maxDurationMs
+        }
 
         /** size <= 0 视为未知，放行（后续 MediaStore 行会带真实体积再判） */
         fun matchesSize(sizeBytes: Long): Boolean =
@@ -380,6 +392,9 @@ class MusicScanService(
                     append("${MediaStore.Audio.Media.IS_MUSIC} = 1")
                     if (ruleMatcher.rules.minDurationMs > 0) {
                         append(" AND ${MediaStore.Audio.Media.DURATION} >= ${ruleMatcher.rules.minDurationMs}")
+                    }
+                    if (ruleMatcher.rules.maxDurationMs > 0) {
+                        append(" AND ${MediaStore.Audio.Media.DURATION} <= ${ruleMatcher.rules.maxDurationMs}")
                     }
                     if (ruleMatcher.rules.minFileSizeBytes > 0) {
                         append(" AND ${MediaStore.Audio.Media.SIZE} >= ${ruleMatcher.rules.minFileSizeBytes}")
@@ -1219,22 +1234,19 @@ class MusicScanService(
 
                 // 中文（CJK 统一表意文字）
                 firstChar.code in 0x4E00..0x9FFF -> {
-                    val transliterator = Transliterator.getInstance("Han-Latin; Latin-ASCII")
-                    val pinyin = transliterator.transliterate(firstChar.toString())
+                    val pinyin = hanLatinTransliterator.get()?.transliterate(firstChar.toString()).orEmpty()
                     pinyin.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
                 }
 
                 // 日文平假名（ひらがな）
                 firstChar.code in 0x3040..0x309F -> {
-                    val transliterator = Transliterator.getInstance("Hiragana-Latin")
-                    val romaji = transliterator.transliterate(firstChar.toString())
+                    val romaji = hiraganaLatinTransliterator.get()?.transliterate(firstChar.toString()).orEmpty()
                     romaji.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
                 }
 
                 // 日文片假名（カタカナ）
                 firstChar.code in 0x30A0..0x30FF -> {
-                    val transliterator = Transliterator.getInstance("Katakana-Latin")
-                    val romaji = transliterator.transliterate(firstChar.toString())
+                    val romaji = katakanaLatinTransliterator.get()?.transliterate(firstChar.toString()).orEmpty()
                     romaji.firstOrNull()?.uppercaseChar()?.toString() ?: "#"
                 }
 

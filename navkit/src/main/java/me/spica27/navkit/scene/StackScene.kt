@@ -23,6 +23,21 @@ import kotlinx.coroutines.flow.first
  */
 abstract class StackScene : Scene() {
 
+    /** 页面侧滑时是否绘制右侧边缘阴影；共享元素页面可关闭以避免退场闪影。 */
+    open val transitionShadowEnabled: Boolean = true
+
+    /** 页面侧滑时是否同时缩放并裁切圆角；关闭后使用干净的全尺寸水平滑动。 */
+    open val transitionScaleEnabled: Boolean = true
+
+    /** 页面进退场时是否水平滑动；关闭后不会产生经过屏幕的垂直页面边缘。 */
+    open val transitionSlideEnabled: Boolean = true
+
+    /** 页面进退场时是否使用淡入淡出。 */
+    open val transitionFadeEnabled: Boolean = false
+
+    /** 此场景覆盖前一场景时，是否压缩并模糊下面的场景。 */
+    open val compressesPreviousScene: Boolean = true
+
     /** 进场进度：0f 表示完全不可见，1f 表示完全呈现 */
     val enterProgress = Animatable(initialValue = 0f)
 
@@ -108,7 +123,8 @@ abstract class StackScene : Scene() {
         for (scene in scenes) {
             if (scene is StackScene &&
                 scene.id > id &&
-                scene.stage.value != SceneStage.Disappeared
+                scene.stage.value != SceneStage.Disappeared &&
+                scene.compressesPreviousScene
             ) {
                 sum += scene.enterProgress.value
             }

@@ -17,6 +17,10 @@ class ScanRulesUseCases(
         repository.setMinDurationSec(seconds)
     }
 
+    suspend fun setMaxDurationSec(seconds: Int) {
+        repository.setMaxDurationSec(seconds)
+    }
+
     suspend fun setMinFileSizeKb(kb: Int) {
         repository.setMinFileSizeKb(kb)
     }

@@ -1,4 +1,12 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.nio.charset.StandardCharsets
+import java.security.KeyStore
+import java.security.MessageDigest
+import java.security.SecureRandom
+import java.util.Base64
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 plugins {
   alias(libs.plugins.android.application)
@@ -11,6 +19,46 @@ plugins {
   alias(libs.plugins.stability.analyzer)
   alias(libs.plugins.androidx.baselineprofile)
 }
+
+def telegramCredentialsFile = rootProject.file("config/telegram-api.properties")
+def telegramCredentials = new Properties()
+if (telegramCredentialsFile.exists()) {
+  telegramCredentialsFile.withInputStream { telegramCredentials.load(it) }
+}
+def telegramApiId = telegramCredentials.getProperty("TELEGRAM_API_ID", "").trim()
+def telegramApiHash = telegramCredentials.getProperty("TELEGRAM_API_HASH", "").trim()
+def hasTelegramCredentials =
+    telegramApiId ==~ /\d+/ &&
+        telegramApiId.toInteger() > 0 &&
+        !telegramApiHash.isBlank()
+
+def encryptBundledTelegramCredentials = { String apiId, String apiHash ->
+  def keyStore = KeyStore.getInstance(KeyStore.getDefaultType())
+  rootProject.file("key.jks").withInputStream {
+    keyStore.load(it, "SPICa27".toCharArray())
+  }
+  def certificateBytes = keyStore.getCertificate("wuqi").getEncoded()
+  def digest = MessageDigest.getInstance("SHA-256")
+  digest.update(certificateBytes)
+  digest.update("me.spica27.spicamusic".getBytes(StandardCharsets.UTF_8))
+  digest.update("spica.telegram.credentials.v1".getBytes(StandardCharsets.UTF_8))
+  def key = new SecretKeySpec(digest.digest(), "AES")
+  def iv = new byte[12]
+  new SecureRandom().nextBytes(iv)
+  def cipher = Cipher.getInstance("AES/GCM/NoPadding")
+  cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(128, iv))
+  def plaintext = "${apiId}\n${apiHash}".getBytes(StandardCharsets.UTF_8)
+  def encrypted = cipher.doFinal(plaintext)
+  def payload = new byte[iv.length + encrypted.length]
+  System.arraycopy(iv, 0, payload, 0, iv.length)
+  System.arraycopy(encrypted, 0, payload, iv.length, encrypted.length)
+  Base64.getEncoder().encodeToString(payload)
+}
+
+def bundledTelegramPayload =
+    hasTelegramCredentials
+        ? encryptBundledTelegramCredentials(telegramApiId, telegramApiHash)
+        : ""
 
 android {
   namespace 'me.spica27.spicamusic'
@@ -34,6 +82,7 @@ android {
     targetSdk 37
     versionCode buildVersionCode
     versionName buildVersionName
+    buildConfigField "String", "TELEGRAM_API_ENCRYPTED", "\"\""
 
     testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     vectorDrawables {
@@ -66,9 +115,25 @@ android {
       shrinkResources true
       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
       signingConfig signingConfigs.signingConfig
+      buildConfigField "String", "TELEGRAM_API_ENCRYPTED", "\"\""
+    }
+    withApi {
+      initWith release
+      matchingFallbacks = ['release']
+      signingConfig signingConfigs.signingConfig
+      buildConfigField "String", "TELEGRAM_API_ENCRYPTED", "\"${bundledTelegramPayload}\""
     }
     debug {
       minifyEnabled false
+      signingConfig signingConfigs.signingConfig
+    }
+    // 用于真机流畅度与包体积测试：保留 release 优化，但单独提供便捷构建任务。
+    performance {
+      initWith release
+      matchingFallbacks = ['release']
+      debuggable false
+      minifyEnabled true
+      shrinkResources true
       signingConfig signingConfigs.signingConfig
     }
   }
@@ -94,6 +159,31 @@ android {
     }
     jniLibs {
       useLegacyPackaging true
+    }
+  }
+}
+
+tasks.register('validateTelegramApiCredentials') {
+  doLast {
+    if (!hasTelegramCredentials) {
+      throw new GradleException(
+          "Missing Telegram credentials. Fill config/telegram-api.properties before building :app:assembleWithApi."
+      )
+    }
+  }
+}
+
+tasks.matching { it.name == "preWithApiBuild" }.configureEach {
+  dependsOn(tasks.named("validateTelegramApiCredentials"))
+}
+
+android.applicationVariants.all { variant ->
+  if (variant.buildType.name == "release" || variant.buildType.name == "withApi") {
+    variant.outputs.all { output ->
+      def credentialSuffix =
+          variant.buildType.name == "withApi" ? "with-telegram-api" : "no-telegram-api"
+      def safeVersion = variant.versionName.replaceAll("[^A-Za-z0-9._-]+", "-")
+      output.outputFileName = "SPICaMusic-${safeVersion}-${credentialSuffix}.apk"
     }
   }
 }
@@ -145,6 +235,7 @@ dependencies {
   implementation(libs.androidx.media3.exoplayer.ffmpeg)
 
   implementation libs.timber
+  implementation libs.taglib
   implementation(libs.accompanist.permissions)
   implementation(libs.androidx.paging.compose)
 
@@ -174,6 +265,9 @@ dependencies {
   // 网络请求
   implementation libs.okhttp
   implementation(libs.logging.interceptor)
+  implementation libs.ktor.server.core
+  implementation libs.ktor.server.cio
+  implementation libs.tdlib
   implementation libs.retrofit
   implementation libs.converter.moshi
   implementation libs.sandwich.retrofit
@@ -185,7 +279,6 @@ dependencies {
   implementation libs.androidx.compose.material.icons.core
   implementation libs.prettytime
   implementation libs.koin.androidx.compose
-  implementation(libs.pinyin4j)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.palette.ktx)
   implementation(libs.cloudy)

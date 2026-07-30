@@ -15,6 +15,21 @@
 
 </div>
 
+## ☁️ Telegram 云端音乐库构建配置
+
+Telegram 串流基于 TDLib，因此应用本身必须提供 API ID 与 API Hash。复制
+`config/telegram-api.properties.example` 为 `config/telegram-api.properties`，然后仅在本机填写：
+
+```properties
+TELEGRAM_API_ID=123456
+TELEGRAM_API_HASH=your_api_hash
+```
+
+该文件已被 Git 忽略。`:app:assembleRelease` 生成不内置凭据的公开版；
+`:app:assembleWithApi` 生成内置凭据版。内置版的 APK 只保存绑定当前签名证书的
+AES-GCM 密文，不包含 API ID/API Hash 明文。未内置凭据时，应用会在首次使用时询问，
+并使用 Android Keystore 加密保存在本机。凭据可在 `my.telegram.org` 创建。
+
 ## ✨ 预览
 
 ### 亮色主题
