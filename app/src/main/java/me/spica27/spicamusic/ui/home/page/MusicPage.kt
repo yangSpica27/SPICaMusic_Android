@@ -5,8 +5,6 @@ package me.spica27.spicamusic.ui.home.page
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloatAsState
@@ -114,12 +112,16 @@ import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.scan.ScannerScene
+import me.spica27.spicamusic.ui.theme.ENTRANCE_GATE_MILLIS
+import me.spica27.spicamusic.ui.theme.ENTRANCE_STAGGER_MILLIS
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.theme.entranceGraphics
+import me.spica27.spicamusic.ui.theme.rememberEntrance
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.combinedClickHighlight
@@ -128,8 +130,6 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 import java.util.concurrent.TimeUnit
 
 private val MastheadCollapseDistance = 140.dp
-
-private const val ENTRANCE_STAGGER_MILLIS = 55L
 
 @Immutable
 private enum class MusicBrowserTab(
@@ -277,14 +277,14 @@ fun MusicPage() {
     var playlistEntrance by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         if (playEntrance) {
-            delay(1400)
+            delay(ENTRANCE_GATE_MILLIS)
             playEntrance = false
         }
     }
 
     LaunchedEffect(playlistEntrance) {
         if (playlistEntrance) {
-            delay(55)
+            delay(ENTRANCE_STAGGER_MILLIS)
             playlistEntrance = false
         }
     }
@@ -672,35 +672,6 @@ private fun Density.mastheadCollapse(listState: LazyListState): Float {
             .coerceIn(1f, MastheadCollapseDistance.toPx())
     return (listState.firstVisibleItemScrollOffset / scrollOutDistance).coerceIn(0f, 1f)
 }
-
-@Composable
-private fun rememberEntrance(
-    order: Int,
-    play: Boolean,
-): Animatable<Float, AnimationVector1D> {
-    val entrance = remember { Animatable(if (play) 0f else 1f) }
-    LaunchedEffect(Unit) {
-        if (entrance.value < 1f) {
-            delay(order * ENTRANCE_STAGGER_MILLIS)
-            entrance.animateTo(
-                targetValue = 1f,
-                animationSpec =
-                    spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = 380f,
-                    ),
-            )
-        }
-    }
-    return entrance
-}
-
-private fun Modifier.entranceGraphics(entrance: Animatable<Float, AnimationVector1D>): Modifier =
-    graphicsLayer {
-        val enter = entrance.value
-        alpha = enter
-        translationY = (1f - enter) * 28.dp.toPx()
-    }
 
 @Composable
 private fun rememberPressScale(interactionSource: MutableInteractionSource): State<Float> {

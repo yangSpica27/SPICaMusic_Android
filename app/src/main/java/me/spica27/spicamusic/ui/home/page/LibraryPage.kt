@@ -6,7 +6,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -112,6 +111,8 @@ import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.theme.entranceGraphics
+import me.spica27.spicamusic.ui.theme.rememberEntrance
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
@@ -127,7 +128,6 @@ import java.util.concurrent.TimeUnit
 private val MastheadCollapseDistance = 140.dp
 
 /** 首屏入场交错间隔 */
-private const val ENTRANCE_STAGGER_MILLIS = 55L
 
 /** 参与入场编排的最大歌单卡数（之后的卡片直接呈现） */
 private const val ENTRANCE_MAX_CARD = 6
@@ -505,37 +505,6 @@ private fun Density.mastheadCollapse(gridState: LazyGridState): Float {
             .coerceIn(1f, MastheadCollapseDistance.toPx())
     return (gridState.firstVisibleItemScrollOffset / scrollOutDistance).coerceIn(0f, 1f)
 }
-
-/** 首屏入场：延迟 [order] 个节拍后弹入，[play] 为 false 时直接呈现（配方同收藏页） */
-@Composable
-private fun rememberEntrance(
-    order: Int,
-    play: Boolean,
-): Animatable<Float, AnimationVector1D> {
-    val entrance = remember { Animatable(if (play) 0f else 1f) }
-    LaunchedEffect(Unit) {
-        if (entrance.value < 1f) {
-            delay(order * ENTRANCE_STAGGER_MILLIS)
-            entrance.animateTo(
-                targetValue = 1f,
-                animationSpec =
-                    spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = 380f,
-                    ),
-            )
-        }
-    }
-    return entrance
-}
-
-/** 入场位移+淡入，全部在 Draw 阶段读取动画值 */
-private fun Modifier.entranceGraphics(entrance: Animatable<Float, AnimationVector1D>): Modifier =
-    graphicsLayer {
-        val enter = entrance.value
-        alpha = enter
-        translationY = (1f - enter) * 28.dp.toPx()
-    }
 
 /** 固定顶栏：背景与标题透明度跟随刊头收缩进度，收起后弹出迷你「新建歌单」药丸 */
 @Composable

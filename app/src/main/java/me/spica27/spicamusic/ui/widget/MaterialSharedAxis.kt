@@ -39,7 +39,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastRoundToInt
-import me.spica27.spicamusic.ui.theme.EaseInOutCubic
+import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 
 /**
  * Returns the provided [Dp] as an [Int] value by the [LocalDensity].
@@ -53,6 +53,8 @@ fun rememberSlideDistance(slideDistance: Dp = 30.dp): Int {
         with(density) { slideDistance.roundToPx() }
     }
 }
+
+private const val DEFAULT_DURATION_MILLIS = 250
 
 private const val ProgressThreshold = 0.35f
 
@@ -72,7 +74,7 @@ private val Int.ForIncoming: Int
 public fun materialSharedAxisX(
     forward: Boolean,
     slideDistance: Int,
-    durationMillis: Int = 325,
+    durationMillis: Int = DEFAULT_DURATION_MILLIS,
 ): ContentTransform =
     materialSharedAxisXIn(
         forward = forward,
@@ -95,7 +97,7 @@ public fun materialSharedAxisX(
 public fun materialSharedAxisXIn(
     forward: Boolean,
     slideDistance: Int = 30.dip.toInt(),
-    durationMillis: Int = 325,
+    durationMillis: Int = DEFAULT_DURATION_MILLIS,
 ): EnterTransition =
     slideInHorizontally(
         animationSpec =
@@ -126,7 +128,7 @@ public fun materialSharedAxisXIn(
 public fun materialSharedAxisXOut(
     forward: Boolean,
     slideDistance: Int = 30.dip.fastRoundToInt(),
-    durationMillis: Int = 325,
+    durationMillis: Int = DEFAULT_DURATION_MILLIS,
 ): ExitTransition =
     slideOutHorizontally(
         animationSpec =
@@ -157,7 +159,7 @@ public fun materialSharedAxisXOut(
 public fun materialSharedAxisY(
     forward: Boolean,
     slideDistance: Int,
-    durationMillis: Int = 325,
+    durationMillis: Int = DEFAULT_DURATION_MILLIS,
 ): ContentTransform =
     materialSharedAxisYIn(
         forward = forward,
@@ -180,7 +182,7 @@ public fun materialSharedAxisY(
 public fun materialSharedAxisYIn(
     forward: Boolean,
     slideDistance: Int = 30.dip.fastRoundToInt(),
-    durationMillis: Int = 325,
+    durationMillis: Int = DEFAULT_DURATION_MILLIS,
 ): EnterTransition =
     slideInVertically(
         animationSpec =
@@ -211,7 +213,7 @@ public fun materialSharedAxisYIn(
 public fun materialSharedAxisYOut(
     forward: Boolean,
     slideDistance: Int = 30.dip.fastRoundToInt(),
-    durationMillis: Int = 325,
+    durationMillis: Int = DEFAULT_DURATION_MILLIS,
 ): ExitTransition =
     slideOutVertically(
         animationSpec =
@@ -240,7 +242,7 @@ public fun materialSharedAxisYOut(
  */
 public fun materialSharedAxisZ(
     forward: Boolean,
-    durationMillis: Int = 325,
+    durationMillis: Int = DEFAULT_DURATION_MILLIS,
 ): ContentTransform =
     materialSharedAxisZIn(
         forward = forward,
@@ -259,7 +261,7 @@ public fun materialSharedAxisZ(
  */
 public fun materialSharedAxisZIn(
     forward: Boolean,
-    durationMillis: Int = 325,
+    durationMillis: Int = DEFAULT_DURATION_MILLIS,
 ): EnterTransition =
     fadeIn(
         animationSpec =
@@ -270,7 +272,12 @@ public fun materialSharedAxisZIn(
             ),
     ) +
         scaleIn(
-            animationSpec = tween(easing = EaseInOutCubic),
+            animationSpec =
+                tween(
+                    durationMillis = durationMillis.ForIncoming,
+                    delayMillis = durationMillis.ForOutgoing,
+                    easing = EaseOutEmphasized,
+                ),
             initialScale = if (forward) 0.8f else 1.1f,
         )
 
@@ -282,10 +289,15 @@ public fun materialSharedAxisZIn(
  */
 public fun materialSharedAxisZOut(
     forward: Boolean,
-    durationMillis: Int = 325,
+    durationMillis: Int = DEFAULT_DURATION_MILLIS,
 ): ExitTransition =
     fadeOut(
-        animationSpec = tween(easing = EaseInOutCubic),
+        // 上游漏传 durationMillis，退场淡出会跑满 300ms 默认值
+        animationSpec =
+            tween(
+                durationMillis = durationMillis.ForOutgoing,
+                easing = FastOutLinearInEasing,
+            ),
     ) +
         scaleOut(
             animationSpec =

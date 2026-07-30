@@ -92,10 +92,10 @@ fun SPICaMusicTheme(
             }
 
         ThemeColorStyle.Flat -> {
-            // 与质感化的 animate 行为对齐:对种子色做动画,派生色板随之平滑过渡
+            // 与质感化的 animate 行为对齐:对种子色做动画,派生色板随之平滑过渡。
             val animatedSeedColor by animateColorAsState(
                 targetValue = themeColor,
-                animationSpec = tween(durationMillis = 500),
+                animationSpec = tween(durationMillis = 200, easing = EaseOutEmphasized),
                 label = "flat_theme_seed_color",
             )
             val colorScheme =

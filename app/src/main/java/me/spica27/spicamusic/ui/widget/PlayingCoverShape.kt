@@ -23,12 +23,13 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.star
 import androidx.graphics.shapes.toPath
+import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 
 @Composable
 fun rememberPlayingCoverShape(isPlaying: Boolean): Shape {
     val playProgress by animateFloatAsState(
         targetValue = if (isPlaying) 1f else 0f,
-        animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 180, easing = EaseOutEmphasized),
         label = "playingCoverPlayProgress",
     )
     val infiniteTransition = rememberInfiniteTransition(label = "playingCoverMorph")
