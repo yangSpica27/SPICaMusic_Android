@@ -40,6 +40,12 @@ class TelegramStreamProxy(
         return "http://127.0.0.1:$port/telegram/${song.fileId}?size=${song.fileSize}"
     }
 
+    suspend fun artworkUrl(song: TelegramSong): String? {
+        val coverFileId = song.coverFileId ?: return null
+        ensureStarted()
+        return "http://127.0.0.1:$port/telegram-art/$coverFileId"
+    }
+
     private suspend fun ensureStarted() {
         if (server != null) return
         startMutex.withLock {
@@ -115,12 +121,47 @@ class TelegramStreamProxy(
                                 }
                             }
                         }
+                        get("/telegram-art/{fileId}") {
+                            val fileId = call.parameters["fileId"]?.toIntOrNull()
+                            if (fileId == null || fileId <= 0) {
+                                call.respond(HttpStatusCode.BadRequest, "Invalid Telegram artwork")
+                                return@get
+                            }
+                            val artwork = awaitDownloadedFile(fileId)
+                            if (artwork == null) {
+                                call.respond(HttpStatusCode.ServiceUnavailable, "Artwork is not available")
+                                return@get
+                            }
+                            call.response.header("Cache-Control", "private, max-age=86400")
+                            call.response.header("Content-Length", artwork.length().toString())
+                            call.respondOutputStream(contentType = ContentType.Image.Any) {
+                                artwork.inputStream().buffered().use { input ->
+                                    input.copyTo(this)
+                                }
+                            }
+                        }
                     }
                 }
             withContext(Dispatchers.IO) { newServer.start(wait = false) }
             port = selectedPort
             server = newServer
         }
+    }
+
+    private suspend fun awaitDownloadedFile(fileId: Int): File? {
+        repository.download(fileId, 0L, 0L)
+        repeat(ARTWORK_POLL_LIMIT) {
+            val info = repository.getFile(fileId)
+            val candidate =
+                info.local.path
+                    .takeIf(String::isNotBlank)
+                    ?.let(::File)
+            if (info.local.isDownloadingCompleted && candidate?.isFile == true && candidate.length() > 0L) {
+                return candidate
+            }
+            delay(POLL_DELAY_MS)
+        }
+        return null
     }
 
     private fun parseRange(
@@ -140,5 +181,6 @@ class TelegramStreamProxy(
     private companion object {
         const val BUFFER_SIZE = 64 * 1024
         const val POLL_DELAY_MS = 40L
+        const val ARTWORK_POLL_LIMIT = 250
     }
 }

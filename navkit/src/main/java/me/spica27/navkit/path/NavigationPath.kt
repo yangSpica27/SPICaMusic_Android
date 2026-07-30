@@ -7,6 +7,8 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModelStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import me.spica27.navkit.scene.Scene
 import me.spica27.navkit.scene.SceneStage
 
@@ -48,6 +50,8 @@ class NavigationPath(
     internal val animationScope: CoroutineScope,
     initialScenes: List<Scene> = emptyList()
 ) {
+    /** Serializes complete navigation transitions across different scenes. */
+    private val navigationMutex = Mutex()
 
     /** Compose 可观察的场景栈；NavigationStack 直接读取此列表渲染 UI */
     val scenes: SnapshotStateList<Scene> = mutableStateListOf()
@@ -80,14 +84,16 @@ class NavigationPath(
      */
     fun push(scene: Scene) {
         animationScope.launch {
-            scene.withStageLock {
-                scene.id = nextId++
-                scene.stage.value = SceneStage.Appearing
-                scenes.add(scene)
-                scene.onPush()
-                scene.waitAppear()
-                scene.stage.value = SceneStage.Appeared
-                scene.onAppear()
+            navigationMutex.withLock {
+                scene.withStageLock {
+                    scene.id = nextId++
+                    scene.stage.value = SceneStage.Appearing
+                    scenes.add(scene)
+                    scene.onPush()
+                    scene.waitAppear()
+                    scene.stage.value = SceneStage.Appeared
+                    scene.onAppear()
+                }
             }
         }
     }
@@ -112,15 +118,17 @@ class NavigationPath(
             return
         }
         animationScope.launch {
-            scene.withStageLock {
-                // 二次检查：排队等锁期间场景可能已被并发 pop 完成
-                if (scene.stage.value == SceneStage.Disappeared) return@withStageLock
-                scene.stage.value = SceneStage.Disappearing
-                scene.waitDisappear()
-                scene.onDisappear()
-                scene.stage.value = SceneStage.Disappeared
-                scenes.remove(scene)
-                scene.onPop()
+            navigationMutex.withLock {
+                scene.withStageLock {
+                    // 二次检查：排队等锁期间场景可能已被并发 pop 完成
+                    if (scene.stage.value == SceneStage.Disappeared) return@withStageLock
+                    scene.stage.value = SceneStage.Disappearing
+                    scene.waitDisappear()
+                    scene.onDisappear()
+                    scene.stage.value = SceneStage.Disappeared
+                    scenes.remove(scene)
+                    scene.onPop()
+                }
             }
         }
     }

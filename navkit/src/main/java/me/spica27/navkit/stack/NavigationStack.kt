@@ -2,8 +2,6 @@ package me.spica27.navkit.stack
 
 import androidx.activity.BackEventCompat
 import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.absoluteOffset
@@ -32,9 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.navkit.geometry.GeometryOccluders
 import me.spica27.navkit.geometry.GeometryTransition
@@ -84,6 +86,7 @@ fun NavigationStack(
 ) {
     val animationScope = rememberCoroutineScope()
     val saveableStateHolder = rememberSaveableStateHolder()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // EntryViewModel 作用域：跟随调用处的 ViewModelStoreOwner（通常是 Activity）
     val entryViewModel = viewModel<EntryViewModel>()
@@ -95,10 +98,40 @@ fun NavigationStack(
         )
     }
 
+    // If the app is backgrounded halfway through a predictive gesture, Android may stop
+    // delivering animation frames before the cancellation rebound completes. Normalize the
+    // visible top scene on resume so the navigation surface can never stay partially shifted.
+    DisposableEffect(lifecycleOwner, path) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    animationScope.launch {
+                        when (val top = path.scenes.lastOrNull()) {
+                            is StackScene -> {
+                                top.enterProgress.snapTo(1f)
+                                top.predictiveBackActive.value = false
+                            }
+
+                            is DialogScene -> top.enterProgress.snapTo(1f)
+                        }
+                    }
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     // 系统预测性返回：手势进度直接反向驱动栈顶页面的 enterProgress，
     // 下层页面会同时解除压缩和模糊，形成 Telegram 风格的“露出上一页”效果。
     PredictiveBackHandler(enabled = path.canPop) { progress ->
         val top = path.scenes.lastOrNull() ?: return@PredictiveBackHandler
+        // Consume gestures arriving while the previous transition is still finishing. Letting
+        // them mutate the disappearing scene's Animatable is what left the UI at a half-screen
+        // position during rapid back/re-enter/back sequences.
+        if (top.stage.value != SceneStage.Appeared) {
+            progress.collect()
+            return@PredictiveBackHandler
+        }
         try {
             progress.collect { event ->
                 val sceneProgress = 1f - event.progress.coerceIn(0f, 1f)
@@ -117,33 +150,17 @@ fun NavigationStack(
                 path.pop(top)
             }
         } catch (_: CancellationException) {
-            // A cancelled edge gesture must return to the fully visible page instead of leaving
-            // it partially translated. NonCancellable guarantees the short rebound can finish.
+            // snapTo does not wait for animation frames, so even a rapid next gesture or moving
+            // the app to the background cannot strand the page at an intermediate position.
             if (path.scenes.lastOrNull() === top) {
                 withContext(NonCancellable) {
                     when (top) {
                         is StackScene -> {
-                            top.enterProgress.animateTo(
-                                targetValue = 1f,
-                                animationSpec =
-                                    spring(
-                                        stiffness = 500f,
-                                        dampingRatio = Spring.DampingRatioNoBouncy,
-                                    ),
-                            )
+                            top.enterProgress.snapTo(1f)
                             top.predictiveBackActive.value = false
                         }
 
-                        is DialogScene -> {
-                            top.enterProgress.animateTo(
-                                targetValue = 1f,
-                                animationSpec =
-                                    spring(
-                                        stiffness = 500f,
-                                        dampingRatio = Spring.DampingRatioNoBouncy,
-                                    ),
-                            )
-                        }
+                        is DialogScene -> top.enterProgress.snapTo(1f)
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.cloud
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -57,6 +58,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -76,6 +78,7 @@ import androidx.paging.compose.itemKey
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.widget.AudioCover
 import org.drinkless.tdlib.TdApi
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -430,11 +433,19 @@ class TelegramChannelScene(
                     contentType = songs.itemContentType { "telegram_song" },
                 ) { index ->
                     songs[index]?.let { song ->
+                        var artworkUri by
+                            remember(song.coverFileId) {
+                                mutableStateOf<Uri?>(null)
+                            }
+                        LaunchedEffect(song.coverFileId) {
+                            artworkUri = viewModel.artworkUri(song)
+                        }
                         CloudSongRow(
                             title = song.title,
                             artist = song.artist,
                             album = "Telegram",
                             durationMs = song.durationMs,
+                            artworkUri = artworkUri,
                             onClick = {
                                 viewModel.play(song, songs.itemSnapshotList.items)
                             },
@@ -981,6 +992,7 @@ private fun CloudSongRow(
     artist: String,
     album: String,
     durationMs: Long,
+    artworkUri: Uri? = null,
     onClick: () -> Unit,
 ) {
     Row(
@@ -996,13 +1008,20 @@ private fun CloudSongRow(
             modifier =
                 Modifier
                     .size(46.dp)
+                    .clip(RoundedCornerShape(13.dp))
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(13.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                Icons.Default.MusicNote,
-                null,
-                tint = MaterialTheme.colorScheme.primary,
+            AudioCover(
+                modifier = Modifier.fillMaxSize(),
+                uri = artworkUri,
+                placeHolder = {
+                    Icon(
+                        Icons.Default.MusicNote,
+                        null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                },
             )
         }
         Column(modifier = Modifier.weight(1f)) {

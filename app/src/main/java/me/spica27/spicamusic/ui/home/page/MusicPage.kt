@@ -100,6 +100,7 @@ import me.spica27.navkit.popup.PopupMenuAnchorState
 import me.spica27.navkit.popup.popupMenuAnchor
 import me.spica27.navkit.popup.rememberPopupMenuAnchorState
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.cloud.CloudLibraryScene
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
@@ -408,6 +409,17 @@ fun MusicPage() {
                                 scaleX = 1f - 0.18f * t
                                 scaleY = 1f - 0.18f * t
                             },
+                )
+            }
+            item(key = "cloud_library", contentType = "cloud_library") {
+                val entrance = rememberEntrance(order = 1, play = playEntrance)
+                CloudLibraryEntryCard(
+                    onClick = { path.push(CloudLibraryScene()) },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                            .entranceGraphics(entrance),
                 )
             }
             item(key = "tabs", contentType = "tabs") {

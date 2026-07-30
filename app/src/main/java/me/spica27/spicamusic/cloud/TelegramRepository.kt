@@ -123,6 +123,9 @@ class TelegramRepository(
         when (val content = message.content) {
             is TdApi.MessageAudio -> {
                 val audio = content.audio
+                val cover =
+                    audio.albumCoverThumbnail
+                        ?: audio.externalAlbumCovers.maxByOrNull { it.width * it.height }
                 TelegramSong(
                     messageId = message.id,
                     chatId = message.chatId,
@@ -138,6 +141,7 @@ class TelegramRepository(
                     artist = audio.performer.ifBlank { "Unknown artist" },
                     durationMs = audio.duration * 1_000L,
                     mimeType = audio.mimeType.ifBlank { "audio/mpeg" },
+                    coverFileId = cover?.file?.id,
                 )
             }
             else -> null

@@ -343,6 +343,8 @@ class TelegramChannelViewModel(
             TelegramPagingSource(repository, chatId)
         }.flow.cachedIn(viewModelScope)
 
+    suspend fun artworkUri(song: TelegramSong): Uri? = proxy.artworkUrl(song)?.let(Uri::parse)
+
     fun play(
         selectedSong: TelegramSong,
         visibleSnapshot: List<TelegramSong>,
@@ -354,6 +356,7 @@ class TelegramChannelViewModel(
                     .ifEmpty { listOf(selectedSong) }
             val items =
                 songs.map { song ->
+                    val artwork = artworkUri(song)
                     MediaItem
                         .Builder()
                         .setMediaId("cloud:telegram:${song.chatId}:${song.messageId}")
@@ -366,6 +369,7 @@ class TelegramChannelViewModel(
                                 .setDisplayTitle(song.title)
                                 .setArtist(song.artist)
                                 .setAlbumTitle("Telegram")
+                                .setArtworkUri(artwork)
                                 .setDurationMs(song.durationMs)
                                 .setIsPlayable(true)
                                 .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)

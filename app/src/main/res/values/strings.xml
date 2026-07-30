@@ -677,7 +677,7 @@
   <string name="connect">Connect</string>
   <string name="username">Username</string>
   <string name="password">Password</string>
-  <string name="telegram_paging_hint">Songs are loaded in small pages. Album art is not decoded while scrolling, which keeps very large channels smooth.</string>
+  <string name="telegram_paging_hint">Songs and album art are loaded on demand in small pages, keeping very large channels smooth.</string>
   <string name="telegram_unavailable">Telegram is unavailable on this device</string>
   <string name="telegram_unavailable_detail">The TDLib native component could not be loaded for this device architecture.</string>
   <string name="telegram_api_title">Telegram API credentials</string>

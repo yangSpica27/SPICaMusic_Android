@@ -101,6 +101,7 @@ data class TelegramSong(
     val artist: String,
     val durationMs: Long,
     val mimeType: String,
+    val coverFileId: Int?,
 )
 
 @Immutable

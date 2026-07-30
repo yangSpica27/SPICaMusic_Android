@@ -677,7 +677,7 @@
   <string name="connect">连接</string>
   <string name="username">用户名</string>
   <string name="password">密码</string>
-  <string name="telegram_paging_hint">歌曲会分小页加载，滚动时不解析专辑封面，因此超大频道也能保持流畅。</string>
+  <string name="telegram_paging_hint">歌曲和专辑封面会分小页按需加载，因此超大频道也能保持流畅。</string>
   <string name="telegram_unavailable">此设备无法使用 Telegram</string>
   <string name="telegram_unavailable_detail">当前设备架构无法加载 TDLib 原生组件。</string>
   <string name="telegram_api_title">Telegram API 凭据</string>
