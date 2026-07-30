@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
@@ -81,6 +82,8 @@ import me.spica27.spicamusic.ui.about.AboutScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.theme.rememberThemeRevealOriginState
+import me.spica27.spicamusic.ui.theme.themeRevealOrigin
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -117,12 +120,6 @@ class SettingsScene : StackScene() {
         val themeModeSystemLabel = stringResource(R.string.settings_theme_mode_system)
         val themeModeLightLabel = stringResource(R.string.settings_theme_mode_light)
         val themeModeDarkLabel = stringResource(R.string.settings_theme_mode_dark)
-        val themeModeName =
-            when (themeMode) {
-                ThemeMode.SYSTEM -> themeModeSystemLabel
-                ThemeMode.LIGHT -> themeModeLightLabel
-                ThemeMode.DARK -> themeModeDarkLabel
-            }
         val themeModeOptions =
             remember(themeModeSystemLabel, themeModeLightLabel, themeModeDarkLabel) {
                 ImmutableList.copyOf(
@@ -225,9 +222,8 @@ class SettingsScene : StackScene() {
                             title = stringResource(R.string.settings_appearance),
                             subtitle = stringResource(R.string.settings_appearance_subtitle),
                         ) {
-                            ModernSettingsSelectItem(
+                            InlineThemeModeSelector(
                                 title = stringResource(R.string.settings_theme_mode_title),
-                                subtitle = themeModeName,
                                 icon = Icons.Default.Brightness6,
                                 options = themeModeOptions,
                                 currentValue = themeMode.value,
@@ -500,6 +496,111 @@ private fun SettingsSectionCard(
         }
         Spacer(modifier = Modifier.height(Spacing.Small))
         content()
+    }
+}
+
+@Composable
+private fun InlineThemeModeSelector(
+    title: String,
+    icon: ImageVector,
+    options: ImmutableList<SelectOption>,
+    currentValue: String,
+    onValueChange: (String) -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.Large, vertical = Spacing.Medium),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(46.dp)
+                        .clip(Shapes.LargeCornerBasedShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+        ) {
+            options.forEach { option ->
+                val selected = option.value == currentValue
+                val revealOrigin = rememberThemeRevealOriginState()
+                val chipBackground by animateColorAsState(
+                    targetValue =
+                        if (selected) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            Color.Transparent
+                        },
+                    animationSpec = tween(durationMillis = 180),
+                    label = "theme_mode_chip_background",
+                )
+                val chipBorder by animateColorAsState(
+                    targetValue =
+                        if (selected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outline
+                        },
+                    animationSpec = tween(durationMillis = 180),
+                    label = "theme_mode_chip_border",
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .themeRevealOrigin(revealOrigin)
+                            .clip(Shapes.LargeCornerBasedShape)
+                            .background(chipBackground)
+                            .border(1.dp, chipBorder, Shapes.LargeCornerBasedShape)
+                            .clickable {
+                                if (!selected) {
+                                    revealOrigin.armFromCenter()
+                                    onValueChange(option.value)
+                                }
+                            }.padding(
+                                horizontal = Spacing.Small,
+                                vertical = Spacing.Medium,
+                            ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = option.label,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        color =
+                            if (selected) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
     }
 }
 

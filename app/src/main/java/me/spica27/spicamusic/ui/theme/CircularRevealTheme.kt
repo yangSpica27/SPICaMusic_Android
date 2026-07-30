@@ -1,10 +1,15 @@
 package me.spica27.spicamusic.ui.theme
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.graphics.Bitmap
 import android.os.SystemClock
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
+import android.view.View
+import android.view.ViewAnimationUtils
+import android.view.ViewGroup
+import android.view.animation.PathInterpolator
+import android.widget.FrameLayout
+import android.widget.ImageView
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
@@ -20,31 +25,24 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.drawToBitmap
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.math.hypot
-import kotlin.math.roundToInt
+import kotlin.coroutines.resume
 
 /**
- * Compose-native adaptation of CircularRevealSwitch's screenshot/reveal idea. The current app
- * frame remains above the newly composed theme while an expanding transparent circle uncovers it.
- * This avoids Activity recreation and keeps the player/navigation state intact.
+ * CircularRevealSwitch-style theme transition without recreating the Activity.
+ *
+ * The old Compose frame is retained in the window while the new frame is revealed with Android's
+ * native [ViewAnimationUtils.createCircularReveal]. Keeping the transition in the decor layer
+ * produces the same sharp circular edge as the reference implementation while preserving the
+ * player and navigation state.
  */
 @Stable
 class ThemeRevealController internal constructor() {
@@ -80,7 +78,7 @@ class ThemeRevealController internal constructor() {
 
     private companion object {
         const val EXPLICIT_ORIGIN_VALIDITY_MS = 15_000L
-        const val POINTER_ORIGIN_VALIDITY_MS = 3_000L
+        const val POINTER_ORIGIN_VALIDITY_MS = 8_000L
     }
 }
 
@@ -120,14 +118,10 @@ fun CircularRevealThemeHost(
     content: @Composable (darkTheme: Boolean, themeColor: Color) -> Unit,
 ) {
     val view = LocalView.current
-    val density = LocalDensity.current
     val controller = remember { ThemeRevealController() }
     var displayedDarkTheme by remember { mutableStateOf(targetDarkTheme) }
     var displayedThemeColor by remember { mutableStateOf(targetThemeColor) }
-    var oldFrame by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
-    var revealOrigin by remember { mutableStateOf(Offset.Zero) }
-    var revealMode by remember { mutableStateOf(RevealMode.Expand) }
-    val progress = remember { Animatable(1f) }
+    var hostOriginInWindow by remember { mutableStateOf(Offset.Zero) }
 
     androidx.compose.runtime.LaunchedEffect(targetDarkTheme, targetThemeColor) {
         val darkChanged = displayedDarkTheme != targetDarkTheme
@@ -142,50 +136,72 @@ fun CircularRevealThemeHost(
             return@LaunchedEffect
         }
 
-        val snapshot =
+        val oldFrame =
             runCatching {
-                view.drawToBitmap(android.graphics.Bitmap.Config.ARGB_8888).asImageBitmap()
+                view.drawToBitmap(Bitmap.Config.ARGB_8888)
             }.getOrNull()
-        if (snapshot == null) {
+        if (oldFrame == null) {
             displayedDarkTheme = targetDarkTheme
             displayedThemeColor = targetThemeColor
             return@LaunchedEffect
         }
 
-        val defaultInset = with(density) { 48f * density.density }
-        revealOrigin =
+        val defaultInset = 48f * view.resources.displayMetrics.density
+        val revealOrigin =
             armedOrigin
                 ?: Offset(
                     x = (view.width - defaultInset).coerceAtLeast(0f),
                     y = defaultInset.coerceAtMost(view.height.toFloat()),
                 )
-        revealMode =
+        val revealMode =
             if (darkChanged && !targetDarkTheme) {
                 RevealMode.Shrink
             } else {
                 RevealMode.Expand
             }
-        oldFrame = snapshot
-        progress.snapTo(0f)
-        displayedDarkTheme = targetDarkTheme
-        displayedThemeColor = targetThemeColor
-        // Wait for the new Material color scheme to be drawn underneath the retained frame.
-        withFrameNanos { }
-        withFrameNanos { }
-        progress.animateTo(
-            targetValue = 1f,
-            animationSpec =
-                tween(
-                    durationMillis =
-                        when {
-                            !darkChanged -> 560
-                            targetDarkTheme -> 680
-                            else -> 520
-                        },
-                    easing = FastOutSlowInEasing,
-                ),
-        )
-        oldFrame = null
+        val durationMillis = if (darkChanged) 520L else 480L
+        val transition =
+            runCatching {
+                NativeRevealTransition.attach(
+                    anchor = view,
+                    oldFrame = oldFrame,
+                    originInWindow = revealOrigin,
+                )
+            }.getOrNull()
+
+        if (transition == null) {
+            oldFrame.recycle()
+            displayedDarkTheme = targetDarkTheme
+            displayedThemeColor = targetThemeColor
+            return@LaunchedEffect
+        }
+
+        try {
+            displayedDarkTheme = targetDarkTheme
+            displayedThemeColor = targetThemeColor
+            // Draw the new Material color scheme behind the retained old frame.
+            withFrameNanos { }
+            withFrameNanos { }
+
+            when (revealMode) {
+                RevealMode.Expand -> {
+                    runCatching {
+                        view.drawToBitmap(Bitmap.Config.ARGB_8888)
+                    }.getOrNull()?.let { newFrame ->
+                        transition.expandNewFrame(
+                            newFrame = newFrame,
+                            durationMillis = durationMillis,
+                        )
+                    }
+                }
+
+                RevealMode.Shrink -> {
+                    transition.shrinkOldFrame(durationMillis = durationMillis)
+                }
+            }
+        } finally {
+            transition.close()
+        }
     }
 
     CompositionLocalProvider(LocalThemeRevealController provides controller) {
@@ -193,85 +209,17 @@ fun CircularRevealThemeHost(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .onGloballyPositioned { coordinates ->
+                        hostOriginInWindow = coordinates.boundsInWindow().topLeft
+                    }
                     .pointerInput(controller) {
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
-                            controller.recordPointer(down.position)
+                            controller.recordPointer(hostOriginInWindow + down.position)
                         }
                     },
         ) {
             content(displayedDarkTheme, displayedThemeColor)
-            oldFrame?.let { frame ->
-                Canvas(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                compositingStrategy = CompositingStrategy.Offscreen
-                            },
-                ) {
-                    val drawOldFrame = {
-                        drawIntoCanvas { canvas ->
-                            val source =
-                                android.graphics.Rect(
-                                    0,
-                                    0,
-                                    frame.width,
-                                    frame.height,
-                                )
-                            val destination =
-                                android.graphics.Rect(
-                                    0,
-                                    0,
-                                    size.width.roundToInt(),
-                                    size.height.roundToInt(),
-                                )
-                            canvas.nativeCanvas.drawBitmap(
-                                frame.asAndroidBitmap(),
-                                source,
-                                destination,
-                                null,
-                            )
-                        }
-                    }
-                    val maximumRadius =
-                        maxOf(
-                            hypot(revealOrigin.x, revealOrigin.y),
-                            hypot(size.width - revealOrigin.x, revealOrigin.y),
-                            hypot(revealOrigin.x, size.height - revealOrigin.y),
-                            hypot(size.width - revealOrigin.x, size.height - revealOrigin.y),
-                        )
-                    when (revealMode) {
-                        RevealMode.Expand -> {
-                            drawOldFrame()
-                            drawCircle(
-                                color = Color.Transparent,
-                                radius = maximumRadius * progress.value,
-                                center = revealOrigin,
-                                blendMode = BlendMode.Clear,
-                            )
-                        }
-
-                        RevealMode.Shrink -> {
-                            val radius = maximumRadius * (1f - progress.value)
-                            val circle =
-                                Path().apply {
-                                    addOval(
-                                        Rect(
-                                            left = revealOrigin.x - radius,
-                                            top = revealOrigin.y - radius,
-                                            right = revealOrigin.x + radius,
-                                            bottom = revealOrigin.y + radius,
-                                        ),
-                                    )
-                                }
-                            clipPath(circle) {
-                                drawOldFrame()
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
@@ -279,4 +227,160 @@ fun CircularRevealThemeHost(
 private enum class RevealMode {
     Expand,
     Shrink,
+}
+
+/**
+ * Window-level screenshot layers matching CircularRevealSwitch's implementation strategy.
+ *
+ * The old frame is attached before Compose receives the new theme, preventing a one-frame flash.
+ * For expand transitions a screenshot of the new frame is revealed above it. For shrink
+ * transitions the old screenshot itself shrinks while the live new UI remains underneath.
+ */
+private class NativeRevealTransition private constructor(
+    private val root: ViewGroup,
+    private val anchor: View,
+    private val oldFrame: Bitmap,
+    private val originInAnchor: Offset,
+) {
+    private val ownedLayers = mutableListOf<ImageView>()
+    private val ownedBitmaps = mutableListOf(oldFrame)
+    private val oldLayer =
+        createLayer(oldFrame, initiallyVisible = true).also { layer ->
+            ownedLayers += layer
+        }
+
+    suspend fun expandNewFrame(
+        newFrame: Bitmap,
+        durationMillis: Long,
+    ) {
+        ownedBitmaps += newFrame
+        val newLayer = createLayer(newFrame, initiallyVisible = false)
+        ownedLayers += newLayer
+
+        // Give DecorView one frame to measure and position the new screenshot layer.
+        withFrameNanos { }
+        val animator = createRevealAnimator(newLayer, startRadius = 0f, endRadius = maximumRadius())
+        animator.duration = durationMillis
+        newLayer.visibility = View.VISIBLE
+        animator.awaitEnd()
+    }
+
+    suspend fun shrinkOldFrame(durationMillis: Long) {
+        val animator = createRevealAnimator(oldLayer, startRadius = maximumRadius(), endRadius = 0f)
+        animator.duration = durationMillis
+        animator.awaitEnd()
+    }
+
+    fun close() {
+        ownedLayers.asReversed().forEach { layer ->
+            layer.setImageDrawable(null)
+            (layer.parent as? ViewGroup)?.removeView(layer)
+        }
+        ownedLayers.clear()
+        ownedBitmaps.forEach { bitmap ->
+            if (!bitmap.isRecycled) bitmap.recycle()
+        }
+        ownedBitmaps.clear()
+    }
+
+    private fun createLayer(
+        bitmap: Bitmap,
+        initiallyVisible: Boolean,
+    ): ImageView {
+        val anchorLocation = IntArray(2).also(anchor::getLocationInWindow)
+        val rootLocation = IntArray(2).also(root::getLocationInWindow)
+        val params =
+            FrameLayout.LayoutParams(anchor.width, anchor.height).apply {
+                leftMargin = anchorLocation[0] - rootLocation[0]
+                topMargin = anchorLocation[1] - rootLocation[1]
+            }
+        val layer =
+            ImageView(anchor.context).apply {
+                layoutParams = params
+                scaleType = ImageView.ScaleType.FIT_XY
+                setImageBitmap(bitmap)
+                isClickable = true
+                isFocusable = true
+                visibility = if (initiallyVisible) View.VISIBLE else View.INVISIBLE
+                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+            }
+        root.addView(layer)
+        layer.bringToFront()
+        return layer
+    }
+
+    private fun createRevealAnimator(
+        layer: View,
+        startRadius: Float,
+        endRadius: Float,
+    ): Animator =
+        ViewAnimationUtils
+            .createCircularReveal(
+                layer,
+                originInAnchor.x.toInt(),
+                originInAnchor.y.toInt(),
+                startRadius,
+                endRadius,
+            ).apply {
+                interpolator = REFERENCE_INTERPOLATOR
+            }
+
+    private fun maximumRadius(): Float {
+        val x = originInAnchor.x
+        val y = originInAnchor.y
+        return maxOf(
+            hypot(x, y),
+            hypot(anchor.width - x, y),
+            hypot(x, anchor.height - y),
+            hypot(anchor.width - x, anchor.height - y),
+        )
+    }
+
+    companion object {
+        private val REFERENCE_INTERPOLATOR = PathInterpolator(0.455f, 0.03f, 0.515f, 0.955f)
+
+        fun attach(
+            anchor: View,
+            oldFrame: Bitmap,
+            originInWindow: Offset,
+        ): NativeRevealTransition {
+            require(anchor.width > 0 && anchor.height > 0)
+            val root = anchor.rootView as? ViewGroup ?: error("Decor root is not a ViewGroup")
+            val anchorLocation = IntArray(2).also(anchor::getLocationInWindow)
+            val localOrigin =
+                Offset(
+                    x = (originInWindow.x - anchorLocation[0]).coerceIn(0f, anchor.width.toFloat()),
+                    y = (originInWindow.y - anchorLocation[1]).coerceIn(0f, anchor.height.toFloat()),
+                )
+            return NativeRevealTransition(
+                root = root,
+                anchor = anchor,
+                oldFrame = oldFrame,
+                originInAnchor = localOrigin,
+            )
+        }
+    }
+}
+
+private suspend fun Animator.awaitEnd() {
+    suspendCancellableCoroutine { continuation ->
+        var finished = false
+        addListener(
+            object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    if (finished) return
+                    finished = true
+                    if (continuation.isActive) continuation.resume(Unit)
+                }
+
+                override fun onAnimationCancel(animation: Animator) {
+                    if (finished) return
+                    finished = true
+                    if (continuation.isActive) continuation.resume(Unit)
+                }
+            },
+        )
+        continuation.invokeOnCancellation { cancel() }
+        start()
+    }
 }
