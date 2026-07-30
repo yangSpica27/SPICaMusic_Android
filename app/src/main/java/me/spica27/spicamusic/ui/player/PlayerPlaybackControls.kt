@@ -69,6 +69,8 @@ import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.theme.rememberThemeRevealOriginState
+import me.spica27.spicamusic.ui.theme.themeRevealOrigin
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioDynamicWaveSlider
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.audio_seekbar.ExpressiveWavySlider
@@ -303,6 +305,8 @@ private fun LegacyPlayerTransportControls(
     onPlayModeClick: () -> Unit,
     onFavoriteClick: () -> Unit,
 ) {
+    val previousRevealOrigin = rememberThemeRevealOriginState()
+    val nextRevealOrigin = rememberThemeRevealOriginState()
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -332,8 +336,14 @@ private fun LegacyPlayerTransportControls(
             horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
         ) {
             IconButton(
-                onClick = onPreviousClick,
-                modifier = Modifier.size(56.dp),
+                onClick = {
+                    previousRevealOrigin.armFromCenter()
+                    onPreviousClick()
+                },
+                modifier =
+                    Modifier
+                        .size(56.dp)
+                        .themeRevealOrigin(previousRevealOrigin),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.SkipPrevious,
@@ -384,8 +394,14 @@ private fun LegacyPlayerTransportControls(
                 }
             }
             IconButton(
-                onClick = onNextClick,
-                modifier = Modifier.size(56.dp),
+                onClick = {
+                    nextRevealOrigin.armFromCenter()
+                    onNextClick()
+                },
+                modifier =
+                    Modifier
+                        .size(56.dp)
+                        .themeRevealOrigin(nextRevealOrigin),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.SkipNext,
@@ -447,6 +463,8 @@ fun PlayerTransportControls(
 ) {
     var activeButton by remember { mutableStateOf<TransportButtonType?>(null) }
     var showSleepTimerDialog by remember { mutableStateOf(false) }
+    val previousRevealOrigin = rememberThemeRevealOriginState()
+    val nextRevealOrigin = rememberThemeRevealOriginState()
     val sleepTimerMinutes =
         sleepTimerRemainingMs?.let { remaining ->
             ((remaining + 59_999L) / 60_000L).coerceAtLeast(1L)
@@ -561,10 +579,12 @@ fun PlayerTransportControls(
                     Modifier
                         .weight(previousWeight)
                         .fillMaxSize()
+                        .themeRevealOrigin(previousRevealOrigin)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.secondaryContainer)
                         .clickable(role = Role.Button) {
                             activeButton = TransportButtonType.Previous
+                            previousRevealOrigin.armFromCenter()
                             onPreviousClick()
                         },
                 contentAlignment = Alignment.Center,
@@ -614,10 +634,12 @@ fun PlayerTransportControls(
                     Modifier
                         .weight(nextWeight)
                         .fillMaxSize()
+                        .themeRevealOrigin(nextRevealOrigin)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.secondaryContainer)
                         .clickable(role = Role.Button) {
                             activeButton = TransportButtonType.Next
+                            nextRevealOrigin.armFromCenter()
                             onNextClick()
                         },
                 contentAlignment = Alignment.Center,

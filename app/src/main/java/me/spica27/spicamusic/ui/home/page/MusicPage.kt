@@ -2,6 +2,7 @@
 
 package me.spica27.spicamusic.ui.home.page
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
@@ -39,6 +40,8 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -57,12 +60,15 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -83,6 +89,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -91,8 +98,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
@@ -100,7 +110,10 @@ import me.spica27.navkit.popup.PopupMenuAnchorState
 import me.spica27.navkit.popup.popupMenuAnchor
 import me.spica27.navkit.popup.rememberPopupMenuAnchorState
 import me.spica27.spicamusic.R
-import me.spica27.spicamusic.cloud.CloudLibraryScene
+import me.spica27.spicamusic.cloud.CatalogQueueItem
+import me.spica27.spicamusic.cloud.CloudCatalogSong
+import me.spica27.spicamusic.cloud.CloudMusicCatalogViewModel
+import me.spica27.spicamusic.cloud.CloudSongSource
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
@@ -121,6 +134,8 @@ import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.theme.rememberThemeRevealOriginState
+import me.spica27.spicamusic.ui.theme.themeRevealOrigin
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.combinedClickHighlight
@@ -159,6 +174,64 @@ private enum class MusicBrowserTab(
     ),
 }
 
+@Immutable
+private enum class SongLibrarySource(
+    val titleRes: Int,
+    val cloudSource: CloudSongSource? = null,
+) {
+    All(R.string.music_source_all),
+    Local(R.string.music_source_local),
+    Telegram(R.string.music_source_telegram, CloudSongSource.TELEGRAM),
+    Jellyfin(R.string.music_source_jellyfin, CloudSongSource.JELLYFIN),
+    Emby(R.string.music_source_emby, CloudSongSource.EMBY),
+    Subsonic(R.string.music_source_subsonic, CloudSongSource.SUBSONIC),
+    Netease(R.string.music_source_netease, CloudSongSource.NETEASE),
+    QqMusic(R.string.music_source_qq, CloudSongSource.QQ_MUSIC),
+}
+
+@Immutable
+private sealed interface BrowserSongItem {
+    val stableId: String
+    val title: String
+    val artist: String
+    val album: String
+    val durationMs: Long
+    val artworkUri: Uri?
+    val fallbackArtworkUri: Uri?
+    val source: CloudSongSource?
+
+    data class Local(
+        val song: Song,
+    ) : BrowserSongItem {
+        override val stableId = "local:${song.mediaStoreId}"
+        override val title = song.displayName
+        override val artist = song.artist
+        override val album = song.album
+        override val durationMs = song.duration
+        override val artworkUri = song.getCoverUri()
+        override val fallbackArtworkUri = song.getAlbumCoverUri()
+        override val source: CloudSongSource? = null
+    }
+
+    data class Cloud(
+        val song: CloudCatalogSong,
+    ) : BrowserSongItem {
+        override val stableId = song.stableId
+        override val title = song.title
+        override val artist = song.artist
+        override val album = song.album
+        override val durationMs = song.durationMs
+        override val artworkUri = song.artworkUri
+        override val fallbackArtworkUri: Uri? = null
+        override val source = song.source
+    }
+}
+
+private data class SongRowSubtitle(
+    val artist: String,
+    val album: String,
+)
+
 // ──────────────────────────────────────────────────────────────────────────
 // 各 Tab 的排序方式
 // ──────────────────────────────────────────────────────────────────────────
@@ -192,6 +265,46 @@ private enum class SongSortMode(
         SortMenuOption("duration_desc", R.string.sort_song_duration_desc, Icons.Default.Schedule),
         compareByDescending { it.duration },
     ),
+}
+
+private fun SongSortMode.browserComparator(): Comparator<BrowserSongItem> =
+    when (this) {
+        SongSortMode.TitleAsc ->
+            compareBy(String.CASE_INSENSITIVE_ORDER, BrowserSongItem::title)
+        SongSortMode.TitleDesc ->
+            compareBy(String.CASE_INSENSITIVE_ORDER, BrowserSongItem::title).reversed()
+        SongSortMode.ArtistAsc ->
+            compareBy(String.CASE_INSENSITIVE_ORDER, BrowserSongItem::artist)
+        SongSortMode.ArtistDesc ->
+            compareBy(String.CASE_INSENSITIVE_ORDER, BrowserSongItem::artist).reversed()
+        SongSortMode.DurationAsc -> compareBy(BrowserSongItem::durationMs)
+        SongSortMode.DurationDesc -> compareByDescending(BrowserSongItem::durationMs)
+    }
+
+private fun List<BrowserSongItem>.filterBrowserSongsBy(query: String): List<BrowserSongItem> {
+    val normalized = query.trim()
+    if (normalized.isEmpty()) return this
+    return filter {
+        it.title.contains(normalized, ignoreCase = true) ||
+            it.artist.contains(normalized, ignoreCase = true) ||
+            it.album.contains(normalized, ignoreCase = true)
+    }
+}
+
+private fun CloudSongSource.filter(): SongLibrarySource =
+    when (this) {
+        CloudSongSource.TELEGRAM -> SongLibrarySource.Telegram
+        CloudSongSource.JELLYFIN -> SongLibrarySource.Jellyfin
+        CloudSongSource.EMBY -> SongLibrarySource.Emby
+        CloudSongSource.SUBSONIC -> SongLibrarySource.Subsonic
+        CloudSongSource.NETEASE -> SongLibrarySource.Netease
+        CloudSongSource.QQ_MUSIC -> SongLibrarySource.QqMusic
+    }
+
+private fun formatDuration(durationMs: Long): String {
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMs.coerceAtLeast(0L))
+    val seconds = TimeUnit.MILLISECONDS.toSeconds(durationMs.coerceAtLeast(0L)) % 60L
+    return "%d:%02d".format(minutes, seconds)
 }
 
 @Immutable
@@ -252,10 +365,24 @@ private enum class ArtistSortMode(
 fun MusicPage() {
     val path = LocalNavigationPath.current
     val homeViewModel: HomeViewModel = koinActivityViewModel()
+    val cloudCatalogViewModel: CloudMusicCatalogViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
 
     val allSongs by homeViewModel.allSongs.collectAsStateWithLifecycle()
+    val cloudCatalog by cloudCatalogViewModel.state.collectAsStateWithLifecycle()
     val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner, cloudCatalogViewModel) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) {
+                    cloudCatalogViewModel.refreshSources()
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val unknownAlbum = stringResource(R.string.unknown_album)
     val unknownArtist = stringResource(R.string.unknown_artist)
@@ -270,6 +397,7 @@ fun MusicPage() {
         }
 
     var selectedTab by rememberSaveable { mutableStateOf(MusicBrowserTab.Songs) }
+    var selectedSource by rememberSaveable { mutableStateOf(SongLibrarySource.All) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var songSortMode by rememberSaveable { mutableStateOf(SongSortMode.TitleAsc) }
     var albumSortMode by rememberSaveable { mutableStateOf(AlbumSortMode.TitleAsc) }
@@ -290,11 +418,49 @@ fun MusicPage() {
         }
     }
 
+    val availableSources =
+        remember(cloudCatalog.availableSources) {
+            buildList {
+                add(SongLibrarySource.All)
+                add(SongLibrarySource.Local)
+                SongLibrarySource.entries
+                    .filter { it.cloudSource in cloudCatalog.availableSources }
+                    .forEach(::add)
+            }
+        }
+    LaunchedEffect(availableSources) {
+        if (selectedSource !in availableSources) selectedSource = SongLibrarySource.All
+    }
+    val browserSongs =
+        remember(allSongs, cloudCatalog.songs, selectedSource) {
+            buildList {
+                if (selectedSource == SongLibrarySource.All || selectedSource == SongLibrarySource.Local) {
+                    allSongs.forEach { add(BrowserSongItem.Local(it)) }
+                }
+                if (selectedSource != SongLibrarySource.Local) {
+                    cloudCatalog.songs
+                        .asSequence()
+                        .filter {
+                            selectedSource == SongLibrarySource.All ||
+                                it.source == selectedSource.cloudSource
+                        }.forEach { add(BrowserSongItem.Cloud(it)) }
+                }
+            }
+        }
     val filteredSongs =
-        remember(allSongs, searchQuery, songSortMode) {
-            allSongs
-                .filterSongsBy(searchQuery)
-                .sortedWith(songSortMode.comparator)
+        remember(browserSongs, searchQuery, songSortMode) {
+            browserSongs
+                .filterBrowserSongsBy(searchQuery)
+                .sortedWith(songSortMode.browserComparator())
+        }
+    val visibleQueue =
+        remember(filteredSongs) {
+            filteredSongs.map {
+                when (it) {
+                    is BrowserSongItem.Local -> CatalogQueueItem.Local(it.song)
+                    is BrowserSongItem.Cloud -> CatalogQueueItem.Cloud(it.song)
+                }
+            }
         }
     val filteredAlbums =
         remember(albums, searchQuery, albumSortMode) {
@@ -370,6 +536,20 @@ fun MusicPage() {
                 focusManager.clearFocus()
             }
     }
+    LaunchedEffect(listState, selectedTab, selectedSource) {
+        if (selectedTab != MusicBrowserTab.Songs || selectedSource == SongLibrarySource.Local) {
+            return@LaunchedEffect
+        }
+        snapshotFlow {
+            val layout = listState.layoutInfo
+            val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: 0
+            layout.totalItemsCount > 0 && lastVisible >= layout.totalItemsCount - 10
+        }.distinctUntilChanged()
+            .filter { it }
+            .collect {
+                cloudCatalogViewModel.loadMore(selectedSource.cloudSource)
+            }
+    }
     Box(
         modifier =
             Modifier
@@ -393,7 +573,7 @@ fun MusicPage() {
             item(key = "masthead", contentType = "masthead") {
                 val entrance = rememberEntrance(order = 0, play = playEntrance)
                 MusicMasthead(
-                    songsCount = allSongs.size,
+                    songsCount = allSongs.size + cloudCatalog.songs.size,
                     albumsCount = albums.size,
                     artistsCount = artists.size,
                     modifier =
@@ -411,22 +591,11 @@ fun MusicPage() {
                             },
                 )
             }
-            item(key = "cloud_library", contentType = "cloud_library") {
-                val entrance = rememberEntrance(order = 1, play = playEntrance)
-                CloudLibraryEntryCard(
-                    onClick = { path.push(CloudLibraryScene()) },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                            .entranceGraphics(entrance),
-                )
-            }
             item(key = "tabs", contentType = "tabs") {
-                val entrance = rememberEntrance(order = 2, play = playEntrance)
+                val entrance = rememberEntrance(order = 1, play = playEntrance)
                 MusicTabStrip(
                     selectedTab = selectedTab,
-                    songsCount = allSongs.size,
+                    songsCount = allSongs.size + cloudCatalog.songs.size,
                     albumsCount = albums.size,
                     artistsCount = artists.size,
                     onSelect = {
@@ -445,8 +614,21 @@ fun MusicPage() {
                 )
             }
 
+            if (selectedTab == MusicBrowserTab.Songs) {
+                item(key = "song_sources", contentType = "song_sources") {
+                    MusicSourceFilterRow(
+                        sources = availableSources,
+                        selected = selectedSource,
+                        onSelect = {
+                            selectedSource = it
+                            playlistEntrance = true
+                        },
+                    )
+                }
+            }
+
             item(key = "search", contentType = "search") {
-                val entrance = rememberEntrance(order = 3, play = playEntrance)
+                val entrance = rememberEntrance(order = 2, play = playEntrance)
                 MusicSearchBar(
                     query = searchQuery,
                     hint = stringResource(selectedTab.searchHintRes),
@@ -492,33 +674,50 @@ fun MusicPage() {
                 MusicBrowserTab.Songs -> {
                     if (filteredSongs.isEmpty()) {
                         item(key = "songs_empty", contentType = "empty") {
-                            MusicEmptyState(
-                                title =
-                                    stringResource(
-                                        if (allSongs.isEmpty()) {
-                                            R.string.music_no_songs_title
-                                        } else {
-                                            R.string.music_empty_songs_title
-                                        },
-                                    ),
-                                subtitle =
-                                    stringResource(
-                                        if (allSongs.isEmpty()) {
-                                            R.string.music_no_songs_subtitle
-                                        } else {
-                                            R.string.music_empty_songs_subtitle
-                                        },
-                                    ),
-                                actionLabel = stringResource(R.string.scan_local_music).takeIf { allSongs.isEmpty() },
-                                onActionClick = { path.push(ScannerScene()) }.takeIf { allSongs.isEmpty() },
-                            )
+                            if (
+                                selectedSource != SongLibrarySource.Local &&
+                                cloudCatalog.loadingSources.isNotEmpty()
+                            ) {
+                                MusicCloudLoadingState()
+                            } else {
+                                MusicEmptyState(
+                                    title =
+                                        stringResource(
+                                            if (allSongs.isEmpty() && cloudCatalog.songs.isEmpty()) {
+                                                R.string.music_no_songs_title
+                                            } else {
+                                                R.string.music_empty_songs_title
+                                            },
+                                        ),
+                                    subtitle =
+                                        stringResource(
+                                            if (allSongs.isEmpty() && cloudCatalog.songs.isEmpty()) {
+                                                R.string.music_no_songs_subtitle
+                                            } else {
+                                                R.string.music_empty_songs_subtitle
+                                            },
+                                        ),
+                                    actionLabel =
+                                        stringResource(R.string.scan_local_music)
+                                            .takeIf {
+                                                selectedSource == SongLibrarySource.Local &&
+                                                    allSongs.isEmpty()
+                                            },
+                                    onActionClick =
+                                        { path.push(ScannerScene()) }
+                                            .takeIf {
+                                                selectedSource == SongLibrarySource.Local &&
+                                                    allSongs.isEmpty()
+                                            },
+                                )
+                            }
                         }
                     } else {
                         itemsIndexed(
                             items = filteredSongs,
-                            key = { _, song -> song.mediaStoreId },
+                            key = { _, song -> song.stableId },
                             contentType = { _, _ -> "song" },
-                        ) { index, song ->
+                        ) { index, item ->
                             val entrance =
                                 rememberEntrance(
                                     order = minOf(index + 4, 10),
@@ -526,16 +725,31 @@ fun MusicPage() {
                                 )
                             MusicSongRow(
                                 index = index,
-                                song = song,
-                                isPlaying = currentMediaItem?.mediaId == song.mediaStoreId.toString(),
+                                title = item.title,
+                                artist = item.artist,
+                                album = item.album,
+                                durationMs = item.durationMs,
+                                artworkUri = item.artworkUri,
+                                fallbackArtworkUri = item.fallbackArtworkUri,
+                                sourceLabel =
+                                    item.source?.let { source ->
+                                        stringResource(source.filter().titleRes)
+                                    },
+                                isPlaying =
+                                    currentMediaItem?.mediaId ==
+                                        when (item) {
+                                            is BrowserSongItem.Local -> item.song.mediaStoreId.toString()
+                                            is BrowserSongItem.Cloud -> item.song.stableId
+                                        },
                                 onLongClick = {
-                                    path.push(SongMenuScene(song))
+                                    (item as? BrowserSongItem.Local)?.let {
+                                        path.push(SongMenuScene(it.song))
+                                    }
                                 },
                                 onClick = {
-                                    playerViewModel.updatePlaylistWithSongs(
-                                        songs = filteredSongs,
-                                        startSong = song,
-                                        autoStart = true,
+                                    cloudCatalogViewModel.play(
+                                        selectedStableId = item.stableId,
+                                        visibleQueue = visibleQueue,
                                     )
                                 },
                                 modifier =
@@ -557,6 +771,14 @@ fun MusicPage() {
                                             translationY = (1f - enter) * 28.dp.toPx()
                                         },
                             )
+                        }
+                        if (
+                            selectedSource != SongLibrarySource.Local &&
+                            cloudCatalog.loadingSources.isNotEmpty()
+                        ) {
+                            item(key = "cloud_page_loading", contentType = "loading") {
+                                MusicCloudLoadingState(compact = true)
+                            }
                         }
                     }
                 }
@@ -1016,6 +1238,58 @@ private fun MusicSearchBar(
 }
 
 @Composable
+private fun MusicSourceFilterRow(
+    sources: List<SongLibrarySource>,
+    selected: SongLibrarySource,
+    onSelect: (SongLibrarySource) -> Unit,
+) {
+    LazyRow(
+        contentPadding =
+            PaddingValues(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+    ) {
+        items(
+            items = sources,
+            key = SongLibrarySource::name,
+        ) { source ->
+            FilterChip(
+                selected = selected == source,
+                onClick = { onSelect(source) },
+                label = {
+                    Text(
+                        text = stringResource(source.titleRes),
+                        maxLines = 1,
+                    )
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun MusicCloudLoadingState(compact: Boolean = false) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = LayoutTokens.MusicHeaderHorizontalPadding,
+                    vertical = if (compact) Spacing.Small else Spacing.Large,
+                ),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(if (compact) 20.dp else 28.dp))
+        Text(
+            text = stringResource(R.string.music_cloud_loading),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = Spacing.Small),
+        )
+    }
+}
+
+@Composable
 private fun MusicSectionHeader(
     tab: MusicBrowserTab,
     count: Int,
@@ -1072,16 +1346,31 @@ private fun MusicSectionHeader(
 private fun MusicSongRow(
     modifier: Modifier = Modifier,
     index: Int,
-    song: Song,
+    title: String,
+    artist: String,
+    album: String,
+    durationMs: Long,
+    artworkUri: Uri?,
+    fallbackArtworkUri: Uri?,
+    sourceLabel: String?,
     isPlaying: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit = {},
 ) {
+    val revealOrigin = rememberThemeRevealOriginState()
+    val song =
+        remember(artist, album, sourceLabel) {
+            SongRowSubtitle(
+                artist = artist,
+                album = listOfNotNull(album, sourceLabel).joinToString(" · "),
+            )
+        }
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                .themeRevealOrigin(revealOrigin)
                 .clip(Shapes.ExtraLargeCornerBasedShape)
                 .background(
                     if (isPlaying) {
@@ -1090,7 +1379,10 @@ private fun MusicSongRow(
                         MaterialTheme.colorScheme.surfaceContainerLow
                     },
                 ).combinedClickHighlight(
-                    onClick = onClick,
+                    onClick = {
+                        revealOrigin.armFromCenter()
+                        onClick()
+                    },
                     onLongClick = onLongClick,
                 ).padding(Spacing.Small),
         verticalAlignment = Alignment.CenterVertically,
@@ -1110,8 +1402,8 @@ private fun MusicSongRow(
             textAlign = TextAlign.Center,
         )
         AudioCover(
-            uri = song.getCoverUri(),
-            fallbackUri = song.getAlbumCoverUri(),
+            uri = artworkUri,
+            fallbackUri = fallbackArtworkUri,
             modifier =
                 Modifier
                     .size(56.dp)
@@ -1120,7 +1412,7 @@ private fun MusicSongRow(
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = song.displayName,
+                text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -1146,7 +1438,7 @@ private fun MusicSongRow(
                 )
             } else {
                 Text(
-                    text = song.getFormattedDuration(),
+                    text = formatDuration(durationMs),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.width(42.dp),

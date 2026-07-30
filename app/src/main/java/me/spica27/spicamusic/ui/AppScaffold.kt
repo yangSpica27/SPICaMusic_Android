@@ -17,6 +17,7 @@ import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.ui.home.HomeScene
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
+import me.spica27.spicamusic.ui.theme.CircularRevealThemeHost
 import me.spica27.spicamusic.ui.theme.SPICaMusicTheme
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -67,19 +68,25 @@ fun AppScaffold() {
         WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDarkMode
     }
 
-    SPICaMusicTheme(
-        darkTheme = isDarkMode,
-        themeColor = color,
-        themeColorStyle = ThemeColorStyle.fromString(themeColorStyleValue),
-    ) {
-        CompositionLocalProvider(LocalPlayerViewModel provides playerViewModel) {
-            NavigationStack(
-                initialScene = {
-                    HomeScene()
-                },
-                content = {
-                },
-            )
+    CircularRevealThemeHost(
+        targetDarkTheme = isDarkMode,
+        targetThemeColor = color,
+    ) { revealedDarkTheme, revealedThemeColor ->
+        SPICaMusicTheme(
+            darkTheme = revealedDarkTheme,
+            themeColor = revealedThemeColor,
+            themeColorStyle = ThemeColorStyle.fromString(themeColorStyleValue),
+            animateColors = false,
+        ) {
+            CompositionLocalProvider(LocalPlayerViewModel provides playerViewModel) {
+                NavigationStack(
+                    initialScene = {
+                        HomeScene()
+                    },
+                    content = {
+                    },
+                )
+            }
         }
     }
 }

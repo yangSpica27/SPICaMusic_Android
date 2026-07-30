@@ -5,6 +5,7 @@ import com.skydoves.sandwich.retrofit.adapters.ApiResponseCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import me.spica27.spicamusic.cloud.CloudAccountStore
+import me.spica27.spicamusic.cloud.CloudMusicCatalogViewModel
 import me.spica27.spicamusic.cloud.MediaServerClient
 import me.spica27.spicamusic.cloud.MediaServerType
 import me.spica27.spicamusic.cloud.MediaServerViewModel
@@ -138,6 +139,17 @@ object AppModule {
             }
             viewModel {
                 TelegramViewModel(repository = get())
+            }
+            viewModel {
+                CloudMusicCatalogViewModel(
+                    accountStore = get(),
+                    mediaServerClient = get(),
+                    remoteClients = get(),
+                    remoteProxy = get(),
+                    telegramRepository = get(),
+                    telegramProxy = get(),
+                    player = get(),
+                )
             }
             viewModel { parameters ->
                 RemoteMusicViewModel(

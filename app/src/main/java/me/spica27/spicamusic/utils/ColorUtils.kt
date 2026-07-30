@@ -16,6 +16,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.palette.graphics.Palette
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayInputStream
+import java.net.URL
 
 private const val ARTWORK_COLOR_CACHE_SIZE = 32
 private val artworkColorCache = LruCache<String, Int>(ARTWORK_COLOR_CACHE_SIZE)
@@ -50,9 +52,28 @@ suspend fun extractDominantColorFromUri(
         getCachedDominantColorFromUri(uri)?.let { return@withContext it }
 
         try {
+            // ContentResolver cannot open HTTP artwork. Cloud covers are thumbnails, so fetch
+            // once and reuse the bytes for the bounds and sampled decode passes.
+            val remoteBytes =
+                if (uri.scheme == "http" || uri.scheme == "https") {
+                    val connection =
+                        URL(uri.toString()).openConnection().apply {
+                            connectTimeout = 8_000
+                            readTimeout = 12_000
+                            useCaches = true
+                        }
+                    connection.getInputStream().use { it.readBytes() }
+                } else {
+                    null
+                }
+
+            fun openArtworkStream() =
+                remoteBytes?.let(::ByteArrayInputStream)
+                    ?: context.contentResolver.openInputStream(uri)
+
             // 第一次 pass：仅读取图片尺寸，不分配像素内存
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            context.contentResolver.openInputStream(uri)?.use {
+            openArtworkStream()?.use {
                 BitmapFactory.decodeStream(it, null, bounds)
             }
 
@@ -66,7 +87,7 @@ suspend fun extractDominantColorFromUri(
                     inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 // 节省一半内存
                 }
             val bitmap =
-                context.contentResolver.openInputStream(uri)?.use {
+                openArtworkStream()?.use {
                     BitmapFactory.decodeStream(it, null, options)
                 }
 

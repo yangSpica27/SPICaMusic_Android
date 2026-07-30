@@ -33,6 +33,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayInputStream
+import java.net.URL
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -89,10 +91,10 @@ fun FluidWarpBackground(
     }
 
     // 封面变化时在 IO 线程解码小图（≤256px），失败/缺封面时回退主色渐变。
-    // 仅 uri 为空时才让 coverColor 参与 key：避免调色板异步就绪触发无谓的重解码
     val uri = coverUri()
-    val fallbackColorKey = if (uri == null) coverColor else null
-    LaunchedEffect(uri, fallbackColorKey) {
+    // Cloud thumbnails can become ready after the metadata change. Rebuild the fallback when
+    // the asynchronously extracted color arrives instead of retaining the previous song's color.
+    LaunchedEffect(uri, coverColor) {
         val bitmap =
             withContext(Dispatchers.IO) {
                 decodeCoverBitmap(context, uri) ?: createGradientFallback(coverColor)
@@ -182,8 +184,24 @@ private fun decodeCoverBitmap(
 ): Bitmap? {
     if (uri == null) return null
     return try {
+        val remoteBytes =
+            if (uri.scheme == "http" || uri.scheme == "https") {
+                val connection =
+                    URL(uri.toString()).openConnection().apply {
+                        connectTimeout = 8_000
+                        readTimeout = 12_000
+                        useCaches = true
+                    }
+                connection.getInputStream().use { it.readBytes() }
+            } else {
+                null
+            }
+        fun openCoverStream() =
+            remoteBytes?.let(::ByteArrayInputStream)
+                ?: context.contentResolver.openInputStream(uri)
+
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        context.contentResolver.openInputStream(uri)?.use {
+        openCoverStream()?.use {
             BitmapFactory.decodeStream(it, null, bounds)
         }
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
@@ -197,7 +215,7 @@ private fun decodeCoverBitmap(
                 inSampleSize = sampleSize
                 inPreferredConfig = Bitmap.Config.ARGB_8888
             }
-        context.contentResolver.openInputStream(uri)?.use {
+        openCoverStream()?.use {
             BitmapFactory.decodeStream(it, null, options)
         }
     } catch (_: Exception) {

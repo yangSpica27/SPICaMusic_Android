@@ -44,6 +44,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.theme.rememberThemeRevealOriginState
+import me.spica27.spicamusic.ui.theme.themeRevealOrigin
 import me.spica27.spicamusic.ui.widget.AudioCover
 
 /**
@@ -73,6 +75,7 @@ fun LargeBottomPlayerBar(
     val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
     val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
     val artworkUri = metadata?.artworkUri
+    val nextRevealOrigin = rememberThemeRevealOriginState()
     Box(
         modifier =
             modifier
@@ -175,8 +178,14 @@ fun LargeBottomPlayerBar(
 
                 // 下一首
                 IconButton(
-                    onClick = onNext,
-                    modifier = nextButtonModifier.size(40.dp),
+                    onClick = {
+                        nextRevealOrigin.armFromCenter()
+                        onNext()
+                    },
+                    modifier =
+                        nextButtonModifier
+                            .size(40.dp)
+                            .themeRevealOrigin(nextRevealOrigin),
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.SkipNext,

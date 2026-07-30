@@ -79,6 +79,7 @@ fun SPICaMusicTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     themeColor: Color,
     themeColorStyle: ThemeColorStyle = ThemeColorStyle.Textured,
+    animateColors: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     when (themeColorStyle) {
@@ -86,7 +87,7 @@ fun SPICaMusicTheme(
             DynamicMaterialTheme(
                 seedColor = themeColor,
                 isDark = darkTheme,
-                animate = true,
+                animate = animateColors,
                 specVersion = ColorSpec.SpecVersion.SPEC_2021,
                 style = PaletteStyle.TonalSpot,
             ) {
@@ -95,11 +96,16 @@ fun SPICaMusicTheme(
 
         ThemeColorStyle.Flat -> {
             // 与质感化的 animate 行为对齐:对种子色做动画,派生色板随之平滑过渡
-            val animatedSeedColor by animateColorAsState(
-                targetValue = themeColor,
-                animationSpec = tween(durationMillis = 500),
-                label = "flat_theme_seed_color",
-            )
+            val animatedSeedColor =
+                if (animateColors) {
+                    animateColorAsState(
+                        targetValue = themeColor,
+                        animationSpec = tween(durationMillis = 500),
+                        label = "flat_theme_seed_color",
+                    ).value
+                } else {
+                    themeColor
+                }
             val colorScheme =
                 remember(animatedSeedColor, darkTheme) {
                     antFlatColorScheme(
