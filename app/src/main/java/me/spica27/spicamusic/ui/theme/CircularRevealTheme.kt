@@ -5,6 +5,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -18,14 +20,18 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -44,6 +50,8 @@ import kotlin.math.roundToInt
 class ThemeRevealController internal constructor() {
     private var pendingOrigin: Offset? = null
     private var armedAtMs: Long = 0L
+    private var recentPointerOrigin: Offset? = null
+    private var pointerRecordedAtMs: Long = 0L
 
     fun arm(originInWindow: Offset) {
         if (!originInWindow.x.isFinite() || !originInWindow.y.isFinite()) return
@@ -51,16 +59,28 @@ class ThemeRevealController internal constructor() {
         armedAtMs = SystemClock.uptimeMillis()
     }
 
+    internal fun recordPointer(originInWindow: Offset) {
+        if (!originInWindow.x.isFinite() || !originInWindow.y.isFinite()) return
+        recentPointerOrigin = originInWindow
+        pointerRecordedAtMs = SystemClock.uptimeMillis()
+    }
+
     internal fun consumeOrigin(): Offset? {
-        val origin = pendingOrigin
+        val now = SystemClock.uptimeMillis()
+        val explicitlyArmedOrigin = pendingOrigin
         pendingOrigin = null
-        return origin?.takeIf {
-            SystemClock.uptimeMillis() - armedAtMs <= ORIGIN_VALIDITY_MS
-        }
+        explicitlyArmedOrigin
+            ?.takeIf { now - armedAtMs <= EXPLICIT_ORIGIN_VALIDITY_MS }
+            ?.let { return it }
+
+        val pointerOrigin = recentPointerOrigin
+        recentPointerOrigin = null
+        return pointerOrigin?.takeIf { now - pointerRecordedAtMs <= POINTER_ORIGIN_VALIDITY_MS }
     }
 
     private companion object {
-        const val ORIGIN_VALIDITY_MS = 15_000L
+        const val EXPLICIT_ORIGIN_VALIDITY_MS = 15_000L
+        const val POINTER_ORIGIN_VALIDITY_MS = 3_000L
     }
 }
 
@@ -106,6 +126,7 @@ fun CircularRevealThemeHost(
     var displayedThemeColor by remember { mutableStateOf(targetThemeColor) }
     var oldFrame by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
     var revealOrigin by remember { mutableStateOf(Offset.Zero) }
+    var revealMode by remember { mutableStateOf(RevealMode.Expand) }
     val progress = remember { Animatable(1f) }
 
     androidx.compose.runtime.LaunchedEffect(targetDarkTheme, targetThemeColor) {
@@ -138,6 +159,12 @@ fun CircularRevealThemeHost(
                     x = (view.width - defaultInset).coerceAtLeast(0f),
                     y = defaultInset.coerceAtMost(view.height.toFloat()),
                 )
+        revealMode =
+            if (darkChanged && !targetDarkTheme) {
+                RevealMode.Shrink
+            } else {
+                RevealMode.Expand
+            }
         oldFrame = snapshot
         progress.snapTo(0f)
         displayedDarkTheme = targetDarkTheme
@@ -149,7 +176,12 @@ fun CircularRevealThemeHost(
             targetValue = 1f,
             animationSpec =
                 tween(
-                    durationMillis = if (darkChanged) 680 else 560,
+                    durationMillis =
+                        when {
+                            !darkChanged -> 560
+                            targetDarkTheme -> 680
+                            else -> 520
+                        },
                     easing = FastOutSlowInEasing,
                 ),
         )
@@ -157,7 +189,17 @@ fun CircularRevealThemeHost(
     }
 
     CompositionLocalProvider(LocalThemeRevealController provides controller) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .pointerInput(controller) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            controller.recordPointer(down.position)
+                        }
+                    },
+        ) {
             content(displayedDarkTheme, displayedThemeColor)
             oldFrame?.let { frame ->
                 Canvas(
@@ -168,27 +210,29 @@ fun CircularRevealThemeHost(
                                 compositingStrategy = CompositingStrategy.Offscreen
                             },
                 ) {
-                    drawIntoCanvas { canvas ->
-                        val source =
-                            android.graphics.Rect(
-                                0,
-                                0,
-                                frame.width,
-                                frame.height,
+                    val drawOldFrame = {
+                        drawIntoCanvas { canvas ->
+                            val source =
+                                android.graphics.Rect(
+                                    0,
+                                    0,
+                                    frame.width,
+                                    frame.height,
+                                )
+                            val destination =
+                                android.graphics.Rect(
+                                    0,
+                                    0,
+                                    size.width.roundToInt(),
+                                    size.height.roundToInt(),
+                                )
+                            canvas.nativeCanvas.drawBitmap(
+                                frame.asAndroidBitmap(),
+                                source,
+                                destination,
+                                null,
                             )
-                        val destination =
-                            android.graphics.Rect(
-                                0,
-                                0,
-                                size.width.roundToInt(),
-                                size.height.roundToInt(),
-                            )
-                        canvas.nativeCanvas.drawBitmap(
-                            frame.asAndroidBitmap(),
-                            source,
-                            destination,
-                            null,
-                        )
+                        }
                     }
                     val maximumRadius =
                         maxOf(
@@ -197,14 +241,42 @@ fun CircularRevealThemeHost(
                             hypot(revealOrigin.x, size.height - revealOrigin.y),
                             hypot(size.width - revealOrigin.x, size.height - revealOrigin.y),
                         )
-                    drawCircle(
-                        color = Color.Transparent,
-                        radius = maximumRadius * progress.value,
-                        center = revealOrigin,
-                        blendMode = BlendMode.Clear,
-                    )
+                    when (revealMode) {
+                        RevealMode.Expand -> {
+                            drawOldFrame()
+                            drawCircle(
+                                color = Color.Transparent,
+                                radius = maximumRadius * progress.value,
+                                center = revealOrigin,
+                                blendMode = BlendMode.Clear,
+                            )
+                        }
+
+                        RevealMode.Shrink -> {
+                            val radius = maximumRadius * (1f - progress.value)
+                            val circle =
+                                Path().apply {
+                                    addOval(
+                                        Rect(
+                                            left = revealOrigin.x - radius,
+                                            top = revealOrigin.y - radius,
+                                            right = revealOrigin.x + radius,
+                                            bottom = revealOrigin.y + radius,
+                                        ),
+                                    )
+                                }
+                            clipPath(circle) {
+                                drawOldFrame()
+                            }
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+private enum class RevealMode {
+    Expand,
+    Shrink,
 }

@@ -241,6 +241,12 @@ val ossLibraries: List<OssLibrary> =
             "https://github.com/YenalyLiew/CircularRevealSwitch",
         ),
         OssLibrary(
+            "Reorderable",
+            "sh.calvin.reorderable:reorderable",
+            "Apache-2.0",
+            "https://github.com/Calvin-LL/Reorderable",
+        ),
+        OssLibrary(
             "Haze",
             "dev.chrisbanes.haze:haze",
             "Apache-2.0",

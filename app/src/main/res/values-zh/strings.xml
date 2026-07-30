@@ -613,10 +613,10 @@
   <string name="settings_about">关于</string>
   <string name="settings_about_subtitle">版本、开源声明与隐私</string>
   <string name="about_title">关于</string>
-  <string name="about_app_tagline">基于 Jetpack Compose 与 Media3 打造的现代化本地音乐播放器</string>
+  <string name="about_app_tagline">融合本地与云端串流的现代化音乐播放器</string>
   <string name="about_version_format">版本 %1$s</string>
   <string name="about_section_intro">项目简介</string>
-  <string name="about_intro_body">本质是个compose的练手项目，更新节奏和功能开发随缘。\n\n项目会保持免费不会做任何的收费功能；</string>
+  <string name="about_intro_body">本项目基于 yangSpica27 的 SPICaMusic，由项目维护者与 Codex、ChatGPT 协作继续开发。除现代化本地音乐播放外，现已支持 Telegram、Emby、Jellyfin、Subsonic 等云端音乐来源；云端串流设计参考了 XiangsuPlayerHQ。\n\n项目保持免费、开源，不提供收费功能。</string>
   <string name="about_section_more">更多</string>
   <string name="about_open_source">开源许可证</string>
   <string name="about_open_source_subtitle">本应用使用的第三方库</string>
@@ -625,7 +625,11 @@
   <string name="about_privacy">隐私政策</string>
   <string name="about_privacy_subtitle">本应用如何处理你的数据</string>
   <string name="about_project_home">项目主页</string>
-  <string name="about_project_home_subtitle">在 GitHub 查看源代码</string>
+  <string name="about_project_home_subtitle">GGBond-xxg/SPICaMusic_Android</string>
+  <string name="about_source_project">源项目主页</string>
+  <string name="about_source_project_subtitle">yangSpica27/SPICaMusic_Android</string>
+  <string name="about_reference_project">参考项目</string>
+  <string name="about_reference_project_subtitle">r3n011/XiangsuPlayerHQ</string>
   <string name="about_cannot_open_link">无法打开链接</string>
 
   <!-- Open-source licenses page -->

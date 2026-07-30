@@ -35,7 +35,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -94,6 +93,7 @@ import me.spica27.spicamusic.ui.player.scene.LyricsPlayerPage
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.MusicCoverPlaceholder
 import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioDynamicWaveSlider
@@ -930,23 +930,14 @@ private fun PlayerPage(
                         uri = currentMediaItem?.mediaMetadata?.artworkUri,
                         onPainterReady = onArtworkPainterReady,
                         placeHolder = {
-                            Box(
+                            MusicCoverPlaceholder(
                                 modifier =
                                     Modifier
                                         .fillMaxSize()
                                         .clip(Shapes.LargeCornerBasedShape)
                                         .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.MusicNote,
-                                    contentDescription = stringResource(R.string.cover_placeholder),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier =
-                                        Modifier
-                                            .size(64.dp)
-                                            .align(Alignment.Center),
-                                )
-                            }
+                                contentDescription = stringResource(R.string.cover_placeholder),
+                            )
                         },
                         modifier =
                             Modifier

@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,6 +48,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.theme.rememberThemeRevealOriginState
 import me.spica27.spicamusic.ui.theme.themeRevealOrigin
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.MusicCoverPlaceholder
 
 /**
  * 底部迷你播放条
@@ -118,17 +120,12 @@ fun LargeBottomPlayerBar(
                         modifier = resolvedCoverModifier,
                         onPainterReady = onCoverPainterReady,
                         placeHolder = {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .size(48.dp),
-                            ) {
-                                Text(
-                                    "🎵",
-                                    modifier = Modifier.align(Alignment.Center),
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                )
-                            }
+                            MusicCoverPlaceholder(
+                                modifier = Modifier.fillMaxSize(),
+                                containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                contentDescription = stringResource(R.string.cover_placeholder),
+                            )
                         },
                     )
                 }

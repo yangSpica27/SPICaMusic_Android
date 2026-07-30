@@ -11,7 +11,7 @@
 - 单个仪器测试：`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=me.spica27.spicamusic.ExampleInstrumentedTest`
 - 其他模块也有 `:common:testDebugUnitTest`、`:feature-library-data:testDebugUnitTest`、`:feature-player-data:testDebugUnitTest`、`:feature-lyrics-data:testDebugUnitTest` 任务，但当前仓库里实际提交的测试源码只在 `app/src/test` 和 `app/src/androidTest`。
 - `app` 模块在 `preBuild` 前自动依赖 `:app:ktlintFormat`，所以构建 app 时会先格式化 Kotlin 源码。
-- 版本号来自 `gradle.properties`：`versionCode = MAJOR_VERSION * 1_000_000 + MINOR_VERSION * 10_000 + BUILD_VERSION`；如需递增构建号，仓库里已有 `incrementBuildNumber` 任务。
+- 版本号优先读取 `gradle.properties` 中的 `VERSION_CODE` / `VERSION_NAME`；未配置时回退到 `MAJOR_VERSION * 1_000_000 + MINOR_VERSION * 10_000 + BUILD_VERSION`。如需递增旧式构建号，仓库里已有 `incrementBuildNumber` 任务。
 - README 当前要求 Android Studio Narwhal 2025.1.1+ / JDK 21+；`app` 模块实际配置为 `compileSdk 37`、`minSdk 29`、`targetSdk 37`。
 - CI 的 release workflow 在 `.github/workflows/android.yml` 中执行 `assembleRelease`，当前使用 Temurin 11。
 

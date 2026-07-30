@@ -7,11 +7,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Android](https://img.shields.io/badge/Android-29+-green.svg)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3+-purple.svg)](https://kotlinlang.org)
-[![GitHub release](https://img.shields.io/github/v/release/yangSpica27/SPICaMusic_Android?include_prereleases)](https://github.com/yangSpica27/SPICaMusic_Android/releases)
+[![GitHub release](https://img.shields.io/github/v/release/GGBond-xxg/SPICaMusic_Android?include_prereleases)](https://github.com/GGBond-xxg/SPICaMusic_Android/releases)
 
-[下载最新版](https://github.com/yangSpica27/SPICaMusic_Android/releases) ·
-[查看源码](https://github.com/yangSpica27/SPICaMusic_Android) ·
-[反馈问题](https://github.com/yangSpica27/SPICaMusic_Android/issues)
+[下载最新版](https://github.com/GGBond-xxg/SPICaMusic_Android/releases) ·
+[查看源码](https://github.com/GGBond-xxg/SPICaMusic_Android) ·
+[反馈问题](https://github.com/GGBond-xxg/SPICaMusic_Android/issues)
 
 </div>
 
@@ -52,9 +52,16 @@ AES-GCM 密文，不包含 API ID/API Hash 明文。未内置凭据时，应用�
 
 ## 📖 项目简介
 
-柠檬音乐是一款面向本地音乐播放的现代化 Android 应用，基于 **Media3 ExoPlayer**、**Jetpack Compose** 与 **Koin** 构建，支持 Android 10 及以上系统。
+柠檬音乐是一款融合本地音乐与云端串流的现代化 Android 播放器，基于
+**Media3 ExoPlayer**、**Jetpack Compose** 与 **Koin** 构建，支持 Android 10 及以上系统。
+应用可扫描设备音乐，也可将 Telegram、Emby、Jellyfin、Subsonic 等来源的歌曲统一展示在
+“全部歌曲”中，并提供来源筛选、封面取色、圆形揭示主题切换、歌词、均衡器、频谱和播放列表等功能。
 
-应用可扫描设备中的音乐文件，并提供收藏、歌单、播放历史、在线歌词、均衡器、混响和实时频谱等功能。项目采用**分层 + 多模块**架构：`app` 负责 Compose UI、应用级 DI 与后台播放服务；`feature-*-domain` 暴露 use case / facade；`feature-*-data` 提供数据实现；`common` 与 `core-preferences` 提供跨模块共享能力。
+本仓库基于 [yangSpica27/SPICaMusic_Android](https://github.com/yangSpica27/SPICaMusic_Android)
+继续开发，由项目维护者与 **Codex、ChatGPT** 协作完成部分功能、测试与代码审查。
+云端串流设计参考了 [r3n011/XiangsuPlayerHQ](https://github.com/r3n011/XiangsuPlayerHQ)，
+主题切换动画参考了 [YenalyLiew/CircularRevealSwitch](https://github.com/YenalyLiew/CircularRevealSwitch)。
+依赖与参考实现的许可说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ## 🏗️ 架构设计
 
@@ -82,7 +89,8 @@ AES-GCM 密文，不包含 API ID/API Hash 明文。未内置凭据时，应用�
 | 📚 本地音乐库 | MediaStore 扫描、指定文件夹扫描、歌曲 / 专辑 / 艺术家分类 |
 | 🎧 音频格式 | FLAC、ALAC、Opus、Vorbis、MP3、AAC、WAV、AC3、EAC3、DCA、MLP、TrueHD 等 |
 | 📝 音乐管理 | 收藏歌曲，新增 / 编辑 / 删除歌单，最近播放与最常播放 |
-| 🎨 主题切换 | 亮色 / 暗色模式，动态取色 |
+| 🎨 主题切换 | 亮色 / 暗色模式，封面动态取色，歌曲与上下首按钮触发圆形揭示动画 |
+| ☁️ 云端音乐 | Telegram、Emby、Jellyfin、Subsonic 等来源，统一歌曲列表与来源筛选 |
 | 🎤 歌词功能 | 在线歌词搜索与同步显示 |
 | 🎛️ 音效调节 | 自定义 EQ 均衡器与混响效果 |
 | 📊 音频分析 | FFT 频谱分析，振幅波形显示 |
@@ -102,13 +110,13 @@ AES-GCM 密文，不包含 API ID/API Hash 明文。未内置凭据时，应用�
 
 ### 安装
 
-从 [Releases](https://github.com/yangSpica27/SPICaMusic_Android/releases) 下载最新 APK 并安装。目前 APK 仅提供 `arm64-v8a` 架构，设备需运行 Android 10（API 29）或更高版本。
+从 [Releases](https://github.com/GGBond-xxg/SPICaMusic_Android/releases) 下载最新 APK 并安装。目前 APK 仅提供 `arm64-v8a` 架构，设备需运行 Android 10（API 29）或更高版本。
 
 ### 从源码构建
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/yangSpica27/SPICaMusic_Android.git
+git clone https://github.com/GGBond-xxg/SPICaMusic_Android.git
 
 # 2. 进入项目并执行调试构建（Windows）
 cd SPICaMusic_Android

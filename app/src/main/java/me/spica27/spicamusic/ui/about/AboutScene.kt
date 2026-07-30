@@ -39,8 +39,10 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 
-/** 项目 GitHub 主页地址。 */
-internal const val PROJECT_HOME_URL = "https://github.com/yangSpica27/SPICaMusic_Android"
+/** 当前项目、源项目与云端串流参考项目的 GitHub 地址。 */
+internal const val PROJECT_HOME_URL = "https://github.com/GGBond-xxg/SPICaMusic_Android"
+internal const val SOURCE_PROJECT_URL = "https://github.com/yangSpica27/SPICaMusic_Android"
+internal const val REFERENCE_PROJECT_URL = "https://github.com/r3n011/XiangsuPlayerHQ"
 
 class AboutScene : StackScene() {
     @Composable
@@ -108,6 +110,34 @@ class AboutScene : StackScene() {
                         subtitle = stringResource(R.string.about_project_home_subtitle),
                         icon = Icons.AutoMirrored.Filled.OpenInNew,
                         onClick = { openUrl(PROJECT_HOME_URL) },
+                        trailingContent = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                    )
+                    AboutItemDivider()
+                    AboutRow(
+                        title = stringResource(R.string.about_source_project),
+                        subtitle = stringResource(R.string.about_source_project_subtitle),
+                        icon = Icons.Default.Code,
+                        onClick = { openUrl(SOURCE_PROJECT_URL) },
+                        trailingContent = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                    )
+                    AboutItemDivider()
+                    AboutRow(
+                        title = stringResource(R.string.about_reference_project),
+                        subtitle = stringResource(R.string.about_reference_project_subtitle),
+                        icon = Icons.Default.Code,
+                        onClick = { openUrl(REFERENCE_PROJECT_URL) },
                         trailingContent = {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.OpenInNew,

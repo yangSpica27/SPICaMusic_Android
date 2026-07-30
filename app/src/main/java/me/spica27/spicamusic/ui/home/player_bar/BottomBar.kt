@@ -116,6 +116,7 @@ import me.spica27.spicamusic.ui.player.sourceArtworkAlpha
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.MusicCoverPlaceholder
 import me.spica27.spicamusic.ui.widget.rememberPlayingCoverShape
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.roundToInt
@@ -479,18 +480,14 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                         .aspectRatio(1f)
                                         .clip(coverShape),
                                 failure = {
-                                    Box(
+                                    MusicCoverPlaceholder(
                                         modifier =
                                             Modifier
                                                 .fillMaxSize()
                                                 .background(MaterialTheme.colorScheme.tertiaryContainer),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            "🎵",
-                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                        )
-                                    }
+                                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        contentDescription = stringResource(R.string.cover_placeholder),
+                                    )
                                 },
                             )
                             Text(
@@ -835,18 +832,14 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                                         .aspectRatio(1f)
                                         .clip(coverShape),
                                 placeHolder = {
-                                    Box(
+                                    MusicCoverPlaceholder(
                                         modifier =
                                             Modifier
                                                 .fillMaxSize()
                                                 .background(MaterialTheme.colorScheme.tertiaryContainer),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            "🎵",
-                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                        )
-                                    }
+                                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                        contentDescription = stringResource(R.string.cover_placeholder),
+                                    )
                                 },
                             )
                             if (nowPlayingSong != null) {

@@ -613,10 +613,10 @@
   <string name="settings_about">About</string>
   <string name="settings_about_subtitle">Version, open-source notices, and privacy</string>
   <string name="about_title">About</string>
-  <string name="about_app_tagline">A modern local music player built with Jetpack Compose &amp; Media3</string>
+  <string name="about_app_tagline">A modern player for local and cloud-streamed music</string>
   <string name="about_version_format">Version %1$s</string>
   <string name="about_section_intro">Introduction</string>
-  <string name="about_intro_body">SPICa Music is a modern Android music player built on Media3 ExoPlayer, Jetpack Compose, and Koin. It plays your local audio in a wide range of high-quality formats (FLAC, ALAC, Opus, and more) and offers lyrics, an equalizer, spectrum visualization, playlists, and listening stats. Everything runs locally on your device — no account required.</string>
+  <string name="about_intro_body">This project continues yangSpica27’s SPICaMusic through collaboration between the maintainer, Codex, and ChatGPT. Alongside modern local playback, it supports Telegram, Emby, Jellyfin, Subsonic, and other cloud music sources. Its cloud-streaming design references XiangsuPlayerHQ.\n\nThe project remains free and open source, with no paid features.</string>
   <string name="about_section_more">More</string>
   <string name="about_open_source">Open-source licenses</string>
   <string name="about_open_source_subtitle">Third-party libraries used in this app</string>
@@ -625,7 +625,11 @@
   <string name="about_privacy">Privacy policy</string>
   <string name="about_privacy_subtitle">How this app handles your data</string>
   <string name="about_project_home">Project homepage</string>
-  <string name="about_project_home_subtitle">View the source code on GitHub</string>
+  <string name="about_project_home_subtitle">GGBond-xxg/SPICaMusic_Android</string>
+  <string name="about_source_project">Original project</string>
+  <string name="about_source_project_subtitle">yangSpica27/SPICaMusic_Android</string>
+  <string name="about_reference_project">Reference project</string>
+  <string name="about_reference_project_subtitle">r3n011/XiangsuPlayerHQ</string>
   <string name="about_cannot_open_link">Could not open the link</string>
 
   <!-- Open-source licenses page -->

@@ -612,10 +612,10 @@
   <string name="settings_about">關於</string>
   <string name="settings_about_subtitle">版本、開源聲明與隱私</string>
   <string name="about_title">關於</string>
-  <string name="about_app_tagline">基於 Jetpack Compose 與 Media3 打造的現代化本地音樂播放器</string>
+  <string name="about_app_tagline">融合本機與雲端串流的現代化音樂播放器</string>
   <string name="about_version_format">版本 %1$s</string>
   <string name="about_section_intro">專案簡介</string>
-  <string name="about_intro_body">檸檬音樂是一款基於 Media3 ExoPlayer、Jetpack Compose 與 Koin 打造的現代化 Android 音樂播放器。它在本機播放你的音訊，支援 FLAC、ALAC、Opus 等多種高品質格式，並提供歌詞、等化器、頻譜視覺化、播放清單與聆聽統計等能力。所有功能均在裝置本機執行，無需帳號。</string>
+  <string name="about_intro_body">本專案基於 yangSpica27 的 SPICaMusic，由專案維護者與 Codex、ChatGPT 協作繼續開發。除現代化本機音樂播放外，現已支援 Telegram、Emby、Jellyfin、Subsonic 等雲端音樂來源；雲端串流設計參考了 XiangsuPlayerHQ。\n\n專案保持免費、開源，不提供收費功能。</string>
   <string name="about_section_more">更多</string>
   <string name="about_open_source">開源授權</string>
   <string name="about_open_source_subtitle">本應用使用的第三方函式庫</string>
@@ -624,7 +624,11 @@
   <string name="about_privacy">隱私政策</string>
   <string name="about_privacy_subtitle">本應用如何處理你的資料</string>
   <string name="about_project_home">專案首頁</string>
-  <string name="about_project_home_subtitle">在 GitHub 檢視原始碼</string>
+  <string name="about_project_home_subtitle">GGBond-xxg/SPICaMusic_Android</string>
+  <string name="about_source_project">源專案首頁</string>
+  <string name="about_source_project_subtitle">yangSpica27/SPICaMusic_Android</string>
+  <string name="about_reference_project">參考專案</string>
+  <string name="about_reference_project_subtitle">r3n011/XiangsuPlayerHQ</string>
   <string name="about_cannot_open_link">無法開啟連結</string>
 
   <!-- Open-source licenses page -->
