@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -317,14 +318,22 @@ private fun SubsonicLogin(
             )
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 if (hasExistingAccount) {
-                    OutlinedButton(onClick = onCancel, enabled = !state.isConnecting) {
+                    OutlinedButton(
+                        onClick = onCancel,
+                        enabled = !state.isConnecting,
+                        modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                    ) {
                         Text("取消")
                     }
                 }
                 Button(
                     onClick = { onLogin(serverUrl, username, password) },
+                    modifier = Modifier.weight(1f).heightIn(min = 52.dp),
                     enabled =
                         !state.isConnecting &&
                             serverUrl.isNotBlank() &&
@@ -409,12 +418,17 @@ private fun CookieWebLogin(
             horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.End),
         ) {
             if (hasExistingAccount) {
-                OutlinedButton(onClick = onCancel, enabled = !state.isConnecting) {
+                OutlinedButton(
+                    onClick = onCancel,
+                    enabled = !state.isConnecting,
+                    modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                ) {
                     Text("取消")
                 }
             }
             Button(
                 enabled = !state.isConnecting,
+                modifier = Modifier.weight(1f).heightIn(min = 52.dp),
                 onClick = {
                     CookieManager.getInstance().flush()
                     val cookies = collectCookies(provider.cookieUrls)

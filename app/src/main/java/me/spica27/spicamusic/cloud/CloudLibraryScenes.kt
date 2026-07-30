@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -790,14 +791,22 @@ private fun MediaServerLogin(
             )
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 if (hasExistingAccount) {
-                    OutlinedButton(onClick = onCancel, enabled = !isConnecting) {
+                    OutlinedButton(
+                        onClick = onCancel,
+                        enabled = !isConnecting,
+                        modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                    ) {
                         Text(stringResource(R.string.cancel))
                     }
                 }
                 Button(
                     onClick = { onLogin(serverUrl, username, password) },
+                    modifier = Modifier.weight(1f).heightIn(min = 52.dp),
                     enabled =
                         !isConnecting &&
                             serverUrl.isNotBlank() &&
@@ -894,7 +903,11 @@ private fun CloudForm(
                         if (secondPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
                 )
             }
-            Button(onClick = onSubmit, enabled = !isWorking && submitEnabled) {
+            Button(
+                onClick = onSubmit,
+                enabled = !isWorking && submitEnabled,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+            ) {
                 if (isWorking) {
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 } else {

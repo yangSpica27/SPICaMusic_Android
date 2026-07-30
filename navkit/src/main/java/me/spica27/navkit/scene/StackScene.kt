@@ -3,6 +3,8 @@ package me.spica27.navkit.scene
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -41,6 +43,12 @@ abstract class StackScene : Scene() {
     /** 进场进度：0f 表示完全不可见，1f 表示完全呈现 */
     val enterProgress = Animatable(initialValue = 0f)
 
+    /** 预测性返回手势期间的滑动方向：左边缘为 1，右边缘为 -1。 */
+    internal val predictiveBackDirection = mutableFloatStateOf(1f)
+
+    /** 是否正由系统预测性返回手势直接驱动 [enterProgress]。 */
+    internal val predictiveBackActive = mutableStateOf(false)
+
     /** 场景是否已完成首帧 Compose 布局 */
     private val _placed = MutableStateFlow(false)
     val placed: StateFlow<Boolean> = _placed
@@ -64,6 +72,8 @@ abstract class StackScene : Scene() {
 
     /** push 开始：将进度 snap 到 0f，避免上一次残留值影响动画 */
     override suspend fun onPush() {
+        predictiveBackActive.value = false
+        predictiveBackDirection.floatValue = 1f
         enterProgress.snapTo(0f)
     }
 
@@ -102,6 +112,8 @@ abstract class StackScene : Scene() {
 
     /** pop 后重置 placed 状态，供场景实例复用 */
     override suspend fun onPop() {
+        predictiveBackActive.value = false
+        predictiveBackDirection.floatValue = 1f
         _placed.value = false
     }
 

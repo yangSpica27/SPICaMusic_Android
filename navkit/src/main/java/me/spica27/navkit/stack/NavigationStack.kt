@@ -1,6 +1,9 @@
 package me.spica27.navkit.stack
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.BackEventCompat
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.absoluteOffset
@@ -29,6 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.withContext
 import me.spica27.navkit.geometry.GeometryOccluders
 import me.spica27.navkit.geometry.GeometryTransition
 import me.spica27.navkit.geometry.GeometryTransition.GeometryPhase
@@ -55,7 +62,7 @@ import kotlin.math.roundToInt
  *    - 提供 [LocalScene] 注入当前场景实例
  *    - 应用 graphicsLayer 进退场变换（StackScene 专用）
  *    - 在首次布局后通知场景 placed（解锁进场动画）
- * 4. 注册 [BackHandler]，在栈深度 > 1 时拦截系统返回键
+ * 4. 注册 [PredictiveBackHandler]，在栈深度 > 1 时交互式驱动返回动画
  *
  * ## 使用示例
  * ```kotlin
@@ -88,9 +95,59 @@ fun NavigationStack(
         )
     }
 
-    // 栈深度 > 1 时拦截系统返回键
-    BackHandler(enabled = path.canPop) {
-        path.popTop()
+    // 系统预测性返回：手势进度直接反向驱动栈顶页面的 enterProgress，
+    // 下层页面会同时解除压缩和模糊，形成 Telegram 风格的“露出上一页”效果。
+    PredictiveBackHandler(enabled = path.canPop) { progress ->
+        val top = path.scenes.lastOrNull() ?: return@PredictiveBackHandler
+        try {
+            progress.collect { event ->
+                val sceneProgress = 1f - event.progress.coerceIn(0f, 1f)
+                when (top) {
+                    is StackScene -> {
+                        top.predictiveBackActive.value = true
+                        top.predictiveBackDirection.floatValue =
+                            if (event.swipeEdge == BackEventCompat.EDGE_RIGHT) -1f else 1f
+                        top.enterProgress.snapTo(sceneProgress)
+                    }
+
+                    is DialogScene -> top.enterProgress.snapTo(sceneProgress)
+                }
+            }
+            if (path.scenes.lastOrNull() === top) {
+                path.pop(top)
+            }
+        } catch (_: CancellationException) {
+            // A cancelled edge gesture must return to the fully visible page instead of leaving
+            // it partially translated. NonCancellable guarantees the short rebound can finish.
+            if (path.scenes.lastOrNull() === top) {
+                withContext(NonCancellable) {
+                    when (top) {
+                        is StackScene -> {
+                            top.enterProgress.animateTo(
+                                targetValue = 1f,
+                                animationSpec =
+                                    spring(
+                                        stiffness = 500f,
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                    ),
+                            )
+                            top.predictiveBackActive.value = false
+                        }
+
+                        is DialogScene -> {
+                            top.enterProgress.animateTo(
+                                targetValue = 1f,
+                                animationSpec =
+                                    spring(
+                                        stiffness = 500f,
+                                        dampingRatio = Spring.DampingRatioNoBouncy,
+                                    ),
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
     CompositionLocalProvider(LocalNavigationPath provides path) {
@@ -170,7 +227,13 @@ private fun SceneContainer(
 //                alpha = enter
                 translationX =
                     if (scene.transitionSlideEnabled) {
-                        (1f - enter) * size.width
+                        val direction =
+                            if (scene.predictiveBackActive.value) {
+                                scene.predictiveBackDirection.floatValue
+                            } else {
+                                1f
+                            }
+                        (1f - enter) * size.width * direction
                     } else {
                         0f
                     }
