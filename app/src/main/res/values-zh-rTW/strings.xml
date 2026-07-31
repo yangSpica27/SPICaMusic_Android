@@ -142,7 +142,7 @@
   <string name="ignored_songs_empty_subtitle">從歌曲選單「添加到忽略清單」的歌曲會出現在這裡。</string>
   <string name="ignored_songs_search_empty">沒有匹配的已忽略歌曲</string>
   <string name="ignored_songs_search_hint">搜尋已忽略的歌曲</string>
-  <string name="copy_success">复制成功</string>
+  <string name="copy_success">複製成功</string>
   <string name="title_dialog_lrc_ui_setting">歌词显示设置</string>
   <string name="lrc_setting_font_size">字号 %s</string>
   <string name="lrc_setting_font_weight">字重 %s</string>
@@ -494,6 +494,12 @@
   <string name="info_file_path">檔案路徑</string>
   <string name="info_file_size">檔案大小</string>
   <string name="info_file_format">檔案格式</string>
+  <string name="song_details">歌曲詳情</string>
+  <string name="file_details">檔案詳情</string>
+  <string name="bit_depth_label">位元深度</string>
+  <string name="bit_depth_format">%d 位元</string>
+  <string name="copy_field_format">複製%s</string>
+  <string name="sample_rate_format">%s kHz</string>
 
   <!-- Scanner -->
   <string name="scanner_hero_title">讓 SPICa 發現你的音樂</string>

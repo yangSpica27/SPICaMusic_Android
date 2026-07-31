@@ -1,8 +1,6 @@
 package me.spica27.spicamusic.ui.search
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -82,7 +80,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import me.spica27.navkit.path.LocalNavigationPath
@@ -98,6 +95,8 @@ import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.theme.entranceGraphics
+import me.spica27.spicamusic.ui.theme.rememberEntrance
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.AudioQualityBadges
 import me.spica27.spicamusic.ui.widget.clickHighlight
@@ -107,7 +106,6 @@ import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.androidx.compose.koinViewModel
 
 /** 首屏入场节拍（与刊头页共用的节奏） */
-private const val ENTRANCE_STAGGER_MILLIS = 55L
 
 /**
  * 搜索内容区的四种状态：
@@ -891,29 +889,3 @@ private fun SearchSkeletonRow(
         )
     }
 }
-
-/** 首屏入场：延迟 [order] 个节拍后弹入（刊头页同款节奏） */
-@Composable
-private fun rememberEntrance(order: Int): Animatable<Float, AnimationVector1D> {
-    val entrance = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        delay(order * ENTRANCE_STAGGER_MILLIS)
-        entrance.animateTo(
-            targetValue = 1f,
-            animationSpec =
-                spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = 380f,
-                ),
-        )
-    }
-    return entrance
-}
-
-/** 入场位移+淡入，动画值全部在 Draw 阶段读取 */
-private fun Modifier.entranceGraphics(entrance: Animatable<Float, AnimationVector1D>): Modifier =
-    graphicsLayer {
-        val enter = entrance.value
-        alpha = enter
-        translationY = (1f - enter) * 28.dp.toPx()
-    }

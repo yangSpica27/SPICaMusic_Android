@@ -1,8 +1,6 @@
 package me.spica27.spicamusic.ui.artistdetail
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -46,15 +44,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -72,6 +72,7 @@ import me.spica27.spicamusic.utils.calculateLuminance
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import kotlin.math.roundToInt
 
 // ── 滚动驱动常量（像素）──────────────────────────────────────────────────────
 private const val SCROLL_ART_RANGE = 480f
@@ -95,11 +96,13 @@ fun ArtistDetailScreen(artist: Artist) {
     val coverUri = remember(artist) { artist.getCoverUri() }
     val dominantColor =
         rememberDominantColorFromUri(uri = coverUri, fallbackColor = Color(0xFF1E1E2E))
-    val animatedDominantColor by animateColorAsState(
-        targetValue = dominantColor,
-        animationSpec = spring(stiffness = 50f),
-        label = "dominantColor",
-    )
+    // stiffness 50f 要 1.5-2 秒落定；收敛到 200f 并保持 State 形态（只在 draw 读取）
+    val animatedDominantColor =
+        animateColorAsState(
+            targetValue = dominantColor,
+            animationSpec = spring(stiffness = 200f),
+            label = "dominantColor",
+        )
     val luminance = remember(dominantColor) { calculateLuminance(dominantColor) }
     val onDominantColor = if (luminance > 0.65f) Color.Black else Color.White
 
@@ -107,66 +110,34 @@ fun ArtistDetailScreen(artist: Artist) {
     val statusBarTopDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val screenWidthDp = remember { 375.dp }
 
-    val rawOffset by remember(lazyListState) {
-        derivedStateOf {
-            if (lazyListState.firstVisibleItemIndex > 0) {
-                SCROLL_ART_RANGE
-            } else {
-                lazyListState.firstVisibleItemScrollOffset.toFloat()
+    // 全部保持为 State：只在 Layout/Draw 阶段读取，滚动时不重组
+    val rawOffsetState =
+        remember(lazyListState) {
+            derivedStateOf {
+                if (lazyListState.firstVisibleItemIndex > 0) {
+                    SCROLL_ART_RANGE
+                } else {
+                    lazyListState.firstVisibleItemScrollOffset.toFloat()
+                }
             }
         }
-    }
 
-    val artProgress by remember {
-        derivedStateOf { (rawOffset / SCROLL_ART_RANGE).coerceIn(0f, 1f) }
-    }
-    val hdrProgress by remember {
-        derivedStateOf { ((rawOffset - SCROLL_HDR_START) / SCROLL_HDR_RANGE).coerceIn(0f, 1f) }
-    }
+    val artProgressState =
+        remember {
+            derivedStateOf { (rawOffsetState.value / SCROLL_ART_RANGE).coerceIn(0f, 1f) }
+        }
+    val hdrProgressState =
+        remember {
+            derivedStateOf {
+                ((rawOffsetState.value - SCROLL_HDR_START) / SCROLL_HDR_RANGE).coerceIn(0f, 1f)
+            }
+        }
 
-    val springDp = remember { spring<Dp>(stiffness = 400f) }
-    val springFloat = remember { spring<Float>(stiffness = 400f) }
+    // 几何直接由滚动进度导出，不再经过弹簧（滚动本身是持续手势输入）
 
     val artTopExpanded = statusBarTopDp + HEADER_HEIGHT + 4.dp
     val artTopCollapsed = statusBarTopDp + (HEADER_HEIGHT - ART_COLLAPSED) / 2f
     val artStartExpanded = (screenWidthDp - ART_EXPANDED) / 2f
-
-    val artSize by animateDpAsState(
-        targetValue = lerp(ART_EXPANDED.value, ART_COLLAPSED.value, artProgress).dp,
-        animationSpec = springDp,
-        label = "artSize",
-    )
-    val artTop by animateDpAsState(
-        targetValue = lerp(artTopExpanded.value, artTopCollapsed.value, artProgress).dp,
-        animationSpec = springDp,
-        label = "artTop",
-    )
-    val artStart by animateDpAsState(
-        targetValue = lerp(artStartExpanded.value, 56f, artProgress).dp,
-        animationSpec = springDp,
-        label = "artStart",
-    )
-    val cornerRad by animateDpAsState(
-        targetValue = lerp(ART_EXPANDED.value / 2f, 8f, artProgress).dp,
-        animationSpec = springDp,
-        label = "cornerRad",
-    )
-
-    val bigAlpha by animateFloatAsState(
-        targetValue = (1f - artProgress * 2.5f).coerceIn(0f, 1f),
-        animationSpec = springFloat,
-        label = "bigAlpha",
-    )
-    val smallAlpha by animateFloatAsState(
-        targetValue = (hdrProgress * 2f).coerceIn(0f, 1f),
-        animationSpec = springFloat,
-        label = "smallAlpha",
-    )
-    val hdrAlpha by animateFloatAsState(
-        targetValue = hdrProgress,
-        animationSpec = springFloat,
-        label = "hdrAlpha",
-    )
 
     Box(
         Modifier
@@ -174,16 +145,20 @@ fun ArtistDetailScreen(artist: Artist) {
             .background(MaterialTheme.colorScheme.background),
     ) {
         // 主色调渐变背景
+        val backgroundColor = MaterialTheme.colorScheme.background
         Box(
             Modifier
                 .fillMaxWidth()
                 .height(statusBarTopDp + HEADER_HEIGHT + ART_EXPANDED + 100.dp)
-                .background(
-                    Brush.verticalGradient(
-                        0f to animatedDominantColor.copy(alpha = 0.90f),
-                        1f to MaterialTheme.colorScheme.background.copy(alpha = 0f),
-                    ),
-                ),
+                // 渐变在 Draw 阶段构建：主色弹簧跑动期间只重绘，不重组
+                .drawBehind {
+                    drawRect(
+                        Brush.verticalGradient(
+                            0f to animatedDominantColor.value.copy(alpha = 0.90f),
+                            1f to backgroundColor.copy(alpha = 0f),
+                        ),
+                    )
+                },
         )
 
         // 可滚动内容
@@ -203,7 +178,9 @@ fun ArtistDetailScreen(artist: Artist) {
                     Modifier
                         .fillMaxWidth()
                         .padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
-                        .graphicsLayer { alpha = bigAlpha },
+                        .graphicsLayer {
+                            alpha = (1f - artProgressState.value * 2.5f).coerceIn(0f, 1f)
+                        },
                 ) {
                     Text(
                         text = artist.name,
@@ -250,7 +227,7 @@ fun ArtistDetailScreen(artist: Artist) {
                 .fillMaxWidth()
                 .height(statusBarTopDp + HEADER_HEIGHT)
                 .align(Alignment.TopStart)
-                .background(MaterialTheme.colorScheme.background.copy(alpha = hdrAlpha)),
+                .drawBehind { drawRect(backgroundColor.copy(alpha = hdrProgressState.value)) },
         ) {
             Row(
                 Modifier
@@ -272,7 +249,9 @@ fun ArtistDetailScreen(artist: Artist) {
                         Modifier
                             .weight(1f)
                             .padding(start = 64.dp, end = 16.dp)
-                            .graphicsLayer { alpha = smallAlpha },
+                            .graphicsLayer {
+                                alpha = (hdrProgressState.value * 2f).coerceIn(0f, 1f)
+                            },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.W600,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -287,9 +266,30 @@ fun ArtistDetailScreen(artist: Artist) {
             imageModel = { coverUri },
             modifier =
                 Modifier
-                    .padding(start = artStart, top = artTop)
-                    .size(artSize)
-                    .clip(RoundedCornerShape(cornerRad)),
+                    // 位置/尺寸在 Layout 阶段按进度导出，圆角在 Draw 阶段插值：
+                    // 滚动时只重新布局与重绘，不重组
+                    .layout { measurable, _ ->
+                        val p = artProgressState.value
+                        val side =
+                            lerp(ART_EXPANDED.toPx(), ART_COLLAPSED.toPx(), p)
+                                .roundToInt()
+                                .coerceAtLeast(1)
+                        val placeable = measurable.measure(Constraints.fixed(side, side))
+                        layout(side, side) {
+                            placeable.place(
+                                x = lerp(artStartExpanded.toPx(), 56.dp.toPx(), p).roundToInt(),
+                                y = lerp(artTopExpanded.toPx(), artTopCollapsed.toPx(), p).roundToInt(),
+                            )
+                        }
+                    }.graphicsLayer {
+                        // 展开态为圆形（半径 = 尺寸一半），折叠态收敛到 8dp 圆角
+                        val p = artProgressState.value
+                        shape =
+                            RoundedCornerShape(
+                                lerp(ART_EXPANDED.toPx() / 2f, 8.dp.toPx(), p),
+                            )
+                        clip = true
+                    },
             success = { _, painter ->
                 Image(
                     painter = painter,

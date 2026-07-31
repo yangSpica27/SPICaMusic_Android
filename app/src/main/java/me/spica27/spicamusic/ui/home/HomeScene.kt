@@ -1,10 +1,8 @@
 package me.spica27.spicamusic.ui.home
 
 import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +22,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,8 +38,6 @@ import me.spica27.spicamusic.ui.home.page.MusicPage
 import me.spica27.spicamusic.ui.home.player_bar.BottomBarScrollConnection
 import me.spica27.spicamusic.ui.home.player_bar.BottomMediaBarV2
 import me.spica27.spicamusic.ui.home.player_bar.rememberBottomBarScrollConnection
-import me.spica27.spicamusic.ui.widget.materialSharedAxisZIn
-import me.spica27.spicamusic.ui.widget.materialSharedAxisZOut
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 class HomeScene : StackScene() {
@@ -79,28 +76,22 @@ class HomeScene : StackScene() {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.BottomCenter,
             ) {
-                AnimatedContent(
-                    targetState = currentPage,
-                    contentKey = {
-                        it
-                    },
-                    modifier =
-                        Modifier
-                            .fillMaxSize(),
-                    transitionSpec = {
-                        materialSharedAxisZIn(forward = true) togetherWith
-                            materialSharedAxisZOut(
-                                forward = true,
-                            )
-                    },
-                ) {
-                    when (it) {
-                        HomePage.Finder ->
-                            FinderPage(
-                                playEntrance = hasLeftInitialFinder,
-                            )
-                        HomePage.Music -> MusicPage()
-                        HomePage.Library -> LibraryPage()
+                // 底栏切页是每天上百次的动作 —— 不做转场动画：任何转场都会
+                // 让最高频的操作显得迟滞。切页即时生效，感知延迟为零。
+                //
+                // SaveableStateHolder 让离开的页面保留可保存状态（列表滚动位置、
+                // 入场动画已播标记等），切回时不重建、不重播入场 stagger。
+                val pageStateHolder = rememberSaveableStateHolder()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    pageStateHolder.SaveableStateProvider(key = currentPage) {
+                        when (currentPage) {
+                            HomePage.Finder ->
+                                FinderPage(
+                                    playEntrance = hasLeftInitialFinder,
+                                )
+                            HomePage.Music -> MusicPage()
+                            HomePage.Library -> LibraryPage()
+                        }
                     }
                 }
                 Box(

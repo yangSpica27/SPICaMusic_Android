@@ -1,8 +1,6 @@
 package me.spica27.spicamusic.ui.albumdetail
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -46,15 +44,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,6 +74,7 @@ import me.spica27.spicamusic.utils.calculateLuminance
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import kotlin.math.roundToInt
 
 // ── 滚动驱动常量（像素）────────────────────────────────────────────────────────
 private const val SCROLL_ART_RANGE = 520f // 封面动画的滚动像素总范围
@@ -99,11 +100,12 @@ fun AlbumDetailScreen(
     val coverUri = remember(album) { album.getCoverUri() }
     val dominantColor =
         rememberDominantColorFromUri(uri = coverUri, fallbackColor = Color(0xFF1E1E2E))
-    val animatedDominantColor by animateColorAsState(
-        targetValue = dominantColor,
-        animationSpec = spring(stiffness = 50f),
-        label = "dominantColor",
-    )
+    val animatedDominantColor =
+        animateColorAsState(
+            targetValue = dominantColor,
+            animationSpec = spring(stiffness = 200f),
+            label = "dominantColor",
+        )
     val luminance = remember(dominantColor) { calculateLuminance(dominantColor) }
     val onDominantColor = if (luminance > 0.65f) Color.Black else Color.White
 
@@ -113,80 +115,34 @@ fun AlbumDetailScreen(
 
     // ── 基于 LazyListState 的滚动偏移量（像素，上限为 SCROLL_ART_RANGE）─────────
     // 一旦用户滚动超过第一个 item，视为动画已完全结束
-    val rawOffset by remember(lazyListState) {
-        derivedStateOf {
-            if (lazyListState.firstVisibleItemIndex > 0) {
-                SCROLL_ART_RANGE
-            } else {
-                lazyListState.firstVisibleItemScrollOffset.toFloat()
+    val rawOffsetState =
+        remember(lazyListState) {
+            derivedStateOf {
+                if (lazyListState.firstVisibleItemIndex > 0) {
+                    SCROLL_ART_RANGE
+                } else {
+                    lazyListState.firstVisibleItemScrollOffset.toFloat()
+                }
             }
         }
-    }
 
     // artProgress：0 = 封面完全展开，1 = 封面完全折叠
-    val artProgress by remember {
-        derivedStateOf {
-            (rawOffset / SCROLL_ART_RANGE).coerceIn(
-                0f,
-                1f,
-            )
+    val artProgressState =
+        remember {
+            derivedStateOf { (rawOffsetState.value / SCROLL_ART_RANGE).coerceIn(0f, 1f) }
         }
-    }
     // hdrProgress：0 = 固定顶栏不可见，1 = 固定顶栏完全可见
-    val hdrProgress by remember {
-        derivedStateOf { ((rawOffset - SCROLL_HDR_START) / SCROLL_HDR_RANGE).coerceIn(0f, 1f) }
-    }
-
-    // ── 封面几何属性（弹簧动画跟随滚动目标值变化）────────────────────────────────
-    val springDp = remember { spring<Dp>(stiffness = 400f) }
-    val springFloat = remember { spring<Float>(stiffness = 400f) }
-
+    val hdrProgressState =
+        remember {
+            derivedStateOf {
+                ((rawOffsetState.value - SCROLL_HDR_START) / SCROLL_HDR_RANGE).coerceIn(0f, 1f)
+            }
+        }
     val artTopExpanded = statusBarTopDp + HEADER_HEIGHT + 4.dp
     // 折叠态：在 HEADER_HEIGHT 内容区内垂直居中
     val artTopCollapsed = statusBarTopDp + (HEADER_HEIGHT - ART_COLLAPSED) / 2f
     // 展开态：在屏幕上水平居中
     val artStartExpanded = (screenWidthDp - ART_EXPANDED) / 2f
-
-    val artSize by animateDpAsState(
-        targetValue = lerp(ART_EXPANDED.value, ART_COLLAPSED.value, artProgress).dp,
-        animationSpec = springDp,
-        label = "artSize",
-    )
-    val artTop by animateDpAsState(
-        targetValue = lerp(artTopExpanded.value, artTopCollapsed.value, artProgress).dp,
-        animationSpec = springDp,
-        label = "artTop",
-    )
-    val artStart by animateDpAsState(
-        targetValue = lerp(artStartExpanded.value, 56f, artProgress).dp,
-        animationSpec = springDp,
-        label = "artStart",
-    )
-    val cornerRad by animateDpAsState(
-        targetValue = lerp(16f, 8f, artProgress).dp,
-        animationSpec = springDp,
-        label = "cornerRad",
-    )
-
-    // ── 透明度动画 ─────────────────────────────────────────────────────────────
-    // bigAlpha：封面下方的大字信息区 —— 封面移动时迅速淡出
-    val bigAlpha by animateFloatAsState(
-        targetValue = (1f - artProgress * 2.5f).coerceIn(0f, 1f),
-        animationSpec = springFloat,
-        label = "bigAlpha",
-    )
-    // smallAlpha：固定顶栏中的专辑标题 —— 在 hdrProgress 后半段淡入
-    val smallAlpha by animateFloatAsState(
-        targetValue = (hdrProgress * 2f).coerceIn(0f, 1f),
-        animationSpec = springFloat,
-        label = "smallAlpha",
-    )
-    // hdrAlpha：固定顶栏背景透明度
-    val hdrAlpha by animateFloatAsState(
-        targetValue = hdrProgress,
-        animationSpec = springFloat,
-        label = "hdrAlpha",
-    )
 
     Box(
         Modifier
@@ -194,16 +150,20 @@ fun AlbumDetailScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         // ── 由专辑主色调染色的渐变背景 ──────────────────────────────────────────
+        val backgroundColor = MaterialTheme.colorScheme.background
         Box(
             Modifier
                 .fillMaxWidth()
                 .height(statusBarTopDp + HEADER_HEIGHT + ART_EXPANDED + 120.dp)
-                .background(
-                    Brush.verticalGradient(
-                        0f to animatedDominantColor.copy(alpha = 0.92f),
-                        1f to MaterialTheme.colorScheme.background.copy(alpha = 0f),
-                    ),
-                ),
+                // 主色渐变在 Draw 阶段构建：主色弹簧跑动期间只重绘，不重组本 Box
+                .drawBehind {
+                    drawRect(
+                        Brush.verticalGradient(
+                            0f to animatedDominantColor.value.copy(alpha = 0.92f),
+                            1f to backgroundColor.copy(alpha = 0f),
+                        ),
+                    )
+                },
         )
 
         // ── 可滚动内容 ────────────────────────────────────────────────────────
@@ -223,7 +183,10 @@ fun AlbumDetailScreen(
                     Modifier
                         .fillMaxWidth()
                         .padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
-                        .graphicsLayer { alpha = bigAlpha },
+                        .graphicsLayer {
+                            // 封面移动时迅速淡出
+                            alpha = (1f - artProgressState.value * 2.5f).coerceIn(0f, 1f)
+                        },
                 ) {
                     Text(
                         text = album.title,
@@ -279,7 +242,10 @@ fun AlbumDetailScreen(
                 .fillMaxWidth()
                 .height(statusBarTopDp + HEADER_HEIGHT)
                 .align(Alignment.TopStart)
-                .background(MaterialTheme.colorScheme.background.copy(alpha = hdrAlpha)),
+                // 顶栏底色在 Draw 阶段取进度，滚动时不重组本 Box 及其子项
+                .drawBehind {
+                    drawRect(backgroundColor.copy(alpha = hdrProgressState.value))
+                },
         ) {
             Row(
                 Modifier
@@ -301,7 +267,10 @@ fun AlbumDetailScreen(
                         Modifier
                             .weight(1f)
                             .padding(64.dp, end = 16.dp)
-                            .graphicsLayer { alpha = smallAlpha },
+                            .graphicsLayer {
+                                // 顶栏标题在 hdrProgress 后半段淡入
+                                alpha = (hdrProgressState.value * 2f).coerceIn(0f, 1f)
+                            },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.W600,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -318,9 +287,27 @@ fun AlbumDetailScreen(
             imageModel = { coverUri },
             modifier =
                 Modifier
-                    .padding(start = artStart, top = artTop)
-                    .size(artSize)
-                    .clip(RoundedCornerShape(cornerRad))
+                    // 位置与尺寸都在 Layout 阶段按进度导出：滚动时只重新布局，
+                    // 不重组。刻意不用 graphicsLayer 缩放 —— 共享元素过渡
+                    // （geometryTarget）依赖真实布局矩形，缩放会让它测错落点。
+                    .layout { measurable, constraints ->
+                        val p = artProgressState.value
+                        val sizePx = lerp(ART_EXPANDED.toPx(), ART_COLLAPSED.toPx(), p)
+                        val side = sizePx.roundToInt().coerceAtLeast(1)
+                        val placeable =
+                            measurable.measure(Constraints.fixed(side, side))
+                        layout(side, side) {
+                            placeable.place(
+                                x = lerp(artStartExpanded.toPx(), 56.dp.toPx(), p).roundToInt(),
+                                y = lerp(artTopExpanded.toPx(), artTopCollapsed.toPx(), p).roundToInt(),
+                            )
+                        }
+                    }
+                    // 圆角随进度在 Draw 阶段插值
+                    .graphicsLayer {
+                        shape = RoundedCornerShape(lerp(16.dp.toPx(), 8.dp.toPx(), artProgressState.value))
+                        clip = true
+                    }
                     // 目标封面只在共享元素完全交接后显示，避免与 overlay 抢显示权
                     .graphicsLayer {
                         alpha =

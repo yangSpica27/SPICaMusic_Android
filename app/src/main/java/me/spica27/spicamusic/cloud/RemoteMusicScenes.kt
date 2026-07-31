@@ -2,6 +2,8 @@ package me.spica27.spicamusic.cloud
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.os.Handler
+import android.os.Looper
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -44,7 +46,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -360,14 +361,6 @@ private fun CookieWebLogin(
     onCancel: () -> Unit,
     onCookiesCaptured: (String) -> Unit,
 ) {
-    var webView by remember(provider) { mutableStateOf<WebView?>(null) }
-    DisposableEffect(provider) {
-        onDispose {
-            webView?.stopLoading()
-            webView?.destroy()
-            webView = null
-        }
-    }
     Column(
         modifier = modifier.padding(horizontal = 16.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -408,9 +401,9 @@ private fun CookieWebLogin(
                         setAcceptThirdPartyCookies(loginWebView, true)
                     }
                     loadUrl(provider.loginUrl)
-                    webView = this
                 }
             },
+            onRelease = WebView::releaseAfterLayout,
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -441,6 +434,21 @@ private fun CookieWebLogin(
                 }
             }
         }
+    }
+}
+
+/**
+ * AndroidView can leave composition while Compose is still completing a layout pass.
+ * WebView.destroy() may request another layout synchronously, so release it on the next
+ * main-loop turn instead of re-entering Compose's active measure.
+ */
+private fun WebView.releaseAfterLayout() {
+    Handler(Looper.getMainLooper()).post {
+        stopLoading()
+        webChromeClient = null
+        webViewClient = WebViewClient()
+        removeAllViews()
+        destroy()
     }
 }
 

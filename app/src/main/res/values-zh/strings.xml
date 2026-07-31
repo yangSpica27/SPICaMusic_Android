@@ -495,6 +495,12 @@
   <string name="info_file_path">文件路径</string>
   <string name="info_file_size">文件大小</string>
   <string name="info_file_format">文件格式</string>
+  <string name="song_details">歌曲详情</string>
+  <string name="file_details">文件详情</string>
+  <string name="bit_depth_label">位深度</string>
+  <string name="bit_depth_format">%d 位</string>
+  <string name="copy_field_format">复制%s</string>
+  <string name="sample_rate_format">%s kHz</string>
 
   <!-- Scanner -->
   <string name="scanner_hero_title">让 SPICa 发现你的音乐</string>

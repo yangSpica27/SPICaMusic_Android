@@ -495,6 +495,12 @@
   <string name="info_file_path">File Path</string>
   <string name="info_file_size">File Size</string>
   <string name="info_file_format">File Format</string>
+  <string name="song_details">Song Details</string>
+  <string name="file_details">File Details</string>
+  <string name="bit_depth_label">Bit Depth</string>
+  <string name="bit_depth_format">%d-bit</string>
+  <string name="copy_field_format">Copy %s</string>
+  <string name="sample_rate_format">%s kHz</string>
 
   <!-- Scanner -->
   <string name="scanner_hero_title">Let SPICa discover your music</string>

@@ -4,8 +4,6 @@ import android.annotation.SuppressLint
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
@@ -106,8 +104,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.BlurredEdgeTreatment
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
@@ -153,11 +149,14 @@ import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.theme.ENTRANCE_STAGGER_MILLIS
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.theme.entranceGraphics
+import me.spica27.spicamusic.ui.theme.rememberEntrance
 import me.spica27.spicamusic.ui.widget.CoverFallback
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.clickHighlight
@@ -450,7 +449,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                     },
                     contentType = { "song" },
                 ) { index ->
-                    val entrance = rememberEntrance(min(4 + index, 8), needAnim = listEntrancePlay)
+                    val entrance = rememberEntrance(min(4 + index, 8), play = listEntrancePlay)
                     val song = browseSongs[index]
                     if (song == null) {
                         SongSkeletonRow(modifier = Modifier.animateItem())
@@ -1585,10 +1584,11 @@ private fun SearchResultList(
     onMore: (Song) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val needAnim = remember { mutableStateOf(true) }
+    // 首屏之后不再重播入场：仅最初 55ms 内挂载的行参与瀑布
+    val entrancePlay = remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
-        delay(55)
-        needAnim.value = false
+        delay(ENTRANCE_STAGGER_MILLIS)
+        entrancePlay.value = false
     }
     LazyColumn(
         state = listState,
@@ -1611,7 +1611,7 @@ private fun SearchResultList(
             contentType = { "song" },
         ) { index ->
             val song = searchResults[index]
-            val entrance = rememberEntrance(min(index, 8), needAnim = needAnim.value)
+            val entrance = rememberEntrance(min(index, 8), play = entrancePlay.value)
             if (song == null) {
                 SongSkeletonRow(
                     modifier =
@@ -2211,32 +2211,3 @@ private fun PickerSongRow(
         }
     }
 }
-
-/** 首屏入场：延迟 [order] 个节拍后弹入*/
-@Composable
-private fun rememberEntrance(
-    order: Int,
-    needAnim: Boolean = true,
-): Animatable<Float, AnimationVector1D> {
-    val entrance = remember { Animatable(if (needAnim) 0f else 1f) }
-    LaunchedEffect(Unit) {
-        delay(order * 55L)
-        entrance.animateTo(
-            targetValue = 1f,
-            animationSpec =
-                spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = 380f,
-                ),
-        )
-    }
-    return entrance
-}
-
-/** 入场位移+淡入，动画值全部在 Draw 阶段读取 */
-private fun Modifier.entranceGraphics(entrance: Animatable<Float, AnimationVector1D>): Modifier =
-    graphicsLayer {
-        val enter = entrance.value
-        alpha = enter
-        translationY = (1f - enter) * 28.dp.toPx()
-    }.blur(radius = ((1f - entrance.value) * 4).dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)

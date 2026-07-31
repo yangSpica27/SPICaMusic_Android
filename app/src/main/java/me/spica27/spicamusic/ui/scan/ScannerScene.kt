@@ -8,15 +8,11 @@ import android.provider.Settings
 import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -102,6 +98,8 @@ import me.spica27.spicamusic.ui.settings.ScanState
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.theme.entranceGraphics
+import me.spica27.spicamusic.ui.theme.rememberEntrance
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
@@ -119,7 +117,6 @@ class ScannerScene : StackScene() {
 }
 
 /** 首屏入场交错间隔 */
-private const val ENTRANCE_STAGGER_MILLIS = 55L
 
 /** 大标题完全收进顶栏所需的滚动距离 */
 private val MastheadCollapseDistance = 140.dp
@@ -310,37 +307,6 @@ private fun Density.mastheadCollapse(listState: LazyListState): Float =
         1f
     } else {
         (listState.firstVisibleItemScrollOffset / MastheadCollapseDistance.toPx()).coerceIn(0f, 1f)
-    }
-
-/** 首屏入场：延迟 [order] 个节拍后弹入，[play] 为 false 时直接呈现 */
-@Composable
-private fun rememberEntrance(
-    order: Int,
-    play: Boolean,
-): Animatable<Float, AnimationVector1D> {
-    val entrance = remember { Animatable(if (play) 0f else 1f) }
-    LaunchedEffect(Unit) {
-        if (entrance.value < 1f) {
-            delay(order * ENTRANCE_STAGGER_MILLIS)
-            entrance.animateTo(
-                targetValue = 1f,
-                animationSpec =
-                    spring(
-                        dampingRatio = Spring.DampingRatioLowBouncy,
-                        stiffness = 380f,
-                    ),
-            )
-        }
-    }
-    return entrance
-}
-
-/** 入场位移+淡入，全部在 Draw 阶段读取动画值 */
-private fun Modifier.entranceGraphics(entrance: Animatable<Float, AnimationVector1D>): Modifier =
-    graphicsLayer {
-        val enter = entrance.value
-        alpha = enter
-        translationY = (1f - enter) * 28.dp.toPx()
     }
 
 /** 固定顶栏：背景与标题透明度跟随刊头收缩进度，收起后出现分隔线 */

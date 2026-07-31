@@ -9,6 +9,7 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
@@ -992,32 +993,28 @@ private fun HomePageSwitcher(modifier: Modifier = Modifier) {
     val tabHeight = remember { mutableStateMapOf<HomePage, Dp>() }
     val density = LocalDensity.current
 
+    val indicatorSpec =
+        remember {
+            spring<Dp>(
+                stiffness = Spring.StiffnessMedium,
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                visibilityThreshold = Dp.VisibilityThreshold,
+            )
+        }
     val indicatorOffset by animateDpAsState(
         targetValue = tabPositions.getOrElse(selectIndex) { 0.dp },
-        label = "",
-        animationSpec =
-            spring(
-                stiffness = Spring.StiffnessMediumLow,
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-            ),
+        label = "indicatorOffset",
+        animationSpec = indicatorSpec,
     )
     val indicatorWidth by animateDpAsState(
         targetValue = tabWidths.getOrElse(selectIndex) { 0.dp },
-        label = "",
-        animationSpec =
-            spring(
-                stiffness = Spring.StiffnessMediumLow,
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-            ),
+        label = "indicatorWidth",
+        animationSpec = indicatorSpec,
     )
     val indicatorHeight by animateDpAsState(
         targetValue = tabHeight.getOrElse(selectIndex) { 0.dp },
-        label = "",
-        animationSpec =
-            spring(
-                stiffness = Spring.StiffnessMediumLow,
-                dampingRatio = Spring.DampingRatioLowBouncy,
-            ),
+        label = "indicatorHeight",
+        animationSpec = indicatorSpec,
     )
     val indicatorColor =
         MaterialTheme.colorScheme.primaryContainer.copy(
@@ -1058,7 +1055,9 @@ private fun HomePageSwitcher(modifier: Modifier = Modifier) {
                             )
                         }
                     }
-                }.animateContentSize(),
+                },
+        // 移除 animateContentSize()：本 Row 高度固定 56dp、子项数量固定，
+        // 尺寸从不变化，白付一趟测量开销（且挂在常驻底栏上）
         verticalAlignment = Alignment.CenterVertically,
     ) {
         for (page in tabs) {

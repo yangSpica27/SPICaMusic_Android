@@ -1,25 +1,24 @@
 package me.spica27.spicamusic.ui.dialog
 
 import android.content.ClipData
+import android.text.format.Formatter
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
@@ -27,6 +26,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DataUsage
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
@@ -35,7 +35,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonColors
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,14 +44,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.skydoves.landscapist.image.LandscapistImage
@@ -59,35 +67,34 @@ import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
-import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.player.formatTime
+import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.CoverFallback
+import java.util.Locale
 
 class SongInfoScene(
     val song: Song,
 ) : DialogScene() {
-    /**
-     * 重写 Content()，将默认的"从中心缩放"替换为"从底部上滑 + 淡入/淡出"。
-     * enterProgress 由父类 DialogScene 驱动（push→1f，pop→0f），无需额外声明。
-     */
     @Composable
     override fun Content() {
         val path = LocalNavigationPath.current
         val scene = LocalScene.current
         val density = LocalDensity.current
-        // 预先在 Composition 阶段把 dp 转成 px，避免在 graphicsLayer 里读取 CompositionLocal
         val slideOffsetPx = with(density) { 72.dp.toPx() }
+        val closeLabel = stringResource(R.string.close)
+
+        BackHandler { path.pop(scene) }
 
         Box(
             Modifier
                 .zIndex(3f)
                 .fillMaxSize(),
         ) {
-            // ── 半透明遮罩：随进度渐显，点击关闭 ──
             val interactionSource = remember { MutableInteractionSource() }
             Box(
                 modifier =
@@ -98,19 +105,19 @@ class SongInfoScene(
                         .clickable(
                             interactionSource = interactionSource,
                             indication = null,
+                            role = Role.Button,
+                            onClickLabel = closeLabel,
                         ) { path.pop(scene) },
             )
 
-            // ── 卡片：从底部上滑 + 淡入/淡出 ──
             Box(
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter)
                         .graphicsLayer {
-                            val p = enterProgress.value
-                            alpha = p
-                            // p=0 时向下偏移 slideOffsetPx，p=1 时归位
-                            translationY = (1f - p) * slideOffsetPx
+                            val progress = enterProgress.value
+                            alpha = progress
+                            translationY = (1f - progress) * slideOffsetPx
                         },
             ) {
                 DialogContent()
@@ -122,17 +129,42 @@ class SongInfoScene(
     override fun DialogContent() {
         val path = LocalNavigationPath.current
         val scene = LocalScene.current
+        val context = LocalContext.current
+        val clipboard = LocalClipboard.current
+        val scope = rememberCoroutineScope()
         val density = LocalDensity.current
         val screenHeight =
             with(density) {
                 LocalWindowInfo.current.containerSize.height
                     .toDp()
             }
+        val title = stringResource(R.string.song_info_dialog_title)
+        val copySuccess = stringResource(R.string.copy_success)
+        val copyLabel = stringResource(R.string.copy_field_format)
+        val formattedFileSize = Formatter.formatFileSize(context, song.size)
+        val onCopy: (String, String) -> Unit = { label, value ->
+            scope.launch {
+                clipboard.setClipEntry(ClipData.newPlainText(label, value).toClipEntry())
+                Toast.makeText(context, copySuccess, Toast.LENGTH_SHORT).show()
+            }
+        }
+
         Surface(
             modifier =
                 Modifier
-                    .fillMaxWidth(),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    .fillMaxWidth()
+                    .heightIn(max = (screenHeight - Spacing.Huge).coerceAtLeast(320.dp))
+                    .semantics {
+                        paneTitle = title
+                        isTraversalGroup = true
+                    }.pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                awaitPointerEvent(PointerEventPass.Final).changes.forEach { it.consume() }
+                            }
+                        }
+                    },
+            shape = Shapes.ExtraLarge1CornerBasedShape,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,
         ) {
@@ -140,122 +172,188 @@ class SongInfoScene(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
+                        .navigationBarsPadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = Spacing.ExtraLarge),
             ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .padding(top = 10.dp)
-                            .width(44.dp)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(MaterialTheme.colorScheme.onSurface)
-                            .align(Alignment.CenterHorizontally),
+                SongInfoHeader(
+                    song = song,
+                    title = title,
+                    onClose = { path.pop(scene) },
                 )
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 18.dp, bottom = 18.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    Surface(
-                        modifier = Modifier.size(72.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        tonalElevation = 3.dp,
-                    ) {
-                        LandscapistImage(
-                            imageModel = { song.getCoverUri() },
-                            modifier = Modifier.fillMaxSize(),
-                            failure = {
-                                CoverFallback(
-                                    fallbackUri = song.getAlbumCoverUri(),
-                                    modifier = Modifier.fillMaxSize(),
-                                )
-                            },
-                        )
-                    }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(R.string.song_info_dialog_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = song.displayName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                        )
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    ) {
-                        IconButton(onClick = { path.pop(scene) }) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = stringResource(R.string.close),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Column(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .heightIn(max = screenHeight * 0.8f)
-                            .verticalScroll(rememberScrollState())
-                            .padding(top = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                            .padding(vertical = Spacing.Large),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.ExtraLarge),
                 ) {
-                    InfoItem(
-                        Icons.Default.MusicNote,
-                        stringResource(R.string.song_displayname),
-                        song.displayName,
-                    )
-                    InfoItem(
-                        Icons.Default.Person,
-                        stringResource(R.string.song_artist),
-                        song.artist,
-                    )
-                    InfoItem(Icons.Default.Album, stringResource(R.string.song_album), song.album)
-                    InfoItem(
-                        Icons.Default.Schedule,
-                        stringResource(R.string.song_duration),
-                        formatTime(song.duration),
-                    )
-                    InfoItem(
-                        Icons.Default.Folder,
-                        stringResource(R.string.info_file_path),
-                        song.path,
-                        isMultiline = true,
-                    )
-                    InfoItem(
-                        Icons.Default.DataUsage,
-                        stringResource(R.string.info_file_size),
-                        "${song.size / 1024 / 1024} MB",
-                    )
-                    InfoItem(
-                        Icons.Default.Info,
-                        stringResource(R.string.info_file_format),
-                        song.codec,
-                    )
+                    InfoSection(title = stringResource(R.string.song_details)) {
+                        InfoItem(Icons.Default.MusicNote, stringResource(R.string.song_displayname), song.displayName, copyLabel, onCopy)
+                        InfoItem(Icons.Default.Person, stringResource(R.string.song_artist), song.artist, copyLabel, onCopy)
+                        InfoItem(Icons.Default.Album, stringResource(R.string.song_album), song.album, copyLabel, onCopy)
+                        InfoItem(
+                            Icons.Default.Schedule,
+                            stringResource(R.string.song_duration),
+                            formatTime(song.duration),
+                            copyLabel,
+                            onCopy,
+                        )
+                    }
+                    InfoSection(title = stringResource(R.string.file_details)) {
+                        InfoItem(
+                            Icons.Default.Folder,
+                            stringResource(R.string.info_file_path),
+                            song.path,
+                            copyLabel,
+                            onCopy,
+                            isMultiline = true,
+                        )
+                        InfoItem(Icons.Default.DataUsage, stringResource(R.string.info_file_size), formattedFileSize, copyLabel, onCopy)
+                        InfoItem(
+                            Icons.Default.Info,
+                            stringResource(R.string.info_file_format),
+                            song.codec.ifBlank { song.mimeType },
+                            copyLabel,
+                            onCopy,
+                        )
+                    }
+                    if (song.sampleRate > 0 || song.bitRate > 0 || song.channels > 0 || song.digit > 0) {
+                        InfoSection(title = stringResource(R.string.audio_info)) {
+                            if (song.sampleRate > 0) {
+                                InfoItem(
+                                    Icons.Default.GraphicEq,
+                                    stringResource(R.string.sample_rate_label),
+                                    stringResource(R.string.sample_rate_format, formatSampleRate(song.sampleRate)),
+                                    copyLabel,
+                                    onCopy,
+                                )
+                            }
+                            if (song.bitRate > 0) {
+                                InfoItem(
+                                    Icons.Default.GraphicEq,
+                                    stringResource(R.string.bitrate_label),
+                                    stringResource(R.string.kbps_format, song.bitRate / 1000),
+                                    copyLabel,
+                                    onCopy,
+                                )
+                            }
+                            if (song.channels > 0) {
+                                val channels =
+                                    when (song.channels) {
+                                        1 -> stringResource(R.string.mono)
+                                        2 -> stringResource(R.string.stereo)
+                                        else -> stringResource(R.string.channels_format, song.channels)
+                                    }
+                                InfoItem(Icons.Default.GraphicEq, stringResource(R.string.channel_count_label), channels, copyLabel, onCopy)
+                            }
+                            if (song.digit > 0) {
+                                InfoItem(
+                                    Icons.Default.GraphicEq,
+                                    stringResource(R.string.bit_depth_label),
+                                    stringResource(R.string.bit_depth_format, song.digit),
+                                    copyLabel,
+                                    onCopy,
+                                )
+                            }
+                        }
+                    }
                 }
-                Spacer(Modifier.height(14.dp))
                 Button(
                     onClick = { path.pop(scene) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = Spacing.Large),
+                    shape = Shapes.LargeCornerBasedShape,
                 ) {
                     Text(stringResource(R.string.close))
                 }
-                Spacer(Modifier.navigationBarsPadding())
             }
         }
+    }
+}
+
+@Composable
+private fun SongInfoHeader(
+    song: Song,
+    title: String,
+    onClose: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = Spacing.Large),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        Surface(
+            modifier = Modifier.size(72.dp),
+            shape = Shapes.ExtraLargeCornerBasedShape,
+            tonalElevation = 3.dp,
+        ) {
+            LandscapistImage(
+                imageModel = { song.getCoverUri() },
+                modifier = Modifier.fillMaxSize(),
+                failure = {
+                    CoverFallback(
+                        fallbackUri = song.getAlbumCoverUri(),
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                },
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+        ) {
+            Text(
+                text = title,
+                modifier = Modifier.semantics { heading() },
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = song.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Surface(
+            shape = Shapes.MediumCornerBasedShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ) {
+            IconButton(onClick = onClose) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = stringResource(R.string.close),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoSection(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
+        Text(
+            text = title,
+            modifier =
+                Modifier
+                    .padding(horizontal = Spacing.ExtraSmall)
+                    .semantics { heading() },
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        content()
     }
 }
 
@@ -264,23 +362,23 @@ private fun InfoItem(
     icon: ImageVector,
     title: String,
     content: String,
+    copyLabelFormat: String,
+    onCopy: (String, String) -> Unit,
     isMultiline: Boolean = false,
 ) {
-    val clipboardManager = LocalClipboard.current
-    val scope = rememberCoroutineScope()
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = Shapes.LargeCornerBasedShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.72f),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
+            modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
         ) {
             Surface(
                 modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(14.dp),
+                shape = Shapes.MediumCornerBasedShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -294,55 +392,44 @@ private fun InfoItem(
             }
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
             ) {
                 Text(
-                    title,
+                    text = title,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    content,
+                    text = content,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = if (isMultiline) 2 else 1,
+                    maxLines = if (isMultiline) 3 else 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             IconButton(
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(48.dp),
+                shape = Shapes.MediumCornerBasedShape,
                 colors =
-                    IconButtonColors(
+                    IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        disabledContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        disabledContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     ),
-                onClick = {
-                    scope.launch {
-                        clipboardManager.setClipEntry(
-                            ClipData
-                                .newPlainText(
-                                    title,
-                                    content,
-                                ).toClipEntry(),
-                        )
-                        Toast
-                            .makeText(
-                                App.getInstance(),
-                                App.getInstance().getString(R.string.copy_success),
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                    }
-                },
+                onClick = { onCopy(title, content) },
             ) {
                 Icon(
                     modifier = Modifier.size(20.dp),
                     imageVector = Icons.Default.ContentCopy,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    contentDescription = String.format(copyLabelFormat, title),
                 )
             }
         }
     }
 }
+
+private fun formatSampleRate(sampleRate: Int): String =
+    if (sampleRate % 1000 == 0) {
+        (sampleRate / 1000).toString()
+    } else {
+        String.format(Locale.getDefault(), "%.1f", sampleRate / 1000f)
+    }
