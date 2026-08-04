@@ -575,7 +575,7 @@
   <!-- Settings -->
   <string name="settings_hero_title">定制你的音乐空间</string>
   <string name="settings_hero_subtitle">主题、动态背景与播放偏好统一管理</string>
-  <string name="settings_appearance_subtitle">塑造播放器的视觉氛围</string>
+  <string name="settings_appearance_subtitle">整个应用的配色与深浅色主题</string>
   <string name="settings_dark_mode_title">深色模式</string>
   <string name="settings_dark_mode_toggle_subtitle">切换深色 / 浅色主题</string>
   <string name="settings_playback_subtitle">让收听体验更顺手</string>
@@ -647,5 +647,44 @@
   <string name="privacy_section_thirdparty_body">在线歌词仅在你搜索时从第三方歌词服务获取，其如何处理请求请参阅该服务自身的条款。应用集成的开源库已列于「开源许可证」中，它们在设备本地运行，不会通过本应用收集你的数据。</string>
   <string name="privacy_section_contact_title">联系方式</string>
   <string name="privacy_section_contact_body">如对本隐私政策有任何疑问，请在项目的 GitHub 仓库提交 issue。</string>
+
+  <!-- Settings screen (redesigned) -->
+  <string name="settings_masthead_subtitle">主题、播放页视觉与播放行为</string>
+  <string name="settings_section_player_visual">播放页</string>
+  <string name="settings_section_player_visual_subtitle">播放页面的观感与动效</string>
+  <string name="settings_section_playback_subtitle">播放音乐时的行为</string>
+  <string name="settings_color_style">配色方式</string>
+  <string name="settings_color_style_subtitle">主题色的生成方式</string>
+  <string name="settings_player_background">播放页背景</string>
+  <string name="settings_player_background_subtitle">播放页面封面后的背景效果</string>
+  <string name="settings_cover_tap_effect">点击封面效果</string>
+  <string name="settings_cover_tap_effect_subtitle">轻点专辑封面后显示的效果</string>
+  <string name="settings_progress_waveform">进度条波形</string>
+  <string name="settings_progress_waveform_subtitle">拖动条的形态</string>
+  <string name="settings_expand_options">展开选项</string>
+  <string name="settings_collapse_options">收起选项</string>
+
+  <!-- Settings option labels and hints -->
+  <string name="settings_option_off">关闭</string>
+  <string name="color_style_textured_desc">从封面取色，生成柔和的同色系配色</string>
+  <string name="color_style_flat_desc">高对比度的纯色扁平配色</string>
+  <string name="bg_top_glow">顶部流光</string>
+  <string name="bg_top_glow_desc">顶部边缘的一道柔光</string>
+  <string name="bg_liquid_aurora">液态极光</string>
+  <string name="bg_liquid_aurora_desc">随节拍缓慢流动的极光带</string>
+  <string name="bg_effect_shader">流体效果</string>
+  <string name="bg_effect_shader_desc">由频谱驱动的实时流体</string>
+  <string name="bg_fluid_warp">封面流体</string>
+  <string name="bg_fluid_warp_desc">专辑封面融化并产生涟漪</string>
+  <string name="bg_blur_cover">模糊封面</string>
+  <string name="bg_blur_cover_desc">仅对封面做模糊处理，最省电</string>
+  <string name="bg_off_desc">纯色背景，最省电</string>
+  <string name="cover_shining_stars">闪耀星光</string>
+  <string name="cover_shining_stars_desc">随音乐跳动的分形星空</string>
+  <string name="cover_audio_city">音频城市</string>
+  <string name="cover_audio_city_desc">随节拍起伏的 3D 立体柱阵</string>
+  <string name="cover_off_desc">点击封面不做任何响应</string>
+  <string name="waveform_dynamic_desc">波形柱随声音实时跳动</string>
+  <string name="waveform_time_domain_desc">预先展示整首歌的波形轮廓</string>
 
 </resources>

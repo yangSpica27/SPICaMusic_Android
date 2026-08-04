@@ -575,7 +575,7 @@
   <!-- Settings -->
   <string name="settings_hero_title">Customize your music space</string>
   <string name="settings_hero_subtitle">Theme, dynamic background and playback in one place</string>
-  <string name="settings_appearance_subtitle">Shape the visual atmosphere of the player</string>
+  <string name="settings_appearance_subtitle">Colors and light or dark theme across the app</string>
   <string name="settings_dark_mode_title">Dark Mode</string>
   <string name="settings_dark_mode_toggle_subtitle">Toggle dark / light theme</string>
   <string name="settings_playback_subtitle">Make the listening experience smoother</string>
@@ -647,5 +647,44 @@
   <string name="privacy_section_thirdparty_body">Online lyrics are retrieved from a third-party lyrics provider only when you search. Please refer to that provider’s own terms for how it handles requests. The app integrates open-source libraries listed under Open-source licenses; they run on-device and do not collect your data through this app.</string>
   <string name="privacy_section_contact_title">Contact</string>
   <string name="privacy_section_contact_body">If you have any questions about this privacy policy, please open an issue on the project’s GitHub repository.</string>
+
+  <!-- Settings screen (redesigned) -->
+  <string name="settings_masthead_subtitle">Theme, player visuals, and playback</string>
+  <string name="settings_section_player_visual">Now Playing</string>
+  <string name="settings_section_player_visual_subtitle">How the player screen looks and moves</string>
+  <string name="settings_section_playback_subtitle">Behavior while music is playing</string>
+  <string name="settings_color_style">Color Style</string>
+  <string name="settings_color_style_subtitle">How the theme colors are generated</string>
+  <string name="settings_player_background">Player Background</string>
+  <string name="settings_player_background_subtitle">Backdrop behind the now-playing screen</string>
+  <string name="settings_cover_tap_effect">Cover Tap Effect</string>
+  <string name="settings_cover_tap_effect_subtitle">Shown when you tap the album art</string>
+  <string name="settings_progress_waveform">Progress Waveform</string>
+  <string name="settings_progress_waveform_subtitle">Shape of the seek bar</string>
+  <string name="settings_expand_options">Show options</string>
+  <string name="settings_collapse_options">Hide options</string>
+
+  <!-- Settings option labels and hints -->
+  <string name="settings_option_off">Off</string>
+  <string name="color_style_textured_desc">A tonal palette derived from the album art</string>
+  <string name="color_style_flat_desc">Flat, high-contrast solid colors</string>
+  <string name="bg_top_glow">Top Glow</string>
+  <string name="bg_top_glow_desc">A soft band of light along the top edge</string>
+  <string name="bg_liquid_aurora">Liquid Aurora</string>
+  <string name="bg_liquid_aurora_desc">Slow aurora ribbons that drift with the beat</string>
+  <string name="bg_effect_shader">Fluid Shader</string>
+  <string name="bg_effect_shader_desc">Reactive fluid driven by the spectrum</string>
+  <string name="bg_fluid_warp">Warped Cover</string>
+  <string name="bg_fluid_warp_desc">The album art melts and ripples</string>
+  <string name="bg_blur_cover">Blurred Cover</string>
+  <string name="bg_blur_cover_desc">Simply blurs the album art. Easiest on battery</string>
+  <string name="bg_off_desc">Plain background. Best for battery life</string>
+  <string name="cover_shining_stars">Shining Stars</string>
+  <string name="cover_shining_stars_desc">A fractal starfield that pulses with the music</string>
+  <string name="cover_audio_city">Audio City</string>
+  <string name="cover_audio_city_desc">A 3D skyline of bars rising with the beat</string>
+  <string name="cover_off_desc">Tapping the cover does nothing</string>
+  <string name="waveform_dynamic_desc">Bars react to the sound in real time</string>
+  <string name="waveform_time_domain_desc">Shows the whole track’s waveform up front</string>
 
 </resources>

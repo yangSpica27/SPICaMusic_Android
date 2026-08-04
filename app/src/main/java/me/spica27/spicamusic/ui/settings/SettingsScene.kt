@@ -1,18 +1,15 @@
 package me.spica27.spicamusic.ui.settings
 
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,52 +17,67 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.Brightness6
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BlurOn
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Landscape
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LensBlur
+import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Percent
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.Waves
+import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.common.collect.ImmutableList
@@ -77,14 +89,20 @@ import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.ui.about.AboutScene
+import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.theme.entranceGraphics
+import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinViewModel
 
+/**
+ * 设置页
+ */
 class SettingsScene : StackScene() {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val path = LocalNavigationPath.current
@@ -92,362 +110,279 @@ class SettingsScene : StackScene() {
 
         val darkMode by viewModel.darkMode.collectAsStateWithLifecycle()
         val keepScreenOn by viewModel.keepScreenOn.collectAsStateWithLifecycle()
-        val spectrumValue by viewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
-        val coverTypeValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
-        val progressBarStyleValue by viewModel.progressBarStyle.collectAsStateWithLifecycle()
-        val themeColorStyleValue by viewModel.themeColorStyle.collectAsStateWithLifecycle()
-        val texturedLabel = stringResource(R.string.theme_color_style_textured)
-        val flatLabel = stringResource(R.string.theme_color_style_flat)
-        val themeColorStyleName =
-            when (ThemeColorStyle.fromString(themeColorStyleValue)) {
-                ThemeColorStyle.Textured -> texturedLabel
-                ThemeColorStyle.Flat -> flatLabel
-            }
-        val themeColorStyleOptions =
-            remember(texturedLabel, flatLabel) {
-                ImmutableList.copyOf(
-                    listOf(
-                        SelectOption(ThemeColorStyle.Textured.value, texturedLabel),
-                        SelectOption(ThemeColorStyle.Flat.value, flatLabel),
+        val backgroundValue by viewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
+        val coverTapValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
+        val progressWaveformValue by viewModel.progressBarStyle.collectAsStateWithLifecycle()
+        val colorStyleValue by viewModel.themeColorStyle.collectAsStateWithLifecycle()
+
+        // 只在页面首次呈现时播放一次入场
+        var entrancePlayed by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            waitAppear()
+            entrancePlayed = true
+        }
+
+        // 一次只展开一个选项组：避免整个页面同时膨胀成一大片选项海
+        var expandedRowKey by rememberSaveable { mutableStateOf<String?>(null) }
+
+        val listState = rememberLazyListState()
+        val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val mastheadGone by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+        ) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding =
+                    PaddingValues(
+                        top = statusBarTop + 56.dp,
+                        bottom = 96.dp,
                     ),
-                )
-            }
-        val dynamicWaveformLabel = stringResource(R.string.progress_bar_style_dynamic_waveform)
-        val timeDomainWaveformLabel = stringResource(R.string.progress_bar_style_time_domain_waveform)
-        val progressBarStyleName =
-            when (ProgressBarStyle.fromString(progressBarStyleValue)) {
-                ProgressBarStyle.DynamicWaveform -> dynamicWaveformLabel
-                ProgressBarStyle.TimeDomainWaveform -> timeDomainWaveformLabel
-            }
-        val progressBarStyleOptions =
-            remember(dynamicWaveformLabel, timeDomainWaveformLabel) {
-                ImmutableList.copyOf(
-                    listOf(
-                        SelectOption(ProgressBarStyle.DynamicWaveform.value, dynamicWaveformLabel),
-                        SelectOption(ProgressBarStyle.TimeDomainWaveform.value, timeDomainWaveformLabel),
-                    ),
-                )
-            }
-        val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        IconButton(onClick = { path.popTop() }) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBackIosNew,
-                                contentDescription = stringResource(R.string.back),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                    },
-                    title = {
-                        Text(
-                            text = stringResource(R.string.finder_settings_title),
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    },
-                    colors =
-                        TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent,
-                            scrolledContainerColor = Color.Transparent,
-                        ),
-                )
-            },
-        ) { paddingValues ->
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.surface,
-                                    MaterialTheme.colorScheme.surfaceContainerLow,
-                                    MaterialTheme.colorScheme.surface,
-                                ),
-                            ),
-                        ),
+                verticalArrangement = Arrangement.spacedBy(Spacing.Large),
+                overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
             ) {
-                SettingsAmbientBackground()
+                item(key = "settings_masthead") {
+                    val entrance = rememberEntrance(order = 0, play = !entrancePlayed)
+                    SettingsMasthead(
+                        modifier =
+                            Modifier
+                                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                                .padding(top = Spacing.Large)
+                                .graphicsLayer {
+                                    val t = mastheadCollapse(listState)
+                                    val enter = entrance.value
+                                    transformOrigin = TransformOrigin(0f, 0f)
+                                    alpha = (1f - t) * enter
+                                    translationY = -t * 16.dp.toPx() + (1f - enter) * 28.dp.toPx()
+                                    scaleX = 1f - 0.18f * t
+                                    scaleY = 1f - 0.18f * t
+                                },
+                    )
+                }
 
-                LazyColumn(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    contentPadding =
-                        PaddingValues(
-                            start = LayoutTokens.MusicHeaderHorizontalPadding,
-                            end = LayoutTokens.MusicHeaderHorizontalPadding,
-                            top = Spacing.Small + paddingValues.calculateTopPadding(),
-                            bottom = Spacing.Huge + paddingValues.calculateBottomPadding(),
-                        ),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.Large),
-                    overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
-                ) {
-                    item {
-                        SettingsHeroCard(
-                            darkMode = darkMode,
-                            spectrumName = DynamicSpectrumBackground.fromString(spectrumValue).name,
-                            coverName = DynamicCoverType.fromString(coverTypeValue).name,
+                item(key = "settings_appearance") {
+                    val entrance = rememberEntrance(order = 1, play = !entrancePlayed)
+                    val colorStyleOptions = rememberColorStyleOptions()
+                    SettingsSectionCard(
+                        title = stringResource(R.string.settings_appearance),
+                        subtitle = stringResource(R.string.settings_appearance_subtitle),
+                        modifier =
+                            Modifier
+                                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                                .entranceGraphics(entrance),
+                    ) {
+                        InlineSelectRow(
+                            rowKey = "color_style",
+                            title = stringResource(R.string.settings_color_style),
+                            summary = stringResource(R.string.settings_color_style_subtitle),
+                            icon = Icons.Default.Palette,
+                            options = colorStyleOptions,
+                            currentValue = colorStyleValue,
+                            expandedKey = expandedRowKey,
+                            onExpandChange = { expandedRowKey = it },
+                            onValueChange = viewModel::setThemeColorStyle,
+                        )
+                        SettingsItemDivider()
+                        SwitchRow(
+                            title = stringResource(R.string.settings_dark_mode_title),
+                            summary = stringResource(R.string.settings_dark_mode_toggle_subtitle),
+                            icon = Icons.Default.DarkMode,
+                            checked = darkMode,
+                            onCheckedChange = viewModel::setDarkMode,
                         )
                     }
+                }
 
-                    item {
-                        SettingsSectionCard(
-                            title = stringResource(R.string.settings_appearance),
-                            subtitle = stringResource(R.string.settings_appearance_subtitle),
-                        ) {
-                            ModernSettingsSwitchItem(
-                                title = stringResource(R.string.settings_dark_mode_title),
-                                subtitle = stringResource(R.string.settings_dark_mode_toggle_subtitle),
-                                icon = Icons.Default.Brightness6,
-                                checked = darkMode,
-                                onCheckedChange = viewModel::setDarkMode,
-                            )
-                            SettingsItemDivider()
-                            ModernSettingsSelectItem(
-                                title = stringResource(R.string.settings_theme_color_style),
-                                subtitle = themeColorStyleName,
-                                icon = Icons.Default.Palette,
-                                options = themeColorStyleOptions,
-                                currentValue = themeColorStyleValue,
-                                onValueChange = viewModel::setThemeColorStyle,
-                            )
-                            SettingsItemDivider()
-                            ModernSettingsSelectItem(
-                                title = stringResource(R.string.settings_dynamic_spectrum),
-                                subtitle = DynamicSpectrumBackground.fromString(spectrumValue).name,
-                                icon = Icons.Default.LensBlur,
-                                options =
-                                    ImmutableList.copyOf(
-                                        DynamicSpectrumBackground.presets.map {
-                                            SelectOption(it.value, it.name)
-                                        },
-                                    ),
-                                currentValue = spectrumValue,
-                                onValueChange = viewModel::setDynamicSpectrumBackground,
-                            )
-                            SettingsItemDivider()
-                            ModernSettingsSelectItem(
-                                title = stringResource(R.string.settings_progress_bar_style),
-                                subtitle = progressBarStyleName,
-                                icon = Icons.Default.Percent,
-                                options = progressBarStyleOptions,
-                                currentValue = progressBarStyleValue,
-                                onValueChange = viewModel::setProgressBarStyle,
-                            )
-                        }
+                item(key = "settings_now_playing") {
+                    val entrance = rememberEntrance(order = 2, play = !entrancePlayed)
+                    val backgroundOptions = rememberBackgroundOptions()
+                    val coverTapOptions = rememberCoverTapOptions()
+                    val progressWaveformOptions = rememberProgressWaveformOptions()
+                    SettingsSectionCard(
+                        title = stringResource(R.string.settings_section_player_visual),
+                        subtitle = stringResource(R.string.settings_section_player_visual_subtitle),
+                        modifier =
+                            Modifier
+                                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                                .entranceGraphics(entrance),
+                    ) {
+                        InlineSelectRow(
+                            rowKey = "player_background",
+                            title = stringResource(R.string.settings_player_background),
+                            summary = stringResource(R.string.settings_player_background_subtitle),
+                            icon = Icons.Default.Landscape,
+                            options = backgroundOptions,
+                            currentValue = backgroundValue,
+                            expandedKey = expandedRowKey,
+                            onExpandChange = { expandedRowKey = it },
+                            onValueChange = viewModel::setDynamicSpectrumBackground,
+                        )
+//                        SettingsItemDivider()
+//                        InlineSelectRow(
+//                            rowKey = "cover_tap",
+//                            title = stringResource(R.string.settings_cover_tap_effect),
+//                            summary = stringResource(R.string.settings_cover_tap_effect_subtitle),
+//                            icon = Icons.Default.Album,
+//                            options = coverTapOptions,
+//                            currentValue = coverTapValue,
+//                            expandedKey = expandedRowKey,
+//                            onExpandChange = { expandedRowKey = it },
+//                            onValueChange = viewModel::setDynamicCoverType,
+//                        )
+                        SettingsItemDivider()
+                        InlineSelectRow(
+                            rowKey = "progress_waveform",
+                            title = stringResource(R.string.settings_progress_waveform),
+                            summary = stringResource(R.string.settings_progress_waveform_subtitle),
+                            icon = Icons.Default.GraphicEq,
+                            options = progressWaveformOptions,
+                            currentValue = progressWaveformValue,
+                            expandedKey = expandedRowKey,
+                            onExpandChange = { expandedRowKey = it },
+                            onValueChange = viewModel::setProgressBarStyle,
+                        )
                     }
+                }
 
-                    item {
-                        SettingsSectionCard(
-                            title = stringResource(R.string.settings_playback),
-                            subtitle = stringResource(R.string.settings_playback_subtitle),
-                        ) {
-                            ModernSettingsSwitchItem(
-                                title = stringResource(R.string.settings_keep_screen_on),
-                                subtitle = stringResource(R.string.settings_keep_screen_on_subtitle),
-                                icon = Icons.Default.Visibility,
-                                checked = keepScreenOn,
-                                onCheckedChange = viewModel::setKeepScreenOn,
-                            )
-                        }
+                item(key = "settings_playback") {
+                    val entrance = rememberEntrance(order = 3, play = !entrancePlayed)
+                    SettingsSectionCard(
+                        title = stringResource(R.string.settings_playback),
+                        subtitle = stringResource(R.string.settings_section_playback_subtitle),
+                        modifier =
+                            Modifier
+                                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                                .entranceGraphics(entrance),
+                    ) {
+                        SwitchRow(
+                            title = stringResource(R.string.settings_keep_screen_on),
+                            summary = stringResource(R.string.settings_keep_screen_on_subtitle),
+                            icon = Icons.Default.Visibility,
+                            checked = keepScreenOn,
+                            onCheckedChange = viewModel::setKeepScreenOn,
+                        )
                     }
+                }
 
-                    item {
-                        SettingsSectionCard(
+                item(key = "settings_about") {
+                    val entrance = rememberEntrance(order = 4, play = !entrancePlayed)
+                    SettingsSectionCard(
+                        title = stringResource(R.string.settings_about),
+                        subtitle = null,
+                        modifier =
+                            Modifier
+                                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                                .entranceGraphics(entrance),
+                    ) {
+                        NavigationRow(
                             title = stringResource(R.string.settings_about),
-                            subtitle = stringResource(R.string.settings_about_subtitle),
-                        ) {
-                            SettingsRow(
-                                title = stringResource(R.string.settings_about),
-                                subtitle = stringResource(R.string.settings_about_subtitle),
-                                icon = Icons.Default.Info,
-                                selected = false,
-                                onClick = { path.push(AboutScene()) },
-                                trailingContent = {
-                                    Icon(
-                                        imageVector = Icons.Default.ChevronRight,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                },
-                            )
-                        }
+                            summary = stringResource(R.string.settings_about_subtitle),
+                            icon = Icons.Default.Info,
+                            onClick = { path.push(AboutScene()) },
+                        )
                     }
                 }
             }
+
+            SettingsTopBar(
+                title = stringResource(R.string.finder_settings_title),
+                listState = listState,
+                solid = mastheadGone,
+                onBack = { path.popTop() },
+                modifier = Modifier.align(Alignment.TopStart),
+            )
         }
     }
 }
 
-@Composable
-private fun SettingsAmbientBackground() {
-    val transition = rememberInfiniteTransition(label = "settings_ambient")
-    val drift by transition.animateFloat(
-        initialValue = -18f,
-        targetValue = 18f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 4600),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "settings_orb_drift",
-    )
+// -- 页面结构 --
 
-    Box(Modifier.fillMaxSize()) {
-        AmbientOrb(
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 48.dp, y = (-28).dp)
-                    .graphicsLayer {
-                        translationY = drift
-                        translationX = -drift * 0.5f
-                    },
+/** 大标题刊头 */
+@Composable
+private fun SettingsMasthead(modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.finder_settings_title),
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        AmbientOrb(
-            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f),
-            modifier =
-                Modifier
-                    .align(Alignment.CenterStart)
-                    .offset(x = (-72).dp)
-                    .graphicsLayer {
-                        translationY = -drift * 0.7f
-                        translationX = drift * 0.35f
-                    },
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.settings_masthead_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
+/** 固定顶栏：背景透明度跟随刊头收缩进度，收起后出现分隔线。 */
 @Composable
-private fun AmbientOrb(
-    color: Color,
+private fun SettingsTopBar(
+    title: String,
+    listState: LazyListState,
+    solid: Boolean,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier =
-            modifier
-                .size(220.dp)
-                .blur(48.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        colors =
-                            listOf(
-                                color,
-                                color.copy(alpha = 0f),
-                            ),
-                    ),
-                ),
-    )
-}
-
-@Composable
-private fun SettingsHeroCard(
-    darkMode: Boolean,
-    spectrumName: String,
-    coverName: String,
-    modifier: Modifier = Modifier,
-) {
+    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val backgroundColor = MaterialTheme.colorScheme.background
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(Shapes.ExtraLarge1CornerBasedShape)
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.colorScheme.secondaryContainer,
-                            MaterialTheme.colorScheme.tertiaryContainer,
-                        ),
-                    ),
-                ).padding(Spacing.ExtraLarge),
+                .height(statusBarTop + 56.dp)
+                .drawBehind {
+                    drawRect(color = backgroundColor.copy(alpha = mastheadCollapse(listState)))
+                },
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.Large)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Brightness6,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(30.dp),
-                    )
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)) {
-                    Text(
-                        text = stringResource(R.string.settings_hero_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_hero_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f),
-                    )
-                }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
-                SettingsPill(
-                    label =
-                        if (darkMode) {
-                            stringResource(
-                                R.string.settings_dark_mode_title,
-                            )
-                        } else {
-                            stringResource(R.string.settings_light_mode_label)
-                        },
+        if (solid) {
+            HorizontalDivider(
+                modifier = Modifier.align(Alignment.BottomStart),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.14f),
+            )
+        }
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = statusBarTop)
+                    .padding(horizontal = Spacing.Small),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
                 )
-                SettingsPill(label = spectrumName)
-                SettingsPill(label = coverName)
             }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .graphicsLayer { alpha = mastheadCollapse(listState) },
+            )
         }
     }
 }
 
-@Composable
-private fun SettingsPill(label: String) {
-    AnimatedContent(
-        targetState = label,
-        transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) },
-        label = "settings_pill_content",
-    ) { targetLabel ->
-        Text(
-            text = targetLabel,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier =
-                Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f))
-                    .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
-        )
-    }
-}
-
+/** 圆角容器分组卡 */
 @Composable
 private fun SettingsSectionCard(
     title: String,
-    subtitle: String,
+    subtitle: String?,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -469,122 +404,244 @@ private fun SettingsSectionCard(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         Spacer(modifier = Modifier.height(Spacing.Small))
         content()
     }
 }
 
+// -- 行类型 --
+
+/**
+ * 内联选择行
+ */
 @Composable
-private fun ModernSettingsSwitchItem(
+private fun InlineSelectRow(
+    rowKey: String,
     title: String,
-    subtitle: String,
+    summary: String,
+    icon: ImageVector,
+    options: ImmutableList<SettingsOption>,
+    currentValue: String,
+    expandedKey: String?,
+    onExpandChange: (String?) -> Unit,
+    onValueChange: (String) -> Unit,
+) {
+    val expanded = expandedKey == rowKey
+    val currentLabel =
+        remember(options, currentValue) {
+            options.firstOrNull { it.value == currentValue }?.label
+        }
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(durationMillis = 220, easing = EaseOutEmphasized),
+        label = "settings_row_chevron",
+    )
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SettingsRowFrame(
+            icon = icon,
+            highlighted = expanded,
+            onClick = { onExpandChange(if (expanded) null else rowKey) },
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    // 当前选中值直接摆在标题下：一眼看得到，不必展开
+                    text = currentLabel ?: summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color =
+                        if (currentLabel != null) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = if (currentLabel != null) FontWeight.Medium else FontWeight.Normal,
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription =
+                    if (expanded) {
+                        stringResource(R.string.settings_collapse_options)
+                    } else {
+                        stringResource(R.string.settings_expand_options)
+                    },
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.graphicsLayer { rotationZ = chevronRotation },
+            )
+        }
+
+        AnimatedVisibility(
+            visible = expanded,
+            enter =
+                expandVertically(
+                    animationSpec = tween(durationMillis = 220, easing = EaseOutEmphasized),
+                ) + fadeIn(tween(durationMillis = 180)),
+            exit =
+                shrinkVertically(
+                    animationSpec = tween(durationMillis = 180, easing = EaseOutEmphasized),
+                ) + fadeOut(tween(durationMillis = 140)),
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .padding(
+                            start = SettingsRowContentInset,
+                            end = Spacing.Large,
+                            top = Spacing.ExtraSmall,
+                            bottom = Spacing.Small,
+                        ),
+                verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+            ) {
+                options.forEach { option ->
+                    OptionCard(
+                        option = option,
+                        selected = option.value == currentValue,
+                        onClick = { onValueChange(option.value) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 开关行：整行可点，图标在开启时轻微放大，动作快速收敛不喧宾。 */
+@Composable
+private fun SwitchRow(
+    title: String,
+    summary: String,
     icon: ImageVector,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val iconScale by animateFloatAsState(
         targetValue = if (checked) 1.08f else 1f,
-        animationSpec = tween(durationMillis = 180),
+        animationSpec = tween(durationMillis = 180, easing = EaseOutEmphasized),
         label = "settings_switch_icon_scale",
     )
-
-    SettingsRow(
-        title = title,
-        subtitle = subtitle,
+    SettingsRowFrame(
         icon = icon,
-        selected = checked,
+        highlighted = checked,
         onClick = { onCheckedChange(!checked) },
         iconModifier = Modifier.graphicsLayer(scaleX = iconScale, scaleY = iconScale),
-        trailingContent = {
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
             )
-        },
-    )
-}
-
-@Composable
-private fun ModernSettingsSelectItem(
-    title: String,
-    subtitle: String,
-    icon: ImageVector,
-    options: ImmutableList<SelectOption>,
-    currentValue: String,
-    onValueChange: (String) -> Unit,
-) {
-    var showDialog by remember { mutableStateOf(false) }
-
-    SettingsRow(
-        title = title,
-        subtitle = subtitle,
-        icon = icon,
-        selected = false,
-        onClick = { showDialog = true },
-        trailingContent = {
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        },
-    )
-
-    if (showDialog) {
-        SettingsSelectDialog(
-            title = title,
-            options = options,
-            currentValue = currentValue,
-            onDismiss = { showDialog = false },
-            onValueChange = {
-                onValueChange(it)
-                showDialog = false
-            },
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors =
+                SwitchDefaults.colors(
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                ),
         )
     }
 }
 
+/** 跳转行：整行可点，右侧显示 chevron。 */
 @Composable
-private fun SettingsRow(
+private fun NavigationRow(
     title: String,
-    subtitle: String,
+    summary: String,
     icon: ImageVector,
-    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    SettingsRowFrame(
+        icon = icon,
+        highlighted = false,
+        onClick = onClick,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = summary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** 所有设置行共享的骨架：46dp 圆角图标筐 + 内容槽。整行 clickHighlight。 */
+@Composable
+private fun SettingsRowFrame(
+    icon: ImageVector,
+    highlighted: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     iconModifier: Modifier = Modifier,
-    trailingContent: @Composable () -> Unit,
+    content: @Composable RowScope.() -> Unit,
 ) {
     val iconBackground by animateColorAsState(
         targetValue =
-            if (selected) {
+            if (highlighted) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
                 MaterialTheme.colorScheme.surfaceContainerHigh
             },
-        label = "settings_icon_background",
+        animationSpec = tween(durationMillis = 220, easing = EaseOutEmphasized),
+        label = "settings_row_icon_bg",
     )
     val iconTint by animateColorAsState(
         targetValue =
-            if (selected) {
+            if (highlighted) {
                 MaterialTheme.colorScheme.onPrimaryContainer
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
-        label = "settings_icon_tint",
+        animationSpec = tween(durationMillis = 220, easing = EaseOutEmphasized),
+        label = "settings_row_icon_tint",
     )
-
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
+                .clickHighlight(onClick = onClick)
                 .padding(horizontal = Spacing.Large, vertical = Spacing.Medium),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
@@ -592,7 +649,7 @@ private fun SettingsRow(
         Box(
             modifier =
                 Modifier
-                    .size(46.dp)
+                    .size(SettingsRowIconSize)
                     .clip(Shapes.LargeCornerBasedShape)
                     .background(iconBackground),
             contentAlignment = Alignment.Center,
@@ -604,23 +661,7 @@ private fun SettingsRow(
                 modifier = iconModifier,
             )
         }
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        trailingContent()
+        content()
     }
 }
 
@@ -629,67 +670,298 @@ private fun SettingsItemDivider() {
     Box(
         modifier =
             Modifier
-                .padding(start = 78.dp, end = Spacing.Large)
+                .padding(start = SettingsRowContentInset, end = Spacing.Large)
                 .fillMaxWidth()
                 .height(1.dp)
                 .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
     )
 }
 
+// -- 选项卡（展开态里的单个选项）--
+
 @Composable
-private fun SettingsSelectDialog(
-    title: String,
-    options: ImmutableList<SelectOption>,
-    currentValue: String,
-    onDismiss: () -> Unit,
-    onValueChange: (String) -> Unit,
+private fun OptionCard(
+    option: SettingsOption,
+    selected: Boolean,
+    onClick: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
-                options.forEach { option ->
-                    val selected = currentValue == option.value
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .clip(Shapes.LargeCornerBasedShape)
-                                .background(
-                                    if (selected) {
-                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f)
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceContainerHigh
-                                    },
-                                ).clickable { onValueChange(option.value) }
-                                .padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-                    ) {
-                        RadioButton(
-                            selected = selected,
-                            onClick = { onValueChange(option.value) },
-                        )
-                        Text(
-                            text = option.label,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                            color =
-                                if (selected) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.close))
-            }
-        },
+    val background by animateColorAsState(
+        targetValue =
+            if (selected) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f)
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.55f)
+            },
+        animationSpec = tween(durationMillis = 200, easing = EaseOutEmphasized),
+        label = "option_card_background",
     )
+    val titleColor by animateColorAsState(
+        targetValue =
+            if (selected) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+        animationSpec = tween(durationMillis = 200, easing = EaseOutEmphasized),
+        label = "option_card_title",
+    )
+    val descriptionColor by animateColorAsState(
+        targetValue =
+            if (selected) {
+                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f)
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        animationSpec = tween(durationMillis = 200, easing = EaseOutEmphasized),
+        label = "option_card_desc",
+    )
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(Shapes.MediumCornerBasedShape)
+                .background(background)
+                .clickHighlight(onClick = onClick)
+                .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        Icon(
+            imageVector = option.icon,
+            contentDescription = null,
+            tint = titleColor,
+            modifier = Modifier.size(20.dp),
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+        ) {
+            Text(
+                text = option.label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                color = titleColor,
+            )
+            Text(
+                text = option.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = descriptionColor,
+            )
+        }
+        // 选中态：小圆点里含 Check，比 RadioButton 更收敛
+        AnimatedVisibility(
+            visible = selected,
+            enter =
+                fadeIn(tween(durationMillis = 180)) +
+                    scaleIn(
+                        animationSpec = tween(durationMillis = 220, easing = EaseOutEmphasized),
+                        initialScale = 0.6f,
+                    ),
+            exit = fadeOut(tween(durationMillis = 120)),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
+    }
 }
+
+// -- 选项配置：每个选项配一个直观的图标 + 一句话说明 --
+
+@Immutable
+private data class SettingsOption(
+    val value: String,
+    val label: String,
+    val description: String,
+    val icon: ImageVector,
+)
+
+@Composable
+private fun rememberColorStyleOptions(): ImmutableList<SettingsOption> {
+    val texturedLabel = stringResource(R.string.theme_color_style_textured)
+    val texturedDesc = stringResource(R.string.color_style_textured_desc)
+    val flatLabel = stringResource(R.string.theme_color_style_flat)
+    val flatDesc = stringResource(R.string.color_style_flat_desc)
+    return remember(texturedLabel, texturedDesc, flatLabel, flatDesc) {
+        ImmutableList.copyOf(
+            listOf(
+                SettingsOption(
+                    ThemeColorStyle.Textured.value,
+                    texturedLabel,
+                    texturedDesc,
+                    Icons.Default.AutoAwesome,
+                ),
+                SettingsOption(
+                    ThemeColorStyle.Flat.value,
+                    flatLabel,
+                    flatDesc,
+                    Icons.Default.Layers,
+                ),
+            ),
+        )
+    }
+}
+
+@Composable
+private fun rememberBackgroundOptions(): ImmutableList<SettingsOption> {
+    val off = stringResource(R.string.settings_option_off)
+    val offDesc = stringResource(R.string.bg_off_desc)
+    val topGlow = stringResource(R.string.bg_top_glow)
+    val topGlowDesc = stringResource(R.string.bg_top_glow_desc)
+    val aurora = stringResource(R.string.bg_liquid_aurora)
+    val auroraDesc = stringResource(R.string.bg_liquid_aurora_desc)
+    val shader = stringResource(R.string.bg_effect_shader)
+    val shaderDesc = stringResource(R.string.bg_effect_shader_desc)
+    val warp = stringResource(R.string.bg_fluid_warp)
+    val warpDesc = stringResource(R.string.bg_fluid_warp_desc)
+    val blur = stringResource(R.string.bg_blur_cover)
+    val blurDesc = stringResource(R.string.bg_blur_cover_desc)
+    return remember(
+        off,
+        offDesc,
+        topGlow,
+        topGlowDesc,
+        aurora,
+        auroraDesc,
+        shader,
+        shaderDesc,
+        warp,
+        warpDesc,
+        blur,
+        blurDesc,
+    ) {
+        ImmutableList.copyOf(
+            listOf(
+                SettingsOption(
+                    DynamicSpectrumBackground.TopGlow.value,
+                    topGlow,
+                    topGlowDesc,
+                    Icons.Default.WbSunny,
+                ),
+                SettingsOption(
+                    DynamicSpectrumBackground.LiquidAurora.value,
+                    aurora,
+                    auroraDesc,
+                    Icons.Default.Waves,
+                ),
+                SettingsOption(
+                    DynamicSpectrumBackground.EffectShader.value,
+                    shader,
+                    shaderDesc,
+                    Icons.Default.BlurOn,
+                ),
+                SettingsOption(
+                    DynamicSpectrumBackground.FluidWarp.value,
+                    warp,
+                    warpDesc,
+                    Icons.Default.LensBlur,
+                ),
+                SettingsOption(
+                    DynamicSpectrumBackground.BlurCover.value,
+                    blur,
+                    blurDesc,
+                    Icons.Default.BlurOn,
+                ),
+                SettingsOption(
+                    DynamicSpectrumBackground.OFF.value,
+                    off,
+                    offDesc,
+                    Icons.Default.PowerSettingsNew,
+                ),
+            ),
+        )
+    }
+}
+
+@Composable
+private fun rememberCoverTapOptions(): ImmutableList<SettingsOption> {
+    val off = stringResource(R.string.settings_option_off)
+    val offDesc = stringResource(R.string.cover_off_desc)
+    val stars = stringResource(R.string.cover_shining_stars)
+    val starsDesc = stringResource(R.string.cover_shining_stars_desc)
+    val city = stringResource(R.string.cover_audio_city)
+    val cityDesc = stringResource(R.string.cover_audio_city_desc)
+    return remember(off, offDesc, stars, starsDesc, city, cityDesc) {
+        ImmutableList.copyOf(
+            listOf(
+                SettingsOption(
+                    DynamicCoverType.ShiningStars.value,
+                    stars,
+                    starsDesc,
+                    Icons.Default.AutoAwesome,
+                ),
+                SettingsOption(
+                    DynamicCoverType.AudioCity.value,
+                    city,
+                    cityDesc,
+                    Icons.Default.LocationCity,
+                ),
+                SettingsOption(
+                    DynamicCoverType.OFF.value,
+                    off,
+                    offDesc,
+                    Icons.Default.PowerSettingsNew,
+                ),
+            ),
+        )
+    }
+}
+
+@Composable
+private fun rememberProgressWaveformOptions(): ImmutableList<SettingsOption> {
+    val dynamic = stringResource(R.string.progress_bar_style_dynamic_waveform)
+    val dynamicDesc = stringResource(R.string.waveform_dynamic_desc)
+    val timeDomain = stringResource(R.string.progress_bar_style_time_domain_waveform)
+    val timeDomainDesc = stringResource(R.string.waveform_time_domain_desc)
+    return remember(dynamic, dynamicDesc, timeDomain, timeDomainDesc) {
+        ImmutableList.copyOf(
+            listOf(
+                SettingsOption(
+                    ProgressBarStyle.DynamicWaveform.value,
+                    dynamic,
+                    dynamicDesc,
+                    Icons.Default.GraphicEq,
+                ),
+                SettingsOption(
+                    ProgressBarStyle.TimeDomainWaveform.value,
+                    timeDomain,
+                    timeDomainDesc,
+                    Icons.AutoMirrored.Filled.ShowChart,
+                ),
+            ),
+        )
+    }
+}
+
+// -- 布局常量 & 刊头收缩计算 --
+
+/** 图标筐尺寸；行内其他元素的横向对齐（分隔线、展开选项区域）以它为基准。 */
+private val SettingsRowIconSize = 46.dp
+
+/**
+ * 让分隔线和展开出来的选项都对齐到标题的起始位置。
+ */
+private val SettingsRowContentInset = Spacing.Large + SettingsRowIconSize + Spacing.Medium
+
+private val MastheadCollapseDistance = 140.dp
+
+/** 刊头收缩进度：0f = 完全展开，1f = 完全滚进顶栏。 */
+private fun Density.mastheadCollapse(listState: LazyListState): Float =
+    if (listState.firstVisibleItemIndex > 0) {
+        1f
+    } else {
+        (listState.firstVisibleItemScrollOffset / MastheadCollapseDistance.toPx()).coerceIn(0f, 1f)
+    }
