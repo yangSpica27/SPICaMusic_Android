@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -95,9 +94,11 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.ui.theme.EaseOutStrong
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
+import me.spica27.spicamusic.ui.theme.ScaleDismissTo
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.theme.entranceGraphics
@@ -203,10 +204,10 @@ private fun IgnoredSongsScreenContent() {
                             .graphicsLayer {
                                 // 跟手收缩：大标题缩小、上移、淡出，直接耦合滚动偏移
                                 val t = mastheadCollapse(listState)
-                                val enter = entrance.value
+                                val enter = entrance.alpha
                                 transformOrigin = TransformOrigin(0f, 0f)
                                 alpha = (1f - t) * enter
-                                translationY = -t * 16.dp.toPx() + (1f - enter) * 28.dp.toPx()
+                                translationY = -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
                                 scaleX = 1f - 0.18f * t
                                 scaleY = 1f - 0.18f * t
                             },
@@ -598,6 +599,8 @@ private fun IgnoredSongRow(
     val scope = rememberCoroutineScope()
     // 取消忽略：图标先蓄力放大、再收缩消失，随后条目在列表中弹性退场
     val restoreScale = remember(song.mediaStoreId) { Animatable(1f) }
+    // 与缩放并行的淡出：收缩到 0.92f 而不是 0f —— 元素是"退开"而不是"塌缩成一点"
+    val restoreAlpha = remember(song.mediaStoreId) { Animatable(1f) }
     Row(
         modifier =
             modifier
@@ -684,9 +687,12 @@ private fun IgnoredSongRow(
                             targetValue = 1.28f,
                             animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
                         )
+                        launch {
+                            restoreAlpha.animateTo(0f, tween(durationMillis = 160, easing = EaseOutStrong))
+                        }
                         restoreScale.animateTo(
-                            targetValue = 0f,
-                            animationSpec = tween(durationMillis = 160, easing = FastOutLinearInEasing),
+                            targetValue = ScaleDismissTo,
+                            animationSpec = tween(durationMillis = 160, easing = EaseOutStrong),
                         )
                     }
                 },
@@ -697,6 +703,7 @@ private fun IgnoredSongRow(
                         .graphicsLayer {
                             scaleX = restoreScale.value
                             scaleY = restoreScale.value
+                            alpha = restoreAlpha.value
                         },
             ) {
                 Icon(

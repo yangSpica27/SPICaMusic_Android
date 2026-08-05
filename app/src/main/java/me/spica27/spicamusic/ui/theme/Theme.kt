@@ -67,6 +67,8 @@ fun ProvideAppInteractionIndication(content: @Composable () -> Unit) {
     CompositionLocalProvider(
         LocalIndication provides clickHighlightIndication,
         LocalRippleConfiguration provides null,
+        // 唯一注入点：Theme 的两个分支与 CrashActivity 都经过这里
+        LocalReducedMotion provides rememberSystemReducedMotion(),
         content = content,
     )
 }

@@ -214,10 +214,10 @@ private fun ScannerScreenContent() {
                             .graphicsLayer {
                                 // 跟手收缩：大标题缩小、上移、淡出，直接耦合滚动偏移
                                 val t = mastheadCollapse(listState)
-                                val enter = entrance.value
+                                val enter = entrance.alpha
                                 transformOrigin = TransformOrigin(0f, 0f)
                                 alpha = (1f - t) * enter
-                                translationY = -t * 16.dp.toPx() + (1f - enter) * 28.dp.toPx()
+                                translationY = -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
                                 scaleX = 1f - 0.18f * t
                                 scaleY = 1f - 0.18f * t
                             },

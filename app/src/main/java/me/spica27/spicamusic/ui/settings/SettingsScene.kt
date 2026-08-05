@@ -91,6 +91,7 @@ import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.ui.about.AboutScene
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.theme.entranceGraphics
@@ -155,10 +156,10 @@ class SettingsScene : StackScene() {
                                 .padding(top = Spacing.Large)
                                 .graphicsLayer {
                                     val t = mastheadCollapse(listState)
-                                    val enter = entrance.value
+                                    val enter = entrance.alpha
                                     transformOrigin = TransformOrigin(0f, 0f)
                                     alpha = (1f - t) * enter
-                                    translationY = -t * 16.dp.toPx() + (1f - enter) * 28.dp.toPx()
+                                    translationY = -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
                                     scaleX = 1f - 0.18f * t
                                     scaleY = 1f - 0.18f * t
                                 },
@@ -756,7 +757,7 @@ private fun OptionCard(
                 fadeIn(tween(durationMillis = 180)) +
                     scaleIn(
                         animationSpec = tween(durationMillis = 220, easing = EaseOutEmphasized),
-                        initialScale = 0.6f,
+                        initialScale = ScaleEnterFrom,
                     ),
             exit = fadeOut(tween(durationMillis = 120)),
         ) {

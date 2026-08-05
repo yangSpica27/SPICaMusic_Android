@@ -12,12 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -46,8 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -56,8 +55,6 @@ import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -152,19 +149,7 @@ class SongInfoScene(
         Surface(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = (screenHeight - Spacing.Huge).coerceAtLeast(320.dp))
-                    .semantics {
-                        paneTitle = title
-                        isTraversalGroup = true
-                    }.pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                awaitPointerEvent(PointerEventPass.Final).changes.forEach { it.consume() }
-                            }
-                        }
-                    },
-            shape = Shapes.ExtraLarge1CornerBasedShape,
+                    .fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,
         ) {
@@ -172,10 +157,12 @@ class SongInfoScene(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .navigationBarsPadding()
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = Spacing.ExtraLarge),
             ) {
+                Spacer(
+                    Modifier.statusBarsPadding(),
+                )
                 SongInfoHeader(
                     song = song,
                     title = title,
@@ -190,9 +177,27 @@ class SongInfoScene(
                     verticalArrangement = Arrangement.spacedBy(Spacing.ExtraLarge),
                 ) {
                     InfoSection(title = stringResource(R.string.song_details)) {
-                        InfoItem(Icons.Default.MusicNote, stringResource(R.string.song_displayname), song.displayName, copyLabel, onCopy)
-                        InfoItem(Icons.Default.Person, stringResource(R.string.song_artist), song.artist, copyLabel, onCopy)
-                        InfoItem(Icons.Default.Album, stringResource(R.string.song_album), song.album, copyLabel, onCopy)
+                        InfoItem(
+                            Icons.Default.MusicNote,
+                            stringResource(R.string.song_displayname),
+                            song.displayName,
+                            copyLabel,
+                            onCopy,
+                        )
+                        InfoItem(
+                            Icons.Default.Person,
+                            stringResource(R.string.song_artist),
+                            song.artist,
+                            copyLabel,
+                            onCopy,
+                        )
+                        InfoItem(
+                            Icons.Default.Album,
+                            stringResource(R.string.song_album),
+                            song.album,
+                            copyLabel,
+                            onCopy,
+                        )
                         InfoItem(
                             Icons.Default.Schedule,
                             stringResource(R.string.song_duration),
@@ -210,7 +215,13 @@ class SongInfoScene(
                             onCopy,
                             isMultiline = true,
                         )
-                        InfoItem(Icons.Default.DataUsage, stringResource(R.string.info_file_size), formattedFileSize, copyLabel, onCopy)
+                        InfoItem(
+                            Icons.Default.DataUsage,
+                            stringResource(R.string.info_file_size),
+                            formattedFileSize,
+                            copyLabel,
+                            onCopy,
+                        )
                         InfoItem(
                             Icons.Default.Info,
                             stringResource(R.string.info_file_format),
@@ -225,7 +236,10 @@ class SongInfoScene(
                                 InfoItem(
                                     Icons.Default.GraphicEq,
                                     stringResource(R.string.sample_rate_label),
-                                    stringResource(R.string.sample_rate_format, formatSampleRate(song.sampleRate)),
+                                    stringResource(
+                                        R.string.sample_rate_format,
+                                        formatSampleRate(song.sampleRate),
+                                    ),
                                     copyLabel,
                                     onCopy,
                                 )
@@ -244,9 +258,19 @@ class SongInfoScene(
                                     when (song.channels) {
                                         1 -> stringResource(R.string.mono)
                                         2 -> stringResource(R.string.stereo)
-                                        else -> stringResource(R.string.channels_format, song.channels)
+                                        else ->
+                                            stringResource(
+                                                R.string.channels_format,
+                                                song.channels,
+                                            )
                                     }
-                                InfoItem(Icons.Default.GraphicEq, stringResource(R.string.channel_count_label), channels, copyLabel, onCopy)
+                                InfoItem(
+                                    Icons.Default.GraphicEq,
+                                    stringResource(R.string.channel_count_label),
+                                    channels,
+                                    copyLabel,
+                                    onCopy,
+                                )
                             }
                             if (song.digit > 0) {
                                 InfoItem(
@@ -270,6 +294,9 @@ class SongInfoScene(
                 ) {
                     Text(stringResource(R.string.close))
                 }
+                Spacer(
+                    Modifier.navigationBarsPadding(),
+                )
             }
         }
     }

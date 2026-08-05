@@ -687,4 +687,12 @@
   <string name="waveform_dynamic_desc">波形柱随声音实时跳动</string>
   <string name="waveform_time_domain_desc">预先展示整首歌的波形轮廓</string>
 
+  <!-- Playlist creator (redesigned) -->
+  <string name="playlist_name_error_duplicate">已有同名歌单</string>
+  <string name="playlist_creator_add_songs_label">顺便加几首？</string>
+  <string name="playlist_creator_add_songs_optional">可跳过</string>
+  <string name="playlist_creator_create_action">创建</string>
+  <string name="playlist_creator_create_action_with_count">创建并加入 %1$d 首</string>
+  <string name="playlist_creator_no_songs">音乐库里还没有歌曲</string>
+
 </resources>

@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.IndicationNodeFactory
@@ -29,8 +28,9 @@ import androidx.compose.ui.node.invalidateDraw
 import androidx.compose.ui.semantics.Role
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
+import me.spica27.spicamusic.ui.theme.EaseOutStrong
 import kotlin.math.hypot
-import kotlin.math.roundToInt
 
 @Composable
 fun rememberClickHighlightIndication(
@@ -239,9 +239,10 @@ private class ClickHighlightNode(
                 rippleActive = true
                 progress.snapTo(0f)
                 invalidateDraw()
+                // 全 App 最高频动画：按下段只给 120ms，强 ease-out 让手指落下的那一帧就有响应
                 progress.animateTo(
                     targetValue = 0.5f,
-                    animationSpec = tween(durationMillis = 250, easing = LinearEasing),
+                    animationSpec = tween(durationMillis = 220, easing = EaseOutEmphasized),
                 ) {
                     invalidateDraw()
                 }
@@ -252,10 +253,12 @@ private class ClickHighlightNode(
         animationJob?.cancel()
         animationJob =
             coroutineScope.launch {
-                val duration = ((1f - progress.value) * 500).roundToInt().coerceAtLeast(1)
+                // 固定时长收尾：Animatable 自己从当前值接上，不会跳变。
+                // 刻意不按剩余进度反推——那会让"轻点即抬手"拿到最长时长、按满反而最短，
+                // 与「按下段可以慢、系统响应段要 snap」正好相反。
                 progress.animateTo(
                     targetValue = 1f,
-                    animationSpec = tween(durationMillis = duration, easing = LinearEasing),
+                    animationSpec = tween(durationMillis = 240, easing = EaseOutStrong),
                 ) {
                     invalidateDraw()
                 }

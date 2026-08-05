@@ -687,4 +687,12 @@
   <string name="waveform_dynamic_desc">Bars react to the sound in real time</string>
   <string name="waveform_time_domain_desc">Shows the whole track’s waveform up front</string>
 
+  <!-- Playlist creator (redesigned) -->
+  <string name="playlist_name_error_duplicate">A playlist with this name already exists</string>
+  <string name="playlist_creator_add_songs_label">Add a few songs?</string>
+  <string name="playlist_creator_add_songs_optional">Optional</string>
+  <string name="playlist_creator_create_action">Create</string>
+  <string name="playlist_creator_create_action_with_count">Create with %1$d</string>
+  <string name="playlist_creator_no_songs">No songs in your library yet</string>
+
 </resources>

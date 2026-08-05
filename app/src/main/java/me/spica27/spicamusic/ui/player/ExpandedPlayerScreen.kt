@@ -104,6 +104,8 @@ import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
 import me.spica27.spicamusic.ui.player.scene.LyricScene
+import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
+import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -286,12 +288,14 @@ fun ExpandedPlayerScreen(
                         progressProvider = progressProvider,
                         onPlaylistBtnClick = {
                             coroutineScope.launch {
+                                // 与顶栏另一侧的返回首页按钮同节奏：两个对称的翻页键
+                                // 不该用两套时长与缓动
                                 pagerState.animateScrollToPage(
                                     1,
                                     animationSpec =
                                         tween(
-                                            durationMillis = 300,
-                                            easing = EaseOutCubic,
+                                            durationMillis = 320,
+                                            easing = EaseOutEmphasized,
                                         ),
                                 )
                             }
@@ -354,12 +358,13 @@ fun ExpandedPlayerScreen(
                                 IconButton(
                                     onClick = {
                                         coroutineScope.launch {
+                                            // 点击直达的翻页：320ms 强 ease-out，落定利落不拖沓
                                             pagerState.animateScrollToPage(
                                                 0,
                                                 animationSpec =
                                                     tween(
-                                                        durationMillis = 550,
-                                                        easing = EaseOutCubic,
+                                                        durationMillis = 320,
+                                                        easing = EaseOutEmphasized,
                                                     ),
                                             )
                                         }
@@ -1052,15 +1057,15 @@ private fun Modifier.geometrySourceFor(transition: GeometryTransition?): Modifie
             }.geometrySource(transition)
     }
 
-/** 控制按钮图标切换：淡入 + 弹性缩放（全屏播放器统一节奏） */
+/** 控制按钮图标切换：高频触发——短时长强 ease-out，不带弹性 */
 private fun controlIconTransform() =
     (
-        fadeIn(tween(160)) +
+        fadeIn(tween(durationMillis = 160, easing = EaseOutEmphasized)) +
             scaleIn(
-                animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                initialScale = 0.7f,
+                animationSpec = tween(durationMillis = 160, easing = EaseOutEmphasized),
+                initialScale = ScaleEnterFrom,
             )
-    ).togetherWith(fadeOut(tween(120)))
+    ).togetherWith(fadeOut(tween(durationMillis = 120, easing = EaseOutEmphasized)))
 
 /**
  * 播放控制按钮：两端为次级操作（播放模式/收藏），中间为主传输组，

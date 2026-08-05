@@ -157,6 +157,7 @@ object AppModule {
             viewModel {
                 PlaylistViewModel(
                     playlistRepository = get<PlaylistUseCases>(),
+                    songRepository = get<SongUseCases>(),
                 )
             }
 

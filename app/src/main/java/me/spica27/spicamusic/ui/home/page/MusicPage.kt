@@ -118,6 +118,8 @@ import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
+import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
+import me.spica27.spicamusic.ui.theme.ScaleExitTo
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.theme.entranceGraphics
@@ -401,10 +403,10 @@ fun MusicPage() {
                             .padding(top = Spacing.Large)
                             .graphicsLayer {
                                 val t = mastheadCollapse(listState)
-                                val enter = entrance.value
+                                val enter = entrance.alpha
                                 transformOrigin = TransformOrigin(0f, 0f)
                                 alpha = (1f - t) * enter
-                                translationY = -t * 16.dp.toPx() + (1f - enter) * 28.dp.toPx()
+                                translationY = -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
                                 scaleX = 1f - 0.18f * t
                                 scaleY = 1f - 0.18f * t
                             },
@@ -539,10 +541,10 @@ fun MusicPage() {
                                                 ),
                                             fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
-                                            val enter = entrance.value
+                                            val enter = entrance.alpha
                                             transformOrigin = TransformOrigin(0f, 0f)
                                             alpha = enter
-                                            translationY = (1f - enter) * 28.dp.toPx()
+                                            translationY = entrance.translateFraction * 28.dp.toPx()
                                         },
                             )
                         }
@@ -591,10 +593,10 @@ fun MusicPage() {
                                                 ),
                                             fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
-                                            val enter = entrance.value
+                                            val enter = entrance.alpha
                                             transformOrigin = TransformOrigin(0f, 0f)
                                             alpha = enter
-                                            translationY = (1f - enter) * 28.dp.toPx()
+                                            translationY = entrance.translateFraction * 28.dp.toPx()
                                         },
                             )
                         }
@@ -643,10 +645,10 @@ fun MusicPage() {
                                                 ),
                                             fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
-                                            val enter = entrance.value
+                                            val enter = entrance.alpha
                                             transformOrigin = TransformOrigin(0f, 0f)
                                             alpha = enter
-                                            translationY = (1f - enter) * 28.dp.toPx()
+                                            translationY = entrance.translateFraction * 28.dp.toPx()
                                         },
                             )
                         }
@@ -738,12 +740,12 @@ private fun MusicTopBar(
                 enter =
                     scaleIn(
                         animationSpec = tween(durationMillis = 180, easing = EaseOutEmphasized),
-                        initialScale = 0.92f,
+                        initialScale = ScaleEnterFrom,
                     ) + fadeIn(tween(durationMillis = 180, easing = EaseOutEmphasized)),
                 exit =
                     scaleOut(
                         animationSpec = tween(durationMillis = 140),
-                        targetScale = 0.8f,
+                        targetScale = ScaleExitTo,
                     ) + fadeOut(tween(durationMillis = 140)),
             ) {
                 Row(

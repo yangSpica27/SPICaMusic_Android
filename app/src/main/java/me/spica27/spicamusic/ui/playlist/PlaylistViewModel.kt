@@ -15,9 +15,14 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Playlist
+import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
+import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
 import timber.log.Timber
+
+/** 创建歌单页「顺便选几首」的候选歌曲数量上限 */
+private const val CREATOR_CANDIDATE_LIMIT = 30
 
 /**
  * 歌单页面 ViewModel
@@ -25,10 +30,33 @@ import timber.log.Timber
 @Stable
 class PlaylistViewModel(
     private val playlistRepository: PlaylistUseCases,
+    private val songRepository: SongUseCases,
 ) : ViewModel() {
     // 所有歌单列表
     val playlists: StateFlow<List<Playlist>> =
         playlistRepository.getAllPlaylistsFlow().stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList(),
+        )
+
+    /**
+     * 创建歌单页的候选歌曲：常听优先，不足 [CREATOR_CANDIDATE_LIMIT] 时用全部歌曲补齐。
+     *
+     * 只在创建页订阅，`WhileSubscribed` 会在离开页面后自动停掉上游。
+     */
+    val creatorCandidates: StateFlow<List<Song>> =
+        combine(
+            songRepository.getOftenListenSong10Flow(),
+            songRepository.getAllSongsFlow(),
+        ) { often, all ->
+            val ordered = LinkedHashMap<Long, Song>(CREATOR_CANDIDATE_LIMIT)
+            (often + all).forEach { song ->
+                if (ordered.size >= CREATOR_CANDIDATE_LIMIT) return@forEach
+                ordered.putIfAbsent(song.mediaStoreId, song)
+            }
+            ordered.values.toList()
+        }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList(),
@@ -82,9 +110,15 @@ class PlaylistViewModel(
     }
 
     /**
-     * 创建新歌单
+     * 创建新歌单，并可选地把 [mediaIds] 一次性加进去。
+     *
+     * 建单与加歌串在同一个协程里：`createPlaylist` 返回新歌单 id 后立刻批量写入，
+     * 批量接口是单事务，只触发一次数据失效，列表不会先闪一个空歌单再跳成 N 首。
      */
-    fun createPlaylist(name: String) {
+    fun createPlaylist(
+        name: String,
+        mediaIds: List<Long> = emptyList(),
+    ) {
         if (name.isBlank()) {
             Timber.w("歌单名称不能为空")
             return
@@ -93,7 +127,10 @@ class PlaylistViewModel(
         viewModelScope.launch {
             try {
                 val playlistId = playlistRepository.createPlaylist(name.trim())
-                Timber.d("创建歌单成功: $name (ID: $playlistId)")
+                if (mediaIds.isNotEmpty()) {
+                    playlistRepository.addSongsToPlaylist(playlistId, mediaIds)
+                }
+                Timber.d("创建歌单成功: $name (ID: $playlistId, 歌曲 ${mediaIds.size} 首)")
                 hideCreateDialog()
             } catch (e: Exception) {
                 Timber.e(e, "创建歌单失败")

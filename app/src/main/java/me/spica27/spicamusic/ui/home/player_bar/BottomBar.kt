@@ -3,6 +3,7 @@ package me.spica27.spicamusic.ui.home.player_bar
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseOutCubic
@@ -16,6 +17,7 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -97,7 +99,9 @@ import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
 import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
+import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
+import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import me.spica27.spicamusic.ui.widget.rememberPlayingCoverShape
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.roundToInt
@@ -507,11 +511,10 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
     val currentHomePage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
     val nowPlayingSong = playerViewModel.currentMediaItem.collectAsStateWithLifecycle().value
 
-    val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
-    val metadata = currentMediaItem?.mediaMetadata
-    val title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song)
-    val artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist)
-    val artworkUri = metadata?.artworkUri
+    // 同一个 StateFlow 只收集一次：重复 collect 会多挂一个 lifecycle 协程，
+    // 且两个 State 实例可能在同一帧不同步
+    val artworkUri = nowPlayingSong?.mediaMetadata?.artworkUri
+    val reducedMotion = LocalReducedMotion.current
     val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
     val coverShape = rememberPlayingCoverShape(isPlaying)
 
@@ -677,22 +680,37 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                                 }
                             },
                         )
-                        Text(
-                            text =
-                                if (nowPlayingSong != null) {
-                                    "$title - $artist"
-                                } else {
-                                    stringResource(R.string.no_song_playing)
-                                },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
+                        AnimatedContent(
+                            targetState = nowPlayingSong,
+                            transitionSpec = { nowPlayingTitleTransform(reducedMotion) },
                             modifier =
                                 Modifier
                                     .weight(1f)
-                                    .padding(end = 8.dp)
-                                    .basicMarquee(repeatDelayMillis = 0),
-                        )
+                                    .padding(end = 8.dp),
+                            // 同一首歌的元数据后到时按 mediaId 原地替换，不会再重播一遍动画
+                            contentKey = { it?.mediaId ?: "-1" },
+                            label = "now_playing_title",
+                        ) { mediaItem ->
+                            val itemMetadata = mediaItem?.mediaMetadata
+                            val itemTitle =
+                                itemMetadata?.title?.toString()
+                                    ?: stringResource(R.string.unknown_song)
+                            val itemArtist =
+                                itemMetadata?.artist?.toString()
+                                    ?: stringResource(R.string.unknown_artist)
+                            Text(
+                                text =
+                                    if (mediaItem != null) {
+                                        "$itemTitle - $itemArtist"
+                                    } else {
+                                        stringResource(R.string.no_song_playing)
+                                    },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                modifier = Modifier.basicMarquee(repeatDelayMillis = 0),
+                            )
+                        }
                     }
                     IconButton(
                         onClick = {
@@ -718,6 +736,25 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
         }
     }
 }
+
+/**
+ * 迷你播放条歌名切换：180ms 淡入配轻微上移；
+ */
+private fun nowPlayingTitleTransform(reducedMotion: Boolean): ContentTransform =
+    ContentTransform(
+        targetContentEnter =
+            if (reducedMotion) {
+                // 降级：只留淡入，去掉上移——位移正是无障碍设置要求去掉的部分
+                fadeIn(tween(durationMillis = 180, easing = EaseOutEmphasized))
+            } else {
+                fadeIn(tween(durationMillis = 180, easing = EaseOutEmphasized)) +
+                    slideInVertically(
+                        animationSpec = tween(durationMillis = 180, easing = EaseOutEmphasized),
+                    ) { it / 3 }
+            },
+        initialContentExit = fadeOut(tween(durationMillis = 120, easing = EaseOutEmphasized)),
+        sizeTransform = null,
+    )
 
 @Composable
 private fun HomePageSwitcher(modifier: Modifier = Modifier) {
