@@ -28,6 +28,10 @@ class PreferencesManager(
         val REVERB_ENABLED = booleanPreferencesKey("reverb_enabled")
         val REVERB_LEVEL = stringPreferencesKey("reverb_level")
         val REVERB_ROOM_SIZE = stringPreferencesKey("reverb_room_size")
+        val LOUDNESS_NORMALIZATION_ENABLED = booleanPreferencesKey("loudness_normalization_enabled")
+
+        // 目标响度（LUFS）。本项目 float 一律以字符串存储，见 getFloat/setFloat
+        val LOUDNESS_TARGET_LUFS = stringPreferencesKey("loudness_target_lufs")
         val SCAN_MIN_DURATION_SEC = stringPreferencesKey("scan_min_duration_sec")
         val SCAN_MIN_FILE_SIZE_KB = stringPreferencesKey("scan_min_file_size_kb")
         val SCAN_ENABLED_FORMATS = stringPreferencesKey("scan_enabled_formats")
@@ -74,7 +78,7 @@ class PreferencesManager(
     ): Flow<Float> =
         context.dataStore.data.map { preferences ->
             preferences[key]?.toFloatOrNull() ?: defaultValue
-        }
+        }.distinctUntilChanged()
 
     suspend fun setFloat(
         key: Preferences.Key<String>,

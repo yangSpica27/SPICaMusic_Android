@@ -26,8 +26,13 @@ class EqualizerAudioProcessor : AudioProcessor {
         private const val BAND_COUNT = 10
     }
 
-    // 10个频段的增益值 (-12dB 到 +12dB)
-    private val bandGains = FloatArray(BAND_COUNT) { 0f }
+    // 主线程持有的"请求增益"，仅主线程读写 (-12dB 到 +12dB)
+    private val requestedGains = FloatArray(BAND_COUNT) { 0f }
+
+    // 主线程发布的不可变增益快照：每次变更新建数组并整体替换引用（@Volatile 安全发布）。
+    // 音频线程通过引用比较检测变更，在本线程内重算系数，杜绝跨线程就地改写滤波器状态。
+    @Volatile
+    private var gainsSnapshot: FloatArray = FloatArray(BAND_COUNT)
 
     // 10段中心频率 (Hz)
     private val bandFrequencies = floatArrayOf(31f, 62f, 125f, 250f, 500f, 1000f, 2000f, 4000f, 8000f, 16000f)
@@ -35,11 +40,20 @@ class EqualizerAudioProcessor : AudioProcessor {
     // 每个频段的 Q 值（带宽）
     private val bandQ = 1.0f
 
+    // ==== 以下均为音频线程独占状态（configure/queueInput/flush/reset 同一音频线程）====
     private var sampleRate = 44100f
     private var channelCount = 2
 
-    // [band][channel] 过滤器阵列；@Volatile 保证音频线程与主线程之间的引用可见性
-    @Volatile
+    // 当前实际应用的增益（从 gainsSnapshot 拷入，音频线程私有）
+    private val appliedGains = FloatArray(BAND_COUNT)
+
+    // 上次已应用的快照引用，用于检测主线程是否发布了新快照
+    private var lastAppliedSnapshot: FloatArray? = null
+
+    // 缓存：当前应用增益是否全为 0（全 0 可直接透传，省去逐样本处理，也避免热路径 lambda 分配）
+    private var appliedAllZero = true
+
+    // [band][channel] 滤波器（音频线程独占）
     private var filters: Array<Array<BiquadFilter>>? = null
 
     @Volatile
@@ -66,8 +80,33 @@ class EqualizerAudioProcessor : AudioProcessor {
         filters = Array(BAND_COUNT) {
             Array(channelCount) { BiquadFilter() }
         }
-        updateAllFilters()
+        // 强制在音频线程重新应用当前快照并重算系数
+        lastAppliedSnapshot = null
+        applySnapshotIfChanged()
         return inputAudioFormat
+    }
+
+    /**
+     * 音频线程内：检测主线程是否发布了新增益快照，若变更则拷入 appliedGains、
+     * 重算滤波器系数并重置状态。全部写操作都发生在音频线程，无跨线程竞争。
+     */
+    private fun applySnapshotIfChanged() {
+        val snapshot = gainsSnapshot
+        if (snapshot === lastAppliedSnapshot) return
+        lastAppliedSnapshot = snapshot
+
+        val filterBank = filters ?: return
+        var allZero = true
+        for (band in 0 until BAND_COUNT) {
+            val gainDb = snapshot.getOrElse(band) { 0f }
+            appliedGains[band] = gainDb
+            if (gainDb != 0f) allZero = false
+            for (ch in 0 until channelCount) {
+                filterBank[band][ch].setPeakingEQ(sampleRate, bandFrequencies[band], bandQ, gainDb)
+                filterBank[band][ch].reset()
+            }
+        }
+        appliedAllZero = allZero
     }
 
     // 始终保持活跃（已配置即纳入管线），enabled 判断在 queueInput 内部处理
@@ -75,7 +114,10 @@ class EqualizerAudioProcessor : AudioProcessor {
     override fun isActive(): Boolean = inputAudioFormat != AudioProcessor.AudioFormat.NOT_SET
 
     override fun queueInput(inputBuffer: ByteBuffer) {
-        if (!enabled || bandGains.all { it == 0f }) {
+        // 音频线程内应用主线程发布的最新增益快照（若有变更）
+        applySnapshotIfChanged()
+
+        if (!enabled || appliedAllZero) {
             outputBuffer = inputBuffer
             return
         }
@@ -91,7 +133,7 @@ class EqualizerAudioProcessor : AudioProcessor {
         }
         cachedOutputBuffer.clear().limit(size)
         val output = cachedOutputBuffer
-        
+
         val filterBank = filters
         if (filterBank == null) {
             outputBuffer = inputBuffer
@@ -108,7 +150,7 @@ class EqualizerAudioProcessor : AudioProcessor {
             var x = sample / 32768f
             // 应用 10 段均衡器（peaking EQ）
             for (band in 0 until BAND_COUNT) {
-                if (bandGains[band] != 0f) {
+                if (appliedGains[band] != 0f) {
                     x = filterBank[band][channel].process(x)
                 }
             }
@@ -116,7 +158,7 @@ class EqualizerAudioProcessor : AudioProcessor {
             val processed = (x * 32768f).roundToInt().coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
             output.putShort(processed.toShort())
         }
-        
+
         output.flip()
         outputBuffer = output
     }
@@ -136,7 +178,15 @@ class EqualizerAudioProcessor : AudioProcessor {
     override fun flush() {
         outputBuffer = AudioProcessor.EMPTY_BUFFER
         inputEnded = false
-        resetFilters()
+        // flush 由 ExoPlayer 在音频线程调用，可直接重置滤波器状态（seek/切歌清除残留）
+        val filterBank = filters
+        if (filterBank != null) {
+            for (band in 0 until BAND_COUNT) {
+                for (ch in 0 until channelCount) {
+                    filterBank[band][ch].reset()
+                }
+            }
+        }
     }
 
     override fun reset() {
@@ -144,21 +194,23 @@ class EqualizerAudioProcessor : AudioProcessor {
         inputAudioFormat = AudioProcessor.AudioFormat.NOT_SET
         outputAudioFormat = AudioProcessor.AudioFormat.NOT_SET
         filters = null
+        lastAppliedSnapshot = null
     }
 
     /**
-     * 设置均衡器开关
+     * 设置均衡器开关（主线程）。开关本身即时生效；重新开启时通过强制重应用快照清零滤波器状态。
      */
     fun setEnabled(enabled: Boolean) {
         this.enabled = enabled
         if (enabled) {
-            resetFilters()
+            // 重新发布当前增益的新快照，促使音频线程重置滤波器状态（避免在主线程碰 DSP 状态）
+            publishSnapshot()
         }
         Timber.tag(TAG).d("EQ enabled: $enabled")
     }
 
     /**
-     * 设置单个频段增益
+     * 设置单个频段增益（主线程）
      * @param band 频段索引 (0-9)
      * @param gainDb 增益值 (-12.0 to +12.0 dB)
      */
@@ -167,57 +219,36 @@ class EqualizerAudioProcessor : AudioProcessor {
             Timber.tag(TAG).w("Invalid band index: $band")
             return
         }
-        
-        val clampedGain = gainDb.coerceIn(-12f, 12f)
-        bandGains[band] = clampedGain
 
-        updateBandFilter(band)
+        requestedGains[band] = gainDb.coerceIn(-12f, 12f)
+        publishSnapshot()
 
-        Timber.tag(TAG).d("Set band $band gain: ${clampedGain}dB")
+        Timber.tag(TAG).d("Set band $band gain: ${requestedGains[band]}dB")
     }
 
     /**
-     * 设置所有频段增益
+     * 设置所有频段增益（主线程）：一次性构建并发布快照，避免逐段发布产生中间态。
      */
     fun setAllBands(gains: FloatArray) {
         if (gains.size != BAND_COUNT) {
             Timber.tag(TAG).w("Invalid bands array size: ${gains.size}, expected $BAND_COUNT")
             return
         }
-        
-        gains.forEachIndexed { index, gain ->
-            setBandGain(index, gain)
+
+        for (i in 0 until BAND_COUNT) {
+            requestedGains[i] = gains[i].coerceIn(-12f, 12f)
         }
+        publishSnapshot()
     }
 
     /**
-     * 获取当前频段增益
+     * 获取当前频段增益（主线程）
      */
-    fun getBandGains(): FloatArray = bandGains.copyOf()
+    fun getBandGains(): FloatArray = requestedGains.copyOf()
 
-    private fun updateAllFilters() {
-        for (band in 0 until BAND_COUNT) {
-            updateBandFilter(band)
-        }
-    }
-
-    private fun updateBandFilter(band: Int) {
-        val filterBank = filters ?: return
-        val gainDb = bandGains[band]
-        val freq = bandFrequencies[band]
-        for (ch in 0 until channelCount) {
-            filterBank[band][ch].setPeakingEQ(sampleRate, freq, bandQ, gainDb)
-            filterBank[band][ch].reset()
-        }
-    }
-
-    private fun resetFilters() {
-        val filterBank = filters ?: return
-        for (band in 0 until BAND_COUNT) {
-            for (ch in 0 until channelCount) {
-                filterBank[band][ch].reset()
-            }
-        }
+    /** 主线程：把 requestedGains 拷成新数组并原子发布，音频线程在下一块检测并应用。 */
+    private fun publishSnapshot() {
+        gainsSnapshot = requestedGains.copyOf()
     }
 
     /**

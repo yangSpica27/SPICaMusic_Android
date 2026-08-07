@@ -120,4 +120,20 @@ interface IMusicPlayer {
      * @param roomSize 房间大小 (0.0 - 1.0)
      */
     fun setReverb(level: Float, roomSize: Float)
+
+    /**
+     * 设置响度归一化开关
+     *
+     * 已测得积分响度（EBU R128）的歌曲会施加一个常数增益，实现**曲间音量齐平**；
+     * 尚未测量的歌曲回退到实时滑动窗口 AGC。
+     */
+    fun setLoudnessNormalizationEnabled(enabled: Boolean)
+
+    /**
+     * 设置响度归一化的目标响度（LUFS）
+     *
+     * 常用值：-14（Spotify/YouTube）、-18（ReplayGain 传统参考）、-23（EBU R128 广播标准）。
+     * 因为库里存的是各曲的积分响度而非增益，改这个值不需要重新扫描。
+     */
+    fun setLoudnessTargetLufs(targetLufs: Float)
 }

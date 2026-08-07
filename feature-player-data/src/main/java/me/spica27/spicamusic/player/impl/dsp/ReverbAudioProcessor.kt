@@ -20,8 +20,14 @@ class ReverbAudioProcessor : AudioProcessor {
         private const val MAX_DELAY_MS = 200 // 最大延迟 200ms
     }
 
+    // 主线程写、音频线程读：@Volatile 保证跨线程可见性
+    @Volatile
     private var enabled = false
+
+    @Volatile
     private var reverbLevel = 0.3f  // 0.0 - 1.0
+
+    @Volatile
     private var roomSize = 0.5f     // 0.0 - 1.0
     
     private var inputAudioFormat = AudioProcessor.AudioFormat.NOT_SET

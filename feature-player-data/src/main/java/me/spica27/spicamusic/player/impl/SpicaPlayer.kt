@@ -32,6 +32,7 @@ import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.player.impl.dsp.EqualizerAudioProcessor
 import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessor
 import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessorWrapper
+import me.spica27.spicamusic.player.impl.dsp.LoudnessNormalizationAudioProcessor
 import me.spica27.spicamusic.player.impl.dsp.ReverbAudioProcessor
 import me.spica27.spicamusic.player.impl.utils.MediaLibrary
 import me.spica27.spicamusic.player.impl.utils.PlayerKVUtils
@@ -79,6 +80,7 @@ class SpicaPlayer(
     // 音效处理器
     private val _equalizerProcessor = EqualizerAudioProcessor()
     private val _reverbProcessor = ReverbAudioProcessor()
+    private val _loudnessProcessor = LoudnessNormalizationAudioProcessor()
 
     private val _initializing = AtomicBoolean(false)
 
@@ -612,15 +614,32 @@ class SpicaPlayer(
         _reverbProcessor.setReverb(level, roomSize)
     }
 
+    override fun setLoudnessNormalizationEnabled(enabled: Boolean) {
+        _loudnessProcessor.setEnabled(enabled)
+    }
+
+    override fun setLoudnessTargetLufs(targetLufs: Float) {
+        // 纯 AGC 模式下目标响度由处理器内部硬编码（-14 LUFS），此方法保留仅为兼容接口
+        Timber.tag(TAG).d("setLoudnessTargetLufs called with $targetLufs (AGC mode, ignored)")
+    }
+
     /**
      * 获取音效处理器数组
      * 用于在 PlaybackService 中配置 ExoPlayer
+     *
+     * ⚠️ 这里依赖 PlaybackService 与本类处于**同一进程**：service 在清单里没有
+     * android:process，且两者拿到的是同一个 Koin 单例，所以这些处理器实例正是
+     * DefaultAudioSink 正在使用的对象，setXxx 方法能直接生效。
+     * 若将来给 service 加了 android:process，`as?` 转型仍会成功，
+     * 但拿到的是另一个进程里的**不同实例**，所有音效开关都会静默失效。
      */
     fun getAudioProcessors(): Array<AudioProcessor> {
         return arrayOf(
             _fftAudioProcessorWrapper,
             _equalizerProcessor,
             _reverbProcessor,
+            // 响度归一化放在链路末端：在 EQ/混响改变电平之后再统一响度
+            _loudnessProcessor,
         )
     }
 

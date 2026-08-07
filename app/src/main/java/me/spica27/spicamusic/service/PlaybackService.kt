@@ -49,6 +49,10 @@ class PlaybackService : MediaLibraryService() {
         // 创建自定义渲染器工厂，添加音频处理器（FFT、EQ、混响）
         val renderersFactory =
             object : DefaultRenderersFactory(this) {
+                init {
+                    setExtensionRendererMode(EXTENSION_RENDERER_MODE_PREFER)
+                }
+
                 override fun buildAudioSink(
                     context: android.content.Context,
                     enableFloatOutput: Boolean,
@@ -59,14 +63,11 @@ class PlaybackService : MediaLibraryService() {
                         .setEnableFloatOutput(enableFloatOutput)
                         .setEnableAudioOutputPlaybackParameters(enableAudioTrackPlaybackParams)
                         .setAudioProcessors(
-                            // 音频处理链: FFT -> EQ -> Reverb
+                            // 音频处理链: FFT -> EQ -> Reverb -> 响度归一化
                             (player as? me.spica27.spicamusic.player.impl.SpicaPlayer)
                                 ?.getAudioProcessors()
                                 ?: arrayOf(player.fftAudioProcessor),
                         ).build()
-                        .apply {
-                            setExtensionRendererMode(EXTENSION_RENDERER_MODE_PREFER)
-                        }
             }
         exoPlayer =
             ExoPlayer

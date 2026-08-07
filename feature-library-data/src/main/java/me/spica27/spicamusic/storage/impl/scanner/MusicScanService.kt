@@ -126,20 +126,6 @@ class MusicScanService(
             },
         )
 
-    // 用于读取音频的响度增益信息
-    private val TRACK_GAIN_KEYS = listOf(
-        "REPLAYGAIN_TRACK_GAIN",
-        "REPLAYGAIN_TRACK_GAIN_DB",
-        "R128_TRACK_GAIN"
-    )
-
-    // 用于读取专辑的响度增益信息
-    private val ALBUM_GAIN_KEYS = listOf(
-        "REPLAYGAIN_ALBUM_GAIN",
-        "REPLAYGAIN_ALBUM_GAIN_DB",
-        "R128_ALBUM_GAIN"
-    )
-
     override fun getScanProgress(): Flow<ScanProgress?> = _scanProgress.asStateFlow()
 
     override fun isScanning(): Flow<Boolean> = _isScanning.asStateFlow()
@@ -488,6 +474,7 @@ class MusicScanService(
                         sortName = sortName,
                         dateModified = dateModified,
                         codec = codec,
+                        waveformData = existingInfo?.waveformData,
                     )
                     songsToScan.add(song)
                     if (existingInfo != null) {
@@ -657,8 +644,6 @@ class MusicScanService(
                             val sortName = generateSortName(finalDisplayName)
                             val codec = resolveCodec(mimeType, audioInfo.bitRate)
 
-
-
                             songsToUpsert.add(
                                 SongEntity(
                                     songId = existingInfo?.songId,
@@ -681,6 +666,7 @@ class MusicScanService(
                                     sortName = sortName,
                                     dateModified = dateModified,
                                     codec = codec,
+                                    waveformData = existingInfo?.waveformData,
                                 ),
                             )
                             affectedAlbumIds.add(albumId)
@@ -1094,8 +1080,6 @@ class MusicScanService(
         var bitRate = 0
         var channels = 0
         var digit = 0
-        var trackGainDb = 0.0f
-        var albumGainDb = 0.0f
         try {
             val uri = "content://media/external/audio/media/$mediaStoreId".toUri()
 
@@ -1119,10 +1103,7 @@ class MusicScanService(
                                 title = metadata.propertyMap["TITLE"]?.firstOrNull()
                                 artist = metadata.propertyMap["ARTIST"]?.firstOrNull()
                                 album = metadata.propertyMap["ALBUM"]?.firstOrNull()
-                                trackGainDb = extractGainValue(metadata.propertyMap, TRACK_GAIN_KEYS)?: 0.0f
-                                albumGainDb = extractGainValue(metadata.propertyMap, ALBUM_GAIN_KEYS)?: 0.0f
                             }
-                            Timber.tag(TAG).e("响度信息: trackGainDb=$trackGainDb dB, albumGainDb=$albumGainDb dB")
                         } catch (e: Exception) {
                             Timber.tag(TAG).w(e, "Taglib 元数据读取失败")
                         }
@@ -1194,7 +1175,7 @@ class MusicScanService(
             sampleRate = sampleRate,
             bitRate = bitRate,
             channels = channels,
-            digit = digit
+            digit = digit,
         )
     }
 
@@ -1333,21 +1314,4 @@ class MusicScanService(
         albums
     }
 
-
-    // 从 TagLib 的 propertyMap 中提取 ReplayGain 值，支持多个可能的键
-    private fun extractGainValue(propertyMap: Map<String, Array<String>>, keys: List<String>): Float? {
-        for (key in keys) {
-            val rawValue = propertyMap[key]?.firstOrNull() ?: continue
-            return parseGainString(rawValue)
-        }
-        return null
-    }
-
-    // 解析 ReplayGain 字符串，支持 "dB" 后缀和空白字符
-    private fun parseGainString(raw: String): Float? {
-        val cleaned = raw.trim()
-            .replace(Regex("[dD][bB]"), "")  // Remove "dB" suffix
-            .trim()
-        return cleaned.toFloatOrNull()
-    }
 }

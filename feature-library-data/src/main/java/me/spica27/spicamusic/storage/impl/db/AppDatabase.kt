@@ -22,7 +22,7 @@ import me.spica27.spicamusic.storage.impl.entity.SongEntity
     entities = [SongEntity::class, PlaylistEntity::class, PlaylistSongCrossRefEntity::class,
         ExtraInfoEntity::class, PlayHistoryEntity::class, AlbumEntity::class,
         ScanFolderEntity::class],
-    version = 15,
+    version = 17,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -88,6 +88,91 @@ abstract class AppDatabase : RoomDatabase() {
                     ON PlaylistSongCrossRef(playlistId, sortOrder)
                     """.trimIndent()
                 )
+            }
+        }
+
+        /**
+         * v14 -> v15: 补链用的空迁移。
+         *
+         * v15 当初是靠 fallbackToDestructiveMigration 落地的（没有对应的 Migration 对象），
+         * 表结构与 v14 实际一致。这里补一个空实现把链条接上，
+         * 否则停留在 v14 的设备升级时仍会走破坏性回退、整库被抹掉。
+         */
+        val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 无结构变更，仅补全版本链
+            }
+        }
+
+        /** v15 -> v16: Song 表新增响度归一化字段（EBU R128） */
+        val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 积分响度（LUFS），可空表示尚未测得
+                db.execSQL("ALTER TABLE Song ADD COLUMN integratedLufs REAL")
+                // 采样峰值（线性幅度 0..1），用于提升时限制增益防削波
+                db.execSQL("ALTER TABLE Song ADD COLUMN samplePeak REAL")
+                db.execSQL(
+                    "ALTER TABLE Song ADD COLUMN loudnessSource INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
+        /** v16 -> v17: 移除 EBU R128 响度归一化字段，改用纯 AGC 方案 */
+        val MIGRATION_16_17 = object : Migration(16, 17) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // SQLite 不支持 ALTER TABLE DROP COLUMN（需要 API 30+）
+                // 使用重建表的方式删除响度字段
+                db.execSQL(
+                    """
+                    CREATE TABLE Song_new (
+                        songId INTEGER PRIMARY KEY AUTOINCREMENT,
+                        mediaStoreId INTEGER NOT NULL,
+                        path TEXT NOT NULL,
+                        displayName TEXT NOT NULL,
+                        artist TEXT NOT NULL,
+                        size INTEGER NOT NULL,
+                        `like` INTEGER NOT NULL,
+                        duration INTEGER NOT NULL,
+                        sort INTEGER NOT NULL,
+                        sortName TEXT NOT NULL,
+                        mimeType TEXT NOT NULL,
+                        albumId INTEGER NOT NULL,
+                        album TEXT NOT NULL,
+                        sampleRate INTEGER NOT NULL,
+                        bitRate INTEGER NOT NULL,
+                        channels INTEGER NOT NULL,
+                        digit INTEGER NOT NULL,
+                        isIgnore INTEGER NOT NULL,
+                        dateModified INTEGER NOT NULL DEFAULT 0,
+                        codec TEXT NOT NULL,
+                        waveformData TEXT
+                    )
+                    """.trimIndent()
+                )
+
+                // 复制数据（排除响度字段）
+                db.execSQL(
+                    """
+                    INSERT INTO Song_new
+                    SELECT songId, mediaStoreId, path, displayName, artist, size, `like`,
+                           duration, sort, sortName, mimeType, albumId, album, sampleRate,
+                           bitRate, channels, digit, isIgnore, dateModified, codec, waveformData
+                    FROM Song
+                    """.trimIndent()
+                )
+
+                // 删除旧表
+                db.execSQL("DROP TABLE Song")
+
+                // 重命名新表
+                db.execSQL("ALTER TABLE Song_new RENAME TO Song")
+
+                // 重建索引
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_Song_displayName ON Song(displayName)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_Song_mediaStoreId ON Song(mediaStoreId)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_Song_isIgnore ON Song(isIgnore)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_Song_sortName ON Song(sortName)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_Song_songId ON Song(songId)")
             }
         }
     }

@@ -217,6 +217,27 @@
   <string name="preset_rock">Rock</string>
   <string name="preset_classical">Classical</string>
   <string name="preset_jazz">Jazz</string>
+  <!-- Audio effects screen -->
+  <string name="settings_sound_effects">Sound Effects</string>
+  <string name="audio_effects_subtitle">Tune the equalizer, reverb and loudness to taste</string>
+  <string name="audio_effects_section_equalizer">Equalizer</string>
+  <string name="audio_effects_eq_enable">Enable Equalizer</string>
+  <string name="audio_effects_eq_enable_desc">Adjust gain across 10 frequency bands</string>
+  <string name="audio_effects_section_reverb">Reverb</string>
+  <string name="audio_effects_reverb_enable">Enable Reverb</string>
+  <string name="audio_effects_section_loudness">Loudness</string>
+  <string name="audio_effects_loudness_title">Loudness Normalization</string>
+  <string name="audio_effects_loudness_desc">Even out volume differences between tracks so switching songs stays comfortable</string>
+  <string name="audio_effects_loudness_target">Target loudness</string>
+  <string name="audio_effects_loudness_target_streaming">-14 Streaming</string>
+  <string name="audio_effects_loudness_target_replaygain">-18 ReplayGain</string>
+  <string name="audio_effects_loudness_target_broadcast">-23 Broadcast</string>
+  <string name="audio_effects_loudness_measure">Measure library loudness</string>
+  <string name="audio_effects_loudness_measure_desc">Tracks without ReplayGain tags need full decoding to measure</string>
+  <string name="audio_effects_loudness_measuring">Measuring %1$d / %2$d</string>
+  <string name="audio_effects_loudness_cancel">Cancel</string>
+  <string name="audio_effects_loudness_rescan">Re-measure all</string>
+  <string name="audio_effects_reset">Reset to Defaults</string>
   <string name="toggle_lyrics">Toggle Lyrics</string>
   <string name="no_albums_found">No albums found</string>
   <string name="choose_lyrics">Choose Lyrics</string>

@@ -218,6 +218,27 @@
   <string name="preset_rock">摇滚</string>
   <string name="preset_classical">古典</string>
   <string name="preset_jazz">爵士</string>
+  <!-- 音效设置页 -->
+  <string name="settings_sound_effects">音效</string>
+  <string name="audio_effects_subtitle">按喜好调节均衡器、混响与响度</string>
+  <string name="audio_effects_section_equalizer">均衡器</string>
+  <string name="audio_effects_eq_enable">启用均衡器</string>
+  <string name="audio_effects_eq_enable_desc">调节 10 个频段的增益</string>
+  <string name="audio_effects_section_reverb">混响</string>
+  <string name="audio_effects_reverb_enable">启用混响</string>
+  <string name="audio_effects_section_loudness">响度</string>
+  <string name="audio_effects_loudness_title">响度归一化</string>
+  <string name="audio_effects_loudness_desc">拉平不同歌曲之间的音量差异，切歌时听感更平稳</string>
+  <string name="audio_effects_loudness_target">目标响度</string>
+  <string name="audio_effects_loudness_target_streaming">-14 流媒体</string>
+  <string name="audio_effects_loudness_target_replaygain">-18 ReplayGain</string>
+  <string name="audio_effects_loudness_target_broadcast">-23 广播标准</string>
+  <string name="audio_effects_loudness_measure">测量曲库响度</string>
+  <string name="audio_effects_loudness_measure_desc">没有 ReplayGain 标签的歌曲需要完整解码才能测出响度</string>
+  <string name="audio_effects_loudness_measuring">正在测量 %1$d / %2$d</string>
+  <string name="audio_effects_loudness_cancel">取消</string>
+  <string name="audio_effects_loudness_rescan">全部重新测量</string>
+  <string name="audio_effects_reset">恢复默认</string>
   <string name="toggle_lyrics">切换歌词</string>
   <string name="no_albums_found">没有找到相关专辑</string>
   <string name="choose_lyrics">选择歌词</string>

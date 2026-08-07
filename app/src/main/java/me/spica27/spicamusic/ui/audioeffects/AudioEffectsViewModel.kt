@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 
@@ -22,7 +23,16 @@ import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 class AudioEffectsViewModel(
     private val settingsUseCases: SettingsUseCases,
     private val player: PlayerUseCases,
+    private val musicScanUseCases: MusicScanUseCases,
 ) : ViewModel() {
+    companion object {
+        /** 默认目标响度（LUFS），与 Spotify/YouTube 一致 */
+        const val DEFAULT_TARGET_LUFS = -14f
+
+        /** 可选目标响度：流媒体 / ReplayGain 传统参考 / EBU R128 广播标准 */
+        val TARGET_LUFS_OPTIONS = listOf(-14f, -18f, -23f)
+    }
+
     // EQ 默认频段（10段）
     private val defaultEqBands = List(10) { 0f }
 
@@ -55,6 +65,12 @@ class AudioEffectsViewModel(
         settingsUseCases
             .getFloat(SettingsUseCases.Keys.REVERB_ROOM_SIZE, 0.5f)
             .stateIn(viewModelScope, SharingStarted.Eagerly, 0.5f)
+
+    // 响度归一化开关
+    val loudnessNormalizationEnabled: StateFlow<Boolean> =
+        settingsUseCases
+            .getBoolean(SettingsUseCases.Keys.LOUDNESS_NORMALIZATION_ENABLED, false)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // 加载状态
     private val _isLoading = MutableStateFlow(false)
@@ -91,6 +107,13 @@ class AudioEffectsViewModel(
                 Pair(level, roomSize)
             }.collect { (level, roomSize) ->
                 player.setReverb(level, roomSize)
+            }
+        }
+
+        // 监听响度归一化开关变化
+        viewModelScope.launch {
+            loudnessNormalizationEnabled.collect { enabled ->
+                player.setLoudnessNormalizationEnabled(enabled)
             }
         }
     }
@@ -181,6 +204,15 @@ class AudioEffectsViewModel(
     }
 
     /**
+     * 设置响度归一化开关
+     */
+    fun setLoudnessNormalizationEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsUseCases.setBoolean(SettingsUseCases.Keys.LOUDNESS_NORMALIZATION_ENABLED, enabled)
+        }
+    }
+
+    /**
      * 重置所有音效到默认值
      */
     fun resetToDefaults() {
@@ -195,6 +227,13 @@ class AudioEffectsViewModel(
             setReverbEnabled(false)
             settingsUseCases.setFloat(SettingsUseCases.Keys.REVERB_LEVEL, 0.3f)
             settingsUseCases.setFloat(SettingsUseCases.Keys.REVERB_ROOM_SIZE, 0.5f)
+
+            // 重置响度归一化
+            setLoudnessNormalizationEnabled(false)
+            settingsUseCases.setFloat(
+                SettingsUseCases.Keys.LOUDNESS_TARGET_LUFS,
+                DEFAULT_TARGET_LUFS,
+            )
 
             _isLoading.value = false
         }

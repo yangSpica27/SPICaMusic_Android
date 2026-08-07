@@ -217,6 +217,27 @@
   <string name="preset_rock">搖滾</string>
   <string name="preset_classical">古典</string>
   <string name="preset_jazz">爵士</string>
+  <!-- 音效設定頁 -->
+  <string name="settings_sound_effects">音效</string>
+  <string name="audio_effects_subtitle">依喜好調整等化器、混響與響度</string>
+  <string name="audio_effects_section_equalizer">等化器</string>
+  <string name="audio_effects_eq_enable">啟用等化器</string>
+  <string name="audio_effects_eq_enable_desc">調整 10 個頻段的增益</string>
+  <string name="audio_effects_section_reverb">混響</string>
+  <string name="audio_effects_reverb_enable">啟用混響</string>
+  <string name="audio_effects_section_loudness">響度</string>
+  <string name="audio_effects_loudness_title">響度正規化</string>
+  <string name="audio_effects_loudness_desc">拉平不同歌曲之間的音量差異，切歌時聽感更平穩</string>
+  <string name="audio_effects_loudness_target">目標響度</string>
+  <string name="audio_effects_loudness_target_streaming">-14 串流</string>
+  <string name="audio_effects_loudness_target_replaygain">-18 ReplayGain</string>
+  <string name="audio_effects_loudness_target_broadcast">-23 廣播標準</string>
+  <string name="audio_effects_loudness_measure">測量曲庫響度</string>
+  <string name="audio_effects_loudness_measure_desc">沒有 ReplayGain 標籤的歌曲需要完整解碼才能測出響度</string>
+  <string name="audio_effects_loudness_measuring">正在測量 %1$d / %2$d</string>
+  <string name="audio_effects_loudness_cancel">取消</string>
+  <string name="audio_effects_loudness_rescan">全部重新測量</string>
+  <string name="audio_effects_reset">恢復預設</string>
   <string name="toggle_lyrics">切換歌詞</string>
   <string name="no_albums_found">沒有找到相關專輯</string>
   <string name="choose_lyrics">選擇歌詞</string>

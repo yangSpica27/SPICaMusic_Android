@@ -10,7 +10,6 @@ import androidx.compose.runtime.Stable
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +31,7 @@ import me.spica27.spicamusic.feature.library.domain.ScanRules
 import me.spica27.spicamusic.feature.library.domain.ScanRulesUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
+import timber.log.Timber
 
 /**
  * 媒体库扫描状态
@@ -324,8 +324,6 @@ class MediaLibrarySourceViewModel(
                 markScanCompleted()
                 _scanState.value = ScanState.Success(result)
             }
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
             if (_scanState.value is ScanState.Scanning) {
                 _scanState.value = ScanState.Error(e.message ?: app.getString(R.string.scan_failed))

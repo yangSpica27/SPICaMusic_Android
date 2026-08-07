@@ -229,6 +229,7 @@ object AppModule {
                 AudioEffectsViewModel(
                     settingsUseCases = get<SettingsUseCases>(),
                     player = get<PlayerUseCases>(),
+                    musicScanUseCases = get<MusicScanUseCases>(),
                 )
             }
 

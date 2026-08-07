@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.LensBlur
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material.icons.filled.WbSunny
@@ -89,6 +90,7 @@ import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.ui.about.AboutScene
+import me.spica27.spicamusic.ui.audioeffects.AudioEffectsScene
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
@@ -260,6 +262,13 @@ class SettingsScene : StackScene() {
                                 .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                                 .entranceGraphics(entrance),
                     ) {
+                        NavigationRow(
+                            title = stringResource(R.string.settings_sound_effects),
+                            summary = stringResource(R.string.settings_sound_effects_subtitle),
+                            icon = Icons.Default.Tune,
+                            onClick = { path.push(AudioEffectsScene()) },
+                        )
+                        SettingsItemDivider()
                         SwitchRow(
                             title = stringResource(R.string.settings_keep_screen_on),
                             summary = stringResource(R.string.settings_keep_screen_on_subtitle),
