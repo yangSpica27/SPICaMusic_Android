@@ -489,11 +489,15 @@ fun FinderPage() {
 
 /**
  * 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在 Draw 阶段读取，滚动零重组）。
- * 使用固定折叠距离，避免滚动帧内反复读取 LazyList layoutInfo。
  */
 private fun Density.mastheadCollapse(listState: LazyListState): Float {
     if (listState.firstVisibleItemIndex > 0) return 1f
-    val scrollOutDistance = MastheadCollapseDistance.toPx().coerceAtLeast(1f)
+    val layoutInfo = listState.layoutInfo
+    val masthead = layoutInfo.visibleItemsInfo.firstOrNull() ?: return 0f
+    val scrollOutDistance =
+        (masthead.size + layoutInfo.mainAxisItemSpacing)
+            .toFloat()
+            .coerceIn(1f, MastheadCollapseDistance.toPx())
     return (listState.firstVisibleItemScrollOffset / scrollOutDistance).coerceIn(0f, 1f)
 }
 

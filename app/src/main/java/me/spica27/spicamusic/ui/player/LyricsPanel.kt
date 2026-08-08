@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -22,8 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.common.collect.ImmutableList
-import kotlinx.coroutines.android.awaitFrame
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsDisplayMode
@@ -55,21 +56,17 @@ fun LyricsPanel(
     // 歌词切换面板的纯 UI 状态（不需要持久化）
     var showSwitcherSheet by remember { mutableStateOf(false) }
 
-    // 监听应用生命周期状态，仅前台时更新播放进度
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsStateWithLifecycle()
-    val isAppInForeground =
-        remember(lifecycleState) {
-            lifecycleState.isAtLeast(Lifecycle.State.STARTED)
-        }
-
-    // 当前播放时间（帧级更新，保留在 Composable 中因为依赖 awaitFrame）
+    // 当前播放时间（帧级更新，保留在 Composable 中因为依赖逐帧对齐）
     var currentTime by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(isAppInForeground) {
-        if (!isAppInForeground) return@LaunchedEffect
-        while (isAppInForeground) {
-            awaitFrame()
-            currentTime = viewModel.getCurrentPositionMs()
+    // 仅前台时更新播放进度。repeatOnLifecycle(STARTED) 切后台真正取消、回前台重启；
+    // withFrameNanos 走 Compose 可暂停帧时钟。（详见 MiniLyric 同处注释。）
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                withFrameNanos { }
+                currentTime = viewModel.getCurrentPositionMs()
+            }
         }
     }
 
@@ -108,9 +105,12 @@ fun LyricsPanel(
                 )
             }
             uiState.lyrics != null -> {
+                // 面板每帧随 currentTime 重组，若在此每帧 copyOf 会全量拷贝整份歌词。
+                // 按 lyrics 身份缓存：只有歌词本身变化才重建。
+                val lyricList = remember(uiState.lyrics) { ImmutableList.copyOf(uiState.lyrics!!) }
                 LyricsUI(
                     modifier = Modifier.fillMaxSize(),
-                    lyric = ImmutableList.copyOf(uiState.lyrics!!),
+                    lyric = lyricList,
                     currentTime = currentTime + uiState.lyricsOffsetMs,
                     displayMode = displayMode,
                     onSeekToTime = { posMs ->

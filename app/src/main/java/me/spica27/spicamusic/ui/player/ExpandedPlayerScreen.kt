@@ -62,6 +62,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -84,6 +85,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
@@ -103,7 +105,7 @@ import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
-import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
+import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
 import me.spica27.spicamusic.ui.player.scene.LyricScene
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
@@ -167,15 +169,22 @@ fun ExpandedPlayerScreen(
             currentMediaItem.toAudioQualityInfo()
         }
 
-    // 监听应用生命周期状态
+    // 判断应用是否在前台（可见状态）。
+    // 不能用 collectAsStateWithLifecycle 去收集 currentStateFlow——那个收集器自身在
+    // 跌破 STARTED 时就停了，永远观察不到向下的转变，标志会锁死为 true，
     val lifecycleOwner = LocalLifecycleOwner.current
-    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsStateWithLifecycle()
-
-    // 判断应用是否在前台（可见状态）
-    val isAppInForeground =
-        remember(lifecycleState) {
-            lifecycleState.isAtLeast(Lifecycle.State.STARTED)
-        }
+    var isAppInForeground by remember {
+        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+    }
+    DisposableEffect(lifecycleOwner) {
+        val observer =
+            LifecycleEventObserver { _, _ ->
+                isAppInForeground =
+                    lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // 当前播放位置（定时更新）
     // 使用 currentMediaItem?.mediaId 作为 key，切歌时自动重置 seek 状态
@@ -402,7 +411,7 @@ fun ExpandedPlayerScreen(
                         Box(
                             modifier = Modifier.padding(it),
                         ) {
-                            CurrentPlaylistPage(
+                            CurrPlaylistPage(
                                 modifier = Modifier.fillMaxSize(),
 //                        scrollBehavior = scrollBehavior,
                             )

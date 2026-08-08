@@ -494,9 +494,7 @@ fun LibraryPage() {
 }
 
 /**
- * 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在 Draw 阶段读取，滚动零重组）。
- * 归一化距离取刊头实测滚出高度（含行距），保证进度在 firstVisibleItemIndex 翻转前
- * 自然到达 1f、不产生跳变；[MastheadCollapseDistance] 仅作异常高度的上限防御。
+ * 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在 Draw 阶段读取，滚动零重组）
  */
 private fun Density.mastheadCollapse(gridState: LazyGridState): Float {
     if (gridState.firstVisibleItemIndex > 0) return 1f

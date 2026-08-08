@@ -15,6 +15,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.android.awaitFrame
+import androidx.lifecycle.repeatOnLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.findPlayingIndex
@@ -55,21 +56,16 @@ fun MiniLyric(
     val viewModel: LyricsViewModel = koinActivityViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // 仅前台时驱动时间轮询，节省电量
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsStateWithLifecycle()
-    val isAppInForeground =
-        remember(lifecycleState) {
-            lifecycleState.isAtLeast(Lifecycle.State.STARTED)
-        }
-
     // 当前播放时间（帧级更新）；行索引经 derivedStateOf 收敛，仅切行时触发重组
     val currentTimeState = remember { mutableLongStateOf(0L) }
-    LaunchedEffect(isAppInForeground) {
-        if (!isAppInForeground) return@LaunchedEffect
-        while (true) {
-            awaitFrame()
-            currentTimeState.longValue = viewModel.getCurrentPositionMs()
+    // 仅前台时驱动时间轮询，节省电量。
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                withFrameNanos { }
+                currentTimeState.longValue = viewModel.getCurrentPositionMs()
+            }
         }
     }
 

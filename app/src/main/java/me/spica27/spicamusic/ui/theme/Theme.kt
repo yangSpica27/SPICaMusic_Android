@@ -2,7 +2,6 @@ package me.spica27.spicamusic.ui.theme
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -12,13 +11,13 @@ import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.materialkolor.DynamicMaterialTheme
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
+import com.materialkolor.ktx.animateColorScheme
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.ui.widget.rememberClickHighlightIndication
 
@@ -94,19 +93,19 @@ fun SPICaMusicTheme(
             }
 
         ThemeColorStyle.Flat -> {
-            // 与质感化的 animate 行为对齐:对种子色做动画,派生色板随之平滑过渡。
-            val animatedSeedColor by animateColorAsState(
-                targetValue = themeColor,
-                animationSpec = tween(durationMillis = 200, easing = EaseOutEmphasized),
-                label = "flat_theme_seed_color",
-            )
-            val colorScheme =
-                remember(animatedSeedColor, darkTheme) {
+            // 目标色板只在种子色/深浅变化时重建；animateColorScheme 用 updateTransition 逐角色
+            val targetScheme =
+                remember(themeColor, darkTheme) {
                     antFlatColorScheme(
-                        seedColor = animatedSeedColor,
+                        seedColor = themeColor,
                         darkTheme = darkTheme,
                     )
                 }
+            val colorScheme =
+                animateColorScheme(
+                    targetScheme,
+                    animationSpec = { tween(durationMillis = 200, easing = EaseOutEmphasized) },
+                )
             MaterialTheme(colorScheme = colorScheme) {
                 ProvideAppInteractionIndication(content = content)
             }

@@ -22,6 +22,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.components.rememberImageComponent
 import com.skydoves.landscapist.crossfade.CrossfadePlugin
@@ -167,6 +170,10 @@ private class TextureViewRenderLoop(
     threadName: String,
 ) {
     private val surfaceActive = AtomicBoolean(false)
+
+    // 前台门控：切后台（ON_STOP）时置 true。TextureView 在 Activity 进后台时视图仍附着、
+    // SurfaceTexture 不销毁，若不显式门控，渲染线程会拿着冻结的数据在后台继续 ~125fps 空转。
+    private val paused = AtomicBoolean(false)
     private val generation = AtomicInteger(0)
     private val stateLock = Any()
     private val renderDispatcher: ExecutorCoroutineDispatcher =
@@ -179,11 +186,32 @@ private class TextureViewRenderLoop(
     private val renderScope = CoroutineScope(renderDispatcher + SupervisorJob())
     private var drawJob: Job? = null
 
+    // 保存 surface 与绘制逻辑，以便 resume() 时无需重新走 onSurfaceTextureAvailable 即可重启
+    private var textureView: TextureView? = null
+    private var drawFrame: ((android.graphics.Canvas) -> Unit)? = null
+
     fun start(
         textureView: TextureView,
         drawFrame: (android.graphics.Canvas) -> Unit,
     ) {
-        stopAndAwait()
+        synchronized(stateLock) {
+            this.textureView = textureView
+            this.drawFrame = drawFrame
+        }
+        launchLoop()
+    }
+
+    private fun launchLoop() {
+        // 非阻塞地停掉旧循环：单线程 dispatcher 会串行化新旧循环，
+        // 加上 generation token 校验，旧循环不可能在新循环启动后再向同一 surface 绘制。
+        stop()
+        if (paused.get()) return
+        val tv: TextureView
+        val draw: (android.graphics.Canvas) -> Unit
+        synchronized(stateLock) {
+            tv = textureView ?: return
+            draw = drawFrame ?: return
+        }
         surfaceActive.set(true)
         val token = generation.incrementAndGet()
 
@@ -193,7 +221,7 @@ private class TextureViewRenderLoop(
                     while (isActive && surfaceActive.get() && generation.get() == token) {
                         val canvas =
                             try {
-                                textureView.lockCanvas(null)
+                                tv.lockCanvas(null)
                             } catch (e: IllegalStateException) {
                                 Timber
                                     .tag("FluidMusicBackground")
@@ -211,11 +239,11 @@ private class TextureViewRenderLoop(
                             if (!surfaceActive.get() || generation.get() != token) {
                                 shouldContinue = false
                             } else {
-                                drawFrame(canvas)
+                                draw(canvas)
                             }
                         } finally {
                             try {
-                                textureView.unlockCanvasAndPost(canvas)
+                                tv.unlockCanvasAndPost(canvas)
                             } catch (e: IllegalStateException) {
                                 Timber
                                     .tag("FluidMusicBackground")
@@ -237,24 +265,59 @@ private class TextureViewRenderLoop(
         }
     }
 
-    fun stopAndAwait() {
+    /** 切后台：暂停渲染，保留 surface 引用，回前台可无缝 resume。 */
+    fun pause() {
+        paused.set(true)
+        stop()
+    }
+
+    /** 回前台：若之前处于暂停态则重启循环。 */
+    fun resume() {
+        if (!paused.getAndSet(false)) return
+        launchLoop()
+    }
+
+    /**
+     * 非阻塞停止：翻转标志并 cancel job，但不 join。
+     * 主线程路径（start / release / pause）用它，避免被渲染线程正卡在 lockCanvas 上拖住。
+     */
+    private fun stop() {
         surfaceActive.set(false)
         generation.incrementAndGet()
+        synchronized(stateLock) {
+            drawJob?.cancel()
+            drawJob = null
+        }
+    }
+
+    /**
+     * surface 销毁路径专用：必须等渲染线程真正停手再返回 true，否则系统释放 SurfaceTexture 后
+     * 渲染线程可能触到已释放的 surface。此处发生在 surface 已在销毁中，lockCanvas 会快速失败，
+     * join 几乎不阻塞。
+     */
+    fun onSurfaceDestroyed() {
         val job =
             synchronized(stateLock) {
-                drawJob.also { drawJob = null }
+                surfaceActive.set(false)
+                generation.incrementAndGet()
+                val j = drawJob
+                drawJob = null
+                textureView = null
+                drawFrame = null
+                j
             }
-
         job?.cancel()
         if (job != null) {
-            runBlocking {
-                job.join()
-            }
+            runBlocking { job.join() }
         }
     }
 
     fun release() {
-        stopAndAwait()
+        stop()
+        synchronized(stateLock) {
+            textureView = null
+            drawFrame = null
+        }
         renderScope.coroutineContext.cancel()
         renderDispatcher.close()
     }
@@ -292,8 +355,20 @@ private fun TopGlowBackground(
         holder.colorB = shiftHue(coverColor, hueShift * 1.6f).copy(alpha = 0.2f).toArgb()
     }
 
-    DisposableEffect(renderLoop) {
+    // 切后台暂停渲染、回前台恢复；组合销毁时释放
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, renderLoop) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_STOP -> renderLoop.pause()
+                    Lifecycle.Event.ON_START -> renderLoop.resume()
+                    else -> {}
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             renderLoop.release()
         }
     }
@@ -356,7 +431,7 @@ private fun TopGlowBackground(
                         }
 
                         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                            renderLoop.stopAndAwait()
+                            renderLoop.onSurfaceDestroyed()
                             return true
                         }
 
@@ -406,8 +481,20 @@ private fun LiquidAuroraBackground(
         }
     }
 
-    DisposableEffect(renderLoop) {
+    // 切后台暂停渲染、回前台恢复；组合销毁时释放
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, renderLoop) {
+        val observer =
+            LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_STOP -> renderLoop.pause()
+                    Lifecycle.Event.ON_START -> renderLoop.resume()
+                    else -> {}
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             renderLoop.release()
         }
     }
@@ -498,7 +585,7 @@ private fun LiquidAuroraBackground(
                         }
 
                         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                            renderLoop.stopAndAwait()
+                            renderLoop.onSurfaceDestroyed()
                             return true
                         }
 

@@ -34,7 +34,7 @@ import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
-import me.spica27.spicamusic.ui.player.pages.CurrentPlaylistPage
+import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 
 class CurrentListScene : DialogScene() {
@@ -89,7 +89,7 @@ class CurrentListScene : DialogScene() {
                 Box(
                     modifier = Modifier.padding(it),
                 ) {
-                    CurrentPlaylistPage(
+                    CurrPlaylistPage(
                         modifier = Modifier.fillMaxSize(),
 //                        scrollBehavior = scrollBehavior,
                     )

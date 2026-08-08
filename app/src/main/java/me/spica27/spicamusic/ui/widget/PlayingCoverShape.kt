@@ -32,28 +32,6 @@ fun rememberPlayingCoverShape(isPlaying: Boolean): Shape {
         animationSpec = tween(durationMillis = 180, easing = EaseOutEmphasized),
         label = "playingCoverPlayProgress",
     )
-    val infiniteTransition = rememberInfiniteTransition(label = "playingCoverMorph")
-    val polygonProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "playingCoverPolygonProgress",
-    )
-
-    val rotationProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 6200, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "playingCoverRotationProgress",
-    )
 
     val circle =
         remember {
@@ -79,7 +57,44 @@ fun rememberPlayingCoverShape(isPlaying: Boolean): Shape {
     val circleToTriangle = remember(circle, shape1) { Morph(circle, shape1) }
     val triangleToQuadrilateral = remember(shape1, shape2) { Morph(shape1, shape2) }
 
-    return remember(circleToTriangle, triangleToQuadrilateral, playProgress, polygonProgress) {
+    // 只有在播放（或播放↔暂停过渡尚未结束）时才驱动无限形变/旋转。
+    val isMorphing = isPlaying || playProgress > 0.001f
+    if (!isMorphing) {
+        return remember(circleToTriangle, triangleToQuadrilateral) {
+            PlayingCoverShape(
+                circleToTriangle = circleToTriangle,
+                triangleToQuadrilateral = triangleToQuadrilateral,
+                playProgress = 0f,
+                polygonProgress = 0f,
+                rotationProgress = 0f,
+            )
+        }
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "playingCoverMorph")
+    val polygonProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "playingCoverPolygonProgress",
+    )
+
+    val rotationProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 6200, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+        label = "playingCoverRotationProgress",
+    )
+
+    return remember(circleToTriangle, triangleToQuadrilateral, playProgress, polygonProgress, rotationProgress) {
         PlayingCoverShape(
             circleToTriangle = circleToTriangle,
             triangleToQuadrilateral = triangleToQuadrilateral,

@@ -77,9 +77,10 @@ fun rememberDominantColorFromUri(
     fallbackColor: Color = Color(0xFF2196F3),
 ): Color {
     val context = LocalContext.current
-    var dominantColor by remember(uri) { mutableStateOf(fallbackColor) }
 
-    LaunchedEffect(uri) {
+    var dominantColor by remember(uri, fallbackColor) { mutableStateOf(fallbackColor) }
+
+    LaunchedEffect(uri, fallbackColor) {
         dominantColor = extractDominantColorFromUri(context, uri, fallbackColor)
     }
 

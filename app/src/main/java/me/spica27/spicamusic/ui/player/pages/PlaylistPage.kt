@@ -92,7 +92,7 @@ import kotlin.math.floor
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CurrentPlaylistPage(
+fun CurrPlaylistPage(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
 ) {

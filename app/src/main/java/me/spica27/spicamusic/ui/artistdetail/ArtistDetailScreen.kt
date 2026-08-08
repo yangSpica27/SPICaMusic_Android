@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -74,10 +75,8 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.math.roundToInt
 
-// ── 滚动驱动常量（像素）──────────────────────────────────────────────────────
-private const val SCROLL_ART_RANGE = 480f
-private const val SCROLL_HDR_START = 280f
-private const val SCROLL_HDR_RANGE = 200f
+// ── 折叠段划分（顶栏遮罩/标题在折叠后段淡入，对齐旧的 280..480 相对区间）───────────
+private const val HDR_FADE_START = 0.58f
 
 // ── 布局尺寸常量 ──────────────────────────────────────────────────────────────
 private val HEADER_HEIGHT = 56.dp
@@ -110,26 +109,26 @@ fun ArtistDetailScreen(artist: Artist) {
     val statusBarTopDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val screenWidthDp = remember { 375.dp }
 
+    // 折叠量程 = 头像占位块高度。列表 item 0 是一个等高的 Spacer
+    val artBlock = ART_EXPANDED + 12.dp
+    val artBlockPx = with(LocalDensity.current) { artBlock.toPx() }
+
     // 全部保持为 State：只在 Layout/Draw 阶段读取，滚动时不重组
-    val rawOffsetState =
-        remember(lazyListState) {
+    val artProgressState =
+        remember(lazyListState, artBlockPx) {
             derivedStateOf {
                 if (lazyListState.firstVisibleItemIndex > 0) {
-                    SCROLL_ART_RANGE
+                    1f
                 } else {
-                    lazyListState.firstVisibleItemScrollOffset.toFloat()
+                    (lazyListState.firstVisibleItemScrollOffset / artBlockPx).coerceIn(0f, 1f)
                 }
             }
         }
-
-    val artProgressState =
-        remember {
-            derivedStateOf { (rawOffsetState.value / SCROLL_ART_RANGE).coerceIn(0f, 1f) }
-        }
+    // 顶栏遮罩/标题在折叠后段淡入
     val hdrProgressState =
-        remember {
+        remember(artProgressState) {
             derivedStateOf {
-                ((rawOffsetState.value - SCROLL_HDR_START) / SCROLL_HDR_RANGE).coerceIn(0f, 1f)
+                ((artProgressState.value - HDR_FADE_START) / (1f - HDR_FADE_START)).coerceIn(0f, 1f)
             }
         }
 
@@ -168,10 +167,15 @@ fun ArtistDetailScreen(artist: Artist) {
             overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
             contentPadding =
                 PaddingValues(
-                    top = statusBarTopDp + HEADER_HEIGHT + ART_EXPANDED + 12.dp,
+                    top = statusBarTopDp + HEADER_HEIGHT,
                     bottom = 200.dp,
                 ),
         ) {
+            // 头像占位：留白归列表自身，其高度即折叠量程（滚过它 progress 恰好到 1）
+            item(key = "art_space", contentType = "art_space") {
+                Spacer(Modifier.height(artBlock))
+            }
+
             // 歌手信息大字区
             item(key = "artist_header") {
                 Column(
@@ -373,8 +377,10 @@ private fun ArtistSongRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        // 每行缓存封面 Uri：getCoverUri() 每次都拼串 + Uri.parse，长列表 fling 时逐行分配
+        val songCoverUri = remember(song.mediaStoreId) { song.getCoverUri() }
         LandscapistImage(
-            imageModel = { song.getCoverUri() },
+            imageModel = { songCoverUri },
             modifier =
                 Modifier
                     .size(48.dp)
