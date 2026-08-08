@@ -20,7 +20,8 @@ import kotlin.math.abs
 internal class VerticalDragGestureHandler(
     private val scope: CoroutineScope,
     private val fraction: Animatable<Float, AnimationVector1D>,
-    private val snapSpec: AnimationSpec<Float>,
+    // 按调用时刻取值：收敛阈值要等 Layout 量出总行程后才能算，捕获成定值会一直用兜底阈值
+    private val snapSpec: () -> AnimationSpec<Float>,
 ) {
     /** 收起态到展开态的总像素距离（由 Layout 在每次测量时写入）。 */
     var dragDistancePx: Float = 1f
@@ -75,7 +76,7 @@ internal class VerticalDragGestureHandler(
             scope.launch {
                 fraction.animateTo(
                     targetValue = target,
-                    animationSpec = snapSpec,
+                    animationSpec = snapSpec(),
                     initialVelocity = initialFractionVelocity,
                 )
             }

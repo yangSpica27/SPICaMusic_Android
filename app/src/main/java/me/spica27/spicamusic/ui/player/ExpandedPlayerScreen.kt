@@ -64,6 +64,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -192,7 +193,17 @@ fun ExpandedPlayerScreen(
         Timber.tag("ExpandedPlayerScreen").d("当前歌曲收藏状态: $songLikeState")
     }
 
-    BackHandler(progressProvider.invoke() > .99f) {
+    // progressProvider 里读的是动画/拖拽的 snapshot state，直接在组合期调用会让整棵播放器树
+    // 每帧重组，抵消掉「用 provider 传进度」的本意。包成 derivedStateOf 后每帧只重算这个
+    // 布尔值，仅在跨过阈值时才真正失效重组。
+    val isFullyExpanded by remember(progressProvider) {
+        derivedStateOf { progressProvider() > .99f }
+    }
+    val isPlayerPageRevealed by remember(progressProvider) {
+        derivedStateOf { progressProvider() > .4f }
+    }
+
+    BackHandler(isFullyExpanded) {
         onCollapse.invoke()
     }
 
@@ -306,7 +317,7 @@ fun ExpandedPlayerScreen(
                     // 播放器页面
                     ShowOnIdleContent(
                         modifier = Modifier.weight(1f),
-                        visible = progressProvider.invoke() > .4f,
+                        visible = isPlayerPageRevealed,
                     ) {
                         PlayerPage(
                             playerViewModel = viewModel,

@@ -524,6 +524,12 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
     // 全屏展开进度状态（由 BottomBarV2 驱动）
     val sheetState = rememberBottomBarV2State()
 
+    // inline 分支的 guard。直读 sheetState.progress 会让这条 inline 条订阅每帧变化的进度，
+    // 展开动画期间整条（含封面加载与 marquee）陪着重组一遍。
+    val sheetFullyExpanded by remember(sheetState) {
+        derivedStateOf { sheetState.progress > 0.99f }
+    }
+
     // 是否是单列模式
     var isSingleLineMode by rememberSaveable { mutableStateOf(true) }
 
@@ -608,7 +614,7 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                     },
                 )
             } else {
-                if (sheetState.progress > 0.99f) return@AnimatedContent
+                if (sheetFullyExpanded) return@AnimatedContent
                 Row(
                     modifier =
                         Modifier

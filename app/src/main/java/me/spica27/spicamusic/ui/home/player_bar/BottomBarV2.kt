@@ -46,6 +46,11 @@ class BottomBarV2State internal constructor(
     /** 是否处于（接近）展开态。用于返回键拦截等需要重组的判断。 */
     val isExpanded: Boolean by derivedStateOf { fraction.value > 0.5f }
 
+    /**
+     * spring 的收敛阈值，单位是「进度」。
+     */
+    internal var progressVisibilityThreshold: Float = DEFAULT_PROGRESS_THRESHOLD
+
     fun expand() {
         scope.launch { fraction.animateTo(1f, snapSpec()) }
     }
@@ -54,12 +59,15 @@ class BottomBarV2State internal constructor(
         scope.launch { fraction.animateTo(0f, snapSpec()) }
     }
 
+    internal fun snapSpec() =
+        spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+            visibilityThreshold = progressVisibilityThreshold,
+        )
+
     internal companion object {
-        fun snapSpec() =
-            spring<Float>(
-                dampingRatio = Spring.DampingRatioNoBouncy,
-                stiffness = Spring.StiffnessMediumLow,
-            )
+        private const val DEFAULT_PROGRESS_THRESHOLD = 0.0005f
     }
 }
 
@@ -73,8 +81,22 @@ fun rememberBottomBarV2State(initialProgress: Float = 0f): BottomBarV2State {
 private class SheetMetrics {
     var widthPx: Int = 0
     var fullHeightPx: Int = 1
+
+    /**
+     * 迷你条与导航区的高度。
+     */
     var miniHeightPx: Int = 0
+        private set
     var navHeightPx: Int = 0
+        private set
+
+    fun updateMiniHeight(height: Int) {
+        if (height > 0) miniHeightPx = height
+    }
+
+    fun updateNavHeight(height: Int) {
+        if (height > 0) navHeightPx = height
+    }
 
     /** 收起态卡片顶部的 Y（= 屏幕高 − 导航高 − 迷你条高），也是收起→展开的总行程。 */
     val collapsedCardTopPx: Int
@@ -102,7 +124,7 @@ fun BottomBarV2(
             VerticalDragGestureHandler(
                 scope = scope,
                 fraction = state.fraction,
-                snapSpec = BottomBarV2State.snapSpec(),
+                snapSpec = state::snapSpec,
             )
         }
 
@@ -112,11 +134,11 @@ fun BottomBarV2(
     val collapsedCornerPx = with(density) { collapsedCornerRadius.toPx() }
 
     // 展开时（接近全屏）才合成全屏播放器，收起时省去开销
-    val showFullPlayer by remember { derivedStateOf { state.fraction.value > 0.001f } }
+    val showFullPlayer by remember(state) { derivedStateOf { state.fraction.value > 0.001f } }
     // 完全展开后移除迷你内容，避免无谓测量与手势拦截
-    val showMiniContent by remember { derivedStateOf { state.fraction.value < 0.999f } }
+    val showMiniContent by remember(state) { derivedStateOf { state.fraction.value < 0.999f } }
     // z 序：展开过半后全屏播放器置顶（同时接管触摸），否则迷你条置顶
-    val fullOnTop by remember { derivedStateOf { state.fraction.value >= 0.5f } }
+    val fullOnTop by remember(state) { derivedStateOf { state.fraction.value >= 0.5f } }
 
     // 展开态拦截返回键，收起播放器
     BackHandler(enabled = state.isExpanded) { state.collapse() }
@@ -236,8 +258,9 @@ fun BottomBarV2(
 
             metrics.widthPx = width
             metrics.fullHeightPx = height
-            metrics.miniHeightPx = playPlaceable.height
-            metrics.navHeightPx = navPlaceable.height
+            // 展开到位后迷你内容被摘除、这里会量到 0，此时保留上次的收起态尺寸
+            metrics.updateMiniHeight(playPlaceable.height)
+            metrics.updateNavHeight(navPlaceable.height)
 
             // 全屏播放器卡片：其 .layout 已据 metrics + 进度算出窗口大小
             val playerPlaceable =
@@ -245,7 +268,10 @@ fun BottomBarV2(
 
             val collapsedCardTop = metrics.collapsedCardTopPx
             // 告知拖拽手势：收起→展开的总行程（= 卡片顶移动距离）
-            handler.dragDistancePx = collapsedCardTop.toFloat().coerceAtLeast(1f)
+            val dragDistance = collapsedCardTop.toFloat().coerceAtLeast(1f)
+            handler.dragDistancePx = dragDistance
+            // 收敛阈值按行程折算成 1 物理像素：让 spring 走到亚像素才吸附，避免末期硬切出跳变
+            state.progressVisibilityThreshold = 1f / dragDistance
 
             layout(width, height) {
                 val f = state.fraction.value
