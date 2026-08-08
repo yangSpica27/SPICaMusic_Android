@@ -1342,7 +1342,7 @@ private fun UtilityEntryRow(
 
 /** 封面加载失败的占位：容器高色 + 音符图标 */
 @Composable
-private fun CoverPlaceholder(modifier: Modifier = Modifier) {
+fun CoverPlaceholder(modifier: Modifier = Modifier) {
     Box(
         modifier =
             modifier

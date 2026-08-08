@@ -1,13 +1,21 @@
 package me.spica27.spicamusic.ui.albumdetail
 
+import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Image
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,80 +30,103 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.skydoves.landscapist.image.LandscapistImage
-import me.spica27.navkit.geometry.GeometryTransition
-import me.spica27.navkit.geometry.geometryTarget
+import kotlinx.coroutines.delay
 import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
-import me.spica27.spicamusic.ui.widget.CoverFallback
+import me.spica27.spicamusic.ui.home.page.CoverPlaceholder
+import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
+import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
+import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.theme.Spacing
+import me.spica27.spicamusic.ui.theme.entranceGraphics
+import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import me.spica27.spicamusic.utils.calculateLuminance
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import kotlin.math.roundToInt
+import java.util.concurrent.TimeUnit
 
-// ── 滚动驱动常量（像素）────────────────────────────────────────────────────────
-private const val SCROLL_ART_RANGE = 520f // 封面动画的滚动像素总范围
-private const val SCROLL_HDR_START = 310f // 顶栏开始淡入时对应的滚动偏移量（像素）
-private const val SCROLL_HDR_RANGE = 210f // 顶栏从不可见到完全可见经历的滚动范围（像素）
+// ── 布局尺寸常量 ──────────────────────────────────────────────────────────────
+private val HEADER_HEIGHT = 56.dp // 固定顶栏内容区高度（不含状态栏）
+private val COVER_EXPANDED_MAX = 236.dp // 封面展开尺寸上限（矮窗口按可用高度 34% 钳制）
+private val COVER_COLLAPSED = 38.dp // 封面折叠尺寸（顶栏内容区内垂直居中）
+private val COVER_COLLAPSED_START = 56.dp // 封面折叠后距屏幕左缘距离（返回按钮之后）
 
-// ── 布局尺寸常量 ───────────────────────────────────────────────────────────────
-private val HEADER_HEIGHT = 56.dp // 固定顶栏的内容区高度（不含状态栏）
-private val ART_EXPANDED = 220.dp // 封面展开尺寸
-private val ART_COLLAPSED = 42.dp // 封面折叠尺寸
+private val BOTTOM_PLAYER_RESERVED = 200.dp // 悬浮迷你播放器底部预留（全项目惯例值）
 
+/**
+ * 专辑详情页。
+ */
 @Composable
-fun AlbumDetailScreen(
-    album: Album,
-    /** 封面飞行过渡；不为 null 时，封面在过渡完成前隐藏，由浮层接管渲染 */
-    geometryTransition: GeometryTransition? = null,
-) {
+fun AlbumDetailScreen(album: Album) {
     val path = LocalNavigationPath.current
     val viewModel: AlbumDetailViewModel =
         koinViewModel(key = "AlbumDetailViewModel_${album.id}") { parametersOf(album.id) }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
+
+    val playerViewModel = LocalPlayerViewModel.current
+    val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
+    val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
+    val playingMediaId = currentMediaItem?.mediaId
+    val playingFromThisAlbum =
+        remember(playingMediaId, songs) {
+            playingMediaId != null && playingMediaId in songs.map { it.mediaStoreId.toString() }
+        }
+
+    // 写入歌单成功/失败提示（Toast 由 ViewModel 递出，消费后清除）
+    LaunchedEffect(toastMessage) {
+        val message = toastMessage ?: return@LaunchedEffect
+        Toast.makeText(App.getInstance(), message, Toast.LENGTH_SHORT).show()
+        viewModel.clearToast()
+    }
 
     val coverUri = remember(album) { album.getCoverUri() }
     val dominantColor =
@@ -110,153 +141,221 @@ fun AlbumDetailScreen(
     val onDominantColor = if (luminance > 0.65f) Color.Black else Color.White
 
     val lazyListState = rememberLazyListState()
-    val statusBarTopDp = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val screenWidthDp = remember { 375.dp }
+    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    // ── 基于 LazyListState 的滚动偏移量（像素，上限为 SCROLL_ART_RANGE）─────────
-    // 一旦用户滚动超过第一个 item，视为动画已完全结束
-    val rawOffsetState =
-        remember(lazyListState) {
-            derivedStateOf {
-                if (lazyListState.firstVisibleItemIndex > 0) {
-                    SCROLL_ART_RANGE
-                } else {
-                    lazyListState.firstVisibleItemScrollOffset.toFloat()
-                }
-            }
-        }
-
-    // artProgress：0 = 封面完全展开，1 = 封面完全折叠
-    val artProgressState =
-        remember {
-            derivedStateOf { (rawOffsetState.value / SCROLL_ART_RANGE).coerceIn(0f, 1f) }
-        }
-    // hdrProgress：0 = 固定顶栏不可见，1 = 固定顶栏完全可见
-    val hdrProgressState =
-        remember {
-            derivedStateOf {
-                ((rawOffsetState.value - SCROLL_HDR_START) / SCROLL_HDR_RANGE).coerceIn(0f, 1f)
-            }
-        }
-    val artTopExpanded = statusBarTopDp + HEADER_HEIGHT + 4.dp
-    // 折叠态：在 HEADER_HEIGHT 内容区内垂直居中
-    val artTopCollapsed = statusBarTopDp + (HEADER_HEIGHT - ART_COLLAPSED) / 2f
-    // 展开态：在屏幕上水平居中
-    val artStartExpanded = (screenWidthDp - ART_EXPANDED) / 2f
-
-    Box(
+    BoxWithConstraints(
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        // ── 由专辑主色调染色的渐变背景 ──────────────────────────────────────────
-        val backgroundColor = MaterialTheme.colorScheme.background
+        // 展开封面：横屏/分屏矮窗口时按可用高度 34% 钳制
+        val coverExpanded = COVER_EXPANDED_MAX.coerceAtMost(maxHeight * 0.34f)
+
+        // 封面占位块高度 == 折叠量程：滚过 item 0 时 progress 恰好到 1，边界零断层
+        val coverBlock = Spacing.Small + coverExpanded + Spacing.Medium
+        val coverStartExpanded = (maxWidth - coverExpanded) / 2
+
+        // 首屏入场瀑布：与歌单详情页同款节奏
+        val headerEntrance = rememberEntrance(order = 1)
+        val actionRowEntrance = rememberEntrance(order = 2)
+        val listEntrancePlay = remember { mutableStateOf(true) }
+        LaunchedEffect(Unit) {
+            delay(55)
+            listEntrancePlay.value = false
+        }
+
+        // 折叠进度：只在 draw/graphicsLayer 阶段调用 → 滚动全程零重组
+        val coverBlockPx =
+            with(androidx.compose.ui.platform.LocalDensity.current) {
+                coverBlock.toPx()
+            }
+
+        // 简化的折叠进度计算：始终使用 coverBlockPx 作为分母
+        // 通过在列表底部添加足够的空白来确保短内容也能滚动完整距离
+        val collapseProgress: Density.() -> Float =
+            remember(lazyListState, coverBlockPx) {
+                {
+                    if (lazyListState.firstVisibleItemIndex > 0) {
+                        1f
+                    } else {
+                        (lazyListState.firstVisibleItemScrollOffset / coverBlockPx)
+                            .coerceIn(0f, 1f)
+                    }
+                }
+            }
+
+        // ── 主色调渐变背景（随折叠淡出）──────────────────────────────────
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(statusBarTopDp + HEADER_HEIGHT + ART_EXPANDED + 120.dp)
-                // 主色渐变在 Draw 阶段构建：主色弹簧跑动期间只重绘，不重组本 Box
+                .height(statusBarTop + HEADER_HEIGHT + coverExpanded + 140.dp)
+                .graphicsLayer { alpha = 1f - collapseProgress() }
                 .drawBehind {
                     drawRect(
                         Brush.verticalGradient(
                             0f to animatedDominantColor.value.copy(alpha = 0.92f),
-                            1f to backgroundColor.copy(alpha = 0f),
+                            0.3f to animatedDominantColor.value.copy(alpha = 0.65f),
+                            0.4f to animatedDominantColor.value.copy(alpha = 0.65f),
+                            0.6f to animatedDominantColor.value.copy(alpha = 0.55f),
+                            0.8f to animatedDominantColor.value.copy(alpha = 0.45f),
+                            0.85f to animatedDominantColor.value.copy(alpha = 0.35f),
+                            1f to Color.Transparent,
                         ),
                     )
                 },
         )
 
-        // ── 可滚动内容 ────────────────────────────────────────────────────────
+        // ── 歌曲列表 ────────────────────────────────────────────────────
         LazyColumn(
             state = lazyListState,
             modifier = Modifier.fillMaxSize(),
             overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
             contentPadding =
                 PaddingValues(
-                    top = statusBarTopDp + HEADER_HEIGHT + ART_EXPANDED + 12.dp,
-                    bottom = 200.dp,
+                    top = statusBarTop + HEADER_HEIGHT,
+                    bottom = BOTTOM_PLAYER_RESERVED,
                 ),
         ) {
-            // 专辑大字信息区 —— 随封面折叠逐渐淡出
-            item(key = "album_header") {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 4.dp)
-                        .graphicsLayer {
-                            // 封面移动时迅速淡出
-                            alpha = (1f - artProgressState.value * 2.5f).coerceIn(0f, 1f)
-                        },
-                ) {
-                    Text(
-                        text = album.title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = onDominantColor,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = album.artist,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = onDominantColor.copy(alpha = 0.8f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(Modifier.height(2.dp))
-                    val songCountText = stringResource(R.string.songs_count, album.numberOfSongs)
-                    Text(
-                        text =
-                            buildString {
-                                append(songCountText)
-                                if (album.year > 0) append(" · ${album.year}")
-                            },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = onDominantColor.copy(alpha = 0.6f),
-                    )
-                }
+            // 封面占位：留白属于列表自身
+            item(key = "cover_space", contentType = "cover_space") {
+                Spacer(Modifier.height(coverBlock))
             }
-            item(key = "play_buttons") {
-                PlayButtons(
-                    onPlayAll = viewModel::playAll,
-                    onShuffle = viewModel::playAll,
+
+            // 专辑名 + 歌手 + meta 行（随滚动淡出）
+            item(key = "album_header", contentType = "header") {
+                AlbumHeader(
+                    album = album,
+                    songCount = songs.size,
+                    totalDurationMs = songs.sumOf { it.duration },
+                    onDominantColor = onDominantColor,
+                    collapseProgress = collapseProgress,
+                    modifier = Modifier.entranceGraphics(headerEntrance),
                 )
             }
-            items(songs, key = { it.mediaStoreId }) { song ->
-                SongRow(
+
+            // 播放 / 随机 + 设置 操作行
+            item(key = "action_row", contentType = "actions") {
+                AlbumActionRow(
+                    isPlaying = isPlaying && playingFromThisAlbum,
+                    onPlayAll = {
+                        if (playingFromThisAlbum) viewModel.togglePlayPause() else viewModel.playAll()
+                    },
+                    onShuffle = viewModel::playAll,
+                    modifier = Modifier.entranceGraphics(actionRowEntrance),
+                )
+            }
+
+            items(
+                count = songs.size,
+                key = { index -> songs[index].mediaStoreId },
+                contentType = { "song" },
+            ) { index ->
+                val entrance =
+                    rememberEntrance(Math.min(3 + index, 8), play = listEntrancePlay.value)
+                val song = songs[index]
+                AlbumSongRow(
+                    index = index + 1,
                     song = song,
+                    isPlaying = playingMediaId == song.mediaStoreId.toString(),
                     onClick = { viewModel.playSongInList(song) },
                     onMore = { path.push(SongMenuScene(song)) },
+                    modifier =
+                        Modifier
+                            .animateItem(
+                                fadeInSpec = ListItemFadeInSpec,
+                                placementSpec =
+                                    spring(
+                                        dampingRatio = Spring.DampingRatioLowBouncy,
+                                        stiffness = Spring.StiffnessMediumLow,
+                                        visibilityThreshold = IntOffset.VisibilityThreshold,
+                                    ),
+                                fadeOutSpec = ListItemFadeOutSpec,
+                            ).entranceGraphics(entrance),
                 )
             }
-            item {
-                Spacer(Modifier.height(340.dp))
+            item(
+                key = "bottom_spacer",
+                contentType = "bottom_spacer",
+            ) {
+                Spacer(Modifier.height(coverBlock + COVER_EXPANDED_MAX))
             }
         }
 
-        // ── 固定顶栏遮罩 ──────────────────────────────────────────────────────
-        // 背景随 hdrProgress 淡入；返回按钮始终可见
+        // ── 浮动封面（滚动直接映射，全部运动收敛在一个 graphicsLayer）──────
+        val collapsedScale = COVER_COLLAPSED / coverExpanded
+        Box(
+            Modifier
+                .padding(
+                    start = coverStartExpanded,
+                    top = statusBarTop + HEADER_HEIGHT + Spacing.Small,
+                ).size(coverExpanded)
+                .graphicsLayer {
+                    val p = collapseProgress()
+                    val s = lerp(1f, collapsedScale, p)
+                    transformOrigin = TransformOrigin(0f, 0f)
+                    scaleX = s
+                    scaleY = s
+                    translationX = lerp(0f, (COVER_COLLAPSED_START - coverStartExpanded).toPx(), p)
+                    // 折叠终点在顶栏内容区内垂直居中（状态栏高度在展开/折叠位中相消）
+                    translationY =
+                        lerp(
+                            0f,
+                            ((HEADER_HEIGHT - COVER_COLLAPSED) / 2 - HEADER_HEIGHT - Spacing.Small)
+                                .toPx(),
+                            p,
+                        )
+                    clip = true
+                    shape = Shapes.LargeCornerBasedShape
+                }.dropShadow(
+                    shape = RoundedCornerShape(16.dp),
+                    shadow =
+                        Shadow(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f),
+                            radius = 12.dp,
+                            spread = 2.dp,
+                        ),
+                ),
+        ) {
+            AudioCover(
+                uri = coverUri,
+                placeHolder = { CoverPlaceholder() },
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        // ── [L3] 固定顶栏（背景/标题在折叠尾段浮现）────────────────────────────
+        val topBarBg = MaterialTheme.colorScheme.background
+        val hairlineColor = MaterialTheme.colorScheme.outlineVariant
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(statusBarTopDp + HEADER_HEIGHT)
+                .height(statusBarTop + HEADER_HEIGHT)
                 .align(Alignment.TopStart)
-                // 顶栏底色在 Draw 阶段取进度，滚动时不重组本 Box 及其子项
                 .drawBehind {
-                    drawRect(backgroundColor.copy(alpha = hdrProgressState.value))
+                    val scrollAlpha = ((collapseProgress() - 0.55f) / 0.45f).coerceIn(0f, 1f)
+                    drawRect(topBarBg.copy(alpha = scrollAlpha))
+                    if (scrollAlpha > 0f) {
+                        drawRect(
+                            color = hairlineColor.copy(alpha = 0.14f * scrollAlpha),
+                            topLeft =
+                                androidx.compose.ui.geometry
+                                    .Offset(0f, size.height - 1.dp.toPx()),
+                            size = Size(size.width, 1.dp.toPx()),
+                        )
+                    }
                 },
         ) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 4.dp),
+                    .height(HEADER_HEIGHT)
+                    .align(Alignment.BottomCenter),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = { path.popTop() }) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back),
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
@@ -266,130 +365,103 @@ fun AlbumDetailScreen(
                     modifier =
                         Modifier
                             .weight(1f)
-                            .padding(64.dp, end = 16.dp)
+                            .padding(end = Spacing.ExtraSmall)
                             .graphicsLayer {
-                                // 顶栏标题在 hdrProgress 后半段淡入
-                                alpha = (hdrProgressState.value * 2f).coerceIn(0f, 1f)
+                                val a = ((collapseProgress() - 0.6f) / 0.3f).coerceIn(0f, 1f)
+                                alpha = a
+                                translationY = (1f - a) * 4.dp.toPx()
                             },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.W600,
-                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
-            }
-        }
-
-        // ── 封面图（浮动遮罩层，随滚动动画）─────────────────────────────────────
-        // 声明在最后，确保渲染层级高于固定顶栏
-        // 过渡动画期间 alpha=0（由 GeometryOverlay 浮层接管），完成后淡入
-        LandscapistImage(
-            imageModel = { coverUri },
-            modifier =
-                Modifier
-                    // 位置与尺寸都在 Layout 阶段按进度导出：滚动时只重新布局，
-                    // 不重组。刻意不用 graphicsLayer 缩放 —— 共享元素过渡
-                    // （geometryTarget）依赖真实布局矩形，缩放会让它测错落点。
-                    .layout { measurable, constraints ->
-                        val p = artProgressState.value
-                        val sizePx = lerp(ART_EXPANDED.toPx(), ART_COLLAPSED.toPx(), p)
-                        val side = sizePx.roundToInt().coerceAtLeast(1)
-                        val placeable =
-                            measurable.measure(Constraints.fixed(side, side))
-                        layout(side, side) {
-                            placeable.place(
-                                x = lerp(artStartExpanded.toPx(), 56.dp.toPx(), p).roundToInt(),
-                                y = lerp(artTopExpanded.toPx(), artTopCollapsed.toPx(), p).roundToInt(),
-                            )
-                        }
-                    }
-                    // 圆角随进度在 Draw 阶段插值
-                    .graphicsLayer {
-                        shape = RoundedCornerShape(lerp(16.dp.toPx(), 8.dp.toPx(), artProgressState.value))
-                        clip = true
-                    }
-                    // 目标封面只在共享元素完全交接后显示，避免与 overlay 抢显示权
-                    .graphicsLayer {
-                        alpha =
-                            if (geometryTransition == null || geometryTransition.shouldShowTarget()) {
-                                1f
-                            } else {
-                                0f
-                            }
-                    }.then(
-                        if (geometryTransition != null) {
-                            Modifier.geometryTarget(geometryTransition)
-                        } else {
-                            Modifier
-                        },
-                    ),
-            success = { _, painter ->
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            },
-            failure = {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.default_cover),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
+                IconButton(onClick = { path.push(AlbumMenuScene(album)) }) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.more),
+                        tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }
+            }
+        }
+    }
+}
+
+// ── 专辑头部：标题 + 歌手 + meta ─────────────────────────────────────────────
+
+@Composable
+private fun AlbumHeader(
+    album: Album,
+    songCount: Int,
+    totalDurationMs: Long,
+    onDominantColor: Color,
+    collapseProgress: Density.() -> Float,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = Spacing.Large)
+            .graphicsLayer {
+                // 使用更激进的淡出：在进度 0.5 时完全透明
+                // 短内容时也能确保 header 完全消失，不留白
+                alpha = (1f - collapseProgress() * 2f).coerceIn(0f, 1f)
             },
+    ) {
+        Text(
+            text = album.title,
+            modifier = Modifier,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = onDominantColor,
+        )
+        Spacer(Modifier.height(Spacing.ExtraSmall))
+        Text(
+            text = album.artist.ifBlank { stringResource(R.string.unknown_artist) },
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = onDominantColor,
+            maxLines = 1,
+        )
+        Spacer(Modifier.height(Spacing.ExtraSmall))
+        Text(
+            text = albumMetaText(album, songCount, totalDurationMs),
+            style = MaterialTheme.typography.bodySmall,
+            color = onDominantColor.copy(alpha = 0.62f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
 
-/**
- * 飞行浮层中渲染的专辑封面内容。
- * 与 [me.spica27.spicamusic.ui.home.page.AlbumGridItem] 使用相同的 imageModel，保证视觉连续性。
- * 由 [AlbumDetailScene] 通过 [me.spica27.navkit.scene.Scene.geometryOverlay] 注册。
- */
+/** meta 行：年份 · N 首 · 总时长 */
 @Composable
-internal fun AlbumCoverContent(album: Album) {
-    LandscapistImage(
-        imageModel = { album.getCoverUri() },
-        modifier = Modifier.fillMaxSize(),
-        success = { _, painter ->
-            Image(
-                painter = painter,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        },
-        failure = {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.default_cover),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
-        },
-    )
+private fun albumMetaText(
+    album: Album,
+    songCount: Int,
+    totalDurationMs: Long,
+): String {
+    val yearPart = if (album.year > 0) album.year.toString() else null
+    val countPart = stringResource(R.string.songs_count, songCount)
+    val hours = TimeUnit.MILLISECONDS.toHours(totalDurationMs)
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(totalDurationMs) % 60
+    val durationPart =
+        when {
+            totalDurationMs <= 0L -> null
+            hours > 0 -> stringResource(R.string.hours_minutes, hours, minutes)
+            minutes > 0 -> stringResource(R.string.minutes, minutes)
+            else -> stringResource(R.string.less_than_1_minute)
+        }
+    return listOfNotNull(yearPart, countPart, durationPart).joinToString(" · ")
 }
 
-// ── 播放 / 随机播放操作行 ──────────────────────────────────────────────────────
+// ── 操作行：播放 / 随机 / 设置 ───────────────────────────────────────────────
 
 @Composable
-private fun PlayButtons(
+private fun AlbumActionRow(
+    isPlaying: Boolean,
     onPlayAll: () -> Unit,
     onShuffle: () -> Unit,
     modifier: Modifier = Modifier,
@@ -398,41 +470,85 @@ private fun PlayButtons(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = Spacing.Large)
+                .padding(top = Spacing.Small, bottom = Spacing.Medium),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
-        ElevatedButton(
+        AlbumActionChip(
+            text = stringResource(R.string.play_all),
+            icon = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
             onClick = onPlayAll,
+            primary = true,
             modifier = Modifier.weight(1f),
-        ) {
-            Icon(
-                Icons.Default.PlayArrow,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.play_all_songs))
-        }
-        ElevatedButton(
+        )
+        AlbumActionChip(
+            text = stringResource(R.string.shuffle_play),
+            icon = Icons.Default.Shuffle,
             onClick = onShuffle,
+            primary = false,
             modifier = Modifier.weight(1f),
-        ) {
-            Icon(
-                Icons.Default.Shuffle,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.shuffle_play))
-        }
+        )
     }
 }
 
-// ── 歌曲列表行 ────────────────────────────────────────────────────────────────
+@Composable
+private fun AlbumActionChip(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    primary: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .clip(CircleShape)
+                .background(
+                    if (primary) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    },
+                ).clickHighlight(onClick = onClick)
+                .padding(horizontal = Spacing.Large, vertical = Spacing.Medium),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement =
+            Arrangement.spacedBy(Spacing.ExtraSmall, Alignment.CenterHorizontally),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint =
+                if (primary) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                },
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color =
+                if (primary) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                },
+            maxLines = 1,
+        )
+    }
+}
+
+// ── 歌曲行：音序号 / 播放均衡器 + 标题 + 时长 + 更多 ──────────────────────────
 
 @Composable
-private fun SongRow(
+private fun AlbumSongRow(
+    index: Int,
     song: Song,
+    isPlaying: Boolean,
     onClick: () -> Unit,
     onMore: () -> Unit,
     modifier: Modifier = Modifier,
@@ -441,47 +557,33 @@ private fun SongRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        LandscapistImage(
-            imageModel = { song.getCoverUri() },
-            modifier =
-                Modifier
-                    .size(48.dp)
-                    .clip(MaterialTheme.shapes.small),
-            success = { _, painter ->
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            },
-            failure = {
-                CoverFallback(
-                    fallbackUri = song.getAlbumCoverUri(),
-                    modifier = Modifier.fillMaxSize(),
-                    placeHolder = {
-                        Box(
-                            Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Default.Album,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
+                .padding(horizontal = Spacing.Medium)
+                .clip(Shapes.MediumCornerBasedShape)
+                .background(
+                    if (isPlaying) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.30f)
+                    } else {
+                        Color.Transparent
                     },
+                ).clickHighlight(onClick = onClick)
+                .padding(horizontal = Spacing.Small, vertical = Spacing.Small),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+    ) {
+        Box(
+            modifier = Modifier.width(28.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (isPlaying) {
+                PlayingBarsIndicator()
+            } else {
+                Text(
+                    text = index.toString(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            },
-        )
+            }
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = song.displayName,
@@ -489,7 +591,12 @@ private fun SongRow(
                 fontWeight = FontWeight.W500,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface,
+                color =
+                    if (isPlaying) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
             )
             Text(
                 text = song.artist,
@@ -499,6 +606,11 @@ private fun SongRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        Text(
+            text = song.getFormattedDuration(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         IconButton(onClick = onMore) {
             Icon(
                 Icons.Default.MoreVert,
@@ -507,8 +619,41 @@ private fun SongRow(
             )
         }
     }
-    HorizontalDivider(
-        modifier = Modifier.padding(start = 76.dp, end = 16.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-    )
+}
+
+/** 播放中指示：三根错相起伏的均衡器竖条（全局空态浮动图标同款节奏） */
+@Composable
+private fun PlayingBarsIndicator() {
+    val transition = rememberInfiniteTransition(label = "albumPlayingBars")
+    val barHeights =
+        List(3) { i ->
+            transition.animateFloat(
+                initialValue = 4f,
+                targetValue = 14f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation =
+                            tween(
+                                durationMillis = 420 + i * 130,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "bar$i",
+            )
+        }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        barHeights.forEach { heightAnim ->
+            Box(
+                Modifier
+                    .width(3.dp)
+                    .height(heightAnim.value.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.primary),
+            )
+        }
+    }
 }

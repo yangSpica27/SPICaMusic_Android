@@ -93,6 +93,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import me.spica27.navkit.geometry.GeometryTransition
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.popup.PopupMenuAnchorState
 import me.spica27.navkit.popup.popupMenuAnchor
@@ -577,9 +578,29 @@ fun MusicPage() {
                                     order = minOf(index + 4, 10),
                                     play = playlistEntrance,
                                 )
+                            // 共享元素过渡挂在行级：同一行复用同一对实例，
+                            // LazyColumn 条目离屏销毁时自动弃用（点击发生时必然在屏）
+                            val albumCoverTransition =
+                                remember(album.id) {
+                                    GeometryTransition(
+                                        key = "album_cover_${album.id}",
+                                        sourceClipRadius = 16.dp,
+                                        targetClipRadius = 12.dp,
+                                    )
+                                }
                             MusicAlbumRow(
                                 album = album,
-                                onClick = { path.push(AlbumDetailScene(album)) },
+                                onClick = {
+                                    if (albumCoverTransition.phase.value ==
+                                        GeometryTransition.GeometryPhase.Source
+                                    ) {
+                                        path.push(
+                                            AlbumDetailScene(
+                                                album,
+                                            ),
+                                        )
+                                    }
+                                },
                                 modifier =
                                     Modifier
                                         .animateItem(
@@ -1152,6 +1173,8 @@ private fun MusicAlbumRow(
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier =
+                Modifier,
             )
             Text(
                 text = album.artist,

@@ -716,4 +716,16 @@
   <string name="playlist_creator_create_action_with_count">Create with %1$d</string>
   <string name="playlist_creator_no_songs">No songs in your library yet</string>
 
+
+  <!-- Album detail -->
+  <string name="album_settings">Album settings</string>
+  <string name="save_to_playlist">Save to playlist</string>
+  <string name="save_to_playlist_subtitle">Write all tracks into an existing or new playlist</string>
+  <string name="album_details_subtitle">Artist, year, tracks and total duration</string>
+  <string name="album_year_label">Year</string>
+  <string name="album_track_count_label">Tracks</string>
+  <string name="added_to_playlist_format">Added to playlist \"%1$s\"</string>
+  <string name="added_to_playlists_count_format">Added to %1$d playlists</string>
+  <string name="album_no_playlists_hint">No playlists yet — create one below.</string>
+  <string name="album_picker_select_hint">Select playlists above</string>
 </resources>

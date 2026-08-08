@@ -176,6 +176,7 @@ object AppModule {
                 AlbumDetailViewModel(
                     albumId = parameters.get<String>(),
                     albumRepository = get<AlbumUseCases>(),
+                    playlistRepository = get<PlaylistUseCases>(),
                     player = get<PlayerUseCases>(),
                 )
             }

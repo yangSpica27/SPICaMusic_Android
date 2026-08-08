@@ -715,4 +715,16 @@
   <string name="playlist_creator_create_action_with_count">建立並加入 %1$d 首</string>
   <string name="playlist_creator_no_songs">音樂庫裡還沒有歌曲</string>
 
+
+  <!-- Album detail -->
+  <string name="album_settings">專輯設定</string>
+  <string name="save_to_playlist">儲存為播放清單</string>
+  <string name="save_to_playlist_subtitle">將整張專輯寫入已有或新增播放清單</string>
+  <string name="album_details_subtitle">歌手、年份、曲目數與總時長</string>
+  <string name="album_year_label">年份</string>
+  <string name="album_track_count_label">曲目</string>
+  <string name="added_to_playlist_format">已加入播放清單「%1$s」</string>
+  <string name="added_to_playlists_count_format">已加入 %1$d 個播放清單</string>
+  <string name="album_no_playlists_hint">還沒有播放清單，可在下方直接新增</string>
+  <string name="album_picker_select_hint">先在上方勾選播放清單</string>
 </resources>
