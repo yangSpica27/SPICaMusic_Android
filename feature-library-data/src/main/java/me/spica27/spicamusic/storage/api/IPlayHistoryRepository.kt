@@ -42,6 +42,12 @@ interface IPlayHistoryRepository {
     suspend fun deletePlayHistory(songId: Long)
 
     /**
+     * 按保留策略裁剪原始明细（时间窗与行数上限取先到），只影响明细、不动全时段汇总。
+     * 建议在 App 启动时后台调用一次。
+     */
+    suspend fun pruneHistory()
+
+    /**
      * 同步插入历史（同步包装，尽量使用 suspend 版本）
      */
     fun insertPlayHistory(item: PlayHistory)

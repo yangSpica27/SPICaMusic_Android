@@ -10,10 +10,6 @@ import androidx.room.PrimaryKey
         Index("mediaId"),
         Index("time"),
         Index(value = ["mediaId", "time"]),
-        Index("actionType"),
-        Index("contextType"),
-        Index("sessionId"),
-        Index("isCompleted"),
     ],
 )
 data class PlayHistoryEntity(

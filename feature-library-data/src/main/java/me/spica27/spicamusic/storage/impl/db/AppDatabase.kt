@@ -17,12 +17,13 @@ import me.spica27.spicamusic.storage.impl.entity.PlaylistEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistSongCrossRefEntity
 import me.spica27.spicamusic.storage.impl.entity.ScanFolderEntity
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
+import me.spica27.spicamusic.storage.impl.entity.SongPlayStatEntity
 
 @Database(
     entities = [SongEntity::class, PlaylistEntity::class, PlaylistSongCrossRefEntity::class,
         ExtraInfoEntity::class, PlayHistoryEntity::class, AlbumEntity::class,
-        ScanFolderEntity::class],
-    version = 17,
+        ScanFolderEntity::class, SongPlayStatEntity::class],
+    version = 18,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -173,6 +174,55 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_Song_isIgnore ON Song(isIgnore)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_Song_sortName ON Song(sortName)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_Song_songId ON Song(songId)")
+            }
+        }
+
+        /**
+         * v17 -> v18: 播放历史治理。
+         * 1) 删除 PlayHistory 上从不参与查询的 4 个索引（actionType/contextType/sessionId/isCompleted），
+         *    降低每次插入的写放大与文件体积。
+         * 2) 新增按歌聚合的 SongPlayStat 表，并从存量事件一次性回填，
+         *    供“常听/最常播放/全时段统计”读取，使这些聚合不再全表扫描 PlayHistory。
+         * 注：不在迁移里 VACUUM（大库会阻塞首次打开）；空闲页由后续插入复用，文件增长自然收敛到平台。
+         */
+        val MIGRATION_17_18 = object : Migration(17, 18) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 1) 删无用索引（名称为 Room 生成规则 index_<表>_<列>）
+                db.execSQL("DROP INDEX IF EXISTS index_PlayHistory_actionType")
+                db.execSQL("DROP INDEX IF EXISTS index_PlayHistory_contextType")
+                db.execSQL("DROP INDEX IF EXISTS index_PlayHistory_sessionId")
+                db.execSQL("DROP INDEX IF EXISTS index_PlayHistory_isCompleted")
+
+                // 2) 建汇总表
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS SongPlayStat (
+                        mediaId             INTEGER NOT NULL PRIMARY KEY,
+                        playCount           INTEGER NOT NULL DEFAULT 0,
+                        totalPlayedDuration INTEGER NOT NULL DEFAULT 0,
+                        completedCount      INTEGER NOT NULL DEFAULT 0,
+                        lastPlayedTime      INTEGER NOT NULL DEFAULT 0,
+                        firstPlayedTime     INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent(),
+                )
+
+                // 3) 从存量事件回填（口径与运行时增量维护一致）
+                db.execSQL(
+                    """
+                    INSERT INTO SongPlayStat
+                        (mediaId, playCount, totalPlayedDuration, completedCount, lastPlayedTime, firstPlayedTime)
+                    SELECT
+                        mediaId,
+                        COUNT(*),
+                        COALESCE(SUM(playedDuration), 0),
+                        SUM(CASE WHEN isCompleted THEN 1 ELSE 0 END),
+                        MAX(time),
+                        MIN(time)
+                    FROM PlayHistory
+                    GROUP BY mediaId
+                    """.trimIndent(),
+                )
             }
         }
     }

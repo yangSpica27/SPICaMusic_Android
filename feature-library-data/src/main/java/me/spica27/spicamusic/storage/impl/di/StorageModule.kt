@@ -39,6 +39,7 @@ val storageModule = module {
             AppDatabase.MIGRATION_14_15,
             AppDatabase.MIGRATION_15_16,
             AppDatabase.MIGRATION_16_17,
+            AppDatabase.MIGRATION_17_18,
         )
             // 版本链在 6→9、10→12 之间仍有缺口（那几版没留下 Migration，
             // 原始表结构已无从考证），只能保留破坏性回退兜底，
@@ -60,7 +61,7 @@ val storageModule = module {
     // Repositories - 通过接口暴露
     single<ISongRepository> { SongRepositoryImpl(get()) }
     single<IPlaylistRepository> { PlaylistRepositoryImpl(get(), get()) }
-    single<IPlayHistoryRepository> { PlayHistoryRepositoryImpl(get()) }
+    single<IPlayHistoryRepository> { PlayHistoryRepositoryImpl(get(), get()) }
     single<IAlbumRepository> { AlbumRepositoryImpl(get()) }
     single<ILyricRepository> { LyricRepositoryImpl(get()) }
     single<IScanFolderRepository> { ScanFolderRepositoryImpl(get()) }

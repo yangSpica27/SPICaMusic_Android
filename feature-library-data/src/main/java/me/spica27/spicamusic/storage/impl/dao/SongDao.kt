@@ -108,14 +108,15 @@ interface SongDao {
     @Delete
     suspend fun delete(song: List<SongEntity>)
 
+    // 改读按歌聚合的 SongPlayStat（每首歌一行），去掉对整张 PlayHistory 的
+    // GROUP BY 全表扫描——成本从 O(播放事件数) 降到 O(曲库大小)，不随历史累计变慢。
     @RewriteQueriesToDropUnusedColumns
     @Query(
         """
-        SELECT s.*, COUNT(ph.mediaId) as play_count 
+        SELECT s.*, COALESCE(sps.playCount, 0) as play_count
         FROM song s
-        LEFT JOIN PlayHistory ph ON s.mediaStoreId = ph.mediaId
+        LEFT JOIN SongPlayStat sps ON s.mediaStoreId = sps.mediaId
         WHERE s.isIgnore == 0
-        GROUP BY s.songId
         ORDER BY play_count DESC
     """
     )
@@ -124,11 +125,10 @@ interface SongDao {
     @RewriteQueriesToDropUnusedColumns
     @Query(
         """
-        SELECT s.*, COUNT(ph.mediaId) as play_count 
+        SELECT s.*, COALESCE(sps.playCount, 0) as play_count
         FROM song s
-        LEFT JOIN PlayHistory ph ON s.mediaStoreId = ph.mediaId
+        LEFT JOIN SongPlayStat sps ON s.mediaStoreId = sps.mediaId
         WHERE s.isIgnore == 0
-        GROUP BY s.songId
         ORDER BY play_count DESC
         LIMIT 10
     """

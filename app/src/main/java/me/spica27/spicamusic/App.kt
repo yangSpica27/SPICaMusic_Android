@@ -6,10 +6,15 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.media3.common.util.UnstableApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import me.spcia.lyric_core.di.extraInfoModule
 import me.spica27.spicamusic.crash.CrashHandler
 import me.spica27.spicamusic.di.AppModule
 import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
+import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
 import me.spica27.spicamusic.feature.library.domain.libraryDomainModule
 import me.spica27.spicamusic.feature.lyrics.domain.lyricsDomainModule
 import me.spica27.spicamusic.feature.player.domain.playerDomainModule
@@ -32,6 +37,10 @@ class App : Application() {
     private val musicScanService: MusicScanUseCases by inject()
 
     private val musicPlayer: IMusicPlayer by inject()
+
+    private val playHistoryUseCases: PlayHistoryUseCases by inject()
+
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
@@ -57,6 +66,12 @@ class App : Application() {
                 AppModule.appModule, // 应用模块
                 extraInfoModule,
             )
+        }
+
+        // 播放历史保留窗裁剪：启动后台跑一次，把原始明细钉在保留窗内（只删明细、不动全时段汇总）
+        appScope.launch {
+            runCatching { playHistoryUseCases.pruneHistory() }
+                .onFailure { Timber.w(it, "播放历史裁剪失败") }
         }
 
         // 启动 MediaStore 变更监听
