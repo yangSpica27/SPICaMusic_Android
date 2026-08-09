@@ -231,7 +231,8 @@ fun LibraryPage() {
                                 val enter = entrance.alpha
                                 transformOrigin = TransformOrigin(0f, 0f)
                                 alpha = (1f - t) * enter
-                                translationY = -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
+                                translationY =
+                                    -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
                                 scaleX = 1f - 0.18f * t
                                 scaleY = 1f - 0.18f * t
                             },
@@ -268,7 +269,11 @@ fun LibraryPage() {
             }
 
             if (hasInaccessibleFolders) {
-                item(key = "sources_alert", span = { GridItemSpan(maxLineSpan) }, contentType = "alert") {
+                item(
+                    key = "sources_alert",
+                    span = { GridItemSpan(maxLineSpan) },
+                    contentType = "alert",
+                ) {
                     InaccessibleFoldersNotice(
                         onClick = {
                             // 逐项对应本 Grid 在「媒体库来源」区头之前的 item 声明，增删分区时须同步
@@ -293,7 +298,11 @@ fun LibraryPage() {
             }
 
             if (showStats) {
-                item(key = "weekly_stats", span = { GridItemSpan(maxLineSpan) }, contentType = "stats") {
+                item(
+                    key = "weekly_stats",
+                    span = { GridItemSpan(maxLineSpan) },
+                    contentType = "stats",
+                ) {
                     val entrance = rememberEntrance(order = 2, play = playEntrance)
                     WeeklyStatsStrip(
                         stats = weeklyStats ?: return@item,
@@ -308,7 +317,11 @@ fun LibraryPage() {
                 }
             }
 
-            item(key = "playlists_header", span = { GridItemSpan(maxLineSpan) }, contentType = "section_header") {
+            item(
+                key = "playlists_header",
+                span = { GridItemSpan(maxLineSpan) },
+                contentType = "section_header",
+            ) {
                 val entrance = rememberEntrance(order = 3, play = playEntrance)
                 Text(
                     text = stringResource(R.string.my_playlists),
@@ -323,7 +336,11 @@ fun LibraryPage() {
             }
 
             if (playlists.isEmpty()) {
-                item(key = "playlists_empty", span = { GridItemSpan(maxLineSpan) }, contentType = "empty") {
+                item(
+                    key = "playlists_empty",
+                    span = { GridItemSpan(maxLineSpan) },
+                    contentType = "empty",
+                ) {
                     PlaylistsEmptyState(
                         modifier =
                             Modifier
@@ -377,14 +394,22 @@ fun LibraryPage() {
                 }
             }
 
-            item(key = "sources_header", span = { GridItemSpan(maxLineSpan) }, contentType = "section_header") {
+            item(
+                key = "sources_header",
+                span = { GridItemSpan(maxLineSpan) },
+                contentType = "section_header",
+            ) {
                 SourcesSectionHeader(
                     showErrorDot = hasInaccessibleFolders,
                     modifier = Modifier.padding(top = Spacing.ExtraLarge),
                 )
             }
 
-            item(key = "extra_header", span = { GridItemSpan(maxLineSpan) }, contentType = "sub_header") {
+            item(
+                key = "extra_header",
+                span = { GridItemSpan(maxLineSpan) },
+                contentType = "sub_header",
+            ) {
                 FolderSubHeader(
                     title = stringResource(R.string.extra_scan_folders),
                     onAddClick = { addExtraLauncher.launch(null) },
@@ -393,7 +418,11 @@ fun LibraryPage() {
             }
 
             if (extraFolders.isEmpty()) {
-                item(key = "extra_empty", span = { GridItemSpan(maxLineSpan) }, contentType = "folder_empty") {
+                item(
+                    key = "extra_empty",
+                    span = { GridItemSpan(maxLineSpan) },
+                    contentType = "folder_empty",
+                ) {
                     FolderEmptyHint(text = stringResource(R.string.add_extra_folder_hint))
                 }
             } else {
@@ -426,7 +455,11 @@ fun LibraryPage() {
                 }
             }
 
-            item(key = "ignore_header", span = { GridItemSpan(maxLineSpan) }, contentType = "sub_header") {
+            item(
+                key = "ignore_header",
+                span = { GridItemSpan(maxLineSpan) },
+                contentType = "sub_header",
+            ) {
                 FolderSubHeader(
                     title = stringResource(R.string.ignore_folders),
                     onAddClick = { addIgnoreLauncher.launch(null) },
@@ -435,7 +468,11 @@ fun LibraryPage() {
             }
 
             if (ignoreFolders.isEmpty()) {
-                item(key = "ignore_empty", span = { GridItemSpan(maxLineSpan) }, contentType = "folder_empty") {
+                item(
+                    key = "ignore_empty",
+                    span = { GridItemSpan(maxLineSpan) },
+                    contentType = "folder_empty",
+                ) {
                     FolderEmptyHint(text = stringResource(R.string.add_ignore_folder_hint))
                 }
             } else {
@@ -464,7 +501,11 @@ fun LibraryPage() {
                 }
             }
 
-            item(key = "ignored_songs_entry", span = { GridItemSpan(maxLineSpan) }, contentType = "ignored_songs_entry") {
+            item(
+                key = "ignored_songs_entry",
+                span = { GridItemSpan(maxLineSpan) },
+                contentType = "ignored_songs_entry",
+            ) {
                 IgnoredSongsEntryRow(
                     count = ignoredSongsCount,
                     onClick = { path.push(IgnoredSongsScene()) },
@@ -767,7 +808,13 @@ private fun WeeklyStatsStrip(
         )
         Row(modifier = Modifier.fillMaxWidth()) {
             StatCell(
-                value = formatPlayDuration(stats.totalPlayedDuration, hoursMinutesFmt, minutesFmt, lessThan1MinText),
+                value =
+                    formatPlayDuration(
+                        stats.totalPlayedDuration,
+                        hoursMinutesFmt,
+                        minutesFmt,
+                        lessThan1MinText,
+                    ),
                 label = stringResource(R.string.play_duration),
                 modifier = Modifier.weight(1f),
             )
@@ -898,6 +945,7 @@ private fun PlaylistsEmptyState(modifier: Modifier = Modifier) {
             text = stringResource(R.string.no_playlists_yet),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = stringResource(R.string.create_first_playlist_hint),
@@ -1104,7 +1152,10 @@ private fun FolderRow(
                         animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
                     )
                     launch {
-                        removeAlpha.animateTo(0f, tween(durationMillis = 160, easing = EaseOutStrong))
+                        removeAlpha.animateTo(
+                            0f,
+                            tween(durationMillis = 160, easing = EaseOutStrong),
+                        )
                     }
                     removeScale.animateTo(
                         targetValue = ScaleDismissTo,

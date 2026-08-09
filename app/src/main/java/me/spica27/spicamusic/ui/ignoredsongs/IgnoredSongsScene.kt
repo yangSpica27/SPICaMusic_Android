@@ -831,6 +831,7 @@ private fun IgnoredEmptyState(
             text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = subtitle,
