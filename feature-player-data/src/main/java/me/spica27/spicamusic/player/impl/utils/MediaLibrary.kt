@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.player.impl.utils
 
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.storage.api.ISongRepository
@@ -21,15 +22,41 @@ object MediaLibrary {
     private val songRepository = getKoin().get<ISongRepository>()
 
     /**
+     * 构建可浏览的文件夹节点（供 Android Auto 等媒体浏览器展示目录）
+     */
+    private fun browsableFolder(
+        mediaId: String,
+        title: String,
+    ): MediaItem =
+        MediaItem
+            .Builder()
+            .setMediaId(mediaId)
+            .setMediaMetadata(
+                MediaMetadata
+                    .Builder()
+                    .setTitle(title)
+                    .setIsBrowsable(true)
+                    .setIsPlayable(false)
+                    .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                    .build(),
+            ).build()
+
+    /**
      * 根据 mediaId 获取单个 MediaItem
      */
     suspend fun getItem(mediaId: String): MediaItem? = withContext(Dispatchers.IO) {
+        // 文件夹节点直接返回可浏览项
+        when (mediaId) {
+            ROOT -> return@withContext browsableFolder(ROOT, "SPICaMusic")
+            ALL_SONGS -> return@withContext browsableFolder(ALL_SONGS, "所有歌曲")
+        }
+
         val mediaStoreId = mediaId.toLongOrNull()
         if (mediaStoreId == null) {
             Timber.tag(TAG).e("Invalid mediaId: $mediaId (not a valid Long)")
             return@withContext null
         }
-        
+
         Timber.tag(TAG).d("getItem: mediaId=$mediaId, mediaStoreId=$mediaStoreId")
         
         val song = songRepository.getSongByMediaStoreId(mediaStoreId)
@@ -64,9 +91,11 @@ object MediaLibrary {
      * 获取指定父节点的子项
      */
     suspend fun getChildren(parentId: String): List<MediaItem> = withContext(Dispatchers.IO) {
-        if (parentId == ALL_SONGS) {
-            return@withContext songRepository.getAllSongs().map { it.toMediaItem() }
+        when (parentId) {
+            // 根节点展示可浏览的分类目录
+            ROOT -> listOf(browsableFolder(ALL_SONGS, "所有歌曲"))
+            ALL_SONGS -> songRepository.getAllSongs().map { it.toMediaItem() }
+            else -> emptyList()
         }
-        emptyList()
     }
 }

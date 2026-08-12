@@ -27,9 +27,16 @@ data class ScanProgress(
 interface IMusicScanService {
     /**
      * 扫描媒体库（默认使用 MediaStore）
+     * @param forceRescan 为 true 时忽略 dateModified 增量判断，强制对每个文件重新提取，
+     *                    用于扫描 schema 版本升级后回填新增字段
      * @return 扫描结果
      */
-    suspend fun scanMediaStore(): ScanResult
+    suspend fun scanMediaStore(forceRescan: Boolean = false): ScanResult
+
+    /**
+     * 检测扫描 schema 版本：若持久化版本低于当前实现声明的最新版本
+     */
+    suspend fun syncIfSchemaVersionChanged()
 
     /**
      * 扫描用户添加的所有额外文件夹（基于 SAF tree URI）

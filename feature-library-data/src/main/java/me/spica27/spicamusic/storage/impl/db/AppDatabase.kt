@@ -23,7 +23,7 @@ import me.spica27.spicamusic.storage.impl.entity.SongPlayStatEntity
     entities = [SongEntity::class, PlaylistEntity::class, PlaylistSongCrossRefEntity::class,
         ExtraInfoEntity::class, PlayHistoryEntity::class, AlbumEntity::class,
         ScanFolderEntity::class, SongPlayStatEntity::class],
-    version = 18,
+    version = 19,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -223,6 +223,13 @@ abstract class AppDatabase : RoomDatabase() {
                     GROUP BY mediaId
                     """.trimIndent(),
                 )
+            }
+        }
+
+        /** v18 -> v19: Song 表新增 trackNumber 列，存储专辑内曲目序号，用于专辑详情正确排序 */
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE Song ADD COLUMN trackNumber INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

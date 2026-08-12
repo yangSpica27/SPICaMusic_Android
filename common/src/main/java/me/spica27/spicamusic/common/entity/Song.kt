@@ -34,6 +34,8 @@ data class Song(
     val codec: String,
     val album: String,
     val waveformData: String? = "",
+    /** 专辑内曲目序号（源自 MediaStore.Audio.Media.TRACK，多碟编码为 disc*1000+track），0 表示未知 */
+    val trackNumber: Int = 0,
 ) : Parcelable {
 
     private fun formatTime(millis: Long): String {

@@ -7,11 +7,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
-import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 
 /**
@@ -22,8 +19,6 @@ import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 @Stable
 class AudioEffectsViewModel(
     private val settingsUseCases: SettingsUseCases,
-    private val player: PlayerUseCases,
-    private val musicScanUseCases: MusicScanUseCases,
 ) : ViewModel() {
     companion object {
         /** 默认目标响度（LUFS），与 Spotify/YouTube 一致 */
@@ -75,48 +70,6 @@ class AudioEffectsViewModel(
     // 加载状态
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    init {
-        // 应用启动时加载并应用保存的音效设置
-        // 为每个 Flow 启动独立的收集协程，统一管理音效应用逻辑
-
-        // 监听 EQ 开关变化
-        viewModelScope.launch {
-            eqEnabled.collect { enabled ->
-                player.setEQEnabled(enabled)
-            }
-        }
-
-        // 监听 EQ 频段变化
-        viewModelScope.launch {
-            eqBands.collect { bands ->
-                player.setAllEQBands(bands.toFloatArray())
-            }
-        }
-
-        // 监听混响开关变化
-        viewModelScope.launch {
-            reverbEnabled.collect { enabled ->
-                player.setReverbEnabled(enabled)
-            }
-        }
-
-        // 监听混响参数变化（使用 combine 组合两个 Flow）
-        viewModelScope.launch {
-            combine(reverbLevel, reverbRoomSize) { level, roomSize ->
-                Pair(level, roomSize)
-            }.collect { (level, roomSize) ->
-                player.setReverb(level, roomSize)
-            }
-        }
-
-        // 监听响度归一化开关变化
-        viewModelScope.launch {
-            loudnessNormalizationEnabled.collect { enabled ->
-                player.setLoudnessNormalizationEnabled(enabled)
-            }
-        }
-    }
 
     /**
      * 设置 EQ 开关

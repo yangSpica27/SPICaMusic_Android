@@ -5,6 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -36,6 +37,9 @@ class PreferencesManager(
         val SCAN_MIN_FILE_SIZE_KB = stringPreferencesKey("scan_min_file_size_kb")
         val SCAN_ENABLED_FORMATS = stringPreferencesKey("scan_enabled_formats")
         val SCAN_LAST_COMPLETED_AT = stringPreferencesKey("scan_last_completed_at")
+
+        // 已完成补扫的扫描 schema 版本号（用于新增字段时的启动静默重扫）
+        val SCAN_SCHEMA_VERSION = intPreferencesKey("scan_schema_version")
     }
 
     fun getBoolean(
@@ -49,6 +53,23 @@ class PreferencesManager(
     suspend fun setBoolean(
         key: Preferences.Key<Boolean>,
         value: Boolean,
+    ) {
+        context.dataStore.edit { preferences ->
+            preferences[key] = value
+        }
+    }
+
+    fun getInt(
+        key: Preferences.Key<Int>,
+        defaultValue: Int = 0,
+    ): Flow<Int> =
+        context.dataStore.data.map { preferences ->
+            preferences[key] ?: defaultValue
+        }.distinctUntilChanged()
+
+    suspend fun setInt(
+        key: Preferences.Key<Int>,
+        value: Int,
     ) {
         context.dataStore.edit { preferences ->
             preferences[key] = value

@@ -1,8 +1,10 @@
 package me.spica27.spicamusic.storage.impl.scanner
 
+import android.Manifest
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
+import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.media.MediaScannerConnection
 import android.net.Uri
@@ -12,6 +14,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.ibm.icu.text.Transliterator
 import com.kyant.taglib.AudioPropertiesReadStyle
@@ -26,9 +29,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.storage.api.IMusicScanService
 import me.spica27.spicamusic.storage.api.IScanFolderRepository
 import me.spica27.spicamusic.storage.api.IScanRulesRepository
@@ -54,6 +59,7 @@ class MusicScanService(
     private val albumDao: AlbumDao,
     private val scanFolderRepository: IScanFolderRepository,
     private val scanRulesRepository: IScanRulesRepository,
+    private val preferencesManager: PreferencesManager,
 ) : IMusicScanService {
 
     private val _scanProgress = MutableStateFlow<ScanProgress?>(null)
@@ -84,6 +90,13 @@ class MusicScanService(
     companion object {
         private const val TAG = "MusicScanService"
         private const val MAX_FOLDER_DEPTH = 20
+
+        /**
+         * 扫描 schema 版本号。
+         * 每当扫描逻辑新增/变更了需要写入数据库的字段（如 trackNumber），把该值 +1。
+         * 设备启动时若持久化的版本号低于此值且已授予媒体权限，则静默强制重扫补齐新字段。
+         */
+        const val SCAN_SCHEMA_VERSION = 1
     }
 
     /**
@@ -288,7 +301,7 @@ class MusicScanService(
 
         if (request.requiresFullRescan) {
             Timber.tag(TAG).i("监听变更无法定位具体媒体项，回退到全量增量扫描")
-            scanMediaStore()
+            scanMediaStore(forceRescan = false)
             return
         }
 
@@ -307,7 +320,45 @@ class MusicScanService(
             ?: uri.lastPathSegment?.toLongOrNull()
     }
 
-    override suspend fun scanMediaStore(): ScanResult = withContext(Dispatchers.IO) {
+    override suspend fun syncIfSchemaVersionChanged() {
+        // 无媒体权限时不打扰用户；用户授予后下次启动会自动补扫
+        if (!hasAudioPermission()) {
+            Timber.tag(TAG).d("未授予媒体权限，跳过 schema 版本补扫")
+            return
+        }
+        val persisted =
+            preferencesManager.getInt(PreferencesManager.Keys.SCAN_SCHEMA_VERSION, 0).first()
+        if (persisted >= SCAN_SCHEMA_VERSION) return
+
+        // 已有扫描在跑时本次会被并发保护挡下（返回空结果），跳过以免误推进版本号，留待下次启动
+        if (_isScanning.value) {
+            Timber.tag(TAG).i("已有扫描进行中，schema 补扫顺延到下次启动")
+            return
+        }
+
+        Timber.tag(TAG).i("扫描 schema 版本升级 $persisted -> $SCAN_SCHEMA_VERSION，启动静默强制重扫")
+        scanMediaStore(forceRescan = true)
+        // 仅在未被取消时推进版本号；失败/取消则保持旧值，下次启动重试
+        if (!isCancelled) {
+            preferencesManager.setInt(
+                PreferencesManager.Keys.SCAN_SCHEMA_VERSION,
+                SCAN_SCHEMA_VERSION,
+            )
+        }
+    }
+
+    private fun hasAudioPermission(): Boolean {
+        val permission =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Manifest.permission.READ_MEDIA_AUDIO
+            } else {
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            }
+        return ContextCompat.checkSelfPermission(context, permission) ==
+            PackageManager.PERMISSION_GRANTED
+    }
+
+    override suspend fun scanMediaStore(forceRescan: Boolean): ScanResult = withContext(Dispatchers.IO) {
         if (_isScanning.value) {
             Timber.tag(TAG).w("扫描已在进行中")
             return@withContext ScanResult(0, 0, 0, 0)
@@ -359,6 +410,7 @@ class MusicScanService(
                 MediaStore.Audio.Media.ALBUM_ID,
                 MediaStore.Audio.Media.DATA,
                 MediaStore.Audio.Media.DATE_MODIFIED,
+                MediaStore.Audio.Media.TRACK,
             )
 
             val selection =
@@ -402,6 +454,7 @@ class MusicScanService(
                 val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
                 val dateModifiedColumn =
                     cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
+                val trackColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
 
                 val totalCount = cursor.count
                 Timber.tag(TAG).d("开始增量扫描 MediaStore，共 $totalCount 个音频文件")
@@ -417,6 +470,7 @@ class MusicScanService(
                     val albumId = cursor.getLong(albumIdColumn)
                     val path = cursor.getString(dataColumn) ?: ""
                     val dateModified = cursor.getLong(dateModifiedColumn)
+                    val track = cursor.getInt(trackColumn)
 
                     // 按用户扫描规则过滤（格式/时长/体积），并跳过忽略文件夹中的文件
                     if (!isMediaStoreSongEligible(ruleMatcher, mimeType, duration, size, path, ignorePrefixes)) {
@@ -435,8 +489,9 @@ class MusicScanService(
 
                     val existingInfo = existingScanInfoMap[mediaStoreId]
 
-                    if (existingInfo != null && existingInfo.dateModified == dateModified && dateModified != 0L) {
+                    if (!forceRescan && existingInfo != null && existingInfo.dateModified == dateModified && dateModified != 0L) {
                         // 文件未变更 → 跳过 TagLib 扫描，不做任何处理
+                        // （强制重扫时不跳过，用于扫描 schema 版本升级后回填新字段）
                         continue
                     }
 
@@ -475,6 +530,7 @@ class MusicScanService(
                         dateModified = dateModified,
                         codec = codec,
                         waveformData = existingInfo?.waveformData,
+                        trackNumber = track,
                     )
                     songsToScan.add(song)
                     if (existingInfo != null) {
@@ -595,6 +651,7 @@ class MusicScanService(
                         val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
                         val dateModifiedColumn =
                             cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
+                        val trackColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
 
                         while (cursor.moveToNext() && !isCancelled) {
                             val mediaStoreId = cursor.getLong(idColumn)
@@ -607,6 +664,7 @@ class MusicScanService(
                             val albumId = cursor.getLong(albumIdColumn)
                             val path = cursor.getString(dataColumn) ?: ""
                             val dateModified = cursor.getLong(dateModifiedColumn)
+                            val track = cursor.getInt(trackColumn)
                             val existingInfo = existingInfoMap[mediaStoreId]
 
                             if (!isMediaStoreSongEligible(ruleMatcher, mimeType, duration, size, path, ignorePrefixes)) {
@@ -667,6 +725,7 @@ class MusicScanService(
                                     dateModified = dateModified,
                                     codec = codec,
                                     waveformData = existingInfo?.waveformData,
+                                    trackNumber = track,
                                 ),
                             )
                             affectedAlbumIds.add(albumId)
@@ -861,6 +920,7 @@ class MusicScanService(
                 MediaStore.Audio.Media.ALBUM_ID,
                 MediaStore.Audio.Media.DATA,
                 MediaStore.Audio.Media.DATE_MODIFIED,
+                MediaStore.Audio.Media.TRACK,
             ),
             "${MediaStore.Audio.Media._ID} IN ($placeholders)",
             mediaStoreIds.map(Long::toString).toTypedArray(),

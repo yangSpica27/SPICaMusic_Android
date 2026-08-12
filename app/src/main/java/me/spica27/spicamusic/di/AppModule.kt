@@ -4,6 +4,7 @@ import com.linc.amplituda.Amplituda
 import com.skydoves.sandwich.retrofit.adapters.ApiResponseCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import me.spica27.spicamusic.audioeffects.AudioEffectsApplier
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
@@ -86,6 +87,14 @@ object AppModule {
 
             // Amplituda 分析工具
             single { Amplituda(androidContext()) }
+
+            // 应用级音效应用器 - 启动时加载并应用持久化音效
+            single {
+                AudioEffectsApplier(
+                    settings = get<SettingsUseCases>(),
+                    player = get<PlayerUseCases>(),
+                )
+            }
 
             // 播放器 ViewModel - 全局共享
             viewModel {
@@ -229,8 +238,6 @@ object AppModule {
             viewModel {
                 AudioEffectsViewModel(
                     settingsUseCases = get<SettingsUseCases>(),
-                    player = get<PlayerUseCases>(),
-                    musicScanUseCases = get<MusicScanUseCases>(),
                 )
             }
 

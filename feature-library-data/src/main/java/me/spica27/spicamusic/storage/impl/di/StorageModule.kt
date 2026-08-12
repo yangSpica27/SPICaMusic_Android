@@ -40,6 +40,7 @@ val storageModule = module {
             AppDatabase.MIGRATION_15_16,
             AppDatabase.MIGRATION_16_17,
             AppDatabase.MIGRATION_17_18,
+            AppDatabase.MIGRATION_18_19,
         )
             // 版本链在 6→9、10→12 之间仍有缺口（那几版没留下 Migration，
             // 原始表结构已无从考证），只能保留破坏性回退兜底，
@@ -68,5 +69,5 @@ val storageModule = module {
     single<IScanRulesRepository> { ScanRulesRepositoryImpl(get()) }
 
     // 扫描服务
-    single<IMusicScanService> { MusicScanService(get(), get(), get(), get(), get()) }
+    single<IMusicScanService> { MusicScanService(get(), get(), get(), get(), get(), get()) }
 }

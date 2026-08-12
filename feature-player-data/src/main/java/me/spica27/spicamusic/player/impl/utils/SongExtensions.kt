@@ -34,7 +34,7 @@ fun Song.toMediaItem(): MediaItem =
                     putString("waveformData", waveformData)
                 })
                 .setDurationMs(duration).setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
-                .setIsPlayable(true).setIsBrowsable(true).setArtworkUri(getCoverUri()).build(),
+                .setIsPlayable(true).setIsBrowsable(false).setArtworkUri(getCoverUri()).build(),
         )
         .setMimeType(mimeType)
         .build()

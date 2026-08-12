@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import me.spcia.lyric_core.di.extraInfoModule
+import me.spica27.spicamusic.audioeffects.AudioEffectsApplier
 import me.spica27.spicamusic.crash.CrashHandler
 import me.spica27.spicamusic.di.AppModule
 import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
@@ -40,6 +41,8 @@ class App : Application() {
 
     private val playHistoryUseCases: PlayHistoryUseCases by inject()
 
+    private val audioEffectsApplier: AudioEffectsApplier by inject()
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @OptIn(UnstableApi::class)
@@ -68,10 +71,19 @@ class App : Application() {
             )
         }
 
+        // Koin 启动后：加载并应用持久化音效设置
+        audioEffectsApplier.start(appScope)
+
         // 播放历史保留窗裁剪：启动后台跑一次，把原始明细钉在保留窗内（只删明细、不动全时段汇总）
         appScope.launch {
             runCatching { playHistoryUseCases.pruneHistory() }
                 .onFailure { Timber.w(it, "播放历史裁剪失败") }
+        }
+
+        // 扫描 schema 版本升级时后台静默补扫（如新增 trackNumber 字段），无权限/版本最新则内部直接返回
+        appScope.launch {
+            runCatching { musicScanService.syncIfSchemaVersionChanged() }
+                .onFailure { Timber.w(it, "扫描 schema 版本补扫失败") }
         }
 
         // 启动 MediaStore 变更监听

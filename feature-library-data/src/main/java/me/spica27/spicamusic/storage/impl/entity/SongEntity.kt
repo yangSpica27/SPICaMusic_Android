@@ -39,4 +39,6 @@ data class SongEntity(
     var dateModified: Long = 0,
     var codec: String,
     var waveformData: String? = "",
+    /** 专辑内曲目序号（MediaStore.Audio.Media.TRACK，多碟编码为 disc*1000+track），0 表示未知 */
+    var trackNumber: Int = 0,
 )
