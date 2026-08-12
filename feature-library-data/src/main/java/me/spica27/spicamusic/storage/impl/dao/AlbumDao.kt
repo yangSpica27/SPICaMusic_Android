@@ -48,6 +48,13 @@ interface AlbumDao {
     @Query("SELECT * FROM albumentity WHERE title LIKE '%' || :keyword || '%' OR artist LIKE '%' || :keyword || '%'")
     fun getFilteredPaging(keyword: String): PagingSource<Int, AlbumEntity>
 
+    // 同一歌手的专辑
+    @Query(
+        "SELECT * FROM albumentity WHERE artist = :artist " +
+            "ORDER BY year DESC, title ASC",
+    )
+    fun getAlbumsByArtistFlow(artist: String): Flow<List<AlbumEntity>>
+
     // 专辑内按曲目序号排序：未知序号(<=0)置于末尾，其余按 trackNumber 升序，最后以名称兜底
     @Query(
         "SELECT * FROM song WHERE albumId = :albumId " +

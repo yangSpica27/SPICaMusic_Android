@@ -7,8 +7,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.SongFilter
+import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayerAction
@@ -17,11 +19,22 @@ import me.spica27.spicamusic.player.api.PlayerAction
 class ArtistDetailViewModel(
     private val artistName: String,
     private val songUseCases: SongUseCases,
+    private val albumUseCases: AlbumUseCases,
     private val player: PlayerUseCases,
 ) : ViewModel() {
     val songs: StateFlow<List<Song>> =
         songUseCases
             .getSongsFlow(filter = SongFilter(artists = listOf(artistName)))
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
+            )
+
+    /** 该歌手名下的全部专辑：底部"来自某歌手的其他内容"横向列表数据源 */
+    val albums: StateFlow<List<Album>> =
+        albumUseCases
+            .getAlbumsByArtistFlow(artistName)
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),

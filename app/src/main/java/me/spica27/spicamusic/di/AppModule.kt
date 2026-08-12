@@ -230,6 +230,7 @@ object AppModule {
                 ArtistDetailViewModel(
                     artistName = parameters.get<String>(),
                     songUseCases = get<SongUseCases>(),
+                    albumUseCases = get<AlbumUseCases>(),
                     player = get<PlayerUseCases>(),
                 )
             }

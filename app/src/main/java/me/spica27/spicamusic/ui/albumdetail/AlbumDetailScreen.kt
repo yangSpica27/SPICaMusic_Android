@@ -85,6 +85,7 @@ import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.theme.entranceGraphics
 import me.spica27.spicamusic.ui.theme.rememberEntrance
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.OtherAlbumsShelf
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import me.spica27.spicamusic.utils.calculateLuminance
@@ -110,6 +111,7 @@ fun AlbumDetailScreen(album: Album) {
     val viewModel: AlbumDetailViewModel =
         koinViewModel(key = "AlbumDetailViewModel_${album.id}") { parametersOf(album.id) }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val otherAlbums by viewModel.otherAlbums.collectAsStateWithLifecycle()
     val toastMessage by viewModel.toastMessage.collectAsStateWithLifecycle()
 
     val playerViewModel = LocalPlayerViewModel.current
@@ -273,6 +275,17 @@ fun AlbumDetailScreen(album: Album) {
                                 fadeOutSpec = ListItemFadeOutSpec,
                             ).entranceGraphics(entrance),
                 )
+            }
+            // 来自同一歌手的其他专辑
+            if (otherAlbums.isNotEmpty()) {
+                item(key = "other_albums", contentType = "other_albums") {
+                    OtherAlbumsShelf(
+                        artistName = album.artist,
+                        albums = otherAlbums,
+                        onAlbumClick = { path.push(AlbumDetailScene(it)) },
+                        modifier = Modifier.padding(top = Spacing.ExtraLarge),
+                    )
+                }
             }
             item(
                 key = "bottom_spacer",

@@ -26,4 +26,9 @@ interface IAlbumRepository {
      */
     fun getAlbumSongsFlow(albumId: String): Flow<List<Song>>
 
+    /**
+     * 获取同一歌手名下的全部专辑 Flow（按年份倒序），用于详情页"来自某歌手的其他内容"
+     */
+    fun getAlbumsByArtistFlow(artist: String): Flow<List<Album>>
+
 }

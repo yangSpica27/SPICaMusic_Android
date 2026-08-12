@@ -48,4 +48,10 @@ class AlbumRepositoryImpl(
             songEntities.map { it.toCommon() }
         }
     }
+
+    override fun getAlbumsByArtistFlow(artist: String): Flow<List<Album>> {
+        return albumDao.getAlbumsByArtistFlow(artist).map { albumEntities ->
+            albumEntities.map { it.toCommon() }
+        }
+    }
 }

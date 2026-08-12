@@ -187,6 +187,7 @@
   <string name="updated">更新歌曲</string>
   <string name="removed">删除歌曲</string>
   <string name="songs_count_format">%d 首</string>
+  <string name="more_from_artist">来自%1$s的其他内容</string>
   <string name="scan_failed">扫描失败</string>
   <string name="cancel">取消</string>
   <string name="retry">重试</string>

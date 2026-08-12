@@ -66,8 +66,10 @@ import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.widget.CoverFallback
+import me.spica27.spicamusic.ui.widget.OtherAlbumsShelf
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import me.spica27.spicamusic.utils.calculateLuminance
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
@@ -91,6 +93,7 @@ fun ArtistDetailScreen(artist: Artist) {
             parametersOf(artist.name)
         }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val albums by viewModel.albums.collectAsStateWithLifecycle()
 
     val coverUri = remember(artist) { artist.getCoverUri() }
     val dominantColor =
@@ -220,6 +223,18 @@ fun ArtistDetailScreen(artist: Artist) {
                     modifier = Modifier.padding(start = 76.dp, end = 16.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
                 )
+            }
+
+            // 来自该歌手的其他内容：设备中存在该歌手的专辑时展示横向列表
+            if (albums.isNotEmpty()) {
+                item(key = "other_albums", contentType = "other_albums") {
+                    OtherAlbumsShelf(
+                        artistName = artist.name,
+                        albums = albums,
+                        onAlbumClick = { path.push(AlbumDetailScene(it)) },
+                        modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
+                    )
+                }
             }
 
             item { Spacer(Modifier.height(340.dp)) }
