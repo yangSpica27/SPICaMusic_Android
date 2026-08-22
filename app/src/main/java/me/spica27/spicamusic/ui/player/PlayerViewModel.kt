@@ -28,6 +28,7 @@ import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
+import me.spica27.spicamusic.player.api.SleepTimerState
 import me.spica27.spicamusic.utils.extractDominantColorFromUri
 import timber.log.Timber
 
@@ -64,6 +65,9 @@ class PlayerViewModel(
      * 播放完成后暂停状态
      */
     val pauseWhenCompletion: StateFlow<Boolean> = player.pauseWhenCompletion
+
+    /** 当前睡眠定时器状态；无定时器时为 null。 */
+    val sleepTimer: StateFlow<SleepTimerState?> = player.sleepTimer
 
     /**
      * 当前播放的媒体项
@@ -310,6 +314,16 @@ class PlayerViewModel(
      */
     fun setPauseWhenCompletion(enabled: Boolean) {
         player.doAction(PlayerAction.PauseWhenCompletion(cancel = !enabled))
+    }
+
+    /** 设置睡眠定时器，到期后暂停播放。 */
+    fun setSleepTimer(durationMs: Long) {
+        player.setSleepTimer(durationMs)
+    }
+
+    /** 取消睡眠定时器。 */
+    fun cancelSleepTimer() {
+        player.cancelSleepTimer()
     }
 
     /**

@@ -28,6 +28,11 @@ interface IMusicPlayer {
     val isPlaying: StateFlow<Boolean>
 
     /**
+     * 睡眠定时器状态；无定时器时为 null。
+     */
+    val sleepTimer: StateFlow<SleepTimerState?>
+
+    /**
      * 当前播放的媒体项
      */
     val currentMediaItem: StateFlow<MediaItem?>
@@ -78,6 +83,19 @@ interface IMusicPlayer {
      * 执行播放器操作
      */
     fun doAction(action: PlayerAction)
+
+    /**
+     * 设置睡眠定时器。到期后暂停当前播放并保留播放位置和播放列表。
+     *
+     * 定时器按真实经过时间倒计时，即使应用退到后台或当前播放被手动暂停也不会暂停计时。
+     * @throws IllegalArgumentException 当 durationMs 小于等于 0 时
+     */
+    fun setSleepTimer(durationMs: Long)
+
+    /**
+     * 取消当前睡眠定时器。
+     */
+    fun cancelSleepTimer()
 
     /**
      * 判断指定媒体项是否正在播放

@@ -728,4 +728,12 @@
   <string name="added_to_playlists_count_format">已加入 %1$d 個播放清單</string>
   <string name="album_no_playlists_hint">還沒有播放清單，可在下方直接新增</string>
   <string name="album_picker_select_hint">先在上方勾選播放清單</string>
+  <string name="settings_sleep_timer">睡眠定時</string>
+  <string name="settings_sleep_timer_subtitle">在指定時間後停止播放</string>
+  <string name="settings_sleep_timer_active">將在 %1$s 後停止</string>
+  <string name="settings_sleep_timer_dialog_title">睡眠定時</string>
+  <string name="settings_sleep_timer_dialog_subtitle">選擇停止播放的時間。</string>
+  <string name="settings_sleep_timer_minutes">%1$d 分鐘</string>
+  <string name="settings_sleep_timer_preset_subtitle">定時結束後暫停播放</string>
+  <string name="settings_sleep_timer_cancel">取消定時</string>
 </resources>

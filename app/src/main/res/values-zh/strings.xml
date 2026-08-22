@@ -729,4 +729,12 @@
   <string name="added_to_playlists_count_format">已添加到 %1$d 个歌单</string>
   <string name="album_no_playlists_hint">还没有歌单，可在下方直接新建</string>
   <string name="album_picker_select_hint">先在上方勾选歌单</string>
+  <string name="settings_sleep_timer">睡眠定时</string>
+  <string name="settings_sleep_timer_subtitle">在指定时间后停止播放</string>
+  <string name="settings_sleep_timer_active">将在 %1$s 后停止</string>
+  <string name="settings_sleep_timer_dialog_title">睡眠定时</string>
+  <string name="settings_sleep_timer_dialog_subtitle">选择停止播放的时间。</string>
+  <string name="settings_sleep_timer_minutes">%1$d 分钟</string>
+  <string name="settings_sleep_timer_preset_subtitle">定时结束后暂停播放</string>
+  <string name="settings_sleep_timer_cancel">取消定时</string>
 </resources>

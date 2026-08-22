@@ -41,6 +41,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -105,6 +106,7 @@ import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
+import me.spica27.spicamusic.player.api.SleepTimerState
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
 import me.spica27.spicamusic.ui.player.scene.LyricScene
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
@@ -161,6 +163,8 @@ fun ExpandedPlayerScreen(
     initialPage: Int = DEFAULT_PAGE, // 初始页面索引
 ) {
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
+    val sleepTimer by viewModel.sleepTimer.collectAsStateWithLifecycle()
+    var showSleepTimerDialog by remember { mutableStateOf(false) }
     val playMode by viewModel.playMode.collectAsStateWithLifecycle()
     val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
     val duration by viewModel.currentDuration.collectAsStateWithLifecycle()
@@ -306,6 +310,8 @@ fun ExpandedPlayerScreen(
                         modifier = Modifier,
                         onCollapse = onCollapse,
                         progressProvider = progressProvider,
+                        sleepTimer = sleepTimer,
+                        onSleepTimerClick = { showSleepTimerDialog = true },
                         onPlaylistBtnClick = {
                             coroutineScope.launch {
                                 // 与顶栏另一侧的返回首页按钮同节奏：两个对称的翻页键
@@ -420,6 +426,15 @@ fun ExpandedPlayerScreen(
                 }
             }
         }
+
+        if (showSleepTimerDialog) {
+            SleepTimerDialog(
+                timer = sleepTimer,
+                onDismiss = { showSleepTimerDialog = false },
+                onSetTimer = viewModel::setSleepTimer,
+                onCancelTimer = viewModel::cancelSleepTimer,
+            )
+        }
     }
 }
 
@@ -435,6 +450,8 @@ private fun TopBar(
     onCollapse: () -> Unit,
     progressProvider: () -> Float,
     modifier: Modifier,
+    sleepTimer: SleepTimerState? = null,
+    onSleepTimerClick: () -> Unit = {},
     onPlaylistBtnClick: () -> Unit = {},
 ) {
     Column(
@@ -474,6 +491,24 @@ private fun TopBar(
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
+            IconButton(
+                onClick = onSleepTimerClick,
+                colors =
+                    IconButtonDefaults.iconButtonColors().copy(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        contentColor =
+                            if (sleepTimer != null) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                    ),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = stringResource(R.string.settings_sleep_timer),
+                )
+            }
             Row(
                 modifier =
                     Modifier

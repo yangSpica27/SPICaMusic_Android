@@ -15,8 +15,10 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -29,6 +31,7 @@ import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
+import me.spica27.spicamusic.player.api.SleepTimerState
 import me.spica27.spicamusic.player.impl.dsp.EqualizerAudioProcessor
 import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessor
 import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessorWrapper
@@ -103,6 +106,12 @@ class SpicaPlayer(
 
     private val _isPlaying = MutableStateFlow(false)
     override val isPlaying: StateFlow<Boolean> = _isPlaying
+
+    private val sleepTimerLock = Any()
+    private var sleepTimerGeneration = 0L
+    private var sleepTimerJob: Job? = null
+    private val _sleepTimer = MutableStateFlow<SleepTimerState?>(null)
+    override val sleepTimer: StateFlow<SleepTimerState?> = _sleepTimer
 
     private val _currentMediaItem = MutableStateFlow<MediaItem?>(null)
     override val currentMediaItem: StateFlow<MediaItem?> = _currentMediaItem
@@ -324,7 +333,90 @@ class SpicaPlayer(
         }
     }
 
+    override fun setSleepTimer(durationMs: Long) {
+        require(durationMs > 0) { "Sleep timer duration must be greater than zero" }
+
+        synchronized(sleepTimerLock) {
+            sleepTimerGeneration += 1
+            val generation = sleepTimerGeneration
+            val deadline = SystemClock.elapsedRealtime() + durationMs
+
+            sleepTimerJob?.cancel()
+            _sleepTimer.value =
+                SleepTimerState(
+                    durationMs = durationMs,
+                    remainingMs = durationMs,
+                    deadlineElapsedRealtimeMs = deadline,
+                )
+            sleepTimerJob = launch { runSleepTimer(generation) }
+        }
+    }
+
+    override fun cancelSleepTimer() {
+        synchronized(sleepTimerLock) {
+            sleepTimerGeneration += 1
+            sleepTimerJob?.cancel()
+            sleepTimerJob = null
+            _sleepTimer.value = null
+        }
+    }
+
+    /**
+     * 倒计时运行在播放器自己的应用级 scope 中，因此不会因 Activity/Compose 页面销毁而丢失。
+     * 每次刷新都校验 generation，避免旧定时器在新定时器设置后覆盖状态或触发暂停。
+     */
+    private suspend fun runSleepTimer(
+        generation: Long,
+    ) {
+        try {
+            while (true) {
+                val now = SystemClock.elapsedRealtime()
+                val remaining =
+                    synchronized(sleepTimerLock) {
+                        if (generation != sleepTimerGeneration) {
+                            null
+                        } else {
+                            val current = _sleepTimer.value ?: return@synchronized null
+                            val updated = current.updatedAt(now)
+                            _sleepTimer.value = updated
+                            updated.remainingMs
+                        }
+                    }
+
+                // null means this job was superseded or explicitly cancelled.
+                if (remaining == null) return
+                if (remaining <= 0L) {
+                    val shouldPause =
+                        synchronized(sleepTimerLock) {
+                            if (generation == sleepTimerGeneration) {
+                                _sleepTimer.value = null
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                    // If playback was manually paused before expiry, avoid waking/reconnecting
+                    // the MediaBrowser just to issue a redundant pause command.
+                    if (shouldPause && _isPlaying.value) {
+                        doAction(PlayerAction.Pause)
+                    }
+                    return
+                }
+
+                delay(minOf(1_000L, remaining))
+            }
+        } finally {
+            val currentJob = kotlinx.coroutines.currentCoroutineContext()[Job]
+            synchronized(sleepTimerLock) {
+                if (sleepTimerJob === currentJob) {
+                    sleepTimerJob = null
+                }
+            }
+        }
+    }
+
     override fun release() {
+        cancelSleepTimer()
         // 1. 移除监听器
         browserInstance?.removeListener(this)
         // 2. 释放 MediaBrowser 及其 Future（Media3 规范：releaseFuture 负责 Future 的生命周期）

@@ -729,4 +729,12 @@
   <string name="added_to_playlists_count_format">Added to %1$d playlists</string>
   <string name="album_no_playlists_hint">No playlists yet — create one below.</string>
   <string name="album_picker_select_hint">Select playlists above</string>
+  <string name="settings_sleep_timer">Sleep timer</string>
+  <string name="settings_sleep_timer_subtitle">Stop playback after a set time</string>
+  <string name="settings_sleep_timer_active">Stops in %1$s</string>
+  <string name="settings_sleep_timer_dialog_title">Sleep timer</string>
+  <string name="settings_sleep_timer_dialog_subtitle">Choose when playback should stop.</string>
+  <string name="settings_sleep_timer_minutes">%1$d minutes</string>
+  <string name="settings_sleep_timer_preset_subtitle">Pause playback when the timer ends</string>
+  <string name="settings_sleep_timer_cancel">Cancel timer</string>
 </resources>

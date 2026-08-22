@@ -35,6 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
@@ -91,6 +92,9 @@ import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.ui.about.AboutScene
 import me.spica27.spicamusic.ui.audioeffects.AudioEffectsScene
+import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.player.SleepTimerDialog
+import me.spica27.spicamusic.ui.player.formatSleepTimerRemaining
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
@@ -117,6 +121,8 @@ class SettingsScene : StackScene() {
         val coverTapValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
         val progressWaveformValue by viewModel.progressBarStyle.collectAsStateWithLifecycle()
         val colorStyleValue by viewModel.themeColorStyle.collectAsStateWithLifecycle()
+        val playerViewModel = LocalPlayerViewModel.current
+        val sleepTimer by playerViewModel.sleepTimer.collectAsStateWithLifecycle()
 
         // 只在页面首次呈现时播放一次入场
         var entrancePlayed by remember { mutableStateOf(false) }
@@ -127,6 +133,7 @@ class SettingsScene : StackScene() {
 
         // 一次只展开一个选项组：避免整个页面同时膨胀成一大片选项海
         var expandedRowKey by rememberSaveable { mutableStateOf<String?>(null) }
+        var showSleepTimerDialog by rememberSaveable { mutableStateOf(false) }
 
         val listState = rememberLazyListState()
         val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -269,6 +276,19 @@ class SettingsScene : StackScene() {
                             onClick = { path.push(AudioEffectsScene()) },
                         )
                         SettingsItemDivider()
+                        NavigationRow(
+                            title = stringResource(R.string.settings_sleep_timer),
+                            summary =
+                                sleepTimer?.let {
+                                    stringResource(
+                                        R.string.settings_sleep_timer_active,
+                                        formatSleepTimerRemaining(it.remainingMs),
+                                    )
+                                } ?: stringResource(R.string.settings_sleep_timer_subtitle),
+                            icon = Icons.Default.Bedtime,
+                            onClick = { showSleepTimerDialog = true },
+                        )
+                        SettingsItemDivider()
                         SwitchRow(
                             title = stringResource(R.string.settings_keep_screen_on),
                             summary = stringResource(R.string.settings_keep_screen_on_subtitle),
@@ -306,6 +326,21 @@ class SettingsScene : StackScene() {
                 onBack = { path.popTop() },
                 modifier = Modifier.align(Alignment.TopStart),
             )
+
+            if (showSleepTimerDialog) {
+                SleepTimerDialog(
+                    timer = sleepTimer,
+                    onDismiss = { showSleepTimerDialog = false },
+                    onSetTimer = {
+                        playerViewModel.setSleepTimer(it)
+                        showSleepTimerDialog = false
+                    },
+                    onCancelTimer = {
+                        playerViewModel.cancelSleepTimer()
+                        showSleepTimerDialog = false
+                    },
+                )
+            }
         }
     }
 }
