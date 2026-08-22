@@ -330,15 +330,10 @@ class SettingsScene : StackScene() {
             if (showSleepTimerDialog) {
                 SleepTimerDialog(
                     timer = sleepTimer,
+                    // 关闭时机交给弹窗：它要先播完收起动画，再回调这里把自己摘掉
                     onDismiss = { showSleepTimerDialog = false },
-                    onSetTimer = {
-                        playerViewModel.setSleepTimer(it)
-                        showSleepTimerDialog = false
-                    },
-                    onCancelTimer = {
-                        playerViewModel.cancelSleepTimer()
-                        showSleepTimerDialog = false
-                    },
+                    onSetTimer = playerViewModel::setSleepTimer,
+                    onCancelTimer = playerViewModel::cancelSleepTimer,
                 )
             }
         }

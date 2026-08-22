@@ -735,6 +735,15 @@
   <string name="settings_sleep_timer_dialog_title">睡眠定时</string>
   <string name="settings_sleep_timer_dialog_subtitle">选择停止播放的时间。</string>
   <string name="settings_sleep_timer_minutes">%1$d 分钟</string>
+  <string name="settings_sleep_timer_unit_minutes">分钟</string>
+  <string name="settings_sleep_timer_unit_hours">小时</string>
+  <string name="settings_sleep_timer_custom">自定义时长</string>
+  <string name="settings_sleep_timer_custom_hint">拖动圆环调整，或用 -/+ 微调</string>
+  <string name="settings_sleep_timer_start">开始计时</string>
+  <string name="settings_sleep_timer_step_decrease">减少 %1$d 分钟</string>
+  <string name="settings_sleep_timer_step_increase">增加 %1$d 分钟</string>
+  <string name="settings_sleep_timer_hours_minutes">%1$d 小时 %2$d 分</string>
+  <string name="settings_sleep_timer_hours">%1$d 小时</string>
   <string name="settings_sleep_timer_preset_subtitle">定时结束后暂停播放</string>
   <string name="settings_sleep_timer_cancel">取消定时</string>
 </resources>

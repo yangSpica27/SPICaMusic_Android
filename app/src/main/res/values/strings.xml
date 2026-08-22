@@ -735,6 +735,15 @@
   <string name="settings_sleep_timer_dialog_title">Sleep timer</string>
   <string name="settings_sleep_timer_dialog_subtitle">Choose when playback should stop.</string>
   <string name="settings_sleep_timer_minutes">%1$d minutes</string>
+  <string name="settings_sleep_timer_unit_minutes">min</string>
+  <string name="settings_sleep_timer_unit_hours">hr</string>
+  <string name="settings_sleep_timer_custom">Custom duration</string>
+  <string name="settings_sleep_timer_custom_hint">Drag the ring, or fine-tune with -/+</string>
+  <string name="settings_sleep_timer_start">Start timer</string>
+  <string name="settings_sleep_timer_step_decrease">Decrease by %1$d minutes</string>
+  <string name="settings_sleep_timer_step_increase">Increase by %1$d minutes</string>
+  <string name="settings_sleep_timer_hours_minutes">%1$d h %2$d min</string>
+  <string name="settings_sleep_timer_hours">%1$d h</string>
   <string name="settings_sleep_timer_preset_subtitle">Pause playback when the timer ends</string>
   <string name="settings_sleep_timer_cancel">Cancel timer</string>
 </resources>

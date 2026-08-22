@@ -13,3 +13,26 @@
 -keep,allowobfuscation,allowshrinking class retrofit2.Response
 -keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
 -keep,allowobfuscation,allowshrinking interface com.skydoves.sandwich.ApiResponse
+
+# Media3 Proguard rules
+-keepclassmembers class androidx.media3.session.MediaSession {
+    androidx.media3.session.MediaSessionImpl impl;
+}
+-keepclassmembers class androidx.media3.session.MediaSessionImpl {
+    androidx.media3.session.MediaSessionLegacyStub sessionLegacyStub;
+    androidx.media3.session.PlayerWrapper getPlayerWrapper();
+}
+-keepclassmembers class androidx.media3.session.MediaSessionLegacyStub {
+    void setAvailableCommands(androidx.media3.session.SessionCommands, androidx.media3.common.Player$Commands);
+    void setPlatformCustomLayout(com.google.common.collect.ImmutableList);
+    void updateLegacySessionPlaybackStateAndQueue(androidx.media3.session.PlayerWrapper);
+}
+-keep interface androidx.media3.** { *; }
+-dontwarn androidx.media3.**
+-keepclassmembers class * extends androidx.media3.session.MediaLibraryService {
+    <methods>;
+}
+-keepclassmembers class * extends androidx.media3.session.MediaSession$Callback {
+    <methods>;
+}
+
