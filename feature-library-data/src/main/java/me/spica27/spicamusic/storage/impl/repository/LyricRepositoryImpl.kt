@@ -16,6 +16,9 @@ class LyricRepositoryImpl(
                 cover = lyric.cover,
                 delay = lyric.delay,
                 sourceName = lyric.lyricSourceName,
+                sourceType = lyric.sourceType,
+                isManual = lyric.isManual,
+                sourceUri = lyric.sourceUri,
             )
         }
 
@@ -32,10 +35,13 @@ class LyricRepositoryImpl(
         cover: String,
         sourceName: String,
         delay: Long,
+        sourceType: String,
+        isManual: Boolean,
+        sourceUri: String,
     ) {
         val existing = extraInfoDao.getLyricWithMediaId(mediaId)
         if (existing != null) {
-            extraInfoDao.updateLyricsAndSource(mediaId, lyrics, sourceName)
+            extraInfoDao.updateLyricsAndSource(mediaId, lyrics, sourceName, sourceType, isManual, sourceUri)
             if (existing.delay != delay) {
                 extraInfoDao.updateDelay(mediaId, delay)
             }
@@ -49,6 +55,9 @@ class LyricRepositoryImpl(
                 cover = cover,
                 delay = delay,
                 lyricSourceName = sourceName,
+                sourceType = sourceType,
+                isManual = isManual,
+                sourceUri = sourceUri,
             ),
         )
     }

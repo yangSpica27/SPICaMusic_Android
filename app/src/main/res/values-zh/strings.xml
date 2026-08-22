@@ -245,6 +245,16 @@
   <string name="choose_lyrics">选择歌词</string>
   <string name="lyrics_preview_instruction">左右滑动预览，选择最合适的歌词版本</string>
   <string name="lyrics_parse_failed">歌词解析失败</string>
+  <string name="lyrics_source_embedded">内嵌歌词</string>
+  <string name="lyrics_source_embedded_subtitle">来自音频文件</string>
+  <string name="lyrics_source_local">本地文件</string>
+  <string name="lyrics_source_local_pick">从文件选择…</string>
+  <string name="lyrics_source_online">在线</string>
+  <string name="lyrics_source_online_count">在线 (%d)</string>
+  <string name="lyrics_source_none_embedded">该歌曲没有内嵌歌词</string>
+  <string name="lyrics_source_online_empty">未找到在线歌词</string>
+  <string name="lyrics_source_current">使用中</string>
+  <string name="lyrics_preview">预览</string>
   <string name="pager_format">%1$d/%2$d</string>
   <string name="albums_title">专辑</string>
   <string name="listening_stats">听歌统计</string>

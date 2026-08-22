@@ -38,12 +38,11 @@ import java.util.Locale
 /**
  * 歌词页浮动工具栏
  *
- * 提供歌词偏移量调节和打开歌词切换面板功能
+ * 提供歌词偏移量调节和打开歌词来源选择面板功能
  *
  * @param offsetMs 当前歌词偏移量（毫秒）
  * @param onOffsetChange 偏移量变化回调
- * @param onOpenLyricsSwitcher 打开歌词切换面板回调
- * @param hasMultipleSources 是否有多个歌词源可切换
+ * @param onOpenLyricsSwitcher 打开歌词来源面板回调
  * @param modifier Modifier
  */
 @Composable
@@ -51,7 +50,6 @@ fun FloatingLyricsToolbar(
     offsetMs: Long,
     onOffsetChange: (Long) -> Unit,
     onOpenLyricsSwitcher: () -> Unit,
-    hasMultipleSources: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var isExpanded by remember { mutableStateOf(false) }
@@ -87,15 +85,13 @@ fun FloatingLyricsToolbar(
                     onOffsetChange = onOffsetChange,
                 )
 
-                // 切换歌词按钮
-                if (hasMultipleSources) {
-                    SwitchLyricsButton(
-                        onClick = {
-                            isExpanded = false
-                            onOpenLyricsSwitcher()
-                        },
-                    )
-                }
+                // 切换歌词来源按钮（常驻：无内嵌/在线时用户仍可进入选择本地文件）
+                SwitchLyricsButton(
+                    onClick = {
+                        isExpanded = false
+                        onOpenLyricsSwitcher()
+                    },
+                )
             }
         }
 

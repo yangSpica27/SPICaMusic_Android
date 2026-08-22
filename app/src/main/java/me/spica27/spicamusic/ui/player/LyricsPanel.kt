@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableList
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsDisplayMode
-import me.spica27.spicamusic.ui.widget.LyricsSwitcherSheet
+import me.spica27.spicamusic.ui.widget.LyricsSourceSheet
 import me.spica27.spicamusic.ui.widget.LyricsUI
 import org.koin.compose.viewmodel.koinActivityViewModel
 
@@ -71,16 +71,20 @@ fun LyricsPanel(
     }
 
     // 歌词切换面板
-    if (showSwitcherSheet && uiState.allLyricSources.isNotEmpty()) {
-        LyricsSwitcherSheet(
-            lyricSources = uiState.allLyricSources,
-            parsedLyrics = uiState.allParsedLyrics,
+    if (showSwitcherSheet) {
+        LyricsSourceSheet(
+            embedded = uiState.embeddedSource,
+            local = uiState.localSource,
+            online = uiState.onlineSources,
+            onlineLoading = uiState.onlineLoading,
+            currentSourceType = uiState.currentSourceType,
+            currentRawText = uiState.displayedRawText,
             currentTime = currentTime + uiState.lyricsOffsetMs,
-            initialPage = uiState.currentSourceIndex,
-            onConfirm = { selectedIndex ->
+            onSelect = { source ->
                 showSwitcherSheet = false
-                viewModel.selectAndSaveLyricSource(selectedIndex)
+                viewModel.selectSource(source)
             },
+            onImportLocalFile = { uri -> viewModel.importLocalFile(uri) },
             onDismiss = { showSwitcherSheet = false },
         )
     }
@@ -104,15 +108,17 @@ fun LyricsPanel(
                     textAlign = TextAlign.Center,
                 )
             }
-            uiState.lyrics != null -> {
+            uiState.displayed != null -> {
+                val displayed = uiState.displayed!!
                 // 面板每帧随 currentTime 重组，若在此每帧 copyOf 会全量拷贝整份歌词。
-                // 按 lyrics 身份缓存：只有歌词本身变化才重建。
-                val lyricList = remember(uiState.lyrics) { ImmutableList.copyOf(uiState.lyrics!!) }
+                // 按 items 身份缓存：只有歌词本身变化才重建。
+                val lyricList = remember(displayed) { ImmutableList.copyOf(displayed.items) }
                 LyricsUI(
                     modifier = Modifier.fillMaxSize(),
                     lyric = lyricList,
                     currentTime = currentTime + uiState.lyricsOffsetMs,
                     displayMode = displayMode,
+                    isSynced = displayed.isSynced,
                     onSeekToTime = { posMs ->
                         viewModel.seekTo(posMs - uiState.lyricsOffsetMs)
                     },
@@ -128,20 +134,21 @@ fun LyricsPanel(
             }
         }
 
-        // 浮动工具栏（右下角）
-        if (uiState.lyrics != null || uiState.errorMessage != null) {
-            val toolbarEndPadding = if (displayMode == LyricsDisplayMode.Compact) 12.dp else 16.dp
-            val toolbarBottomPadding = if (displayMode == LyricsDisplayMode.Compact) 12.dp else 24.dp
-            FloatingLyricsToolbar(
-                offsetMs = uiState.lyricsOffsetMs,
-                onOffsetChange = { viewModel.updateOffset(it) },
-                onOpenLyricsSwitcher = { showSwitcherSheet = true },
-                hasMultipleSources = uiState.allLyricSources.size > 1,
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = toolbarEndPadding, bottom = toolbarBottomPadding),
-            )
-        }
+        // 浮动工具栏（右下角）：切换入口常驻，保证无内嵌/在线时仍可进入选择本地文件
+        FloatingLyricsToolbar(
+            offsetMs = uiState.lyricsOffsetMs,
+            onOffsetChange = { viewModel.updateOffset(it) },
+            onOpenLyricsSwitcher = {
+                viewModel.openPanel()
+                showSwitcherSheet = true
+            },
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(
+                        end = if (displayMode == LyricsDisplayMode.Compact) 12.dp else 16.dp,
+                        bottom = if (displayMode == LyricsDisplayMode.Compact) 12.dp else 24.dp,
+                    ),
+        )
     }
 }

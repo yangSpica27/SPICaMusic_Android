@@ -244,6 +244,16 @@
   <string name="choose_lyrics">選擇歌詞</string>
   <string name="lyrics_preview_instruction">左右滑動預覽，選擇最合適的歌詞版本</string>
   <string name="lyrics_parse_failed">歌詞解析失敗</string>
+  <string name="lyrics_source_embedded">內嵌歌詞</string>
+  <string name="lyrics_source_embedded_subtitle">來自音訊檔案</string>
+  <string name="lyrics_source_local">本機檔案</string>
+  <string name="lyrics_source_local_pick">從檔案選擇…</string>
+  <string name="lyrics_source_online">線上</string>
+  <string name="lyrics_source_online_count">線上 (%d)</string>
+  <string name="lyrics_source_none_embedded">此歌曲沒有內嵌歌詞</string>
+  <string name="lyrics_source_online_empty">找不到線上歌詞</string>
+  <string name="lyrics_source_current">使用中</string>
+  <string name="lyrics_preview">預覽</string>
   <string name="pager_format">%1$d/%2$d</string>
   <string name="albums_title">專輯</string>
   <string name="listening_stats">聽歌統計</string>

@@ -190,12 +190,19 @@ fun LyricsUI(
     lyric: ImmutableList<LyricItem>,
     currentTime: Long,
     displayMode: LyricsDisplayMode = LyricsDisplayMode.Fullscreen,
+    isSynced: Boolean = true,
     onSeekToTime: (Long) -> Unit = {},
 ) {
     val lyricLines = remember(lyric) { lyric.sortedBy { it.time } }
 
     if (lyricLines.isEmpty()) {
         EmptyLyricState(modifier)
+        return
+    }
+
+    // 无时间戳的纯文本歌词（内嵌/本地常见）：静态可滚动展示，不高亮、不跟随、不可 seek
+    if (!isSynced) {
+        PlainLyricsList(modifier = modifier, lines = lyricLines, displayMode = displayMode)
         return
     }
 
@@ -458,6 +465,51 @@ fun LyricsUI(
 }
 
 // ==================== 辅助组件 ====================
+
+/**
+ * 纯文本歌词列表（无时间戳）
+ *
+ * 内嵌 / 本地歌词常为无时间轴的整段文本，此处静态居中展示、可自由滚动，
+ * 不做行高亮、自动跟随与点按 seek——这些都依赖时间戳。
+ */
+@Composable
+private fun PlainLyricsList(
+    modifier: Modifier = Modifier,
+    lines: List<LyricItem>,
+    displayMode: LyricsDisplayMode,
+) {
+    val style = rememberLyricsUIStyle(displayMode)
+    val textColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(style.itemSpacing),
+        contentPadding =
+            PaddingValues(
+                horizontal = style.horizontalPadding,
+                vertical = style.verticalPadding,
+            ),
+    ) {
+        itemsIndexed(
+            items = lines,
+            key = { _, line -> line.key },
+        ) { _, line ->
+            val content =
+                when (line) {
+                    is LyricItem.NormalLyric -> line.content
+                    is LyricItem.WordsLyric -> line.words.joinToString(separator = "") { it.content }
+                }
+            Text(
+                text = content.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
+                style = style.mainTextStyle,
+                fontWeight = FontWeight.Medium,
+                color = textColor,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
 
 /**
  * 空歌词状态显示

@@ -23,7 +23,7 @@ import me.spica27.spicamusic.storage.impl.entity.SongPlayStatEntity
     entities = [SongEntity::class, PlaylistEntity::class, PlaylistSongCrossRefEntity::class,
         ExtraInfoEntity::class, PlayHistoryEntity::class, AlbumEntity::class,
         ScanFolderEntity::class, SongPlayStatEntity::class],
-    version = 19,
+    version = 20,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -230,6 +230,20 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_18_19 = object : Migration(18, 19) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE Song ADD COLUMN trackNumber INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
+         * v19 -> v20: 歌词多来源改造。extra_info 增加三列
+         */
+        val MIGRATION_19_20 = object : Migration(19, 20) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE extra_info ADD COLUMN sourceType TEXT NOT NULL DEFAULT 'ONLINE'")
+                db.execSQL("ALTER TABLE extra_info ADD COLUMN isManual INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE extra_info ADD COLUMN sourceUri TEXT NOT NULL DEFAULT ''")
+                // 存量行都来自旧切换面板的显式选择（唯一写入方是用户确认），
+                // 回填 isManual=1 保住用户既有选择，避免升级后被自动优先级改成内嵌。
+                db.execSQL("UPDATE extra_info SET isManual = 1 WHERE lyrics <> ''")
             }
         }
     }

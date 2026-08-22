@@ -244,6 +244,16 @@
   <string name="choose_lyrics">Choose Lyrics</string>
   <string name="lyrics_preview_instruction">Swipe left/right to preview and choose the best lyrics version</string>
   <string name="lyrics_parse_failed">Lyrics parsing failed</string>
+  <string name="lyrics_source_embedded">Embedded lyrics</string>
+  <string name="lyrics_source_embedded_subtitle">From audio file</string>
+  <string name="lyrics_source_local">Local file</string>
+  <string name="lyrics_source_local_pick">Pick from file…</string>
+  <string name="lyrics_source_online">Online</string>
+  <string name="lyrics_source_online_count">Online (%d)</string>
+  <string name="lyrics_source_none_embedded">No embedded lyrics in this song</string>
+  <string name="lyrics_source_online_empty">No online lyrics found</string>
+  <string name="lyrics_source_current">In use</string>
+  <string name="lyrics_preview">Preview</string>
   <string name="pager_format">%1$d/%2$d</string>
   <string name="albums_title">Albums</string>
   <string name="listening_stats">Listening Stats</string>

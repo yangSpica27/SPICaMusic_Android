@@ -6,6 +6,9 @@ data class StoredLyrics(
     val cover: String,
     val delay: Long,
     val sourceName: String,
+    val sourceType: String,
+    val isManual: Boolean,
+    val sourceUri: String,
 )
 
 interface ILyricRepository {
@@ -19,5 +22,8 @@ interface ILyricRepository {
         cover: String = "",
         sourceName: String,
         delay: Long,
+        sourceType: String,
+        isManual: Boolean,
+        sourceUri: String = "",
     )
 }

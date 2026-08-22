@@ -69,14 +69,18 @@ fun MiniLyric(
         }
     }
 
-    val lyrics = uiState.lyrics
+    val lyrics = uiState.displayed?.items
+    val isSynced = uiState.displayed?.isSynced == true
     val offsetMs = uiState.lyricsOffsetMs
     // 先派生行索引（Int 等值比较，每帧计算零分配），
-    // 行文本仅在索引变化时拼接，避免逐字歌词每帧 joinToString
-    val playingIndex by remember(lyrics, offsetMs) {
+    // 行文本仅在索引变化时拼接，避免逐字歌词每帧 joinToString。
+    // 纯文本歌词（isSynced=false）的 time 是行下标而非时间戳，跟随播放进度无意义，
+    // 固定预告首句，否则 findPlayingIndex 对毫秒级时钟恒返回末行。
+    val playingIndex by remember(lyrics, offsetMs, isSynced) {
         derivedStateOf {
             val list = lyrics ?: return@derivedStateOf -1
             if (list.isEmpty()) return@derivedStateOf -1
+            if (!isSynced) return@derivedStateOf 0
             val index = list.findPlayingIndex(currentTimeState.longValue + offsetMs)
             // 尚未唱到第一句时预告首句
             if (index == Int.MAX_VALUE) 0 else index

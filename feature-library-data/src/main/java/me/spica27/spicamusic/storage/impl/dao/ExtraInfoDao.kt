@@ -34,16 +34,24 @@ interface ExtraInfoDao {
     fun updateDelay(mediaId: Long, delay: Long?)
 
     /**
-     * 保存用户选择的歌词和偏移量
-     * 如果该 mediaId 已存在则更新歌词和源名称，不存在则插入新记录
+     * 保存用户选择的歌词和来源信息
+     * 如果该 mediaId 已存在则更新歌词、源名称与来源元数据，不存在则插入新记录
      */
     @Query(
         """
-        UPDATE extra_info SET lyrics = :lyrics, lyricSourceName = :sourceName 
+        UPDATE extra_info SET lyrics = :lyrics, lyricSourceName = :sourceName,
+            sourceType = :sourceType, isManual = :isManual, sourceUri = :sourceUri
         WHERE mediaId = :mediaId
     """,
     )
-    fun updateLyricsAndSource(mediaId: Long, lyrics: String, sourceName: String)
+    fun updateLyricsAndSource(
+        mediaId: Long,
+        lyrics: String,
+        sourceName: String,
+        sourceType: String,
+        isManual: Boolean,
+        sourceUri: String,
+    )
 
     /**
      * 获取歌词源名称
