@@ -152,6 +152,31 @@ class LrcParserTest {
   }
 
   @Test
+  fun parse_acceptsWholeSecondTagsAndPairsCrLfTranslations() {
+    val lyric = "[0:00]夏の日\r\n[0:00]夏日\r\n[01:04]次の行\r\n[01:04]下一行"
+
+    val parsed = LrcParser.parse(lyric)
+
+    assertEquals(2, parsed.size)
+    val first = parsed[0] as LyricItem.NormalLyric
+    assertEquals(0L, first.time)
+    assertEquals("夏の日", first.content)
+    assertEquals("夏日", first.translation)
+    val second = parsed[1] as LyricItem.NormalLyric
+    assertEquals(64_000L, second.time)
+    assertEquals("次の行", second.content)
+    assertEquals("下一行", second.translation)
+  }
+
+  @Test
+  fun timeTagToTime_acceptsMissingAndVariableLengthMilliseconds() {
+    assertEquals(64_000L, LrcParser.timeTagToTime("[01:04]"))
+    assertEquals(64_100L, LrcParser.timeTagToTime("[01:04.1]"))
+    assertEquals(64_120L, LrcParser.timeTagToTime("<01:04.12>"))
+    assertEquals(64_123L, LrcParser.timeTagToTime("[01:04.123456]"))
+  }
+
+  @Test
   fun parse_realWorldBrokenEnhancedLrcPairsAllTranslations() {
     // 线上真实数据：A Moment Apart - ODESZA（歌词源逐字时间戳整体为行时间两倍）
     // 共20句主歌词，除第一句制作人信息外每句都跟随一行同时间的翻译

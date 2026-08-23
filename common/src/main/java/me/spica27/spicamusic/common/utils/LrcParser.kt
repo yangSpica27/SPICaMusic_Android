@@ -7,14 +7,13 @@ import kotlin.math.abs
 // 参考LMusic https://github.com/cy745/lmusic
 object LrcParser {
   /**
-   * 匹配[00:00.00]格式时间标签的正则表达式
+   * LRC 行时间标签：支持 [mm:ss]、[mm:ss.x]、[mm:ss.xx] 等常见变体。
+   * 分钟允许 1～3 位，毫秒允许省略或使用 1～6 位；解析时统一换算为毫秒。
    */
-  private val REGEX_TIME = Regex("\\[(\\d\\d):(\\d\\d)\\.(\\d{1,5})]")
+  private val REGEX_TIME = Regex("\\[(\\d{1,3}):(\\d{2})(?:\\.(\\d{1,6}))?]")
 
-  /**
-   * 匹配<00:00.00>格式时间标签的正则表达式
-   */
-  private val REGEX_TIME_EX = Regex("<(\\d\\d):(\\d\\d)\\.(\\d{1,5})>")
+  /** 增强型 LRC 的逐字时间标签，格式与行标签相同但使用尖括号。 */
+  private val REGEX_TIME_EX = Regex("<(\\d{1,3}):(\\d{2})(?:\\.(\\d{1,6}))?>")
 
   /**
    * 逐字时间戳相对[..]行时间标签允许的最大偏差（毫秒），
@@ -123,7 +122,7 @@ object LrcParser {
     var lineTime: Long? = null
     var firstWordTagTime: Long? = null
 
-    // 当歌词中有一个[00:00.000]类型的时间标签时尝试匹配<00:00.000>格式的时间标签
+    // 当歌词中有一个行时间标签时尝试匹配增强型 LRC 的 <..> 逐字时间标签
     if (findResult.size == 1) {
       val temp = REGEX_TIME_EX
         .findAll(lyricLine)
@@ -224,18 +223,18 @@ object LrcParser {
   }
 
   /**
-   * 负责解析并转换`[00:00.000]`和`<00:00.000>`格式的时间标签
-   * @param str 时间标签字符串，格式为[00:00.000]或<00:00.000>
+   * 负责解析并转换 `[mm:ss]` / `[mm:ss.xxx]` 和对应尖括号格式的时间标签。
+   * @param str 时间标签字符串，例如 `[01:04]`、`[01:04.50]` 或 `<01:04.500>`
    * @return 转换后的时间戳（毫秒）
    */
   fun timeTagToTime(str: String): Long {
 
-    // 匹配[00:00.00]格式的时间标签
+    // 匹配方括号时间标签
     var timeMatcher = REGEX_TIME.matchEntire(str)
       ?.groupValues
       ?.takeIf { it.isNotEmpty() }
 
-    // 尝试匹配<00:00.00>格式的时间标签
+    // 尝试匹配尖括号时间标签
     if (timeMatcher == null) {
       timeMatcher = REGEX_TIME_EX.matchEntire(str)
         ?.groupValues
@@ -245,16 +244,17 @@ object LrcParser {
 
     val min = timeMatcher.getOrNull(1)!!.toLong()
     val sec = timeMatcher.getOrNull(2)!!.toLong()
-    val milString = timeMatcher.getOrNull(3)!!
+    val milString = timeMatcher.getOrNull(3).orEmpty()
 
-    var mil = milString.toLong()
-    // 如果毫秒是两位数，需要乘以 10，when 新增支持 1 - 6 位毫秒，很多获取的歌词存在不同的毫秒位数
-    when (milString.length) {
-      1 -> mil *= 100
-      2 -> mil *= 10
-      4 -> mil /= 10
-      5 -> mil /= 100
-      6 -> mil /= 1000
+    // 统一把 1～6 位小数扩展/截断到毫秒；没有小数的 [mm:ss] 视为整秒。
+    val mil = when (milString.length) {
+      0 -> 0L
+      1 -> milString.toLong() * 100
+      2 -> milString.toLong() * 10
+      3 -> milString.toLong()
+      4 -> milString.toLong() / 10
+      5 -> milString.toLong() / 100
+      else -> milString.toLong() / 1000
     }
 
     return min * 60 * 1000 + sec * 1000 + mil
