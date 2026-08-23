@@ -17,8 +17,6 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -29,7 +27,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.skydoves.landscapist.image.LandscapistImage
-import kotlinx.coroutines.flow.Flow
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -49,17 +46,9 @@ private fun albumCoverUri(albumId: Long): Uri = "content://media/external/audio/
  *
  * 使用方式（歌单列表 item 示例）：
  * ```kotlin
- * val coverIds by viewModel.getPlaylistCoverAlbumIds(playlist.playlistId!!).collectAsState(emptyList())
+ * val coverIds by viewModel.getPlaylistCoverAlbumIds(playlist.playlistId!!).collectAsStateWithLifecycle()
  * PlaylistCoverView(albumIds = coverIds, modifier = Modifier.size(56.dp))
  * ```
- * 或直接传入 Flow：
- * ```kotlin
- * PlaylistCoverView(
- *     albumIdsFlow = playlistUseCases.getPlaylistCoverAlbumIds(playlistId),
- *     modifier = Modifier.size(56.dp),
- * )
- * ```
- *
  * @param albumIds   最多 5 个专辑 ID，长度决定渲染策略（0/1-4/5）
  * @param iconSize   空歌单占位音符图标大小，默认 32.dp
  */
@@ -87,19 +76,6 @@ fun PlaylistCoverView(
             }
         }
     }
-}
-
-/**
- * 接受 Flow 版本，内部 collectAsState；适合直接传 use case 的 Flow 而不想在外部 collect 的场景。
- */
-@Composable
-fun PlaylistCoverView(
-    albumIdsFlow: Flow<List<Long>>,
-    modifier: Modifier = Modifier,
-    iconSize: Dp = 32.dp,
-) {
-    val albumIds by albumIdsFlow.collectAsState(initial = emptyList())
-    PlaylistCoverView(albumIds = albumIds, modifier = modifier, iconSize = iconSize)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

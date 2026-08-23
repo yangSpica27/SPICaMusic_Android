@@ -20,7 +20,7 @@ class AlbumViewModel(
     private val _searchKeyword = MutableStateFlow("")
 
     /**
-     * 搜索关键词的 StateFlow，直接暴露给 UI 层使用，UI 层可以通过 collectAsState() 订阅它的变化
+     * 搜索关键词的 StateFlow，直接暴露给 UI 层使用，UI 层可以通过 collectAsStateWithLifecycle() 订阅它的变化
      */
     val searchKeyword: StateFlow<String> = _searchKeyword
 
