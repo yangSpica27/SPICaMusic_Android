@@ -1115,7 +1115,7 @@ private fun PlaylistRail(
     }
 }
 
-/** 歌单卡：马赛克封面 + 名称 + 歌曲数，无容器底色（资料库歌单卡同款） */
+/** 歌单卡：组合封面 + 名称 + 歌曲数，无容器底色（资料库歌单卡同款） */
 @Composable
 private fun FinderPlaylistCard(
     item: PlaylistWithCover,

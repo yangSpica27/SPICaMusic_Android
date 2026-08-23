@@ -53,7 +53,7 @@ class PlaylistDetailViewModel(
             initialValue = null,
         )
 
-    // 歌单封面所需的专辑 ID（最多 4 个，用于马赛克封面）
+    // 歌单封面所需的专辑 ID（最多 5 个，用于组合封面）
     val coverAlbumIds: StateFlow<List<Long>> =
         playlistRepository.getPlaylistCoverAlbumIds(playlistId).stateIn(
             scope = viewModelScope,

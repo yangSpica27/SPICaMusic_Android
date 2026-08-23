@@ -104,15 +104,15 @@ interface PlaylistDao {
     fun getSongSizeByPlaylistIdOnce(playlistId: Long): Int
 
     /**
-     * 获取歌单前 4 个不同专辑 ID，用于封面马赛克渲染。
-     * 按歌曲加入时间倒序取最新的 4 个不同 albumId。
+     * 获取歌单前 5 个不同专辑 ID，用于组合封面渲染。
+     * 按歌曲加入时间倒序取最新的 5 个不同 albumId。
      */
     @Query(
         """SELECT DISTINCT s.albumId FROM Song AS s
            JOIN PlaylistSongCrossRef AS psc ON s.mediaStoreId = psc.mediaId
            WHERE psc.playlistId = :playlistId
            ORDER BY psc.sortOrder DESC, psc.insertTime DESC, psc.mediaId DESC
-           LIMIT 4"""
+           LIMIT 5"""
     )
     fun getCoverAlbumIds(playlistId: Long): Flow<List<Long>>
 

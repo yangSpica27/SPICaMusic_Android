@@ -860,7 +860,7 @@ private fun StatCell(
     }
 }
 
-/** 歌单卡：马赛克封面 + 名称 + 歌曲数 */
+/** 歌单卡：组合封面 + 名称 + 歌曲数 */
 @Composable
 private fun PlaylistCard(
     item: PlaylistWithCover,
