@@ -16,6 +16,7 @@ import me.spcia.lyric_core.parser.YrcParser
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.LyricSource
 import me.spica27.spicamusic.common.entity.LyricSourceType
+import me.spica27.spicamusic.common.utils.AmllParser
 import me.spica27.spicamusic.common.utils.LrcParser
 import me.spica27.spicamusic.feature.lyrics.domain.LyricsUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
@@ -359,11 +360,14 @@ class LyricsViewModel(
             }
 
         /**
-         * 解析带时间戳的歌词文本为 LyricItem 列表（YRC 优先，回退 LRC）。
+         * 解析带时间戳的歌词文本为 LyricItem 列表（AMLL/TTML、YRC、LRC）。
          * 无时间戳的纯文本会返回空——纯文本兜底见 [parseAnyLyrics]。
          */
         fun parseLyrics(lyricsText: String): List<LyricItem>? {
             if (lyricsText.isBlank()) return null
+
+            val amll = AmllParser.parse(lyricsText)
+            if (amll.isNotEmpty()) return amll
 
             return if (lyricsText.isYrcFormat()) {
                 try {

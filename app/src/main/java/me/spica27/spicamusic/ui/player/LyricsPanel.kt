@@ -57,7 +57,9 @@ fun LyricsPanel(
     var showSwitcherSheet by remember { mutableStateOf(false) }
 
     // 当前播放时间（帧级更新，保留在 Composable 中因为依赖逐帧对齐）
-    var currentTime by remember { mutableLongStateOf(0L) }
+    // 首帧直接使用播放器的真实位置，避免先以 0ms 完成一次错误的歌词定位，
+    // 随后又把实际当前行当成普通 index 切换从视口底部动画进入。
+    var currentTime by remember { mutableLongStateOf(viewModel.getCurrentPositionMs()) }
     // 仅前台时更新播放进度。repeatOnLifecycle(STARTED) 切后台真正取消、回前台重启；
     // withFrameNanos 走 Compose 可暂停帧时钟。（详见 MiniLyric 同处注释。）
     val lifecycleOwner = LocalLifecycleOwner.current
