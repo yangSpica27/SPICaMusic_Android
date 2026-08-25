@@ -83,6 +83,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.findPlayingIndex
@@ -1388,7 +1389,11 @@ private suspend fun LazyListState.snapToLyricIndex(
     anchorOffsetPx: Int,
 ) {
     if (anchorOffsetPx < 0 || targetIndex < 0) return
-    scrollToItem(targetIndex)
+    // Put the target directly at the playback anchor. Passing the offset to
+    // scrollToItem avoids the multi-step estimation used by
+    // animateScrollToItem, which can visibly travel through the list end for
+    // far-away variable-height lyric rows.
+    scrollToItem(targetIndex, -anchorOffsetPx)
     val targetItem =
         snapshotFlow {
             layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }
@@ -1398,8 +1403,8 @@ private suspend fun LazyListState.snapToLyricIndex(
 
 /**
  * Moves the list to the next lyric without estimating item heights. Visible
- * items are corrected immediately; off-screen targets use LazyList's own
- * animation and the item placement modifier supplies the staggered motion.
+ * items are corrected immediately; off-screen targets are snapped directly to
+ * the anchor so LazyList cannot expose an intermediate end-of-list position.
  */
 private suspend fun LazyListState.syncToLyricIndex(
     targetIndex: Int,
@@ -1414,7 +1419,23 @@ private suspend fun LazyListState.syncToLyricIndex(
             scrollBy(distance)
         }
     } else {
-        animateScrollToItem(targetIndex, -anchorOffsetPx)
+        scrollToItem(targetIndex, -anchorOffsetPx)
+        val settledItem =
+            withTimeoutOrNull(500L) {
+                snapshotFlow {
+                    layoutInfo.visibleItemsInfo.firstOrNull { it.index == targetIndex }
+                }.first { it != null }
+            }
+
+        if (settledItem == null) {
+            snapToLyricIndex(targetIndex, anchorOffsetPx)
+            return
+        }
+
+        val residual = distanceToAnchor(settledItem.offset, anchorOffsetPx)
+        if (abs(residual) >= 0.5f) {
+            scrollBy(residual)
+        }
     }
 }
 
