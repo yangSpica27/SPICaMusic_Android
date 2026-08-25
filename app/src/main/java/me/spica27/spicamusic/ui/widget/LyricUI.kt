@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -381,6 +382,7 @@ fun LyricsUI(
                 itemsIndexed(
                     items = lyricLines,
                     key = { _, line -> line.key },
+                    contentType = { _, line -> line::class },
                 ) { index, line ->
                     val isActive =
                         index == highlightedIndex ||
@@ -431,7 +433,7 @@ fun LyricsUI(
                             is LyricItem.WordsLyric -> {
                                 WordsLyricLine(
                                     lyric = line,
-                                    currentTime = currentTime,
+                                    currentTimeState = currentTimeState,
                                     alpha = alpha,
                                     scale = scale,
                                     blurRadius = blurRadius,
@@ -528,6 +530,7 @@ private fun PlainLyricsList(
         itemsIndexed(
             items = lines,
             key = { _, line -> line.key },
+            contentType = { _, line -> line::class },
         ) { _, line ->
             val content =
                 when (line) {
@@ -821,7 +824,7 @@ private fun wordBoundingBox(
 @Composable
 private fun WordsLyricLine(
     lyric: LyricItem.WordsLyric,
-    currentTime: Long,
+    currentTimeState: State<Long>,
     alpha: Float,
     scale: Float,
     blurRadius: Dp,
@@ -866,7 +869,7 @@ private fun WordsLyricLine(
         beforeAccompaniment.forEachIndexed { index, background ->
             AccompanimentLine(
                 background = background,
-                currentTime = currentTime,
+                currentTimeState = currentTimeState,
                 placement = AccompanimentPlacement.Before,
                 parentKey = lyric.key,
                 index = index,
@@ -883,7 +886,7 @@ private fun WordsLyricLine(
         ProgressiveWordsText(
             text = sentence.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
             wordRanges = wordRanges,
-            progressProvider = { range -> wordProgress(range.word, currentTime) },
+            progressProvider = { range -> wordProgress(range.word, currentTimeState.value) },
             // 测量样式不含颜色：强调度由外层图层处理，逐字进度只在绘制阶段读取，
             // 避免滚动时测量结果因播放状态变化而失效并引发闪烁
             textStyle = style.wordsTextStyle,
@@ -921,7 +924,7 @@ private fun WordsLyricLine(
         afterAccompaniment.forEachIndexed { index, background ->
             AccompanimentLine(
                 background = background,
-                currentTime = currentTime,
+                currentTimeState = currentTimeState,
                 placement = AccompanimentPlacement.After,
                 parentKey = lyric.key,
                 index = index,
@@ -945,7 +948,7 @@ private enum class AccompanimentPlacement {
 @Composable
 private fun AccompanimentLine(
     background: LyricItem.WordsLyric.AccompanimentLyric,
-    currentTime: Long,
+    currentTimeState: State<Long>,
     placement: AccompanimentPlacement,
     parentKey: String,
     index: Int,
@@ -966,9 +969,13 @@ private fun AccompanimentLine(
     val words = remember(background) { background.words.sortedBy { it.startTime } }
     if (words.isEmpty()) return
 
-    val visible =
-        currentTime >= background.startTime - LyricUIConstants.ACCOMPANIMENT_VISIBILITY_PADDING_MS &&
-            currentTime <= background.endTime + LyricUIConstants.ACCOMPANIMENT_VISIBILITY_PADDING_MS
+    val visible by remember(background, currentTimeState) {
+        derivedStateOf {
+            val currentTime = currentTimeState.value
+            currentTime >= background.startTime - LyricUIConstants.ACCOMPANIMENT_VISIBILITY_PADDING_MS &&
+                currentTime <= background.endTime + LyricUIConstants.ACCOMPANIMENT_VISIBILITY_PADDING_MS
+        }
+    }
     val pivotX = if (alignEnd) 1f else 0f
     val pivotY = if (placement == AccompanimentPlacement.Before) 0f else 1f
     val alignment = if (placement == AccompanimentPlacement.Before) Alignment.Top else Alignment.Bottom
@@ -1011,7 +1018,7 @@ private fun AccompanimentLine(
             ProgressiveWordsText(
                 text = words.joinToString(separator = "") { it.content },
                 wordRanges = remember(words) { buildWordRanges(words) },
-                progressProvider = { range -> wordProgress(range.word, currentTime) },
+                progressProvider = { range -> wordProgress(range.word, currentTimeState.value) },
                 textStyle = style.accompanimentTextStyle,
                 baseColor = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.42f),
                 activeColor = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.88f),
