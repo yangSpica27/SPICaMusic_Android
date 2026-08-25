@@ -593,7 +593,9 @@ private fun LyricLine(
     voiceAccent: Color?,
     alignEnd: Boolean,
 ) {
-    val inactiveTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
+    // Emphasis is applied once by the row graphics layer below. Keep the
+    // per-text alpha here independent so inactive rows are not dimmed twice.
+    val inactiveTextColor = MaterialTheme.colorScheme.onSurface
     val activeTextColor = voiceAccent ?: MaterialTheme.colorScheme.onSurface
     val horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start
     val textAlign = if (alignEnd) TextAlign.End else TextAlign.Start
@@ -832,9 +834,9 @@ private fun WordsLyricLine(
     colorScheme: androidx.compose.material3.ColorScheme,
 ) {
     val activeTextColor = voiceAccent ?: MaterialTheme.colorScheme.onSurface
-    val baseTextColor = activeTextColor.copy(alpha = LyricUIConstants.BASE_TEXT_ALPHA * alpha)
+    val baseTextColor = activeTextColor.copy(alpha = LyricUIConstants.BASE_TEXT_ALPHA)
     val translationColor =
-        activeTextColor.copy(alpha = LyricUIConstants.TRANSLATION_TEXT_ALPHA * alpha)
+        activeTextColor.copy(alpha = LyricUIConstants.TRANSLATION_TEXT_ALPHA)
     val horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start
     val textAlign = if (alignEnd) TextAlign.End else TextAlign.Start
     val sortedWords = remember(lyric) { lyric.words.sortedBy { it.startTime } }
@@ -868,7 +870,6 @@ private fun WordsLyricLine(
                 placement = AccompanimentPlacement.Before,
                 parentKey = lyric.key,
                 index = index,
-                alpha = alpha,
                 style = style,
                 measureCache = measureCache,
                 parentAgents = agents,
@@ -899,7 +900,7 @@ private fun WordsLyricLine(
             Text(
                 text = lyric.phonetic!!,
                 style = style.phoneticTextStyle,
-                color = activeTextColor.copy(alpha = 0.7f * alpha),
+                color = activeTextColor.copy(alpha = 0.7f),
                 textAlign = textAlign,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -924,7 +925,6 @@ private fun WordsLyricLine(
                 placement = AccompanimentPlacement.After,
                 parentKey = lyric.key,
                 index = index,
-                alpha = alpha,
                 style = style,
                 measureCache = measureCache,
                 parentAgents = agents,
@@ -949,7 +949,6 @@ private fun AccompanimentLine(
     placement: AccompanimentPlacement,
     parentKey: String,
     index: Int,
-    alpha: Float,
     style: LyricsUIStyle,
     measureCache: MutableMap<String, List<MeasuredWord>>,
     parentAgents: List<LyricItem.Agent>,
@@ -1014,7 +1013,7 @@ private fun AccompanimentLine(
                 wordRanges = remember(words) { buildWordRanges(words) },
                 progressProvider = { range -> wordProgress(range.word, currentTime) },
                 textStyle = style.accompanimentTextStyle,
-                baseColor = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.42f * alpha),
+                baseColor = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.42f),
                 activeColor = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.88f),
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
@@ -1027,7 +1026,7 @@ private fun AccompanimentLine(
                 Text(
                     text = background.phonetic!!,
                     style = style.phoneticTextStyle,
-                    color = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.52f * alpha),
+                    color = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.52f),
                     textAlign = textAlign,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -1039,7 +1038,7 @@ private fun AccompanimentLine(
                 Text(
                     text = translation,
                     style = style.wordsTranslationTextStyle,
-                    color = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.58f * alpha),
+                    color = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.58f),
                     textAlign = textAlign,
                     overflow = TextOverflow.Ellipsis,
                 )
