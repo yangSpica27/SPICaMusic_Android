@@ -186,7 +186,7 @@ dependencies {
   implementation libs.androidx.compose.material.icons.core
   implementation libs.prettytime
   implementation libs.koin.androidx.compose
-  implementation(libs.pinyin4j)
+//  implementation(libs.pinyin4j)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.palette.ktx)
   implementation(libs.cloudy)

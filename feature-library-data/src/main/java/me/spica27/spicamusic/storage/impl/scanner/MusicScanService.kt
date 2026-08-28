@@ -6,6 +6,7 @@ import android.content.ContentUris
 import android.content.Context
 import android.content.pm.PackageManager
 import android.database.ContentObserver
+import android.icu.text.Transliterator
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -16,7 +17,6 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import com.ibm.icu.text.Transliterator
 import com.kyant.taglib.AudioPropertiesReadStyle
 import com.kyant.taglib.TagLib
 import kotlinx.coroutines.CoroutineScope
