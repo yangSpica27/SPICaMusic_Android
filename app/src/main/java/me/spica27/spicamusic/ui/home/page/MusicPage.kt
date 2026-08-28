@@ -89,6 +89,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
@@ -546,7 +548,8 @@ fun MusicPage() {
                                             transformOrigin = TransformOrigin(0f, 0f)
                                             alpha = enter
                                             translationY = entrance.translateFraction * 28.dp.toPx()
-                                        },
+                                        }.bottomFold(listState, song.mediaStoreId)
+                                        .zIndex(-index.toFloat()),
                             )
                         }
                     }
@@ -618,7 +621,8 @@ fun MusicPage() {
                                             transformOrigin = TransformOrigin(0f, 0f)
                                             alpha = enter
                                             translationY = entrance.translateFraction * 28.dp.toPx()
-                                        },
+                                        }.bottomFold(listState, album.id)
+                                        .zIndex(-index.toFloat()),
                             )
                         }
                     }
@@ -670,7 +674,8 @@ fun MusicPage() {
                                             transformOrigin = TransformOrigin(0f, 0f)
                                             alpha = enter
                                             translationY = entrance.translateFraction * 28.dp.toPx()
-                                        },
+                                        }.bottomFold(listState, artist.name)
+                                        .zIndex(-index.toFloat()),
                             )
                         }
                     }
@@ -684,6 +689,36 @@ fun MusicPage() {
         )
     }
 }
+
+// 折叠基准线相对视口物理底边的上移量
+private val ListItemFoldBottomInset = 120.dp
+
+// 条目底边越过基准线后、再继续下沉这段距离即完全折叠（缩到底、淡尽）。
+private val ListItemFoldDistance = 96.dp
+
+// 折到底时的最小缩放/透明度。缩到 0.86、淡到 0：像被收进底栏后溶解。
+private const val ListItemFoldMinScale = 0.86f
+private const val ListItemFoldMinAlpha = 0f
+
+private fun Modifier.bottomFold(
+    listState: LazyListState,
+    key: Any,
+): Modifier =
+    graphicsLayer {
+        val layout = listState.layoutInfo
+        val info = layout.visibleItemsInfo.firstOrNull { it.key == key } ?: return@graphicsLayer
+        val foldLine = layout.viewportEndOffset - ListItemFoldBottomInset.toPx()
+        val itemBottom = info.offset + info.size
+        val sink = itemBottom - foldLine // >0：已越过基准线，正沉入底栏
+        if (sink <= 0f) return@graphicsLayer // 基准线以上：完全不动，杜绝末尾留白
+        val p = (sink / ListItemFoldDistance.toPx()).coerceIn(0f, 1f)
+        transformOrigin = TransformOrigin(0.5f, 1f) // 以底边为锚，缩放时底边不动
+        translationY = -sink // 把底边钉在基准线，不再滑到栏后
+        val scale = lerp(1f, ListItemFoldMinScale, p)
+        scaleX = scale
+        scaleY = scale
+        alpha = lerp(1f, ListItemFoldMinAlpha, p)
+    }
 
 private fun Density.mastheadCollapse(listState: LazyListState): Float {
     if (listState.firstVisibleItemIndex > 0) return 1f
