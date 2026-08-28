@@ -35,9 +35,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.maxLength
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -59,9 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +81,7 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.theme.entranceGraphics
 import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.widget.AnimatedCursorTextField
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -213,9 +212,8 @@ class PlaylistCreatorScene : StackScene() {
             NameHeadlineField(
                 name = name,
                 onNameChange = { newValue ->
-                    if (newValue.length <= MAX_NAME_LENGTH) {
-                        name = newValue
-                    }
+                    // 长度上限已由输入框内的 InputTransformation.maxLength 保证
+                    name = newValue
                     if (newValue.isNotBlank()) submittedEmpty = false
                 },
                 onClear = {
@@ -309,36 +307,29 @@ private fun NameHeadlineField(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
         ) {
-            BasicTextField(
+            AnimatedCursorTextField(
                 value = name,
                 onValueChange = onNameChange,
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .focusRequester(focusRequester),
+                modifier = Modifier.weight(1f),
                 textStyle =
                     MaterialTheme.typography.headlineMedium.copy(
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                     ),
-                cursorBrush = SolidColor(accentColor),
-                singleLine = true,
+                cursorColor = accentColor,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { onImeDone() }),
-                decorationBox = { innerTextField ->
-                    Box(contentAlignment = Alignment.CenterStart) {
-                        if (name.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.playlist_name_placeholder_hint),
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        innerTextField()
-                    }
+                onImeAction = onImeDone,
+                inputTransformation = InputTransformation.maxLength(MAX_NAME_LENGTH),
+                focusRequester = focusRequester,
+                placeholder = {
+                    Text(
+                        text = stringResource(R.string.playlist_name_placeholder_hint),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 },
             )
             AnimatedVisibility(
