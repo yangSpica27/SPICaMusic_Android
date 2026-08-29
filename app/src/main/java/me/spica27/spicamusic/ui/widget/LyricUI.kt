@@ -1,7 +1,6 @@
 package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.EaseOutBounce
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -97,6 +96,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 // ==================== 常量 ====================
+
 private object LyricUIConstants {
     const val EMPTY_LYRIC_TEXT = "暂无歌词"
     const val EMPTY_WORD_PLACEHOLDER = " · · · "
@@ -122,6 +122,7 @@ private object LyricUIConstants {
 
     const val WORD_GLOW_ALPHA = 0.3f
     const val WORD_GLOW_BLUR_RADIUS = 10f
+
     const val WORD_TRANSLATION_Y = -1.5f
     const val SLOW_WORD_MIN_DURATION_MS = 1_000L
     const val SLOW_WORD_CHAR_DURATION_THRESHOLD_MS = 200f
@@ -596,8 +597,6 @@ private fun LyricLine(
     voiceAccent: Color?,
     alignEnd: Boolean,
 ) {
-    // Emphasis is applied once by the row graphics layer below. Keep the
-    // per-text alpha here independent so inactive rows are not dimmed twice.
     val inactiveTextColor = MaterialTheme.colorScheme.onSurface
     val activeTextColor = voiceAccent ?: MaterialTheme.colorScheme.onSurface
     val horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start
@@ -1149,37 +1148,74 @@ private fun ProgressiveWordsText(
                     }
                 val dipOverflowY = measured.dipAmplitude * LyricUIConstants.SLOW_WORD_MAX_FLOAT_OFFSET_PX
 
-                val fadeCenter = measured.box.left + measured.box.width * progress
-                val fadeWidth = measured.box.width * 0.25f
-                val fadeStart =
-                    ((fadeCenter - fadeWidth / 2 - measured.box.left) / measured.box.width)
-                        .coerceIn(0f, 1f)
-                val fadeEnd =
-                    ((fadeCenter + fadeWidth / 2 - measured.box.left) / measured.box.width)
-                        .coerceIn(0f, 1f)
+                // 扫描渐变过渡带宽度（占词宽比例）
+                val fadeRange = 0.25f
 
-                val colorStops =
+                val fadeCenter = -fadeRange / 2f + (1f + fadeRange) * progress
+                val fadeStart = (fadeCenter - fadeRange / 2f).coerceIn(0f, 1f)
+                val fadeEnd = (fadeCenter + fadeRange / 2f).coerceIn(0f, 1f)
+
+                val highlightStops =
                     arrayOf(
                         0.0f to highlightColor,
                         fadeStart to highlightColor,
                         fadeEnd to baseColor,
                         1.0f to baseColor,
                     )
-                val highlightBrush =
-                    Brush.horizontalGradient(
-                        colorStops = colorStops,
-                        startX = 0f,
-                        endX = size.width,
+                // 已播放部分的深度加强层色标：已唱区间不透明 activeColor，未唱区间完全透明。
+                val depthStops =
+                    arrayOf(
+                        0.0f to highlightColor,
+                        fadeStart to highlightColor,
+                        fadeEnd to highlightColor.copy(alpha = 0f),
+                        1.0f to highlightColor.copy(alpha = 0f),
                     )
-                val glow =
-                    Shadow(
-                        color = highlightColor.copy(alpha = LyricUIConstants.WORD_GLOW_ALPHA * progress),
-                        blurRadius =
-                            LyricUIConstants.WORD_GLOW_BLUR_RADIUS *
-                                EaseOutBounce.transform(progress),
-                    )
+                // 扫描渐变必须在整词坐标系内连续推进。逐字绘制时每个字母用 topLeft 平移了画布，
+                val canvasWidth = size.width
 
-                // 底层文字（测量样式不含颜色，绘制时显式指定）
+                // 端点退化时避免 TileMode.Clamp 的边缘泄露：progress=0 时 fadeStart/fadeEnd 都塌到 0，
+                fun wordSweepBrush(
+                    stops: Array<Pair<Float, Color>>,
+                    charX: Float,
+                ): Brush {
+                    val effectiveStops =
+                        when {
+                            fadeEnd <= 0f -> {
+                                val c = stops.last().second
+                                arrayOf(0f to c, 1f to c)
+                            }
+
+                            fadeStart >= 1f -> {
+                                val c = stops.first().second
+                                arrayOf(0f to c, 1f to c)
+                            }
+
+                            else -> stops
+                        }
+                    return Brush.horizontalGradient(
+                        colorStops = effectiveStops,
+                        startX = -charX,
+                        endX = canvasWidth - charX,
+                    )
+                }
+
+                val highlightBrush = wordSweepBrush(highlightStops, 0f)
+                val depthBrush = wordSweepBrush(depthStops, 0f)
+                val glow =
+                    if (hasSlowWordAnimation) {
+                        val glowSwell = 4f * progress * (1f - progress)
+                        Shadow(
+                            color =
+                                highlightColor.copy(
+                                    alpha = LyricUIConstants.WORD_GLOW_ALPHA * glowSwell,
+                                ),
+                            blurRadius = LyricUIConstants.WORD_GLOW_BLUR_RADIUS * glowSwell,
+                        )
+                    } else {
+                        null
+                    }
+
+                // 底层：已播放区间的深度加强层（未播放区间透明，不铺底）
                 if (hasSlowWordAnimation) {
                     measured.characterLayouts.forEachIndexed { characterIndex, characterLayout ->
                         val characterBox = measured.characterBounds[characterIndex]
@@ -1206,13 +1242,13 @@ private fun ProgressiveWordsText(
                         withTransform({ scale(scaleX = scale, scaleY = scale, pivot = wordPivot) }) {
                             drawText(
                                 textLayoutResult = characterLayout,
-                                color = baseColor,
+                                brush = wordSweepBrush(depthStops, characterPosition.x),
                                 topLeft = characterPosition,
                             )
                         }
                     }
                 } else {
-                    drawText(measured.layout, color = baseColor)
+                    drawText(measured.layout, brush = depthBrush)
                 }
 
                 // 高亮层（渐变 + 发光）
@@ -1248,7 +1284,7 @@ private fun ProgressiveWordsText(
                             withTransform({ scale(scaleX = scale, scaleY = scale, pivot = wordPivot) }) {
                                 drawText(
                                     textLayoutResult = characterLayout,
-                                    brush = highlightBrush,
+                                    brush = wordSweepBrush(highlightStops, characterPosition.x),
                                     topLeft = characterPosition,
                                     shadow = glow,
                                 )
@@ -1395,10 +1431,6 @@ private suspend fun LazyListState.snapToLyricIndex(
     anchorOffsetPx: Int,
 ) {
     if (anchorOffsetPx < 0 || targetIndex < 0) return
-    // Put the target directly at the playback anchor. Passing the offset to
-    // scrollToItem avoids the multi-step estimation used by
-    // animateScrollToItem, which can visibly travel through the list end for
-    // far-away variable-height lyric rows.
     scrollToItem(targetIndex, -anchorOffsetPx)
     val targetItem =
         snapshotFlow {
@@ -1407,11 +1439,6 @@ private suspend fun LazyListState.snapToLyricIndex(
     scrollBy(distanceToAnchor(targetItem.offset, anchorOffsetPx))
 }
 
-/**
- * Moves the list to the next lyric without estimating item heights. Visible
- * items are corrected immediately; off-screen targets are snapped directly to
- * the anchor so LazyList cannot expose an intermediate end-of-list position.
- */
 private suspend fun LazyListState.syncToLyricIndex(
     targetIndex: Int,
     anchorOffsetPx: Int,
