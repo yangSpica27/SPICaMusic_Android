@@ -1,6 +1,8 @@
 package me.spica27.spicamusic.ui.artistdetail
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,7 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,8 +40,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,10 +60,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.image.LandscapistImage
+import kotlinx.coroutines.delay
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Artist
@@ -68,6 +74,10 @@ import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
+import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
+import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
+import me.spica27.spicamusic.ui.theme.entranceGraphics
+import me.spica27.spicamusic.ui.theme.rememberEntrance
 import me.spica27.spicamusic.ui.widget.CoverFallback
 import me.spica27.spicamusic.ui.widget.OtherAlbumsShelf
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
@@ -134,6 +144,13 @@ fun ArtistDetailScreen(artist: Artist) {
                 ((artProgressState.value - HDR_FADE_START) / (1f - HDR_FADE_START)).coerceIn(0f, 1f)
             }
         }
+
+    // 首屏入场瀑布：与专辑/歌单详情页同款节奏。首帧后关闭 play，避免滚动回收的
+    val listEntrancePlay = remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(55)
+        listEntrancePlay.value = false
+    }
 
     // 几何直接由滚动进度导出，不再经过弹簧（滚动本身是持续手势输入）
 
@@ -213,11 +230,29 @@ fun ArtistDetailScreen(artist: Artist) {
                 )
             }
 
-            items(songs, key = { it.mediaStoreId }) { song ->
+            itemsIndexed(
+                items = songs,
+                key = { _, song -> song.mediaStoreId },
+                contentType = { _, _ -> "song" },
+            ) { index, song ->
+                val entrance =
+                    rememberEntrance(minOf(3 + index, 8), play = listEntrancePlay.value)
                 ArtistSongRow(
                     song = song,
                     onClick = { viewModel.playSongInList(song) },
                     onMore = { path.push(SongMenuScene(song)) },
+                    modifier =
+                        Modifier
+                            .animateItem(
+                                fadeInSpec = ListItemFadeInSpec,
+                                placementSpec =
+                                    spring(
+                                        dampingRatio = Spring.DampingRatioLowBouncy,
+                                        stiffness = Spring.StiffnessMediumLow,
+                                        visibilityThreshold = IntOffset.VisibilityThreshold,
+                                    ),
+                                fadeOutSpec = ListItemFadeOutSpec,
+                            ).entranceGraphics(entrance),
                 )
                 HorizontalDivider(
                     modifier = Modifier.padding(start = 76.dp, end = 16.dp),

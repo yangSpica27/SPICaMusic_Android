@@ -28,7 +28,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -40,13 +39,14 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastCoerceAtLeast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private val MinSpikeWidthDp: Dp = 1.dp
 private val MaxSpikeWidthDp: Dp = 24.dp
@@ -116,7 +116,7 @@ fun AudioWaveSlider(
 
     var isTouch by remember { mutableStateOf(false) }
 
-    val scaleY =
+    val trackScaleY =
         animateFloatAsState(
             if (isTouch) {
                 0.8f
@@ -154,8 +154,10 @@ fun AudioWaveSlider(
                     Modifier
                         .fillMaxWidth()
                         .fillMaxHeight()
-                        .scale(1f, scaleY.value)
-                        .graphicsLayer(alpha = DefaultGraphicsLayerAlpha),
+                        .graphicsLayer {
+                            scaleY = trackScaleY.value
+                            alpha = DefaultGraphicsLayerAlpha
+                        },
             ) {
                 canvasSize = size
                 spikes = size.width / spikeTotalWidth.toPx()
@@ -195,9 +197,12 @@ fun AudioWaveSlider(
                 Box(
                     modifier =
                         Modifier
-                            .offset(
-                                x = with(LocalDensity.current) { (progress * canvasSize.width).toDp() - thumbWidth.value / 2 },
-                            ).width(thumbWidth.value)
+                            .offset {
+                                IntOffset(
+                                    x = (progress * canvasSize.width - thumbWidth.value.toPx() / 2f).roundToInt(),
+                                    y = 0,
+                                )
+                            }.width(thumbWidth.value)
                             .fillMaxHeight(),
                 )
             }
@@ -260,7 +265,7 @@ fun AudioDynamicWaveSlider(
     val coroutineScope = rememberCoroutineScope()
     var isTouch by remember { mutableStateOf(false) }
 
-    val scaleY =
+    val trackScaleY =
         animateFloatAsState(
             if (isTouch) {
                 1.02f
@@ -298,8 +303,10 @@ fun AudioDynamicWaveSlider(
                     Modifier
                         .fillMaxWidth()
                         .fillMaxHeight()
-                        .scale(1f, scaleY.value)
-                        .graphicsLayer(alpha = DefaultGraphicsLayerAlpha),
+                        .graphicsLayer {
+                            scaleY = trackScaleY.value
+                            alpha = DefaultGraphicsLayerAlpha
+                        },
             ) {
                 canvasSize = size
                 val spikeWidthPx = spikeWidth.toPx()
@@ -358,9 +365,12 @@ fun AudioDynamicWaveSlider(
                 Box(
                     modifier =
                         Modifier
-                            .offset(
-                                x = with(LocalDensity.current) { (progress * canvasSize.width).toDp() - thumbWidth.value / 2 },
-                            ).width(thumbWidth.value)
+                            .offset {
+                                IntOffset(
+                                    x = (progress * canvasSize.width - thumbWidth.value.toPx() / 2f).roundToInt(),
+                                    y = 0,
+                                )
+                            }.width(thumbWidth.value)
                             .fillMaxHeight(),
                 )
             }
