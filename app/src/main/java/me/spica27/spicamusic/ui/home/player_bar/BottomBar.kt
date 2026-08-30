@@ -87,10 +87,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.components.rememberImageComponent
 import com.skydoves.landscapist.crossfade.CrossfadePlugin
 import com.skydoves.landscapist.image.LandscapistImage
+import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
 import me.spica27.navkit.geometry.geometryOccluder
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.glass.LiquidGlassVariant
+import me.spica27.spicamusic.ui.glass.liquidGlass
 import me.spica27.spicamusic.ui.home.HomePage
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
@@ -503,7 +506,10 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
  */
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
-fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = LocalBottomBarScrollConnection.current) {
+fun BottomMediaBarV2(
+    bottomBarScrollConnection: BottomBarScrollConnection = LocalBottomBarScrollConnection.current,
+    hazeState: HazeState,
+) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
     val navigationPath = LocalNavigationPath.current
@@ -560,6 +566,7 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                                             sharedContentState = rememberSharedContentState("navigation_bar"),
                                             animatedVisibilityScope = this@AnimatedContent,
                                         ).weight(1f),
+                                hazeState = hazeState,
                             )
                             Box(
                                 modifier =
@@ -590,8 +597,11 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                                     .sharedElement(
                                         sharedContentState = rememberSharedContentState("player_bar"),
                                         animatedVisibilityScope = this@AnimatedContent,
-                                    ).clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                                    ).liquidGlass(
+                                        hazeState = hazeState,
+                                        variant = LiquidGlassVariant.PlayerBar,
+                                        shape = CircleShape,
+                                    ),
                             onExpand = {
                                 initialPage = DEFAULT_PAGE
                                 sheetState.expand()
@@ -652,9 +662,11 @@ fun BottomMediaBarV2(bottomBarScrollConnection: BottomBarScrollConnection = Loca
                                     animatedVisibilityScope = this@AnimatedContent,
                                 ).height(56.dp)
                                 .weight(1f)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                .clickable {
+                                .liquidGlass(
+                                    hazeState = hazeState,
+                                    variant = LiquidGlassVariant.PlayerBar,
+                                    shape = CircleShape,
+                                ).clickable {
                                     isSingleLineMode = false
                                 }.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -763,7 +775,10 @@ private fun nowPlayingTitleTransform(reducedMotion: Boolean): ContentTransform =
     )
 
 @Composable
-private fun HomePageSwitcher(modifier: Modifier = Modifier) {
+private fun HomePageSwitcher(
+    modifier: Modifier = Modifier,
+    hazeState: HazeState? = null,
+) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val tabs = remember { HomePage.entries.toTypedArray() }
     val selectIndex = homeViewModel.currentPage.collectAsStateWithLifecycle().value
@@ -796,14 +811,23 @@ private fun HomePageSwitcher(modifier: Modifier = Modifier) {
         animationSpec = indicatorSpec,
     )
     val indicatorColor = MaterialTheme.colorScheme.primaryContainer
+    val surfaceModifier =
+        if (hazeState != null) {
+            Modifier.liquidGlass(
+                hazeState = hazeState,
+                variant = LiquidGlassVariant.Navigation,
+                shape = CircleShape,
+            )
+        } else {
+            Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+        }
 
     Row(
         modifier =
             modifier
                 .height(56.dp)
                 .padding(end = 12.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .then(surfaceModifier)
                 .drawWithCache {
                     val paddingValues = 6.dp.toPx()
                     onDrawBehind {

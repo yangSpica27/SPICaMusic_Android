@@ -12,6 +12,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.navkit.stack.NavigationStack
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
+import me.spica27.spicamusic.ui.glass.LiquidGlassConfig
+import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.home.HomeScene
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
@@ -30,6 +32,11 @@ fun AppScaffold() {
     val isDarkMode by
         preferencesManager
             .getBoolean(PreferencesManager.Keys.DARK_MODE)
+            .collectAsStateWithLifecycle(false)
+
+    val liquidGlassEnabled by
+        preferencesManager
+            .getBoolean(PreferencesManager.Keys.LIQUID_GLASS_ENABLED, false)
             .collectAsStateWithLifecycle(false)
 
     val themeColorStyleValue by
@@ -58,7 +65,10 @@ fun AppScaffold() {
         themeColor = color,
         themeColorStyle = ThemeColorStyle.fromString(themeColorStyleValue),
     ) {
-        CompositionLocalProvider(LocalPlayerViewModel provides playerViewModel) {
+        CompositionLocalProvider(
+            LocalLiquidGlassConfig provides LiquidGlassConfig(enabled = liquidGlassEnabled),
+            LocalPlayerViewModel provides playerViewModel,
+        ) {
             NavigationStack(
                 initialScene = {
                     HomeScene()

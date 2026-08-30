@@ -77,6 +77,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
@@ -92,6 +93,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -107,6 +110,9 @@ import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.SleepTimerState
+import me.spica27.spicamusic.ui.glass.LiquidGlassVariant
+import me.spica27.spicamusic.ui.glass.liquidGlass
+import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
 import me.spica27.spicamusic.ui.player.scene.LyricScene
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
@@ -266,6 +272,7 @@ fun ExpandedPlayerScreen(
             uri = currentMediaItem?.mediaMetadata?.artworkUri,
             fallbackColor = MaterialTheme.colorScheme.primary,
         )
+    val hazeState = rememberHazeState()
 
     Box(
         modifier =
@@ -279,7 +286,8 @@ fun ExpandedPlayerScreen(
         FluidMusicBackground(
             modifier =
                 Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .liquidGlassSource(hazeState),
             coverColor = coverColor,
             isDarkMode = MaterialTheme.colorScheme.surface.luminance() < 0.5f,
             coverUri = { currentMediaItem?.mediaMetadata?.artworkUri },
@@ -310,6 +318,7 @@ fun ExpandedPlayerScreen(
                         modifier = Modifier,
                         onCollapse = onCollapse,
                         progressProvider = progressProvider,
+                        hazeState = hazeState,
                         sleepTimer = sleepTimer,
                         onSleepTimerClick = { showSleepTimerDialog = true },
                         onPlaylistBtnClick = {
@@ -336,6 +345,7 @@ fun ExpandedPlayerScreen(
                     ) {
                         PlayerPage(
                             playerViewModel = viewModel,
+                            hazeState = hazeState,
                             isSeekingState = isSeekingState,
                             currentMediaItem = { currentMediaItem },
                             audioQualityInfo = audioQualityInfo,
@@ -450,6 +460,7 @@ private fun TopBar(
     onCollapse: () -> Unit,
     progressProvider: () -> Float,
     modifier: Modifier,
+    hazeState: HazeState,
     sleepTimer: SleepTimerState? = null,
     onSleepTimerClick: () -> Unit = {},
     onPlaylistBtnClick: () -> Unit = {},
@@ -473,13 +484,19 @@ private fun TopBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
-                modifier = Modifier,
+                modifier =
+                    Modifier.liquidGlass(
+                        hazeState = hazeState,
+                        variant = LiquidGlassVariant.TopBar,
+                        shape = CircleShape,
+                        fallbackColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
                 onClick = {
                     onCollapse.invoke()
                 },
                 colors =
                     IconButtonDefaults.iconButtonColors().copy(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        containerColor = Color.Transparent,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                     ),
             ) {
@@ -492,10 +509,17 @@ private fun TopBar(
             }
             Spacer(modifier = Modifier.weight(1f))
             IconButton(
+                modifier =
+                    Modifier.liquidGlass(
+                        hazeState = hazeState,
+                        variant = LiquidGlassVariant.TopBar,
+                        shape = CircleShape,
+                        fallbackColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
                 onClick = onSleepTimerClick,
                 colors =
                     IconButtonDefaults.iconButtonColors().copy(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        containerColor = Color.Transparent,
                         contentColor =
                             if (sleepTimer != null) {
                                 MaterialTheme.colorScheme.primary
@@ -512,10 +536,11 @@ private fun TopBar(
             Row(
                 modifier =
                     Modifier
-                        .clip(CircleShape)
-                        .background(
-                            MaterialTheme.colorScheme.surfaceContainer,
+                        .liquidGlass(
+                            hazeState = hazeState,
+                            variant = LiquidGlassVariant.TopBar,
                             shape = CircleShape,
+                            fallbackColor = MaterialTheme.colorScheme.surfaceContainer,
                         ).clickable {
                             onPlaylistBtnClick.invoke()
                         }.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -573,6 +598,7 @@ private fun MediaItem?.toAudioQualityInfo(): AudioQualityInfo {
 @Composable
 private fun PlayerPage(
     playerViewModel: PlayerViewModel,
+    hazeState: HazeState,
     currentMediaItem: () -> MediaItem?,
     audioQualityInfo: AudioQualityInfo,
     seekPositionProvider: () -> Float,
@@ -892,6 +918,7 @@ private fun PlayerPage(
                         alpha = controlsReveal
                         translationY = (1f - controlsReveal) * 24f
                     },
+            hazeState = hazeState,
             isPlaying = isPlaying,
             playMode = playMode,
             isLike = isLike,
@@ -1129,6 +1156,7 @@ private fun controlIconTransform() =
 @Composable
 private fun PlayerControls(
     modifier: Modifier,
+    hazeState: HazeState,
     isPlaying: Boolean,
     playMode: PlayMode,
     isLike: Boolean,
@@ -1198,8 +1226,17 @@ private fun PlayerControls(
                         .graphicsLayer {
                             scaleX = playScale
                             scaleY = playScale
-                        }.clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
+                        }.liquidGlass(
+                            hazeState = hazeState,
+                            variant = LiquidGlassVariant.PlayButton,
+                            shape = CircleShape,
+                            fallbackColor = MaterialTheme.colorScheme.primary,
+                        ),
+                colors =
+                    IconButtonDefaults.iconButtonColors().copy(
+                        containerColor = Color.Transparent,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
             ) {
                 AnimatedContent(
                     targetState = isPlaying,

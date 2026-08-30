@@ -201,6 +201,11 @@ dependencies {
   implementation(libs.landscapist.transformation)
   baselineProfile(project(':baselineprofile'))
   implementation(libs.reorderable)
+
+  // haze
+  implementation(libs.haze)
+  implementation(libs.haze.blur)
+  implementation(libs.haze.materials)
 }
 
 

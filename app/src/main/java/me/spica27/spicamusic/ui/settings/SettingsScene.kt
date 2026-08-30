@@ -116,6 +116,7 @@ class SettingsScene : StackScene() {
         val viewModel: SettingsViewModel = koinViewModel()
 
         val darkMode by viewModel.darkMode.collectAsStateWithLifecycle()
+        val liquidGlassEnabled by viewModel.liquidGlassEnabled.collectAsStateWithLifecycle()
         val keepScreenOn by viewModel.keepScreenOn.collectAsStateWithLifecycle()
         val backgroundValue by viewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
         val coverTapValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
@@ -204,6 +205,14 @@ class SettingsScene : StackScene() {
                             icon = Icons.Default.DarkMode,
                             checked = darkMode,
                             onCheckedChange = viewModel::setDarkMode,
+                        )
+                        SettingsItemDivider()
+                        SwitchRow(
+                            title = stringResource(R.string.settings_liquid_glass_title),
+                            summary = stringResource(R.string.settings_liquid_glass_subtitle),
+                            icon = Icons.Default.LensBlur,
+                            checked = liquidGlassEnabled,
+                            onCheckedChange = viewModel::setLiquidGlassEnabled,
                         )
                     }
                 }

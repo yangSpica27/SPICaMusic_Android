@@ -19,6 +19,7 @@ class PreferencesManager(
 
     object Keys {
         val DARK_MODE = booleanPreferencesKey("dark_mode")
+        val LIQUID_GLASS_ENABLED = booleanPreferencesKey("liquid_glass_enabled")
         val THEME_COLOR_STYLE = stringPreferencesKey("theme_color_style")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
         val DYNAMIC_SPECTRUM_BACKGROUND = stringPreferencesKey("dynamic_spectrum_background")

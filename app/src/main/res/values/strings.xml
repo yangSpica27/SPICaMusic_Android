@@ -610,6 +610,8 @@
   <string name="settings_appearance_subtitle">Colors and light or dark theme across the app</string>
   <string name="settings_dark_mode_title">Dark Mode</string>
   <string name="settings_dark_mode_toggle_subtitle">Toggle dark / light theme</string>
+  <string name="settings_liquid_glass_title">Liquid glass</string>
+  <string name="settings_liquid_glass_subtitle">Blur selected player surfaces for a translucent look</string>
   <string name="settings_playback_subtitle">Make the listening experience smoother</string>
   <string name="settings_light_mode_label">Light Mode</string>
 

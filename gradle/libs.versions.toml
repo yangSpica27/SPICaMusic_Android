@@ -13,7 +13,7 @@ dynamicanimationKtxVersion = "1.1.0"
 graphicsCoreVersion = "1.0.4"
 graphicsPathVersion = "1.1.0"
 graphicsShapesVersion = "1.1.0"
-hazeVersion = "1.7.2"
+hazeVersion = "2.0.0-beta02"
 cloudy = "0.7.1"
 koinAndroidxComposeVersion = "4.2.2"
 kotlin = "2.3.21"
@@ -85,7 +85,8 @@ androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", versi
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" }
 converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "converterMoshiVersion" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "hazeVersion" }
-haze-materials = { module = "dev.chrisbanes.haze:haze-materials", version.ref = "hazeVersion" }
+haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "hazeVersion" }
+haze-materials = { module = "dev.chrisbanes.haze:haze-blur-material3", version.ref = "hazeVersion" }
 kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version = "1.11.0" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

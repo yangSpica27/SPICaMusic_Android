@@ -17,8 +17,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.home.page.FinderPage
 import me.spica27.spicamusic.ui.home.page.LibraryPage
 import me.spica27.spicamusic.ui.home.page.MusicPage
@@ -36,6 +38,8 @@ class HomeScene : StackScene() {
         val currentPage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
 
         val bottomBarScrollConnection = rememberBottomBarScrollConnection()
+        // One source for the home content lets the persistent bottom surfaces share one capture.
+        val hazeState = rememberHazeState()
 
         CompositionLocalProvider(
             LocalBottomBarScrollConnection provides bottomBarScrollConnection,
@@ -50,7 +54,12 @@ class HomeScene : StackScene() {
                 // SaveableStateHolder 让离开的页面保留可保存状态（列表滚动位置、
                 // 入场动画已播标记等），切回时不重建、不重播入场 stagger。
                 val pageStateHolder = rememberSaveableStateHolder()
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .liquidGlassSource(hazeState),
+                ) {
                     pageStateHolder.SaveableStateProvider(key = currentPage) {
                         when (currentPage) {
                             HomePage.Finder -> FinderPage()
@@ -59,7 +68,10 @@ class HomeScene : StackScene() {
                         }
                     }
                 }
-                BottomMediaBarV2(bottomBarScrollConnection)
+                BottomMediaBarV2(
+                    bottomBarScrollConnection = bottomBarScrollConnection,
+                    hazeState = hazeState,
+                )
             }
         }
     }

@@ -609,6 +609,8 @@
   <string name="settings_appearance_subtitle">整個應用的配色與深淺色主題</string>
   <string name="settings_dark_mode_title">深色模式</string>
   <string name="settings_dark_mode_toggle_subtitle">切換深色 / 淺色主題</string>
+  <string name="settings_liquid_glass_title">液態玻璃</string>
+  <string name="settings_liquid_glass_subtitle">為部分播放介面啟用半透明模糊效果</string>
   <string name="settings_playback_subtitle">讓聆聽體驗更順手</string>
   <string name="settings_light_mode_label">淺色模式</string>
 

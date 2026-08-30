@@ -31,6 +31,18 @@ class SettingsViewModel(
         }
     }
 
+    // 液态玻璃：默认关闭
+    val liquidGlassEnabled =
+        settingsUseCases
+            .getBoolean(SettingsUseCases.Keys.LIQUID_GLASS_ENABLED, false)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun setLiquidGlassEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsUseCases.setBoolean(SettingsUseCases.Keys.LIQUID_GLASS_ENABLED, enabled)
+        }
+    }
+
     // 主题色风格
     val themeColorStyle =
         settingsUseCases
