@@ -27,7 +27,7 @@ lifecycleRuntimeKtx = "2.9.2"
 activityCompose = "1.13.0"
 # Keep the AndroidX Compose line aligned with the KMP Compose artifacts used by
 # MaterialKolor, Cloudy, and Landscapist.
-composeBom = "2026.06.01"
+composeBom = "2026.08.00"
 constraintlayout = "2.2.2"
 loggingInterceptorVersion = "5.3.2"
 material3Version = "1.4.0"
@@ -35,7 +35,7 @@ materialIconsCoreVersion = "1.7.8"
 media3ExoplayerVersion = "1.10.0"
 mediaVersion = "1.8.0"
 okhttpVersion = "5.4.0"
-pagingVersion = "3.5.0"
+pagingVersion = "3.5.1"
 pinyin4jVersion = "2.5.1"
 prettytimeVersion = "5.0.8.Final"
 retrofitVersion = "3.0.0"
@@ -48,7 +48,7 @@ lifecycleViewmodelNav3 = "2.10.0"
 kotlinSerialization = "2.4.0"
 kotlinxSerializationCore = "1.11.0"
 moshiKotlin = "1.15.2"
-materialKolor = "5.0.0"
+materialKolor = "5.0.1"
 paletteVersion = "1.0.0"
 media3SessionVersion = "1.10.0"
 ksp = "2.3.7"
@@ -87,6 +87,8 @@ converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.r
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "hazeVersion" }
 haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "hazeVersion" }
 haze-materials = { module = "dev.chrisbanes.haze:haze-blur-material3", version.ref = "hazeVersion" }
+haze-glass = { module = "dev.chrisbanes.haze:haze-glass", version.ref = "hazeVersion" }
+haze-glass-materials = { module = "dev.chrisbanes.haze:haze-glass-material3", version.ref = "hazeVersion" }
 kotlinx-coroutines-guava = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-guava", version = "1.11.0" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

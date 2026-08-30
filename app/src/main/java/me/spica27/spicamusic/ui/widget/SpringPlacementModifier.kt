@@ -1,9 +1,6 @@
-@file:OptIn(ExperimentalAnimatableApi::class)
-
 package me.spica27.spicamusic.ui.widget
 
 import androidx.compose.animation.core.DeferredTargetAnimation
-import androidx.compose.animation.core.ExperimentalAnimatableApi
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.snap

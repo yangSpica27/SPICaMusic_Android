@@ -21,7 +21,6 @@ import dev.chrisbanes.haze.blur.HazeColorEffect
 import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.hazeSource
 
-
 @Immutable
 data class LiquidGlassConfig(
     val enabled: Boolean = false,

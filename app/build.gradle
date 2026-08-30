@@ -206,6 +206,19 @@ dependencies {
   implementation(libs.haze)
   implementation(libs.haze.blur)
   implementation(libs.haze.materials)
+  implementation(libs.haze.glass)
+  implementation(libs.haze.glass.materials)
+}
+
+// Compose BOM 2026.06.01 会把 material3 顶到 1.5.0-alpha17，与 foundation 1.12.0（稳定）
+// 的 CustomStyle 接口 ABI 不兼容 —— TextFieldDefaults 里的 lambda 实现 alpha 版的
+// `CustomStyle.applyStyle`，运行时 foundation 稳定版找不到该抽象方法，抛
+// `AbstractMethodError`。这里强制把 material3 拉回稳定 1.4.0，避免 alpha/稳定 混搭。
+configurations.configureEach {
+  resolutionStrategy {
+    force("androidx.compose.material3:material3:1.4.0")
+    force("androidx.compose.material3:material3-android:1.4.0")
+  }
 }
 
 
