@@ -58,7 +58,7 @@ interface IMusicPlayer {
     val currentTimelineItems: StateFlow<List<MediaItem>>
 
     /**
-     * 当前播放位置（秒）
+     * 当前播放位置（毫秒）
      */
     val currentPosition: Long
 

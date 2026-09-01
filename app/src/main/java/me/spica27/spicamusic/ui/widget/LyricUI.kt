@@ -77,6 +77,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -87,6 +88,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricItem
 import me.spica27.spicamusic.common.entity.findPlayingIndex
+import me.spica27.spicamusic.common.entity.getSentenceContent
 import me.spica27.spicamusic.common.entity.voiceAgents
 import me.spica27.spicamusic.ui.theme.Shapes
 import java.util.Locale
@@ -115,7 +117,7 @@ private object LyricUIConstants {
 
     const val SCROLL_VIEWPORT_OFFSET_RATIO = 0.28f
 
-    const val BASE_TEXT_ALPHA = 0.24f
+    const val BASE_TEXT_ALPHA = 0.21f
     const val TRANSLATION_TEXT_ALPHA = 0.72f
     const val ACTIVE_TRANSLATION_ALPHA = 0.85f
     const val INACTIVE_TRANSLATION_ALPHA = 0.8f
@@ -147,6 +149,30 @@ enum class LyricsDisplayMode {
 }
 
 /**
+ * 歌词变体显示模式
+ */
+enum class LyricsVariantDisplayMode {
+    First,
+    All,
+}
+
+/**
+ * 显示配置
+ */
+@Immutable
+data class LyricsDisplayOptions(
+    val translationMode: LyricsVariantDisplayMode = LyricsVariantDisplayMode.First,
+    val transliterationMode: LyricsVariantDisplayMode = LyricsVariantDisplayMode.First,
+    val preferredTranslationLanguage: String? = null,
+    val preferredTransliterationLanguage: String? = null,
+    val showRuby: Boolean = true,
+    val showEmptyBeat: Boolean = true,
+    val obscureObscene: Boolean = false,
+    val showSongPart: Boolean = false,
+    val showAgentLabel: Boolean = false,
+)
+
+/**
  * 随展示形态变化的排版参数
  */
 @Immutable
@@ -156,6 +182,7 @@ private data class LyricsUIStyle(
     val wordsTextStyle: TextStyle,
     val wordsTranslationTextStyle: TextStyle,
     val phoneticTextStyle: TextStyle,
+    val rubyTextStyle: TextStyle,
     val accompanimentTextStyle: TextStyle,
     val activeScale: Float,
     val itemSpacing: Dp,
@@ -175,6 +202,7 @@ private fun rememberLyricsUIStyle(displayMode: LyricsDisplayMode): LyricsUIStyle
                     wordsTextStyle = typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
                     wordsTranslationTextStyle = typography.bodySmall,
                     phoneticTextStyle = typography.bodySmall,
+                    rubyTextStyle = typography.labelSmall.copy(fontSize = 10.sp),
                     accompanimentTextStyle = typography.titleMedium,
                     activeScale = 1.12f,
                     itemSpacing = 12.dp,
@@ -189,6 +217,7 @@ private fun rememberLyricsUIStyle(displayMode: LyricsDisplayMode): LyricsUIStyle
                     wordsTextStyle = typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                     wordsTranslationTextStyle = typography.bodySmall,
                     phoneticTextStyle = typography.labelSmall,
+                    rubyTextStyle = typography.labelSmall.copy(fontSize = 8.sp),
                     accompanimentTextStyle = typography.bodyMedium,
                     activeScale = 1.06f,
                     itemSpacing = 6.dp,
@@ -211,6 +240,7 @@ fun LyricsUI(
     lyric: ImmutableList<LyricItem>,
     currentTime: Long,
     displayMode: LyricsDisplayMode = LyricsDisplayMode.Fullscreen,
+    displayOptions: LyricsDisplayOptions = LyricsDisplayOptions(),
     isSynced: Boolean = true,
     onSeekToTime: (Long) -> Unit = {},
 ) {
@@ -223,7 +253,12 @@ fun LyricsUI(
 
     // 无时间戳的纯文本歌词（内嵌/本地常见）：静态可滚动展示，不高亮、不跟随、不可 seek
     if (!isSynced) {
-        PlainLyricsList(modifier = modifier, lines = lyricLines, displayMode = displayMode)
+        PlainLyricsList(
+            modifier = modifier,
+            lines = lyricLines,
+            displayMode = displayMode,
+            displayOptions = displayOptions,
+        )
         return
     }
 
@@ -265,21 +300,26 @@ fun LyricsUI(
     // 逐字行测量缓存：按行 key 复用。滚动时 item 被回收重建不再重新测量，
     // 避免「占位文本 -> 逐字渲染」的反复切换闪烁
     val wordsTextStyle = style.wordsTextStyle
-    val wordsMeasureCache = remember(lyricLines, wordsTextStyle) { HashMap<String, List<MeasuredWord>>() }
+    val wordsMeasureCache =
+        remember(lyricLines, wordsTextStyle, displayOptions.obscureObscene) {
+            HashMap<String, List<MeasuredWord>>()
+        }
     val prewarmTextMeasurer = rememberTextMeasurer(cacheSize = 0)
 
     // 后台预热全部逐字行的测量结果，行首次进入视口时即可同步命中缓存
-    LaunchedEffect(lyricLines, wordsTextStyle) {
+    LaunchedEffect(lyricLines, wordsTextStyle, displayOptions.obscureObscene) {
         val pending =
             lyricLines
                 .filterIsInstance<LyricItem.WordsLyric>()
-                .filter { it.key !in wordsMeasureCache }
+                .filter { it.measureCacheKey(displayOptions.obscureObscene) !in wordsMeasureCache }
         if (pending.isEmpty()) return@LaunchedEffect
         val results =
             withContext(Dispatchers.Default) {
                 pending.associate { line ->
-                    val ranges = buildWordRanges(line.words.sortedBy { it.startTime })
-                    line.key to measureWordRanges(prewarmTextMeasurer, ranges, wordsTextStyle)
+                    val words = line.wordsForDisplay(displayOptions.obscureObscene)
+                    val ranges = buildWordRanges(words)
+                    line.measureCacheKey(displayOptions.obscureObscene) to
+                        measureWordRanges(prewarmTextMeasurer, ranges, wordsTextStyle)
                 }
             }
         results.forEach { (key, value) -> wordsMeasureCache.putIfAbsent(key, value) }
@@ -403,6 +443,12 @@ fun LyricsUI(
 
                     val springStiffness =
                         (120f - (distanceFromActive * 20f)).coerceAtLeast(20f)
+                    val songPart = line.songPartLabel()
+                    val previousSongPart = lyricLines.getOrNull(index - 1)?.songPartLabel()
+                    val showSongPart =
+                        displayOptions.showSongPart &&
+                            !songPart.isNullOrBlank() &&
+                            songPart != previousSongPart
 
                     LyricItemWrapper(
                         modifier =
@@ -429,6 +475,10 @@ fun LyricsUI(
                                     style = style,
                                     voiceAccent = lineAccent,
                                     alignEnd = alignEnd,
+                                    agents = lineAgents,
+                                    showSongPart = showSongPart,
+                                    songPart = songPart,
+                                    displayOptions = displayOptions,
                                 )
 
                             is LyricItem.WordsLyric -> {
@@ -445,6 +495,9 @@ fun LyricsUI(
                                     alignEnd = alignEnd,
                                     voiceIndexById = voiceIndexById,
                                     colorScheme = colorScheme,
+                                    showSongPart = showSongPart,
+                                    songPart = songPart,
+                                    displayOptions = displayOptions,
                                 )
                             }
                         }
@@ -515,6 +568,7 @@ private fun PlainLyricsList(
     modifier: Modifier = Modifier,
     lines: List<LyricItem>,
     displayMode: LyricsDisplayMode,
+    displayOptions: LyricsDisplayOptions,
 ) {
     val style = rememberLyricsUIStyle(displayMode)
     val textColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
@@ -536,10 +590,14 @@ private fun PlainLyricsList(
             val content =
                 when (line) {
                     is LyricItem.NormalLyric -> line.content
-                    is LyricItem.WordsLyric -> line.words.joinToString(separator = "") { it.content }
-                }
+                    is LyricItem.WordsLyric ->
+                        line
+                            .wordsForDisplay(displayOptions.obscureObscene)
+                            .joinToString(separator = "") { it.content }
+                            .ifBlank { line.getSentenceContent() }
+                }.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER }
             Text(
-                text = content.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
+                text = content,
                 style = style.mainTextStyle,
                 fontWeight = FontWeight.Medium,
                 color = textColor,
@@ -596,6 +654,10 @@ private fun LyricLine(
     style: LyricsUIStyle,
     voiceAccent: Color?,
     alignEnd: Boolean,
+    agents: List<LyricItem.Agent>,
+    showSongPart: Boolean,
+    songPart: String?,
+    displayOptions: LyricsDisplayOptions,
 ) {
     val inactiveTextColor = MaterialTheme.colorScheme.onSurface
     val activeTextColor = voiceAccent ?: MaterialTheme.colorScheme.onSurface
@@ -618,19 +680,33 @@ private fun LyricLine(
                     vertical = style.verticalPadding,
                 ),
     ) {
+        if (showSongPart || (displayOptions.showAgentLabel && agents.hasUsefulLabels())) {
+            LineContextLabel(
+                songPart = songPart.takeIf { showSongPart },
+                agents = agents.takeIf { displayOptions.showAgentLabel },
+                textAlign = textAlign,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
         Text(
             text = lyric.content.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
             style = style.mainTextStyle,
-            fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Medium,
+            fontWeight = FontWeight.Medium,
             color = if (isActive) activeTextColor else inactiveTextColor,
             textAlign = textAlign,
             overflow = TextOverflow.Ellipsis,
         )
 
-        if (!lyric.translation.isNullOrBlank()) {
+        val translations =
+            lyric.translationVariantsFor(
+                displayOptions.translationMode,
+                displayOptions.preferredTranslationLanguage,
+            )
+        translations.forEach { translation ->
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = lyric.translation!!,
+                text = translation.content,
                 style = style.translationTextStyle,
                 color =
                     if (isActive) {
@@ -834,6 +910,9 @@ private fun WordsLyricLine(
     alignEnd: Boolean,
     voiceIndexById: Map<String, Int>,
     colorScheme: androidx.compose.material3.ColorScheme,
+    showSongPart: Boolean,
+    songPart: String?,
+    displayOptions: LyricsDisplayOptions,
 ) {
     val activeTextColor = voiceAccent ?: MaterialTheme.colorScheme.onSurface
     val baseTextColor = activeTextColor.copy(alpha = LyricUIConstants.BASE_TEXT_ALPHA)
@@ -842,9 +921,17 @@ private fun WordsLyricLine(
     val horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start
     val textAlign = if (alignEnd) TextAlign.End else TextAlign.Start
     val sortedWords = remember(lyric) { lyric.words.sortedBy { it.startTime } }
-    val sentence = remember(sortedWords) { sortedWords.joinToString(separator = "") { it.content } }
+    val renderWords =
+        remember(sortedWords, displayOptions.obscureObscene) {
+            lyric.wordsForDisplay(displayOptions.obscureObscene)
+        }
+    val sentence =
+        remember(renderWords, lyric.content) {
+            renderWords
+                .joinToString(separator = "") { it.content }
+                .ifBlank { lyric.getSentenceContent() }
+        }
     val accompaniment = remember(lyric) { lyric.accompaniment.sortedBy { it.startTime } }
-    val wordRanges = remember(sortedWords) { buildWordRanges(sortedWords) }
     val (beforeAccompaniment, afterAccompaniment) =
         remember(accompaniment, lyric.startTime) {
             accompaniment.partition { it.startTime < lyric.startTime }
@@ -865,6 +952,15 @@ private fun WordsLyricLine(
                     vertical = style.verticalPadding,
                 ),
     ) {
+        if (showSongPart || (displayOptions.showAgentLabel && agents.hasUsefulLabels())) {
+            LineContextLabel(
+                songPart = songPart.takeIf { showSongPart },
+                agents = agents.takeIf { displayOptions.showAgentLabel },
+                textAlign = textAlign,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
         beforeAccompaniment.forEachIndexed { index, background ->
             AccompanimentLine(
                 background = background,
@@ -879,25 +975,51 @@ private fun WordsLyricLine(
                 colorScheme = colorScheme,
                 fallbackAccent = voiceAccent,
                 fallbackAlignEnd = alignEnd,
+                displayOptions = displayOptions,
             )
         }
 
-        ProgressiveWordsText(
-            text = sentence.ifBlank { LyricUIConstants.EMPTY_WORD_PLACEHOLDER },
-            wordRanges = wordRanges,
-            progressProvider = { range -> wordProgress(range.word, currentTimeState.value) },
-            // 测量样式不含颜色：强调度由外层图层处理，逐字进度只在绘制阶段读取，
-            // 避免滚动时测量结果因播放状态变化而失效并引发闪烁
-            textStyle = style.wordsTextStyle,
-            baseColor = baseTextColor,
-            activeColor = activeTextColor,
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
-            cacheKey = lyric.key,
-            measureCache = measureCache,
-        )
+        if (sentence.isNotBlank()) {
+            ProgressiveWordsText(
+                text = sentence,
+                wordRanges = remember(renderWords) { buildWordRanges(renderWords) },
+                progressProvider = { range -> wordProgress(range.word, currentTimeState.value) },
+                // 测量样式不含颜色：强调度由外层图层处理，逐字进度只在绘制阶段读取，
+                // 避免滚动时测量结果因播放状态变化而失效并引发闪烁
+                textStyle = style.wordsTextStyle,
+                baseColor = baseTextColor,
+                activeColor = activeTextColor,
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
+                cacheKey = lyric.measureCacheKey(displayOptions.obscureObscene),
+                measureCache = measureCache,
+                rubyTextStyle = style.rubyTextStyle,
+                showRuby = displayOptions.showRuby,
+                showEmptyBeat = displayOptions.showEmptyBeat,
+            )
+        }
 
-        if (!lyric.phonetic.isNullOrBlank()) {
+        val transliterations =
+            lyric.transliterationVariantsFor(
+                displayOptions.transliterationMode,
+                displayOptions.preferredTransliterationLanguage,
+            )
+        if (transliterations.isNotEmpty()) {
+            transliterations.forEachIndexed { index, transliteration ->
+                Spacer(modifier = Modifier.height(4.dp))
+                TranslationLine(
+                    translation = transliteration,
+                    currentTimeState = currentTimeState,
+                    style = style,
+                    color = activeTextColor.copy(alpha = 0.7f),
+                    textAlign = textAlign,
+                    cacheKey = "${lyric.key}:roman:$index:${transliteration.lang}",
+                    measureCache = measureCache,
+                    displayOptions = displayOptions,
+                    textStyle = style.phoneticTextStyle,
+                )
+            }
+        } else if (!lyric.phonetic.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = lyric.phonetic!!,
@@ -908,15 +1030,22 @@ private fun WordsLyricLine(
             )
         }
 
-        val translation = lyric.translation.firstOrNull { it.content.isNotBlank() }?.content
-        if (!translation.isNullOrBlank()) {
+        val translations =
+            lyric.translationVariantsFor(
+                displayOptions.translationMode,
+                displayOptions.preferredTranslationLanguage,
+            )
+        translations.forEachIndexed { index, translation ->
             Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = translation,
-                style = style.wordsTranslationTextStyle,
+            TranslationLine(
+                translation = translation,
+                currentTimeState = currentTimeState,
+                style = style,
                 color = translationColor,
                 textAlign = textAlign,
-                overflow = TextOverflow.Ellipsis,
+                cacheKey = "${lyric.key}:translation:$index:${translation.lang}:${translation.type}",
+                measureCache = measureCache,
+                displayOptions = displayOptions,
             )
         }
 
@@ -934,6 +1063,7 @@ private fun WordsLyricLine(
                 colorScheme = colorScheme,
                 fallbackAccent = voiceAccent,
                 fallbackAlignEnd = alignEnd,
+                displayOptions = displayOptions,
             )
         }
     }
@@ -942,6 +1072,237 @@ private fun WordsLyricLine(
 private enum class AccompanimentPlacement {
     Before,
     After,
+}
+
+@Composable
+private fun LineContextLabel(
+    songPart: String?,
+    agents: List<LyricItem.Agent>?,
+    textAlign: TextAlign,
+) {
+    val labels =
+        buildList {
+            songPart?.takeIf(String::isNotBlank)?.let(::add)
+            agents
+                ?.map { it.label }
+                ?.filter(String::isNotBlank)
+                ?.distinct()
+                ?.joinToString(" / ")
+                ?.takeIf(String::isNotBlank)
+                ?.let(::add)
+        }
+    if (labels.isEmpty()) return
+    Text(
+        text = labels.joinToString(" / "),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+        textAlign = textAlign,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+private fun List<LyricItem.Agent>.hasUsefulLabels(): Boolean = size > 1 || any { !it.name.isNullOrBlank() }
+
+private fun LyricItem.songPartLabel(): String? =
+    when (this) {
+        is LyricItem.NormalLyric -> songPart
+        is LyricItem.WordsLyric -> songPart
+    }
+
+private fun LyricItem.WordsLyric.WordWithTiming.displayContent(obscureObscene: Boolean): String =
+    if (!obscureObscene || !obscene) {
+        content
+    } else {
+        content.map { character -> if (character.isWhitespace()) character else '*' }.joinToString("")
+    }
+
+private fun List<LyricItem.WordsLyric.WordWithTiming>.displayWordsWithFullText(
+    fullText: String?,
+    obscureObscene: Boolean,
+): List<LyricItem.WordsLyric.WordWithTiming> {
+    val sorted = sortedBy { it.startTime }
+    val normalizedText =
+        fullText?.takeIf(String::isNotBlank)
+            ?: return sorted.map { it.displayCopy(obscureObscene) }
+    if (sorted.isEmpty()) return sorted
+
+    val result = mutableListOf<LyricItem.WordsLyric.WordWithTiming>()
+    var cursor = 0
+    var matched = false
+    var pendingPrefix = ""
+    sorted.forEach { original ->
+        val raw = original.content
+        val trimmed = raw.trim()
+        val match =
+            normalizedText.indexOf(raw, cursor).takeIf { it >= cursor }
+                ?: normalizedText.indexOf(trimmed, cursor).takeIf { it >= cursor }
+        if (match != null) {
+            matched = true
+            val gap = normalizedText.substring(cursor, match)
+            if (gap.isNotEmpty()) {
+                if (result.isNotEmpty()) {
+                    val previous = result.last()
+                    result[result.lastIndex] =
+                        previous.copy(
+                            content = previous.content + gap,
+                            endsWithSpace = previous.endsWithSpace || gap.last().isWhitespace(),
+                        )
+                } else {
+                    pendingPrefix += gap
+                }
+            }
+            cursor = match + if (normalizedText.startsWith(raw, match)) raw.length else trimmed.length
+        }
+        val display = original.displayCopy(obscureObscene)
+        result += display.copy(content = pendingPrefix + display.content)
+        pendingPrefix = ""
+    }
+    if (matched && cursor < normalizedText.length && result.isNotEmpty()) {
+        val tail = normalizedText.substring(cursor)
+        val previous = result.last()
+        result[result.lastIndex] =
+            previous.copy(
+                content = previous.content + tail,
+                endsWithSpace = previous.endsWithSpace || tail.last().isWhitespace(),
+            )
+    }
+    return if (matched) result else sorted.map { it.displayCopy(obscureObscene) }
+}
+
+private fun LyricItem.WordsLyric.wordsForDisplay(obscureObscene: Boolean): List<LyricItem.WordsLyric.WordWithTiming> =
+    words.displayWordsWithFullText(content, obscureObscene)
+
+private fun LyricItem.WordsLyric.WordWithTiming.displayCopy(obscureObscene: Boolean): LyricItem.WordsLyric.WordWithTiming {
+    val visibleContent = displayContent(obscureObscene)
+    return copy(
+        content = if (endsWithSpace && !visibleContent.endsWith(' ')) "$visibleContent " else visibleContent,
+        ruby = if (obscureObscene && obscene) emptyList() else ruby,
+    )
+}
+
+private fun LyricItem.WordsLyric.measureCacheKey(obscureObscene: Boolean): String = "$key:obscure=$obscureObscene"
+
+private fun List<LyricItem.WordsLyric.Translation>.visibleVariants(
+    mode: LyricsVariantDisplayMode,
+    includeBackground: Boolean = false,
+    preferredLanguage: String? = null,
+): List<LyricItem.WordsLyric.Translation> {
+    val distinct =
+        asSequence()
+            .filter { it.content.isNotBlank() || it.words.isNotEmpty() }
+            .filter { includeBackground || !it.isBackground }
+            .distinct()
+            .toList()
+    val ordered =
+        if (preferredLanguage.isNullOrBlank()) {
+            distinct
+        } else {
+            distinct.sortedBy { if (it.lang.equals(preferredLanguage, ignoreCase = true)) 0 else 1 }
+        }
+    return if (mode == LyricsVariantDisplayMode.All) ordered else ordered.take(1)
+}
+
+private fun LyricItem.NormalLyric.translationVariantsFor(
+    mode: LyricsVariantDisplayMode,
+    preferredLanguage: String? = null,
+): List<LyricItem.WordsLyric.Translation> {
+    val variants =
+        translationVariants
+            .ifEmpty {
+                translation
+                    ?.takeIf(String::isNotBlank)
+                    ?.let { listOf(LyricItem.WordsLyric.Translation(content = it)) }
+                    .orEmpty()
+            }
+    return variants.visibleVariants(mode, preferredLanguage = preferredLanguage)
+}
+
+private fun LyricItem.WordsLyric.translationVariantsFor(
+    mode: LyricsVariantDisplayMode,
+    preferredLanguage: String? = null,
+): List<LyricItem.WordsLyric.Translation> =
+    (translationVariants.ifEmpty { translation }).visibleVariants(mode, preferredLanguage = preferredLanguage)
+
+private fun LyricItem.WordsLyric.AccompanimentLyric.translationVariantsFor(
+    mode: LyricsVariantDisplayMode,
+    preferredLanguage: String? = null,
+): List<LyricItem.WordsLyric.Translation> =
+    (translationVariants.ifEmpty { translation }).visibleVariants(
+        mode,
+        includeBackground = true,
+        preferredLanguage = preferredLanguage,
+    )
+
+private fun LyricItem.WordsLyric.transliterationVariantsFor(
+    mode: LyricsVariantDisplayMode,
+    preferredLanguage: String? = null,
+): List<LyricItem.WordsLyric.Translation> =
+    transliterations
+        .asSequence()
+        .filter { it.content.isNotBlank() || it.words.isNotEmpty() }
+        .distinct()
+        .toList()
+        .let { variants ->
+            val ordered =
+                if (preferredLanguage.isNullOrBlank()) {
+                    variants
+                } else {
+                    variants.sortedBy { if (it.lang.equals(preferredLanguage, ignoreCase = true)) 0 else 1 }
+                }
+            if (mode == LyricsVariantDisplayMode.All) ordered else ordered.take(1)
+        }
+
+@Composable
+private fun TranslationLine(
+    translation: LyricItem.WordsLyric.Translation,
+    currentTimeState: State<Long>,
+    style: LyricsUIStyle,
+    color: Color,
+    textAlign: TextAlign,
+    cacheKey: String,
+    measureCache: MutableMap<String, List<MeasuredWord>>,
+    displayOptions: LyricsDisplayOptions,
+    textStyle: TextStyle = style.wordsTranslationTextStyle,
+) {
+    val words =
+        remember(translation, displayOptions.obscureObscene) {
+            translation.words.displayWordsWithFullText(
+                translation.content,
+                displayOptions.obscureObscene,
+            )
+        }
+    val text =
+        remember(translation, words) {
+            words.joinToString(separator = "") { it.content }.ifBlank { translation.content }
+        }
+    if (words.isNotEmpty()) {
+        ProgressiveWordsText(
+            text = text,
+            wordRanges = remember(words) { buildWordRanges(words) },
+            progressProvider = { range -> wordProgress(range.word, currentTimeState.value) },
+            textStyle = textStyle,
+            baseColor = color.copy(alpha = color.alpha * 0.72f),
+            activeColor = color,
+            cacheKey = cacheKey,
+            measureCache = measureCache,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = if (textAlign == TextAlign.End) Arrangement.End else Arrangement.Start,
+            rubyTextStyle = style.rubyTextStyle,
+            showRuby = displayOptions.showRuby,
+            showEmptyBeat = displayOptions.showEmptyBeat,
+        )
+    } else {
+        Text(
+            text = text,
+            style = textStyle,
+            color = color,
+            textAlign = textAlign,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 @Composable
@@ -958,14 +1319,21 @@ private fun AccompanimentLine(
     colorScheme: androidx.compose.material3.ColorScheme,
     fallbackAccent: Color?,
     fallbackAlignEnd: Boolean,
+    displayOptions: LyricsDisplayOptions,
 ) {
     val backgroundAgents = background.voiceAgents().ifEmpty { parentAgents }
     val voiceIndex = backgroundAgents.firstOrNull()?.id?.let(voiceIndexById::get)
-    val accent = voiceAccent(voiceIndex, colorScheme) ?: fallbackAccent
+    val accent = voiceIndex?.let { voiceAccent(it, colorScheme) } ?: fallbackAccent
     val alignEnd = voiceIndex?.let(::voiceAlignEnd) ?: fallbackAlignEnd
     val horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start
     val textAlign = if (alignEnd) TextAlign.End else TextAlign.Start
-    val words = remember(background) { background.words.sortedBy { it.startTime } }
+    val words =
+        remember(background, displayOptions.obscureObscene) {
+            background.words.displayWordsWithFullText(
+                background.content,
+                displayOptions.obscureObscene,
+            )
+        }
     if (words.isEmpty()) return
 
     val visible by remember(background, currentTimeState) {
@@ -1014,8 +1382,19 @@ private fun AccompanimentLine(
                 ),
     ) {
         Column(horizontalAlignment = horizontalAlignment, modifier = Modifier.fillMaxWidth()) {
+            if (displayOptions.showAgentLabel && backgroundAgents.hasUsefulLabels()) {
+                LineContextLabel(
+                    songPart = null,
+                    agents = backgroundAgents,
+                    textAlign = textAlign,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+            }
             ProgressiveWordsText(
-                text = words.joinToString(separator = "") { it.content },
+                text =
+                    words
+                        .joinToString(separator = "") { it.content }
+                        .ifBlank { background.content.orEmpty() },
                 wordRanges = remember(words) { buildWordRanges(words) },
                 progressProvider = { range -> wordProgress(range.word, currentTimeState.value) },
                 textStyle = style.accompanimentTextStyle,
@@ -1023,11 +1402,46 @@ private fun AccompanimentLine(
                 activeColor = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.88f),
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
-                cacheKey = "$parentKey:accompaniment:$index:${background.startTime}",
+                cacheKey = "$parentKey:accompaniment:$index:${background.startTime}:obscure=${displayOptions.obscureObscene}",
                 measureCache = measureCache,
+                rubyTextStyle = style.rubyTextStyle,
+                showRuby = displayOptions.showRuby,
+                showEmptyBeat = displayOptions.showEmptyBeat,
             )
 
-            if (!background.phonetic.isNullOrBlank()) {
+            val transliterations =
+                background.transliterations
+                    .asSequence()
+                    .filter { it.content.isNotBlank() || it.words.isNotEmpty() }
+                    .distinct()
+                    .toList()
+                    .let { variants ->
+                        val ordered =
+                            if (displayOptions.preferredTransliterationLanguage.isNullOrBlank()) {
+                                variants
+                            } else {
+                                variants.sortedBy {
+                                    if (it.lang.equals(displayOptions.preferredTransliterationLanguage, ignoreCase = true)) 0 else 1
+                                }
+                            }
+                        if (displayOptions.transliterationMode == LyricsVariantDisplayMode.All) ordered else ordered.take(1)
+                    }
+            if (transliterations.isNotEmpty()) {
+                transliterations.forEachIndexed { transliterationIndex, transliteration ->
+                    Spacer(modifier = Modifier.height(2.dp))
+                    TranslationLine(
+                        translation = transliteration,
+                        currentTimeState = currentTimeState,
+                        style = style,
+                        color = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.52f),
+                        textAlign = textAlign,
+                        cacheKey = "$parentKey:accompaniment:$index:roman:$transliterationIndex:${transliteration.lang}",
+                        measureCache = measureCache,
+                        displayOptions = displayOptions,
+                        textStyle = style.phoneticTextStyle,
+                    )
+                }
+            } else if (!background.phonetic.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = background.phonetic!!,
@@ -1038,15 +1452,22 @@ private fun AccompanimentLine(
                 )
             }
 
-            val translation = background.translation.firstOrNull { it.content.isNotBlank() }?.content
-            if (!translation.isNullOrBlank()) {
+            val translations =
+                background.translationVariantsFor(
+                    displayOptions.translationMode,
+                    displayOptions.preferredTranslationLanguage,
+                )
+            translations.forEachIndexed { translationIndex, translation ->
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = translation,
-                    style = style.wordsTranslationTextStyle,
+                TranslationLine(
+                    translation = translation,
+                    currentTimeState = currentTimeState,
+                    style = style,
                     color = (accent ?: MaterialTheme.colorScheme.onSurface).copy(alpha = 0.58f),
                     textAlign = textAlign,
-                    overflow = TextOverflow.Ellipsis,
+                    cacheKey = "$parentKey:accompaniment:$index:translation:$translationIndex:${translation.lang}",
+                    measureCache = measureCache,
+                    displayOptions = displayOptions,
                 )
             }
         }
@@ -1068,6 +1489,9 @@ private fun ProgressiveWordsText(
     measureCache: MutableMap<String, List<MeasuredWord>>,
     modifier: Modifier = Modifier,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+    rubyTextStyle: TextStyle? = null,
+    showRuby: Boolean = false,
+    showEmptyBeat: Boolean = false,
 ) {
     if (wordRanges.isEmpty()) {
         Text(
@@ -1085,11 +1509,11 @@ private fun ProgressiveWordsText(
 
     // 优先同步命中缓存；miss 时后台测量后回填（仅发生在预热尚未覆盖时）
     var measuredWords by remember(text, wordRanges, textStyle) {
-        mutableStateOf(measureCache[cacheKey])
+        mutableStateOf(measureCache[cacheKey]?.takeIf { it.size == wordRanges.size })
     }
 
     LaunchedEffect(text, wordRanges, textStyle) {
-        if (measuredWords != null) return@LaunchedEffect
+        if (measuredWords?.size == wordRanges.size) return@LaunchedEffect
         val result =
             withContext(Dispatchers.Default) {
                 measureWordRanges(textMeasurer, wordRanges, textStyle)
@@ -1115,149 +1539,135 @@ private fun ProgressiveWordsText(
     ) {
         words.forEachIndexed { index, measured ->
             val range = wordRanges[index]
-
-            Canvas(
-                modifier =
-                    Modifier
-                        .graphicsLayer {
-                            // 进度驱动的弹跳位移，在 graphics layer 中读取以减少 recomposition
-                            val progress = progressProvider(range)
-                            translationY = progress * wordTranslationYPx
-                        }.size(
-                            with(density) {
-                                Size(
-                                    width = measured.box.width,
-                                    height = measured.box.height - wordTranslationYPx,
-                                ).toDpSize()
-                            },
-                        ),
-            ) {
-                // ── 绘制阶段：每帧仅执行 draw 操作，无测量 ──
-                val progress = progressProvider(range)
-                val hasSlowWordAnimation =
-                    measured.scaleAmplitude > 0f &&
-                        measured.characterLayouts.size == measured.characterBounds.size
-                val wordPivot = Offset(measured.box.center.x, measured.box.bottom)
-                val scaleOverflowX = measured.box.width * measured.scaleAmplitude / 2f
-                val scaleOverflowY = measured.box.height * measured.scaleAmplitude
-                val floatOffsetOverflow =
-                    if (measured.dipAmplitude > 0f) {
-                        LyricUIConstants.SLOW_WORD_MAX_FLOAT_OFFSET_PX
-                    } else {
-                        0f
-                    }
-                val dipOverflowY = measured.dipAmplitude * LyricUIConstants.SLOW_WORD_MAX_FLOAT_OFFSET_PX
-
-                // 扫描渐变过渡带宽度（占词宽比例）
-                val fadeRange = 0.25f
-
-                val fadeCenter = -fadeRange / 2f + (1f + fadeRange) * progress
-                val fadeStart = (fadeCenter - fadeRange / 2f).coerceIn(0f, 1f)
-                val fadeEnd = (fadeCenter + fadeRange / 2f).coerceIn(0f, 1f)
-
-                val highlightStops =
-                    arrayOf(
-                        0.0f to highlightColor,
-                        fadeStart to highlightColor,
-                        fadeEnd to baseColor,
-                        1.0f to baseColor,
-                    )
-                // 已播放部分的深度加强层色标：已唱区间不透明 activeColor，未唱区间完全透明。
-                val depthStops =
-                    arrayOf(
-                        0.0f to highlightColor,
-                        fadeStart to highlightColor,
-                        fadeEnd to highlightColor.copy(alpha = 0f),
-                        1.0f to highlightColor.copy(alpha = 0f),
-                    )
-                // 扫描渐变必须在整词坐标系内连续推进。逐字绘制时每个字母用 topLeft 平移了画布，
-                val canvasWidth = size.width
-
-                // 端点退化时避免 TileMode.Clamp 的边缘泄露：progress=0 时 fadeStart/fadeEnd 都塌到 0，
-                fun wordSweepBrush(
-                    stops: Array<Pair<Float, Color>>,
-                    charX: Float,
-                ): Brush {
-                    val effectiveStops =
-                        when {
-                            fadeEnd <= 0f -> {
-                                val c = stops.last().second
-                                arrayOf(0f to c, 1f to c)
-                            }
-
-                            fadeStart >= 1f -> {
-                                val c = stops.first().second
-                                arrayOf(0f to c, 1f to c)
-                            }
-
-                            else -> stops
-                        }
-                    return Brush.horizontalGradient(
-                        colorStops = effectiveStops,
-                        startX = -charX,
-                        endX = canvasWidth - charX,
-                    )
-                }
-
-                val highlightBrush = wordSweepBrush(highlightStops, 0f)
-                val depthBrush = wordSweepBrush(depthStops, 0f)
-                val glow =
-                    if (hasSlowWordAnimation) {
-                        val glowSwell = 4f * progress * (1f - progress)
-                        Shadow(
-                            color =
-                                highlightColor.copy(
-                                    alpha = LyricUIConstants.WORD_GLOW_ALPHA * glowSwell,
-                                ),
-                            blurRadius = LyricUIConstants.WORD_GLOW_BLUR_RADIUS * glowSwell,
-                        )
-                    } else {
-                        null
-                    }
-
-                // 底层：已播放区间的深度加强层（未播放区间透明，不铺底）
-                if (hasSlowWordAnimation) {
-                    measured.characterLayouts.forEachIndexed { characterIndex, characterLayout ->
-                        val characterBox = measured.characterBounds[characterIndex]
-                        val animationProgress =
-                            slowWordCharacterAnimationProgress(
-                                word = range.word,
-                                wordProgress = progress,
-                                characterIndex = characterIndex,
-                                characterCount = measured.characterLayouts.size,
-                            )
-                        val scale =
-                            slowWordCharacterScale(
-                                animationProgress = animationProgress,
-                                amplitude = measured.scaleAmplitude,
-                            )
-                        val floatOffset =
-                            slowWordCharacterFloatOffset(animationProgress, measured.dipAmplitude)
-                        val centeredOffsetX = (characterBox.width - characterLayout.size.width) / 2f
-                        val characterPosition =
-                            Offset(
-                                x = characterBox.left + centeredOffsetX,
-                                y = characterBox.top + floatOffset,
-                            )
-                        withTransform({ scale(scaleX = scale, scaleY = scale, pivot = wordPivot) }) {
-                            drawText(
-                                textLayoutResult = characterLayout,
-                                brush = wordSweepBrush(depthStops, characterPosition.x),
-                                topLeft = characterPosition,
-                            )
-                        }
-                    }
+            val rubyText =
+                if (showRuby && rubyTextStyle != null) {
+                    range.word.ruby
+                        .joinToString(separator = "") { it.text }
+                        .trim()
                 } else {
-                    drawText(measured.layout, brush = depthBrush)
+                    ""
                 }
-
-                // 高亮层（渐变 + 发光）
-                clipRect(
-                    measured.box.left - scaleOverflowX,
-                    measured.box.top + wordTranslationYPx - scaleOverflowY - dipOverflowY,
-                    size.width + scaleOverflowX,
-                    measured.box.bottom + wordTranslationYPx + floatOffsetOverflow,
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier =
+                    Modifier.padding(
+                        start =
+                            if (showEmptyBeat) {
+                                ((range.word.emptyBeat ?: 0).coerceIn(0, 32) * 4).dp
+                            } else {
+                                0.dp
+                            },
+                    ),
+            ) {
+                if (rubyText.isNotBlank()) {
+                    Text(
+                        text = rubyText,
+                        style = rubyTextStyle!!,
+                        color = activeColor.copy(alpha = 0.68f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Canvas(
+                    modifier =
+                        Modifier
+                            .graphicsLayer {
+                                // 进度驱动的弹跳位移，在 graphics layer 中读取以减少 recomposition
+                                val progress = progressProvider(range)
+                                translationY = progress * wordTranslationYPx
+                            }.size(
+                                with(density) {
+                                    Size(
+                                        width = measured.box.width,
+                                        height = measured.box.height - wordTranslationYPx,
+                                    ).toDpSize()
+                                },
+                            ),
                 ) {
+                    // ── 绘制阶段：每帧仅执行 draw 操作，无测量 ──
+                    val progress = progressProvider(range)
+                    val hasSlowWordAnimation =
+                        measured.scaleAmplitude > 0f &&
+                            measured.characterLayouts.size == measured.characterBounds.size
+                    val wordPivot = Offset(measured.box.center.x, measured.box.bottom)
+                    val scaleOverflowX = measured.box.width * measured.scaleAmplitude / 2f
+                    val scaleOverflowY = measured.box.height * measured.scaleAmplitude
+                    val floatOffsetOverflow =
+                        if (measured.dipAmplitude > 0f) {
+                            LyricUIConstants.SLOW_WORD_MAX_FLOAT_OFFSET_PX
+                        } else {
+                            0f
+                        }
+                    val dipOverflowY = measured.dipAmplitude * LyricUIConstants.SLOW_WORD_MAX_FLOAT_OFFSET_PX
+
+                    // 扫描渐变过渡带宽度（占词宽比例）
+                    val fadeRange = 0.25f
+
+                    val fadeCenter = -fadeRange / 2f + (1f + fadeRange) * progress
+                    val fadeStart = (fadeCenter - fadeRange / 2f).coerceIn(0f, 1f)
+                    val fadeEnd = (fadeCenter + fadeRange / 2f).coerceIn(0f, 1f)
+
+                    val highlightStops =
+                        arrayOf(
+                            0.0f to highlightColor,
+                            fadeStart to highlightColor,
+                            fadeEnd to baseColor,
+                            1.0f to baseColor,
+                        )
+                    // 已播放部分的深度加强层色标：已唱区间不透明 activeColor，未唱区间完全透明。
+                    val depthStops =
+                        arrayOf(
+                            0.0f to highlightColor,
+                            fadeStart to highlightColor,
+                            fadeEnd to highlightColor.copy(alpha = 0f),
+                            1.0f to highlightColor.copy(alpha = 0f),
+                        )
+                    // 扫描渐变必须在整词坐标系内连续推进。逐字绘制时每个字母用 topLeft 平移了画布，
+                    val canvasWidth = size.width
+
+                    // 端点退化时避免 TileMode.Clamp 的边缘泄露：progress=0 时 fadeStart/fadeEnd 都塌到 0，
+                    fun wordSweepBrush(
+                        stops: Array<Pair<Float, Color>>,
+                        charX: Float,
+                    ): Brush {
+                        val effectiveStops =
+                            when {
+                                fadeEnd <= 0f -> {
+                                    val c = stops.last().second
+                                    arrayOf(0f to c, 1f to c)
+                                }
+
+                                fadeStart >= 1f -> {
+                                    val c = stops.first().second
+                                    arrayOf(0f to c, 1f to c)
+                                }
+
+                                else -> stops
+                            }
+                        return Brush.horizontalGradient(
+                            colorStops = effectiveStops,
+                            startX = -charX,
+                            endX = canvasWidth - charX,
+                        )
+                    }
+
+                    val highlightBrush = wordSweepBrush(highlightStops, 0f)
+                    val depthBrush = wordSweepBrush(depthStops, 0f)
+                    val glow =
+                        if (hasSlowWordAnimation) {
+                            val glowSwell = 4f * progress * (1f - progress)
+                            Shadow(
+                                color =
+                                    highlightColor.copy(
+                                        alpha = LyricUIConstants.WORD_GLOW_ALPHA * glowSwell,
+                                    ),
+                                blurRadius = LyricUIConstants.WORD_GLOW_BLUR_RADIUS * glowSwell,
+                            )
+                        } else {
+                            null
+                        }
+
+                    // 底层：已播放区间的深度加强层（未播放区间透明，不铺底）
                     if (hasSlowWordAnimation) {
                         measured.characterLayouts.forEachIndexed { characterIndex, characterLayout ->
                             val characterBox = measured.characterBounds[characterIndex]
@@ -1284,18 +1694,61 @@ private fun ProgressiveWordsText(
                             withTransform({ scale(scaleX = scale, scaleY = scale, pivot = wordPivot) }) {
                                 drawText(
                                     textLayoutResult = characterLayout,
-                                    brush = wordSweepBrush(highlightStops, characterPosition.x),
+                                    brush = wordSweepBrush(depthStops, characterPosition.x),
                                     topLeft = characterPosition,
-                                    shadow = glow,
                                 )
                             }
                         }
                     } else {
-                        drawText(
-                            measured.layout,
-                            brush = highlightBrush,
-                            shadow = glow,
-                        )
+                        drawText(measured.layout, brush = depthBrush)
+                    }
+
+                    // 高亮层（渐变 + 发光）
+                    clipRect(
+                        measured.box.left - scaleOverflowX,
+                        measured.box.top + wordTranslationYPx - scaleOverflowY - dipOverflowY,
+                        size.width + scaleOverflowX,
+                        measured.box.bottom + wordTranslationYPx + floatOffsetOverflow,
+                    ) {
+                        if (hasSlowWordAnimation) {
+                            measured.characterLayouts.forEachIndexed { characterIndex, characterLayout ->
+                                val characterBox = measured.characterBounds[characterIndex]
+                                val animationProgress =
+                                    slowWordCharacterAnimationProgress(
+                                        word = range.word,
+                                        wordProgress = progress,
+                                        characterIndex = characterIndex,
+                                        characterCount = measured.characterLayouts.size,
+                                    )
+                                val scale =
+                                    slowWordCharacterScale(
+                                        animationProgress = animationProgress,
+                                        amplitude = measured.scaleAmplitude,
+                                    )
+                                val floatOffset =
+                                    slowWordCharacterFloatOffset(animationProgress, measured.dipAmplitude)
+                                val centeredOffsetX = (characterBox.width - characterLayout.size.width) / 2f
+                                val characterPosition =
+                                    Offset(
+                                        x = characterBox.left + centeredOffsetX,
+                                        y = characterBox.top + floatOffset,
+                                    )
+                                withTransform({ scale(scaleX = scale, scaleY = scale, pivot = wordPivot) }) {
+                                    drawText(
+                                        textLayoutResult = characterLayout,
+                                        brush = wordSweepBrush(highlightStops, characterPosition.x),
+                                        topLeft = characterPosition,
+                                        shadow = glow,
+                                    )
+                                }
+                            }
+                        } else {
+                            drawText(
+                                measured.layout,
+                                brush = highlightBrush,
+                                shadow = glow,
+                            )
+                        }
                     }
                 }
             }
@@ -1497,7 +1950,10 @@ private fun LyricItem.isActiveAt(time: Long): Boolean =
 private fun voiceAccent(
     index: Int?,
     colorScheme: androidx.compose.material3.ColorScheme,
-): Color = MaterialTheme.colorScheme.onSurface
+): Color {
+    val palette = listOf(colorScheme.onSurface)
+    return palette[(index ?: 0).coerceAtLeast(0) % palette.size]
+}
 
 private fun voiceAlignEnd(index: Int): Boolean = index % 2 == 1
 

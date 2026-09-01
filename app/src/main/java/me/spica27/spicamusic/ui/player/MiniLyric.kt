@@ -91,7 +91,21 @@ fun MiniLyric(
             lyrics?.getOrNull(playingIndex)?.let { item ->
                 when (item) {
                     is LyricItem.NormalLyric -> item.content
-                    is LyricItem.WordsLyric -> item.getSentenceContent()
+                    is LyricItem.WordsLyric ->
+                        if (item.words.none { it.obscene }) {
+                            item.getSentenceContent()
+                        } else {
+                            item.words.joinToString(separator = "") { word ->
+                                if (word.obscene) {
+                                    word.content
+                                        .map { character ->
+                                            if (character.isWhitespace()) character else '*'
+                                        }.joinToString("")
+                                } else {
+                                    word.content
+                                }
+                            }
+                        }
                 }
             }
         }

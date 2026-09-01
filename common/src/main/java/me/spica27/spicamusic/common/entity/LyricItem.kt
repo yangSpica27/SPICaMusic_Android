@@ -33,6 +33,10 @@ sealed class LyricItem(
         val phonetic: String? = null,
         val agent: String = "",
         val agents: List<Agent> = emptyList(),
+        val translationVariants: List<WordsLyric.Translation> = emptyList(),
+        val transliterations: List<WordsLyric.Translation> = emptyList(),
+        val songPart: String? = null,
+        val blockIndex: Int? = null,
     ) : LyricItem()
 
     @Immutable
@@ -46,12 +50,22 @@ sealed class LyricItem(
         val phonetic: String? = null,
         val accompaniment: List<AccompanimentLyric> = emptyList(),
         val agents: List<Agent> = emptyList(),
+        val transliterations: List<Translation> = emptyList(),
+        val translationVariants: List<Translation> = emptyList(),
+        val songPart: String? = null,
+        val blockIndex: Int? = null,
+        /** Full main-line text, including un-timed text nodes. */
+        val content: String? = null,
     ) : LyricItem(time = startTime) {
 
         @Immutable
         data class Translation(
             val content: String,
-            val lang: String,
+            val lang: String = "unknown",
+            val words: List<WordWithTiming> = emptyList(),
+            val type: String? = null,
+            val isBackground: Boolean = false,
+            val segments: List<String> = emptyList(),
         )
 
         /**
@@ -67,6 +81,10 @@ sealed class LyricItem(
             val endTime: Long,
             val phonetic: String? = null,
             val agents: List<Agent> = emptyList(),
+            val transliterations: List<Translation> = emptyList(),
+            val translationVariants: List<Translation> = emptyList(),
+            val key: String? = null,
+            val content: String? = null,
         )
 
         @Immutable
@@ -75,9 +93,20 @@ sealed class LyricItem(
             val startTime: Long,
             val endTime: Long,
             val phonetic: String? = null,
+            val endsWithSpace: Boolean = false,
+            val obscene: Boolean = false,
+            val emptyBeat: Int? = null,
+            val ruby: List<RubyAnnotation> = emptyList(),
         ) : Comparable<WordWithTiming> {
             override fun compareTo(other: WordWithTiming): Int = startTime.compareTo(other.startTime)
         }
+
+        @Immutable
+        data class RubyAnnotation(
+            val text: String,
+            val startTime: Long,
+            val endTime: Long,
+        )
     }
 }
 
@@ -142,7 +171,8 @@ fun List<LyricItem.WordsLyric.WordWithTiming>.findPlayingIndexForWords(time: Lon
 
 fun List<LyricItem>.findPlayingItem(time: Long): LyricItem? = this.getOrNull(findPlayingIndex(time))
 
-fun LyricItem.WordsLyric.getSentenceContent(): String = words.joinToString(separator = "") { it.content }
+fun LyricItem.WordsLyric.getSentenceContent(): String =
+    content?.takeIf { it.isNotBlank() } ?: words.joinToString(separator = "") { it.content }
 
 fun LyricItem.voiceAgents(): List<LyricItem.Agent> =
     when (this) {
@@ -164,7 +194,7 @@ fun LyricItem.toNormal(): LyricItem.NormalLyric? {
     if (this is LyricItem.NormalLyric) return this
     if (this is LyricItem.WordsLyric) {
         apply {
-            val translation = translation.firstOrNull { it.content.isNotBlank() }?.content
+            val translationText = translation.firstOrNull { it.content.isNotBlank() }?.content
             val sentence =
                 getSentenceContent()
                     .takeIf { it.isNotBlank() }
@@ -172,12 +202,16 @@ fun LyricItem.toNormal(): LyricItem.NormalLyric? {
 
             return LyricItem.NormalLyric(
                 content = sentence,
-                translation = translation,
+                translation = translationText,
                 time = this.time,
                 key = this.key,
                 phonetic = phonetic,
                 agent = agent,
                 agents = agents,
+                translationVariants = this.translation,
+                transliterations = transliterations,
+                songPart = songPart,
+                blockIndex = blockIndex,
             )
         }
     }

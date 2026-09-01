@@ -92,6 +92,8 @@ class SpicaPlayer(
     // Nullable var instead of `by lazy` so it can be reset after release(), allowing re-init.
     private var _browserFuture: ListenableFuture<MediaBrowser>? = null
 
+    private val playbackPositionSmoother = PlaybackPositionSmoother()
+
     private fun getOrCreateBrowserFuture(): ListenableFuture<MediaBrowser> =
         _browserFuture ?: MediaBrowser.Builder(context, sessionToken)
             .setListener(this)
@@ -134,10 +136,22 @@ class SpicaPlayer(
     private val playbackDurationTracker = PlaybackDurationTracker()
 
     override val currentPosition: Long
-        get() = runCatching {
-            val future = _browserFuture
-            if (future != null && future.isDone) future.get()?.currentPosition else null
-        }.getOrNull() ?: 0L
+        get() {
+            val browserAndPosition =
+                runCatching {
+                    val future = _browserFuture
+                    val browser = if (future != null && future.isDone) future.get() else null
+                    browser to browser?.currentPosition
+                }.getOrNull()
+            val browser = browserAndPosition?.first
+            val mediaId = browser?.currentMediaItem?.mediaId ?: _currentMediaItem.value?.mediaId
+            val rawPosition = browserAndPosition?.second
+            return if (rawPosition != null) {
+                playbackPositionSmoother.sample(mediaId, rawPosition)
+            } else {
+                playbackPositionSmoother.lastPosition(mediaId)
+            }
+        }
 
     override fun isItemPlaying(mediaId: String): Boolean {
         if (!_isPlaying.value) return false
@@ -273,6 +287,13 @@ class SpicaPlayer(
                     }
 
                     is PlayerAction.SeekTo -> {
+                        // Reset immediately so the lyric UI follows a user seek
+                        // during the small window before Media3 dispatches its
+                        // position-discontinuity callback.
+                        val mediaId =
+                            browser.currentMediaItem?.mediaId
+                                ?: _currentMediaItem.value?.mediaId
+                        playbackPositionSmoother.resetTo(mediaId, action.positionMs)
                         browser.seekTo(action.positionMs)
                     }
 
@@ -417,6 +438,7 @@ class SpicaPlayer(
 
     override fun release() {
         cancelSleepTimer()
+        playbackPositionSmoother.clear()
         // 1. 移除监听器
         browserInstance?.removeListener(this)
         // 2. 释放 MediaBrowser 及其 Future（Media3 规范：releaseFuture 负责 Future 的生命周期）
@@ -444,6 +466,7 @@ class SpicaPlayer(
         _browserFuture = null
         _initializing.set(false)
         _isPlaying.value = false
+        playbackPositionSmoother.markDisconnected()
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -505,6 +528,15 @@ class SpicaPlayer(
         newPosition: Player.PositionInfo,
         reason: Int,
     ) {
+        if (
+            reason == Player.DISCONTINUITY_REASON_SEEK ||
+                reason == Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT
+        ) {
+            val mediaId =
+                browserInstance?.currentMediaItem?.mediaId
+                    ?: _currentMediaItem.value?.mediaId
+            playbackPositionSmoother.resetTo(mediaId, newPosition.positionMs)
+        }
         if (reason == Player.DISCONTINUITY_REASON_SEEK && isRecordingPlay) {
             playbackDurationTracker.splitOnSeek(
                 oldPositionMs = oldPosition.positionMs,
@@ -563,6 +595,14 @@ class SpicaPlayer(
 
         Timber.e("onMediaItemTransition $mediaItem $reason")
         _currentMediaItem.value = mediaItem
+        // A repeat transition can keep the same media ID while resetting the
+        // position to zero, so it must establish a fresh position anchor too.
+        // Do not read browser.currentPosition here: during the callback it can
+        // still contain the previous media item's final position.
+        playbackPositionSmoother.resetTo(
+            mediaId = mediaItem?.mediaId,
+            positionMs = 0L,
+        )
         // 切歌时立即重置 duration，避免旧时长污染新歌曲的进度计算
         _currentDuration.value = 0L
         // 尝试从 browser 实例获取新歌曲的时长（可能此时已就绪）

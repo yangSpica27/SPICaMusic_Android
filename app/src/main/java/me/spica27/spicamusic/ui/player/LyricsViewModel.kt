@@ -18,6 +18,7 @@ import me.spica27.spicamusic.common.entity.LyricSource
 import me.spica27.spicamusic.common.entity.LyricSourceType
 import me.spica27.spicamusic.common.utils.AmllParser
 import me.spica27.spicamusic.common.utils.LrcParser
+import me.spica27.spicamusic.feature.lyrics.domain.LocalLyricsImportResult
 import me.spica27.spicamusic.feature.lyrics.domain.LyricsUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.player.api.PlayerAction
@@ -43,6 +44,9 @@ class LyricsViewModel(
     data class ParsedLyrics(
         val items: List<LyricItem>,
         val isSynced: Boolean,
+        val amllMetadata: AmllParser.Metadata? = null,
+        val parseWarnings: List<String> = emptyList(),
+        val parseError: String? = null,
     )
 
     data class UiState(
@@ -241,12 +245,16 @@ class LyricsViewModel(
         val offset = _uiState.value.lyricsOffsetMs
         viewModelScope.launch {
             val parsed = parseOffMain(source.rawLyrics)
+            if (parsed.items.isEmpty()) {
+                _uiState.update { it.copy(errorMessage = "歌词为空或无法解析") }
+                return@launch
+            }
             _uiState.update {
                 it.copy(
                     displayed = parsed,
                     displayedRawText = source.rawLyrics,
                     currentSourceType = source.type,
-                    errorMessage = if (parsed.items.isEmpty()) "歌词解析失败" else null,
+                    errorMessage = null,
                 )
             }
             if (id <= 0L) return@launch
@@ -264,36 +272,62 @@ class LyricsViewModel(
         }
     }
 
-    /** 导入本地歌词文件：读取内容快照入库（LOCAL_FILE + 手动锁定），随后作为当前显示 */
+    /** 导入本地歌词文件：验证通过后才快照入库（LOCAL_FILE + 手动锁定）。 */
     fun importLocalFile(uri: String) {
         val id = _uiState.value.currentMediaStoreId
         if (id <= 0L) {
             _uiState.update { it.copy(errorMessage = "请先播放一首歌曲再导入歌词") }
             return
         }
+        val offset = _uiState.value.lyricsOffsetMs
         viewModelScope.launch {
-            val cached =
+            val result =
                 withContext(Dispatchers.IO) {
-                    lyricsUseCases.importLocalLyrics(id, uri, _uiState.value.lyricsOffsetMs)
+                    lyricsUseCases.importLocalLyricsResult(id, uri, offset)
                 }
-            if (cached == null) {
-                _uiState.update { it.copy(errorMessage = "无法读取该歌词文件") }
-                return@launch
-            }
-            val parsed = parseOffMain(cached.lyrics)
-            _uiState.update {
-                it.copy(
-                    displayed = parsed,
-                    displayedRawText = cached.lyrics,
-                    currentSourceType = LyricSourceType.LOCAL_FILE,
-                    localSource =
-                        LyricSource.LocalFile(
-                            uri = uri,
-                            fileName = cached.lyricSourceName,
-                            rawLyrics = cached.lyrics,
-                        ),
-                    errorMessage = if (parsed.items.isEmpty()) "歌词文件为空或无法解析" else null,
-                )
+            if (_uiState.value.currentMediaStoreId != id) return@launch
+            when (result) {
+                is LocalLyricsImportResult.Failure -> {
+                    _uiState.update {
+                        it.copy(
+                            // 读取器和内容验证均在写缓存前完成，失败时保留当前歌词与来源。
+                            errorMessage =
+                                when (result.reason) {
+                                    LocalLyricsImportResult.FailureReason.INVALID_CONTENT -> "歌词文件为空或无法解析"
+                                    LocalLyricsImportResult.FailureReason.UNSUPPORTED_FILE -> "不支持的文件类型，请选择歌词文件"
+                                    LocalLyricsImportResult.FailureReason.FILE_TOO_LARGE -> "歌词文件过大（最大 4 MiB）"
+                                    LocalLyricsImportResult.FailureReason.BINARY_FILE -> "文件不是有效的文本歌词"
+                                    LocalLyricsImportResult.FailureReason.READ_FAILED -> "无法读取该歌词文件"
+                                },
+                        )
+                    }
+                    return@launch
+                }
+
+                is LocalLyricsImportResult.Success -> {
+                    val cached = result.cached
+                    val parsed = parseOffMain(cached.lyrics)
+                    if (parsed.items.isEmpty()) {
+                        // 防御性检查：UseCase 已验证，解析器升级后仍不应污染当前显示。
+                        _uiState.update { it.copy(errorMessage = "歌词文件为空或无法解析") }
+                        return@launch
+                    }
+                    _uiState.update {
+                        it.copy(
+                            displayed = parsed,
+                            displayedRawText = cached.lyrics,
+                            currentSourceType = LyricSourceType.LOCAL_FILE,
+                            localSource =
+                                LyricSource.LocalFile(
+                                    uri = uri,
+                                    fileName = cached.lyricSourceName,
+                                    rawLyrics = cached.lyrics,
+                                ),
+                            lyricsOffsetMs = offset,
+                            errorMessage = null,
+                        )
+                    }
+                }
             }
         }
     }
@@ -369,7 +403,11 @@ class LyricsViewModel(
             val amll = AmllParser.parse(lyricsText)
             if (amll.isNotEmpty()) return amll
 
-            return if (lyricsText.isYrcFormat()) {
+            return parseNonAmllLyrics(lyricsText)
+        }
+
+        private fun parseNonAmllLyrics(lyricsText: String): List<LyricItem> =
+            if (lyricsText.isYrcFormat()) {
                 try {
                     YrcParser.parseToLyricItems(lyricsText).ifEmpty {
                         LrcParser.parse(lyricsText)
@@ -381,7 +419,6 @@ class LyricsViewModel(
             } else {
                 LrcParser.parse(lyricsText)
             }
-        }
 
         /**
          * 解析任意歌词文本：优先按时间戳解析（[parseLyrics]）；
@@ -390,8 +427,28 @@ class LyricsViewModel(
         fun parseAnyLyrics(lyricsText: String): ParsedLyrics {
             if (lyricsText.isBlank()) return ParsedLyrics(emptyList(), isSynced = false)
 
-            val synced = parseLyrics(lyricsText)
-            if (!synced.isNullOrEmpty()) return ParsedLyrics(synced, isSynced = true)
+            val amllResult = AmllParser.parseDetailed(lyricsText)
+            if (amllResult.items.isNotEmpty()) {
+                return ParsedLyrics(
+                    items = amllResult.items,
+                    isSynced = true,
+                    amllMetadata = amllResult.metadata,
+                    parseWarnings = amllResult.warnings,
+                    parseError = amllResult.error,
+                )
+            }
+
+            // AMLL was already parsed above; only try the other timestamp formats here.
+            val synced = parseNonAmllLyrics(lyricsText)
+            if (!synced.isNullOrEmpty()) {
+                return ParsedLyrics(
+                    items = synced,
+                    isSynced = true,
+                    amllMetadata = amllResult.metadata.takeIf { it != AmllParser.Metadata() },
+                    parseWarnings = amllResult.warnings,
+                    parseError = amllResult.error,
+                )
+            }
 
             // 纯文本兜底：无时间戳，按非空行静态展示（time 仅用于稳定排序，UI 依 isSynced 关闭高亮/seek）
             val items =
@@ -407,7 +464,13 @@ class LyricsViewModel(
                             key = "plain:$index",
                         )
                     }.toList()
-            return ParsedLyrics(items, isSynced = false)
+            return ParsedLyrics(
+                items = items,
+                isSynced = false,
+                amllMetadata = amllResult.metadata.takeIf { it != AmllParser.Metadata() },
+                parseWarnings = amllResult.warnings,
+                parseError = amllResult.error,
+            )
         }
     }
 }

@@ -38,4 +38,5 @@ dependencies {
   implementation project(':feature-lyrics-data')
   implementation project(':feature-library-data')
   implementation libs.koin.androidx.compose
+  testImplementation libs.junit
 }

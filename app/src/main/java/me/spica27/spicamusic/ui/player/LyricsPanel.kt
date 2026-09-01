@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsDisplayMode
+import me.spica27.spicamusic.ui.widget.LyricsDisplayOptions
 import me.spica27.spicamusic.ui.widget.LyricsSourceSheet
 import me.spica27.spicamusic.ui.widget.LyricsUI
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -42,11 +43,13 @@ import org.koin.compose.viewmodel.koinActivityViewModel
  * - 自动搜索歌词，优先使用缓存
  * - 歌词偏移量调节（持久化到数据库）
  * - 多歌词源切换（通过预览面板选择后缓存）
+ * - AMLL 扩展字段显示策略（翻译版本、Ruby、敏感词、段落和歌手标签）
  */
 @Composable
 fun LyricsPanel(
     modifier: Modifier = Modifier,
     displayMode: LyricsDisplayMode = LyricsDisplayMode.Fullscreen,
+    displayOptions: LyricsDisplayOptions = LyricsDisplayOptions(),
 ) {
     // Activity 作用域共享实例：与 mini 歌词同源，
     // 此处切换歌词源 / 调整偏移量会同步反映到 mini 歌词
@@ -120,6 +123,7 @@ fun LyricsPanel(
                     lyric = lyricList,
                     currentTime = currentTime + uiState.lyricsOffsetMs,
                     displayMode = displayMode,
+                    displayOptions = displayOptions,
                     isSynced = displayed.isSynced,
                     onSeekToTime = { posMs ->
                         viewModel.seekTo(posMs - uiState.lyricsOffsetMs)

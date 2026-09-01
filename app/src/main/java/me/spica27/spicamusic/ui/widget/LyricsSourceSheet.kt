@@ -161,8 +161,17 @@ fun LyricsSourceSheet(
                         subtitle = null,
                         selected = false,
                         onClick = {
-                            // OpenDocument 需 MIME 数组；.lrc 无标准 MIME，用宽松集合覆盖
-                            picker.launch(arrayOf("text/plain", "application/octet-stream", "*/*"))
+                            // .lrc/.yrc 没有统一 MIME，使用文本/XML 与 octet-stream 覆盖常见 provider。
+                            // 读取器仍会按扩展名、MIME、大小和内容再次校验，不能仅依赖 picker 过滤。
+                            picker.launch(
+                                arrayOf(
+                                    "text/plain",
+                                    "text/xml",
+                                    "application/xml",
+                                    "application/ttml+xml",
+                                    "application/octet-stream",
+                                ),
+                            )
                         },
                     )
                 }
