@@ -69,6 +69,7 @@ fun FluidMusicBackground(
     coverColor: Color = Color(0xFF2196F3),
     isDarkMode: Boolean? = null,
     coverUri: () -> Uri? = { null },
+    enabled: Boolean = true,
 ) {
     val playerViewModel = LocalPlayerViewModel.current
     val settingsViewModel: SettingsViewModel = koinViewModel()
@@ -78,9 +79,10 @@ fun FluidMusicBackground(
     // 只有真正消费 FFT 数据的动态模式才收集；OFF 和纯静态的 BlurCover 不收集，
     // 避免驱动无意义的插值计算与每帧重组
     val enable =
-        remember(backgroundMode) {
+        remember(backgroundMode, enabled) {
             backgroundMode != DynamicSpectrumBackground.OFF &&
-                backgroundMode != DynamicSpectrumBackground.BlurCover
+                backgroundMode != DynamicSpectrumBackground.BlurCover &&
+                enabled
         }
 
     // FFT 插值计算随收集自动启停（WhileSubscribed），无需手动订阅/解绑；
@@ -99,6 +101,7 @@ fun FluidMusicBackground(
                 modifier = modifier.blur(72.dp),
                 fftDrawData = fftSnapshot,
                 coverColor = coverColor,
+                enabled = enabled,
             )
 
         DynamicSpectrumBackground.LiquidAurora ->
@@ -107,6 +110,7 @@ fun FluidMusicBackground(
                 fftDrawData = fftSnapshot,
                 coverColor = coverColor,
                 isDarkMode = isDarkMode,
+                enabled = enabled,
             )
 
         DynamicSpectrumBackground.EffectShader -> {
@@ -115,6 +119,7 @@ fun FluidMusicBackground(
                 coverColor = coverColor,
                 fftDrawData = fftSnapshot,
                 isDarkMode = isDarkMode,
+                enabled = enabled,
             )
         }
 
@@ -125,6 +130,7 @@ fun FluidMusicBackground(
                 fftDrawData = fftSnapshot,
                 isDarkMode = isDarkMode,
                 coverUri = coverUri,
+                enabled = enabled,
             )
         }
 
@@ -174,6 +180,10 @@ private class TextureViewRenderLoop(
     // 前台门控：切后台（ON_STOP）时置 true。TextureView 在 Activity 进后台时视图仍附着、
     // SurfaceTexture 不销毁，若不显式门控，渲染线程会拿着冻结的数据在后台继续 ~125fps 空转。
     private val paused = AtomicBoolean(false)
+
+    // 场景可见性门控：与 Activity 生命周期独立。底层场景仍在栈中时冻结最后一帧，
+    // 避免歌词页覆盖期间动态背景线程继续以约 125fps 空转。
+    private val renderEnabled = AtomicBoolean(true)
     private val generation = AtomicInteger(0)
     private val stateLock = Any()
     private val renderDispatcher: ExecutorCoroutineDispatcher =
@@ -205,7 +215,7 @@ private class TextureViewRenderLoop(
         // 非阻塞地停掉旧循环：单线程 dispatcher 会串行化新旧循环，
         // 加上 generation token 校验，旧循环不可能在新循环启动后再向同一 surface 绘制。
         stop()
-        if (paused.get()) return
+        if (paused.get() || !renderEnabled.get()) return
         val tv: TextureView
         val draw: (android.graphics.Canvas) -> Unit
         synchronized(stateLock) {
@@ -218,7 +228,12 @@ private class TextureViewRenderLoop(
         synchronized(stateLock) {
             drawJob =
                 renderScope.launch {
-                    while (isActive && surfaceActive.get() && generation.get() == token) {
+                    while (
+                        isActive &&
+                        surfaceActive.get() &&
+                        generation.get() == token &&
+                        renderEnabled.get()
+                    ) {
                         val canvas =
                             try {
                                 tv.lockCanvas(null)
@@ -275,6 +290,16 @@ private class TextureViewRenderLoop(
     fun resume() {
         if (!paused.getAndSet(false)) return
         launchLoop()
+    }
+
+    /** 场景不可见时冻结最后一帧；重新可见时恢复渲染。 */
+    fun setEnabled(enabled: Boolean) {
+        if (renderEnabled.getAndSet(enabled) == enabled) return
+        if (enabled) {
+            if (!paused.get()) launchLoop()
+        } else {
+            stop()
+        }
     }
 
     /**
@@ -343,11 +368,13 @@ private fun TopGlowBackground(
     modifier: Modifier,
     fftDrawData: FloatArray,
     coverColor: Color,
+    enabled: Boolean,
 ) {
     val holder = remember { TopGlowHolder() }
     val renderLoop = remember { TextureViewRenderLoop("TopGlow-Renderer") }
 
     SideEffect {
+        renderLoop.setEnabled(enabled)
         holder.fftData = fftDrawData
         val luminance = calculateLuminance(coverColor)
         val hueShift = if (luminance < 0.5f) 24f else -24f
@@ -462,11 +489,13 @@ private fun LiquidAuroraBackground(
     fftDrawData: FloatArray,
     coverColor: Color,
     isDarkMode: Boolean?,
+    enabled: Boolean,
 ) {
     val holder = remember { LiquidAuroraHolder() }
     val renderLoop = remember { TextureViewRenderLoop("LiquidAurora-Renderer") }
 
     SideEffect {
+        renderLoop.setEnabled(enabled)
         holder.fftData = fftDrawData
         val elapsed = System.currentTimeMillis() % 20_000L
         holder.phase = elapsed / 20_000f * 360f

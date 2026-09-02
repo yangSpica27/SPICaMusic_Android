@@ -66,9 +66,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -153,6 +155,20 @@ private const val PLAYER_CONTROLS_REVEAL_THRESHOLD = 0.48f
 private const val COLLAPSED_HERO_SCALE = 0.82f
 private val EmptyFftDrawData = FloatArray(0)
 
+/** 保存动态波形的最后一帧，场景被覆盖时停掉订阅但不让底层 UI 闪为空。 */
+private class FftDrawDataHolder {
+    var data: FloatArray = EmptyFftDrawData
+}
+
+/** 保存播放器被覆盖前的位置，隐藏场景不再读取高频 Snapshot 状态。 */
+private class PlaybackPositionHolder {
+    @Volatile
+    var realPosition: Float = 0f
+
+    @Volatile
+    var seekPosition: Float = 0f
+}
+
 // ============================================
 // 主屏幕组件
 // ============================================
@@ -167,6 +183,7 @@ fun ExpandedPlayerScreen(
     onCollapse: () -> Unit,
     progressProvider: () -> Float = { 1f }, // 展开进度提供器，避免整棵树每帧重组
     initialPage: Int = DEFAULT_PAGE, // 初始页面索引
+    animationsEnabled: Boolean = true,
 ) {
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val sleepTimer by viewModel.sleepTimer.collectAsStateWithLifecycle()
@@ -204,7 +221,14 @@ fun ExpandedPlayerScreen(
     val seekValueState = remember(mediaId) { mutableFloatStateOf(0f) }
     var isSeekingState by remember(mediaId) { mutableStateOf(false) }
 
-    val positionState = viewModel.currentPosition.collectAsStateWithLifecycle()
+    // 场景不可见时不订阅播放位置；SeekBar 通过 PlaybackPositionHolder 保留最后一帧。
+    val positionState =
+        if (animationsEnabled) {
+            viewModel.currentPosition.collectAsStateWithLifecycle()
+        } else {
+            remember(mediaId) { mutableLongStateOf(0L) }
+        }
+    val positionHolder = remember(mediaId) { PlaybackPositionHolder() }
 
     val songLikeState by viewModel.currentSongIsLike.collectAsStateWithLifecycle()
 
@@ -228,11 +252,14 @@ fun ExpandedPlayerScreen(
 
     // 将播放位置同步到 seekbar：用 snapshotFlow 在协程中观察位置变化，
     // 避免在组合作用域读取高频 state 而导致重组。
-    LaunchedEffect(mediaId) {
+    LaunchedEffect(mediaId, animationsEnabled) {
+        if (!animationsEnabled) return@LaunchedEffect
         snapshotFlow { positionState.value }
             .collect { position ->
+                positionHolder.realPosition = position.toFloat()
                 if (!isSeekingState) {
                     seekValueState.floatValue = position.toFloat()
+                    positionHolder.seekPosition = position.toFloat()
                 }
             }
     }
@@ -282,7 +309,8 @@ fun ExpandedPlayerScreen(
                 }.background(MaterialTheme.colorScheme.surface)
                 .fillMaxSize(),
     ) {
-        // 流动背景（仅前台时启用，节省电量）
+        // 流动背景仅在当前场景可见且应用处于前台时启用。
+        // NavigationStack 会保留底层场景，不能只依赖 Activity 生命周期判断可见性。
         FluidMusicBackground(
             modifier =
                 Modifier
@@ -291,6 +319,7 @@ fun ExpandedPlayerScreen(
             coverColor = coverColor,
             isDarkMode = MaterialTheme.colorScheme.surface.luminance() < 0.5f,
             coverUri = { currentMediaItem?.mediaMetadata?.artworkUri },
+            enabled = animationsEnabled && isAppInForeground,
         )
 
         // 内容层
@@ -349,8 +378,12 @@ fun ExpandedPlayerScreen(
                             isSeekingState = isSeekingState,
                             currentMediaItem = { currentMediaItem },
                             audioQualityInfo = audioQualityInfo,
-                            realPositionProvider = { positionState.value.toFloat() },
-                            seekPositionProvider = { seekValueState.floatValue },
+                            realPositionProvider = {
+                                if (animationsEnabled) positionState.value.toFloat() else positionHolder.realPosition
+                            },
+                            seekPositionProvider = {
+                                if (animationsEnabled) seekValueState.floatValue else positionHolder.seekPosition
+                            },
                             duration = duration,
                             isPlaying = isPlaying,
                             isLike = songLikeState,
@@ -358,6 +391,7 @@ fun ExpandedPlayerScreen(
                             onValueChange = {
                                 isSeekingState = true
                                 seekValueState.floatValue = it * duration
+                                positionHolder.seekPosition = seekValueState.floatValue
                             },
                             onValueChangeFinished = {
                                 viewModel.seekTo(seekValueState.floatValue.toLong())
@@ -372,6 +406,7 @@ fun ExpandedPlayerScreen(
                             },
                             progressProvider = progressProvider,
                             isAppInForeground = isAppInForeground,
+                            animationsEnabled = animationsEnabled,
                             modifier = Modifier.fillMaxSize(),
                         )
                     }
@@ -616,6 +651,7 @@ private fun PlayerPage(
     onFavoriteClick: () -> Unit,
     progressProvider: () -> Float,
     isAppInForeground: Boolean,
+    animationsEnabled: Boolean,
     modifier: Modifier = Modifier,
     isSeekingState: Boolean = false,
 ) {
@@ -901,6 +937,7 @@ private fun PlayerPage(
             progressBarStyle = progressBarStyle,
             playerViewModel = playerViewModel,
             isAppInForeground = isAppInForeground,
+            animationsEnabled = animationsEnabled,
             isSeekingState = isSeekingState,
             onValueChange = onValueChange,
             onValueChangeFinished = onValueChangeFinished,
@@ -949,6 +986,7 @@ private fun SeekBarSection(
     progressBarStyle: ProgressBarStyle,
     playerViewModel: PlayerViewModel,
     isAppInForeground: Boolean,
+    animationsEnabled: Boolean,
     isSeekingState: Boolean,
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit,
@@ -958,7 +996,11 @@ private fun SeekBarSection(
     val seekPosition = seekPositionProvider()
     val realPosition = realPositionProvider()
     // FFT 插值计算随下方 collectAsStateWithLifecycle 收集自动启停，无需手动订阅/解绑
-    val useDynamicWaveform = progressBarStyle == ProgressBarStyle.DynamicWaveform && isAppInForeground
+    val useDynamicWaveform =
+        progressBarStyle == ProgressBarStyle.DynamicWaveform &&
+            isAppInForeground &&
+            animationsEnabled
+    val fftDataHolder = remember { FftDrawDataHolder() }
     Column(
         modifier =
             modifier.graphicsLayer {
@@ -974,9 +1016,10 @@ private fun SeekBarSection(
                 val fftDrawData =
                     if (useDynamicWaveform) {
                         val drawData by playerViewModel.fftDrawData.collectAsStateWithLifecycle()
+                        SideEffect { fftDataHolder.data = drawData }
                         drawData
                     } else {
-                        EmptyFftDrawData
+                        fftDataHolder.data
                     }
                 AudioDynamicWaveSlider(
                     progress = sliderProgress,

@@ -238,7 +238,7 @@ private fun rememberLyricsUIStyle(displayMode: LyricsDisplayMode): LyricsUIStyle
 fun LyricsUI(
     modifier: Modifier = Modifier,
     lyric: ImmutableList<LyricItem>,
-    currentTime: Long,
+    currentTimeProvider: () -> Long,
     displayMode: LyricsDisplayMode = LyricsDisplayMode.Fullscreen,
     displayOptions: LyricsDisplayOptions = LyricsDisplayOptions(),
     isSynced: Boolean = true,
@@ -271,9 +271,16 @@ fun LyricsUI(
     var showSeekOverlay by remember { mutableStateOf(false) }
     // 首次显示时列表停在顶部，需要一次无动画的精确定位；之后的行切换才走动画滚动
     var hasSyncedInitialPosition by remember(lyricLines) { mutableStateOf(false) }
-    // currentTime 每帧变化，用 rememberUpdatedState 包装后作为稳定实例供 derivedStateOf 读取；
-    // derivedStateOf 只在计算结果（行索引）变化时才通知依赖方重组
-    val currentTimeState = rememberUpdatedState(currentTime)
+    // 保持 provider 实例与 LyricsUI 的组合树解耦：实际时间读取发生在
+    // derivedStateOf / Canvas 绘制阶段，而不是 LyricsUI 的组合阶段。
+    val currentTimeProviderState = rememberUpdatedState(currentTimeProvider)
+    val currentTimeState =
+        remember {
+            object : State<Long> {
+                override val value: Long
+                    get() = currentTimeProviderState.value()
+            }
+        }
     val playingIndex by remember(lyricLines) {
         derivedStateOf { lyricLines.findPlayingIndex(currentTimeState.value) }
     }

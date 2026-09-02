@@ -65,7 +65,6 @@ fun LyricsSourceSheet(
     onlineLoading: Boolean,
     currentSourceType: LyricSourceType,
     currentRawText: String?,
-    currentTime: Long,
     onSelect: (LyricSource) -> Unit,
     onImportLocalFile: (String) -> Unit,
     onDismiss: () -> Unit,

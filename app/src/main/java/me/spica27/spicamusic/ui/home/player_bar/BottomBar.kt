@@ -509,6 +509,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
 fun BottomMediaBarV2(
     bottomBarScrollConnection: BottomBarScrollConnection = LocalBottomBarScrollConnection.current,
     hazeState: HazeState,
+    animationsEnabled: Boolean = true,
 ) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
@@ -617,6 +618,7 @@ fun BottomMediaBarV2(
                             onCollapse = onCollapse,
                             progressProvider = progress,
                             initialPage = initialPage,
+                            animationsEnabled = animationsEnabled,
                             modifier =
                                 Modifier
                                     .fillMaxSize(),

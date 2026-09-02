@@ -162,6 +162,7 @@ fun TunnelShaderBackground(
  * @param coverColor 封面主色，用于色彩调整
  * @param fftDrawData FFT 频谱数据
  * @param isDarkMode 暗色模式（true）或亮色模式（false），null时自动判断
+ * @param enabled 是否启用渲染循环；关闭时暂停 GLSurfaceView 并保留当前帧
  */
 @Composable
 fun EffectShaderBackground(
@@ -169,6 +170,7 @@ fun EffectShaderBackground(
     coverColor: Color = Color(0xFF2196F3),
     fftDrawData: FloatArray = FloatArray(0),
     isDarkMode: Boolean? = false,
+    enabled: Boolean = true,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val surfaceViewHolder = remember { mutableStateOf<EffectShaderSurfaceView?>(null) }
@@ -183,7 +185,7 @@ fun EffectShaderBackground(
         )
     }
 
-    DisposableEffect(lifecycleOwner, surfaceViewHolder.value) {
+    DisposableEffect(lifecycleOwner, surfaceViewHolder.value, enabled) {
         val surfaceView = surfaceViewHolder.value
         if (surfaceView == null) {
             onDispose {}
@@ -191,7 +193,7 @@ fun EffectShaderBackground(
             val observer =
                 object : DefaultLifecycleObserver {
                     override fun onResume(owner: LifecycleOwner) {
-                        surfaceView.onResume()
+                        if (enabled) surfaceView.onResume() else surfaceView.onPause()
                     }
 
                     override fun onPause(owner: LifecycleOwner) {
@@ -200,7 +202,11 @@ fun EffectShaderBackground(
                 }
 
             lifecycleOwner.lifecycle.addObserver(observer)
-            surfaceView.onResume()
+            if (enabled && lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                surfaceView.onResume()
+            } else {
+                surfaceView.onPause()
+            }
 
             onDispose {
                 lifecycleOwner.lifecycle.removeObserver(observer)

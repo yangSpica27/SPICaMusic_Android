@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -62,7 +63,14 @@ fun LyricsPanel(
     // 当前播放时间（帧级更新，保留在 Composable 中因为依赖逐帧对齐）
     // 首帧直接使用播放器的真实位置，避免先以 0ms 完成一次错误的歌词定位，
     // 随后又把实际当前行当成普通 index 切换从视口底部动画进入。
-    var currentTime by remember { mutableLongStateOf(viewModel.getCurrentPositionMs()) }
+    // 只让时钟状态在真正消费它的 LyricsUI 绘制/派生计算阶段被读取；
+    // 不把每帧变化的 Long 作为 LyricsPanel/LyricsUI 的组合参数。
+    val currentTimeState = remember { mutableLongStateOf(viewModel.getCurrentPositionMs()) }
+    val lyricsOffsetState = rememberUpdatedState(uiState.lyricsOffsetMs)
+    val currentTimeProvider =
+        remember {
+            { currentTimeState.longValue + lyricsOffsetState.value }
+        }
     // 仅前台时更新播放进度。repeatOnLifecycle(STARTED) 切后台真正取消、回前台重启；
     // withFrameNanos 走 Compose 可暂停帧时钟。（详见 MiniLyric 同处注释。）
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -70,7 +78,7 @@ fun LyricsPanel(
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
                 withFrameNanos { }
-                currentTime = viewModel.getCurrentPositionMs()
+                currentTimeState.longValue = viewModel.getCurrentPositionMs()
             }
         }
     }
@@ -84,7 +92,6 @@ fun LyricsPanel(
             onlineLoading = uiState.onlineLoading,
             currentSourceType = uiState.currentSourceType,
             currentRawText = uiState.displayedRawText,
-            currentTime = currentTime + uiState.lyricsOffsetMs,
             onSelect = { source ->
                 showSwitcherSheet = false
                 viewModel.selectSource(source)
@@ -121,7 +128,7 @@ fun LyricsPanel(
                 LyricsUI(
                     modifier = Modifier.fillMaxSize(),
                     lyric = lyricList,
-                    currentTime = currentTime + uiState.lyricsOffsetMs,
+                    currentTimeProvider = currentTimeProvider,
                     displayMode = displayMode,
                     displayOptions = displayOptions,
                     isSynced = displayed.isSynced,

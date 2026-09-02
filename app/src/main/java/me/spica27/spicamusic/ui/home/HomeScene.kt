@@ -12,12 +12,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.rememberHazeState
+import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.glass.liquidGlassSource
@@ -34,6 +39,17 @@ class HomeScene : StackScene() {
     @Composable
     override fun Content() {
         val homeViewModel: HomeViewModel = koinActivityViewModel()
+        val navigationPath = LocalNavigationPath.current
+        val scene = LocalScene.current
+
+        // NavigationStack 会保留底层场景以完成退场/压缩动画，因此 HomeScene 在歌词页
+        // 覆盖期间仍处于组合树中。只在自己是栈顶场景时启用高开销的播放器动效。
+        // scenes 是 SnapshotStateList，这个读取只会在 push/pop 时失效，不会随播放进度变化。
+        val isSceneVisible by remember(navigationPath, scene) {
+            derivedStateOf {
+                navigationPath.scenes.lastOrNull() === scene
+            }
+        }
 
         val currentPage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
 
@@ -71,6 +87,7 @@ class HomeScene : StackScene() {
                 BottomMediaBarV2(
                     bottomBarScrollConnection = bottomBarScrollConnection,
                     hazeState = hazeState,
+                    animationsEnabled = isSceneVisible,
                 )
             }
         }

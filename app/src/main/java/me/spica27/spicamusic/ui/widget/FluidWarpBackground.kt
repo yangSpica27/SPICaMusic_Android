@@ -48,6 +48,7 @@ import kotlin.math.sqrt
  * @param fftDrawData FFT 频谱数据（31 频段，0..1）
  * @param isDarkMode 暗色模式；null 时按当前主题背景亮度自动判断
  * @param coverUri 封面 Uri 提供器
+ * @param enabled 是否启用渲染循环；关闭时暂停 GLSurfaceView 并保留当前帧
  */
 @Composable
 fun FluidWarpBackground(
@@ -56,6 +57,7 @@ fun FluidWarpBackground(
     fftDrawData: FloatArray = FloatArray(0),
     isDarkMode: Boolean? = null,
     coverUri: () -> Uri? = { null },
+    enabled: Boolean = true,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -82,7 +84,7 @@ fun FluidWarpBackground(
         renderer.submitCover(bitmap)
     }
 
-    DisposableEffect(lifecycleOwner, surfaceViewHolder.value) {
+    DisposableEffect(lifecycleOwner, surfaceViewHolder.value, enabled) {
         val surfaceView = surfaceViewHolder.value
         if (surfaceView == null) {
             onDispose {}
@@ -90,7 +92,7 @@ fun FluidWarpBackground(
             val observer =
                 object : DefaultLifecycleObserver {
                     override fun onResume(owner: LifecycleOwner) {
-                        surfaceView.onResume()
+                        if (enabled) surfaceView.onResume() else surfaceView.onPause()
                     }
 
                     override fun onPause(owner: LifecycleOwner) {
@@ -99,7 +101,11 @@ fun FluidWarpBackground(
                 }
 
             lifecycleOwner.lifecycle.addObserver(observer)
-            surfaceView.onResume()
+            if (enabled && lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                surfaceView.onResume()
+            } else {
+                surfaceView.onPause()
+            }
 
             onDispose {
                 lifecycleOwner.lifecycle.removeObserver(observer)
