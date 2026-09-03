@@ -138,4 +138,18 @@ class NavigationPath(
 
     /** 栈内是否有可以弹出的场景（scene 数量 > 1） */
     val canPop: Boolean get() = scenes.size > 1
+
+    /**
+     * [scene] 是否处于前台：栈内位于它之上的场景全部已进入退场流程
+     * （[SceneStage.Disappearing] / [SceneStage.Disappeared]）。
+     */
+    fun isForeground(scene: Scene): Boolean {
+        val index = scenes.indexOf(scene)
+        if (index < 0) return false
+        for (i in index + 1 until scenes.size) {
+            val stage = scenes[i].stage.value
+            if (stage != SceneStage.Disappearing && stage != SceneStage.Disappeared) return false
+        }
+        return true
+    }
 }
