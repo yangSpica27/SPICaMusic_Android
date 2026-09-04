@@ -1,10 +1,11 @@
 package me.spica27.spicamusic.ui.widget
 
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.DeferredTargetAnimation
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ApproachLayoutModifierNode
@@ -20,18 +21,20 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.round
 
+/** 歌词行位移曲线，先缓后快再减速。 */
+internal val LyricLineMoveEasing = CubicBezierEasing(0.4f, 0.1f, 0f, 1f)
+
 /**
- * Animates an item's placement after a lookahead layout changes.
- *
- * The list can update its scroll position immediately, while each lyric line
- * approaches its new position with an independent spring. Manual scrolling
- * uses snap placement so the content stays directly under the user's finger.
+ * 处理前瞻布局后的歌词行位移。
+ * 列表先立即更新滚动位置，各行再按时长和错峰延迟补间；手动滚动时直接贴合手指。
  */
-private class SpringPlacementModifierNode(
+private class LinePlacementModifierNode(
     var lookaheadScope: LookaheadScope,
     var itemKey: Any,
     var isManualScrolling: Boolean,
-    var stiffness: Float,
+    var durationMillis: Int,
+    var delayMillis: Int,
+    var initialOffsetY: Int,
 ) : Modifier.Node(),
     ApproachLayoutModifierNode {
     private var offsetAnimation = DeferredTargetAnimation(IntOffset.VectorConverter)
@@ -44,7 +47,7 @@ private class SpringPlacementModifierNode(
             with(lookaheadScope) {
                 lookaheadScopeCoordinates.localLookaheadPositionOf(lookaheadCoordinates).round()
             }
-        offsetAnimation.updateTarget(target, coroutineScope, animationSpec())
+        updatePlacementTarget(target)
         return !offsetAnimation.isIdle
     }
 
@@ -64,13 +67,7 @@ private class SpringPlacementModifierNode(
                 with(lookaheadScope) {
                     lookaheadScopeCoordinates.localLookaheadPositionOf(coordinates).round()
                 }
-            val animatedOffset =
-                offsetAnimation.updateTarget(
-                    target,
-                    coroutineScope,
-                    animationSpec(),
-                )
-            isFirstFrame = false
+            val animatedOffset = updatePlacementTarget(target)
 
             val placementOffset =
                 with(lookaheadScope) {
@@ -82,11 +79,32 @@ private class SpringPlacementModifierNode(
     }
 
     private fun animationSpec(): FiniteAnimationSpec<IntOffset> =
-        if (isFirstFrame || isManualScrolling) {
+        if (isManualScrolling) {
             snap()
         } else {
-            spring(dampingRatio = 0.95f, stiffness = stiffness)
+            tween(
+                durationMillis = durationMillis,
+                delayMillis = delayMillis,
+                easing = LyricLineMoveEasing,
+            )
         }
+
+    /** 首次组合的底部歌词先下移，再补间到目标位置。 */
+    private fun updatePlacementTarget(target: IntOffset): IntOffset {
+        if (isFirstFrame) {
+            isFirstFrame = false
+            if (initialOffsetY != 0 && !isManualScrolling) {
+                offsetAnimation.updateTarget(
+                    target + IntOffset(0, initialOffsetY),
+                    coroutineScope,
+                    snap(),
+                )
+                return offsetAnimation.updateTarget(target, coroutineScope, animationSpec())
+            }
+            return offsetAnimation.updateTarget(target, coroutineScope, snap())
+        }
+        return offsetAnimation.updateTarget(target, coroutineScope, animationSpec())
+    }
 
     override fun onReset() {
         resetAnimation()
@@ -96,11 +114,15 @@ private class SpringPlacementModifierNode(
         newScope: LookaheadScope,
         newKey: Any,
         newIsManualScrolling: Boolean,
-        newStiffness: Float,
+        newDurationMillis: Int,
+        newDelayMillis: Int,
+        newInitialOffsetY: Int,
     ) {
         lookaheadScope = newScope
         isManualScrolling = newIsManualScrolling
-        stiffness = newStiffness
+        durationMillis = newDurationMillis
+        delayMillis = newDelayMillis
+        initialOffsetY = newInitialOffsetY
         if (itemKey != newKey) {
             itemKey = newKey
             resetAnimation()
@@ -113,30 +135,52 @@ private class SpringPlacementModifierNode(
     }
 }
 
-private data class SpringPlacementNodeElement(
+private data class LinePlacementNodeElement(
     val lookaheadScope: LookaheadScope,
     val itemKey: Any,
     val isManualScrolling: Boolean,
-    val stiffness: Float,
-) : ModifierNodeElement<SpringPlacementModifierNode>() {
-    override fun update(node: SpringPlacementModifierNode) {
-        node.updateState(lookaheadScope, itemKey, isManualScrolling, stiffness)
+    val durationMillis: Int,
+    val delayMillis: Int,
+    val initialOffsetY: Int,
+) : ModifierNodeElement<LinePlacementModifierNode>() {
+    override fun update(node: LinePlacementModifierNode) {
+        node.updateState(
+            lookaheadScope,
+            itemKey,
+            isManualScrolling,
+            durationMillis,
+            delayMillis,
+            initialOffsetY,
+        )
     }
 
-    override fun create(): SpringPlacementModifierNode = SpringPlacementModifierNode(lookaheadScope, itemKey, isManualScrolling, stiffness)
+    override fun create(): LinePlacementModifierNode =
+        LinePlacementModifierNode(
+            lookaheadScope,
+            itemKey,
+            isManualScrolling,
+            durationMillis,
+            delayMillis,
+            initialOffsetY,
+        )
 }
 
-internal fun Modifier.springPlacement(
+/** 添加歌词行位移动画，支持时长和错峰延迟。 */
+internal fun Modifier.linePlacement(
     lookaheadScope: LookaheadScope,
     itemKey: Any,
     isManualScrolling: Boolean,
-    stiffness: Float,
+    durationMillis: Int,
+    delayMillis: Int,
+    initialOffsetY: Int = 0,
 ): Modifier =
     then(
-        SpringPlacementNodeElement(
+        LinePlacementNodeElement(
             lookaheadScope = lookaheadScope,
             itemKey = itemKey,
             isManualScrolling = isManualScrolling,
-            stiffness = stiffness,
+            durationMillis = durationMillis,
+            delayMillis = delayMillis,
+            initialOffsetY = initialOffsetY,
         ),
     )

@@ -30,7 +30,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -49,7 +51,9 @@ import me.spica27.spicamusic.ui.player.LyricsPanel
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
+import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import kotlin.math.roundToInt
 
 /**
@@ -126,30 +130,54 @@ class LyricScene(
                 ?.toString()
                 ?: stringResource(R.string.unknown_artist)
         val artworkUri = currentMediaItem?.mediaMetadata?.artworkUri ?: heroArtworkUri
+        val coverColor =
+            rememberDominantColorFromUri(
+                uri = artworkUri,
+                fallbackColor = MaterialTheme.colorScheme.primary,
+            )
 
-        Scaffold(
-            topBar = {
-                LyricsHeader(
-                    title = title,
-                    artist = artist,
-                    artworkUri = artworkUri,
-                    coverTransition = coverTransition,
-                    enterProgressProvider = { enterProgress.value },
-                    onBack = { path.popTop() },
-                )
-            },
-        ) { innerPadding ->
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                contentAlignment = Alignment.Center,
-            ) {
-                ShowOnIdleContent(enterAnimEnd.value) {
-                    LyricsPanel(
-                        modifier = Modifier.fillMaxSize(),
+        Box(modifier = Modifier.fillMaxSize()) {
+            FluidMusicBackground(
+                modifier = Modifier.fillMaxSize(),
+                coverColor = coverColor,
+                isDarkMode = MaterialTheme.colorScheme.surface.luminance() < 0.5f,
+                coverUri = { artworkUri },
+            )
+
+            Scaffold(
+                containerColor = Color.Transparent,
+                topBar = {
+                    LyricsHeader(
+                        title = title,
+                        artist = artist,
+                        artworkUri = artworkUri,
+                        coverTransition = coverTransition,
+                        enterProgressProvider = { enterProgress.value },
+                        onBack = { path.popTop() },
                     )
+                },
+            ) { innerPadding ->
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ShowOnIdleContent(enterAnimEnd.value) {
+                        // 全屏歌词主题 1：歌词文本始终使用白色，避免被动态背景取色影响。
+                        MaterialTheme(
+                            colorScheme =
+                                MaterialTheme.colorScheme.copy(
+                                    onSurface = Color.White,
+                                    onSurfaceVariant = Color.White,
+                                ),
+                        ) {
+                            LyricsPanel(
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    }
                 }
             }
         }
