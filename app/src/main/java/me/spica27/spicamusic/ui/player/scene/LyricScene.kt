@@ -165,18 +165,9 @@ class LyricScene(
                     contentAlignment = Alignment.Center,
                 ) {
                     ShowOnIdleContent(enterAnimEnd.value) {
-                        // 全屏歌词主题 1：歌词文本始终使用白色，避免被动态背景取色影响。
-                        MaterialTheme(
-                            colorScheme =
-                                MaterialTheme.colorScheme.copy(
-                                    onSurface = Color.White,
-                                    onSurfaceVariant = Color.White,
-                                ),
-                        ) {
-                            LyricsPanel(
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
+                        LyricsPanel(
+                            modifier = Modifier.fillMaxSize(),
+                        )
                     }
                 }
             }
