@@ -79,7 +79,10 @@ private:
     std::array<float, kFftSize> hammingWindow_{};
 
     PFFFT_Setup* setup_ = nullptr;
-    int sampleRate_ = 44100;
+    // Effective rate after analysis-only decimation. This is the rate used
+    // for FFT bin-to-frequency mapping; it may be lower than the negotiated
+    // PCM rate for Hi-Res streams (96/192 kHz).
+    int analysisSampleRate_ = 44100;
     int decimationFactor_ = 1;
     float decimationAccumulator_ = 0.0f;
     int decimationCount_ = 0;
@@ -172,7 +175,7 @@ public:
 
 private:
     bool decode(const std::uint8_t* input, std::size_t inputBytes, int frames);
-    bool decodeFirstChannel(const std::uint8_t* input, std::size_t inputBytes, int frames);
+    void pushFftAnalysis(int frames);
     void applyParameterSnapshot();
     static float decodeSample(const std::uint8_t* source, PcmEncoding encoding);
     static void encodeSample(std::uint8_t* destination, PcmEncoding encoding, float value);
@@ -181,6 +184,7 @@ private:
 
     std::array<std::vector<float>, kMaxChannels> channelBuffers_;
     std::array<float*, kMaxChannels> channelPointers_{};
+    std::vector<float> fftMonoBuffer_;
     FftAnalyzer fft_;
     EqProcessor eq_;
     LoudnessProcessor loudness_;

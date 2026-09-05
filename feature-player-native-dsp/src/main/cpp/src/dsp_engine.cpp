@@ -60,8 +60,11 @@ bool FftAnalyzer::configure(int sampleRate) {
     stop_.store(true, std::memory_order_release);
     if (worker_.joinable()) worker_.join();
 
-    sampleRate_ = sampleRate;
     decimationFactor_ = std::max(1, (sampleRate + 48000 - 1) / 48000);
+    // The ring buffer contains one averaged sample for each decimation
+    // window. Keep the effective rate in sync with those samples; using the
+    // negotiated 96/192 kHz rate here would shift every FFT peak by 2x/4x.
+    analysisSampleRate_ = std::max(1, sampleRate / decimationFactor_);
     decimationAccumulator_ = 0.0f;
     decimationCount_ = 0;
 
@@ -238,8 +241,9 @@ void FftAnalyzer::mapToBands(const float* magnitudes, float* result) const {
         10000.0f, 12500.0f, 16000.0f, 20000.0f,
     };
 
-    const float frequencyResolution = static_cast<float>(sampleRate_) / kFftSize;
-    const float nyquist = static_cast<float>(sampleRate_) / 2.0f;
+    const float frequencyResolution =
+        static_cast<float>(analysisSampleRate_) / kFftSize;
+    const float nyquist = static_cast<float>(analysisSampleRate_) / 2.0f;
     for (int band = 0; band < kBandCount; ++band) {
         const float center = frequencies[band];
         const float low = band == 0 ? 16.0f :
@@ -514,6 +518,7 @@ bool DspEngine::configure(int sampleRate, int channelCount,
         channelBuffers_[channel].assign(maxFrames_, 0.0f);
         channelPointers_[channel] = channelBuffers_[channel].data();
     }
+    fftMonoBuffer_.assign(maxFrames_, 0.0f);
     if (!fft_.configure(sampleRate_) ||
         !eq_.configure(sampleRate_, channelCount_, maxFrames_) ||
         !loudness_.configure(sampleRate_, channelCount_, maxFrames_)) {
@@ -730,18 +735,22 @@ bool DspEngine::decode(const std::uint8_t* input, std::size_t inputBytes, int fr
     return true;
 }
 
-bool DspEngine::decodeFirstChannel(const std::uint8_t* input,
-                                   std::size_t inputBytes, int frames) {
-    const int sampleBytes = bytesPerSample();
-    const std::size_t frameBytes = static_cast<std::size_t>(sampleBytes) * channelCount_;
-    if (input == nullptr || frameBytes == 0 || frames < 0 ||
-        static_cast<std::size_t>(frames) * frameBytes > inputBytes) return false;
+void DspEngine::pushFftAnalysis(int frames) {
+    if (frames <= 0 || frames > maxFrames_ || channelCount_ <= 0) return;
 
+    // FFT is an observation path. Mix every interleaved channel into a
+    // mono analysis buffer so a silent/quiet first channel cannot hide the
+    // spectrum of a Hi-Res multichannel recording. The original channel
+    // buffers remain untouched for EQ/loudness and output encoding.
+    const float scale = 1.0f / static_cast<float>(channelCount_);
     for (int frame = 0; frame < frames; ++frame) {
-        const std::uint8_t* source = input + static_cast<std::size_t>(frame) * frameBytes;
-        channelBuffers_[0][frame] = decodeSample(source, encoding_);
+        float sum = 0.0f;
+        for (int channel = 0; channel < channelCount_; ++channel) {
+            sum += channelBuffers_[channel][frame];
+        }
+        fftMonoBuffer_[frame] = sum * scale;
     }
-    return true;
+    fft_.push(fftMonoBuffer_.data(), static_cast<std::size_t>(frames));
 }
 
 int DspEngine::process(const std::uint8_t* input, std::size_t inputBytes,
@@ -766,8 +775,8 @@ int DspEngine::process(const std::uint8_t* input, std::size_t inputBytes,
 
     if (!anyEffects) {
         if (fftEnabled) {
-            if (!decodeFirstChannel(input, inputBytes, frames)) return -5;
-            fft_.push(channelBuffers_[0].data(), static_cast<std::size_t>(frames));
+            if (!decode(input, inputBytes, frames)) return -5;
+            pushFftAnalysis(frames);
         }
         std::memcpy(output, input, inputBytes);
         return static_cast<int>(inputBytes);
@@ -776,7 +785,7 @@ int DspEngine::process(const std::uint8_t* input, std::size_t inputBytes,
     if (!decode(input, inputBytes, frames)) return -5;
 
     if (fftEnabled) {
-        fft_.push(channelBuffers_[0].data(), static_cast<std::size_t>(frames));
+        pushFftAnalysis(frames);
     }
 
     if (eq_.isConfigured()) {

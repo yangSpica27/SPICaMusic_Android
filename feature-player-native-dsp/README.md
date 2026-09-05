@@ -13,6 +13,11 @@ Media3 AudioProcessor (DirectByteBuffer)
   -> encode to the original PCM format
 ```
 
+For 88.2/96/176.4/192 kHz input the analyzer performs analysis-only
+decimation to a rate at or below 48 kHz, while the negotiated PCM stream is
+passed through at its original rate and encoding. FFT bin mapping uses that
+effective analysis rate, so Hi-Res tones remain at their actual frequencies.
+
 The negotiated `AudioFormat` is returned unchanged. If the native library is
 unavailable or a block cannot be processed, the adapter returns
 `AudioFormat.NOT_SET` or copies the original block so Media3 bypasses
