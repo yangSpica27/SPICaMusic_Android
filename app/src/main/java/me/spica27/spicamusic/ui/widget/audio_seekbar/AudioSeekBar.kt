@@ -232,7 +232,7 @@ fun AudioDynamicWaveSlider(
     style: DrawStyle = Fill,
     waveformBrush: Brush = SolidColor(Color.White),
     progressBrush: Brush = SolidColor(Color.Blue),
-    waveformAlignment: WaveformAlignment = WaveformAlignment.Bottom,
+    waveformAlignment: WaveformAlignment = WaveformAlignment.Center,
     onProgressChangeFinished: (() -> Unit)? = null,
     spikeWidth: Dp = 4.dp,
     spikeRadius: Dp = 2.dp,
