@@ -1,10 +1,12 @@
 package me.spica27.spicamusic.service
 
 import android.os.Build
+import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.util.ExperimentalApi
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
@@ -42,6 +44,7 @@ class PlaybackService : MediaLibraryService() {
     // 服务级别的协程作用域
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    @OptIn(ExperimentalApi::class)
     override fun onCreate() {
         super.onCreate()
         setMediaNotificationProvider(
@@ -82,6 +85,7 @@ class PlaybackService : MediaLibraryService() {
                     renderersFactory,
                 ).setWakeMode(C.WAKE_MODE_LOCAL)
                 .setMaxSeekToPreviousPositionMs(Long.MAX_VALUE)
+                .experimentalSetDynamicSchedulingEnabled(false)
                 .setAudioAttributes(
                     AudioAttributes
                         .Builder()
