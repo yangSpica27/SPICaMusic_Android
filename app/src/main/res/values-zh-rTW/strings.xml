@@ -751,4 +751,5 @@
   <string name="settings_sleep_timer_hours">%1$d 小時</string>
   <string name="settings_sleep_timer_preset_subtitle">定時結束後暫停播放</string>
   <string name="settings_sleep_timer_cancel">取消定時</string>
+  <string name="items_selected">已選擇</string>
 </resources>

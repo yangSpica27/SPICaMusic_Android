@@ -301,6 +301,7 @@
   <string name="add_to_queue">添加到播放列表</string>
   <string name="now_playing_indicator">正在播放</string>
   <string name="multi_select_count_format">已选择 %d 项</string>
+  <string name="items_selected">已选中</string>
   <string name="playlist_count_format">播放列表 (%d)</string>
   <string name="jump_to_playing">跳转到正在播放</string>
   <string name="clear_playlist">清空播放列表</string>

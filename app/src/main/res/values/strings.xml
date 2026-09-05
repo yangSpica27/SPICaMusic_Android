@@ -300,6 +300,7 @@
   <string name="add_to_queue">Add to Queue</string>
   <string name="now_playing_indicator">Now Playing</string>
   <string name="multi_select_count_format">%d selected</string>
+  <string name="items_selected">Items selected</string>
   <string name="playlist_count_format">Playlist (%d)</string>
   <string name="jump_to_playing">Jump to playing</string>
   <string name="clear_playlist">Clear playlist</string>
@@ -375,7 +376,7 @@
   <string name="range_week">This Week</string>
   <string name="range_year">This Year</string>
   <string name="range_all_time">All Time</string>
-    <string name="audio_playback_attribution">\"This app plays audio\"</string>
+  <string name="audio_playback_attribution" translatable="false">\"This app plays audio\"</string>
 
   <!-- Library Page -->
   <string name="library_title">Media Library</string>
