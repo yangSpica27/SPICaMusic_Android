@@ -410,6 +410,7 @@ private fun SettingsTopBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
             Text(
@@ -417,6 +418,7 @@ private fun SettingsTopBar(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
+                color = MaterialTheme.colorScheme.onSurface,
                 overflow = TextOverflow.Ellipsis,
                 modifier =
                     Modifier

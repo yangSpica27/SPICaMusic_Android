@@ -92,15 +92,17 @@ class NativeDspEngine : Closeable {
 
     /** Process one packed PCM block into [output]. Both buffers must be direct. */
     fun process(input: ByteBuffer, output: ByteBuffer, byteCount: Int): Int {
-        val currentHandle = handle.get()
-        if (currentHandle == 0L || !configured || byteCount < 0 ||
-            input.position() < 0 || output.position() < 0 ||
-            input.remaining() < byteCount || output.remaining() < byteCount ||
-            !input.isDirect || !output.isDirect
-        ) return -1
-        return nativeProcess(
-            currentHandle, input, output, input.position(), output.position(), byteCount,
-        )
+        synchronized(stateLock) {
+            val currentHandle = handle.get()
+            if (currentHandle == 0L || !configured || byteCount < 0 ||
+                input.position() < 0 || output.position() < 0 ||
+                input.remaining() < byteCount || output.remaining() < byteCount ||
+                !input.isDirect || !output.isDirect
+            ) return -1
+            return nativeProcess(
+                currentHandle, input, output, input.position(), output.position(), byteCount,
+            )
+        }
     }
 
     fun setEqEnabled(enabled: Boolean) {
