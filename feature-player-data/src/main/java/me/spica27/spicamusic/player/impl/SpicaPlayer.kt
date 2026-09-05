@@ -179,11 +179,10 @@ class SpicaPlayer(
                 }
 
                 // 恢复上次的播放模式
-                val savedPlayMode = PlayMode.from(playerKVUtils.getPlayMode())
-                applyPlayMode(browser, savedPlayMode)
-
                 browser.playWhenReady = false
                 browser.setMediaItems(items)
+                // 替换时间轴后恢复模式
+                applyPlayMode(browser, PlayMode.from(playerKVUtils.getPlayMode()))
                 browser.prepare()
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Failed to initialize player")
@@ -205,6 +204,13 @@ class SpicaPlayer(
         // 10-second timeout prevents doAction from hanging forever if PlaybackService
         // fails to start (process death, system kill, manifest misconfiguration).
         return withTimeoutOrNull(10_000L) { getOrCreateBrowserFuture().await() }
+            ?.also { browser ->
+                // On a fresh install there is no history, so init() returns before it
+                // can restore the mode. Apply the persisted/default mode whenever a
+                // controller is acquired so the first playlist uses the same mode
+                // that the UI exposes.
+                applyPlayMode(browser, PlayMode.from(playerKVUtils.getPlayMode()))
+            }
     }
 
     override fun doAction(action: PlayerAction) {
@@ -265,6 +271,7 @@ class SpicaPlayer(
                                 val currentIndex = browser.currentMediaItemIndex
                                 val toIndex = if (currentIndex == -1) 0 else currentIndex + 1
                                 browser.addMediaItem(toIndex, item)
+                                applyPlayMode(browser, PlayMode.from(playerKVUtils.getPlayMode()))
                                 browser.prepare()
                                 browser.seekTo(toIndex, 0)
                                 browser.playWhenReady = true
@@ -330,6 +337,10 @@ class SpicaPlayer(
                             ?.takeIf { it >= 0 } ?: 0
                         val items = withContext(Dispatchers.IO) { MediaLibrary.mediaIdToMediaItems(action.mediaIds) }
                         browser.setMediaItems(items, index, 0)
+                        // Setting a playlist can leave a newly-created player at
+                        // REPEAT_MODE_OFF. Reapply the saved mode after replacing the
+                        // timeline, including the first-play path on a fresh install.
+                        applyPlayMode(browser, PlayMode.from(playerKVUtils.getPlayMode()))
                         if (action.start) {
                             browser.play()
                         }
