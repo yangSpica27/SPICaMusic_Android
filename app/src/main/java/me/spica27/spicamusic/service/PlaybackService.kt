@@ -30,7 +30,7 @@ import timber.log.Timber
 /**
  * 媒体播放后台服务
  * 使用 Media3 MediaLibraryService 实现后台播放
- * 集成 FFT 音频处理器进行频谱分析
+ * 集成 native DSP 音频处理器进行频谱分析、EQ 和响度处理
  */
 @UnstableApi
 class PlaybackService : MediaLibraryService() {
@@ -47,7 +47,7 @@ class PlaybackService : MediaLibraryService() {
         setMediaNotificationProvider(
             SpicaNotificationProvider(this),
         )
-        // 创建自定义渲染器工厂，添加音频处理器（FFT、EQ、混响）
+        // 创建自定义渲染器工厂，添加 native DSP（FFT、EQ、响度归一化）
         val renderersFactory =
             object : DefaultRenderersFactory(this) {
                 init {
@@ -64,7 +64,8 @@ class PlaybackService : MediaLibraryService() {
                         .setEnableFloatOutput(enableFloatOutput)
                         .setEnableAudioOutputPlaybackParameters(enableAudioTrackPlaybackParams)
                         .setAudioProcessors(
-                            // 音频处理链: FFT -> EQ -> Reverb -> 响度归一化
+                            // 音频处理链由 Native DSP 提供；Native 不可用时由
+                            // AudioFormat.NOT_SET 触发 Media3 原样旁路。
                             (player as? me.spica27.spicamusic.player.impl.SpicaPlayer)
                                 ?.getAudioProcessors()
                                 ?: arrayOf(player.fftAudioProcessor),

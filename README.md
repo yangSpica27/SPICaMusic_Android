@@ -39,7 +39,7 @@
 
 柠檬音乐是一款面向本地音乐播放的现代化 Android 应用，基于 **Media3 ExoPlayer**、**Jetpack Compose** 与 **Koin** 构建，支持 Android 10 及以上系统。
 
-应用可扫描设备中的音乐文件，并提供收藏、歌单、播放历史、在线歌词、均衡器、混响和实时频谱等功能。项目采用**分层 + 多模块**架构：`app` 负责 Compose UI、应用级 DI 与后台播放服务；`feature-*-domain` 暴露 use case / facade；`feature-*-data` 提供数据实现；`common` 与 `core-preferences` 提供跨模块共享能力。
+应用可扫描设备中的音乐文件，并提供收藏、歌单、播放历史、在线歌词、均衡器、响度归一化和实时频谱等功能。项目采用**分层 + 多模块**架构：`app` 负责 Compose UI、应用级 DI 与后台播放服务；`feature-*-domain` 暴露 use case / facade；`feature-*-data` 提供数据实现；`common` 与 `core-preferences` 提供跨模块共享能力。
 
 ## 🏗️ 架构设计
 
@@ -69,7 +69,7 @@
 | 📝 音乐管理 | 收藏歌曲，新增 / 编辑 / 删除歌单，最近播放与最常播放 |
 | 🎨 主题切换 | 亮色 / 暗色模式，动态取色 |
 | 🎤 歌词功能 | 在线歌词搜索与同步显示 |
-| 🎛️ 音效调节 | 自定义 EQ 均衡器与混响效果 |
+| 🎛️ 音效调节 | 10 段 EQ 均衡器与响度归一化 |
 | 📊 音频分析 | FFT 频谱分析，振幅波形显示 |
 | 🔄 播放体验 | 后台播放、媒体通知、顺序 / 随机 / 单曲循环 |
 
@@ -138,7 +138,7 @@ cd SPICaMusic_Android
 | **网络请求** | [Retrofit](https://github.com/square/retrofit) + [OkHttp](https://github.com/square/okhttp) |
 | **JSON 解析** | [Moshi](https://github.com/square/moshi) |
 | **图片加载** | [Coil3](https://github.com/coil-kt/coil) |
-| **音频分析** | [Amplituda](https://github.com/lincollincol/Amplituda) + [TarsosDSP](https://github.com/JorenSix/TarsosDSP) |
+| **音频分析** | PFFFT + Native DSP |
 | **视觉效果** | [AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) - 液态玻璃效果 |
 | **解码器** | [FFmpeg](https://github.com/FFmpeg/FFmpeg) - 多格式音频解码 |
 

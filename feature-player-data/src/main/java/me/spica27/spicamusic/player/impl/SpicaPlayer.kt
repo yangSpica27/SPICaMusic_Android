@@ -27,16 +27,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import me.spica27.spicamusic.common.entity.PlayHistory
+import me.spica27.spicamusic.dsp.NativeDspAudioProcessor
+import me.spica27.spicamusic.dsp.NativeDspEngine
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.player.api.SleepTimerState
-import me.spica27.spicamusic.player.impl.dsp.EqualizerAudioProcessor
-import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessor
-import me.spica27.spicamusic.player.impl.dsp.FFTAudioProcessorWrapper
-import me.spica27.spicamusic.player.impl.dsp.LoudnessNormalizationAudioProcessor
-import me.spica27.spicamusic.player.impl.dsp.ReverbAudioProcessor
+import me.spica27.spicamusic.player.impl.dsp.NativeFftProcessor
 import me.spica27.spicamusic.player.impl.utils.MediaLibrary
 import me.spica27.spicamusic.player.impl.utils.PlayerKVUtils
 import me.spica27.spicamusic.player.impl.utils.toMediaItem
@@ -70,20 +68,19 @@ class SpicaPlayer(
         SessionToken(context, ComponentName(context, playbackServiceClass))
     }
 
-    // FFT 音频处理器
-    private val _fftProcessor = FFTAudioProcessor()
+    // Native DSP is the only audio-effects implementation. If the shared
+    // library is unavailable on an ABI, NativeDspAudioProcessor reports
+    // AudioFormat.NOT_SET and Media3 bypasses it without changing the PCM
+    // stream.
+    private val _nativeDspEngine = NativeDspEngine()
+    private val _nativeFftProcessor = NativeFftProcessor(_nativeDspEngine)
+    override val fftProcessor: IFFTProcessor = _nativeFftProcessor
 
-    override val fftProcessor: IFFTProcessor = _fftProcessor
+    // Native processor performs FFT + EQ + loudness in one format-preserving
+    // block. No Java/Kotlin DSP processor is inserted in the audio sink.
+    private val _nativeAudioProcessor: AudioProcessor = NativeDspAudioProcessor(_nativeDspEngine)
+    override val fftAudioProcessor: AudioProcessor = _nativeAudioProcessor
 
-    // FFT AudioProcessor 包装器 (用于 ExoPlayer)
-    private val _fftAudioProcessorWrapper = FFTAudioProcessorWrapper(_fftProcessor)
-    override val fftAudioProcessor: AudioProcessor =
-        _fftAudioProcessorWrapper
-
-    // 音效处理器
-    private val _equalizerProcessor = EqualizerAudioProcessor()
-    private val _reverbProcessor = ReverbAudioProcessor()
-    private val _loudnessProcessor = LoudnessNormalizationAudioProcessor()
 
     private val _initializing = AtomicBoolean(false)
 
@@ -448,7 +445,7 @@ class SpicaPlayer(
         // 3. 允许 release 后重新 init（例如服务重启场景）
         _initializing.set(false)
         // 4. 释放 FFT 处理器（取消线程池）
-        _fftProcessor.release()
+        _nativeDspEngine.close()
         // 5. 取消协程
         coroutineContext.cancel()
     }
@@ -472,10 +469,10 @@ class SpicaPlayer(
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         this@SpicaPlayer._isPlaying.value = isPlaying
         // 采样跟随播放状态：暂停时停止采样（暂停中 seek/切歌的管线预缓冲不会被采样）
-        _fftProcessor.setPlaybackActive(isPlaying)
+        _nativeFftProcessor.setPlaybackActive(isPlaying)
         if (!isPlaying) {
             // 暂停/停止时清空频谱数据，可视化平滑归零后插值循环自动挂起
-            _fftProcessor.reset()
+            fftProcessor.reset()
         }
         if (isPlaying) {
             startPlaySession(
@@ -727,32 +724,23 @@ class SpicaPlayer(
     // ==================== 音效控制实现 ====================
 
     override fun setEQEnabled(enabled: Boolean) {
-        _equalizerProcessor.setEnabled(enabled)
+        _nativeDspEngine.setEqEnabled(enabled)
     }
 
     override fun setEQBandGain(band: Int, gainDb: Float) {
-        _equalizerProcessor.setBandGain(band, gainDb)
+        _nativeDspEngine.setEqBandGain(band, gainDb)
     }
 
     override fun setAllEQBands(gains: FloatArray) {
-        _equalizerProcessor.setAllBands(gains)
-    }
-
-    override fun setReverbEnabled(enabled: Boolean) {
-        _reverbProcessor.setEnabled(enabled)
-    }
-
-    override fun setReverb(level: Float, roomSize: Float) {
-        _reverbProcessor.setReverb(level, roomSize)
+        _nativeDspEngine.setAllEqBands(gains)
     }
 
     override fun setLoudnessNormalizationEnabled(enabled: Boolean) {
-        _loudnessProcessor.setEnabled(enabled)
+        _nativeDspEngine.setLoudnessEnabled(enabled)
     }
 
     override fun setLoudnessTargetLufs(targetLufs: Float) {
-        // 纯 AGC 模式下目标响度由处理器内部硬编码（-14 LUFS），此方法保留仅为兼容接口
-        Timber.tag(TAG).d("setLoudnessTargetLufs called with $targetLufs (AGC mode, ignored)")
+        _nativeDspEngine.setTargetLufs(targetLufs)
     }
 
     /**
@@ -766,13 +754,7 @@ class SpicaPlayer(
      * 但拿到的是另一个进程里的**不同实例**，所有音效开关都会静默失效。
      */
     fun getAudioProcessors(): Array<AudioProcessor> {
-        return arrayOf(
-            _fftAudioProcessorWrapper,
-            _equalizerProcessor,
-            _reverbProcessor,
-            // 响度归一化放在链路末端：在 EQ/混响改变电平之后再统一响度
-            _loudnessProcessor,
-        )
+        return arrayOf(_nativeAudioProcessor)
     }
 
     private fun buildExtraFromMetadata(metadata: MediaMetadata?): String {

@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.SurroundSound
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -53,8 +52,8 @@ import org.koin.compose.viewmodel.koinViewModel
 /**
  * 音效设置页
  *
- * 均衡器（开关 + 预设 + 10 段增益）、混响（开关 + 强度/房间大小）、
- * 响度归一化（开关）。视觉语言复用 [AboutScaffold] / [AboutSectionCard]，与设置页保持一致。
+ * 均衡器（开关 + 预设 + 10 段增益）和响度归一化（开关）。
+ * 视觉语言复用 [AboutScaffold] / [AboutSectionCard]，与设置页保持一致。
  */
 class AudioEffectsScene : StackScene() {
     @Composable
@@ -63,10 +62,8 @@ class AudioEffectsScene : StackScene() {
 
         val eqEnabled by viewModel.eqEnabled.collectAsStateWithLifecycle()
         val eqBands by viewModel.eqBands.collectAsStateWithLifecycle()
-        val reverbEnabled by viewModel.reverbEnabled.collectAsStateWithLifecycle()
-        val reverbLevel by viewModel.reverbLevel.collectAsStateWithLifecycle()
-        val reverbRoomSize by viewModel.reverbRoomSize.collectAsStateWithLifecycle()
         val loudnessEnabled by viewModel.loudnessNormalizationEnabled.collectAsStateWithLifecycle()
+        val loudnessTargetLufs by viewModel.loudnessTargetLufs.collectAsStateWithLifecycle()
 
         AboutScaffold(title = stringResource(R.string.settings_sound_effects)) {
             item {
@@ -98,38 +95,6 @@ class AudioEffectsScene : StackScene() {
             }
 
             item {
-                AboutSectionCard(title = stringResource(R.string.audio_effects_section_reverb)) {
-                    EffectSwitchRow(
-                        title = stringResource(R.string.audio_effects_reverb_enable),
-                        subtitle = stringResource(R.string.reverb_spatial_desc),
-                        icon = Icons.Default.SurroundSound,
-                        checked = reverbEnabled,
-                        onCheckedChange = viewModel::setReverbEnabled,
-                    )
-                    AnimatedVisibility(
-                        visible = reverbEnabled,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut(),
-                    ) {
-                        Column {
-                            EffectSliderRow(
-                                label = stringResource(R.string.reverb_intensity),
-                                value = reverbLevel,
-                                valueText = percentText(reverbLevel),
-                                onValueChange = viewModel::setReverbLevel,
-                            )
-                            EffectSliderRow(
-                                label = stringResource(R.string.room_size),
-                                value = reverbRoomSize,
-                                valueText = percentText(reverbRoomSize),
-                                onValueChange = viewModel::setReverbRoomSize,
-                            )
-                        }
-                    }
-                }
-            }
-
-            item {
                 AboutSectionCard(title = stringResource(R.string.audio_effects_section_loudness)) {
                     EffectSwitchRow(
                         title = stringResource(R.string.audio_effects_loudness_title),
@@ -138,6 +103,12 @@ class AudioEffectsScene : StackScene() {
                         checked = loudnessEnabled,
                         onCheckedChange = viewModel::setLoudnessNormalizationEnabled,
                     )
+                    AnimatedVisibility(visible = loudnessEnabled) {
+                        LoudnessTargetSelector(
+                            targetLufs = loudnessTargetLufs,
+                            onTargetChange = viewModel::setLoudnessTargetLufs,
+                        )
+                    }
                 }
             }
 
@@ -218,45 +189,6 @@ private fun EffectSwitchRow(
     }
 }
 
-/** 参数滑杆行（0~1）：左侧标签，右侧百分比，下方 Slider。 */
-@Composable
-private fun EffectSliderRow(
-    label: String,
-    value: Float,
-    valueText: String,
-    onValueChange: (Float) -> Unit,
-) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Spacing.Large, vertical = Spacing.Small),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = valueText,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = 0f..1f,
-        )
-    }
-}
-
 /** 预设方案：横向 FilterChip 快速套用。 */
 @Composable
 private fun EqualizerPresets(onPreset: (AudioEffectsViewModel.Preset) -> Unit) {
@@ -291,11 +223,41 @@ private fun EqualizerPresets(onPreset: (AudioEffectsViewModel.Preset) -> Unit) {
     }
 }
 
-/**
- * 目标响度选择：横向 FilterChip。
- *
- * 用离散 chip 而非滑杆，因为目标响度是几个有明确来历的约定值，不是连续量。
- */
+/** 目标响度选择：使用有明确行业含义的离散 LUFS 选项。 */
+@Composable
+private fun LoudnessTargetSelector(
+    targetLufs: Float,
+    onTargetChange: (Float) -> Unit,
+) {
+    val options =
+        listOf(
+            -14f to stringResource(R.string.audio_effects_loudness_target_streaming),
+            -18f to stringResource(R.string.audio_effects_loudness_target_replaygain),
+            -23f to stringResource(R.string.audio_effects_loudness_target_broadcast),
+        )
+    Column(
+        modifier = Modifier.padding(horizontal = Spacing.Large, vertical = Spacing.Small),
+        verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+    ) {
+        Text(
+            text = stringResource(R.string.audio_effects_loudness_target),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+        ) {
+            options.forEach { (value, label) ->
+                FilterChip(
+                    selected = kotlin.math.abs(targetLufs - value) < 0.01f,
+                    onClick = { onTargetChange(value) },
+                    label = { Text(label) },
+                )
+            }
+        }
+    }
+}
 
 /** 10 段均衡器：每段一根竖向滑杆，展示中心频率与当前增益。 */
 @Composable
@@ -420,5 +382,3 @@ private fun ResetRow(onReset: () -> Unit) {
         )
     }
 }
-
-private fun percentText(value: Float): String = "${(value * 100).toInt()}%"

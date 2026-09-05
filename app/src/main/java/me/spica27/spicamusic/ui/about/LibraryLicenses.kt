@@ -158,6 +158,24 @@ val ossLibraries: List<OssLibrary> =
             "LGPL-2.1",
             "https://github.com/Kyant0/taglib",
         ),
+        OssLibrary(
+            "PFFFT",
+            "vendored native source: pffft 1.1.0",
+            "BSD-3-Clause",
+            "https://github.com/marton78/pffft",
+        ),
+        OssLibrary(
+            "DSPFilters",
+            "vendored native source: DSPFilters",
+            "MIT",
+            "https://github.com/vinniefalco/DSPFilters",
+        ),
+        OssLibrary(
+            "libebur128",
+            "vendored native source: libebur128 1.2.6",
+            "MIT",
+            "https://github.com/jiixyj/libebur128",
+        ),
         // ---------- DI ----------
         OssLibrary(
             "Koin",

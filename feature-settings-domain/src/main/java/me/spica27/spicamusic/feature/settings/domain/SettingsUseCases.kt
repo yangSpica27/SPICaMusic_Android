@@ -17,9 +17,6 @@ class SettingsUseCases(
         val PROGRESS_BAR_STYLE = PreferencesManager.Keys.PROGRESS_BAR_STYLE
         val EQ_ENABLED = PreferencesManager.Keys.EQ_ENABLED
         val EQ_BANDS = PreferencesManager.Keys.EQ_BANDS
-        val REVERB_ENABLED = PreferencesManager.Keys.REVERB_ENABLED
-        val REVERB_LEVEL = PreferencesManager.Keys.REVERB_LEVEL
-        val REVERB_ROOM_SIZE = PreferencesManager.Keys.REVERB_ROOM_SIZE
         val LOUDNESS_NORMALIZATION_ENABLED = PreferencesManager.Keys.LOUDNESS_NORMALIZATION_ENABLED
         val LOUDNESS_TARGET_LUFS = PreferencesManager.Keys.LOUDNESS_TARGET_LUFS
         val SCAN_LAST_COMPLETED_AT = PreferencesManager.Keys.SCAN_LAST_COMPLETED_AT

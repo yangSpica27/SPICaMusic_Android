@@ -14,7 +14,7 @@ import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 /**
  * 音效配置 ViewModel
  *
- * 管理 EQ 和混响效果的状态，并持久化到 DataStore
+ * 管理 EQ 和响度归一化效果的状态，并持久化到 DataStore
  */
 @Stable
 class AudioEffectsViewModel(
@@ -43,29 +43,17 @@ class AudioEffectsViewModel(
             .getFloatList(SettingsUseCases.Keys.EQ_BANDS, defaultEqBands)
             .stateIn(viewModelScope, SharingStarted.Eagerly, defaultEqBands)
 
-    // 混响开关
-    val reverbEnabled: StateFlow<Boolean> =
-        settingsUseCases
-            .getBoolean(SettingsUseCases.Keys.REVERB_ENABLED, false)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
-
-    // 混响强度 (0.0 - 1.0)
-    val reverbLevel: StateFlow<Float> =
-        settingsUseCases
-            .getFloat(SettingsUseCases.Keys.REVERB_LEVEL, 0.3f)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, 0.3f)
-
-    // 混响房间大小 (0.0 - 1.0)
-    val reverbRoomSize: StateFlow<Float> =
-        settingsUseCases
-            .getFloat(SettingsUseCases.Keys.REVERB_ROOM_SIZE, 0.5f)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, 0.5f)
-
     // 响度归一化开关
     val loudnessNormalizationEnabled: StateFlow<Boolean> =
         settingsUseCases
             .getBoolean(SettingsUseCases.Keys.LOUDNESS_NORMALIZATION_ENABLED, false)
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    // 目标响度（LUFS），与 native libebur128 AGC 的范围保持一致。
+    val loudnessTargetLufs: StateFlow<Float> =
+        settingsUseCases
+            .getFloat(SettingsUseCases.Keys.LOUDNESS_TARGET_LUFS, DEFAULT_TARGET_LUFS)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, DEFAULT_TARGET_LUFS)
 
     // 加载状态
     private val _isLoading = MutableStateFlow(false)
@@ -128,40 +116,21 @@ class AudioEffectsViewModel(
     }
 
     /**
-     * 设置混响开关
-     */
-    fun setReverbEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            settingsUseCases.setBoolean(SettingsUseCases.Keys.REVERB_ENABLED, enabled)
-        }
-    }
-
-    /**
-     * 设置混响强度
-     */
-    fun setReverbLevel(level: Float) {
-        viewModelScope.launch {
-            val clampedLevel = level.coerceIn(0f, 1f)
-            settingsUseCases.setFloat(SettingsUseCases.Keys.REVERB_LEVEL, clampedLevel)
-        }
-    }
-
-    /**
-     * 设置混响房间大小
-     */
-    fun setReverbRoomSize(roomSize: Float) {
-        viewModelScope.launch {
-            val clampedSize = roomSize.coerceIn(0f, 1f)
-            settingsUseCases.setFloat(SettingsUseCases.Keys.REVERB_ROOM_SIZE, clampedSize)
-        }
-    }
-
-    /**
      * 设置响度归一化开关
      */
     fun setLoudnessNormalizationEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsUseCases.setBoolean(SettingsUseCases.Keys.LOUDNESS_NORMALIZATION_ENABLED, enabled)
+        }
+    }
+
+    /** 设置目标响度（LUFS）。 */
+    fun setLoudnessTargetLufs(target: Float) {
+        viewModelScope.launch {
+            settingsUseCases.setFloat(
+                SettingsUseCases.Keys.LOUDNESS_TARGET_LUFS,
+                target.coerceIn(-40f, 0f),
+            )
         }
     }
 
@@ -175,11 +144,6 @@ class AudioEffectsViewModel(
             // 重置 EQ
             setEqEnabled(false)
             setAllEqBands(defaultEqBands)
-
-            // 重置混响
-            setReverbEnabled(false)
-            settingsUseCases.setFloat(SettingsUseCases.Keys.REVERB_LEVEL, 0.3f)
-            settingsUseCases.setFloat(SettingsUseCases.Keys.REVERB_ROOM_SIZE, 0.5f)
 
             // 重置响度归一化
             setLoudnessNormalizationEnabled(false)

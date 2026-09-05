@@ -17,6 +17,7 @@ local.properties
 /player-core/build/
 /storage-core/build/
 /docs/
+/native-dsp-thirdparty/
 /.kotlin/
 /common/build/
 /.claude/

@@ -48,12 +48,10 @@ kotlin {
 dependencies {
     // Common module
     api project(':common')
+    implementation project(':feature-player-native-dsp')
     
     // Storage API (for song data access)
     implementation project(':feature-library-data')
-    
-    // TarsosDSP for FFT analysis
-    compileOnly fileTree(dir: "libs", include: ["*.jar"])
     
     implementation libs.androidx.core.ktx
     implementation libs.androidx.lifecycle.runtime.ktx

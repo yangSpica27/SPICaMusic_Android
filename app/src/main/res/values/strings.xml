@@ -208,11 +208,7 @@
   <string name="multi_select">Multi-select</string>
   <string name="equalizer_10_band">10-band Equalizer</string>
   <string name="db_value_format">%ddB</string>
-  <string name="reverb_spatial">Spatial Reverb</string>
-  <string name="reverb_spatial_desc">Simulates concert hall, church and other space effects</string>
-  <string name="reverb_intensity">Reverb Intensity</string>
   <string name="percent_value_format">%d%%</string>
-  <string name="room_size">Room Size</string>
   <string name="presets_title">Presets</string>
   <string name="preset_pop">Pop</string>
   <string name="preset_rock">Rock</string>
@@ -220,12 +216,10 @@
   <string name="preset_jazz">Jazz</string>
   <!-- Audio effects screen -->
   <string name="settings_sound_effects">Sound Effects</string>
-  <string name="audio_effects_subtitle">Tune the equalizer, reverb and loudness to taste</string>
+  <string name="audio_effects_subtitle">Tune the equalizer and loudness to taste</string>
   <string name="audio_effects_section_equalizer">Equalizer</string>
   <string name="audio_effects_eq_enable">Enable Equalizer</string>
   <string name="audio_effects_eq_enable_desc">Adjust gain across 10 frequency bands</string>
-  <string name="audio_effects_section_reverb">Reverb</string>
-  <string name="audio_effects_reverb_enable">Enable Reverb</string>
   <string name="audio_effects_section_loudness">Loudness</string>
   <string name="audio_effects_loudness_title">Loudness Normalization</string>
   <string name="audio_effects_loudness_desc">Even out volume differences between tracks so switching songs stays comfortable</string>
@@ -362,7 +356,7 @@
   <string name="settings_appearance">Appearance</string>
   <string name="settings_dark_mode_subtitle">Enable dark theme</string>
   <string name="settings_playback">Playback</string>
-  <string name="settings_sound_effects_subtitle">Equalizer, reverb and other effects</string>
+  <string name="settings_sound_effects_subtitle">Equalizer, loudness and other effects</string>
   <string name="settings_keep_screen_on">Keep Screen On</string>
   <string name="settings_keep_screen_on_subtitle">Keep screen on during playback</string>
   <string name="settings_dynamic_spectrum">Dynamic Spectrum Background</string>

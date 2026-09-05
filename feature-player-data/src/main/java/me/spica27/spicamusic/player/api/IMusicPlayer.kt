@@ -128,22 +128,10 @@ interface IMusicPlayer {
     fun setAllEQBands(gains: FloatArray)
 
     /**
-     * 设置混响开关
-     */
-    fun setReverbEnabled(enabled: Boolean)
-
-    /**
-     * 设置混响参数
-     * @param level 混响强度 (0.0 - 1.0)
-     * @param roomSize 房间大小 (0.0 - 1.0)
-     */
-    fun setReverb(level: Float, roomSize: Float)
-
-    /**
      * 设置响度归一化开关
      *
-     * 已测得积分响度（EBU R128）的歌曲会施加一个常数增益，实现**曲间音量齐平**；
-     * 尚未测量的歌曲回退到实时滑动窗口 AGC。
+     * 播放链路使用 EBU R128/LUFS 测量驱动实时 AGC，并在输出端做峰值保护。
+     * 目标是平滑曲内/曲间的感知响度，不改变 Media3 协商的 PCM 格式。
      */
     fun setLoudnessNormalizationEnabled(enabled: Boolean)
 

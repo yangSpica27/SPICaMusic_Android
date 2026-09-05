@@ -208,11 +208,7 @@
   <string name="multi_select">多選</string>
   <string name="equalizer_10_band">10段均衡器</string>
   <string name="db_value_format">%ddB</string>
-  <string name="reverb_spatial">空間混響</string>
-  <string name="reverb_spatial_desc">模擬音樂廳、教堂等空間效果</string>
-  <string name="reverb_intensity">混響強度</string>
   <string name="percent_value_format">%d%%</string>
-  <string name="room_size">房間大小</string>
   <string name="presets_title">預設方案</string>
   <string name="preset_pop">流行</string>
   <string name="preset_rock">搖滾</string>
@@ -220,12 +216,10 @@
   <string name="preset_jazz">爵士</string>
   <!-- 音效設定頁 -->
   <string name="settings_sound_effects">音效</string>
-  <string name="audio_effects_subtitle">依喜好調整等化器、混響與響度</string>
+  <string name="audio_effects_subtitle">依喜好調整等化器與響度</string>
   <string name="audio_effects_section_equalizer">等化器</string>
   <string name="audio_effects_eq_enable">啟用等化器</string>
   <string name="audio_effects_eq_enable_desc">調整 10 個頻段的增益</string>
-  <string name="audio_effects_section_reverb">混響</string>
-  <string name="audio_effects_reverb_enable">啟用混響</string>
   <string name="audio_effects_section_loudness">響度</string>
   <string name="audio_effects_loudness_title">響度正規化</string>
   <string name="audio_effects_loudness_desc">拉平不同歌曲之間的音量差異，切歌時聽感更平穩</string>
@@ -362,7 +356,7 @@
   <string name="settings_appearance">外觀</string>
   <string name="settings_dark_mode_subtitle">啟用深色主題</string>
   <string name="settings_playback">播放</string>
-  <string name="settings_sound_effects_subtitle">均衡器、混響等音效設定</string>
+  <string name="settings_sound_effects_subtitle">均衡器、響度等音效設定</string>
   <string name="settings_keep_screen_on">螢幕常亮</string>
   <string name="settings_keep_screen_on_subtitle">播放時保持螢幕常亮</string>
   <string name="settings_dynamic_spectrum">動態頻譜背景</string>

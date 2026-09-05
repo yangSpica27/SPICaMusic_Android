@@ -27,9 +27,6 @@ class PreferencesManager(
         val PROGRESS_BAR_STYLE = stringPreferencesKey("progress_bar_style")
         val EQ_ENABLED = booleanPreferencesKey("eq_enabled")
         val EQ_BANDS = stringPreferencesKey("eq_bands")
-        val REVERB_ENABLED = booleanPreferencesKey("reverb_enabled")
-        val REVERB_LEVEL = stringPreferencesKey("reverb_level")
-        val REVERB_ROOM_SIZE = stringPreferencesKey("reverb_room_size")
         val LOUDNESS_NORMALIZATION_ENABLED = booleanPreferencesKey("loudness_normalization_enabled")
 
         // 目标响度（LUFS）。本项目 float 一律以字符串存储，见 getFloat/setFloat

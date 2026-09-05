@@ -36,6 +36,7 @@ include ':common'
 include ':core-preferences'
 include ':feature-library-data'
 include ':feature-player-data'
+include ':feature-player-native-dsp'
 //include(':decoder_flac')
 //include(":starrysky")
 include ':feature-lyrics-data'
