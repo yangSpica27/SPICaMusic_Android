@@ -101,7 +101,8 @@ cd SPICaMusic_Android
 ```
 
 **环境要求**:
-- Android Studio Narwhal 2025.1.1+（或兼容 AGP 9.2.1 的版本）
+- 支持 AGP 9.4.0 的 Android Studio 版本
+- Gradle 9.6.0（项目已通过 Gradle Wrapper 固定版本）
 - JDK 21+
 - Android SDK 29+（`minSdk 29` / `targetSdk 37` / `compileSdk 37`）
 

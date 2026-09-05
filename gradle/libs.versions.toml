@@ -1,7 +1,7 @@
 [versions]
 accompanistVersion = "0.37.3"
 adaptiveVersion = "1.2.0"
-agp = "9.3.1"
+agp = "9.4.0"
 amplitudaVersion = "2.3.1"
 androidliquidglassVersion = "1.0.0-alpha11"
 capsuleAndroidVersion = "2.1.1-patch2"
