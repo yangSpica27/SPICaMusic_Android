@@ -16,7 +16,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -33,7 +32,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -44,7 +42,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -57,6 +54,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -113,6 +111,7 @@ import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.SleepTimerState
 import me.spica27.spicamusic.ui.glass.LiquidGlassVariant
+import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.glass.liquidGlass
 import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
@@ -342,30 +341,6 @@ fun ExpandedPlayerScreen(
                             .statusBarsPadding(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    // 顶部工具栏
-                    TopBar(
-                        modifier = Modifier,
-                        onCollapse = onCollapse,
-                        progressProvider = progressProvider,
-                        hazeState = hazeState,
-                        sleepTimer = sleepTimer,
-                        onSleepTimerClick = { showSleepTimerDialog = true },
-                        onPlaylistBtnClick = {
-                            coroutineScope.launch {
-                                // 与顶栏另一侧的返回首页按钮同节奏：两个对称的翻页键
-                                // 不该用两套时长与缓动
-                                pagerState.animateScrollToPage(
-                                    1,
-                                    animationSpec =
-                                        tween(
-                                            durationMillis = 320,
-                                            easing = EaseOutEmphasized,
-                                        ),
-                                )
-                            }
-                        },
-                    )
-
                     // 水平 Pager 内容区域
                     // 播放器页面
                     ShowOnIdleContent(
@@ -403,6 +378,20 @@ fun ExpandedPlayerScreen(
                             onPlayModeClick = { viewModel.togglePlayMode() },
                             onFavoriteClick = {
                                 viewModel.toggleLikeCurrentSong()
+                            },
+                            onSleepTimerClick = { showSleepTimerDialog = true },
+                            sleepTimer = sleepTimer,
+                            onPlaylistClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(
+                                        1,
+                                        animationSpec =
+                                            tween(
+                                                durationMillis = 320,
+                                                easing = EaseOutEmphasized,
+                                            ),
+                                    )
+                                }
                             },
                             progressProvider = progressProvider,
                             isAppInForeground = isAppInForeground,
@@ -484,121 +473,6 @@ fun ExpandedPlayerScreen(
 }
 
 // ============================================
-// 导航栏组件
-// ============================================
-
-/**
- * 顶部工具栏
- */
-@Composable
-private fun TopBar(
-    onCollapse: () -> Unit,
-    progressProvider: () -> Float,
-    modifier: Modifier,
-    hazeState: HazeState,
-    sleepTimer: SleepTimerState? = null,
-    onSleepTimerClick: () -> Unit = {},
-    onPlaylistBtnClick: () -> Unit = {},
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(modifier = Modifier.height(Spacing.Small))
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        val progress = progressProvider()
-                        val barAlpha = calculateFadeAlpha(progress, HERO_REVEAL_THRESHOLD)
-                        alpha = barAlpha
-                        translationY = (1f - barAlpha) * -20f
-                    }.padding(horizontal = Spacing.Large),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(
-                modifier =
-                    Modifier.liquidGlass(
-                        hazeState = hazeState,
-                        variant = LiquidGlassVariant.TopBar,
-                        shape = CircleShape,
-                        fallbackColor = MaterialTheme.colorScheme.surfaceContainer,
-                    ),
-                onClick = {
-                    onCollapse.invoke()
-                },
-                colors =
-                    IconButtonDefaults.iconButtonColors().copy(
-                        containerColor = Color.Transparent,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.KeyboardArrowDown,
-                    contentDescription = stringResource(R.string.collapse),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            IconButton(
-                modifier =
-                    Modifier.liquidGlass(
-                        hazeState = hazeState,
-                        variant = LiquidGlassVariant.TopBar,
-                        shape = CircleShape,
-                        fallbackColor = MaterialTheme.colorScheme.surfaceContainer,
-                    ),
-                onClick = onSleepTimerClick,
-                colors =
-                    IconButtonDefaults.iconButtonColors().copy(
-                        containerColor = Color.Transparent,
-                        contentColor =
-                            if (sleepTimer != null) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            },
-                    ),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Schedule,
-                    contentDescription = stringResource(R.string.settings_sleep_timer),
-                )
-            }
-            Row(
-                modifier =
-                    Modifier
-                        .liquidGlass(
-                            hazeState = hazeState,
-                            variant = LiquidGlassVariant.TopBar,
-                            shape = CircleShape,
-                            fallbackColor = MaterialTheme.colorScheme.surfaceContainer,
-                        ).clickable {
-                            onPlaylistBtnClick.invoke()
-                        }.padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Default.PlaylistPlay,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = stringResource(R.string.queue),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
 // ---------- 音频信息组件 ----------
 
 @Immutable
@@ -649,6 +523,9 @@ private fun PlayerPage(
     onNextClick: () -> Unit,
     onPlayModeClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onSleepTimerClick: () -> Unit,
+    onPlaylistClick: () -> Unit,
+    sleepTimer: SleepTimerState?,
     progressProvider: () -> Float,
     isAppInForeground: Boolean,
     animationsEnabled: Boolean,
@@ -944,8 +821,8 @@ private fun PlayerPage(
             progressProvider = progressProvider,
         )
         Spacer(modifier = Modifier.height(Spacing.Large))
-        // 控制按钮（补全展开揭示编排，与封面/信息/进度条同一套节奏）
-        PlayerControls(
+        // 主播放控制：上一曲、播放/暂停、下一曲单独成行
+        TransportControls(
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -957,13 +834,20 @@ private fun PlayerPage(
                     },
             hazeState = hazeState,
             isPlaying = isPlaying,
-            playMode = playMode,
-            isLike = isLike,
             onPlayPauseClick = onPlayPauseClick,
             onPreviousClick = onPreviousClick,
             onNextClick = onNextClick,
+        )
+        Spacer(modifier = Modifier.height(Spacing.Medium))
+        SecondaryActions(
+            modifier = Modifier.fillMaxWidth(),
+            playMode = playMode,
+            isLike = isLike,
+            sleepTimer = sleepTimer,
             onPlayModeClick = onPlayModeClick,
             onFavoriteClick = onFavoriteClick,
+            onSleepTimerClick = onSleepTimerClick,
+            onPlaylistClick = onPlaylistClick,
         )
     }
 }
@@ -1192,61 +1076,39 @@ private fun controlIconTransform() =
             )
     ).togetherWith(fadeOut(tween(durationMillis = 120, easing = EaseOutEmphasized)))
 
-/**
- * 播放控制按钮：两端为次级操作（播放模式/收藏），中间为主传输组，
- * 避免此前 Center 排列下按钮总宽超出容器、次级按钮与传输键粘连的问题
- */
+/** 主播放控制：上一曲、播放/暂停、下一曲。 */
 @Composable
-private fun PlayerControls(
+private fun TransportControls(
     modifier: Modifier,
     hazeState: HazeState,
     isPlaying: Boolean,
-    playMode: PlayMode,
-    isLike: Boolean,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
-    onPlayModeClick: () -> Unit,
-    onFavoriteClick: () -> Unit,
 ) {
+    val config = LocalLiquidGlassConfig.current
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 播放模式
-        IconButton(onClick = onPlayModeClick) {
-            AnimatedContent(
-                targetState = playMode,
-                transitionSpec = { controlIconTransform() },
-                label = "playModeIcon",
-            ) { mode ->
-                Icon(
-                    imageVector =
-                        when (mode) {
-                            PlayMode.LOOP -> Icons.Rounded.Repeat
-                            PlayMode.LIST -> Icons.Rounded.RepeatOne
-                            PlayMode.SHUFFLE -> Icons.Rounded.Shuffle
-                        },
-                    contentDescription = stringResource(R.string.play_mode),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(26.dp),
-                )
-            }
-        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
         ) {
             IconButton(
                 onClick = onPreviousClick,
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(52.dp),
+                colors =
+                    IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.SkipPrevious,
                     contentDescription = stringResource(R.string.previous_track),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(36.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(32.dp),
                 )
             }
             val playInteraction = remember { MutableInteractionSource() }
@@ -1266,77 +1128,175 @@ private fun PlayerControls(
                 modifier =
                     Modifier
                         .size(80.dp)
-                        .graphicsLayer {
-                            scaleX = playScale
-                            scaleY = playScale
-                        }.liquidGlass(
+                        .liquidGlass(
                             hazeState = hazeState,
                             variant = LiquidGlassVariant.PlayButton,
                             shape = CircleShape,
                             fallbackColor = MaterialTheme.colorScheme.primary,
                         ),
-                colors =
-                    IconButtonDefaults.iconButtonColors().copy(
-                        containerColor = Color.Transparent,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
             ) {
-                AnimatedContent(
-                    targetState = isPlaying,
-                    transitionSpec = { controlIconTransform() },
-                    label = "playPauseIcon",
-                ) { playing ->
-                    Icon(
-                        imageVector = if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                        contentDescription =
-                            if (playing) {
-                                stringResource(R.string.pause)
-                            } else {
-                                stringResource(R.string.play)
-                            },
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(44.dp),
-                    )
+                Box(
+                    modifier =
+                        Modifier.graphicsLayer {
+                            scaleX = playScale
+                            scaleY = playScale
+                        },
+                ) {
+                    AnimatedContent(
+                        targetState = isPlaying,
+                        transitionSpec = { controlIconTransform() },
+                        label = "playPauseIcon",
+                    ) { playing ->
+                        Icon(
+                            imageVector = if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                            contentDescription =
+                                if (playing) {
+                                    stringResource(R.string.pause)
+                                } else {
+                                    stringResource(R.string.play)
+                                },
+                            tint =
+                                if (config.enabled) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.onPrimary
+                                },
+                            modifier = Modifier.size(44.dp),
+                        )
+                    }
                 }
             }
 
             IconButton(
                 onClick = onNextClick,
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(52.dp),
+                colors =
+                    IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             ) {
                 Icon(
                     imageVector = Icons.Rounded.SkipNext,
                     contentDescription = stringResource(R.string.next_track),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(36.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(32.dp),
                 )
             }
         }
+    }
+}
 
-        // 收藏
-        IconButton(onClick = onFavoriteClick) {
+/** 播放辅助操作：收藏、睡眠定时、播放模式和播放队列。 */
+@Composable
+private fun SecondaryActions(
+    modifier: Modifier,
+    playMode: PlayMode,
+    isLike: Boolean,
+    sleepTimer: SleepTimerState?,
+    onPlayModeClick: () -> Unit,
+    onFavoriteClick: () -> Unit,
+    onSleepTimerClick: () -> Unit,
+    onPlaylistClick: () -> Unit,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(
+            onClick = onFavoriteClick,
+            colors =
+                IconButtonDefaults.iconButtonColors(
+                    containerColor =
+                        if (isLike) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        } else {
+                            Color.Transparent
+                        },
+                    contentColor =
+                        if (isLike) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                ),
+        ) {
             AnimatedContent(
                 targetState = isLike,
                 transitionSpec = { controlIconTransform() },
                 label = "favoriteIcon",
             ) { liked ->
                 Icon(
-                    imageVector =
-                        if (liked) {
-                            Icons.Rounded.Favorite
-                        } else {
-                            Icons.Rounded.FavoriteBorder
-                        },
+                    imageVector = if (liked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
                     contentDescription = stringResource(R.string.favorite),
-                    tint =
-                        if (liked) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
+                    tint = LocalContentColor.current,
                     modifier = Modifier.size(26.dp),
                 )
             }
+        }
+        IconButton(
+            onClick = onSleepTimerClick,
+            colors =
+                IconButtonDefaults.iconButtonColors(
+                    containerColor =
+                        if (sleepTimer != null) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                        } else {
+                            Color.Transparent
+                        },
+                    contentColor =
+                        if (sleepTimer != null) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                ),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Schedule,
+                contentDescription = stringResource(R.string.settings_sleep_timer),
+                tint = LocalContentColor.current,
+            )
+        }
+        IconButton(
+            onClick = onPlayModeClick,
+            colors =
+                IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    contentColor = MaterialTheme.colorScheme.primary,
+                ),
+        ) {
+            AnimatedContent(
+                targetState = playMode,
+                transitionSpec = { controlIconTransform() },
+                label = "playModeIcon",
+            ) { mode ->
+                Icon(
+                    imageVector =
+                        when (mode) {
+                            PlayMode.LOOP -> Icons.Rounded.Repeat
+                            PlayMode.LIST -> Icons.Rounded.RepeatOne
+                            PlayMode.SHUFFLE -> Icons.Rounded.Shuffle
+                        },
+                    contentDescription = stringResource(R.string.play_mode),
+                    tint = LocalContentColor.current,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+        }
+        IconButton(
+            onClick = onPlaylistClick,
+            colors =
+                IconButtonDefaults.iconButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Default.PlaylistPlay,
+                contentDescription = stringResource(R.string.queue),
+                tint = LocalContentColor.current,
+                modifier = Modifier.size(26.dp),
+            )
         }
     }
 }
