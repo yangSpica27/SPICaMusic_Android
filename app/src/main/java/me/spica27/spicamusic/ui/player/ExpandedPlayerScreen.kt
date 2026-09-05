@@ -902,7 +902,7 @@ private fun PlayerPage(
                 Row(
                     modifier =
                         Modifier
-                            .clip(CircleShape)
+                            .clip(Shapes.SmallCornerBasedShape)
                             .background(MaterialTheme.colorScheme.tertiaryContainer)
                             .padding(horizontal = Spacing.Medium, vertical = 5.dp)
                             .animateContentSize(),
