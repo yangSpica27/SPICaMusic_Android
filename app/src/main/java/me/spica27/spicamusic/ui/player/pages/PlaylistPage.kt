@@ -86,14 +86,7 @@ import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.viewmodel.koinViewModel
 
 /**
- * 当前播放列表页面 - 优雅克制版本
- *
- * 设计理念:
- * 1. 微妙的渐变背景 - 更低的透明度,不喧宾夺主
- * 2. 扁平化列表设计 - 去除卡片阴影,使用细腻分隔
- * 3. 左侧指示条高亮 - 当前播放项用彩色条+微妙发光替代尺寸变化
- * 4. 统一视觉语言 - 向专辑详情页等其他页面看齐
- * 5. 精简动画效果 - 只保留必要的颜色和透明度过渡
+ * 当前播放列表页面
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -382,12 +375,20 @@ fun CurrPlaylistPage(
                 }
             } else {
                 // 列表内容
+                // 可能出现一首歌曲在列表中多次出现的情况, 为了避免 LazyColumn 的 key 冲突, 我们为每个 item 生成一个唯一的 key
                 val itemKeys =
                     remember(currentPlaylist) {
-                        val seen = HashMap<String, Int>()
-                        currentPlaylist.map { item ->
-                            val n = seen.merge(item.mediaId, 1, Int::plus)!!
-                            "${item.mediaId}#$n"
+                        val seen = mutableMapOf<String, Int>()
+                        Array(currentPlaylist.size) { index ->
+                            val item = currentPlaylist[index]
+                            val count = seen.getOrDefault(item.mediaId, 0) + 1
+                            seen[item.mediaId] = count
+
+                            if (count == 1) {
+                                item.mediaId
+                            } else {
+                                "${item.mediaId}#$count"
+                            }
                         }
                     }
 
@@ -408,7 +409,7 @@ fun CurrPlaylistPage(
                 ) {
                     itemsIndexed(
                         currentPlaylist,
-                        key = { index, song -> itemKeys.getOrElse(index) { song.mediaId } },
+                        key = { index, _ -> itemKeys[index] }, // Direct array access
                     ) { index, item ->
                         val isSelected = selectedMediaIds.contains(item.mediaId)
                         val isPlaying = currentMediaItem?.mediaId == item.mediaId
