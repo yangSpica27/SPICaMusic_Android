@@ -766,7 +766,6 @@ private fun PlayerPage(
         Box(
             modifier =
                 Modifier
-                    .height(28.dp)
                     .graphicsLayer {
                         val tagsReveal =
                             calculateFadeAlpha(progressProvider(), TAGS_REVEAL_THRESHOLD)
@@ -779,26 +778,23 @@ private fun PlayerPage(
                 Row(
                     modifier =
                         Modifier
-                            .clip(Shapes.SmallCornerBasedShape)
-                            .background(MaterialTheme.colorScheme.tertiaryContainer)
                             .padding(horizontal = Spacing.Medium, vertical = 5.dp)
                             .animateContentSize(),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     qualityTags.forEachIndexed { index, tag ->
-                        if (index > 0) {
-                            Text(
-                                text = "·",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.55f),
-                            )
-                        }
                         Text(
                             text = tag,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier =
+                                Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                        shape = Shapes.SmallCornerBasedShape,
+                                    ).padding(horizontal = Spacing.Small, vertical = 4.dp),
                         )
                     }
                 }
@@ -1107,7 +1103,7 @@ private fun TransportControls(
                 Icon(
                     imageVector = Icons.Rounded.SkipPrevious,
                     contentDescription = stringResource(R.string.previous_track),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(32.dp),
                 )
             }
@@ -1178,7 +1174,7 @@ private fun TransportControls(
                 Icon(
                     imageVector = Icons.Rounded.SkipNext,
                     contentDescription = stringResource(R.string.next_track),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(32.dp),
                 )
             }
@@ -1217,7 +1213,7 @@ private fun SecondaryActions(
                         if (isLike) {
                             MaterialTheme.colorScheme.primary
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                            MaterialTheme.colorScheme.onSurface
                         },
                 ),
         ) {
@@ -1248,7 +1244,7 @@ private fun SecondaryActions(
                         if (sleepTimer != null) {
                             MaterialTheme.colorScheme.primary
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                            MaterialTheme.colorScheme.onSurface
                         },
                 ),
         ) {
@@ -1262,8 +1258,8 @@ private fun SecondaryActions(
             onClick = onPlayModeClick,
             colors =
                 IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    contentColor = MaterialTheme.colorScheme.primary,
+                    containerColor = Color.Transparent,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
         ) {
             AnimatedContent(
@@ -1279,7 +1275,6 @@ private fun SecondaryActions(
                             PlayMode.SHUFFLE -> Icons.Rounded.Shuffle
                         },
                     contentDescription = stringResource(R.string.play_mode),
-                    tint = LocalContentColor.current,
                     modifier = Modifier.size(26.dp),
                 )
             }
@@ -1288,7 +1283,7 @@ private fun SecondaryActions(
             onClick = onPlaylistClick,
             colors =
                 IconButtonDefaults.iconButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
         ) {
             Icon(

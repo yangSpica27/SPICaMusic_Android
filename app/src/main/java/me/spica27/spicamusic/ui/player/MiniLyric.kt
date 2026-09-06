@@ -142,7 +142,7 @@ fun MiniLyric(
                 style = MaterialTheme.typography.bodyMedium,
                 color =
                     if (isPlaceholder) {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },
