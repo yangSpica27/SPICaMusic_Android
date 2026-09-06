@@ -100,8 +100,7 @@ import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinViewModel
@@ -158,18 +157,17 @@ class SettingsScene : StackScene() {
                 overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
             ) {
                 item(key = "settings_masthead") {
-                    val entrance = rememberEntrance(order = 0, play = !entrancePlayed)
                     SettingsMasthead(
                         modifier =
                             Modifier
                                 .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                                 .padding(top = Spacing.Large)
+                                .entrance(order = 0, play = !entrancePlayed)
                                 .graphicsLayer {
                                     val t = mastheadCollapse(listState)
-                                    val enter = entrance.alpha
                                     transformOrigin = TransformOrigin(0f, 0f)
-                                    alpha = (1f - t) * enter
-                                    translationY = -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
+                                    alpha = 1f - t
+                                    translationY = -t * 16.dp.toPx()
                                     scaleX = 1f - 0.18f * t
                                     scaleY = 1f - 0.18f * t
                                 },
@@ -177,7 +175,6 @@ class SettingsScene : StackScene() {
                 }
 
                 item(key = "settings_appearance") {
-                    val entrance = rememberEntrance(order = 1, play = !entrancePlayed)
                     val colorStyleOptions = rememberColorStyleOptions()
                     SettingsSectionCard(
                         title = stringResource(R.string.settings_appearance),
@@ -185,7 +182,7 @@ class SettingsScene : StackScene() {
                         modifier =
                             Modifier
                                 .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                                .entranceGraphics(entrance),
+                                .entrance(order = 1, play = !entrancePlayed),
                     ) {
                         InlineSelectRow(
                             rowKey = "color_style",
@@ -218,7 +215,6 @@ class SettingsScene : StackScene() {
                 }
 
                 item(key = "settings_now_playing") {
-                    val entrance = rememberEntrance(order = 2, play = !entrancePlayed)
                     val backgroundOptions = rememberBackgroundOptions()
                     val coverTapOptions = rememberCoverTapOptions()
                     val progressWaveformOptions = rememberProgressWaveformOptions()
@@ -228,7 +224,7 @@ class SettingsScene : StackScene() {
                         modifier =
                             Modifier
                                 .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                                .entranceGraphics(entrance),
+                                .entrance(order = 2, play = !entrancePlayed),
                     ) {
                         InlineSelectRow(
                             rowKey = "player_background",
@@ -269,14 +265,13 @@ class SettingsScene : StackScene() {
                 }
 
                 item(key = "settings_playback") {
-                    val entrance = rememberEntrance(order = 3, play = !entrancePlayed)
                     SettingsSectionCard(
                         title = stringResource(R.string.settings_playback),
                         subtitle = stringResource(R.string.settings_section_playback_subtitle),
                         modifier =
                             Modifier
                                 .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                                .entranceGraphics(entrance),
+                                .entrance(order = 3, play = !entrancePlayed),
                     ) {
                         NavigationRow(
                             title = stringResource(R.string.settings_sound_effects),
@@ -309,14 +304,13 @@ class SettingsScene : StackScene() {
                 }
 
                 item(key = "settings_about") {
-                    val entrance = rememberEntrance(order = 4, play = !entrancePlayed)
                     SettingsSectionCard(
                         title = stringResource(R.string.settings_about),
                         subtitle = null,
                         modifier =
                             Modifier
                                 .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                                .entranceGraphics(entrance),
+                                .entrance(order = 4, play = !entrancePlayed),
                     ) {
                         NavigationRow(
                             title = stringResource(R.string.settings_about),

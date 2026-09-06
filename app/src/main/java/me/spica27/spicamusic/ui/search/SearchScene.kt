@@ -92,8 +92,7 @@ import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.AnimatedCursorTextField
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.AudioQualityBadges
@@ -187,9 +186,6 @@ class SearchScene : StackScene() {
             }
         }
 
-        val headerEntrance = rememberEntrance(order = 0)
-        val contentEntrance = rememberEntrance(order = 1)
-
         Column(
             modifier =
                 Modifier
@@ -207,7 +203,7 @@ class SearchScene : StackScene() {
                 onImeSearch = { keyboardController?.hide() },
                 focusRequester = focusRequester,
                 listState = listState,
-                modifier = Modifier.entranceGraphics(headerEntrance),
+                modifier = Modifier.entrance(order = 0),
             )
             Box(
                 modifier =
@@ -215,7 +211,7 @@ class SearchScene : StackScene() {
                         .weight(1f)
                         .fillMaxWidth()
                         .imePadding()
-                        .entranceGraphics(contentEntrance),
+                        .entrance(order = 1),
             ) {
                 AnimatedContent(
                     targetState = contentState,

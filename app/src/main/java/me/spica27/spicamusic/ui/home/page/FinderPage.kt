@@ -107,8 +107,7 @@ import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.ScaleExitTo
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.clickHighlight
@@ -193,7 +192,6 @@ fun FinderPage() {
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
         ) {
             item(key = "masthead", contentType = "masthead") {
-                val entrance = rememberEntrance(order = 0, play = playEntrance)
                 FinderMasthead(
                     frequentCount = frequentSongs.size,
                     favoriteCount = favoriteSongs.size,
@@ -202,13 +200,13 @@ fun FinderPage() {
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.Large)
+                            .entrance(order = 0, play = playEntrance)
                             .graphicsLayer {
                                 // 跟手收缩：大标题缩小、上移、淡出，直接耦合滚动偏移
                                 val t = mastheadCollapse(listState)
-                                val enter = entrance.alpha
                                 transformOrigin = TransformOrigin(0f, 0f)
-                                alpha = (1f - t) * enter
-                                translationY = -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
+                                alpha = 1f - t
+                                translationY = -t * 16.dp.toPx()
                                 scaleX = 1f - 0.18f * t
                                 scaleY = 1f - 0.18f * t
                             },
@@ -216,17 +214,15 @@ fun FinderPage() {
             }
 
             item(key = "search", contentType = "search") {
-                val entrance = rememberEntrance(order = 1, play = playEntrance)
                 SearchCapsule(
                     onClick = { path.push(SearchScene()) },
-                    modifier = Modifier.entranceGraphics(entrance),
+                    modifier = Modifier.entrance(order = 1, play = playEntrance),
                 )
             }
 
             // 数据库没有本地音乐时，引导用户前往扫描页面
             if (allSongs.isEmpty()) {
                 item(key = "scan_guide", contentType = "scan_guide") {
-                    val entrance = rememberEntrance(order = 2, play = playEntrance)
                     ScanGuideCard(
                         onClick = { path.push(ScannerScene()) },
                         modifier =
@@ -235,7 +231,7 @@ fun FinderPage() {
                                     fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
                                     fadeOutSpec = ListItemFadeOutSpec,
-                                ).entranceGraphics(entrance),
+                                ).entrance(order = 2, play = playEntrance),
                     )
                 }
             }
@@ -243,7 +239,6 @@ fun FinderPage() {
             // 常听榜单：页面主角。空态与内容卡形态差异大，只做淡入淡出交换
             if (frequentSongs.isEmpty()) {
                 item(key = "frequent_empty", contentType = "empty") {
-                    val entrance = rememberEntrance(order = 3, play = playEntrance)
                     FinderEmptyRow(
                         title = stringResource(R.string.finder_no_frequent_title),
                         subtitle = stringResource(R.string.finder_no_frequent_subtitle),
@@ -253,12 +248,11 @@ fun FinderPage() {
                                     fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
                                     fadeOutSpec = ListItemFadeOutSpec,
-                                ).entranceGraphics(entrance),
+                                ).entrance(order = 3, play = playEntrance),
                     )
                 }
             } else {
                 item(key = "frequent_hero", contentType = "hero") {
-                    val entrance = rememberEntrance(order = 3, play = playEntrance)
                     FrequentHeroCard(
                         songs = frequentCardSongs,
                         onPlayAll = {
@@ -287,13 +281,12 @@ fun FinderPage() {
                                     fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
                                     fadeOutSpec = ListItemFadeOutSpec,
-                                ).entranceGraphics(entrance),
+                                ).entrance(order = 3, play = playEntrance),
                     )
                 }
             }
 
             item(key = "favorites_header", contentType = "section_header") {
-                val entrance = rememberEntrance(order = 4, play = playEntrance)
                 SectionHeader(
                     title = stringResource(R.string.my_favorites),
                     subtitle = stringResource(R.string.songs_count_format, favoriteSongs.size),
@@ -306,13 +299,12 @@ fun FinderPage() {
                                 placementSpec = ItemPlacementSpec,
                                 fadeOutSpec = ListItemFadeOutSpec,
                             ).padding(top = Spacing.Medium)
-                            .entranceGraphics(entrance),
+                            .entrance(order = 4, play = playEntrance),
                 )
             }
 
             if (favoriteSongs.isEmpty()) {
                 item(key = "favorites_empty", contentType = "empty") {
-                    val entrance = rememberEntrance(order = 5, play = playEntrance)
                     FinderEmptyRow(
                         title = stringResource(R.string.finder_no_favorites_title),
                         subtitle = stringResource(R.string.finder_no_favorites_subtitle),
@@ -322,12 +314,11 @@ fun FinderPage() {
                                     fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
                                     fadeOutSpec = ListItemFadeOutSpec,
-                                ).entranceGraphics(entrance),
+                                ).entrance(order = 5, play = playEntrance),
                     )
                 }
             } else {
                 item(key = "favorites_card", contentType = "favorites") {
-                    val entrance = rememberEntrance(order = 5, play = playEntrance)
                     FavoritesCard(
                         songs = favoritePreviewSongs,
                         onPlayAll = {
@@ -356,13 +347,12 @@ fun FinderPage() {
                                     fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
                                     fadeOutSpec = ListItemFadeOutSpec,
-                                ).entranceGraphics(entrance),
+                                ).entrance(order = 5, play = playEntrance),
                     )
                 }
             }
 
             item(key = "playlists_header", contentType = "section_header") {
-                val entrance = rememberEntrance(order = 6, play = playEntrance)
                 SectionHeader(
                     title = stringResource(R.string.finder_playlists_overview_title),
                     subtitle = stringResource(R.string.library_summary_playlists, playlists.size),
@@ -375,13 +365,12 @@ fun FinderPage() {
                                 placementSpec = ItemPlacementSpec,
                                 fadeOutSpec = ListItemFadeOutSpec,
                             ).padding(top = Spacing.Medium)
-                            .entranceGraphics(entrance),
+                            .entrance(order = 6, play = playEntrance),
                 )
             }
 
             if (playlistsWithCover.isEmpty()) {
                 item(key = "playlists_empty", contentType = "empty") {
-                    val entrance = rememberEntrance(order = 6, play = playEntrance)
                     FinderEmptyRow(
                         title = stringResource(R.string.no_playlists_yet),
                         subtitle = stringResource(R.string.finder_no_playlists_subtitle),
@@ -392,12 +381,11 @@ fun FinderPage() {
                                     fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
                                     fadeOutSpec = ListItemFadeOutSpec,
-                                ).entranceGraphics(entrance),
+                                ).entrance(order = 6, play = playEntrance),
                     )
                 }
             } else {
                 item(key = "playlists_rail", contentType = "rail") {
-                    val entrance = rememberEntrance(order = 6, play = playEntrance)
                     PlaylistRail(
                         playlists = playlistsWithCover,
                         onPlaylistClick = { item -> path.push(PlaylistDetailScene(item.playlist)) },
@@ -407,7 +395,7 @@ fun FinderPage() {
                                     fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
                                     fadeOutSpec = ListItemFadeOutSpec,
-                                ).entranceGraphics(entrance),
+                                ).entrance(order = 6, play = playEntrance),
                     )
                 }
             }

@@ -97,8 +97,7 @@ import me.spica27.spicamusic.ui.settings.ScanState
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
@@ -203,7 +202,6 @@ private fun ScannerScreenContent() {
             overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
         ) {
             item(key = "scanner_masthead") {
-                val entrance = rememberEntrance(order = 0, play = !entrancePlayed)
                 ScannerMasthead(
                     phase = phase,
                     errorMessage = statusMemory.error,
@@ -211,13 +209,13 @@ private fun ScannerScreenContent() {
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.Large)
+                            .entrance(order = 0, play = !entrancePlayed)
                             .graphicsLayer {
                                 // 跟手收缩：大标题缩小、上移、淡出，直接耦合滚动偏移
                                 val t = mastheadCollapse(listState)
-                                val enter = entrance.alpha
                                 transformOrigin = TransformOrigin(0f, 0f)
-                                alpha = (1f - t) * enter
-                                translationY = -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
+                                alpha = 1f - t
+                                translationY = -t * 16.dp.toPx()
                                 scaleX = 1f - 0.18f * t
                                 scaleY = 1f - 0.18f * t
                             },
@@ -225,7 +223,6 @@ private fun ScannerScreenContent() {
             }
 
             item(key = "scanner_status") {
-                val entrance = rememberEntrance(order = 1, play = !entrancePlayed)
                 ScannerStatusPanel(
                     phase = phase,
                     progress = statusMemory.progress,
@@ -246,12 +243,11 @@ private fun ScannerScreenContent() {
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.ExtraLarge)
-                            .entranceGraphics(entrance),
+                            .entrance(order = 1, play = !entrancePlayed),
                 )
             }
 
             item(key = "scanner_setup") {
-                val entrance = rememberEntrance(order = 2, play = !entrancePlayed)
                 ScannerSetupSection(
                     rules = scanRules,
                     extraFolderCount = extraFolders.size,
@@ -263,7 +259,7 @@ private fun ScannerScreenContent() {
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.ExtraLarge)
-                            .entranceGraphics(entrance),
+                            .entrance(order = 2, play = !entrancePlayed),
                 )
             }
         }

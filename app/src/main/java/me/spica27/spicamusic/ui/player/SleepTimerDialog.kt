@@ -103,8 +103,7 @@ import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import java.util.Locale
 import java.util.concurrent.TimeUnit
@@ -304,12 +303,11 @@ private fun SheetHeader(
     onBack: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val entrance = rememberEntrance(order = 0)
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .entranceGraphics(entrance),
+                .entrance(order = 0),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AnimatedVisibility(
@@ -356,8 +354,6 @@ private fun TimerHero(
     customMinutes: Int,
     onCustomMinutesChange: (Int) -> Unit,
 ) {
-    val entrance = rememberEntrance(order = 1)
-
     // 编辑时环表示"要设多久"，其余时候表示"还剩多少"，两者共用同一条动画
     val sweepTarget =
         if (editing) {
@@ -378,7 +374,7 @@ private fun TimerHero(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .entranceGraphics(entrance)
+                .entrance(order = 1)
                 .clip(Shapes.ExtraLarge2CornerBasedShape)
                 .background(
                     Brush.verticalGradient(
@@ -836,7 +832,6 @@ private fun CustomDurationRow(
     playEntrance: Boolean,
     onClick: () -> Unit,
 ) {
-    val entrance = rememberEntrance(order = 7, play = playEntrance)
     val active = activeMinutes != null
     val contentColor =
         if (active) {
@@ -850,7 +845,7 @@ private fun CustomDurationRow(
             Modifier
                 .padding(top = Spacing.Small)
                 .fillMaxWidth()
-                .entranceGraphics(entrance)
+                .entrance(order = 7, play = playEntrance)
                 .clip(Shapes.ExtraLargeCornerBasedShape)
                 .background(
                     if (active) {
@@ -966,7 +961,6 @@ private fun SleepTimerPreset(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val entrance = rememberEntrance(order = entranceOrder, play = playEntrance)
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val presetLabel = stringResource(R.string.settings_sleep_timer_minutes, minutes)
@@ -1012,7 +1006,7 @@ private fun SleepTimerPreset(
     Column(
         modifier =
             modifier
-                .entranceGraphics(entrance)
+                .entrance(order = entranceOrder, play = playEntrance)
                 // 用 graphicsLayer 而不是 Modifier.scale：后者在组合期读值，
                 // 弹簧跑动的每一帧都会重组这枚胶囊
                 .graphicsLayer {

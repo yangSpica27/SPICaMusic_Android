@@ -124,8 +124,7 @@ import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.ScaleExitTo
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.AnimatedCursorTextField
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.clickHighlight
@@ -403,7 +402,6 @@ fun MusicPage() {
             overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
         ) {
             item(key = "masthead", contentType = "masthead") {
-                val entrance = rememberEntrance(order = 0, play = playEntrance)
                 MusicMasthead(
                     songsCount = allSongs.size,
                     albumsCount = albums.size,
@@ -412,19 +410,18 @@ fun MusicPage() {
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.Large)
+                            .entrance(order = 0, play = playEntrance)
                             .graphicsLayer {
                                 val t = mastheadCollapse(listState)
-                                val enter = entrance.alpha
                                 transformOrigin = TransformOrigin(0f, 0f)
-                                alpha = (1f - t) * enter
-                                translationY = -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
+                                alpha = 1f - t
+                                translationY = -t * 16.dp.toPx()
                                 scaleX = 1f - 0.18f * t
                                 scaleY = 1f - 0.18f * t
                             },
                 )
             }
             item(key = "tabs", contentType = "tabs") {
-                val entrance = rememberEntrance(order = 2, play = playEntrance)
                 MusicTabStrip(
                     selectedTab = selectedTab,
                     songsCount = allSongs.size,
@@ -442,12 +439,11 @@ fun MusicPage() {
                                 ListItemFadeInSpec,
                                 placementSpec = null,
                                 fadeOutSpec = ListItemFadeOutSpec,
-                            ).entranceGraphics(entrance),
+                            ).entrance(order = 2, play = playEntrance),
                 )
             }
 
             item(key = "search", contentType = "search") {
-                val entrance = rememberEntrance(order = 3, play = playEntrance)
                 MusicSearchBar(
                     query = searchQuery,
                     hint = stringResource(selectedTab.searchHintRes),
@@ -460,7 +456,7 @@ fun MusicPage() {
                                 ListItemFadeInSpec,
                                 placementSpec = null,
                                 fadeOutSpec = ListItemFadeOutSpec,
-                            ).entranceGraphics(entrance),
+                            ).entrance(order = 3, play = playEntrance),
                 )
             }
 
@@ -520,11 +516,6 @@ fun MusicPage() {
                             key = { _, song -> song.mediaStoreId },
                             contentType = { _, _ -> "song" },
                         ) { index, song ->
-                            val entrance =
-                                rememberEntrance(
-                                    order = minOf(index + 4, 10),
-                                    play = playlistEntrance,
-                                )
                             MusicSongRow(
                                 index = index,
                                 song = song,
@@ -546,12 +537,10 @@ fun MusicPage() {
                                             ListItemFadeInSpec,
                                             placementSpec = ItemPlacementSpringSpec,
                                             fadeOutSpec = ListItemFadeOutSpec,
-                                        ).graphicsLayer {
-                                            val enter = entrance.alpha
-                                            transformOrigin = TransformOrigin(0f, 0f)
-                                            alpha = enter
-                                            translationY = entrance.translateFraction * 28.dp.toPx()
-                                        }.bottomFold(listState, song.mediaStoreId)
+                                        ).entrance(
+                                            order = minOf(index + 4, 10),
+                                            play = playlistEntrance,
+                                        ).bottomFold(listState, song.mediaStoreId)
                                         .zIndex(-index.toFloat()),
                             )
                         }
@@ -579,11 +568,6 @@ fun MusicPage() {
                             key = { index, album -> album.id },
                             contentType = { index, _ -> "album" },
                         ) { index, album ->
-                            val entrance =
-                                rememberEntrance(
-                                    order = minOf(index + 4, 10),
-                                    play = playlistEntrance,
-                                )
                             // 共享元素过渡挂在行级：同一行复用同一对实例，
                             // LazyColumn 条目离屏销毁时自动弃用（点击发生时必然在屏）
                             val albumCoverTransition =
@@ -614,12 +598,10 @@ fun MusicPage() {
                                             ListItemFadeInSpec,
                                             placementSpec = ItemPlacementSpringSpec,
                                             fadeOutSpec = ListItemFadeOutSpec,
-                                        ).graphicsLayer {
-                                            val enter = entrance.alpha
-                                            transformOrigin = TransformOrigin(0f, 0f)
-                                            alpha = enter
-                                            translationY = entrance.translateFraction * 28.dp.toPx()
-                                        }.bottomFold(listState, album.id)
+                                        ).entrance(
+                                            order = minOf(index + 4, 10),
+                                            play = playlistEntrance,
+                                        ).bottomFold(listState, album.id)
                                         .zIndex(-index.toFloat()),
                             )
                         }
@@ -647,11 +629,6 @@ fun MusicPage() {
                             key = { index, artist -> artist.name },
                             contentType = { index, _ -> "artist" },
                         ) { index, artist ->
-                            val entrance =
-                                rememberEntrance(
-                                    order = minOf(index + 4, 10),
-                                    play = playlistEntrance,
-                                )
                             MusicArtistRow(
                                 artist = artist,
                                 onClick = { path.push(ArtistDetailScene(artist)) },
@@ -662,12 +639,10 @@ fun MusicPage() {
                                             ListItemFadeInSpec,
                                             placementSpec = ItemPlacementSpringSpec,
                                             fadeOutSpec = ListItemFadeOutSpec,
-                                        ).graphicsLayer {
-                                            val enter = entrance.alpha
-                                            transformOrigin = TransformOrigin(0f, 0f)
-                                            alpha = enter
-                                            translationY = entrance.translateFraction * 28.dp.toPx()
-                                        }.bottomFold(listState, artist.name)
+                                        ).entrance(
+                                            order = minOf(index + 4, 10),
+                                            play = playlistEntrance,
+                                        ).bottomFold(listState, artist.name)
                                         .zIndex(-index.toFloat()),
                             )
                         }

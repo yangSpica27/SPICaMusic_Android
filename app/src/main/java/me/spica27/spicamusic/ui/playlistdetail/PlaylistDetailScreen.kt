@@ -155,8 +155,7 @@ import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.CoverFallback
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.clickHighlight
@@ -304,8 +303,6 @@ fun PlaylistDetailScreen(playlist: Playlist) {
         val coverStartExpanded = (maxWidth - coverExpanded) / 2
 
         val browseListState = rememberLazyListState()
-        val headerEntrance = rememberEntrance(order = 2)
-        val actionRowEntrance = rememberEntrance(order = 3)
         var listEntrancePlay by remember { mutableStateOf(true) }
         LaunchedEffect(listEntrancePlay) {
             if (listEntrancePlay) {
@@ -379,7 +376,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                         .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                         .graphicsLayer {
                             alpha = (1f - collapseProgress() * 2.5f).coerceIn(0f, 1f)
-                        }.entranceGraphics(headerEntrance),
+                        }.entrance(order = 2),
                 ) {
                     Text(
                         text = displayName,
@@ -405,7 +402,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                     playEnabled = !isPlaylistEmpty,
                     onPlayAll = viewModel::playAll,
                     onAddSongs = viewModel::showAddSongsSheet,
-                    modifier = Modifier.entranceGraphics(actionRowEntrance),
+                    modifier = Modifier.entrance(order = 3),
                 )
             }
 
@@ -457,7 +454,6 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                     },
                     contentType = { "song" },
                 ) { index ->
-                    val entrance = rememberEntrance(min(4 + index, 8), play = listEntrancePlay)
                     val song = browseSongs[index]
                     if (song == null) {
                         SongSkeletonRow(modifier = Modifier.animateItem())
@@ -491,7 +487,10 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                         fadeInSpec = ListItemFadeInSpec,
                                         placementSpec = ItemPlacementSpringSpec,
                                         fadeOutSpec = ListItemFadeOutSpec,
-                                    ).entranceGraphics(entrance),
+                                    ).entrance(
+                                        order = min(4 + index, 8),
+                                        play = listEntrancePlay,
+                                    ),
                         )
                     }
                 }
@@ -1614,13 +1613,12 @@ private fun SearchResultList(
             contentType = { "song" },
         ) { index ->
             val song = searchResults[index]
-            val entrance = rememberEntrance(min(index, 8), play = entrancePlay.value)
             if (song == null) {
                 SongSkeletonRow(
                     modifier =
                         Modifier
                             .animateItem()
-                            .entranceGraphics(entrance),
+                            .entrance(order = min(index, 8), play = entrancePlay.value),
                 )
             } else {
                 SearchResultRow(
@@ -1632,7 +1630,7 @@ private fun SearchResultList(
                     modifier =
                         Modifier
                             .animateItem()
-                            .entranceGraphics(entrance),
+                            .entrance(order = min(index, 8), play = entrancePlay.value),
                 )
             }
         }

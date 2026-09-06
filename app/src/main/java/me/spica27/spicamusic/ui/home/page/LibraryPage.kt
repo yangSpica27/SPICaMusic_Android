@@ -114,8 +114,7 @@ import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.ScaleExitTo
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
@@ -219,20 +218,18 @@ fun LibraryPage() {
             overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
         ) {
             item(key = "masthead", span = { GridItemSpan(maxLineSpan) }, contentType = "masthead") {
-                val entrance = rememberEntrance(order = 0, play = playEntrance)
                 LibraryMasthead(
                     playlistCount = playlists.size,
                     modifier =
                         Modifier
                             .padding(top = Spacing.Large)
+                            .entrance(order = 0, play = playEntrance)
                             .graphicsLayer {
                                 // 跟手收缩：大标题缩小、上移、淡出，直接耦合滚动偏移
                                 val t = mastheadCollapse(gridState)
-                                val enter = entrance.alpha
                                 transformOrigin = TransformOrigin(0f, 0f)
-                                alpha = (1f - t) * enter
-                                translationY =
-                                    -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
+                                alpha = 1f - t
+                                translationY = -t * 16.dp.toPx()
                                 scaleX = 1f - 0.18f * t
                                 scaleY = 1f - 0.18f * t
                             },
@@ -240,13 +237,12 @@ fun LibraryPage() {
             }
 
             item(key = "actions", span = { GridItemSpan(maxLineSpan) }, contentType = "actions") {
-                val entrance = rememberEntrance(order = 1, play = playEntrance)
                 Row(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .padding(top = Spacing.Small)
-                            .entranceGraphics(entrance),
+                            .entrance(order = 1, play = playEntrance),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
                 ) {
                     LibraryCommandPill(
@@ -303,7 +299,6 @@ fun LibraryPage() {
                     span = { GridItemSpan(maxLineSpan) },
                     contentType = "stats",
                 ) {
-                    val entrance = rememberEntrance(order = 2, play = playEntrance)
                     WeeklyStatsStrip(
                         stats = weeklyStats ?: return@item,
                         modifier =
@@ -312,7 +307,7 @@ fun LibraryPage() {
                                     fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
                                     fadeOutSpec = ListItemFadeOutSpec,
-                                ).entranceGraphics(entrance),
+                                ).entrance(order = 2, play = playEntrance),
                     )
                 }
             }
@@ -322,7 +317,6 @@ fun LibraryPage() {
                 span = { GridItemSpan(maxLineSpan) },
                 contentType = "section_header",
             ) {
-                val entrance = rememberEntrance(order = 3, play = playEntrance)
                 Text(
                     text = stringResource(R.string.my_playlists),
                     style = MaterialTheme.typography.titleMedium,
@@ -331,7 +325,7 @@ fun LibraryPage() {
                     modifier =
                         Modifier
                             .padding(top = Spacing.Medium)
-                            .entranceGraphics(entrance),
+                            .entrance(order = 3, play = playEntrance),
                 )
             }
 
@@ -377,12 +371,10 @@ fun LibraryPage() {
                     // 编舞只覆盖首屏前几张卡；播完后不再为滚动进场的卡片挂空操作 graphicsLayer
                     val entranceModifier =
                         if (playEntrance && index < ENTRANCE_MAX_CARD) {
-                            val entrance =
-                                rememberEntrance(
-                                    order = ENTRANCE_ORDER_CARD_BASE + index,
-                                    play = true,
-                                )
-                            cardModifier.entranceGraphics(entrance)
+                            cardModifier.entrance(
+                                order = ENTRANCE_ORDER_CARD_BASE + index,
+                                play = true,
+                            )
                         } else {
                             cardModifier
                         }

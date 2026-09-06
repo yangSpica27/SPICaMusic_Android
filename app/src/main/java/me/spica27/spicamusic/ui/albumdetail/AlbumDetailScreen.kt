@@ -82,8 +82,7 @@ import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.OtherAlbumsShelf
 import me.spica27.spicamusic.ui.widget.clickHighlight
@@ -158,8 +157,6 @@ fun AlbumDetailScreen(album: Album) {
         val coverStartExpanded = (maxWidth - coverExpanded) / 2
 
         // 首屏入场瀑布：与歌单详情页同款节奏
-        val headerEntrance = rememberEntrance(order = 1)
-        val actionRowEntrance = rememberEntrance(order = 2)
         val listEntrancePlay = remember { mutableStateOf(true) }
         LaunchedEffect(Unit) {
             delay(55)
@@ -232,7 +229,7 @@ fun AlbumDetailScreen(album: Album) {
                     totalDurationMs = songs.sumOf { it.duration },
                     onDominantColor = onDominantColor,
                     collapseProgress = collapseProgress,
-                    modifier = Modifier.entranceGraphics(headerEntrance),
+                    modifier = Modifier.entrance(order = 1),
                 )
             }
 
@@ -244,7 +241,7 @@ fun AlbumDetailScreen(album: Album) {
                         if (playingFromThisAlbum) viewModel.togglePlayPause() else viewModel.playAll()
                     },
                     onShuffle = viewModel::playAll,
-                    modifier = Modifier.entranceGraphics(actionRowEntrance),
+                    modifier = Modifier.entrance(order = 2),
                 )
             }
 
@@ -253,8 +250,6 @@ fun AlbumDetailScreen(album: Album) {
                 key = { index -> songs[index].mediaStoreId },
                 contentType = { "song" },
             ) { index ->
-                val entrance =
-                    rememberEntrance(Math.min(3 + index, 8), play = listEntrancePlay.value)
                 val song = songs[index]
                 AlbumSongRow(
                     index = index + 1,
@@ -273,7 +268,10 @@ fun AlbumDetailScreen(album: Album) {
                                         visibilityThreshold = IntOffset.VisibilityThreshold,
                                     ),
                                 fadeOutSpec = ListItemFadeOutSpec,
-                            ).entranceGraphics(entrance),
+                            ).entrance(
+                                order = Math.min(3 + index, 8),
+                                play = listEntrancePlay.value,
+                            ),
                 )
             }
             // 来自同一歌手的其他专辑

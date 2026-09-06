@@ -122,8 +122,7 @@ import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.ScaleExitTo
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.combinedClickHighlight
@@ -222,7 +221,6 @@ private fun FavoriteScreenContent() {
             overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
         ) {
             item(key = "favorites_masthead") {
-                val entrance = rememberEntrance(order = 0, play = !entrancePlayed)
                 FavoriteMasthead(
                     songCount = songCount,
                     searching = searchKeyword.isNotBlank(),
@@ -239,13 +237,13 @@ private fun FavoriteScreenContent() {
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.Large)
+                            .entrance(order = 0, play = !entrancePlayed)
                             .graphicsLayer {
                                 // 跟手收缩：大标题缩小、上移、淡出，直接耦合滚动偏移
                                 val t = mastheadCollapse(listState)
-                                val enter = entrance.alpha
                                 transformOrigin = TransformOrigin(0f, 0f)
-                                alpha = (1f - t) * enter
-                                translationY = -t * 16.dp.toPx() + entrance.translateFraction * 28.dp.toPx()
+                                alpha = 1f - t
+                                translationY = -t * 16.dp.toPx()
                                 scaleX = 1f - 0.18f * t
                                 scaleY = 1f - 0.18f * t
                             },
@@ -253,7 +251,6 @@ private fun FavoriteScreenContent() {
             }
 
             item(key = "favorites_actions") {
-                val entrance = rememberEntrance(order = 1, play = !entrancePlayed)
                 FavoriteActionRow(
                     enabled = songCount > 0,
                     onPlayAll = { viewModel.playAllSongs() },
@@ -262,12 +259,11 @@ private fun FavoriteScreenContent() {
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.Large)
-                            .entranceGraphics(entrance),
+                            .entrance(order = 1, play = !entrancePlayed),
                 )
             }
 
             item(key = "favorites_search") {
-                val entrance = rememberEntrance(order = 2, play = !entrancePlayed)
                 FavoriteSearchPill(
                     keyword = searchKeyword,
                     onKeywordChange = viewModel::updateSearchKeyword,
@@ -277,23 +273,24 @@ private fun FavoriteScreenContent() {
                             .fillMaxWidth()
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.Large)
-                            .entranceGraphics(entrance),
+                            .entrance(order = 2, play = !entrancePlayed),
                 )
             }
 
             if (songs.loadState.refresh is LoadState.Loading) {
                 item(key = "favorites_skeleton") {
-                    val entrance = rememberEntrance(order = ENTRANCE_ORDER_ROW_BASE, play = !entrancePlayed)
                     FavoriteSkeletonRows(
                         modifier =
                             Modifier
                                 .padding(top = Spacing.Large)
-                                .entranceGraphics(entrance),
+                                .entrance(
+                                    order = ENTRANCE_ORDER_ROW_BASE,
+                                    play = !entrancePlayed,
+                                ),
                     )
                 }
             } else if (songs.itemCount == 0) {
                 item(key = "favorites_empty") {
-                    val entrance = rememberEntrance(order = ENTRANCE_ORDER_ROW_BASE, play = !entrancePlayed)
                     FavoriteEmptyState(
                         title =
                             if (searchKeyword.isBlank()) {
@@ -311,7 +308,10 @@ private fun FavoriteScreenContent() {
                             Modifier
                                 .fillMaxWidth()
                                 .animateItem()
-                                .entranceGraphics(entrance),
+                                .entrance(
+                                    order = ENTRANCE_ORDER_ROW_BASE,
+                                    play = !entrancePlayed,
+                                ),
                     )
                 }
             } else {
@@ -322,11 +322,6 @@ private fun FavoriteScreenContent() {
                 ) { index ->
                     val song = songs[index]
                     if (song != null) {
-                        val entrance =
-                            rememberEntrance(
-                                order = index + ENTRANCE_ORDER_ROW_BASE,
-                                play = !entrancePlayed && index < ENTRANCE_MAX_ROW,
-                            )
                         val selected = selectedSongIds.contains(song.mediaStoreId)
                         FavoriteSongRow(
                             song = song,
@@ -351,7 +346,10 @@ private fun FavoriteScreenContent() {
                                         fadeInSpec = ListItemFadeInSpec,
                                         placementSpec = ItemPlacementSpringSpec,
                                         fadeOutSpec = ListItemFadeOutSpec,
-                                    ).entranceGraphics(entrance),
+                                    ).entrance(
+                                        order = index + ENTRANCE_ORDER_ROW_BASE,
+                                        play = !entrancePlayed && index < ENTRANCE_MAX_ROW,
+                                    ),
                         )
                     }
                 }

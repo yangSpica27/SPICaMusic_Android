@@ -76,8 +76,7 @@ import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.CoverFallback
 import me.spica27.spicamusic.ui.widget.OtherAlbumsShelf
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
@@ -235,8 +234,6 @@ fun ArtistDetailScreen(artist: Artist) {
                 key = { _, song -> song.mediaStoreId },
                 contentType = { _, _ -> "song" },
             ) { index, song ->
-                val entrance =
-                    rememberEntrance(minOf(3 + index, 8), play = listEntrancePlay.value)
                 ArtistSongRow(
                     song = song,
                     onClick = { viewModel.playSongInList(song) },
@@ -252,7 +249,10 @@ fun ArtistDetailScreen(artist: Artist) {
                                         visibilityThreshold = IntOffset.VisibilityThreshold,
                                     ),
                                 fadeOutSpec = ListItemFadeOutSpec,
-                            ).entranceGraphics(entrance),
+                            ).entrance(
+                                order = minOf(3 + index, 8),
+                                play = listEntrancePlay.value,
+                            ),
                 )
                 HorizontalDivider(
                     modifier = Modifier.padding(start = 76.dp, end = 16.dp),

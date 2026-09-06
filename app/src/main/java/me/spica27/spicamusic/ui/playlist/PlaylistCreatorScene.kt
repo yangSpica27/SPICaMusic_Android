@@ -79,8 +79,7 @@ import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.theme.entranceGraphics
-import me.spica27.spicamusic.ui.theme.rememberEntrance
+import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.AnimatedCursorTextField
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.clickHighlight
@@ -181,11 +180,6 @@ class PlaylistCreatorScene : StackScene() {
                     .background(MaterialTheme.colorScheme.background)
                     .clickHighlight {},
         ) {
-            val headerEntrance = rememberEntrance(order = 0)
-            val inputEntrance = rememberEntrance(order = 1)
-            val suggestionEntrance = rememberEntrance(order = 2)
-            val pickerEntrance = rememberEntrance(order = 3)
-
             // 顶部只有返回键：输入框就是页面标题，不再需要第二处标题
             Row(
                 modifier =
@@ -193,7 +187,7 @@ class PlaylistCreatorScene : StackScene() {
                         .fillMaxWidth()
                         .statusBarsPadding()
                         .padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall)
-                        .entranceGraphics(headerEntrance),
+                        .entrance(order = 0),
             ) {
                 IconButton(
                     onClick = {
@@ -227,7 +221,7 @@ class PlaylistCreatorScene : StackScene() {
                     Modifier
                         .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                         .offset { IntOffset(shakeOffset.value.roundToInt(), 0) }
-                        .entranceGraphics(inputEntrance),
+                        .entrance(order = 1),
             )
 
             Spacer(Modifier.height(Spacing.Medium))
@@ -242,7 +236,7 @@ class PlaylistCreatorScene : StackScene() {
                 modifier =
                     Modifier
                         .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                        .entranceGraphics(suggestionEntrance),
+                        .entrance(order = 2),
             )
 
             Spacer(Modifier.height(Spacing.Large))
@@ -263,7 +257,7 @@ class PlaylistCreatorScene : StackScene() {
                     Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .entranceGraphics(pickerEntrance),
+                        .entrance(order = 3),
             )
 
             CreatorActionBar(
