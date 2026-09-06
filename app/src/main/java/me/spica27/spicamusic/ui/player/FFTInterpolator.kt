@@ -36,6 +36,10 @@ class FFTInterpolator(
 
         // 无订阅者后延迟停止，避免页面切换瞬间反复重启
         private const val STOP_TIMEOUT_MS = 2_000L
+
+        // 过渡时长平滑系数：0.3 = 新间隔权重 30%，历史权重 70%
+        // 用于消除 50ms 轮询导致的间隔量化抖动（50/100/150ms 跳变）
+        private const val TRANSITION_SMOOTHING_ALPHA = 0.3f
     }
 
     private val bandCount = IFFTProcessor.BAND_COUNT
@@ -54,6 +58,9 @@ class FFTInterpolator(
             var transitionStart = 0L
             var transitionDuration = 100L
 
+            // 平滑过渡时长（指数移动平均），初始值 100ms
+            var smoothedTransitionDuration = 100f
+
             while (true) {
                 val now = SystemClock.elapsedRealtime()
 
@@ -63,8 +70,15 @@ class FFTInterpolator(
                     lastOutput.copyInto(fromBands)
                     target.copyInto(toBands)
                     if (lastFrame != null) {
+                        val actualInterval = now - transitionStart
+
+                        // 指数移动平均平滑过渡时长，避免 50ms 轮询量化导致的跳变
+                        smoothedTransitionDuration = smoothedTransitionDuration * (1f - TRANSITION_SMOOTHING_ALPHA) +
+                            actualInterval * TRANSITION_SMOOTHING_ALPHA
+
                         transitionDuration =
-                            (now - transitionStart)
+                            smoothedTransitionDuration
+                                .toLong()
                                 .coerceIn(MIN_TRANSITION_MS, MAX_TRANSITION_MS)
                     }
                     transitionStart = now

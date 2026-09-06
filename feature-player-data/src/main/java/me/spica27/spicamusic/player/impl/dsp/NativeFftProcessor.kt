@@ -1,11 +1,13 @@
 package me.spica27.spicamusic.player.impl.dsp
 
+import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.flow.StateFlow
 import me.spica27.spicamusic.dsp.NativeDspEngine
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import java.nio.ByteBuffer
 
 /** IFFTProcessor facade backed by the native engine's asynchronous analyzer. */
+@UnstableApi
 class NativeFftProcessor(
     private val engine: NativeDspEngine,
 ) : IFFTProcessor {

@@ -55,7 +55,10 @@ public:
 private:
     void workerLoop();
     void publishBands(const float* values, int generation);
-    void mapToBands(const float* magnitudes, float* result) const;
+    void mapToBands(const float* magnitudes, float* result);
+
+    // 时域平滑参数：0.2 = 新帧权重 20%，历史帧权重 80%
+    static constexpr float kSmoothingAlpha = 0.2f;
 
     static constexpr std::size_t kRingSize = 1u << 15;
     static constexpr std::size_t kRingMask = kRingSize - 1;
@@ -71,6 +74,7 @@ private:
 
     std::array<float, kRingSize> ring_{};
     std::array<std::array<float, kBandCount>, 2> bandBuffers_{};
+    std::array<float, kBandCount> smoothedBands_{};  // 平滑滤波状态
     mutable std::mutex bandsMutex_;
     alignas(16) std::array<float, kFftSize> fftInput_{};
     alignas(16) std::array<float, kFftSize> fftOutput_{};

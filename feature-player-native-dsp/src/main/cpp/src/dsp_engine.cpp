@@ -232,7 +232,7 @@ void FftAnalyzer::publishBands(const float* values, int generation) {
     bandsSequence_.fetch_add(1, std::memory_order_release);
 }
 
-void FftAnalyzer::mapToBands(const float* magnitudes, float* result) const {
+void FftAnalyzer::mapToBands(const float* magnitudes, float* result) {
     static constexpr std::array<float, kBandCount> frequencies = {
         20.0f, 25.0f, 32.0f, 40.0f, 50.0f, 63.0f, 80.0f, 100.0f,
         125.0f, 160.0f, 200.0f, 250.0f, 315.0f, 400.0f, 500.0f,
@@ -255,7 +255,8 @@ void FftAnalyzer::mapToBands(const float* magnitudes, float* result) const {
             result[band] = 0.0f;
             continue;
         }
-        const int lowBin = std::max(1, static_cast<int>(low / frequencyResolution));
+        // 包含 bin 0（恢复完整的低频能量）
+        const int lowBin = std::max(0, static_cast<int>(low / frequencyResolution));
         const int highBin = std::max(lowBin, std::min(
             kFftSize / 2 - 1,
             static_cast<int>(std::min(high, nyquist) / frequencyResolution)));
