@@ -103,6 +103,14 @@ import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.androidx.compose.koinViewModel
 
+// 复用的动画对象
+private val ItemPlacementSpringSpec =
+    spring<IntOffset>(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+        visibilityThreshold = IntOffset.VisibilityThreshold,
+    )
+
 /** 首屏入场节拍（与刊头页共用的节奏） */
 
 /**
@@ -464,12 +472,7 @@ private fun SearchResultList(
                         modifier =
                             Modifier.animateItem(
                                 fadeInSpec = ListItemFadeInSpec,
-                                placementSpec =
-                                    spring(
-                                        dampingRatio = Spring.DampingRatioLowBouncy,
-                                        stiffness = Spring.StiffnessMediumLow,
-                                        visibilityThreshold = IntOffset.VisibilityThreshold,
-                                    ),
+                                placementSpec = ItemPlacementSpringSpec,
                                 fadeOutSpec = ListItemFadeOutSpec,
                             ),
                     )

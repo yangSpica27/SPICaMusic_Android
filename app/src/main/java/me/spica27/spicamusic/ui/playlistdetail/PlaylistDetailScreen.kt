@@ -182,6 +182,14 @@ private val COLLAPSED_TITLE_START = COVER_COLLAPSED_START + COVER_COLLAPSED + Sp
 private val BOTTOM_PLAYER_RESERVED = 200.dp // 悬浮迷你播放器底部预留（全项目惯例值）
 private val MULTI_SELECT_BAR_RESERVED = 72.dp // 多选底栏出现时的额外避让
 
+// 复用的动画对象
+private val ItemPlacementSpringSpec =
+    spring<IntOffset>(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+        visibilityThreshold = IntOffset.VisibilityThreshold,
+    )
+
 /** 固定顶栏的三种形态：浏览 / 搜索 / 排序 */
 private enum class TopBarState { Browse, Search, Sort }
 
@@ -481,12 +489,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                 Modifier
                                     .animateItem(
                                         fadeInSpec = ListItemFadeInSpec,
-                                        placementSpec =
-                                            spring(
-                                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                                stiffness = Spring.StiffnessMediumLow,
-                                                visibilityThreshold = IntOffset.VisibilityThreshold,
-                                            ),
+                                        placementSpec = ItemPlacementSpringSpec,
                                         fadeOutSpec = ListItemFadeOutSpec,
                                     ).entranceGraphics(entrance),
                         )

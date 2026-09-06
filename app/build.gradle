@@ -104,6 +104,17 @@ kotlin {
   }
 }
 
+composeCompiler {
+  // Generate Compose Compiler stability reports for Phase 2 diagnosis
+  reportsDestination = layout.buildDirectory.dir("compose_metrics")
+
+  // Enable Strong Skipping mode (default in Kotlin 2.0.20+, but explicit is better)
+  enableStrongSkippingMode = true
+
+  // Treat all interfaces as stable (uncomment after adding stabilityConfigurationFile if needed)
+  // stabilityConfigurationFile = rootProject.file("compose_compiler_config.conf")
+}
+
 //build.gradle
 ktlint {
   android = true // Enable Android-specific linting rules

@@ -136,6 +136,14 @@ import java.util.concurrent.TimeUnit
 
 private val MastheadCollapseDistance = 140.dp
 
+// 复用的item动画对象
+private val ItemPlacementSpringSpec =
+    spring<IntOffset>(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+        visibilityThreshold = IntOffset.VisibilityThreshold,
+    )
+
 @Immutable
 private enum class MusicBrowserTab(
     val titleRes: Int,
@@ -536,12 +544,7 @@ fun MusicPage() {
                                         .animateItem(
                                             fadeInSpec =
                                             ListItemFadeInSpec,
-                                            placementSpec =
-                                                spring(
-                                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                                    stiffness = Spring.StiffnessMediumLow,
-                                                    visibilityThreshold = IntOffset.VisibilityThreshold,
-                                                ),
+                                            placementSpec = ItemPlacementSpringSpec,
                                             fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
                                             val enter = entrance.alpha
@@ -609,12 +612,7 @@ fun MusicPage() {
                                         .animateItem(
                                             fadeInSpec =
                                             ListItemFadeInSpec,
-                                            placementSpec =
-                                                spring(
-                                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                                    stiffness = Spring.StiffnessMediumLow,
-                                                    visibilityThreshold = IntOffset.VisibilityThreshold,
-                                                ),
+                                            placementSpec = ItemPlacementSpringSpec,
                                             fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
                                             val enter = entrance.alpha
@@ -662,12 +660,7 @@ fun MusicPage() {
                                         .animateItem(
                                             fadeInSpec =
                                             ListItemFadeInSpec,
-                                            placementSpec =
-                                                spring(
-                                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                                    stiffness = Spring.StiffnessMediumLow,
-                                                    visibilityThreshold = IntOffset.VisibilityThreshold,
-                                                ),
+                                            placementSpec = ItemPlacementSpringSpec,
                                             fadeOutSpec = ListItemFadeOutSpec,
                                         ).graphicsLayer {
                                             val enter = entrance.alpha

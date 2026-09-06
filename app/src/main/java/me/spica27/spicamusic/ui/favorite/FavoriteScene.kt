@@ -155,6 +155,14 @@ private const val ENTRANCE_ORDER_ROW_BASE = 3
 /** 大标题完全收进顶栏所需的滚动距离 */
 private val MastheadCollapseDistance = 140.dp
 
+// 复用的 Animation specs
+private val ItemPlacementSpringSpec =
+    spring<IntOffset>(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+        visibilityThreshold = IntOffset.VisibilityThreshold,
+    )
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FavoriteScreenContent() {
@@ -341,12 +349,7 @@ private fun FavoriteScreenContent() {
                                 Modifier
                                     .animateItem(
                                         fadeInSpec = ListItemFadeInSpec,
-                                        placementSpec =
-                                            spring(
-                                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                                stiffness = Spring.StiffnessMediumLow,
-                                                visibilityThreshold = IntOffset.VisibilityThreshold,
-                                            ),
+                                        placementSpec = ItemPlacementSpringSpec,
                                         fadeOutSpec = ListItemFadeOutSpec,
                                     ).entranceGraphics(entrance),
                         )
