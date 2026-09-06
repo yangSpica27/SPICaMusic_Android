@@ -117,6 +117,7 @@ import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
 import me.spica27.spicamusic.ui.player.scene.LyricScene
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
+import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
@@ -126,6 +127,7 @@ import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioDynamicWaveSlider
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
 import me.spica27.spicamusic.ui.widget.clickHighlight
+import me.spica27.spicamusic.ui.widget.holographicCoverTilt
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
@@ -551,6 +553,7 @@ private fun PlayerPage(
     val songUseCases = koinInject<SongUseCases>()
 
     val path = LocalNavigationPath.current
+    val coverEffectsEnabled = animationsEnabled && isAppInForeground && !LocalReducedMotion.current
 
     val coverTransition =
         remember {
@@ -609,7 +612,11 @@ private fun PlayerPage(
                             translationY = (1f - heroReveal) * 48f
                             scaleX = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
                             scaleY = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
-                        }.geometrySource(coverTransition)
+                        }.holographicCoverTilt(
+                            enabled = coverEffectsEnabled,
+                            highlightColor = Color.White,
+                            spectralColor = MaterialTheme.colorScheme.tertiary,
+                        ).geometrySource(coverTransition)
                         .clip(Shapes.LargeCornerBasedShape),
             ) {
                 AnimatedContent(
@@ -1200,18 +1207,19 @@ private fun SecondaryActions(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(
+            shape = Shapes.SmallCornerBasedShape,
             onClick = onFavoriteClick,
             colors =
                 IconButtonDefaults.iconButtonColors(
                     containerColor =
                         if (isLike) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
                         } else {
-                            Color.Transparent
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                         },
                     contentColor =
                         if (isLike) {
-                            MaterialTheme.colorScheme.primary
+                            Color(0xffcf1322)
                         } else {
                             MaterialTheme.colorScheme.onSurface
                         },
@@ -1231,14 +1239,15 @@ private fun SecondaryActions(
             }
         }
         IconButton(
+            shape = Shapes.SmallCornerBasedShape,
             onClick = onSleepTimerClick,
             colors =
                 IconButtonDefaults.iconButtonColors(
                     containerColor =
                         if (sleepTimer != null) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
                         } else {
-                            Color.Transparent
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                         },
                     contentColor =
                         if (sleepTimer != null) {
@@ -1255,10 +1264,11 @@ private fun SecondaryActions(
             )
         }
         IconButton(
+            shape = Shapes.SmallCornerBasedShape,
             onClick = onPlayModeClick,
             colors =
                 IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.Transparent,
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                     contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
         ) {
@@ -1280,10 +1290,12 @@ private fun SecondaryActions(
             }
         }
         IconButton(
+            shape = Shapes.SmallCornerBasedShape,
             onClick = onPlaylistClick,
             colors =
                 IconButtonDefaults.iconButtonColors(
                     contentColor = MaterialTheme.colorScheme.onSurface,
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                 ),
         ) {
             Icon(
