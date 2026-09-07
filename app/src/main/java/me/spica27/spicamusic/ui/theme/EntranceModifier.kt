@@ -1,8 +1,7 @@
 package me.spica27.spicamusic.ui.theme
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
@@ -19,11 +18,10 @@ import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** 相邻元素的入场间隔。 */
-const val ENTRANCE_STAGGER_MILLIS = 55L
+const val ENTRANCE_STAGGER_MILLIS = 35L
 
 /** 首屏入场动画的最长等待时间。 */
 const val ENTRANCE_GATE_MILLIS = 1000L
@@ -31,9 +29,17 @@ const val ENTRANCE_GATE_MILLIS = 1000L
 /** 入场上浮距离。 */
 private const val ENTRANCE_TRANSLATION_DP = 28f
 
-/** 入场弹簧参数。 */
-private const val ENTRANCE_DAMPING = Spring.DampingRatioLowBouncy
-private const val ENTRANCE_STIFFNESS = 380f
+/** 入场动画参数。 */
+private val ENTER_ANIM_EASING = CubicBezierEasing(0.4f, 0.1f, 0f, 1f)
+
+/** 最短时长。 */
+private const val ENTER_ANIM_DURATION_MIN = 250
+
+/** 最长时长。 */
+private const val ENTER_ANIM_DURATION_MAX = 550
+
+/** 每向下一个的加的时长 */
+private const val ENTER_ANIM_DURATION_ITEM = 45
 
 /** 降级动效下的淡入时长。 */
 private const val ENTRANCE_REDUCED_FADE_MILLIS = 120
@@ -157,17 +163,21 @@ private class EntranceModifierNode(
                             animationSpec =
                                 tween(
                                     durationMillis = ENTRANCE_REDUCED_FADE_MILLIS,
-                                    easing = EaseOutEmphasized,
+                                    easing = ENTER_ANIM_EASING,
                                 ),
                         )
                     } else {
-                        delay(order.coerceAtLeast(0).toLong() * ENTRANCE_STAGGER_MILLIS)
                         progress.animateTo(
                             targetValue = 1f,
                             animationSpec =
-                                spring(
-                                    dampingRatio = ENTRANCE_DAMPING,
-                                    stiffness = ENTRANCE_STIFFNESS,
+                                tween<Float>(
+                                    delayMillis = (order.coerceAtLeast(0) * ENTRANCE_STAGGER_MILLIS).toInt(),
+                                    durationMillis = (
+                                        ENTER_ANIM_DURATION_MIN +
+                                            (order * ENTER_ANIM_DURATION_ITEM)
+                                                .coerceAtMost(ENTER_ANIM_DURATION_MAX)
+                                    ),
+                                    easing = ENTER_ANIM_EASING,
                                 ),
                         )
                     }
