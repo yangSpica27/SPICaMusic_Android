@@ -1211,12 +1211,7 @@ private fun SecondaryActions(
             onClick = onFavoriteClick,
             colors =
                 IconButtonDefaults.iconButtonColors(
-                    containerColor =
-                        if (isLike) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
-                        } else {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                        },
+                    containerColor = Color.Transparent,
                     contentColor =
                         if (isLike) {
                             Color(0xffcf1322)
@@ -1243,12 +1238,7 @@ private fun SecondaryActions(
             onClick = onSleepTimerClick,
             colors =
                 IconButtonDefaults.iconButtonColors(
-                    containerColor =
-                        if (sleepTimer != null) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
-                        } else {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                        },
+                    containerColor = Color.Transparent,
                     contentColor =
                         if (sleepTimer != null) {
                             MaterialTheme.colorScheme.primary
@@ -1268,7 +1258,7 @@ private fun SecondaryActions(
             onClick = onPlayModeClick,
             colors =
                 IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
         ) {
@@ -1295,7 +1285,7 @@ private fun SecondaryActions(
             colors =
                 IconButtonDefaults.iconButtonColors(
                     contentColor = MaterialTheme.colorScheme.onSurface,
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    containerColor = Color.Transparent,
                 ),
         ) {
             Icon(
