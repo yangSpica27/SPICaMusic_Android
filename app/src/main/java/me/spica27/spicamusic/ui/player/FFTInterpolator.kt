@@ -37,9 +37,9 @@ class FFTInterpolator(
         // 无订阅者后延迟停止，避免页面切换瞬间反复重启
         private const val STOP_TIMEOUT_MS = 2_000L
 
-        // 过渡时长平滑系数：0.3 = 新间隔权重 30%，历史权重 70%
+        // 过渡时长平滑系数：0.8 = 新间隔权重 80%，历史权重 20%
         // 用于消除 50ms 轮询导致的间隔量化抖动（50/100/150ms 跳变）
-        private const val TRANSITION_SMOOTHING_ALPHA = 0.3f
+        private const val TRANSITION_SMOOTHING_ALPHA = 0.8f
     }
 
     private val bandCount = IFFTProcessor.BAND_COUNT

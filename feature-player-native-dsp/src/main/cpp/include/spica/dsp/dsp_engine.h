@@ -57,8 +57,8 @@ private:
     void publishBands(const float* values, int generation);
     void mapToBands(const float* magnitudes, float* result);
 
-    // 时域平滑参数：0.2 = 新帧权重 20%，历史帧权重 80%
-    static constexpr float kSmoothingAlpha = 0.2f;
+    // 时域平滑参数：0.2 = 新帧权重 80%，历史帧权重 20%
+    static constexpr float kSmoothingAlpha = 0.8f;
 
     static constexpr std::size_t kRingSize = 1u << 15;
     static constexpr std::size_t kRingMask = kRingSize - 1;
