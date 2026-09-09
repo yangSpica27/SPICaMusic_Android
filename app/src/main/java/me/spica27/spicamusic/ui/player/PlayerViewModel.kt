@@ -261,6 +261,14 @@ class PlayerViewModel(
     }
 
     /**
+     * 按索引批量移除播放列表项
+     */
+    fun removeFromPlaylist(indices: List<Int>) {
+        if (indices.isEmpty()) return
+        player.doAction(PlayerAction.RemoveAtIndices(indices))
+    }
+
+    /**
      * 从播放列表移除歌曲
      */
     fun removeSongFromPlaylist(song: Song) {

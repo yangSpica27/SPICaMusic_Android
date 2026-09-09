@@ -34,6 +34,7 @@ import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.player.api.SleepTimerState
+import me.spica27.spicamusic.player.api.normalizedRemovalIndices
 import me.spica27.spicamusic.player.impl.dsp.NativeFftProcessor
 import me.spica27.spicamusic.player.impl.utils.MediaLibrary
 import me.spica27.spicamusic.player.impl.utils.PlayerKVUtils
@@ -241,6 +242,11 @@ class SpicaPlayer(
                         if (index != -1) {
                             browser.removeMediaItem(index)
                         }
+                    }
+
+                    is PlayerAction.RemoveAtIndices -> {
+                        normalizedRemovalIndices(action.indices, browser.mediaItemCount)
+                            .forEach(browser::removeMediaItem)
                     }
 
                     PlayerAction.PlayOrPause -> {

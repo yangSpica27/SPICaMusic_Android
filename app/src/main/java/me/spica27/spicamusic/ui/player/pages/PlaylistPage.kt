@@ -50,6 +50,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -72,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import com.skydoves.landscapist.image.LandscapistImage
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
@@ -80,8 +83,10 @@ import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.player.formatTime
 import me.spica27.spicamusic.ui.playlistdetail.RenameDialog
+import me.spica27.spicamusic.ui.widget.ParticleDissolveDefaults
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.combinedClickHighlight
+import me.spica27.spicamusic.ui.widget.particleDissolve
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -97,14 +102,25 @@ fun CurrPlaylistPage(
     val panelViewModel: CurrentPlaylistPanelViewModel = koinViewModel()
     val currentPlaylist by viewModel.currentPlaylist.collectAsStateWithLifecycle()
     val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
+    val itemKeys = remember(currentPlaylist) { createPlaylistItemKeys(currentPlaylist) }
 
     var isMultiSelectMode by remember { mutableStateOf(false) }
-    val selectedMediaIds = remember { mutableStateListOf<String>() }
+    val selectedItemKeys = remember { mutableStateListOf<String>() }
     var showCreateDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showClearConfirmDialog by remember { mutableStateOf(false) }
 
-    val selectedCount by remember { derivedStateOf { selectedMediaIds.size } }
+    val pendingDeletionState = remember { mutableStateOf<PendingPlaylistDeletion?>(null) }
+    val removalDispatchedState = remember { mutableStateOf(false) }
+    val pendingDeletion = pendingDeletionState.value
+    val removalDispatched = removalDispatchedState.value
+    val dissolvingItemKeys = remember { mutableStateListOf<String>() }
+    val completedDissolveItemKeys = remember { mutableStateListOf<String>() }
+    val isDeletionPending = pendingDeletion != null
+
+    val selectedCount by remember { derivedStateOf { selectedItemKeys.size } }
+    val scrollState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
     // 追踪当前播放的索引
     val currentPlayingIndex =
@@ -139,21 +155,66 @@ fun CurrPlaylistPage(
         label = "breatheAlpha",
     )
 
-    BackHandler(enabled = isMultiSelectMode) {
+    BackHandler(enabled = isMultiSelectMode && !isDeletionPending) {
         isMultiSelectMode = false
-        selectedMediaIds.clear()
+        selectedItemKeys.clear()
     }
 
-    LaunchedEffect(currentPlaylist) {
-        val validIds = currentPlaylist.map { it.mediaId }.toSet()
-        selectedMediaIds.removeAll { it !in validIds }
-        if (selectedMediaIds.isEmpty()) {
+    LaunchedEffect(itemKeys) {
+        if (pendingDeletionState.value != null) return@LaunchedEffect
+
+        val validKeys = itemKeys.toSet()
+        selectedItemKeys.removeAll { it !in validKeys }
+        if (selectedItemKeys.isEmpty()) {
             isMultiSelectMode = false
         }
     }
 
-    val scrollState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
+    LaunchedEffect(pendingDeletion) {
+        val deletion = pendingDeletion ?: return@LaunchedEffect
+        if (deletion.animatedItemKeys.isEmpty()) {
+            viewModel.removeFromPlaylist(deletion.indices)
+            removalDispatchedState.value = true
+            return@LaunchedEffect
+        }
+
+        deletion.animatedItemKeys.forEachIndexed { index, itemKey ->
+            if (index > 0) {
+                delay(ParticleDissolveDefaults.WAVE_DELAY_MILLIS)
+            }
+            dissolvingItemKeys.add(itemKey)
+        }
+    }
+
+    LaunchedEffect(pendingDeletion, completedDissolveItemKeys.size, removalDispatched) {
+        val deletion = pendingDeletion ?: return@LaunchedEffect
+        if (
+            deletion.animatedItemKeys.isNotEmpty() &&
+            !removalDispatched &&
+            deletion.animatedItemKeys.all(completedDissolveItemKeys::contains)
+        ) {
+            viewModel.removeFromPlaylist(deletion.indices)
+            removalDispatchedState.value = true
+        }
+    }
+
+    LaunchedEffect(currentPlaylist.size, pendingDeletion, removalDispatched) {
+        val deletion = pendingDeletion ?: return@LaunchedEffect
+        if (removalDispatched && currentPlaylist.size <= deletion.expectedPlaylistSize) {
+            pendingDeletionState.value = null
+            removalDispatchedState.value = false
+            dissolvingItemKeys.clear()
+            completedDissolveItemKeys.clear()
+        }
+    }
+
+    DisposableEffect(viewModel) {
+        onDispose {
+            pendingDeletionState.value?.takeIf { !removalDispatchedState.value }?.let { deletion ->
+                viewModel.removeFromPlaylist(deletion.indices)
+            }
+        }
+    }
 
     Box(
         modifier = modifier.fillMaxSize(),
@@ -252,7 +313,7 @@ fun CurrPlaylistPage(
                             TextButton(
                                 onClick = {
                                     isMultiSelectMode = false
-                                    selectedMediaIds.clear()
+                                    selectedItemKeys.clear()
                                 },
                                 colors =
                                     ButtonDefaults.textButtonColors(
@@ -277,6 +338,7 @@ fun CurrPlaylistPage(
                                             }
                                         }
                                     },
+                                    enabled = !isDeletionPending,
                                     shape = RoundedCornerShape(12.dp),
                                     color = MaterialTheme.colorScheme.primaryContainer,
                                 ) {
@@ -294,6 +356,7 @@ fun CurrPlaylistPage(
                                 // 多选模式
                                 Surface(
                                     onClick = { isMultiSelectMode = true },
+                                    enabled = !isDeletionPending,
                                     shape = RoundedCornerShape(12.dp),
                                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                                 ) {
@@ -311,6 +374,7 @@ fun CurrPlaylistPage(
                                 // 清空列表
                                 Surface(
                                     onClick = { showClearConfirmDialog = true },
+                                    enabled = !isDeletionPending,
                                     shape = RoundedCornerShape(12.dp),
                                     color = MaterialTheme.colorScheme.errorContainer,
                                 ) {
@@ -375,25 +439,9 @@ fun CurrPlaylistPage(
                 }
             } else {
                 // 列表内容
-                // 可能出现一首歌曲在列表中多次出现的情况, 为了避免 LazyColumn 的 key 冲突, 我们为每个 item 生成一个唯一的 key
-                val itemKeys =
-                    remember(currentPlaylist) {
-                        val seen = mutableMapOf<String, Int>()
-                        Array(currentPlaylist.size) { index ->
-                            val item = currentPlaylist[index]
-                            val count = seen.getOrDefault(item.mediaId, 0) + 1
-                            seen[item.mediaId] = count
-
-                            if (count == 1) {
-                                item.mediaId
-                            } else {
-                                "${item.mediaId}#$count"
-                            }
-                        }
-                    }
-
                 LazyColumn(
                     state = scrollState,
+                    userScrollEnabled = !isDeletionPending,
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -409,10 +457,12 @@ fun CurrPlaylistPage(
                 ) {
                     itemsIndexed(
                         currentPlaylist,
-                        key = { index, _ -> itemKeys[index] }, // Direct array access
+                        key = { index, _ -> itemKeys[index] },
                     ) { index, item ->
-                        val isSelected = selectedMediaIds.contains(item.mediaId)
+                        val itemKey = itemKeys[index]
+                        val isSelected = selectedItemKeys.contains(itemKey)
                         val isPlaying = currentMediaItem?.mediaId == item.mediaId
+                        val isDissolving = dissolvingItemKeys.contains(itemKey)
 
                         EnhancedPlaylistItemRow(
                             index = index,
@@ -421,14 +471,16 @@ fun CurrPlaylistPage(
                             isPlaying = isPlaying,
                             isMultiSelectMode = isMultiSelectMode,
                             isSelected = isSelected,
+                            isDissolving = isDissolving,
+                            enabled = !isDeletionPending,
                             breatheAlpha = if (isPlaying) breatheAlpha else 1f,
                             accentColor = animatedDominantColor.value,
                             onClick = {
                                 if (isMultiSelectMode) {
                                     if (isSelected) {
-                                        selectedMediaIds.remove(item.mediaId)
+                                        selectedItemKeys.remove(itemKey)
                                     } else {
-                                        selectedMediaIds.add(item.mediaId)
+                                        selectedItemKeys.add(itemKey)
                                     }
                                 } else {
                                     viewModel.playByMediaStoreId(item.mediaId)
@@ -438,10 +490,15 @@ fun CurrPlaylistPage(
                                 if (!isMultiSelectMode) {
                                     isMultiSelectMode = true
                                 }
-                                if (selectedMediaIds.contains(item.mediaId)) {
-                                    selectedMediaIds.remove(item.mediaId)
+                                if (selectedItemKeys.contains(itemKey)) {
+                                    selectedItemKeys.remove(itemKey)
                                 } else {
-                                    selectedMediaIds.add(item.mediaId)
+                                    selectedItemKeys.add(itemKey)
+                                }
+                            },
+                            onDissolveComplete = {
+                                if (!completedDissolveItemKeys.contains(itemKey)) {
+                                    completedDissolveItemKeys.add(itemKey)
                                 }
                             },
                         )
@@ -529,10 +586,15 @@ fun CurrPlaylistPage(
                 if (it.isNotBlank()) {
                     panelViewModel.createPlaylistWithMediaIds(
                         name = it,
-                        mediaIds = selectedMediaIds.toList(),
+                        mediaIds =
+                            itemKeys.mapIndexedNotNull { index, itemKey ->
+                                currentPlaylist[index].mediaId.takeIf {
+                                    selectedItemKeys.contains(itemKey)
+                                }
+                            },
                     ) { success ->
                         if (success) {
-                            selectedMediaIds.clear()
+                            selectedItemKeys.clear()
                             isMultiSelectMode = false
                             showCreateDialog = false
                         }
@@ -548,11 +610,26 @@ fun CurrPlaylistPage(
             message = stringResource(R.string.delete_selected_message, selectedCount),
             confirmText = stringResource(R.string.delete),
             onConfirm = {
-                val toRemove = selectedMediaIds.toList()
-                toRemove.forEach { mediaId ->
-                    viewModel.removeFromPlaylist(mediaId)
+                val selectedKeySet = selectedItemKeys.toSet()
+                val indices = selectedPlaylistIndices(itemKeys, selectedKeySet)
+                val animatedItemKeys =
+                    scrollState.layoutInfo.visibleItemsInfo.mapNotNull { itemInfo ->
+                        itemKeys.getOrNull(itemInfo.index)?.takeIf { it in selectedKeySet }
+                    }
+
+                if (indices.isNotEmpty()) {
+                    dissolvingItemKeys.clear()
+                    completedDissolveItemKeys.clear()
+                    removalDispatchedState.value = false
+                    pendingDeletionState.value =
+                        PendingPlaylistDeletion(
+                            indices = indices,
+                            animatedItemKeys = animatedItemKeys,
+                            expectedPlaylistSize = currentPlaylist.size - indices.size,
+                        )
                 }
-                selectedMediaIds.clear()
+
+                selectedItemKeys.clear()
                 isMultiSelectMode = false
                 showDeleteConfirmDialog = false
             },
@@ -574,6 +651,27 @@ fun CurrPlaylistPage(
         )
     }
 }
+
+@Immutable
+private data class PendingPlaylistDeletion(
+    val indices: List<Int>,
+    val animatedItemKeys: List<String>,
+    val expectedPlaylistSize: Int,
+)
+
+internal fun createPlaylistItemKeys(items: List<MediaItem>): List<String> {
+    val occurrences = mutableMapOf<String, Int>()
+    return items.map { item ->
+        val occurrence = occurrences.getOrDefault(item.mediaId, 0) + 1
+        occurrences[item.mediaId] = occurrence
+        "${item.mediaId}#$occurrence"
+    }
+}
+
+internal fun selectedPlaylistIndices(
+    itemKeys: List<String>,
+    selectedItemKeys: Set<String>,
+): List<Int> = itemKeys.indices.filter { itemKeys[it] in selectedItemKeys }
 
 // === 确认对话框 ===
 @Composable
@@ -627,10 +725,13 @@ private fun EnhancedPlaylistItemRow(
     isPlaying: Boolean,
     isMultiSelectMode: Boolean,
     isSelected: Boolean,
+    isDissolving: Boolean = false,
+    enabled: Boolean = true,
     breatheAlpha: Float,
     accentColor: Color,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    onDissolveComplete: () -> Unit = {},
     modifier: Modifier,
 ) {
     val metadata = item.invoke().mediaMetadata
@@ -674,8 +775,12 @@ private fun EnhancedPlaylistItemRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .background(animatedBackgroundColor.value, RoundedCornerShape(12.dp))
+                .particleDissolve(
+                    isDissolving = isDissolving,
+                    onComplete = onDissolveComplete,
+                ).background(animatedBackgroundColor.value, RoundedCornerShape(12.dp))
                 .combinedClickHighlight(
+                    enabled = enabled,
                     onClick = onClick,
                     onLongClick = onLongClick,
                 ).padding(vertical = 10.dp, horizontal = 16.dp),

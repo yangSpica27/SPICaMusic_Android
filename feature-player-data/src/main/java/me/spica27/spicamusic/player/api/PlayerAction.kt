@@ -60,6 +60,13 @@ sealed class PlayerAction {
     data class RemoveWithMediaId(val mediaId: String) : PlayerAction()
 
     /**
+     * 按索引批量移除播放列表项
+     */
+    data class RemoveAtIndices(
+        val indices: List<Int>,
+    ) : PlayerAction()
+
+    /**
      * 添加到队列末尾
      */
     data class AddToQueue(
@@ -81,3 +88,14 @@ sealed class PlayerAction {
      */
     data object ReloadAndPlay : PlayerAction()
 }
+
+internal fun normalizedRemovalIndices(
+    indices: List<Int>,
+    itemCount: Int,
+): List<Int> =
+    indices
+        .asSequence()
+        .distinct()
+        .filter { it in 0 until itemCount }
+        .sortedDescending()
+        .toList()
