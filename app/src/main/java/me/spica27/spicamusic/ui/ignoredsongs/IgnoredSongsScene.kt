@@ -630,22 +630,6 @@ private fun IgnoredSongRow(
                 Modifier
                     .size(48.dp)
                     .clip(Shapes.MediumCornerBasedShape),
-            placeHolder = {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.MusicNote,
-                        contentDescription = stringResource(R.string.cover_placeholder),
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            },
         )
         Column(modifier = Modifier.weight(1f).padding(horizontal = Spacing.Medium)) {
             Text(

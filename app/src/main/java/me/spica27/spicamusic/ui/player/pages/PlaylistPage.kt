@@ -39,7 +39,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.LocationSearching
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -83,6 +82,7 @@ import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.player.formatTime
 import me.spica27.spicamusic.ui.playlistdetail.RenameDialog
+import me.spica27.spicamusic.ui.widget.DefaultMusicCover
 import me.spica27.spicamusic.ui.widget.ParticleDissolveDefaults
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.combinedClickHighlight
@@ -825,19 +825,7 @@ private fun EnhancedPlaylistItemRow(
                     )
                 }
             },
-            failure = {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MusicNote,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-            },
+            failure = { DefaultMusicCover() },
         )
 
         Spacer(modifier = Modifier.width(14.dp))

@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -37,7 +36,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -99,7 +97,7 @@ class LyricScene(
         val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
         val artworkUri = currentMediaItem?.mediaMetadata?.artworkUri ?: heroArtworkUri
         when (key) {
-            coverTransition?.key -> FlyingCover(uri = artworkUri, coverTransition = coverTransition)
+            coverTransition?.key -> FlyingCover(uri = artworkUri)
         }
     }
 
@@ -239,19 +237,6 @@ private fun LyricsHeader(
         ) {
             AudioCover(
                 uri = artworkUri,
-                placeHolder = {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.MusicNote,
-                            contentDescription = stringResource(R.string.cover_placeholder),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(TARGET_PLACEHOLDER_ICON_SIZE),
-                        )
-                    }
-                },
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -293,41 +278,10 @@ private fun LyricsHeader(
  * 飞行中的封面：跟随浮层矩形缩放，与源/目标使用同一图像模型保证视觉连续。
  */
 @Composable
-private fun FlyingCover(
-    uri: Uri?,
-    coverTransition: GeometryTransition?,
-) {
-    val progress = coverTransition?.progress?.value ?: 0f
-    val iconSize = lerp(SOURCE_PLACEHOLDER_ICON_SIZE, TARGET_PLACEHOLDER_ICON_SIZE, progress)
-    Box(
+private fun FlyingCover(uri: Uri?) {
+    AudioCover(
+        progressiveEnabled = false,
+        uri = uri,
         modifier = Modifier.fillMaxSize(),
-    ) {
-        AudioCover(
-            progressiveEnabled = false,
-            uri = uri,
-            placeHolder = {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.MusicNote,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(iconSize),
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxSize(),
-        )
-    }
+    )
 }
-
-/** 播放页大封面占位音符尺寸（飞行起点） */
-private val SOURCE_PLACEHOLDER_ICON_SIZE = 64.dp
-
-/** 歌词页 header 缩略图占位音符尺寸（飞行终点） */
-private val TARGET_PLACEHOLDER_ICON_SIZE = 24.dp

@@ -58,7 +58,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
-import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
@@ -553,7 +552,6 @@ fun PlaylistDetailScreen(playlist: Playlist) {
             PlaylistCoverView(
                 albumIds = coverAlbumIds,
                 modifier = Modifier.fillMaxSize(),
-                iconSize = coverExpanded * 0.35f,
             )
         }
 
@@ -1370,21 +1368,6 @@ private fun SongCoverImage(song: Song) {
             CoverFallback(
                 fallbackUri = song.getAlbumCoverUri(),
                 modifier = Modifier.fillMaxSize(),
-                placeHolder = {
-                    Box(
-                        Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Icons.Default.Album,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                },
             )
         },
     )
@@ -2171,21 +2154,6 @@ private fun PickerSongRow(
                     CoverFallback(
                         fallbackUri = song.getAlbumCoverUri(),
                         modifier = Modifier.fillMaxSize(),
-                        placeHolder = {
-                            Box(
-                                Modifier
-                                    .fillMaxSize()
-                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    Icons.Default.MusicNote,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                            }
-                        },
                     )
                 },
             )

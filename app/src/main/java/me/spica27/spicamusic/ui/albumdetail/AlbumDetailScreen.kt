@@ -76,7 +76,6 @@ import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
-import me.spica27.spicamusic.ui.home.page.CoverPlaceholder
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
@@ -330,7 +329,6 @@ fun AlbumDetailScreen(album: Album) {
         ) {
             AudioCover(
                 uri = coverUri,
-                placeHolder = { CoverPlaceholder() },
                 modifier = Modifier.fillMaxSize(),
             )
         }

@@ -83,19 +83,6 @@ fun LargeBottomPlayerBar(
                                 .background(
                                     MaterialTheme.colorScheme.tertiaryContainer,
                                 ),
-                        placeHolder = {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .size(48.dp),
-                            ) {
-                                Text(
-                                    "🎵",
-                                    modifier = Modifier.align(Alignment.Center),
-                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                )
-                            }
-                        },
                     )
                 }
 

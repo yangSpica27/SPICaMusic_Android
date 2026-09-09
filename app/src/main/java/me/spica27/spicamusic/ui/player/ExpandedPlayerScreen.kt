@@ -42,7 +42,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
@@ -629,25 +628,6 @@ private fun PlayerPage(
                 ) { currentMediaItem ->
                     AudioCover(
                         uri = currentMediaItem?.mediaMetadata?.artworkUri,
-                        placeHolder = {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxSize()
-                                        .clip(Shapes.LargeCornerBasedShape)
-                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.MusicNote,
-                                    contentDescription = stringResource(R.string.cover_placeholder),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier =
-                                        Modifier
-                                            .size(64.dp)
-                                            .align(Alignment.Center),
-                                )
-                            }
-                        },
                         modifier =
                             Modifier
                                 .fillMaxSize()

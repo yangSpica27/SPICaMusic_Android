@@ -896,7 +896,6 @@ private fun HeroSongRow(
                 Modifier
                     .size(48.dp)
                     .clip(Shapes.MediumCornerBasedShape),
-            placeHolder = { CoverPlaceholder() },
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -993,7 +992,6 @@ private fun FavoriteSongRow(
                 Modifier
                     .size(48.dp)
                     .clip(Shapes.MediumCornerBasedShape),
-            placeHolder = { CoverPlaceholder() },
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -1328,25 +1326,6 @@ private fun UtilityEntryRow(
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp),
-        )
-    }
-}
-
-/** 封面加载失败的占位：容器高色 + 音符图标 */
-@Composable
-fun CoverPlaceholder(modifier: Modifier = Modifier) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.MusicNote,
-            contentDescription = stringResource(R.string.cover_placeholder),
-            modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

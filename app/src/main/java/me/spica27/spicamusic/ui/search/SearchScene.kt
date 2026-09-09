@@ -40,7 +40,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.CircularProgressIndicator
@@ -564,7 +563,6 @@ private fun SearchSongItem(
                 Modifier
                     .size(56.dp)
                     .clip(Shapes.LargeCornerBasedShape),
-            placeHolder = { SearchCoverPlaceholder() },
         )
         Column(
             modifier = Modifier.weight(1f),
@@ -608,25 +606,6 @@ private fun SearchSongItem(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-/** 封面占位：surfaceContainerHigh 底 + 音符图标（全局占位约定） */
-@Composable
-private fun SearchCoverPlaceholder() {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Default.MusicNote,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp),
-        )
     }
 }
 

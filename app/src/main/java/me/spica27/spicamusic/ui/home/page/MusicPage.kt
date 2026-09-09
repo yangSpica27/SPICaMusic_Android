@@ -1096,7 +1096,6 @@ private fun MusicSongRow(
                 Modifier
                     .size(56.dp)
                     .clip(Shapes.LargeCornerBasedShape),
-            placeHolder = { MusicCoverPlaceholder() },
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -1161,7 +1160,6 @@ private fun MusicAlbumRow(
                 Modifier
                     .size(64.dp)
                     .clip(Shapes.LargeCornerBasedShape),
-            placeHolder = { MusicCoverPlaceholder(Icons.Default.Album) },
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -1214,7 +1212,6 @@ private fun MusicArtistRow(
                 Modifier
                     .size(64.dp)
                     .clip(CircleShape),
-            placeHolder = { MusicCoverPlaceholder(Icons.Default.Person) },
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -1319,27 +1316,6 @@ private fun MusicEmptyState(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun MusicCoverPlaceholder(
-    icon: ImageVector = Icons.Default.MusicNote,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(24.dp),
-        )
     }
 }
 

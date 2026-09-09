@@ -105,6 +105,7 @@ import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
+import me.spica27.spicamusic.ui.widget.DefaultMusicCover
 import me.spica27.spicamusic.ui.widget.rememberPlayingCoverShape
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.math.roundToInt
@@ -438,20 +439,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                         .fillMaxHeight()
                                         .aspectRatio(1f)
                                         .clip(coverShape),
-                                failure = {
-                                    Box(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxSize()
-                                                .background(MaterialTheme.colorScheme.tertiaryContainer),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            "🎵",
-                                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                        )
-                                    }
-                                },
+                                failure = { DefaultMusicCover() },
                             )
                             Text(
                                 text =
@@ -685,20 +673,7 @@ fun BottomMediaBarV2(
                                     .fillMaxHeight()
                                     .aspectRatio(1f)
                                     .clip(coverShape),
-                            failure = {
-                                Box(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.tertiaryContainer),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(
-                                        "🎵",
-                                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    )
-                                }
-                            },
+                            failure = { DefaultMusicCover() },
                         )
                         AnimatedContent(
                             targetState = nowPlayingSong,

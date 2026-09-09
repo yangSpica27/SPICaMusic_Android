@@ -12,19 +12,13 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlin.math.cos
@@ -50,13 +44,11 @@ private fun albumCoverUri(albumId: Long): Uri = "content://media/external/audio/
  * PlaylistCoverView(albumIds = coverIds, modifier = Modifier.size(56.dp))
  * ```
  * @param albumIds   最多 5 个专辑 ID，长度决定渲染策略（0/1-4/5）
- * @param iconSize   空歌单占位音符图标大小，默认 32.dp
  */
 @Composable
 fun PlaylistCoverView(
     albumIds: List<Long>,
     modifier: Modifier = Modifier,
-    iconSize: Dp = 32.dp,
 ) {
     Box(modifier = modifier) {
         ShowOnIdleContent(
@@ -65,7 +57,7 @@ fun PlaylistCoverView(
             exit = materialSharedAxisYOut(true),
         ) {
             when {
-                albumIds.isEmpty() -> EmptyPlaylistCover(Modifier.fillMaxSize(), iconSize)
+                albumIds.isEmpty() -> DefaultMusicCover(Modifier.fillMaxSize())
                 albumIds.size < COMBINATION_COVER_COUNT ->
                     SingleAlbumCover(albumIds.first(), Modifier.fillMaxSize())
                 else ->
@@ -81,25 +73,6 @@ fun PlaylistCoverView(
 // ─────────────────────────────────────────────────────────────────────────────
 // 内部渲染分支
 // ─────────────────────────────────────────────────────────────────────────────
-
-/** 歌单为空时的占位图（音符图标居中） */
-@Composable
-private fun EmptyPlaylistCover(
-    modifier: Modifier,
-    iconSize: Dp,
-) {
-    Box(
-        modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            imageVector = Icons.Default.MusicNote,
-            contentDescription = null,
-            modifier = Modifier.size(iconSize),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
 
 /** 歌单少于 5 首时，直接显示第一首的专辑封面 */
 @Composable
@@ -129,18 +102,8 @@ private fun PlaylistCoverImage(
                 modifier = Modifier.fillMaxSize(),
             )
         },
-        failure = { CoverImagePlaceholder(Modifier.fillMaxSize()) },
+        failure = { DefaultMusicCover() },
     )
-}
-
-@Composable
-private fun CoverImagePlaceholder(modifier: Modifier) {
-    Box(
-        modifier = modifier,
-    ) {
-        // Keep failed tiles visually quiet while the remaining covers continue to load.
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainerHigh))
-    }
 }
 
 /**

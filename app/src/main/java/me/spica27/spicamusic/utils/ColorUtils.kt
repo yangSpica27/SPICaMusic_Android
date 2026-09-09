@@ -21,7 +21,7 @@ import kotlinx.coroutines.withContext
 suspend fun extractDominantColorFromUri(
     context: Context,
     uri: Uri?,
-    fallbackColor: Color = Color(0xFF2196F3),
+    fallbackColor: Color = Color(0xFFFFC107),
 ): Color =
     withContext(Dispatchers.IO) {
         if (uri == null) return@withContext fallbackColor
