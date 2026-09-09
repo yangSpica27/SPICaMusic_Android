@@ -508,11 +508,8 @@ fun CurrPlaylistPage(
 
             // === 底部多选操作栏 ===
             AnimatedVisibility(visible = isMultiSelectMode) {
-                Surface(
+                Box(
                     modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    tonalElevation = 8.dp,
-                    shadowElevation = 8.dp,
                 ) {
                     Row(
                         modifier =
