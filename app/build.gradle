@@ -1,10 +1,7 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
   alias(libs.plugins.android.application)
-  alias(libs.plugins.kotlin.android)
-  id 'kotlin-parcelize'
-  alias(libs.plugins.ksp)
+  id 'org.jetbrains.kotlin.plugin.parcelize'
+  id 'com.google.devtools.ksp'
   alias(libs.plugins.jetbrains.kotlin.serialization)
   alias(libs.plugins.compose.compiler)
   id "org.jlleitschuh.gradle.ktlint" version "14.2.0"
@@ -12,32 +9,29 @@ plugins {
   alias(libs.plugins.androidx.baselineprofile)
 }
 
+def majorVersion = providers.gradleProperty("MAJOR_VERSION").get().toInteger()
+def minorVersion = providers.gradleProperty("MINOR_VERSION").get().toInteger()
+def buildVersion = providers.gradleProperty("BUILD_VERSION").get().toInteger()
+def appVersionCode = majorVersion * 1_000_000 + minorVersion * 10_000 + buildVersion
+def appVersionName = "$majorVersion.$minorVersion.$buildVersion PRE"
+
+println("buildVersionCode = $appVersionCode")
+println("buildVersionName = $appVersionName")
+
 android {
-  namespace 'me.spica27.spicamusic'
+  namespace = 'me.spica27.spicamusic'
   compileSdk = 37
 
-  def props = new Properties()
-  file("$rootDir/gradle.properties").withInputStream { props.load(it) }
-  def MAJOR_VERSION = Integer.parseInt(props["MAJOR_VERSION"])
-  def MINOR_VERSION = Integer.parseInt(props["MINOR_VERSION"])
-  def BUILD_VERSION = Integer.parseInt(props["BUILD_VERSION"])
-  rootProject.ext.buildVersionCode =
-      (MAJOR_VERSION) * 1_000_000 + (MINOR_VERSION) * 10_000 + BUILD_VERSION
-  rootProject.ext.buildVersionName = "$MAJOR_VERSION.$MINOR_VERSION.$BUILD_VERSION PRE"
-
-  println("buildVersionCode = ${rootProject.ext.buildVersionCode}")
-  println("buildVersionName= ${rootProject.ext.buildVersionName}")
-
   defaultConfig {
-    applicationId "me.spica27.spicamusic"
-    minSdk 29
-    targetSdk 37
-    versionCode buildVersionCode
-    versionName buildVersionName
+    applicationId = "me.spica27.spicamusic"
+    minSdk = 29
+    targetSdk = 37
+    versionCode = appVersionCode
+    versionName = appVersionName
 
-    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     vectorDrawables {
-      useSupportLibrary true
+      useSupportLibrary = true
     }
     ndk {
       //armeabi armeabi-v7a arm64-v8a x86 x86_64
@@ -47,37 +41,37 @@ android {
 
   signingConfigs {
     signingConfig {
-      storeFile rootProject.file("key.jks")
-      storePassword 'SPICa27'
-      keyAlias 'wuqi'
-      keyPassword 'SPICa27'
+      storeFile = rootProject.file("key.jks")
+      storePassword = 'SPICa27'
+      keyAlias = 'wuqi'
+      keyPassword = 'SPICa27'
     }
   }
 
   lint {
-    checkReleaseBuilds false
-    abortOnError false
+    checkReleaseBuilds = false
+    abortOnError = false
   }
 
   buildTypes {
     release {
       optimization.enable = true
-      minifyEnabled true
-      shrinkResources true
+      minifyEnabled = true
+      shrinkResources = true
       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-      signingConfig signingConfigs.signingConfig
+      signingConfig = signingConfigs.signingConfig
     }
     debug {
-      minifyEnabled false
-      signingConfig signingConfigs.signingConfig
+      minifyEnabled = false
+      signingConfig = signingConfigs.signingConfig
     }
   }
   compileOptions {
-    sourceCompatibility JavaVersion.VERSION_11
-    targetCompatibility JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
   }
   buildFeatures {
-    compose true
+    compose = true
     buildConfig = true
   }
   sourceSets {
@@ -93,14 +87,8 @@ android {
       it.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
     jniLibs {
-      useLegacyPackaging true
+      useLegacyPackaging = true
     }
-  }
-}
-
-kotlin {
-  compilerOptions {
-    jvmTarget = JvmTarget.JVM_11
   }
 }
 
@@ -121,7 +109,9 @@ ktlint {
   ignoreFailures = true // Fail the build if KtLint finds any issues
 }
 
-tasks.getByPath("preBuild").dependsOn("ktlintFormat")
+tasks.named("preBuild") {
+  dependsOn("ktlintFormat")
+}
 
 dependencies {
   // 模块依赖

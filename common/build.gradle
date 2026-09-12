@@ -1,40 +1,33 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.jetbrains.kotlin.serialization)
-    id 'kotlin-parcelize'
+    id 'org.jetbrains.kotlin.plugin.parcelize'
 }
 
 android {
-    namespace 'me.spica27.spicamusic.common'
+    namespace = 'me.spica27.spicamusic.common'
     compileSdk = 37
 
     defaultConfig {
-        minSdk 29
-        targetSdk 36
+        minSdk = 29
+        targetSdk = 36
 
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
-    }
 }
 
 dependencies {

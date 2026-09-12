@@ -8,11 +8,11 @@ pluginManagement {
       }
     }
     mavenCentral()
-    maven { url "https://jitpack.io" }
-    maven { url 'https://maven.aliyun.com/repository/central' }
-    maven { url 'https://maven.aliyun.com/repository/google' }
-    maven { url 'https://maven.aliyun.com/repository/public' }
-    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+    maven { url = uri("https://jitpack.io") }
+    maven { url = uri('https://maven.aliyun.com/repository/central') }
+    maven { url = uri('https://maven.aliyun.com/repository/google') }
+    maven { url = uri('https://maven.aliyun.com/repository/public') }
+    maven { url = uri('https://maven.aliyun.com/repository/gradle-plugin') }
     gradlePluginPortal()
   }
 }
@@ -21,12 +21,12 @@ dependencyResolutionManagement {
   repositories {
     google()
     mavenCentral()
-    maven { url 	"https://repo1.maven.org/maven2/"}
-    maven { url "https://jitpack.io" }
-    maven { url 'https://maven.aliyun.com/repository/central' }
-    maven { url 'https://maven.aliyun.com/repository/google' }
-    maven { url 'https://maven.aliyun.com/repository/public' }
-    maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+    maven { url = uri("https://repo1.maven.org/maven2/") }
+    maven { url = uri("https://jitpack.io") }
+    maven { url = uri('https://maven.aliyun.com/repository/central') }
+    maven { url = uri('https://maven.aliyun.com/repository/google') }
+    maven { url = uri('https://maven.aliyun.com/repository/public') }
+    maven { url = uri('https://maven.aliyun.com/repository/gradle-plugin') }
   }
 }
 

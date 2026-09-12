@@ -45,7 +45,6 @@ timberVersion = "5.0.1"
 nav3Core = "1.1.1"
 material3AdaptiveNav3 = "1.1.0"
 lifecycleViewmodelNav3 = "2.10.0"
-kotlinSerialization = "2.4.0"
 kotlinxSerializationCore = "1.11.0"
 moshiKotlin = "1.15.2"
 materialKolor = "5.0.1"
@@ -56,7 +55,7 @@ roomVersion = "2.8.4"
 miuixAndroid = "0.9.0"
 androidautosize = "v1.2.1"
 version = "2.11.0"
-macrobenchmark = "1.4.1"
+macrobenchmark = "1.5.0"
 uiautomator = "2.3.0"
 reorderable = "3.1.0"
 [libraries]
@@ -147,10 +146,8 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinSerialization"}
+jetbrains-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.7.4" }
+stability-analyzer = { id = "com.github.skydoves.compose.stability.analyzer", version = "0.7.5" }
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "macrobenchmark" }

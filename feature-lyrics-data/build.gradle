@@ -1,21 +1,18 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
   alias(libs.plugins.android.library)
-  alias(libs.plugins.kotlin.android)
-  alias(libs.plugins.ksp)
-  id 'kotlin-parcelize'
+  id 'com.google.devtools.ksp'
+  id 'org.jetbrains.kotlin.plugin.parcelize'
 }
 
 android {
-  namespace 'me.spica27.lyric_core'
+  namespace = 'me.spica27.lyric_core'
   compileSdk = 37
 
   defaultConfig {
-    minSdk 29
-    targetSdk 36
+    minSdk = 29
+    targetSdk = 36
 
-    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     consumerProguardFiles "consumer-rules.pro"
 
     ndk {
@@ -25,26 +22,20 @@ android {
 
   buildTypes {
     release {
-      minifyEnabled false
+      minifyEnabled = false
       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
     }
   }
 
   compileOptions {
-    sourceCompatibility JavaVersion.VERSION_11
-    targetCompatibility JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
   }
 
   sourceSets {
     main {
       jniLibs.srcDirs = ['libs']
     }
-  }
-}
-
-kotlin {
-  compilerOptions {
-    jvmTarget = JvmTarget.JVM_11
   }
 }
 

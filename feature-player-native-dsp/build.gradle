@@ -1,14 +1,13 @@
 plugins {
   alias(libs.plugins.android.library)
-  alias(libs.plugins.kotlin.android)
 }
 
 android {
-  namespace 'me.spica27.spicamusic.dsp'
+  namespace = 'me.spica27.spicamusic.dsp'
   compileSdk = 37
 
   defaultConfig {
-    minSdk 29
+    minSdk = 29
 
     ndk {
       // Keep the first native rollout aligned with the existing player module.
@@ -26,19 +25,13 @@ android {
 
   buildTypes {
     release {
-      minifyEnabled false
+      minifyEnabled = false
     }
   }
 
   compileOptions {
-    sourceCompatibility JavaVersion.VERSION_11
-    targetCompatibility JavaVersion.VERSION_11
-  }
-}
-
-kotlin {
-  compilerOptions {
-    jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
   }
 }
 
