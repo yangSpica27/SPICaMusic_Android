@@ -136,7 +136,7 @@ class ScanRulesScene : DialogScene() {
                             .width(44.dp)
                             .height(4.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
                             .align(Alignment.CenterHorizontally),
                 )
 
