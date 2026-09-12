@@ -55,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
@@ -147,8 +148,11 @@ class SongMenuScene(
                         .align(Alignment.Center)
                         .graphicsLayer {
                             val p = enterProgress.value
+                            applyDefaultShowTransform(
+                                progress = p,
+                                origin = TransformOrigin(0.5f, 1f),
+                            )
                             translationY = (1f - p) * slideOffsetPx
-                            alpha = p
                         },
             ) {
                 SongMenuContent(

@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -101,7 +102,10 @@ class ScanFoldersScene : DialogScene() {
                         .align(Alignment.BottomCenter)
                         .graphicsLayer {
                             val p = enterProgress.value
-                            alpha = p
+                            applyDefaultShowTransform(
+                                progress = p,
+                                origin = TransformOrigin(0.5f, 1f),
+                            )
                             translationY = (1f - p) * slideOffsetPx
                         },
             ) {

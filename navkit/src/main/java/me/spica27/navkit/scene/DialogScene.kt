@@ -2,6 +2,7 @@ package me.spica27.navkit.scene
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,12 +14,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
-import me.spica27.navkit.motion.EaseOutEmphasized
 import me.spica27.navkit.motion.EaseOutStrong
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
@@ -29,7 +31,7 @@ import me.spica27.navkit.scene.DialogScene.Companion.SCRIM_MAX_ALPHA
  *
  * ## 动画模型
  * - [enterProgress]：进场进度，0f = 完全不可见，1f = 完全呈现
- * - 进场：375ms emphasized-decelerate，从中心缩放（[DIALOG_SCALE_MIN] → 1f）+ alpha 渐显
+ * - 进场：miuix 风格欠阻尼弹簧，从中心缩放（[DIALOG_SCALE_MIN] → 1f）+ alpha 渐显
  * - 退场：200ms 强 ease-out——关闭是系统响应，短时长、起步即动
  *
  * ## placed 机制
@@ -70,7 +72,11 @@ abstract class DialogScene : Scene() {
 
     /** 进场动画 spec；子类（如 PopupMenuScene）可覆写以改变节奏 */
     protected open val enterAnimationSpec: AnimationSpec<Float>
-        get() = tween(375, easing = EaseOutEmphasized)
+        get() = spring(
+            dampingRatio = DIALOG_ENTER_DAMPING_RATIO,
+            stiffness = DIALOG_ENTER_STIFFNESS,
+            visibilityThreshold = PROGRESS_VISIBILITY_THRESHOLD,
+        )
 
     /** 退场动画 spec；子类可覆写。关闭是系统响应：短时长、起步即动 */
     protected open val exitAnimationSpec: AnimationSpec<Float>
@@ -145,6 +151,20 @@ abstract class DialogScene : Scene() {
     abstract fun DialogContent()
 
     /**
+     * 将默认的弹簧缩放应用到自定义 [Content] 的内容层。
+     */
+    protected fun GraphicsLayerScope.applyDefaultShowTransform(
+        progress: Float,
+        origin: TransformOrigin = TransformOrigin.Center,
+    ) {
+        val scale = DIALOG_SCALE_MIN + (1f - DIALOG_SCALE_MIN) * progress
+        alpha = progress.coerceIn(0f, 1f)
+        scaleX = scale
+        scaleY = scale
+        transformOrigin = origin
+    }
+
+    /**
      * 完整内容层：全屏遮罩（scrim）+ 居中的 [DialogContent]（含缩放/透明度动画）。
      *
      * 子类通常**不需要**重写此方法。如需自定义进场效果（如底部弹出 ActionSheet），
@@ -178,10 +198,7 @@ abstract class DialogScene : Scene() {
                 modifier = Modifier
                     .align(Alignment.Center)
                     .graphicsLayer {
-                        val p = enterProgress.value
-                        alpha = p
-                        scaleX = DIALOG_SCALE_MIN + (1f - DIALOG_SCALE_MIN) * p
-                        scaleY = DIALOG_SCALE_MIN + (1f - DIALOG_SCALE_MIN) * p
+                        applyDefaultShowTransform(enterProgress.value)
                     }
             ) {
                 DialogContent()
@@ -193,7 +210,12 @@ abstract class DialogScene : Scene() {
         /** 遮罩最大不透明度（进度为 1f 时） */
         private const val SCRIM_MAX_ALPHA = 0.5f
 
-        /** 进场起始缩放比（0.92 → 1.0，产生"弹出"感） */
-        private const val DIALOG_SCALE_MIN = 0.92f
+        /** 进场起始缩放比。 */
+        private const val DIALOG_SCALE_MIN = 0.8f
+
+        /** 默认对话框弹簧参数：灵动但不过度回弹。 */
+        private const val DIALOG_ENTER_DAMPING_RATIO = 0.9f
+        private const val DIALOG_ENTER_STIFFNESS = 438.6f
+        private const val PROGRESS_VISIBILITY_THRESHOLD = 0.0001f
     }
 }

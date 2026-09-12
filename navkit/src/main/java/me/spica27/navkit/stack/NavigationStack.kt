@@ -194,7 +194,7 @@ private fun SceneContainer(
                     shadowElevation = 20f * (1f - enter)
                 }
 
-                // ── DialogScene 入场：背景变暗 + 去饱和度 ──────────────────
+                // ── DialogScene / PopupMenuScene 入场：背景模糊 ───────────
                 if (fgProgress > 0f) {
                     val blurSigma = fgProgress * density * BLUR_MAX_DP
                     renderEffect = BlurEffect(
@@ -333,8 +333,7 @@ private const val COMPRESS_SCALE_MIN = 0.74f
 /** 背景压缩时的左移偏移比例 */
 private const val COMPRESS_TRANSLATE_FRACTION = 0.06f
 
-/** StackScene 进场时对背景施加的最大模糊半径（dp） */
-private const val BLUR_MAX_DP = 24f
-
+/** 弹窗展开时对背景施加的默认最大模糊半径（dp） */
+private const val BLUR_MAX_DP = 20f
 
 private const val ENTER_RADIUS = 28

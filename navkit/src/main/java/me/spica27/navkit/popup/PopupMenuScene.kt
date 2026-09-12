@@ -2,6 +2,7 @@ package me.spica27.navkit.popup
 
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +23,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.layout
@@ -33,7 +35,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.zIndex
-import me.spica27.navkit.motion.EaseOutEmphasized
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
@@ -45,9 +46,10 @@ import kotlin.math.roundToInt
  * 对下层 StackScene 施加 BlurEffect）并变暗（本场景的 scrim），只保留菜单清晰突出焦点。
  *
  * ## 动画模型
- * 复用 [DialogScene] 的 [enterProgress] 生命周期，改为菜单专用的 emphasized 缓动。
+ * 复用 [DialogScene] 的 [enterProgress] 生命周期，使用 miuix 列表弹窗的欠阻尼弹簧。
  * 单一进度同时驱动四层效果（全部在 Layout/Draw 阶段读取，零重组）：
- * 1. **容器 morph**：矩形从锚点冻结矩形插值到菜单目标矩形，圆角从锚点圆角插值到 [menuCornerRadius]
+ * 1. **缩放与容器 morph**：内容沿锚点方向从 0.15 缩放到 1，容器矩形从锚点冻结矩形插值到菜单目标矩形，
+ *    圆角从锚点圆角插值到 [menuCornerRadius]
  * 2. **幽灵交接**：锚点组件隐藏后，[AnchorGhostContent] 复制品钉在锚点原位（容器之上），
  *    进度前段淡出；[MenuContent] 中后段淡入——图标"原地"过渡成菜单
  * 3. **背景聚焦**：scrim 变暗到 [scrimMaxAlpha]（模糊由 NavigationStack 自动叠加）
@@ -96,7 +98,11 @@ abstract class PopupMenuScene(
     open val scrimMaxAlpha: Float = 0.35f
 
     override val enterAnimationSpec: AnimationSpec<Float>
-        get() = tween(ENTER_DURATION_MILLIS, easing = EaseOutEmphasized)
+        get() = spring(
+            dampingRatio = POPUP_ENTER_DAMPING_RATIO,
+            stiffness = POPUP_ENTER_STIFFNESS,
+            visibilityThreshold = PROGRESS_VISIBILITY_THRESHOLD,
+        )
 
     override val exitAnimationSpec: AnimationSpec<Float>
         get() = tween(EXIT_DURATION_MILLIS, easing = POPUP_EXIT_EASING)
@@ -252,6 +258,10 @@ abstract class PopupMenuScene(
                         // 展开方向：与锚点同角对齐，放不下再翻转，最终 clamp 进安全区
                         val alignRight = anchor.center.x > screenW / 2f
                         val growDown = anchor.top + menuH <= safeBottom
+                        geometry.transformOrigin = TransformOrigin(
+                            pivotFractionX = if (alignRight) 1f else 0f,
+                            pivotFractionY = if (growDown) 0f else 1f,
+                        )
                         // 上界先与下界取 max，防止菜单占满安全区时区间因舍入倒挂
                         val maxLeft = (safeRight - menuW).coerceAtLeast(safeLeft)
                         val maxTop = (safeBottom - menuH).coerceAtLeast(safeTop)
@@ -275,7 +285,12 @@ abstract class PopupMenuScene(
             ) {
                 Box(
                     Modifier.graphicsLayer {
-                        alpha = menuContentAlpha(enterProgress.value)
+                        val progress = enterProgress.value
+                        val scale = POPUP_SCALE_MIN + (1f - POPUP_SCALE_MIN) * progress
+                        alpha = menuContentAlpha(progress)
+                        scaleX = scale
+                        scaleY = scale
+                        transformOrigin = geometry.transformOrigin
                     }
                 ) {
                     MenuContent()
@@ -305,8 +320,13 @@ abstract class PopupMenuScene(
         ((progress - MENU_FADE_START) / (MENU_FADE_END - MENU_FADE_START)).coerceIn(0f, 1f)
 
     companion object {
-        private const val ENTER_DURATION_MILLIS = 340
         private const val EXIT_DURATION_MILLIS = 220
+
+        /** 缩放与弹簧参数。 */
+        private const val POPUP_SCALE_MIN = 0.15f
+        private const val POPUP_ENTER_DAMPING_RATIO = 0.82f
+        private const val POPUP_ENTER_STIFFNESS = 362.5f
+        private const val PROGRESS_VISIBILITY_THRESHOLD = 0.0001f
 
         /** Material emphasized-accelerate：收回时迅速离场 */
         private val POPUP_EXIT_EASING = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
@@ -326,6 +346,7 @@ abstract class PopupMenuScene(
  */
 private class PopupMenuGeometry {
     var targetRect: Rect = Rect.Zero
+    var transformOrigin: TransformOrigin = TransformOrigin.Center
 
     /** 锚点矩形与目标矩形按进度插值；异常态（矩形未记录）退化为目标位置渐显 */
     fun currentBounds(progress: Float, anchor: Rect): Rect {

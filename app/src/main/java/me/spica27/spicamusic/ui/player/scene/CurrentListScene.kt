@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -129,7 +130,13 @@ class CurrentListScene : DialogScene() {
                     Modifier
                         .align(Alignment.BottomCenter)
                         .graphicsLayer {
-                            translationY = size.height - enterProgress.value * size.height
+                            val progress = enterProgress.value
+                            val visualProgress = progress.coerceIn(0f, 1f)
+                            applyDefaultShowTransform(
+                                progress = progress,
+                                origin = TransformOrigin(0.5f, 1f),
+                            )
+                            translationY = size.height - progress * size.height
                             if (enterProgress.isRunning) {
                                 shape =
                                     RoundedCornerShape(
@@ -137,13 +144,13 @@ class CurrentListScene : DialogScene() {
                                             lerp(
                                                 36.dp.toPx(),
                                                 0f,
-                                                enterProgress.value,
+                                                visualProgress,
                                             ),
                                         topEnd =
                                             lerp(
                                                 36.dp.toPx(),
                                                 0f,
-                                                enterProgress.value,
+                                                visualProgress,
                                             ),
                                     )
                             }

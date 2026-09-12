@@ -121,7 +121,7 @@ abstract class StackScene : Scene() {
      * [DialogScene.enterProgress] 之和，clamp 到 [0f, 1f]。
      *
      * 此值在 `Modifier.graphicsLayer {}` 内读取（Draw 阶段），
-     * 驱动背景场景的变暗（alpha 0.3）与去饱和度（ColorMatrix）效果。
+     * 驱动背景场景的模糊效果。
      *
      * @param scenes 导航栈的完整快照列表
      */

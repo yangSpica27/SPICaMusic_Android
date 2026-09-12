@@ -45,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboard
@@ -113,7 +114,10 @@ class SongInfoScene(
                         .align(Alignment.BottomCenter)
                         .graphicsLayer {
                             val progress = enterProgress.value
-                            alpha = progress
+                            applyDefaultShowTransform(
+                                progress = progress,
+                                origin = TransformOrigin(0.5f, 1f),
+                            )
                             translationY = (1f - progress) * slideOffsetPx
                         },
             ) {
