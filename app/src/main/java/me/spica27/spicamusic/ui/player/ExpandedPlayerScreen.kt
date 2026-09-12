@@ -38,7 +38,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
@@ -49,16 +48,12 @@ import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
@@ -403,60 +398,13 @@ fun ExpandedPlayerScreen(
                 }
             } else {
                 // 播放列表
-                Scaffold(
-                    topBar = {
-                        @OptIn(ExperimentalMaterial3Api::class)
-                        TopAppBar(
-                            colors =
-                                TopAppBarDefaults.topAppBarColors().copy(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
-                                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                    subtitleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
-                            navigationIcon = {
-                                IconButton(
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            // 点击直达的翻页：320ms 强 ease-out，落定利落不拖沓
-                                            pagerState.animateScrollToPage(
-                                                0,
-                                                animationSpec =
-                                                    tween(
-                                                        durationMillis = 320,
-                                                        easing = EaseOutEmphasized,
-                                                    ),
-                                            )
-                                        }
-                                    },
-                                    colors =
-                                        IconButtonDefaults.iconButtonColors().copy(
-                                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                            contentColor = MaterialTheme.colorScheme.onSurface,
-                                        ),
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.KeyboardArrowDown,
-                                        contentDescription = stringResource(R.string.back),
-                                    )
-                                }
-                            },
-                            title = {
-                                Text(stringResource(R.string.now_playinglist))
-                            },
+                ShowOnIdleContent(true) {
+                    Box(
+                        modifier = Modifier,
+                    ) {
+                        CurrPlaylistPage(
+                            modifier = Modifier.fillMaxSize(),
                         )
-                    },
-                ) {
-                    ShowOnIdleContent(true) {
-                        Box(
-                            modifier = Modifier.padding(it),
-                        ) {
-                            CurrPlaylistPage(
-                                modifier = Modifier.fillMaxSize(),
-//                        scrollBehavior = scrollBehavior,
-                            )
-                        }
                     }
                 }
             }

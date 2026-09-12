@@ -304,6 +304,7 @@
   <string name="items_selected">已选中</string>
   <string name="playlist_count_format">播放列表 (%d)</string>
   <string name="jump_to_playing">跳转到正在播放</string>
+  <string name="locate_playing">定位当前</string>
   <string name="clear_playlist">清空播放列表</string>
   <string name="delete_selected_title">删除已选歌曲</string>
   <string name="delete_selected_message">确定从当前播放列表中移除已选的 %1$d 首歌曲吗？</string>
