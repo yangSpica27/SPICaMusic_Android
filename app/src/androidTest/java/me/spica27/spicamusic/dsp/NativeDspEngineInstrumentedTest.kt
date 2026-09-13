@@ -21,7 +21,7 @@ import kotlin.math.sin
 @RunWith(AndroidJUnit4::class)
 class NativeDspEngineInstrumentedTest {
     @Test
-    fun antiPhaseStereoStillProducesResponsiveSpectrum() =
+    fun stereoMixIncludesBothInputChannels() =
         runBlocking {
             assertTrue(NativeDspEngine.isNativeLibraryLoaded)
 
@@ -45,7 +45,7 @@ class NativeDspEngineInstrumentedTest {
                     }
 
                 repeat(INITIAL_BLOCK_COUNT) { block ->
-                    val input = antiPhaseStereoBlock(block * FRAMES_PER_BLOCK)
+                    val input = stereoToneBlock(block * FRAMES_PER_BLOCK)
                     val output = ByteBuffer.allocateDirect(input.remaining())
                     assertEquals(
                         input.remaining(),
@@ -55,8 +55,12 @@ class NativeDspEngineInstrumentedTest {
 
                 val firstBands = spectrum.await()
                 assertTrue(
-                    "1 kHz band should survive anti-phase stereo analysis",
+                    "1 kHz left-channel tone should be present in the stereo mix",
                     firstBands[ONE_KHZ_BAND_INDEX] > 0.3f,
+                )
+                assertTrue(
+                    "2 kHz right-channel tone should be present in the stereo mix",
+                    firstBands[TWO_KHZ_BAND_INDEX] > 0.3f,
                 )
 
                 engine.setPlaybackActive(false)
@@ -69,16 +73,17 @@ class NativeDspEngineInstrumentedTest {
             }
         }
 
-    private fun antiPhaseStereoBlock(firstFrame: Int): ByteBuffer {
+    private fun stereoToneBlock(firstFrame: Int): ByteBuffer {
         val buffer =
             ByteBuffer
                 .allocateDirect(FRAMES_PER_BLOCK * CHANNEL_COUNT * Float.SIZE_BYTES)
                 .order(ByteOrder.LITTLE_ENDIAN)
         repeat(FRAMES_PER_BLOCK) { offset ->
-            val phase = 2.0 * PI * TONE_HZ * (firstFrame + offset) / SAMPLE_RATE
-            val sample = (sin(phase) * AMPLITUDE).toFloat()
-            buffer.putFloat(sample)
-            buffer.putFloat(-sample)
+            val frame = firstFrame + offset
+            val leftPhase = 2.0 * PI * LEFT_TONE_HZ * frame / SAMPLE_RATE
+            val rightPhase = 2.0 * PI * RIGHT_TONE_HZ * frame / SAMPLE_RATE
+            buffer.putFloat((sin(leftPhase) * AMPLITUDE).toFloat())
+            buffer.putFloat((sin(rightPhase) * AMPLITUDE).toFloat())
         }
         buffer.flip()
         return buffer
@@ -89,8 +94,10 @@ class NativeDspEngineInstrumentedTest {
         const val CHANNEL_COUNT = 2
         const val FRAMES_PER_BLOCK = 1_024
         const val INITIAL_BLOCK_COUNT = 4
-        const val TONE_HZ = 1_000.0
+        const val LEFT_TONE_HZ = 1_000.0
+        const val RIGHT_TONE_HZ = 2_000.0
         const val AMPLITUDE = 0.8
         const val ONE_KHZ_BAND_INDEX = 17
+        const val TWO_KHZ_BAND_INDEX = 20
     }
 }

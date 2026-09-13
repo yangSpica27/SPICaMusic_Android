@@ -23,6 +23,10 @@ results wake the Kotlin reader as soon as they are published; there is no
 fixed-rate JNI polling stage. If analysis falls more than two windows behind,
 the worker skips stale windows instead of replaying a long queue.
 
+FFT visualization uses the arithmetic mean of the first two decoded channels
+as its mono source. Mono input uses its only channel unchanged; extra surround
+channels remain in the playback path but are not included in visualization.
+
 The negotiated `AudioFormat` is returned unchanged. If the native library is
 unavailable or a block cannot be processed, the adapter returns
 `AudioFormat.NOT_SET` or copies the original block so Media3 bypasses

@@ -765,32 +765,17 @@ bool DspEngine::decode(const std::uint8_t* input, std::size_t inputBytes, int fr
 void DspEngine::pushFftAnalysis(int frames) {
     if (frames <= 0 || frames > maxFrames_ || channelCount_ <= 0) return;
 
-    // Match the Kotlin path's first-channel analysis to keep amplitude and
-    // channel selection stable. If that channel is truly silent, fall back to
-    // the strongest channel so multichannel material remains visible.
-    int analysisChannel = 0;
-    float firstEnergy = 0.0f;
-    for (int frame = 0; frame < frames; ++frame) {
-        const float sample = channelBuffers_[0][frame];
-        firstEnergy += sample * sample;
-    }
-    if (firstEnergy <= 1.0e-12f) {
-        float strongestEnergy = firstEnergy;
-        for (int channel = 1; channel < channelCount_; ++channel) {
-            float energy = 0.0f;
-            for (int frame = 0; frame < frames; ++frame) {
-                const float sample = channelBuffers_[channel][frame];
-                energy += sample * sample;
-            }
-            if (energy > strongestEnergy) {
-                strongestEnergy = energy;
-                analysisChannel = channel;
-            }
+    if (channelCount_ == 1) {
+        std::copy_n(channelBuffers_[0].data(), frames, fftMonoBuffer_.data());
+    } else {
+        // Analyze the arithmetic mean of the first two channels. Additional
+        // surround channels stay untouched in the playback path and are not
+        // included in the visualization source.
+        for (int frame = 0; frame < frames; ++frame) {
+            fftMonoBuffer_[frame] =
+                (channelBuffers_[0][frame] + channelBuffers_[1][frame]) * 0.5f;
         }
     }
-
-    std::copy_n(channelBuffers_[analysisChannel].data(), frames,
-                fftMonoBuffer_.data());
     fft_.push(fftMonoBuffer_.data(), static_cast<std::size_t>(frames));
 }
 
