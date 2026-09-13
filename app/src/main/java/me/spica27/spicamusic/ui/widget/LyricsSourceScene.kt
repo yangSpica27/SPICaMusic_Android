@@ -21,13 +21,12 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,29 +35,52 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.navkit.path.LocalScene
+import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricSource
 import me.spica27.spicamusic.common.entity.LyricSourceType
+import me.spica27.spicamusic.ui.player.LyricsViewModel
+import me.spica27.spicamusic.ui.theme.Shapes
+import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
- * 歌词来源选择面板（分区列表）
+ * 歌词来源选择对话框（分区列表）
  *
  * 按来源类型分区展示：内嵌歌词（0/1 条）、本地文件（导入入口 + 已导入项）、在线（N 条候选，懒加载）。
  * 点击任一候选即选中并关闭；本地区点击"从文件选择"触发 SAF picker。
  *
- * @param embedded 内嵌歌词候选，null 表示无
- * @param local 已导入的本地歌词，null 表示尚未导入
- * @param online 在线候选列表
- * @param onlineLoading 在线候选是否正在加载
- * @param currentSourceType 当前正在使用的来源类型（用于"使用中"标记）
- * @param currentRawText 当前正在使用的来源原文（用于精确匹配在线候选中的"使用中"项）
- * @param onSelect 选中某来源回调
- * @param onImportLocalFile 请求导入本地文件回调（由上层拉起 SAF picker，回传 uri 字符串）
- * @param onDismiss 关闭面板回调
+ * 数据直接来自 Activity 作用域的 [LyricsViewModel]，选择来源或导入本地文件后自动关闭。
  */
-@OptIn(ExperimentalMaterial3Api::class)
+class LyricsSourceScene : DialogScene() {
+    @Composable
+    override fun DialogContent() {
+        val path = LocalNavigationPath.current
+        val scene = LocalScene.current
+        val viewModel: LyricsViewModel = koinActivityViewModel()
+        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+        LyricsSourceDialogContent(
+            embedded = uiState.embeddedSource,
+            local = uiState.localSource,
+            online = uiState.onlineSources,
+            onlineLoading = uiState.onlineLoading,
+            currentSourceType = uiState.currentSourceType,
+            currentRawText = uiState.displayedRawText,
+            onSelect = { source ->
+                viewModel.selectSource(source)
+                path.pop(scene)
+            },
+            onImportLocalFile = { uri -> viewModel.importLocalFile(uri) },
+            onDismiss = { path.pop(scene) },
+        )
+    }
+}
+
 @Composable
-fun LyricsSourceSheet(
+private fun LyricsSourceDialogContent(
     embedded: LyricSource.Embedded?,
     local: LyricSource.LocalFile?,
     online: List<LyricSource.Online>,
@@ -69,8 +91,6 @@ fun LyricsSourceSheet(
     onImportLocalFile: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
     // SAF 文档选择器：限文本类，回传 uri 字符串给上层快照入库
     val picker =
         androidx.activity.compose.rememberLauncherForActivityResult(
@@ -84,12 +104,13 @@ fun LyricsSourceSheet(
             }
         }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.onBackground,
-        dragHandle = null,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = Shapes.ExtraLarge1CornerBasedShape,
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
     ) {
         Column(
             modifier =
@@ -129,7 +150,6 @@ fun LyricsSourceSheet(
                             selected = currentSourceType == LyricSourceType.EMBEDDED,
                             onClick = {
                                 onSelect(embedded)
-                                onDismiss()
                             },
                         )
                     }
@@ -148,7 +168,6 @@ fun LyricsSourceSheet(
                             selected = currentSourceType == LyricSourceType.LOCAL_FILE,
                             onClick = {
                                 onSelect(local)
-                                onDismiss()
                             },
                         )
                     }
@@ -220,7 +239,6 @@ fun LyricsSourceSheet(
                                         currentRawText == source.rawLyrics,
                                 onClick = {
                                     onSelect(source)
-                                    onDismiss()
                                 },
                             )
                         }

@@ -37,7 +37,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -52,13 +51,11 @@ import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Tune
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -92,8 +89,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.navkit.path.LocalScene
+import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.player.api.SleepTimerState
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
@@ -130,7 +131,7 @@ private const val RING_REVEAL_MILLIS = 880
 private const val RING_TICK_MILLIS = 1000
 
 /**
- * 点选后到面板收起之间留的确认停顿。
+ * 点选后到对话框关闭之间留的确认停顿。
  */
 private const val SELECTION_SETTLE_MILLIS = 140L
 
@@ -153,137 +154,125 @@ private const val DIAL_DEAD_ZONE_RATIO = 0.15f
 /** 环跳跃阈值 */
 private const val RING_JUMP_THRESHOLD = 0.01f
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SleepTimerDialog(
-    timer: SleepTimerState?,
-    onDismiss: () -> Unit,
-    onSetTimer: (durationMs: Long) -> Unit,
-    onCancelTimer: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
+class SleepTimerScene : DialogScene() {
+    @Composable
+    override fun DialogContent() {
+        val path = LocalNavigationPath.current
+        val scene = LocalScene.current
+        val viewModel = LocalPlayerViewModel.current
+        val timer by viewModel.sleepTimer.collectAsStateWithLifecycle()
+        val scope = rememberCoroutineScope()
 
-    var dismissing by remember { mutableStateOf(false) }
+        var dismissing by remember { mutableStateOf(false) }
 
-    // 自定义模式，同一枚环从"还剩多少"改任"设多久"，下半区换成提交按钮
-    var editing by remember { mutableStateOf(false) }
-    var customMinutes by remember { mutableIntStateOf(CUSTOM_DEFAULT_MINUTES) }
+        // 自定义模式，同一枚环从"还剩多少"改任"设多久"，下半区换成提交按钮
+        var editing by remember { mutableStateOf(false) }
+        var customMinutes by remember { mutableIntStateOf(CUSTOM_DEFAULT_MINUTES) }
 
-    // 入场瀑布只在首次显影时跑，从自定义返回是回到刚才那一屏，再排一遍队会啰嗦
-    var everEdited by remember { mutableStateOf(false) }
+        // 入场瀑布只在首次显影时跑，从自定义返回是回到刚才那一屏，再排一遍队会啰嗦
+        var everEdited by remember { mutableStateOf(false) }
 
-    // 先把面板滑下去再通知外部移除，否则 ModalBottomSheet 会被直接从组合里摘掉、没有退场
-    fun dismissAnimated(settle: Long = 0L) {
-        if (dismissing) return
-        dismissing = true
-        scope.launch {
-            if (settle > 0L) delay(settle)
-            sheetState.hide()
-            onDismiss()
+        fun dismissAnimated(settle: Long = 0L) {
+            if (dismissing) return
+            dismissing = true
+            scope.launch {
+                if (settle > 0L) delay(settle)
+                path.pop(scene)
+            }
         }
-    }
 
-    // 对不上任何预设的时长就是自定义来的，入口那行要把它显示出来
-    val activeCustomMinutes =
-        timer
-            ?.durationMs
-            ?.let { TimeUnit.MILLISECONDS.toMinutes(it).toInt() }
-            ?.takeIf { it !in SleepTimerOptionsMinutes }
-
-    // 带着当前值进自定义，正在走的定时器先吸附到最近一档，没有则用默认值
-    fun beginEditing() {
-        customMinutes =
+        // 对不上任何预设的时长就是自定义来的，入口那行要把它显示出来
+        val activeCustomMinutes =
             timer
                 ?.durationMs
-                ?.let { snapCustomMinutes(TimeUnit.MILLISECONDS.toMinutes(it).toFloat()) }
-                ?: CUSTOM_DEFAULT_MINUTES
-        everEdited = true
-        editing = true
-    }
+                ?.let { TimeUnit.MILLISECONDS.toMinutes(it).toInt() }
+                ?.takeIf { it !in SleepTimerOptionsMinutes }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        dragHandle = null,
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.Large)
-                    .padding(bottom = Spacing.Large)
-                    .navigationBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        // 带着当前值进自定义，正在走的定时器先吸附到最近一档，没有则用默认值
+        fun beginEditing() {
+            customMinutes =
+                timer
+                    ?.durationMs
+                    ?.let { snapCustomMinutes(TimeUnit.MILLISECONDS.toMinutes(it).toFloat()) }
+                    ?: CUSTOM_DEFAULT_MINUTES
+            everEdited = true
+            editing = true
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = Shapes.ExtraLarge1CornerBasedShape,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            tonalElevation = 6.dp,
+            shadowElevation = 8.dp,
         ) {
-            Box(
+            Column(
                 modifier =
                     Modifier
-                        .padding(top = Spacing.Small, bottom = Spacing.ExtraSmall)
-                        .size(width = 36.dp, height = 4.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)),
-            )
-            SheetHeader(
-                editing = editing,
-                onBack = { editing = false },
-                onDismiss = { dismissAnimated() },
-            )
-            TimerHero(
-                timer = timer,
-                editing = editing,
-                customMinutes = customMinutes,
-                onCustomMinutesChange = { customMinutes = it },
-            )
-            Spacer(modifier = Modifier.height(Spacing.Large))
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = Spacing.Large, vertical = Spacing.Large),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                DialogHeader(
+                    editing = editing,
+                    onBack = { editing = false },
+                    onDismiss = { dismissAnimated() },
+                )
+                TimerHero(
+                    timer = timer,
+                    editing = editing,
+                    customMinutes = customMinutes,
+                    onCustomMinutesChange = { customMinutes = it },
+                )
+                Spacer(modifier = Modifier.height(Spacing.Large))
 
-            // 下半区整块换人。两种模式高度差不少，交给 SizeTransform 抹平
-            AnimatedContent(
-                targetState = editing,
-                transitionSpec = {
-                    fadeIn(ListItemFadeInSpec) togetherWith
-                        fadeOut(ListItemFadeOutSpec) using
-                        SizeTransform(clip = false) { _, _ ->
-                            tween(280, easing = EaseOutEmphasized)
-                        }
-                },
-                label = "sleep_timer_mode",
-            ) { isEditing ->
-                if (isEditing) {
-                    StartTimerButton(
-                        enabled = !dismissing,
-                        onClick = {
-                            onSetTimer(TimeUnit.MINUTES.toMillis(customMinutes.toLong()))
-                            dismissAnimated(settle = SELECTION_SETTLE_MILLIS)
-                        },
-                    )
-                } else {
-                    Column {
-                        PresetRow(
-                            activeDurationMs = timer?.durationMs,
+                // 下半区整块换人。两种模式高度差不少，交给 SizeTransform 抹平
+                AnimatedContent(
+                    targetState = editing,
+                    transitionSpec = {
+                        fadeIn(ListItemFadeInSpec) togetherWith
+                            fadeOut(ListItemFadeOutSpec) using
+                            SizeTransform(clip = false) { _, _ ->
+                                tween(280, easing = EaseOutEmphasized)
+                            }
+                    },
+                    label = "sleep_timer_mode",
+                ) { isEditing ->
+                    if (isEditing) {
+                        StartTimerButton(
                             enabled = !dismissing,
-                            playEntrance = !everEdited,
-                            onSelect = { durationMs ->
-                                onSetTimer(durationMs)
+                            onClick = {
+                                viewModel.setSleepTimer(TimeUnit.MINUTES.toMillis(customMinutes.toLong()))
                                 dismissAnimated(settle = SELECTION_SETTLE_MILLIS)
                             },
                         )
-                        CustomDurationRow(
-                            activeMinutes = activeCustomMinutes,
-                            enabled = !dismissing,
-                            playEntrance = !everEdited,
-                            onClick = { beginEditing() },
-                        )
-                        CancelTimerButton(
-                            visible = timer != null && !dismissing,
-                            onClick = {
-                                onCancelTimer()
-                                dismissAnimated()
-                            },
-                        )
+                    } else {
+                        Column {
+                            PresetRow(
+                                activeDurationMs = timer?.durationMs,
+                                enabled = !dismissing,
+                                playEntrance = !everEdited,
+                                onSelect = { durationMs ->
+                                    viewModel.setSleepTimer(durationMs)
+                                    dismissAnimated(settle = SELECTION_SETTLE_MILLIS)
+                                },
+                            )
+                            CustomDurationRow(
+                                activeMinutes = activeCustomMinutes,
+                                enabled = !dismissing,
+                                playEntrance = !everEdited,
+                                onClick = { beginEditing() },
+                            )
+                            CancelTimerButton(
+                                visible = timer != null && !dismissing,
+                                onClick = {
+                                    viewModel.cancelSleepTimer()
+                                    dismissAnimated()
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -298,7 +287,7 @@ fun SleepTimerDialog(
  * 免得进了自定义就找不到出口。
  */
 @Composable
-private fun SheetHeader(
+private fun DialogHeader(
     editing: Boolean,
     onBack: () -> Unit,
     onDismiss: () -> Unit,

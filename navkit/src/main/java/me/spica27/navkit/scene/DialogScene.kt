@@ -1,26 +1,25 @@
 package me.spica27.navkit.scene
 
-import androidx.compose.animation.core.Animatable
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.dialog
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
+import me.spica27.navkit.component.ScrimOverlay
 import me.spica27.navkit.motion.EaseOutStrong
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
@@ -28,15 +27,12 @@ import me.spica27.navkit.scene.DialogScene.Companion.DIALOG_SCALE_MIN
 import me.spica27.navkit.scene.DialogScene.Companion.SCRIM_MAX_ALPHA
 
 /**
+ * 对话框场景基类，继承自 [OverlayScene]。
  *
  * ## 动画模型
  * - [enterProgress]：进场进度，0f = 完全不可见，1f = 完全呈现
  * - 进场：miuix 风格欠阻尼弹簧，从中心缩放（[DIALOG_SCALE_MIN] → 1f）+ alpha 渐显
  * - 退场：200ms 强 ease-out——关闭是系统响应，短时长、起步即动
- *
- * ## placed 机制
- * 与 [StackScene] 一致：[NavigationStack][me.spica27.navkit.stack.NavigationStack]
- * 在场景首次布局后调用 [notifyPlaced]，解除 [waitAppear] 阻塞，进场动画随即启动。
  *
  * ## 默认 Content 行为
  * - 全屏半透明遮罩（scrim），随进度从 0 渐变到 [SCRIM_MAX_ALPHA]
@@ -65,77 +61,20 @@ import me.spica27.navkit.scene.DialogScene.Companion.SCRIM_MAX_ALPHA
  * path.pop(scene)
  * ```
  */
-abstract class DialogScene : Scene() {
+abstract class DialogScene : OverlayScene() {
 
-    /** 进场进度：0f = 完全不可见，1f = 完全呈现 */
-    val enterProgress = Animatable(0f)
+    /** 进场动画 spec：miuix 风格欠阻尼弹簧 */
+    override val enterAnimationSpec: AnimationSpec<Float>
+        get() =
+            spring(
+                dampingRatio = DIALOG_ENTER_DAMPING_RATIO,
+                stiffness = DIALOG_ENTER_STIFFNESS,
+                visibilityThreshold = PROGRESS_VISIBILITY_THRESHOLD,
+            )
 
-    /** 进场动画 spec；子类（如 PopupMenuScene）可覆写以改变节奏 */
-    protected open val enterAnimationSpec: AnimationSpec<Float>
-        get() = spring(
-            dampingRatio = DIALOG_ENTER_DAMPING_RATIO,
-            stiffness = DIALOG_ENTER_STIFFNESS,
-            visibilityThreshold = PROGRESS_VISIBILITY_THRESHOLD,
-        )
-
-    /** 退场动画 spec；子类可覆写。关闭是系统响应：短时长、起步即动 */
-    protected open val exitAnimationSpec: AnimationSpec<Float>
+    /** 退场动画 spec：200ms 强 ease-out */
+    override val exitAnimationSpec: AnimationSpec<Float>
         get() = tween(200, easing = EaseOutStrong)
-
-    private val _placed = MutableStateFlow(false)
-    val placed: StateFlow<Boolean> = _placed
-
-    /** 进场动画是否已完成（enterProgress 达到 1f） */
-    private val _enterAnimEnd = MutableStateFlow(false)
-
-    val enterAnimEnd: StateFlow<Boolean> = _enterAnimEnd
-
-    /**
-     * 由 [me.spica27.navkit.stack.NavigationStack] 在场景首次通过
-     * onGloballyPositioned 完成布局后调用，触发 [waitAppear] 解除阻塞。
-     */
-    fun notifyPlaced() {
-        _placed.value = true
-    }
-
-    // ──────────────────────────────────────────────────────────────────────
-    // Scene 生命周期钩子
-    // ──────────────────────────────────────────────────────────────────────
-
-    /** push 开始：将进度 snap 到 0f，避免残留值影响动画 */
-    override suspend fun onPush() {
-        enterProgress.snapTo(0f)
-    }
-
-    /** 等待 NavigationStack 通知场景首帧已布局完成 */
-    override suspend fun waitAppear() {
-        _placed.first { it }
-    }
-
-    /** 进场动画：从 0f 动画到 1f */
-    override suspend fun onAppear() {
-        enterProgress.animateTo(
-            targetValue = 1f,
-            animationSpec = enterAnimationSpec
-        ) {
-            if (this.value == targetValue) {
-                _enterAnimEnd.value = true
-            }
-        }
-    }
-
-    /** 退场动画：从当前进度动画到 0f（Animatable 可中断重定向） */
-    override suspend fun onDisappear() {
-        enterProgress.animateTo(
-            targetValue = 0f,
-            animationSpec = exitAnimationSpec
-        )
-    }
-
-    /** pop 后重置 placed 状态，供场景实例复用 */
-    override suspend fun onPop() {
-        _placed.value = false
-    }
 
     // ──────────────────────────────────────────────────────────────────────
     // Composable 内容
@@ -175,28 +114,35 @@ abstract class DialogScene : Scene() {
         val path = LocalNavigationPath.current
         val scene = LocalScene.current
 
+        // 注册在下层页面内容之后，确保弹窗优先于页面内部的 BackHandler 消费返回事件。
+        // 仅前台弹窗启用，避免退场中的旧弹窗截获其上方新场景的返回事件。
+        BackHandler(enabled = path.isForeground(scene)) {
+            path.pop(scene)
+        }
+
         Box(
             Modifier
                 .zIndex(3f)
-                .fillMaxSize()
+                .fillMaxSize(),
         ) {
             // 半透明遮罩：随进度渐显，点击关闭对话框
-            val interactionSource = remember { MutableInteractionSource() }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer { alpha = enterProgress.value * SCRIM_MAX_ALPHA }
-                    .background(Color.Black)
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) { path.pop(scene) }
+            ScrimOverlay(
+                progress = enterProgress.value,
+                maxAlpha = SCRIM_MAX_ALPHA,
+                onDismiss = { path.pop(scene) },
             )
 
             // 对话框卡片：从中心缩放 + alpha 渐显
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
+                    .padding(
+                        horizontal = DIALOG_HORIZONTAL_MARGIN,
+                        vertical = DIALOG_VERTICAL_MARGIN,
+                    )
+                    .widthIn(max = DIALOG_MAX_WIDTH)
+                    .fillMaxWidth()
+                    .semantics { dialog() }
                     .graphicsLayer {
                         applyDefaultShowTransform(enterProgress.value)
                     }
@@ -217,5 +163,10 @@ abstract class DialogScene : Scene() {
         private const val DIALOG_ENTER_DAMPING_RATIO = 0.9f
         private const val DIALOG_ENTER_STIFFNESS = 438.6f
         private const val PROGRESS_VISIBILITY_THRESHOLD = 0.0001f
+
+        /** Dialog 内容与窗口边缘的最小留白，以及大屏上的最大宽度。 */
+        private val DIALOG_HORIZONTAL_MARGIN = 24.dp
+        private val DIALOG_VERTICAL_MARGIN = 32.dp
+        private val DIALOG_MAX_WIDTH = 560.dp
     }
 }

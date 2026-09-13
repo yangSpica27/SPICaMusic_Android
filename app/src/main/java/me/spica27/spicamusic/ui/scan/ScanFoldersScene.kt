@@ -1,29 +1,21 @@
 package me.spica27.spicamusic.ui.scan
 
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -39,21 +31,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
@@ -67,53 +54,6 @@ import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 class ScanFoldersScene : DialogScene() {
-    @Composable
-    override fun Content() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val density = LocalDensity.current
-        val slideOffsetPx = with(density) { 80.dp.toPx() }
-
-        BackHandler(true) {
-            path.pop(scene)
-        }
-
-        Box(
-            Modifier
-                .zIndex(3f)
-                .fillMaxSize(),
-        ) {
-            val interactionSource = remember { MutableInteractionSource() }
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = enterProgress.value }
-                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.42f))
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                        ) { path.pop(scene) },
-            )
-
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .graphicsLayer {
-                            val p = enterProgress.value
-                            applyDefaultShowTransform(
-                                progress = p,
-                                origin = TransformOrigin(0.5f, 1f),
-                            )
-                            translationY = (1f - p) * slideOffsetPx
-                        },
-            ) {
-                DialogContent()
-            }
-        }
-    }
-
     @Composable
     override fun DialogContent() {
         val path = LocalNavigationPath.current
@@ -142,14 +82,11 @@ class ScanFoldersScene : DialogScene() {
             }
 
         Surface(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .navigationBarsPadding(),
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            modifier = Modifier.fillMaxWidth(),
+            shape = Shapes.ExtraLarge1CornerBasedShape,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,
+            shadowElevation = 8.dp,
         ) {
             Column(
                 modifier =
@@ -157,17 +94,6 @@ class ScanFoldersScene : DialogScene() {
                         .fillMaxWidth()
                         .padding(horizontal = Spacing.Large),
             ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .padding(top = 10.dp)
-                            .width(44.dp)
-                            .height(4.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
-                            .align(Alignment.CenterHorizontally),
-                )
-
                 Row(
                     modifier =
                         Modifier

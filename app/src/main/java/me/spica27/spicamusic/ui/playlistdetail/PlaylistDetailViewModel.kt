@@ -161,20 +161,20 @@ class PlaylistDetailViewModel(
         _searchKeyword.value = keyword
     }
 
-    // ===== 歌曲选择器（SongPickerSheet）分页支持 =====
+    // ===== 歌曲选择对话框分页支持 =====
 
-    /** SongPickerSheet 内部的搜索关键词 */
-    private val _pickerKeyword = MutableStateFlow("")
+    /** SongPickerDialogScene 内部的搜索关键词 */
+    private val pickerKeyword = MutableStateFlow("")
 
     /** 更新选择器搜索关键词 */
     fun updatePickerKeyword(keyword: String) {
-        _pickerKeyword.value = keyword
+        pickerKeyword.value = keyword
     }
 
     /** 分页获取不在当前歌单中的歌曲（支持关键词过滤） */
     @OptIn(ExperimentalCoroutinesApi::class)
     val pickerSongsPaging: Flow<PagingData<Song>> =
-        _pickerKeyword
+        pickerKeyword
             .flatMapLatest { keyword ->
                 songRepository.getSongsNotInPlaylistPagingFlow(
                     playlistId = playlistId,
@@ -185,7 +185,7 @@ class PlaylistDetailViewModel(
     /** 不在歌单中的符合条件歌曲总数 */
     @OptIn(ExperimentalCoroutinesApi::class)
     val pickerSongCount: StateFlow<Int> =
-        _pickerKeyword
+        pickerKeyword
             .flatMapLatest { keyword ->
                 songRepository.countSongsNotInPlaylistFlow(
                     playlistId = playlistId,
@@ -199,7 +199,7 @@ class PlaylistDetailViewModel(
 
     /** 获取不在歌单中的所有符合条件歌曲 ID（用于全选） */
     suspend fun getPickerSongIds(): List<Long> {
-        val keyword = _pickerKeyword.value.ifBlank { null }
+        val keyword = pickerKeyword.value.ifBlank { null }
         return songRepository.getSongIdsNotInPlaylist(playlistId, keyword)
     }
 
@@ -211,26 +211,8 @@ class PlaylistDetailViewModel(
     private val _selectedSongs = MutableStateFlow<Set<Long>>(emptySet())
     val selectedSongs = _selectedSongs.asStateFlow()
 
-    // 是否显示重命名对话框
-    private val _showRenameDialog = MutableStateFlow(false)
-    val showRenameDialog = _showRenameDialog.asStateFlow()
-
-    private val _showDeleteConfirmDialog = MutableStateFlow(false)
-
-    val showDeleteConfirmDialog = _showDeleteConfirmDialog.asStateFlow()
-
     private val _playlistDeleted = MutableStateFlow(false)
     val playlistDeleted = _playlistDeleted.asStateFlow()
-
-    // 是否显示添加歌曲选择器
-    private val _showAddSongsSheet = MutableStateFlow(false)
-
-    val showAddSongsSheet = _showAddSongsSheet.asStateFlow()
-
-    // 是否显示更多选项菜单
-    private val _showMoreOptionsMenu = MutableStateFlow(false)
-
-    val showMoreOptionsMenu = _showMoreOptionsMenu.asStateFlow()
 
     /**
      * 播放歌单所有歌曲
@@ -341,7 +323,6 @@ class PlaylistDetailViewModel(
         exitSearchMode()
         _isMultiSelectMode.value = false
         _selectedSongs.value = emptySet()
-        _showMoreOptionsMenu.value = false
 
         viewModelScope.launch {
             try {
@@ -413,20 +394,12 @@ class PlaylistDetailViewModel(
         _sortModeLimitExceeded.value = false
     }
 
-    fun showDeleteConfirmDialog() {
-        _showDeleteConfirmDialog.value = true
-    }
-
-    fun hideDeleteConfirmDialog() {
-        _showDeleteConfirmDialog.value = false
-    }
-
-    fun deletePlaylist() {
+    fun deletePlaylist(onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             try {
                 playlistRepository.deletePlaylist(playlistId)
                 _playlistDeleted.value = true
-                hideDeleteConfirmDialog()
+                onSuccess()
                 Timber.d("删除歌单成功: $playlistId")
             } catch (e: Exception) {
                 Timber.e(e, "删除歌单失败")
@@ -456,23 +429,12 @@ class PlaylistDetailViewModel(
     }
 
     /**
-     * 显示重命名对话框
-     */
-    fun showRenameDialog() {
-        _showRenameDialog.value = true
-    }
-
-    /**
-     * 隐藏重命名对话框
-     */
-    fun hideRenameDialog() {
-        _showRenameDialog.value = false
-    }
-
-    /**
      * 重命名歌单
      */
-    fun renamePlaylist(newName: String) {
+    fun renamePlaylist(
+        newName: String,
+        onSuccess: () -> Unit = {},
+    ) {
         if (newName.isBlank()) {
             Timber.w("歌单名称不能为空")
             return
@@ -481,8 +443,8 @@ class PlaylistDetailViewModel(
         viewModelScope.launch {
             try {
                 playlistRepository.renamePlaylist(playlistId, newName.trim())
+                onSuccess()
                 Timber.d("重命名歌单成功: $newName")
-                hideRenameDialog()
             } catch (e: Exception) {
                 Timber.e(e, "重命名歌单失败")
             }
@@ -490,44 +452,19 @@ class PlaylistDetailViewModel(
     }
 
     /**
-     * 显示添加歌曲选择器
-     */
-    fun showAddSongsSheet() {
-        _showAddSongsSheet.value = true
-    }
-
-    /**
-     * 隐藏添加歌曲选择器
-     */
-    fun hideAddSongsSheet() {
-        _showAddSongsSheet.value = false
-    }
-
-    /**
-     * 显示更多选项菜单
-     */
-    fun showMoreOptionsMenu() {
-        _showMoreOptionsMenu.value = true
-    }
-
-    /**
-     * 隐藏更多选项菜单
-     */
-    fun hideMoreOptionsMenu() {
-        _showMoreOptionsMenu.value = false
-    }
-
-    /**
      * 批量添加歌曲到歌单
      */
-    fun addSongsToPlaylist(mediaIds: List<Long>) {
+    fun addSongsToPlaylist(
+        mediaIds: List<Long>,
+        onSuccess: () -> Unit = {},
+    ) {
         if (mediaIds.isEmpty()) return
 
         viewModelScope.launch {
             try {
                 playlistRepository.addSongsToPlaylist(playlistId, mediaIds)
+                onSuccess()
                 Timber.d("成功添加 ${mediaIds.size} 首歌曲到歌单")
-                hideAddSongsSheet()
             } catch (e: Exception) {
                 Timber.e(e, "添加歌曲到歌单失败")
             }

@@ -3,22 +3,16 @@ package me.spica27.spicamusic.ui.dialog
 import android.content.ClipData
 import android.text.format.Formatter
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -41,25 +35,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.launch
 import me.spica27.navkit.path.LocalNavigationPath
@@ -79,66 +66,12 @@ class SongInfoScene(
     val song: Song,
 ) : DialogScene() {
     @Composable
-    override fun Content() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val density = LocalDensity.current
-        val slideOffsetPx = with(density) { 72.dp.toPx() }
-        val closeLabel = stringResource(R.string.close)
-
-        BackHandler { path.pop(scene) }
-
-        Box(
-            Modifier
-                .zIndex(3f)
-                .fillMaxSize(),
-        ) {
-            val interactionSource = remember { MutableInteractionSource() }
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = enterProgress.value }
-                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.42f))
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            role = Role.Button,
-                            onClickLabel = closeLabel,
-                        ) { path.pop(scene) },
-            )
-
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .graphicsLayer {
-                            val progress = enterProgress.value
-                            applyDefaultShowTransform(
-                                progress = progress,
-                                origin = TransformOrigin(0.5f, 1f),
-                            )
-                            translationY = (1f - progress) * slideOffsetPx
-                        },
-            ) {
-                DialogContent()
-            }
-        }
-    }
-
-    @Composable
     override fun DialogContent() {
         val path = LocalNavigationPath.current
         val scene = LocalScene.current
         val context = LocalContext.current
         val clipboard = LocalClipboard.current
         val scope = rememberCoroutineScope()
-        val density = LocalDensity.current
-        val screenHeight =
-            with(density) {
-                LocalWindowInfo.current.containerSize.height
-                    .toDp()
-            }
         val title = stringResource(R.string.song_info_dialog_title)
         val copySuccess = stringResource(R.string.copy_success)
         val copyLabel = stringResource(R.string.copy_field_format)
@@ -153,9 +86,12 @@ class SongInfoScene(
         Surface(
             modifier =
                 Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .systemBarsPadding(),
+            shape = Shapes.ExtraLarge1CornerBasedShape,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,
+            shadowElevation = 8.dp,
         ) {
             Column(
                 modifier =
@@ -164,9 +100,6 @@ class SongInfoScene(
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = Spacing.ExtraLarge),
             ) {
-                Spacer(
-                    Modifier.statusBarsPadding(),
-                )
                 SongInfoHeader(
                     song = song,
                     title = title,
@@ -298,9 +231,6 @@ class SongInfoScene(
                 ) {
                     Text(stringResource(R.string.close))
                 }
-                Spacer(
-                    Modifier.navigationBarsPadding(),
-                )
             }
         }
     }

@@ -57,14 +57,12 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.LocationSearching
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
@@ -109,14 +107,16 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.dialog.ConfirmationDialogScene
+import me.spica27.spicamusic.ui.dialog.TextInputDialogScene
 import me.spica27.spicamusic.ui.glass.LiquidGlassVariant
 import me.spica27.spicamusic.ui.glass.liquidGlass
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.player.formatTime
-import me.spica27.spicamusic.ui.playlistdetail.RenameDialog
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
@@ -143,6 +143,7 @@ fun CurrPlaylistPage(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
 ) {
+    val path = LocalNavigationPath.current
     val panelViewModel: CurrentPlaylistPanelViewModel = koinViewModel()
     val currentPlaylist by viewModel.currentPlaylist.collectAsStateWithLifecycle()
     val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
@@ -438,84 +439,113 @@ fun CurrPlaylistPage(
         }
     }
 
+    val createPlaylistTitle = stringResource(R.string.create_playlist)
+    val playlistNameLabel = stringResource(R.string.playlist_name_label)
+    val confirmLabel = stringResource(R.string.confirm)
+    val cancelLabel = stringResource(R.string.cancel)
     if (showCreateDialog) {
-        RenameDialog(
-            title = stringResource(R.string.create_playlist),
-            initialName = "",
-            onDismiss = { showCreateDialog = false },
-            onConfirm = {
-                if (it.isNotBlank()) {
-                    panelViewModel.createPlaylistWithMediaIds(
-                        name = it,
-                        mediaIds =
-                            itemKeys.mapIndexedNotNull { index, itemKey ->
-                                currentPlaylist[index].mediaId.takeIf {
-                                    selectedItemKeys.contains(itemKey)
+        LaunchedEffect(Unit) {
+            showCreateDialog = false
+            path.push(
+                TextInputDialogScene(
+                    title = createPlaylistTitle,
+                    initialValue = "",
+                    label = playlistNameLabel,
+                    confirmLabel = confirmLabel,
+                    dismissLabel = cancelLabel,
+                    onConfirm = { name, dismiss ->
+                        if (name.isNotBlank()) {
+                            panelViewModel.createPlaylistWithMediaIds(
+                                name = name,
+                                mediaIds =
+                                    itemKeys.mapIndexedNotNull { index, itemKey ->
+                                        currentPlaylist[index].mediaId.takeIf {
+                                            selectedItemKeys.contains(itemKey)
+                                        }
+                                    },
+                            ) { success ->
+                                if (success) {
+                                    selectedItemKeys.clear()
+                                    isMultiSelectMode = false
+                                    dismiss()
                                 }
-                            },
-                    ) { success ->
-                        if (success) {
-                            selectedItemKeys.clear()
-                            isMultiSelectMode = false
-                            showCreateDialog = false
+                            }
                         }
-                    }
-                }
-            },
-        )
+                    },
+                ),
+            )
+        }
     }
 
     if (showDeleteConfirmDialog) {
-        CurrentPlaylistConfirmDialog(
-            title = stringResource(R.string.delete_selected_title),
-            message = stringResource(R.string.delete_selected_message, selectedCount),
-            confirmText = stringResource(R.string.delete),
-            icon = Icons.Default.Delete,
-            onConfirm = {
-                val selectedKeySet = selectedItemKeys.toSet()
-                val indices = selectedPlaylistIndices(itemKeys, selectedKeySet)
-                val animatedItemKeys =
-                    if (reducedMotion) {
-                        emptyList()
-                    } else {
-                        scrollState.layoutInfo.visibleItemsInfo.mapNotNull { itemInfo ->
-                            itemKeys.getOrNull(itemInfo.index)?.takeIf { it in selectedKeySet }
+        val title = stringResource(R.string.delete_selected_title)
+        val message = stringResource(R.string.delete_selected_message, selectedCount)
+        val deleteLabel = stringResource(R.string.delete)
+        LaunchedEffect(Unit) {
+            showDeleteConfirmDialog = false
+            path.push(
+                ConfirmationDialogScene(
+                    title = title,
+                    message = message,
+                    confirmLabel = deleteLabel,
+                    dismissLabel = cancelLabel,
+                    icon = Icons.Default.Delete,
+                    destructive = true,
+                    onConfirm = { dismiss ->
+                        val selectedKeySet = selectedItemKeys.toSet()
+                        val indices = selectedPlaylistIndices(itemKeys, selectedKeySet)
+                        val animatedItemKeys =
+                            if (reducedMotion) {
+                                emptyList()
+                            } else {
+                                scrollState.layoutInfo.visibleItemsInfo.mapNotNull { itemInfo ->
+                                    itemKeys.getOrNull(itemInfo.index)?.takeIf { it in selectedKeySet }
+                                }
+                            }
+
+                        if (indices.isNotEmpty()) {
+                            dissolvingItemKeys.clear()
+                            completedDissolveItemKeys.clear()
+                            removalDispatchedState.value = false
+                            pendingDeletionState.value =
+                                PendingPlaylistDeletion(
+                                    indices = indices,
+                                    animatedItemKeys = animatedItemKeys,
+                                    expectedPlaylistSize = currentPlaylist.size - indices.size,
+                                )
                         }
-                    }
 
-                if (indices.isNotEmpty()) {
-                    dissolvingItemKeys.clear()
-                    completedDissolveItemKeys.clear()
-                    removalDispatchedState.value = false
-                    pendingDeletionState.value =
-                        PendingPlaylistDeletion(
-                            indices = indices,
-                            animatedItemKeys = animatedItemKeys,
-                            expectedPlaylistSize = currentPlaylist.size - indices.size,
-                        )
-                }
-
-                selectedItemKeys.clear()
-                isMultiSelectMode = false
-                showDeleteConfirmDialog = false
-            },
-            onDismiss = { showDeleteConfirmDialog = false },
-        )
+                        selectedItemKeys.clear()
+                        isMultiSelectMode = false
+                        dismiss()
+                    },
+                ),
+            )
+        }
     }
 
     if (showClearConfirmDialog) {
-        CurrentPlaylistConfirmDialog(
-            title = stringResource(R.string.clear_current_playlist_title),
-            message = stringResource(R.string.clear_current_playlist_message),
-            confirmText = stringResource(R.string.clear_playlist),
-            icon = Icons.Default.DeleteSweep,
-            onConfirm = {
-                viewModel.pause()
-                viewModel.updatePlaylist(emptyList())
-                showClearConfirmDialog = false
-            },
-            onDismiss = { showClearConfirmDialog = false },
-        )
+        val title = stringResource(R.string.clear_current_playlist_title)
+        val message = stringResource(R.string.clear_current_playlist_message)
+        val clearLabel = stringResource(R.string.clear_playlist)
+        LaunchedEffect(Unit) {
+            showClearConfirmDialog = false
+            path.push(
+                ConfirmationDialogScene(
+                    title = title,
+                    message = message,
+                    confirmLabel = clearLabel,
+                    dismissLabel = cancelLabel,
+                    icon = Icons.Default.DeleteSweep,
+                    destructive = true,
+                    onConfirm = { dismiss ->
+                        viewModel.pause()
+                        viewModel.updatePlaylist(emptyList())
+                        dismiss()
+                    },
+                ),
+            )
+        }
     }
 }
 
@@ -1186,68 +1216,6 @@ private fun PlayingBars(
             )
         }
     }
-}
-
-// === 确认对话框 ===
-@Composable
-private fun CurrentPlaylistConfirmDialog(
-    title: String,
-    message: String,
-    confirmText: String,
-    icon: ImageVector,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Box(
-                modifier =
-                    Modifier
-                        .size(52.dp)
-                        .background(MaterialTheme.colorScheme.errorContainer, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(26.dp),
-                )
-            }
-        },
-        title = {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
-        },
-        text = {
-            Text(
-                message,
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors =
-                    ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                    ),
-            ) {
-                Text(confirmText, fontWeight = FontWeight.SemiBold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-        shape = Shapes.ExtraLarge1CornerBasedShape,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-    )
 }
 
 @Composable

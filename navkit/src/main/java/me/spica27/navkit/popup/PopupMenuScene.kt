@@ -178,6 +178,17 @@ abstract class PopupMenuScene(
 
         val menuColor = menuContainerColor()
         val anchorColor = anchorContainerColor()
+        val progress = enterProgress.value
+
+        val containerBackgroundColor = when {
+            anchorColor.alpha < 0.01f && progress <= 0.2f -> Color.Transparent
+            anchorColor.alpha < 0.01f -> {
+                val adjustedProgress = ((progress - 0.2f) / 0.8f).coerceIn(0f, 1f)
+                menuColor.copy(alpha = adjustedProgress)
+            }
+            else -> lerp(anchorColor, menuColor, progress)
+        }
+
         val menuRadiusPx = with(density) { menuCornerRadius.toPx() }
         val marginPx = with(density) { screenMargin.toPx() }
         val elevationPx = with(density) { menuElevation.toPx() }

@@ -93,7 +93,7 @@ import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.ui.about.AboutScene
 import me.spica27.spicamusic.ui.audioeffects.AudioEffectsScene
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
-import me.spica27.spicamusic.ui.player.SleepTimerDialog
+import me.spica27.spicamusic.ui.player.SleepTimerScene
 import me.spica27.spicamusic.ui.player.formatSleepTimerRemaining
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
@@ -133,7 +133,6 @@ class SettingsScene : StackScene() {
 
         // 一次只展开一个选项组：避免整个页面同时膨胀成一大片选项海
         var expandedRowKey by rememberSaveable { mutableStateOf<String?>(null) }
-        var showSleepTimerDialog by rememberSaveable { mutableStateOf(false) }
 
         val listState = rememberLazyListState()
         val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -290,7 +289,7 @@ class SettingsScene : StackScene() {
                                     )
                                 } ?: stringResource(R.string.settings_sleep_timer_subtitle),
                             icon = Icons.Default.Bedtime,
-                            onClick = { showSleepTimerDialog = true },
+                            onClick = { path.push(SleepTimerScene()) },
                         )
                         SettingsItemDivider()
                         SwitchRow(
@@ -329,16 +328,6 @@ class SettingsScene : StackScene() {
                 onBack = { path.popTop() },
                 modifier = Modifier.align(Alignment.TopStart),
             )
-
-            if (showSleepTimerDialog) {
-                SleepTimerDialog(
-                    timer = sleepTimer,
-                    // 关闭时机交给弹窗：它要先播完收起动画，再回调这里把自己摘掉
-                    onDismiss = { showSleepTimerDialog = false },
-                    onSetTimer = playerViewModel::setSleepTimer,
-                    onCancelTimer = playerViewModel::cancelSleepTimer,
-                )
-            }
         }
     }
 }

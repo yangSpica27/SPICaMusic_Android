@@ -36,6 +36,7 @@ import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.path.NavigationPath
 import me.spica27.navkit.scene.DialogScene
+import me.spica27.navkit.scene.OverlayScene
 import me.spica27.navkit.scene.Scene
 import me.spica27.navkit.scene.SceneKeySet
 import me.spica27.navkit.scene.SceneStage
@@ -152,7 +153,7 @@ private fun SceneContainer(
     path: NavigationPath,
     entryViewModel: EntryViewModel
 ) {
-    // StackScene / DialogScene：从 Draw 阶段读取动画进度，避免 Composition-phase 重组
+    // StackScene / OverlayScene：从 Draw 阶段读取动画进度，避免 Composition-phase 重组
     val sceneModifier = when (scene) {
         is StackScene -> Modifier
             .fillMaxSize()
@@ -194,7 +195,7 @@ private fun SceneContainer(
                     shadowElevation = 20f * (1f - enter)
                 }
 
-                // ── DialogScene / PopupMenuScene 入场：背景模糊 ───────────
+                // ── OverlayScene (DialogScene / PopupMenuScene) 入场：背景模糊 ───────────
                 if (fgProgress > 0f) {
                     val blurSigma = fgProgress * density * BLUR_MAX_DP
                     renderEffect = BlurEffect(
@@ -218,7 +219,7 @@ private fun SceneContainer(
                 }
             }
 
-        is DialogScene -> Modifier
+        is OverlayScene -> Modifier
             .fillMaxSize()
             .onGloballyPositioned { scene.notifyPlaced() }
 

@@ -64,18 +64,15 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -113,6 +110,7 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SongMenuScene
+import me.spica27.spicamusic.ui.dialog.TextInputDialogScene
 import me.spica27.spicamusic.ui.theme.EaseOutStrong
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
@@ -175,7 +173,11 @@ private fun FavoriteScreenContent() {
     val selectedCount by viewModel.selectedCount.collectAsStateWithLifecycle()
     val snackbarMessage by viewModel.snackbarMessage.collectAsStateWithLifecycle()
 
-    var showSavePlaylistDialog by remember { mutableStateOf(false) }
+    val savePlaylistTitle = stringResource(R.string.save_as_playlist)
+    val savePlaylistInitialName = stringResource(R.string.finder_favorites_playlist_name)
+    val playlistNameLabel = stringResource(R.string.playlist_name_label)
+    val confirmLabel = stringResource(R.string.confirm)
+    val cancelLabel = stringResource(R.string.cancel)
 
     BackHandler {
         if (isMultiSelectMode) {
@@ -395,22 +397,25 @@ private fun FavoriteScreenContent() {
                     viewModel.playSelectedSongs()
                     viewModel.exitMultiSelectMode()
                 },
-                onSaveAsPlaylist = { showSavePlaylistDialog = true },
+                onSaveAsPlaylist = {
+                    path.push(
+                        TextInputDialogScene(
+                            title = savePlaylistTitle,
+                            initialValue = savePlaylistInitialName,
+                            label = playlistNameLabel,
+                            confirmLabel = confirmLabel,
+                            dismissLabel = cancelLabel,
+                            onConfirm = { name, dismiss ->
+                                viewModel.createPlaylistFromSelected(name)
+                                viewModel.exitMultiSelectMode()
+                                dismiss()
+                            },
+                        ),
+                    )
+                },
                 onRemove = { viewModel.dislikeSelectedSongs() },
             )
         }
-    }
-
-    if (showSavePlaylistDialog) {
-        SavePlaylistDialog(
-            initialName = stringResource(R.string.finder_favorites_playlist_name),
-            onConfirm = { name ->
-                viewModel.createPlaylistFromSelected(name)
-                viewModel.exitMultiSelectMode()
-                showSavePlaylistDialog = false
-            },
-            onDismiss = { showSavePlaylistDialog = false },
-        )
     }
 }
 
@@ -1175,40 +1180,4 @@ private fun MultiSelectActionPill(
             overflow = TextOverflow.Ellipsis,
         )
     }
-}
-
-/** 输入歌单名称的确认弹窗 */
-@Composable
-private fun SavePlaylistDialog(
-    initialName: String,
-    onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var name by remember { mutableStateOf(initialName) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.save_as_playlist)) },
-        text = {
-            OutlinedTextField(
-                colors =
-                    TextFieldDefaults.colors().copy(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent,
-                    ),
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.playlist_name_label)) },
-                singleLine = true,
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(name) }, enabled = name.isNotBlank()) {
-                Text(stringResource(R.string.confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
-        },
-    )
 }

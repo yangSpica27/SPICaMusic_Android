@@ -1,8 +1,6 @@
 package me.spica27.spicamusic.ui.dialog
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,7 +31,6 @@ import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.SportsMartialArts
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,7 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,16 +51,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.launch
@@ -86,12 +78,10 @@ class SongMenuScene(
     val song: Song,
 ) : DialogScene() {
     @Composable
-    override fun Content() {
+    override fun DialogContent() {
         val path = LocalNavigationPath.current
         val scene = LocalScene.current
         val scope = rememberCoroutineScope()
-        val density = LocalDensity.current
-        val slideOffsetPx = with(density) { 72.dp.toPx() }
         val viewModel: SongMenuViewModel =
             koinViewModel(
                 key = "SongMenuViewModel_${song.mediaStoreId}",
@@ -102,13 +92,10 @@ class SongMenuScene(
         val album by viewModel.albumDetail.collectAsStateWithLifecycle()
         val artist by viewModel.artistDetail.collectAsStateWithLifecycle()
 
-        var showPlaylistDialog by remember { mutableStateOf(false) }
-        var showCreatePlaylistDialog by remember { mutableStateOf(false) }
-
         val keyboardController = LocalSoftwareKeyboardController.current
         val focusManager = LocalFocusManager.current
 
-        SideEffect {
+        LaunchedEffect(Unit) {
             keyboardController?.hide()
             focusManager.clearFocus()
         }
@@ -124,109 +111,128 @@ class SongMenuScene(
             }
         }
 
-        Box(
-            Modifier
-                .zIndex(3f)
-                .fillMaxSize(),
-        ) {
-            val interactionSource = remember { MutableInteractionSource() }
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .graphicsLayer { alpha = enterProgress.value }
-                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.42f))
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                        ) { closeMenu() },
-            )
-
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.Center)
-                        .graphicsLayer {
-                            val p = enterProgress.value
-                            applyDefaultShowTransform(
-                                progress = p,
-                                origin = TransformOrigin(0.5f, 1f),
-                            )
-                            translationY = (1f - p) * slideOffsetPx
-                        },
-            ) {
-                SongMenuContent(
-                    song = song,
-                    isLiked = isLiked,
-                    onClose = ::closeMenu,
-                    onPlayNext = {
-                        viewModel.addToNext()
-                        closeMenu()
-                    },
-                    onAddToQueue = {
-                        viewModel.addToQueue()
-                        closeMenu()
-                    },
-                    onToggleLike = {
-                        viewModel.toggleLike()
-                        closeMenu()
-                    },
-                    onShowPlaylistDialog = {
-                        showPlaylistDialog = true
-                    },
-                    onOpenAlbum = {
-                        closeAndNavigate { path.push(AlbumDetailScene(album)) }
-                    },
-                    onOpenArtist = {
-                        closeAndNavigate { path.push(ArtistDetailScene(artist)) }
-                    },
-                    onOpenSongInfo = {
-                        closeAndNavigate { path.push(SongInfoScene(song)) }
-                    },
-                    onIgnoreSong = {
-                        viewModel.ignoreSong()
-                        closeMenu()
-                    },
-                )
+        val onPlayNext =
+            remember {
+                {
+                    viewModel.addToNext()
+                    closeMenu()
+                }
             }
-        }
-
-        if (showPlaylistDialog) {
-            PlaylistPickerDialog(
-                playlists = playlists,
-                onDismiss = { showPlaylistDialog = false },
-                onCreatePlaylist = {
-                    showPlaylistDialog = false
-                    showCreatePlaylistDialog = true
-                },
-                onSelectPlaylist = { playlist ->
-                    playlist.playlistId?.let { playlistId ->
-                        viewModel.addToPlaylist(playlistId)
-                    }
-                    showPlaylistDialog = false
+        val onAddToQueue =
+            remember {
+                {
+                    viewModel.addToQueue()
                     closeMenu()
-                },
-            )
-        }
-
-        if (showCreatePlaylistDialog) {
-            CreatePlaylistDialog(
-                onDismiss = { showCreatePlaylistDialog = false },
-                onConfirm = { name ->
-                    viewModel.createPlaylistAndAdd(name)
-                    showCreatePlaylistDialog = false
+                }
+            }
+        val onToggleLike =
+            remember {
+                {
+                    viewModel.toggleLike()
                     closeMenu()
-                },
-                onOpenFullCreator = {
-                    showCreatePlaylistDialog = false
-                    closeAndNavigate { path.push(PlaylistCreatorScene()) }
-                },
-            )
-        }
+                }
+            }
+        val onShowPlaylistDialog =
+            remember {
+                {
+                    path.push(
+                        PlaylistPickerScene(
+                            parentScene = this@SongMenuScene,
+                            viewModel = viewModel,
+                            playlists = playlists,
+                        ),
+                    )
+                }
+            }
+        val onOpenAlbum = remember(album) { { closeAndNavigate { path.push(AlbumDetailScene(album)) } } }
+        val onOpenArtist = remember(artist) { { closeAndNavigate { path.push(ArtistDetailScene(artist)) } } }
+        val onOpenSongInfo = remember { { closeAndNavigate { path.push(SongInfoScene(song)) } } }
+        val onIgnoreSong =
+            remember {
+                {
+                    viewModel.ignoreSong()
+                    closeMenu()
+                }
+            }
+
+        SongMenuContent(
+            song = song,
+            isLiked = isLiked,
+            onClose = ::closeMenu,
+            onPlayNext = onPlayNext,
+            onAddToQueue = onAddToQueue,
+            onToggleLike = onToggleLike,
+            onShowPlaylistDialog = onShowPlaylistDialog,
+            onOpenAlbum = onOpenAlbum,
+            onOpenArtist = onOpenArtist,
+            onOpenSongInfo = onOpenSongInfo,
+            onIgnoreSong = onIgnoreSong,
+        )
     }
+}
 
+private class PlaylistPickerScene(
+    private val parentScene: SongMenuScene,
+    private val viewModel: SongMenuViewModel,
+    private val playlists: List<me.spica27.spicamusic.common.entity.Playlist>,
+) : DialogScene() {
     @Composable
-    override fun DialogContent() = Unit
+    override fun DialogContent() {
+        val path = LocalNavigationPath.current
+        val scene = LocalScene.current
+        val scope = rememberCoroutineScope()
+
+        PlaylistPickerDialogContent(
+            playlists = playlists,
+            onDismiss = { path.pop(scene) },
+            onCreatePlaylist = {
+                scope.launch {
+                    path.pop(scene)
+                    path.push(CreatePlaylistScene(parentScene, viewModel))
+                }
+            },
+            onSelectPlaylist = { playlist ->
+                val playlistId = playlist.playlistId
+                if (playlistId != null) {
+                    viewModel.addToPlaylist(playlistId)
+                    scope.launch {
+                        path.pop(scene)
+                        path.pop(parentScene)
+                    }
+                } else {
+                    path.pop(scene)
+                }
+            },
+        )
+    }
+}
+
+private class CreatePlaylistScene(
+    private val parentScene: SongMenuScene,
+    private val viewModel: SongMenuViewModel,
+) : DialogScene() {
+    @Composable
+    override fun DialogContent() {
+        val path = LocalNavigationPath.current
+        val scene = LocalScene.current
+        val scope = rememberCoroutineScope()
+
+        CreatePlaylistDialogContent(
+            onDismiss = { path.pop(scene) },
+            onConfirm = { name ->
+                viewModel.createPlaylistAndAdd(name)
+                scope.launch {
+                    path.pop(scene)
+                    path.pop(parentScene)
+                }
+            },
+            onOpenFullCreator = {
+                path.pop(scene)
+                path.pop(parentScene)
+                path.push(PlaylistCreatorScene())
+            },
+        )
+    }
 }
 
 @Composable
@@ -243,29 +249,20 @@ private fun SongMenuContent(
     onOpenSongInfo: () -> Unit,
     onIgnoreSong: () -> Unit,
 ) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.BottomCenter,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .clip(shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
                     .padding(bottom = 12.dp),
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .padding(top = 10.dp)
-                        .width(44.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.65f))
-                        .align(Alignment.CenterHorizontally),
-            )
             Row(
                 modifier =
                     Modifier
@@ -519,25 +516,28 @@ private fun ControlItem(
 }
 
 @Composable
-private fun PlaylistPickerDialog(
+private fun PlaylistPickerDialogContent(
     playlists: List<me.spica27.spicamusic.common.entity.Playlist>,
     onDismiss: () -> Unit,
     onCreatePlaylist: () -> Unit,
     onSelectPlaylist: (me.spica27.spicamusic.common.entity.Playlist) -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surface,
         tonalElevation = 6.dp,
-        title = {
+        shadowElevation = 8.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
             DialogTitle(
                 title = stringResource(R.string.add_to_playlist),
                 subtitle = stringResource(R.string.playlist_picker_subtitle),
                 icon = Icons.AutoMirrored.Default.PlaylistAdd,
             )
-        },
-        text = {
             Column(
                 modifier =
                     Modifier
@@ -562,50 +562,54 @@ private fun PlaylistPickerDialog(
                     }
                 }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = onCreatePlaylist,
-                shape = RoundedCornerShape(16.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
             ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(stringResource(R.string.create_playlist))
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.cancel))
+                }
+                Button(
+                    onClick = onCreatePlaylist,
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(stringResource(R.string.create_playlist))
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable
-private fun CreatePlaylistDialog(
+private fun CreatePlaylistDialogContent(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
     onOpenFullCreator: () -> Unit,
 ) {
     var playlistName by remember { mutableStateOf("") }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surface,
         tonalElevation = 6.dp,
-        title = {
+        shadowElevation = 8.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
             DialogTitle(
                 title = stringResource(R.string.create_playlist),
                 subtitle = stringResource(R.string.create_playlist_auto_add_subtitle),
                 icon = Icons.Default.Add,
             )
-        },
-        text = {
             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 OutlinedTextField(
                     value = playlistName,
@@ -628,22 +632,23 @@ private fun CreatePlaylistDialog(
                     Text(stringResource(R.string.create_empty_only))
                 }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onConfirm(playlistName) },
-                enabled = playlistName.isNotBlank(),
-                shape = RoundedCornerShape(16.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
             ) {
-                Text(stringResource(R.string.create_and_add))
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.cancel))
+                }
+                Button(
+                    onClick = { onConfirm(playlistName) },
+                    enabled = playlistName.isNotBlank(),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Text(stringResource(R.string.create_and_add))
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable

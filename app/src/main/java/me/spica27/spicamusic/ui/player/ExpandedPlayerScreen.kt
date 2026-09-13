@@ -180,9 +180,9 @@ fun ExpandedPlayerScreen(
     initialPage: Int = DEFAULT_PAGE, // 初始页面索引
     animationsEnabled: Boolean = true,
 ) {
+    val path = LocalNavigationPath.current
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val sleepTimer by viewModel.sleepTimer.collectAsStateWithLifecycle()
-    var showSleepTimerDialog by remember { mutableStateOf(false) }
     val playMode by viewModel.playMode.collectAsStateWithLifecycle()
     val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
     val duration by viewModel.currentDuration.collectAsStateWithLifecycle()
@@ -375,7 +375,7 @@ fun ExpandedPlayerScreen(
                             onFavoriteClick = {
                                 viewModel.toggleLikeCurrentSong()
                             },
-                            onSleepTimerClick = { showSleepTimerDialog = true },
+                            onSleepTimerClick = { path.push(SleepTimerScene()) },
                             sleepTimer = sleepTimer,
                             onPlaylistClick = {
                                 coroutineScope.launch {
@@ -408,15 +408,6 @@ fun ExpandedPlayerScreen(
                     }
                 }
             }
-        }
-
-        if (showSleepTimerDialog) {
-            SleepTimerDialog(
-                timer = sleepTimer,
-                onDismiss = { showSleepTimerDialog = false },
-                onSetTimer = viewModel::setSleepTimer,
-                onCancelTimer = viewModel::cancelSleepTimer,
-            )
         }
     }
 }

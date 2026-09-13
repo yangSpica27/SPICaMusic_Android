@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -26,11 +25,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.common.collect.ImmutableList
+import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsDisplayMode
 import me.spica27.spicamusic.ui.widget.LyricsDisplayOptions
-import me.spica27.spicamusic.ui.widget.LyricsSourceSheet
+import me.spica27.spicamusic.ui.widget.LyricsSourceScene
 import me.spica27.spicamusic.ui.widget.LyricsUI
 import org.koin.compose.viewmodel.koinActivityViewModel
 
@@ -57,8 +57,7 @@ fun LyricsPanel(
     val viewModel: LyricsViewModel = koinActivityViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // 歌词切换面板的纯 UI 状态（不需要持久化）
-    var showSwitcherSheet by remember { mutableStateOf(false) }
+    val path = LocalNavigationPath.current
 
     // 当前播放时间（帧级更新，保留在 Composable 中因为依赖逐帧对齐）
     // 首帧直接使用播放器的真实位置，避免先以 0ms 完成一次错误的歌词定位，
@@ -81,24 +80,6 @@ fun LyricsPanel(
                 currentTimeState.longValue = viewModel.getCurrentPositionMs()
             }
         }
-    }
-
-    // 歌词切换面板
-    if (showSwitcherSheet) {
-        LyricsSourceSheet(
-            embedded = uiState.embeddedSource,
-            local = uiState.localSource,
-            online = uiState.onlineSources,
-            onlineLoading = uiState.onlineLoading,
-            currentSourceType = uiState.currentSourceType,
-            currentRawText = uiState.displayedRawText,
-            onSelect = { source ->
-                showSwitcherSheet = false
-                viewModel.selectSource(source)
-            },
-            onImportLocalFile = { uri -> viewModel.importLocalFile(uri) },
-            onDismiss = { showSwitcherSheet = false },
-        )
     }
 
     Box(
@@ -153,7 +134,7 @@ fun LyricsPanel(
             onOffsetChange = { viewModel.updateOffset(it) },
             onOpenLyricsSwitcher = {
                 viewModel.openPanel()
-                showSwitcherSheet = true
+                path.push(LyricsSourceScene())
             },
             modifier =
                 Modifier
