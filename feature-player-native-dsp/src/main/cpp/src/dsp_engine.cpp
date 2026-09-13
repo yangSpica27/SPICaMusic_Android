@@ -44,6 +44,7 @@ FftAnalyzer::FftAnalyzer() {
 
 FftAnalyzer::~FftAnalyzer() {
     stop_.store(true, std::memory_order_release);
+    bandsCondition_.notify_all();
     if (worker_.joinable()) worker_.join();
     if (setup_ != nullptr) {
         pffft_destroy_setup(setup_);
@@ -58,6 +59,7 @@ bool FftAnalyzer::configure(int sampleRate) {
     // previous worker before replacing the PFFFT setup so no worker can use a
     // destroyed setup during a format change.
     stop_.store(true, std::memory_order_release);
+    bandsCondition_.notify_all();
     if (worker_.joinable()) worker_.join();
 
     decimationFactor_ = std::max(1, (sampleRate + 48000 - 1) / 48000);
@@ -128,8 +130,9 @@ void FftAnalyzer::push(const float* mono, std::size_t frames) {
         decimationCount_ = 0;
 
         if (write - read >= kRingSize - 1) {
-            // FFT is an observation path. Never block the audio thread when
-            // the worker is behind; dropping the newest sample bounds latency.
+            // FFT is an observation path, so never block the audio thread.
+            // The worker skips to the newest complete retained window when it
+            // wakes instead of processing this backlog sequentially.
             break;
         }
         ring_[write & kRingMask] = sample;
@@ -141,17 +144,28 @@ void FftAnalyzer::push(const float* mono, std::size_t frames) {
 void FftAnalyzer::reset() {
     generation_.fetch_add(1, std::memory_order_acq_rel);
 
-    std::lock_guard<std::mutex> lock(bandsMutex_);
-    const int next = activeBandBuffer_.load(std::memory_order_relaxed) ^ 1;
-    bandBuffers_[next].fill(0.0f);
-    bandsSequence_.fetch_add(1, std::memory_order_acq_rel);
-    activeBandBuffer_.store(next, std::memory_order_release);
-    bandsSequence_.fetch_add(1, std::memory_order_release);
+    {
+        std::lock_guard<std::mutex> lock(bandsMutex_);
+        const int next = activeBandBuffer_.load(std::memory_order_relaxed) ^ 1;
+        bandBuffers_[next].fill(0.0f);
+        bandsSequence_.fetch_add(1, std::memory_order_acq_rel);
+        activeBandBuffer_.store(next, std::memory_order_release);
+        bandsSequence_.fetch_add(1, std::memory_order_release);
+    }
+    bandsCondition_.notify_all();
 }
 
-std::uint64_t FftAnalyzer::readBands(float* out, std::size_t count) const {
+std::uint64_t FftAnalyzer::awaitBands(std::uint64_t afterSequence, float* out,
+                                      std::size_t count, int timeoutMs) {
     if (out == nullptr || count < kBandCount) return 0;
-    std::lock_guard<std::mutex> lock(bandsMutex_);
+
+    std::unique_lock<std::mutex> lock(bandsMutex_);
+    const auto timeout = std::chrono::milliseconds(
+        std::max(1, std::min(timeoutMs, 1000)));
+    bandsCondition_.wait_for(lock, timeout, [this, afterSequence] {
+        return bandsSequence_.load(std::memory_order_acquire) != afterSequence;
+    });
+
     const int active = activeBandBuffer_.load(std::memory_order_relaxed);
     std::copy(bandBuffers_[active].begin(), bandBuffers_[active].end(), out);
     return bandsSequence_.load(std::memory_order_relaxed);
@@ -175,12 +189,20 @@ void FftAnalyzer::workerLoop() {
             continue;
         }
 
+        // Follow the FIFO window order used by the Kotlin analyzer during
+        // normal playback. Only discard old windows when more than two full
+        // windows are queued, which bounds overload latency without making a
+        // large Media3 input block jump ahead of audible playback.
+        if (write - read > static_cast<std::size_t>(kFftSize * 2)) {
+            read = write - kFftSize;
+        }
+
         const int generation = generation_.load(std::memory_order_acquire);
         for (int i = 0; i < kFftSize; ++i) {
             fftInput_[i] = ring_[(read + static_cast<std::size_t>(i)) & kRingMask] *
                            hammingWindow_[i];
         }
-        read += kFftSize;
+        read += kHopSize;
         readIndex_.store(read, std::memory_order_release);
 
         pffft_transform_ordered(setup_, fftInput_.data(), fftOutput_.data(),
@@ -219,17 +241,20 @@ void FftAnalyzer::workerLoop() {
 }
 
 void FftAnalyzer::publishBands(const float* values, int generation) {
-    std::lock_guard<std::mutex> lock(bandsMutex_);
-    if (generation != generation_.load(std::memory_order_acquire) ||
-        !enabled_.load(std::memory_order_acquire) ||
-        !playbackActive_.load(std::memory_order_acquire)) {
-        return;
+    {
+        std::lock_guard<std::mutex> lock(bandsMutex_);
+        if (generation != generation_.load(std::memory_order_acquire) ||
+            !enabled_.load(std::memory_order_acquire) ||
+            !playbackActive_.load(std::memory_order_acquire)) {
+            return;
+        }
+        bandsSequence_.fetch_add(1, std::memory_order_acq_rel);
+        const int next = activeBandBuffer_.load(std::memory_order_relaxed) ^ 1;
+        std::copy(values, values + kBandCount, bandBuffers_[next].begin());
+        activeBandBuffer_.store(next, std::memory_order_release);
+        bandsSequence_.fetch_add(1, std::memory_order_release);
     }
-    bandsSequence_.fetch_add(1, std::memory_order_acq_rel);
-    const int next = activeBandBuffer_.load(std::memory_order_relaxed) ^ 1;
-    std::copy(values, values + kBandCount, bandBuffers_[next].begin());
-    activeBandBuffer_.store(next, std::memory_order_release);
-    bandsSequence_.fetch_add(1, std::memory_order_release);
+    bandsCondition_.notify_all();
 }
 
 void FftAnalyzer::mapToBands(const float* magnitudes, float* result) {
@@ -255,8 +280,8 @@ void FftAnalyzer::mapToBands(const float* magnitudes, float* result) {
             result[band] = 0.0f;
             continue;
         }
-        // 包含 bin 0（恢复完整的低频能量）
-        const int lowBin = std::max(0, static_cast<int>(low / frequencyResolution));
+        // Skip DC so a small PCM offset cannot pin the lowest visual bands.
+        const int lowBin = std::max(1, static_cast<int>(low / frequencyResolution));
         const int highBin = std::max(lowBin, std::min(
             kFftSize / 2 - 1,
             static_cast<int>(std::min(high, nyquist) / frequencyResolution)));
@@ -566,8 +591,9 @@ void DspEngine::setPlaybackActive(bool active) {
     fft_.setPlaybackActive(active);
 }
 
-std::uint64_t DspEngine::readBands(float* out, std::size_t count) const {
-    return fft_.readBands(out, count);
+std::uint64_t DspEngine::awaitBands(std::uint64_t afterSequence, float* out,
+                                    std::size_t count, int timeoutMs) {
+    return fft_.awaitBands(afterSequence, out, count, timeoutMs);
 }
 
 void DspEngine::applyParameterSnapshot() {
@@ -739,18 +765,32 @@ bool DspEngine::decode(const std::uint8_t* input, std::size_t inputBytes, int fr
 void DspEngine::pushFftAnalysis(int frames) {
     if (frames <= 0 || frames > maxFrames_ || channelCount_ <= 0) return;
 
-    // FFT is an observation path. Mix every interleaved channel into a
-    // mono analysis buffer so a silent/quiet first channel cannot hide the
-    // spectrum of a Hi-Res multichannel recording. The original channel
-    // buffers remain untouched for EQ/loudness and output encoding.
-    const float scale = 1.0f / static_cast<float>(channelCount_);
+    // Match the Kotlin path's first-channel analysis to keep amplitude and
+    // channel selection stable. If that channel is truly silent, fall back to
+    // the strongest channel so multichannel material remains visible.
+    int analysisChannel = 0;
+    float firstEnergy = 0.0f;
     for (int frame = 0; frame < frames; ++frame) {
-        float sum = 0.0f;
-        for (int channel = 0; channel < channelCount_; ++channel) {
-            sum += channelBuffers_[channel][frame];
-        }
-        fftMonoBuffer_[frame] = sum * scale;
+        const float sample = channelBuffers_[0][frame];
+        firstEnergy += sample * sample;
     }
+    if (firstEnergy <= 1.0e-12f) {
+        float strongestEnergy = firstEnergy;
+        for (int channel = 1; channel < channelCount_; ++channel) {
+            float energy = 0.0f;
+            for (int frame = 0; frame < frames; ++frame) {
+                const float sample = channelBuffers_[channel][frame];
+                energy += sample * sample;
+            }
+            if (energy > strongestEnergy) {
+                strongestEnergy = energy;
+                analysisChannel = channel;
+            }
+        }
+    }
+
+    std::copy_n(channelBuffers_[analysisChannel].data(), frames,
+                fftMonoBuffer_.data());
     fft_.push(fftMonoBuffer_.data(), static_cast<std::size_t>(frames));
 }
 

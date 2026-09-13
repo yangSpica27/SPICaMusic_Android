@@ -7,7 +7,7 @@ player on `arm64-v8a`:
 Media3 AudioProcessor (DirectByteBuffer)
   -> JNI
   -> PCM decode (8/16/24/32-bit LE/BE and float)
-  -> PFFFT analyzer (4096 samples, asynchronous)
+  -> PFFFT analyzer (4096-sample non-overlapping window, asynchronous)
   -> DSPFilters RBJ EQ (10 bands)
   -> libebur128 measurement + native gain/limiter
   -> encode to the original PCM format
@@ -17,6 +17,11 @@ For 88.2/96/176.4/192 kHz input the analyzer performs analysis-only
 decimation to a rate at or below 48 kHz, while the negotiated PCM stream is
 passed through at its original rate and encoding. FFT bin mapping uses that
 effective analysis rate, so Hi-Res tones remain at their actual frequencies.
+
+The analyzer follows the Kotlin path's non-overlapping window cadence. Native
+results wake the Kotlin reader as soon as they are published; there is no
+fixed-rate JNI polling stage. If analysis falls more than two windows behind,
+the worker skips stale windows instead of replaying a long queue.
 
 The negotiated `AudioFormat` is returned unchanged. If the native library is
 unavailable or a block cannot be processed, the adapter returns

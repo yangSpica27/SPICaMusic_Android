@@ -2,6 +2,7 @@
 
 #include <array>
 #include <atomic>
+#include <condition_variable>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -50,16 +51,17 @@ public:
     void setPlaybackActive(bool active);
     void push(const float* mono, std::size_t frames);
     void reset();
-    std::uint64_t readBands(float* out, std::size_t count) const;
+    std::uint64_t awaitBands(std::uint64_t afterSequence, float* out,
+                             std::size_t count, int timeoutMs);
 
 private:
     void workerLoop();
     void publishBands(const float* values, int generation);
     void mapToBands(const float* magnitudes, float* result);
 
-    // 时域平滑参数：0.2 = 新帧权重 80%，历史帧权重 20%
-    static constexpr float kSmoothingAlpha = 0.8f;
-
+    // Match the Kotlin analyzer's non-overlapping 4096-sample windows. The
+    // latest-window fallback below is used only when the worker is overloaded.
+    static constexpr int kHopSize = kFftSize;
     static constexpr std::size_t kRingSize = 1u << 15;
     static constexpr std::size_t kRingMask = kRingSize - 1;
 
@@ -74,8 +76,8 @@ private:
 
     std::array<float, kRingSize> ring_{};
     std::array<std::array<float, kBandCount>, 2> bandBuffers_{};
-    std::array<float, kBandCount> smoothedBands_{};  // 平滑滤波状态
     mutable std::mutex bandsMutex_;
+    std::condition_variable bandsCondition_;
     alignas(16) std::array<float, kFftSize> fftInput_{};
     alignas(16) std::array<float, kFftSize> fftOutput_{};
     alignas(16) std::array<float, kFftSize> fftWork_{};
@@ -170,7 +172,8 @@ public:
     void setParameters(const DspParameters& parameters);
     void setFftEnabled(bool enabled);
     void setPlaybackActive(bool active);
-    std::uint64_t readBands(float* out, std::size_t count) const;
+    std::uint64_t awaitBands(std::uint64_t afterSequence, float* out,
+                             std::size_t count, int timeoutMs);
     void reset();
 
     bool isConfigured() const { return configured_; }

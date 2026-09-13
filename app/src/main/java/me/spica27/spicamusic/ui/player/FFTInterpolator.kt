@@ -27,8 +27,8 @@ class FFTInterpolator(
     scope: CoroutineScope,
 ) {
     companion object {
-        // 绘制帧间隔（约 60fps）
-        private const val FRAME_INTERVAL_MS = 16L
+        // 绘制帧间隔（约 120fps）
+        private const val FRAME_INTERVAL_MS = 8L
 
         // FFT 帧间隔的插值时长上下限
         private const val MIN_TRANSITION_MS = 8L
@@ -56,7 +56,6 @@ class FFTInterpolator(
 
             while (true) {
                 val now = SystemClock.elapsedRealtime()
-
                 val target = fftProcessor.bands.value
                 if (target !== lastFrame) {
                     // 收到新 FFT 帧：以当前输出为起点，向新数据过渡

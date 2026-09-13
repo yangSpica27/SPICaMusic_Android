@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.io.Closeable
 import java.nio.ByteBuffer
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
@@ -24,7 +24,8 @@ import java.util.concurrent.atomic.AtomicLong
 class NativeDspEngine : Closeable {
 
     companion object {
-        private const val POLL_INTERVAL_MS = 50L
+        private const val BAND_WAIT_TIMEOUT_MS = 250
+        private const val IDLE_RECHECK_INTERVAL_MS = 16L
         private const val DEFAULT_MAX_FRAMES = 32 * 1024
         private const val BAND_COUNT = 31
 
@@ -55,15 +56,15 @@ class NativeDspEngine : Closeable {
     @Volatile private var playbackActive = false
     @Volatile private var configured = false
     @Volatile private var lastBandSequence = 0L
+    @Volatile private var bandStateGeneration = 0L
+    @Volatile private var closing = false
     private var pollBuffer = FloatArray(BAND_COUNT)
 
-    private val poller: ScheduledExecutorService? = if (isAvailable) {
-        Executors.newSingleThreadScheduledExecutor { runnable ->
-            Thread(runnable, "Native-DSP-FFT").apply { priority = Thread.MIN_PRIORITY }
+    private val bandReader: ExecutorService? = if (isAvailable) {
+        Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "Native-DSP-Bands").apply { priority = Thread.NORM_PRIORITY }
         }.also { executor ->
-            executor.scheduleAtFixedRate(
-                { pollBands() }, POLL_INTERVAL_MS, POLL_INTERVAL_MS, TimeUnit.MILLISECONDS,
-            )
+            executor.execute(::readBandsLoop)
         }
     } else {
         null
@@ -79,6 +80,7 @@ class NativeDspEngine : Closeable {
         synchronized(stateLock) {
             val currentHandle = handle.get()
             if (currentHandle == 0L) return false
+            bandStateGeneration++
             val success = nativeConfigure(
                 currentHandle, sampleRate, channelCount, encoding,
                 maxFrames.coerceAtLeast(1),
@@ -146,6 +148,7 @@ class NativeDspEngine : Closeable {
     fun disableFft() {
         _isFftEnabled.value = false
         synchronized(stateLock) {
+            bandStateGeneration++
             handle.get().takeIf { it != 0L }?.let { nativeSetFftEnabled(it, false) }
             lastBandSequence = 0L
             _bands.value = FloatArray(BAND_COUNT)
@@ -155,6 +158,7 @@ class NativeDspEngine : Closeable {
     fun setPlaybackActive(active: Boolean) {
         playbackActive = active
         synchronized(stateLock) {
+            if (!active) bandStateGeneration++
             handle.get().takeIf { it != 0L }?.let { nativeSetPlaybackActive(it, active) }
             if (!active) {
                 lastBandSequence = 0L
@@ -165,6 +169,7 @@ class NativeDspEngine : Closeable {
 
     fun reset() {
         synchronized(stateLock) {
+            bandStateGeneration++
             handle.get().takeIf { it != 0L }?.let { nativeReset(it) }
             lastBandSequence = 0L
             _bands.value = FloatArray(BAND_COUNT)
@@ -185,32 +190,65 @@ class NativeDspEngine : Closeable {
         }
     }
 
-    private fun pollBands() {
-        val currentHandle = handle.get()
-        if (currentHandle == 0L || !configured || !_isFftEnabled.value || !playbackActive) return
-        synchronized(stateLock) {
-            if (handle.get() != currentHandle || !configured ||
-                !_isFftEnabled.value || !playbackActive
-            ) return
-            // Serialize the read with reset/configure so a window produced just
-            // before seek/pause cannot be published after the UI has cleared it.
-            val sequence = nativeReadBands(currentHandle, pollBuffer)
-            if (sequence == 0L || sequence == lastBandSequence) return
-            lastBandSequence = sequence
-            // StateFlow consumers may retain the array; publish a copy rather
-            // than mutating the polling buffer on the next native read.
-            _bands.value = pollBuffer.copyOf()
+    private fun readBandsLoop() {
+        while (!closing && !Thread.currentThread().isInterrupted) {
+            val currentHandle = handle.get()
+            if (currentHandle == 0L) return
+
+            if (!configured || !_isFftEnabled.value || !playbackActive) {
+                try {
+                    Thread.sleep(IDLE_RECHECK_INTERVAL_MS)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    return
+                }
+                continue
+            }
+
+            val generation = bandStateGeneration
+            val observedSequence = lastBandSequence
+            val sequence = nativeAwaitBands(
+                currentHandle,
+                observedSequence,
+                pollBuffer,
+                BAND_WAIT_TIMEOUT_MS,
+            )
+            if (sequence == 0L || sequence == observedSequence) continue
+
+            synchronized(stateLock) {
+                if (closing || handle.get() != currentHandle ||
+                    generation != bandStateGeneration || !configured ||
+                    !_isFftEnabled.value || !playbackActive ||
+                    sequence == lastBandSequence
+                ) return@synchronized
+
+                lastBandSequence = sequence
+                // StateFlow consumers may retain the array; publish a copy
+                // before the next native wait reuses pollBuffer.
+                _bands.value = pollBuffer.copyOf()
+            }
         }
     }
 
     override fun close() {
-        val currentHandle = handle.getAndSet(0L)
-        poller?.shutdown()
-        poller?.awaitTermination(200L, TimeUnit.MILLISECONDS)
-        poller?.shutdownNow()
+        closing = true
+        val currentHandle =
+            synchronized(stateLock) {
+                bandStateGeneration++
+                configured = false
+                handle.getAndSet(0L).also { value ->
+                    // reset() inside setFftEnabled wakes a native await so the
+                    // reader can observe closing without waiting for timeout.
+                    if (value != 0L) nativeSetFftEnabled(value, false)
+                }
+            }
+        bandReader?.shutdownNow()
+        bandReader?.awaitTermination(
+            BAND_WAIT_TIMEOUT_MS.toLong() + 250L,
+            TimeUnit.MILLISECONDS,
+        )
         synchronized(stateLock) {
             if (currentHandle != 0L) nativeRelease(currentHandle)
-            configured = false
         }
     }
 
@@ -228,7 +266,12 @@ class NativeDspEngine : Closeable {
     )
     private external fun nativeSetFftEnabled(handle: Long, enabled: Boolean)
     private external fun nativeSetPlaybackActive(handle: Long, active: Boolean)
-    private external fun nativeReadBands(handle: Long, output: FloatArray): Long
+    private external fun nativeAwaitBands(
+        handle: Long,
+        afterSequence: Long,
+        output: FloatArray,
+        timeoutMs: Int,
+    ): Long
     private external fun nativeReset(handle: Long)
     @Suppress("unused")
     private external fun nativeResetFft(handle: Long)

@@ -109,13 +109,16 @@ Java_me_spica27_spicamusic_dsp_NativeDspEngine_nativeSetPlaybackActive(
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_me_spica27_spicamusic_dsp_NativeDspEngine_nativeReadBands(
-    JNIEnv* env, jobject, jlong handle, jfloatArray output) {
+Java_me_spica27_spicamusic_dsp_NativeDspEngine_nativeAwaitBands(
+    JNIEnv* env, jobject, jlong handle, jlong afterSequence,
+    jfloatArray output, jint timeoutMs) {
     auto* value = engine(handle);
     if (value == nullptr || output == nullptr ||
         env->GetArrayLength(output) < DspEngine::kBandCount) return 0;
     jfloat bands[DspEngine::kBandCount]{};
-    const std::uint64_t sequence = value->readBands(bands, DspEngine::kBandCount);
+    const std::uint64_t sequence = value->awaitBands(
+        static_cast<std::uint64_t>(afterSequence), bands,
+        DspEngine::kBandCount, timeoutMs);
     env->SetFloatArrayRegion(output, 0, DspEngine::kBandCount, bands);
     return static_cast<jlong>(sequence);
 }
