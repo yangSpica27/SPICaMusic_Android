@@ -242,7 +242,6 @@ abstract class PopupMenuScene(
                         )
                         shape = RoundedCornerShape(radius)
                         clip = true
-                        shadowElevation = p * elevationPx
                     }
                     // 容器背景：锚点色 → 菜单面色
                     .drawBehind {
