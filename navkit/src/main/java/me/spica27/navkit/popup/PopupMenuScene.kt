@@ -178,16 +178,6 @@ abstract class PopupMenuScene(
 
         val menuColor = menuContainerColor()
         val anchorColor = anchorContainerColor()
-        val progress = enterProgress.value
-
-        val containerBackgroundColor = when {
-            anchorColor.alpha < 0.01f && progress <= 0.2f -> Color.Transparent
-            anchorColor.alpha < 0.01f -> {
-                val adjustedProgress = ((progress - 0.2f) / 0.8f).coerceIn(0f, 1f)
-                menuColor.copy(alpha = adjustedProgress)
-            }
-            else -> lerp(anchorColor, menuColor, progress)
-        }
 
         val menuRadiusPx = with(density) { menuCornerRadius.toPx() }
         val marginPx = with(density) { screenMargin.toPx() }
@@ -195,7 +185,7 @@ abstract class PopupMenuScene(
         // edge-to-edge 下场景容器铺满整个窗口，目标矩形需避开系统栏
         val systemBarInsets = WindowInsets.systemBars
 
-        // 锚点矩形在 onPush 时已冻结，组合期读取即为稳定值
+        // 锚点矩形在 onPush 时已冻结；尺寸读取一次，后续位置仍取冻结值
         val anchorRect = anchorState.anchorRect.value
         val ghostWidth = with(density) { anchorRect.width.toDp() }
         val ghostHeight = with(density) { anchorRect.height.toDp() }
@@ -245,7 +235,24 @@ abstract class PopupMenuScene(
                     }
                     // 容器背景：锚点色 → 菜单面色
                     .drawBehind {
-                        drawRect(lerp(anchorColor, menuColor, enterProgress.value))
+                        val progress = enterProgress.value
+                        val containerColor =
+                            when {
+                                anchorColor.alpha < 0.01f &&
+                                        progress <= TRANSPARENT_ANCHOR_FADE_START ->
+                                    Color.Transparent
+
+                                anchorColor.alpha < 0.01f -> {
+                                    val adjustedProgress =
+                                        ((progress - TRANSPARENT_ANCHOR_FADE_START) /
+                                                (1f - TRANSPARENT_ANCHOR_FADE_START))
+                                            .coerceIn(0f, 1f)
+                                    menuColor.copy(alpha = adjustedProgress)
+                                }
+
+                                else -> lerp(anchorColor, menuColor, progress)
+                            }
+                        drawRect(containerColor)
                     }
                     // 尺寸：内容始终按自然尺寸测量（约束恒定命中缓存），容器上报插值尺寸
                     .layout { measurable, constraints ->
@@ -347,6 +354,9 @@ abstract class PopupMenuScene(
         /** 菜单内容淡入起止进度 */
         private const val MENU_FADE_START = 0.15f
         private const val MENU_FADE_END = 0.6f
+
+        /** 透明锚点背景从 20% 进度后开始浮现 */
+        private const val TRANSPARENT_ANCHOR_FADE_START = 0.2f
     }
 }
 

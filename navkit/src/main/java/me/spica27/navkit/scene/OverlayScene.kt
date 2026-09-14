@@ -48,7 +48,9 @@ abstract class OverlayScene : Scene() {
      * onGloballyPositioned 完成布局后调用，触发 [waitAppear] 解除阻塞。
      */
     fun notifyPlaced() {
-        _placed.value = true
+        if (stage.value == SceneStage.Appearing) {
+            _placed.value = true
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -84,6 +86,7 @@ abstract class OverlayScene : Scene() {
 
     /** pop 后重置 placed 状态，供场景实例复用 */
     override suspend fun onPop() {
+        enterProgress.snapTo(0f)
         _placed.value = false
         _enterAnimEnd.value = false
     }

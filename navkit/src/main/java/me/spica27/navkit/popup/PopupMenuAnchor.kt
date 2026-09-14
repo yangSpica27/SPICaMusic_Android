@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.toSize
  * 弹出菜单锚点的状态容器，连接"前一个页面里的锚点组件"与 [PopupMenuScene]。
  *
  * ## 工作原理
- * 1. 锚点组件附加 [Modifier.popupMenuAnchor]，静止时持续把自身窗口矩形写入 [anchorRect]
+ * 1. 锚点组件附加 [Modifier.popupMenuAnchor]，静止时持续刷新自身窗口矩形
  * 2. push [PopupMenuScene] 时场景把自己写入 [owner]，矩形随即**冻结**
  *    （菜单开合动画期间锚点坐标不再刷新，参照
  *    [GeometryTransition][me.spica27.navkit.geometry.GeometryTransition] 的源矩形冻结策略）
@@ -39,8 +39,22 @@ class PopupMenuAnchorState {
     /** 场景的幽灵复制品已上屏、源组件应当隐藏；由 [PopupMenuScene] 维护 */
     val sourceHidden: MutableState<Boolean> = mutableStateOf(false)
 
+    /** 最新一次布局回调的窗口矩形；owner 为空时同步到 [anchorRect] */
+    private var latestAnchorRect: Rect = Rect.Zero
+
     /** 菜单是否已打开 */
     val isOpen: Boolean get() = owner.value != null
+
+    internal fun refreshAnchorRect() {
+        if (owner.value == null) {
+            anchorRect.value = latestAnchorRect
+        }
+    }
+
+    internal fun updateLatestAnchorRect(rect: Rect) {
+        latestAnchorRect = rect
+        refreshAnchorRect()
+    }
 }
 
 /** 创建并记住一个 [PopupMenuAnchorState]。 */
@@ -60,9 +74,9 @@ fun rememberPopupMenuAnchorState(): PopupMenuAnchorState = remember { PopupMenuA
 fun Modifier.popupMenuAnchor(state: PopupMenuAnchorState): Modifier =
     this
         .onGloballyPositioned { coords ->
-            if (!state.isOpen) {
-                // 未裁剪矩形：与 GeometryModifiers 一致，避免 Lazy 视口裁剪污染起点
-                state.anchorRect.value = Rect(coords.positionInWindow(), coords.size.toSize())
-            }
+            // 未裁剪矩形：与 GeometryModifiers 一致，避免 Lazy 视口裁剪污染起点
+            state.updateLatestAnchorRect(
+                Rect(coords.positionInWindow(), coords.size.toSize())
+            )
         }
         .graphicsLayer { alpha = if (state.sourceHidden.value) 0f else 1f }

@@ -40,7 +40,9 @@ abstract class StackScene : Scene() {
      * 触发后 [waitAppear] 将解除阻塞。
      */
     fun notifyPlaced() {
-        _placed.value = true
+        if (stage.value == SceneStage.Appearing) {
+            _placed.value = true
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -87,6 +89,8 @@ abstract class StackScene : Scene() {
 
     /** pop 后重置 placed 状态，供场景实例复用 */
     override suspend fun onPop() {
+        enterProgress.snapTo(0f)
+        _enterAnimEnd.value = false
         _placed.value = false
     }
 

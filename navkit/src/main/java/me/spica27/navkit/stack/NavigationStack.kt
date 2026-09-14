@@ -13,9 +13,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
@@ -35,7 +35,6 @@ import me.spica27.navkit.geometry.GeometryTransition.GeometryPhase
 import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.path.NavigationPath
-import me.spica27.navkit.scene.DialogScene
 import me.spica27.navkit.scene.OverlayScene
 import me.spica27.navkit.scene.Scene
 import me.spica27.navkit.scene.SceneKeySet
@@ -115,7 +114,8 @@ fun NavigationStack(
                             SceneContainer(
                                 scene = scene,
                                 path = path,
-                                entryViewModel = entryViewModel
+                                entryViewModel = entryViewModel,
+                                saveableStateHolder = saveableStateHolder
                             )
                         }
                     }
@@ -151,7 +151,8 @@ fun NavigationStack(
 private fun SceneContainer(
     scene: Scene,
     path: NavigationPath,
-    entryViewModel: EntryViewModel
+    entryViewModel: EntryViewModel,
+    saveableStateHolder: SaveableStateHolder
 ) {
     // StackScene / OverlayScene：从 Draw 阶段读取动画进度，避免 Composition-phase 重组
     val sceneModifier = when (scene) {
@@ -235,9 +236,8 @@ private fun SceneContainer(
     // 场景 pop（Disappeared）后清理其 ViewModelStore
     DisposableEffect(scene.id) {
         onDispose {
-            if (scene.stage.value == SceneStage.Disappeared) {
-                entryViewModel.clearScene(scene.id)
-            }
+            entryViewModel.clearScene(scene.id)
+            saveableStateHolder.removeState(SceneKeySet.Content(scene.id))
         }
     }
 

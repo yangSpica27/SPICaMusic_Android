@@ -25,6 +25,7 @@ import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene.Companion.DIALOG_SCALE_MIN
 import me.spica27.navkit.scene.DialogScene.Companion.SCRIM_MAX_ALPHA
+import me.spica27.navkit.scene.SceneStage
 
 /**
  * 对话框场景基类，继承自 [OverlayScene]。
@@ -114,9 +115,11 @@ abstract class DialogScene : OverlayScene() {
         val path = LocalNavigationPath.current
         val scene = LocalScene.current
 
-        // 注册在下层页面内容之后，确保弹窗优先于页面内部的 BackHandler 消费返回事件。
-        // 仅前台弹窗启用，避免退场中的旧弹窗截获其上方新场景的返回事件。
-        BackHandler(enabled = path.isForeground(scene)) {
+        // 只有栈顶且尚未退场的弹窗消费返回事件，避免旧弹窗截获其上方场景的返回。
+        BackHandler(
+            enabled = path.isForeground(scene) &&
+                    scene.stage.value != SceneStage.Disappearing
+        ) {
             path.pop(scene)
         }
 

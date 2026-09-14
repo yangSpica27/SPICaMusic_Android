@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.ViewModelStore
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import me.spica27.navkit.scene.Scene
 import me.spica27.navkit.scene.SceneStage
@@ -36,8 +37,8 @@ val LocalScene = compositionLocalOf<Scene> {
  * - 持有 [viewModelStore] 用于注册 [EntryViewModel]
  *
  * ## 线程安全
- * [push] 和 [pop] 都在 [animationScope] 中执行，每个场景用 [Scene.stageMutex]
- * 保证生命周期钩子串行，不会出现并发进退场。
+ * [push] 和 [pop] 按 [animationScope] 中的提交顺序串行执行，每个场景再用
+ * [Scene.stageMutex] 防御外部并发生命周期调用。
  *
  * @param animationScope 用于驱动进退场协程的 CoroutineScope，
  *   通常来自 rememberCoroutineScope()，持有 MonotonicFrameClock
@@ -52,6 +53,8 @@ class NavigationPath(
     /** Compose 可观察的场景栈；NavigationStack 直接读取此列表渲染 UI */
     val scenes: SnapshotStateList<Scene> = mutableStateListOf()
 
+    private val operations = Channel<suspend () -> Unit>(Channel.UNLIMITED)
+
     /** 自增场景 ID 计数器 */
     private var nextId = 0
 
@@ -59,8 +62,14 @@ class NavigationPath(
     internal val viewModelStore = ViewModelStore()
 
     init {
+        animationScope.launch {
+            for (operation in operations) {
+                operation()
+            }
+        }
+
         // 初始场景走完整 push 流程，保证 StackScene.enterProgress 动画到 1f 后可见
-        initialScenes.forEach { push(it) }
+        initialScenes.forEach(::push)
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -70,7 +79,7 @@ class NavigationPath(
     /**
      * 将 [scene] 压入导航栈并启动进场动画。
      *
-     * 流程（在 animationScope 协程中串行执行）：
+     * 流程（在 animationScope 中按提交顺序串行执行）：
      * 1. 分配 ID，设置 Appearing
      * 2. 添加到 scenes 列表（触发 Compose 重组，场景开始渲染）
      * 3. [Scene.onPush]：进度 snap 到初始值
@@ -79,13 +88,19 @@ class NavigationPath(
      * 6. [Scene.onAppear]：执行进场动画
      */
     fun push(scene: Scene) {
-        animationScope.launch {
+        submit {
+            if (scene.stage.value != SceneStage.Uninitialized) return@submit
+
             scene.withStageLock {
+                if (scene.stage.value != SceneStage.Uninitialized) return@withStageLock
+
                 scene.id = nextId++
                 scene.stage.value = SceneStage.Appearing
                 scenes.add(scene)
                 scene.onPush()
                 scene.waitAppear()
+                if (!scenes.contains(scene)) return@withStageLock
+
                 scene.stage.value = SceneStage.Appeared
                 scene.onAppear()
             }
@@ -111,10 +126,21 @@ class NavigationPath(
         ) {
             return
         }
-        animationScope.launch {
+        submit {
+            if (scene.stage.value == SceneStage.Disappearing ||
+                scene.stage.value == SceneStage.Disappeared
+            ) {
+                return@submit
+            }
+
             scene.withStageLock {
-                // 二次检查：排队等锁期间场景可能已被并发 pop 完成
-                if (scene.stage.value == SceneStage.Disappeared) return@withStageLock
+                if (scene.stage.value == SceneStage.Disappearing ||
+                    scene.stage.value == SceneStage.Disappeared ||
+                    !scenes.contains(scene)
+                ) {
+                    return@withStageLock
+                }
+
                 scene.stage.value = SceneStage.Disappearing
                 scene.waitDisappear()
                 scene.onDisappear()
@@ -144,12 +170,12 @@ class NavigationPath(
      * （[SceneStage.Disappearing] / [SceneStage.Disappeared]）。
      */
     fun isForeground(scene: Scene): Boolean {
-        val index = scenes.indexOf(scene)
-        if (index < 0) return false
-        for (i in index + 1 until scenes.size) {
-            val stage = scenes[i].stage.value
-            if (stage != SceneStage.Disappearing && stage != SceneStage.Disappeared) return false
+        return scenes.lastOrNull() === scene
+    }
+
+    private fun submit(operation: suspend () -> Unit) {
+        if (!operations.trySend(operation).isSuccess) {
+            animationScope.launch { operation() }
         }
-        return true
     }
 }

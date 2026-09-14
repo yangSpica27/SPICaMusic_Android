@@ -20,9 +20,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.navkit.path.LocalNavigationPath
+import me.spica27.navkit.path.LocalScene
 import me.spica27.navkit.scene.DialogScene
+import me.spica27.navkit.scene.SceneStage
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
@@ -32,8 +33,11 @@ class CurrentListScene : DialogScene() {
     @Composable
     override fun DialogContent() {
         val path = LocalNavigationPath.current
+        val scene = LocalScene.current
 
-        val enterAnimEnd = enterAnimEnd.collectAsStateWithLifecycle()
+        val contentReady =
+            scene.stage.value == SceneStage.Appeared ||
+                scene.stage.value == SceneStage.Disappearing
 
         val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -79,7 +83,7 @@ class CurrentListScene : DialogScene() {
                     )
                 },
             ) {
-                ShowOnIdleContent(enterAnimEnd.value) {
+                ShowOnIdleContent(contentReady) {
                     Box(
                         modifier = Modifier.padding(it),
                     ) {
