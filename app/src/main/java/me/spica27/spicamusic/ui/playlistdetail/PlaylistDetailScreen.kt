@@ -2000,7 +2000,7 @@ private fun SongPickerDialogContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(count = pickerSongs.itemCount, key = { index ->
-                    pickerSongs[index]?.mediaStoreId ?: index
+                    pickerSongs.peek(index)?.mediaStoreId ?: "picker_placeholder_$index"
                 }) { index ->
                     val song = pickerSongs[index] ?: return@items
                     val isSelected = selectedIds.contains(song.mediaStoreId)

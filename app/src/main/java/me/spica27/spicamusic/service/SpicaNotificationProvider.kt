@@ -47,7 +47,12 @@ internal class SpicaNotificationProvider(
         private const val FLAG_ONLY_UPDATE_TICKER = 0x2000000
     }
 
-    override val coroutineContext: CoroutineContext = Dispatchers.IO + SupervisorJob()
+    private val job = SupervisorJob()
+    override val coroutineContext: CoroutineContext = Dispatchers.IO + job
+
+    fun cancel() {
+        job.cancel()
+    }
 
     private val notificationManager: NotificationManager by lazy {
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

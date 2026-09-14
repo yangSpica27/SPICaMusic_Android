@@ -75,7 +75,7 @@ class SettingsViewModel(
             .getString(
                 SettingsUseCases.Keys.DYNAMIC_SPECTRUM_BACKGROUND,
                 DynamicSpectrumBackground.FluidWarp.value,
-            ).stateIn(viewModelScope, SharingStarted.Eagerly, DynamicSpectrumBackground.OFF.value)
+            ).stateIn(viewModelScope, SharingStarted.Eagerly, DynamicSpectrumBackground.FluidWarp.value)
 
     fun setDynamicSpectrumBackground(value: String) {
         viewModelScope.launch {

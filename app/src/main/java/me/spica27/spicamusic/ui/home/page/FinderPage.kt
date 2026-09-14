@@ -18,7 +18,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -28,7 +27,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,8 +36,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -85,17 +81,14 @@ import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.delay
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.home.HomePage
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
-import me.spica27.spicamusic.ui.model.PlaylistWithCover
-import me.spica27.spicamusic.ui.navigation.AllPlaylistsRoute
-import me.spica27.spicamusic.ui.navigation.FavoriteRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
-import me.spica27.spicamusic.ui.navigation.PlaylistDetailRoute
 import me.spica27.spicamusic.ui.navigation.ScannerRoute
 import me.spica27.spicamusic.ui.navigation.SearchRoute
 import me.spica27.spicamusic.ui.navigation.SettingsRoute
@@ -109,10 +102,9 @@ import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.AudioCover
-import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.clickHighlight
-import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinActivityViewModel
+import java.util.concurrent.TimeUnit
 
 /**
  * 发现页
@@ -120,11 +112,6 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 
 /** 大标题收缩归一化距离的上限（实际取刊头实测滚出高度，见 mastheadCollapse） */
 private val MastheadCollapseDistance = 140.dp
-
-/** 首屏入场交错间隔 */
-
-/** 收藏预览最多展示的歌曲数 */
-private const val FavoritePreviewSongCount = 5
 
 /** 列表项增删的统一动画配方（同资料库页） */
 private val ItemPlacementSpec: FiniteAnimationSpec<IntOffset> =
@@ -143,23 +130,20 @@ fun FinderPage() {
     val frequentSongs by homeViewModel.frequentSongs.collectAsStateWithLifecycle()
     val favoriteSongs by homeViewModel.favoriteSongs.collectAsStateWithLifecycle()
     val playlists by homeViewModel.playlists.collectAsStateWithLifecycle()
-    val playlistsWithCover by homeViewModel.playlistsWithCover.collectAsStateWithLifecycle()
     val allSongs by homeViewModel.allSongs.collectAsStateWithLifecycle()
     val snackbarMessage by homeViewModel.snackbarMessage.collectAsStateWithLifecycle()
+    val weeklyStats by homeViewModel.weeklyStats.collectAsStateWithLifecycle()
     val frequentCardSongs = remember(frequentSongs) { ImmutableList.copyOf(frequentSongs) }
-    val favoritePreviewSongs =
-        remember(favoriteSongs) {
-            ImmutableList.copyOf(favoriteSongs.take(FavoritePreviewSongCount))
-        }
 
     val frequentPlaylistName = stringResource(R.string.finder_frequent_playlist_name)
-    val favoritePlaylistName = stringResource(R.string.finder_favorites_playlist_name)
 
     LaunchedEffect(snackbarMessage) {
         val message = snackbarMessage ?: return@LaunchedEffect
         Toast.makeText(App.getInstance(), message, Toast.LENGTH_SHORT).show()
         homeViewModel.clearSnackbar()
     }
+
+    LaunchedEffect(Unit) { homeViewModel.refreshWeeklyStats() }
 
     var playEntrance by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
@@ -171,6 +155,7 @@ fun FinderPage() {
 
     val listState = rememberLazyListState()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val showStats = (weeklyStats?.totalPlayedDuration ?: 0L) > 0L
 
     Box(
         modifier =
@@ -286,129 +271,22 @@ fun FinderPage() {
                 }
             }
 
-            item(key = "favorites_header", contentType = "section_header") {
-                SectionHeader(
-                    title = stringResource(R.string.my_favorites),
-                    subtitle = stringResource(R.string.songs_count_format, favoriteSongs.size),
-                    actionLabel = stringResource(R.string.finder_more).takeIf { favoriteSongs.isNotEmpty() },
-                    onActionClick =
-                        {
-                            backStack.add(FavoriteRoute)
-                            Unit
-                        }.takeIf { favoriteSongs.isNotEmpty() },
-                    modifier =
-                        Modifier
-                            .animateItem(
-                                fadeInSpec = ListItemFadeInSpec,
-                                placementSpec = ItemPlacementSpec,
-                                fadeOutSpec = ListItemFadeOutSpec,
-                            ).padding(top = Spacing.Medium)
-                            .entrance(order = 4, play = playEntrance),
-                )
-            }
-
-            if (favoriteSongs.isEmpty()) {
-                item(key = "favorites_empty", contentType = "empty") {
-                    FinderEmptyRow(
-                        title = stringResource(R.string.finder_no_favorites_title),
-                        subtitle = stringResource(R.string.finder_no_favorites_subtitle),
+            if (showStats) {
+                item(key = "weekly_stats", contentType = "stats") {
+                    WeeklyStatsStrip(
+                        stats = weeklyStats ?: return@item,
                         modifier =
                             Modifier
                                 .animateItem(
                                     fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
                                     fadeOutSpec = ListItemFadeOutSpec,
-                                ).entrance(order = 5, play = playEntrance),
-                    )
-                }
-            } else {
-                item(key = "favorites_card", contentType = "favorites") {
-                    FavoritesCard(
-                        songs = favoritePreviewSongs,
-                        onPlayAll = {
-                            playerViewModel.updatePlaylistWithSongs(
-                                songs = favoriteSongs,
-                                startSong = favoriteSongs.firstOrNull(),
-                                autoStart = true,
-                            )
-                        },
-                        onSongClick = { song ->
-                            playerViewModel.updatePlaylistWithSongs(
-                                songs = favoriteSongs,
-                                startSong = song,
-                                autoStart = true,
-                            )
-                        },
-                        onSaveAsPlaylist = {
-                            homeViewModel.createPlaylistFromSongs(
-                                songs = favoriteSongs,
-                                playlistName = favoritePlaylistName,
-                            )
-                        },
-                        modifier =
-                            Modifier
-                                .animateItem(
-                                    fadeInSpec = ListItemFadeInSpec,
-                                    placementSpec = null,
-                                    fadeOutSpec = ListItemFadeOutSpec,
-                                ).entrance(order = 5, play = playEntrance),
+                                ).entrance(order = 4, play = playEntrance),
                     )
                 }
             }
 
-            item(key = "playlists_header", contentType = "section_header") {
-                SectionHeader(
-                    title = stringResource(R.string.finder_playlists_overview_title),
-                    subtitle = stringResource(R.string.library_summary_playlists, playlists.size),
-                    actionLabel = stringResource(R.string.finder_more).takeIf { playlists.size >= 2 },
-                    onActionClick =
-                        {
-                            backStack.add(AllPlaylistsRoute)
-                            Unit
-                        }.takeIf { playlists.size >= 2 },
-                    modifier =
-                        Modifier
-                            .animateItem(
-                                fadeInSpec = ListItemFadeInSpec,
-                                placementSpec = ItemPlacementSpec,
-                                fadeOutSpec = ListItemFadeOutSpec,
-                            ).padding(top = Spacing.Medium)
-                            .entrance(order = 6, play = playEntrance),
-                )
-            }
-
-            if (playlistsWithCover.isEmpty()) {
-                item(key = "playlists_empty", contentType = "empty") {
-                    FinderEmptyRow(
-                        title = stringResource(R.string.no_playlists_yet),
-                        subtitle = stringResource(R.string.finder_no_playlists_subtitle),
-                        onClick = { homeViewModel.navigateToPage(HomePage.Library) },
-                        modifier =
-                            Modifier
-                                .animateItem(
-                                    fadeInSpec = ListItemFadeInSpec,
-                                    placementSpec = null,
-                                    fadeOutSpec = ListItemFadeOutSpec,
-                                ).entrance(order = 6, play = playEntrance),
-                    )
-                }
-            } else {
-                item(key = "playlists_rail", contentType = "rail") {
-                    PlaylistRail(
-                        playlists = playlistsWithCover,
-                        onPlaylistClick = { item -> backStack.add(PlaylistDetailRoute(item.playlist)) },
-                        modifier =
-                            Modifier
-                                .animateItem(
-                                    fadeInSpec = ListItemFadeInSpec,
-                                    placementSpec = null,
-                                    fadeOutSpec = ListItemFadeOutSpec,
-                                ).entrance(order = 6, play = playEntrance),
-                    )
-                }
-            }
-
-            // 导航性质的快捷入口沉底为页尾分区（对应资料库页的「媒体库来源」处理），不参与入场编舞
+            // 导航性质的快捷入口沉底为页尾分区，不参与入场编舞
             item(key = "entries_header", contentType = "section_header") {
                 Text(
                     text = stringResource(R.string.finder_quick_entries_title),
@@ -932,103 +810,6 @@ private fun HeroSongRow(
     }
 }
 
-/** 收藏预览卡：静置容器色，视觉上从属于常听主卡 */
-@Composable
-private fun FavoritesCard(
-    songs: ImmutableList<Song>,
-    onPlayAll: () -> Unit,
-    onSongClick: (Song) -> Unit,
-    onSaveAsPlaylist: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                .clip(Shapes.ExtraLargeCornerBasedShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .padding(Spacing.Medium),
-        verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)) {
-            songs.forEach { song ->
-                FavoriteSongRow(
-                    song = song,
-                    onClick = { onSongClick(song) },
-                )
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
-            FinderActionPill(
-                text = stringResource(R.string.play_all),
-                icon = Icons.Default.PlayArrow,
-                onClick = onPlayAll,
-                modifier = Modifier.weight(1f),
-            )
-            FinderActionPill(
-                text = stringResource(R.string.finder_save_as_playlist),
-                icon = Icons.Default.Add,
-                onClick = onSaveAsPlaylist,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-/** 收藏行：封面 + 歌名/歌手 + 时长 */
-@Composable
-private fun FavoriteSongRow(
-    song: Song,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(Shapes.LargeCornerBasedShape)
-                .clickHighlight(onClick = onClick)
-                .padding(Spacing.Small),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-    ) {
-        AudioCover(
-            uri = song.getCoverUri(),
-            fallbackUri = song.getAlbumCoverUri(),
-            modifier =
-                Modifier
-                    .size(48.dp)
-                    .clip(Shapes.MediumCornerBasedShape),
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = song.displayName,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = song.artist,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Text(
-            text = song.getFormattedDuration(),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(40.dp),
-            textAlign = TextAlign.End,
-        )
-    }
-}
-
 /** 动作药丸：次级容器色 + 按压回弹（收藏/常听卡内的成对动作） */
 @Composable
 private fun FinderActionPill(
@@ -1073,86 +854,82 @@ private fun FinderActionPill(
     }
 }
 
-/** 歌单横滑列：通栏出血，卡片可越过屏幕边缘 */
+/** 本周统计条：眉题 + 三格明细，纯展示不可点击 */
 @Composable
-private fun PlaylistRail(
-    playlists: List<PlaylistWithCover>,
-    onPlaylistClick: (PlaylistWithCover) -> Unit,
+private fun WeeklyStatsStrip(
+    stats: PlayStats,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
-        overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Horizontal),
+    val hoursMinutesFmt = stringResource(R.string.hours_minutes)
+    val minutesFmt = stringResource(R.string.minutes)
+    val lessThan1MinText = stringResource(R.string.less_than_1_minute)
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                .clip(Shapes.ExtraLargeCornerBasedShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .padding(Spacing.Large),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
-        items(
-            items = playlists,
-            key = {
-                it.playlist.playlistId ?: it.playlist.playlistName
-                    .hashCode()
-                    .toLong()
-            },
-            contentType = { "playlist" },
-        ) { item ->
-            FinderPlaylistCard(
-                item = item,
-                onClick = { onPlaylistClick(item) },
-                modifier =
-                    Modifier.animateItem(
-                        fadeInSpec = ListItemFadeInSpec,
-                        placementSpec = ItemPlacementSpec,
-                        fadeOutSpec = ListItemFadeOutSpec,
+        Text(
+            text = stringResource(R.string.weekly_listening_overview),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(modifier = Modifier.fillMaxWidth()) {
+            StatCell(
+                value =
+                    formatPlayDuration(
+                        stats.totalPlayedDuration,
+                        hoursMinutesFmt,
+                        minutesFmt,
+                        lessThan1MinText,
                     ),
+                label = stringResource(R.string.play_duration),
+                modifier = Modifier.weight(1f),
+            )
+            StatCell(
+                value = "${stats.playEventCount}",
+                label = stringResource(R.string.play_count),
+                modifier = Modifier.weight(1f),
+            )
+            StatCell(
+                value = "${stats.uniqueSongCount}",
+                label = stringResource(R.string.unique_songs),
+                modifier = Modifier.weight(1f),
             )
         }
     }
 }
 
-/** 歌单卡：组合封面 + 名称 + 歌曲数，无容器底色（资料库歌单卡同款） */
 @Composable
-private fun FinderPlaylistCard(
-    item: PlaylistWithCover,
-    onClick: () -> Unit,
+private fun StatCell(
+    value: String,
+    label: String,
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier =
-            modifier
-                .width(148.dp)
-                .clip(Shapes.ExtraLargeCornerBasedShape)
-                .clickHighlight(onClick = onClick),
-        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PlaylistCoverView(
-            albumIds = item.coverAlbumIds,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(Shapes.ExtraLargeCornerBasedShape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        Column(
-            modifier = Modifier.padding(bottom = Spacing.Small),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                text = item.playlist.playlistName,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = stringResource(R.string.songs_count, item.songCount),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
     }
 }
 
@@ -1212,63 +989,6 @@ private fun FinderEmptyRow(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-        }
-    }
-}
-
-/** 分区头：标题 + 计数 meta + 可选「更多」胶囊 */
-@Composable
-private fun SectionHeader(
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier,
-    actionLabel: String? = null,
-    onActionClick: (() -> Unit)? = null,
-) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (actionLabel != null && onActionClick != null) {
-            Row(
-                modifier =
-                    Modifier
-                        .padding(start = Spacing.Small)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                        .clickHighlight(onClick = onActionClick)
-                        .padding(horizontal = Spacing.Medium, vertical = Spacing.ExtraSmall),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
-            ) {
-                Text(
-                    text = actionLabel,
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
         }
     }
 }
@@ -1335,5 +1055,20 @@ private fun UtilityEntryRow(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp),
         )
+    }
+}
+
+private fun formatPlayDuration(
+    durationMs: Long,
+    hoursMinutesFormat: String,
+    minutesFormat: String,
+    lessThan1Min: String,
+): String {
+    val hours = TimeUnit.MILLISECONDS.toHours(durationMs)
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMs) % 60
+    return when {
+        hours > 0 -> hoursMinutesFormat.format(hours, minutes)
+        minutes > 0 -> minutesFormat.format(minutes)
+        else -> lessThan1Min
     }
 }

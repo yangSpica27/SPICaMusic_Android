@@ -91,7 +91,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
@@ -278,6 +280,7 @@ fun MusicPage() {
 
     var selectedTab by rememberSaveable { mutableStateOf(MusicBrowserTab.Songs) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    var debouncedQuery by rememberSaveable { mutableStateOf("") }
     var songSortMode by rememberSaveable { mutableStateOf(SongSortMode.TitleAsc) }
     var albumSortMode by rememberSaveable { mutableStateOf(AlbumSortMode.TitleAsc) }
     var artistSortMode by rememberSaveable { mutableStateOf(ArtistSortMode.NameAsc) }
@@ -297,22 +300,29 @@ fun MusicPage() {
         }
     }
 
+    @OptIn(FlowPreview::class)
+    LaunchedEffect(Unit) {
+        snapshotFlow { searchQuery }
+            .debounce(300)
+            .collect { debouncedQuery = it }
+    }
+
     val filteredSongs =
-        remember(allSongs, searchQuery, songSortMode) {
+        remember(allSongs, debouncedQuery, songSortMode) {
             allSongs
-                .filterSongsBy(searchQuery)
+                .filterSongsBy(debouncedQuery)
                 .sortedWith(songSortMode.comparator)
         }
     val filteredAlbums =
-        remember(albums, searchQuery, albumSortMode) {
+        remember(albums, debouncedQuery, albumSortMode) {
             albums
-                .filterAlbumsBy(searchQuery)
+                .filterAlbumsBy(debouncedQuery)
                 .sortedWith(albumSortMode.comparator)
         }
     val filteredArtists =
-        remember(artists, searchQuery, artistSortMode) {
+        remember(artists, debouncedQuery, artistSortMode) {
             artists
-                .filterArtistsBy(searchQuery)
+                .filterArtistsBy(debouncedQuery)
                 .sortedWith(artistSortMode.comparator)
         }
 

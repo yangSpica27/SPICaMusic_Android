@@ -40,6 +40,7 @@ class PlaybackService : MediaLibraryService() {
 
     private var mediaSession: MediaLibrarySession? = null
     private lateinit var exoPlayer: ExoPlayer
+    private lateinit var notificationProvider: SpicaNotificationProvider
 
     // 服务级别的协程作用域
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -47,9 +48,8 @@ class PlaybackService : MediaLibraryService() {
     @OptIn(ExperimentalApi::class)
     override fun onCreate() {
         super.onCreate()
-        setMediaNotificationProvider(
-            SpicaNotificationProvider(this),
-        )
+        notificationProvider = SpicaNotificationProvider(this)
+        setMediaNotificationProvider(notificationProvider)
         // 创建自定义渲染器工厂，添加 native DSP（FFT、EQ、响度归一化）
         val renderersFactory =
             object : DefaultRenderersFactory(this) {
@@ -191,8 +191,9 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onDestroy() {
         serviceScope.cancel()
+        notificationProvider.cancel()
+        exoPlayer.release()
         mediaSession?.run {
-            exoPlayer.release()
             release()
             mediaSession = null
         }

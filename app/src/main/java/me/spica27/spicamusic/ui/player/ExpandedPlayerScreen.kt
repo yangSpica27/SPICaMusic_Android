@@ -619,7 +619,7 @@ private fun PlayerPage(
         val amplituda: Amplituda = koinInject<Amplituda>()
 
         // 优化：使用缓存机制避免重复加载波形数据
-        val amplitudeCache = remember { mutableMapOf<String, List<Int>>() }
+        val amplitudeCache = remember { linkedMapOf<String, List<Int>>() }
         var ampState by remember { mutableStateOf(listOf<Int>()) }
 
         // 音频波形数据
@@ -1183,7 +1183,7 @@ private fun SecondaryActions(
 fun formatTime(millis: Long): String {
     val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)
     val seconds = TimeUnit.MILLISECONDS.toSeconds(millis) % 60
-    return String.format(Locale.CHINESE, "%d:%02d", minutes, seconds)
+    return String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
 }
 
 /**

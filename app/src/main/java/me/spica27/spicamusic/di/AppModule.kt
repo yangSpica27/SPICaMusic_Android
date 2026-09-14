@@ -125,6 +125,7 @@ object AppModule {
                     app = androidApplication(),
                     songRepository = get<SongUseCases>(),
                     playlistRepository = get<PlaylistUseCases>(),
+                    historyRepository = get<PlayHistoryUseCases>(),
                 )
             }
 
@@ -205,9 +206,6 @@ object AppModule {
             viewModel {
                 LibraryPageViewModel(
                     playlistRepositoryImpl = get<PlaylistUseCases>(),
-                    historyRepository = get<PlayHistoryUseCases>(),
-                    scanFolderUseCases = get<ScanFolderUseCases>(),
-                    songRepository = get<SongUseCases>(),
                 )
             }
 

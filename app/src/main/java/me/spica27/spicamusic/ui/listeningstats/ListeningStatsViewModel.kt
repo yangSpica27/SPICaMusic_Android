@@ -11,6 +11,8 @@ import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
+import timber.log.Timber
+import kotlin.coroutines.cancellation.CancellationException
 
 data class TopSongDisplayItem(
     val songId: Long,
@@ -61,7 +63,10 @@ class ListeningStatsViewModel(
                             playCount = ts.playCount,
                         )
                     }
-            } catch (_: Exception) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh listening stats")
             }
         }
     }

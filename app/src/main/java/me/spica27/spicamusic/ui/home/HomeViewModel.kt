@@ -18,14 +18,17 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.SongFilter
 import me.spica27.spicamusic.common.entity.SongSortOrder
+import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
 import timber.log.Timber
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * 首页 ViewModel
@@ -37,7 +40,11 @@ class HomeViewModel(
     private val app: Application,
     private val songRepository: SongUseCases,
     private val playlistRepository: PlaylistUseCases,
+    private val historyRepository: PlayHistoryUseCases,
 ) : ViewModel() {
+    private val _weeklyStats = MutableStateFlow<PlayStats?>(null)
+    val weeklyStats: StateFlow<PlayStats?> = _weeklyStats.asStateFlow()
+
     // 排序方式
     private val _sortOrder = MutableStateFlow(SongSortOrder.DEFAULT)
     val sortOrder: StateFlow<SongSortOrder> = _sortOrder
@@ -155,17 +162,31 @@ class HomeViewModel(
         _filter.value = newFilter
     }
 
+    private val _searchKeyword = MutableStateFlow("")
+
     /**
      * 搜索歌曲
      */
-    fun searchSongs(keyword: String): StateFlow<List<Song>> =
-        songRepository
-            .searchSongsFlow(keyword, _sortOrder.value)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val searchResults: StateFlow<List<Song>> =
+        combine(_searchKeyword, _sortOrder) { keyword, sortOrder ->
+            keyword to sortOrder
+        }.flatMapLatest { (keyword, sortOrder) ->
+            if (keyword.isBlank()) {
+                flowOf(emptyList())
+            } else {
+                songRepository.searchSongsFlow(keyword, sortOrder)
+            }
+        }.flowOn(Dispatchers.IO)
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList(),
             )
+
+    fun updateSearchKeyword(keyword: String) {
+        _searchKeyword.value = keyword
+    }
 
     /**
      * 重置筛选条件
@@ -211,6 +232,18 @@ class HomeViewModel(
 
     fun clearSnackbar() {
         _snackbarMessage.value = null
+    }
+
+    fun refreshWeeklyStats() {
+        viewModelScope.launch {
+            try {
+                _weeklyStats.value = historyRepository.getWeeklyStats()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to refresh weekly stats")
+            }
+        }
     }
 
     /**
