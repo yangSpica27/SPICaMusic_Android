@@ -49,188 +49,181 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.launch
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.path.LocalScene
-import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.player.formatTime
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.CoverFallback
 import java.util.Locale
 
-class SongInfoScene(
-    val song: Song,
-) : DialogScene() {
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val context = LocalContext.current
-        val clipboard = LocalClipboard.current
-        val scope = rememberCoroutineScope()
-        val title = stringResource(R.string.song_info_dialog_title)
-        val copySuccess = stringResource(R.string.copy_success)
-        val copyLabel = stringResource(R.string.copy_field_format)
-        val formattedFileSize = Formatter.formatFileSize(context, song.size)
-        val onCopy: (String, String) -> Unit = { label, value ->
-            scope.launch {
-                clipboard.setClipEntry(ClipData.newPlainText(label, value).toClipEntry())
-                Toast.makeText(context, copySuccess, Toast.LENGTH_SHORT).show()
-            }
+@Composable
+fun SongInfoDialogContent(song: Song) {
+    val backStack = LocalBackStack.current
+    val context = LocalContext.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    val title = stringResource(R.string.song_info_dialog_title)
+    val copySuccess = stringResource(R.string.copy_success)
+    val copyLabel = stringResource(R.string.copy_field_format)
+    val formattedFileSize = Formatter.formatFileSize(context, song.size)
+    val onCopy: (String, String) -> Unit = { label, value ->
+        scope.launch {
+            clipboard.setClipEntry(ClipData.newPlainText(label, value).toClipEntry())
+            Toast.makeText(context, copySuccess, Toast.LENGTH_SHORT).show()
         }
+    }
 
-        Surface(
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .systemBarsPadding(),
+        shape = Shapes.ExtraLarge1CornerBasedShape,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+    ) {
+        Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .systemBarsPadding(),
-            shape = Shapes.ExtraLarge1CornerBasedShape,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp,
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.ExtraLarge),
         ) {
+            SongInfoHeader(
+                song = song,
+                title = title,
+                onClose = { backStack.removeLastOrNull() },
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = Spacing.ExtraLarge),
+                        .padding(vertical = Spacing.Large),
+                verticalArrangement = Arrangement.spacedBy(Spacing.ExtraLarge),
             ) {
-                SongInfoHeader(
-                    song = song,
-                    title = title,
-                    onClose = { path.pop(scene) },
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = Spacing.Large),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.ExtraLarge),
-                ) {
-                    InfoSection(title = stringResource(R.string.song_details)) {
-                        InfoItem(
-                            Icons.Default.MusicNote,
-                            stringResource(R.string.song_displayname),
-                            song.displayName,
-                            copyLabel,
-                            onCopy,
-                        )
-                        InfoItem(
-                            Icons.Default.Person,
-                            stringResource(R.string.song_artist),
-                            song.artist,
-                            copyLabel,
-                            onCopy,
-                        )
-                        InfoItem(
-                            Icons.Default.Album,
-                            stringResource(R.string.song_album),
-                            song.album,
-                            copyLabel,
-                            onCopy,
-                        )
-                        InfoItem(
-                            Icons.Default.Schedule,
-                            stringResource(R.string.song_duration),
-                            formatTime(song.duration),
-                            copyLabel,
-                            onCopy,
-                        )
-                    }
-                    InfoSection(title = stringResource(R.string.file_details)) {
-                        InfoItem(
-                            Icons.Default.Folder,
-                            stringResource(R.string.info_file_path),
-                            song.path,
-                            copyLabel,
-                            onCopy,
-                            isMultiline = true,
-                        )
-                        InfoItem(
-                            Icons.Default.DataUsage,
-                            stringResource(R.string.info_file_size),
-                            formattedFileSize,
-                            copyLabel,
-                            onCopy,
-                        )
-                        InfoItem(
-                            Icons.Default.Info,
-                            stringResource(R.string.info_file_format),
-                            song.codec.ifBlank { song.mimeType },
-                            copyLabel,
-                            onCopy,
-                        )
-                    }
-                    if (song.sampleRate > 0 || song.bitRate > 0 || song.channels > 0 || song.digit > 0) {
-                        InfoSection(title = stringResource(R.string.audio_info)) {
-                            if (song.sampleRate > 0) {
-                                InfoItem(
-                                    Icons.Default.GraphicEq,
-                                    stringResource(R.string.sample_rate_label),
-                                    stringResource(
-                                        R.string.sample_rate_format,
-                                        formatSampleRate(song.sampleRate),
-                                    ),
-                                    copyLabel,
-                                    onCopy,
-                                )
-                            }
-                            if (song.bitRate > 0) {
-                                InfoItem(
-                                    Icons.Default.GraphicEq,
-                                    stringResource(R.string.bitrate_label),
-                                    stringResource(R.string.kbps_format, song.bitRate / 1000),
-                                    copyLabel,
-                                    onCopy,
-                                )
-                            }
-                            if (song.channels > 0) {
-                                val channels =
-                                    when (song.channels) {
-                                        1 -> stringResource(R.string.mono)
-                                        2 -> stringResource(R.string.stereo)
-                                        else ->
-                                            stringResource(
-                                                R.string.channels_format,
-                                                song.channels,
-                                            )
-                                    }
-                                InfoItem(
-                                    Icons.Default.GraphicEq,
-                                    stringResource(R.string.channel_count_label),
-                                    channels,
-                                    copyLabel,
-                                    onCopy,
-                                )
-                            }
-                            if (song.digit > 0) {
-                                InfoItem(
-                                    Icons.Default.GraphicEq,
-                                    stringResource(R.string.bit_depth_label),
-                                    stringResource(R.string.bit_depth_format, song.digit),
-                                    copyLabel,
-                                    onCopy,
-                                )
-                            }
+                InfoSection(title = stringResource(R.string.song_details)) {
+                    InfoItem(
+                        Icons.Default.MusicNote,
+                        stringResource(R.string.song_displayname),
+                        song.displayName,
+                        copyLabel,
+                        onCopy,
+                    )
+                    InfoItem(
+                        Icons.Default.Person,
+                        stringResource(R.string.song_artist),
+                        song.artist,
+                        copyLabel,
+                        onCopy,
+                    )
+                    InfoItem(
+                        Icons.Default.Album,
+                        stringResource(R.string.song_album),
+                        song.album,
+                        copyLabel,
+                        onCopy,
+                    )
+                    InfoItem(
+                        Icons.Default.Schedule,
+                        stringResource(R.string.song_duration),
+                        formatTime(song.duration),
+                        copyLabel,
+                        onCopy,
+                    )
+                }
+                InfoSection(title = stringResource(R.string.file_details)) {
+                    InfoItem(
+                        Icons.Default.Folder,
+                        stringResource(R.string.info_file_path),
+                        song.path,
+                        copyLabel,
+                        onCopy,
+                        isMultiline = true,
+                    )
+                    InfoItem(
+                        Icons.Default.DataUsage,
+                        stringResource(R.string.info_file_size),
+                        formattedFileSize,
+                        copyLabel,
+                        onCopy,
+                    )
+                    InfoItem(
+                        Icons.Default.Info,
+                        stringResource(R.string.info_file_format),
+                        song.codec.ifBlank { song.mimeType },
+                        copyLabel,
+                        onCopy,
+                    )
+                }
+                if (song.sampleRate > 0 || song.bitRate > 0 || song.channels > 0 || song.digit > 0) {
+                    InfoSection(title = stringResource(R.string.audio_info)) {
+                        if (song.sampleRate > 0) {
+                            InfoItem(
+                                Icons.Default.GraphicEq,
+                                stringResource(R.string.sample_rate_label),
+                                stringResource(
+                                    R.string.sample_rate_format,
+                                    formatSampleRate(song.sampleRate),
+                                ),
+                                copyLabel,
+                                onCopy,
+                            )
+                        }
+                        if (song.bitRate > 0) {
+                            InfoItem(
+                                Icons.Default.GraphicEq,
+                                stringResource(R.string.bitrate_label),
+                                stringResource(R.string.kbps_format, song.bitRate / 1000),
+                                copyLabel,
+                                onCopy,
+                            )
+                        }
+                        if (song.channels > 0) {
+                            val channels =
+                                when (song.channels) {
+                                    1 -> stringResource(R.string.mono)
+                                    2 -> stringResource(R.string.stereo)
+                                    else ->
+                                        stringResource(
+                                            R.string.channels_format,
+                                            song.channels,
+                                        )
+                                }
+                            InfoItem(
+                                Icons.Default.GraphicEq,
+                                stringResource(R.string.channel_count_label),
+                                channels,
+                                copyLabel,
+                                onCopy,
+                            )
+                        }
+                        if (song.digit > 0) {
+                            InfoItem(
+                                Icons.Default.GraphicEq,
+                                stringResource(R.string.bit_depth_label),
+                                stringResource(R.string.bit_depth_format, song.digit),
+                                copyLabel,
+                                onCopy,
+                            )
                         }
                     }
                 }
-                Button(
-                    onClick = { path.pop(scene) },
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = Spacing.Large),
-                    shape = Shapes.LargeCornerBasedShape,
-                ) {
-                    Text(stringResource(R.string.close))
-                }
+            }
+            Button(
+                onClick = { backStack.removeLastOrNull() },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = Spacing.Large),
+                shape = Shapes.LargeCornerBasedShape,
+            ) {
+                Text(stringResource(R.string.close))
             }
         }
     }

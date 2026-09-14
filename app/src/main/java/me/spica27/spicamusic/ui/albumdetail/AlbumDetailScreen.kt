@@ -69,13 +69,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
-import me.spica27.spicamusic.ui.dialog.SongMenuScene
+import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
+import me.spica27.spicamusic.ui.navigation.AlbumMenuRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.SongMenuRoute
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
@@ -105,7 +107,7 @@ private val BOTTOM_PLAYER_RESERVED = 200.dp // 悬浮迷你播放器底部预留
  */
 @Composable
 fun AlbumDetailScreen(album: Album) {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val viewModel: AlbumDetailViewModel =
         koinViewModel(key = "AlbumDetailViewModel_${album.id}") { parametersOf(album.id) }
     val songs by viewModel.songs.collectAsStateWithLifecycle()
@@ -255,7 +257,7 @@ fun AlbumDetailScreen(album: Album) {
                     song = song,
                     isPlaying = playingMediaId == song.mediaStoreId.toString(),
                     onClick = { viewModel.playSongInList(song) },
-                    onMore = { path.push(SongMenuScene(song)) },
+                    onMore = { backStack.add(SongMenuRoute(song)) },
                     modifier =
                         Modifier
                             .animateItem(
@@ -279,7 +281,7 @@ fun AlbumDetailScreen(album: Album) {
                     OtherAlbumsShelf(
                         artistName = album.artist,
                         albums = otherAlbums,
-                        onAlbumClick = { path.push(AlbumDetailScene(it)) },
+                        onAlbumClick = { backStack.add(AlbumDetailRoute(it)) },
                         modifier = Modifier.padding(top = Spacing.ExtraLarge),
                     )
                 }
@@ -362,7 +364,7 @@ fun AlbumDetailScreen(album: Album) {
                     .align(Alignment.BottomCenter),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { path.popTop() }) {
+                IconButton(onClick = { backStack.removeLastOrNull() }) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back),
@@ -386,7 +388,7 @@ fun AlbumDetailScreen(album: Album) {
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                IconButton(onClick = { path.push(AlbumMenuScene(album)) }) {
+                IconButton(onClick = { backStack.add(AlbumMenuRoute(album)) }) {
                     Icon(
                         Icons.Default.MoreVert,
                         contentDescription = stringResource(R.string.more),

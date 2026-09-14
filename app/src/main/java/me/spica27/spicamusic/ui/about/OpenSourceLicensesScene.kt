@@ -26,51 +26,48 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 
-class OpenSourceLicensesScene : StackScene() {
-    @Composable
-    override fun Content() {
-        val context = LocalContext.current
-        val cannotOpenText = stringResource(R.string.about_cannot_open_link)
+@Composable
+fun OpenSourceLicensesScreen() {
+    val context = LocalContext.current
+    val cannotOpenText = stringResource(R.string.about_cannot_open_link)
 
-        fun openUrl(url: String) {
-            try {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, url.toUri()).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    },
+    fun openUrl(url: String) {
+        try {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                },
+            )
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(context, cannotOpenText, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    AboutScaffold(title = stringResource(R.string.licenses_title)) {
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)) {
+                Text(
+                    text = stringResource(R.string.licenses_header),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            } catch (_: ActivityNotFoundException) {
-                Toast.makeText(context, cannotOpenText, Toast.LENGTH_SHORT).show()
+                Text(
+                    text = stringResource(R.string.licenses_count_format, ossLibraries.size),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
             }
         }
 
-        AboutScaffold(title = stringResource(R.string.licenses_title)) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)) {
-                    Text(
-                        text = stringResource(R.string.licenses_header),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = stringResource(R.string.licenses_count_format, ossLibraries.size),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    )
-                }
-            }
-
-            items(ossLibraries) { library ->
-                LibraryCard(
-                    library = library,
-                    onClick = { openUrl(library.url) },
-                )
-            }
+        items(ossLibraries) { library ->
+            LibraryCard(
+                library = library,
+                onClick = { openUrl(library.url) },
+            )
         }
     }
 }

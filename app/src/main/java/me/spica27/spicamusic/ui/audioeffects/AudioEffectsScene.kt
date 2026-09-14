@@ -41,7 +41,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.about.AboutScaffold
 import me.spica27.spicamusic.ui.about.AboutSectionCard
@@ -56,66 +55,64 @@ import org.koin.compose.viewmodel.koinViewModel
  * 均衡器（开关 + 预设 + 10 段增益）和响度归一化（开关）。
  * 视觉语言复用 [AboutScaffold] / [AboutSectionCard]，与设置页保持一致。
  */
-class AudioEffectsScene : StackScene() {
-    @Composable
-    override fun Content() {
-        val viewModel: AudioEffectsViewModel = koinViewModel()
+@Composable
+fun AudioEffectsScreen() {
+    val viewModel: AudioEffectsViewModel = koinViewModel()
 
-        val eqEnabled by viewModel.eqEnabled.collectAsStateWithLifecycle()
-        val eqBands by viewModel.eqBands.collectAsStateWithLifecycle()
-        val loudnessEnabled by viewModel.loudnessNormalizationEnabled.collectAsStateWithLifecycle()
-        val loudnessTargetLufs by viewModel.loudnessTargetLufs.collectAsStateWithLifecycle()
+    val eqEnabled by viewModel.eqEnabled.collectAsStateWithLifecycle()
+    val eqBands by viewModel.eqBands.collectAsStateWithLifecycle()
+    val loudnessEnabled by viewModel.loudnessNormalizationEnabled.collectAsStateWithLifecycle()
+    val loudnessTargetLufs by viewModel.loudnessTargetLufs.collectAsStateWithLifecycle()
 
-        AboutScaffold(title = stringResource(R.string.settings_sound_effects)) {
-            item {
-                AboutSectionCard(
-                    title = stringResource(R.string.audio_effects_section_equalizer),
-                    subtitle = stringResource(R.string.audio_effects_subtitle),
+    AboutScaffold(title = stringResource(R.string.settings_sound_effects)) {
+        item {
+            AboutSectionCard(
+                title = stringResource(R.string.audio_effects_section_equalizer),
+                subtitle = stringResource(R.string.audio_effects_subtitle),
+            ) {
+                EffectSwitchRow(
+                    title = stringResource(R.string.audio_effects_eq_enable),
+                    subtitle = stringResource(R.string.audio_effects_eq_enable_desc),
+                    icon = Icons.Default.GraphicEq,
+                    checked = eqEnabled,
+                    onCheckedChange = viewModel::setEqEnabled,
+                )
+                AnimatedVisibility(
+                    visible = eqEnabled,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut(),
                 ) {
-                    EffectSwitchRow(
-                        title = stringResource(R.string.audio_effects_eq_enable),
-                        subtitle = stringResource(R.string.audio_effects_eq_enable_desc),
-                        icon = Icons.Default.GraphicEq,
-                        checked = eqEnabled,
-                        onCheckedChange = viewModel::setEqEnabled,
-                    )
-                    AnimatedVisibility(
-                        visible = eqEnabled,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut(),
-                    ) {
-                        Column {
-                            EqualizerPresets(onPreset = viewModel::applyPreset)
-                            EqualizerBands(
-                                bands = eqBands,
-                                onBandChange = viewModel::setEqBandGain,
-                            )
-                        }
-                    }
-                }
-            }
-
-            item {
-                AboutSectionCard(title = stringResource(R.string.audio_effects_section_loudness)) {
-                    EffectSwitchRow(
-                        title = stringResource(R.string.audio_effects_loudness_title),
-                        subtitle = stringResource(R.string.audio_effects_loudness_desc),
-                        icon = Icons.AutoMirrored.Filled.VolumeUp,
-                        checked = loudnessEnabled,
-                        onCheckedChange = viewModel::setLoudnessNormalizationEnabled,
-                    )
-                    AnimatedVisibility(visible = loudnessEnabled) {
-                        LoudnessTargetSelector(
-                            targetLufs = loudnessTargetLufs,
-                            onTargetChange = viewModel::setLoudnessTargetLufs,
+                    Column {
+                        EqualizerPresets(onPreset = viewModel::applyPreset)
+                        EqualizerBands(
+                            bands = eqBands,
+                            onBandChange = viewModel::setEqBandGain,
                         )
                     }
                 }
             }
+        }
 
-            item {
-                ResetRow(onReset = viewModel::resetToDefaults)
+        item {
+            AboutSectionCard(title = stringResource(R.string.audio_effects_section_loudness)) {
+                EffectSwitchRow(
+                    title = stringResource(R.string.audio_effects_loudness_title),
+                    subtitle = stringResource(R.string.audio_effects_loudness_desc),
+                    icon = Icons.AutoMirrored.Filled.VolumeUp,
+                    checked = loudnessEnabled,
+                    onCheckedChange = viewModel::setLoudnessNormalizationEnabled,
+                )
+                AnimatedVisibility(visible = loudnessEnabled) {
+                    LoudnessTargetSelector(
+                        targetLufs = loudnessTargetLufs,
+                        onTargetChange = viewModel::setLoudnessTargetLufs,
+                    )
+                }
             }
+        }
+
+        item {
+            ResetRow(onReset = viewModel::resetToDefaults)
         }
     }
 }

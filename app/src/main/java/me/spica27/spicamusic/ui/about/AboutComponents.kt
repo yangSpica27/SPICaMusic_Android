@@ -36,8 +36,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
@@ -52,7 +52,7 @@ internal fun AboutScaffold(
     title: String,
     content: LazyListScope.() -> Unit,
 ) {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     Scaffold(
         containerColor = Color.Transparent,
@@ -60,7 +60,7 @@ internal fun AboutScaffold(
             TopAppBar(
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
-                    IconButton(onClick = { path.popTop() }) {
+                    IconButton(onClick = { backStack.removeLastOrNull() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBackIos,
                             contentDescription = stringResource(R.string.back),

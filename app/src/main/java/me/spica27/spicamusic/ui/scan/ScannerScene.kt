@@ -86,12 +86,13 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import kotlinx.coroutines.delay
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.feature.library.domain.ScanProgress
 import me.spica27.spicamusic.feature.library.domain.ScanResult
 import me.spica27.spicamusic.feature.library.domain.ScanRules
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.ScanFoldersRoute
+import me.spica27.spicamusic.ui.navigation.ScanRulesRoute
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.settings.ScanState
 import me.spica27.spicamusic.ui.theme.LayoutTokens
@@ -107,11 +108,9 @@ import org.koin.compose.viewmodel.koinActivityViewModel
  * 扫描音乐页：刊头大标题 + 状态面板 + 扫描配置入口 + 常驻底部操作区。
  * 视觉与交互对齐 IgnoredSongsScene 的设计语言（自绘顶栏、跟手收缩、交错入场、clickHighlight）。
  */
-class ScannerScene : StackScene() {
-    @Composable
-    override fun Content() {
-        ScannerScreenContent()
-    }
+@Composable
+fun ScannerScreen() {
+    ScannerScreenContent()
 }
 
 /** 首屏入场交错间隔 */
@@ -137,7 +136,7 @@ private enum class ScanPhase {
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 private fun ScannerScreenContent() {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val context = LocalContext.current
     val viewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
     val scanState by viewModel.scanState.collectAsStateWithLifecycle()
@@ -253,8 +252,8 @@ private fun ScannerScreenContent() {
                     extraFolderCount = extraFolders.size,
                     ignoreFolderCount = ignoreFolders.size,
                     enabled = phase != ScanPhase.Scanning,
-                    onOpenRules = { path.push(ScanRulesScene()) },
-                    onOpenFolders = { path.push(ScanFoldersScene()) },
+                    onOpenRules = { backStack.add(ScanRulesRoute) },
+                    onOpenFolders = { backStack.add(ScanFoldersRoute) },
                     modifier =
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
@@ -268,7 +267,7 @@ private fun ScannerScreenContent() {
             title = stringResource(R.string.scan_music),
             listState = listState,
             solid = mastheadGone,
-            onBack = { path.popTop() },
+            onBack = { backStack.removeLastOrNull() },
             modifier = Modifier.align(Alignment.TopStart),
         )
 

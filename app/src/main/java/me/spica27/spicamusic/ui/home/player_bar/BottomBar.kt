@@ -89,19 +89,18 @@ import com.skydoves.landscapist.crossfade.CrossfadePlugin
 import com.skydoves.landscapist.image.LandscapistImage
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
-import me.spica27.navkit.geometry.geometryOccluder
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.glass.LiquidGlassVariant
 import me.spica27.spicamusic.ui.glass.liquidGlass
 import me.spica27.spicamusic.ui.home.HomePage
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.PlaylistCreatorRoute
 import me.spica27.spicamusic.ui.player.DEFAULT_PAGE
 import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
 import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
-import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
@@ -125,7 +124,7 @@ private enum class PlayerSheetValue { Collapsed, Expanded }
 fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalBottomBarScrollConnection.current) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
-    val navigationPath = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -297,8 +296,6 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                 Modifier
                                     .fillMaxWidth()
                                     .onSizeChanged { size -> miniBarHeightPx = size.height }
-                                    // 登记为几何过渡遮挡物：封面飞行时被播放条盖住的部分不会突然跳到最顶层
-                                    .geometryOccluder("bottom_media_bar")
                                     .animateContentSize(
                                         animationSpec =
                                             spring(
@@ -364,9 +361,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                             .clip(CircleShape)
                                             .background(MaterialTheme.colorScheme.tertiary)
                                             .clickable {
-                                                navigationPath.push(
-                                                    PlaylistCreatorScene(),
-                                                )
+                                                backStack.add(PlaylistCreatorRoute)
                                             },
                                     contentAlignment = Alignment.Center,
                                 ) {
@@ -460,9 +455,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                         }
                         IconButton(
                             onClick = {
-                                navigationPath.push(
-                                    PlaylistCreatorScene(),
-                                )
+                                backStack.add(PlaylistCreatorRoute)
                             },
                             modifier =
                                 Modifier
@@ -501,7 +494,7 @@ fun BottomMediaBarV2(
 ) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
-    val navigationPath = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
 
     val currentHomePage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
     val nowPlayingSong = playerViewModel.currentMediaItem.collectAsStateWithLifecycle().value
@@ -567,7 +560,7 @@ fun BottomMediaBarV2(
                                         .clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.tertiary)
                                         .clickable {
-                                            navigationPath.push(PlaylistCreatorScene())
+                                            backStack.add(PlaylistCreatorRoute)
                                         },
                                 contentAlignment = Alignment.Center,
                             ) {
@@ -709,7 +702,7 @@ fun BottomMediaBarV2(
                     }
                     IconButton(
                         onClick = {
-                            navigationPath.push(PlaylistCreatorScene())
+                            backStack.add(PlaylistCreatorRoute)
                         },
                         modifier =
                             Modifier

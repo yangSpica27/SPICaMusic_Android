@@ -25,12 +25,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.common.collect.ImmutableList
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.LyricsSourceRoute
 import me.spica27.spicamusic.ui.widget.FloatingLyricsToolbar
 import me.spica27.spicamusic.ui.widget.LyricsDisplayMode
 import me.spica27.spicamusic.ui.widget.LyricsDisplayOptions
-import me.spica27.spicamusic.ui.widget.LyricsSourceScene
 import me.spica27.spicamusic.ui.widget.LyricsUI
 import org.koin.compose.viewmodel.koinActivityViewModel
 
@@ -57,7 +57,7 @@ fun LyricsPanel(
     val viewModel: LyricsViewModel = koinActivityViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
 
     // 当前播放时间（帧级更新，保留在 Composable 中因为依赖逐帧对齐）
     // 首帧直接使用播放器的真实位置，避免先以 0ms 完成一次错误的歌词定位，
@@ -134,7 +134,7 @@ fun LyricsPanel(
             onOffsetChange = { viewModel.updateOffset(it) },
             onOpenLyricsSwitcher = {
                 viewModel.openPanel()
-                path.push(LyricsSourceScene())
+                backStack.add(LyricsSourceRoute)
             },
             modifier =
                 Modifier

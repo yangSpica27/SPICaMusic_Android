@@ -20,79 +20,65 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.path.LocalScene
-import me.spica27.navkit.scene.DialogScene
-import me.spica27.navkit.scene.SceneStage
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
-import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 
-class CurrentListScene : DialogScene() {
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CurrentListDialogContent() {
+    val backStack = LocalBackStack.current
 
-        val contentReady =
-            scene.stage.value == SceneStage.Appeared ||
-                scene.stage.value == SceneStage.Disappearing
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-        val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp,
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    scrollBehavior = scrollBehavior,
+                    colors =
+                        TopAppBarDefaults.topAppBarColors().copy(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            titleContentColor = MaterialTheme.colorScheme.onSurface,
+                            actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+                            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            subtitleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    navigationIcon = {
+                        IconButton(
+                            onClick = {
+                                backStack.removeLastOrNull()
+                            },
+                            colors =
+                                IconButtonDefaults.iconButtonColors().copy(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    contentColor = MaterialTheme.colorScheme.onSurface,
+                                ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBackIosNew,
+                                contentDescription = stringResource(R.string.back),
+                            )
+                        }
+                    },
+                    title = {
+                        Text(stringResource(R.string.now_playinglist))
+                    },
+                )
+            },
         ) {
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        scrollBehavior = scrollBehavior,
-                        colors =
-                            TopAppBarDefaults.topAppBarColors().copy(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                titleContentColor = MaterialTheme.colorScheme.onSurface,
-                                actionIconContentColor = MaterialTheme.colorScheme.onSurface,
-                                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                                subtitleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                        navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    path.popTop()
-                                },
-                                colors =
-                                    IconButtonDefaults.iconButtonColors().copy(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        contentColor = MaterialTheme.colorScheme.onSurface,
-                                    ),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowBackIosNew,
-                                    contentDescription = stringResource(R.string.back),
-                                )
-                            }
-                        },
-                        title = {
-                            Text(stringResource(R.string.now_playinglist))
-                        },
-                    )
-                },
+            Box(
+                modifier = Modifier.padding(it),
             ) {
-                ShowOnIdleContent(contentReady) {
-                    Box(
-                        modifier = Modifier.padding(it),
-                    ) {
-                        CurrPlaylistPage(
-                            modifier = Modifier.fillMaxSize(),
-//                            scrollBehavior = scrollBehavior,
-                        )
-                    }
-                }
+                CurrPlaylistPage(
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
     }

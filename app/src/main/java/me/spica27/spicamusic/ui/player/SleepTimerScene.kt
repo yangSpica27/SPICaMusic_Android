@@ -92,11 +92,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.path.LocalScene
-import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.player.api.SleepTimerState
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
@@ -154,125 +152,122 @@ private const val DIAL_DEAD_ZONE_RATIO = 0.15f
 /** 环跳跃阈值 */
 private const val RING_JUMP_THRESHOLD = 0.01f
 
-class SleepTimerScene : DialogScene() {
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val viewModel = LocalPlayerViewModel.current
-        val timer by viewModel.sleepTimer.collectAsStateWithLifecycle()
-        val scope = rememberCoroutineScope()
+@Composable
+fun SleepTimerDialogContent() {
+    val backStack = LocalBackStack.current
+    val viewModel = LocalPlayerViewModel.current
+    val timer by viewModel.sleepTimer.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
-        var dismissing by remember { mutableStateOf(false) }
+    var dismissing by remember { mutableStateOf(false) }
 
-        // 自定义模式，同一枚环从"还剩多少"改任"设多久"，下半区换成提交按钮
-        var editing by remember { mutableStateOf(false) }
-        var customMinutes by remember { mutableIntStateOf(CUSTOM_DEFAULT_MINUTES) }
+    // 自定义模式，同一枚环从"还剩多少"改任"设多久"，下半区换成提交按钮
+    var editing by remember { mutableStateOf(false) }
+    var customMinutes by remember { mutableIntStateOf(CUSTOM_DEFAULT_MINUTES) }
 
-        // 入场瀑布只在首次显影时跑，从自定义返回是回到刚才那一屏，再排一遍队会啰嗦
-        var everEdited by remember { mutableStateOf(false) }
+    // 入场瀑布只在首次显影时跑，从自定义返回是回到刚才那一屏，再排一遍队会啰嗦
+    var everEdited by remember { mutableStateOf(false) }
 
-        fun dismissAnimated(settle: Long = 0L) {
-            if (dismissing) return
-            dismissing = true
-            scope.launch {
-                if (settle > 0L) delay(settle)
-                path.pop(scene)
-            }
+    fun dismissAnimated(settle: Long = 0L) {
+        if (dismissing) return
+        dismissing = true
+        scope.launch {
+            if (settle > 0L) delay(settle)
+            backStack.removeLastOrNull()
         }
+    }
 
-        // 对不上任何预设的时长就是自定义来的，入口那行要把它显示出来
-        val activeCustomMinutes =
+    // 对不上任何预设的时长就是自定义来的，入口那行要把它显示出来
+    val activeCustomMinutes =
+        timer
+            ?.durationMs
+            ?.let { TimeUnit.MILLISECONDS.toMinutes(it).toInt() }
+            ?.takeIf { it !in SleepTimerOptionsMinutes }
+
+    // 带着当前值进自定义，正在走的定时器先吸附到最近一档，没有则用默认值
+    fun beginEditing() {
+        customMinutes =
             timer
                 ?.durationMs
-                ?.let { TimeUnit.MILLISECONDS.toMinutes(it).toInt() }
-                ?.takeIf { it !in SleepTimerOptionsMinutes }
+                ?.let { snapCustomMinutes(TimeUnit.MILLISECONDS.toMinutes(it).toFloat()) }
+                ?: CUSTOM_DEFAULT_MINUTES
+        everEdited = true
+        editing = true
+    }
 
-        // 带着当前值进自定义，正在走的定时器先吸附到最近一档，没有则用默认值
-        fun beginEditing() {
-            customMinutes =
-                timer
-                    ?.durationMs
-                    ?.let { snapCustomMinutes(TimeUnit.MILLISECONDS.toMinutes(it).toFloat()) }
-                    ?: CUSTOM_DEFAULT_MINUTES
-            everEdited = true
-            editing = true
-        }
-
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = Shapes.ExtraLarge1CornerBasedShape,
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = Shapes.ExtraLarge1CornerBasedShape,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.Large, vertical = Spacing.Large),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = Spacing.Large, vertical = Spacing.Large),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                DialogHeader(
-                    editing = editing,
-                    onBack = { editing = false },
-                    onDismiss = { dismissAnimated() },
-                )
-                TimerHero(
-                    timer = timer,
-                    editing = editing,
-                    customMinutes = customMinutes,
-                    onCustomMinutesChange = { customMinutes = it },
-                )
-                Spacer(modifier = Modifier.height(Spacing.Large))
+            DialogHeader(
+                editing = editing,
+                onBack = { editing = false },
+                onDismiss = { dismissAnimated() },
+            )
+            TimerHero(
+                timer = timer,
+                editing = editing,
+                customMinutes = customMinutes,
+                onCustomMinutesChange = { customMinutes = it },
+            )
+            Spacer(modifier = Modifier.height(Spacing.Large))
 
-                // 下半区整块换人。两种模式高度差不少，交给 SizeTransform 抹平
-                AnimatedContent(
-                    targetState = editing,
-                    transitionSpec = {
-                        fadeIn(ListItemFadeInSpec) togetherWith
-                            fadeOut(ListItemFadeOutSpec) using
-                            SizeTransform(clip = false) { _, _ ->
-                                tween(280, easing = EaseOutEmphasized)
-                            }
-                    },
-                    label = "sleep_timer_mode",
-                ) { isEditing ->
-                    if (isEditing) {
-                        StartTimerButton(
+            // 下半区整块换人。两种模式高度差不少，交给 SizeTransform 抹平
+            AnimatedContent(
+                targetState = editing,
+                transitionSpec = {
+                    fadeIn(ListItemFadeInSpec) togetherWith
+                        fadeOut(ListItemFadeOutSpec) using
+                        SizeTransform(clip = false) { _, _ ->
+                            tween(280, easing = EaseOutEmphasized)
+                        }
+                },
+                label = "sleep_timer_mode",
+            ) { isEditing ->
+                if (isEditing) {
+                    StartTimerButton(
+                        enabled = !dismissing,
+                        onClick = {
+                            viewModel.setSleepTimer(TimeUnit.MINUTES.toMillis(customMinutes.toLong()))
+                            dismissAnimated(settle = SELECTION_SETTLE_MILLIS)
+                        },
+                    )
+                } else {
+                    Column {
+                        PresetRow(
+                            activeDurationMs = timer?.durationMs,
                             enabled = !dismissing,
-                            onClick = {
-                                viewModel.setSleepTimer(TimeUnit.MINUTES.toMillis(customMinutes.toLong()))
+                            playEntrance = !everEdited,
+                            onSelect = { durationMs ->
+                                viewModel.setSleepTimer(durationMs)
                                 dismissAnimated(settle = SELECTION_SETTLE_MILLIS)
                             },
                         )
-                    } else {
-                        Column {
-                            PresetRow(
-                                activeDurationMs = timer?.durationMs,
-                                enabled = !dismissing,
-                                playEntrance = !everEdited,
-                                onSelect = { durationMs ->
-                                    viewModel.setSleepTimer(durationMs)
-                                    dismissAnimated(settle = SELECTION_SETTLE_MILLIS)
-                                },
-                            )
-                            CustomDurationRow(
-                                activeMinutes = activeCustomMinutes,
-                                enabled = !dismissing,
-                                playEntrance = !everEdited,
-                                onClick = { beginEditing() },
-                            )
-                            CancelTimerButton(
-                                visible = timer != null && !dismissing,
-                                onClick = {
-                                    viewModel.cancelSleepTimer()
-                                    dismissAnimated()
-                                },
-                            )
-                        }
+                        CustomDurationRow(
+                            activeMinutes = activeCustomMinutes,
+                            enabled = !dismissing,
+                            playEntrance = !everEdited,
+                            onClick = { beginEditing() },
+                        )
+                        CancelTimerButton(
+                            visible = timer != null && !dismissing,
+                            onClick = {
+                                viewModel.cancelSleepTimer()
+                                dismissAnimated()
+                            },
+                        )
                     }
                 }
             }

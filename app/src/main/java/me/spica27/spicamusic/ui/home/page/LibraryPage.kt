@@ -93,17 +93,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.feature.library.domain.ScanFolder
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
-import me.spica27.spicamusic.ui.ignoredsongs.IgnoredSongsScene
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
-import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
-import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
-import me.spica27.spicamusic.ui.scan.ScannerScene
+import me.spica27.spicamusic.ui.navigation.IgnoredSongsRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.PlaylistCreatorRoute
+import me.spica27.spicamusic.ui.navigation.PlaylistDetailRoute
+import me.spica27.spicamusic.ui.navigation.ScannerRoute
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.theme.EaseOutStrong
 import me.spica27.spicamusic.ui.theme.LayoutTokens
@@ -139,7 +139,7 @@ private const val ENTRANCE_ORDER_CARD_BASE = 4
 
 @Composable
 fun LibraryPage() {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val context = LocalContext.current
     val viewModel: LibraryPageViewModel = koinActivityViewModel()
     val sourceViewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
@@ -250,7 +250,7 @@ fun LibraryPage() {
                         icon = Icons.Default.Add,
                         container = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
-                        onClick = { path.push(PlaylistCreatorScene()) },
+                        onClick = { backStack.add(PlaylistCreatorRoute) },
                         modifier = Modifier.weight(1f),
                     )
                     LibraryCommandPill(
@@ -258,7 +258,7 @@ fun LibraryPage() {
                         icon = Icons.Default.Scanner,
                         container = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        onClick = { path.push(ScannerScene()) },
+                        onClick = { backStack.add(ScannerRoute) },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -380,7 +380,7 @@ fun LibraryPage() {
                         }
                     PlaylistCard(
                         item = item,
-                        onClick = { path.push(PlaylistDetailScene(item.playlist)) },
+                        onClick = { backStack.add(PlaylistDetailRoute(item.playlist)) },
                         modifier = entranceModifier,
                     )
                 }
@@ -500,7 +500,7 @@ fun LibraryPage() {
             ) {
                 IgnoredSongsEntryRow(
                     count = ignoredSongsCount,
-                    onClick = { path.push(IgnoredSongsScene()) },
+                    onClick = { backStack.add(IgnoredSongsRoute) },
                     modifier =
                         Modifier
                             .padding(top = Spacing.Small)
@@ -520,7 +520,7 @@ fun LibraryPage() {
 
         LibraryTopBar(
             gridState = gridState,
-            onCreateClick = { path.push(PlaylistCreatorScene()) },
+            onCreateClick = { backStack.add(PlaylistCreatorRoute) },
             modifier = Modifier.align(Alignment.TopStart),
         )
     }

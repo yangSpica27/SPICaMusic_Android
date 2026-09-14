@@ -192,8 +192,6 @@ dependencies {
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.palette.ktx)
   implementation(libs.cloudy)
-  // 本地导航库
-  implementation project(':navkit')
 
   implementation libs.androidx.graphics.core
   implementation libs.androidx.graphics.path

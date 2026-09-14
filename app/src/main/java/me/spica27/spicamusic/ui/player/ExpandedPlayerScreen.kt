@@ -92,10 +92,6 @@ import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.spica27.navkit.geometry.GeometryTransition
-import me.spica27.navkit.geometry.GeometryTransition.GeometryPhase
-import me.spica27.navkit.geometry.geometrySource
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
@@ -108,8 +104,10 @@ import me.spica27.spicamusic.ui.glass.LiquidGlassVariant
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.glass.liquidGlass
 import me.spica27.spicamusic.ui.glass.liquidGlassSource
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.LyricRoute
+import me.spica27.spicamusic.ui.navigation.SleepTimerRoute
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
-import me.spica27.spicamusic.ui.player.scene.LyricScene
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
@@ -180,7 +178,7 @@ fun ExpandedPlayerScreen(
     initialPage: Int = DEFAULT_PAGE, // 初始页面索引
     animationsEnabled: Boolean = true,
 ) {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val sleepTimer by viewModel.sleepTimer.collectAsStateWithLifecycle()
     val playMode by viewModel.playMode.collectAsStateWithLifecycle()
@@ -375,7 +373,7 @@ fun ExpandedPlayerScreen(
                             onFavoriteClick = {
                                 viewModel.toggleLikeCurrentSong()
                             },
-                            onSleepTimerClick = { path.push(SleepTimerScene()) },
+                            onSleepTimerClick = { backStack.add(SleepTimerRoute) },
                             sleepTimer = sleepTimer,
                             onPlaylistClick = {
                                 coroutineScope.launch {
@@ -490,19 +488,8 @@ private fun PlayerPage(
         }
     val songUseCases = koinInject<SongUseCases>()
 
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val coverEffectsEnabled = animationsEnabled && isAppInForeground && !LocalReducedMotion.current
-
-    val coverTransition =
-        remember {
-            GeometryTransition(
-                key = "lyric_hero_cover",
-                sourceClipRadius = 16.dp,
-                targetClipRadius = 12.dp,
-            )
-        }
-    val titleTransition = remember { GeometryTransition(key = "lyric_hero_title", sourceClipRadius = 0.dp) }
-    val artistTransition = remember { GeometryTransition(key = "lyric_hero_artist", sourceClipRadius = 0.dp) }
 
     val title =
         currentMediaItem
@@ -545,8 +532,7 @@ private fun PlayerPage(
                         .graphicsLayer {
                             val heroReveal =
                                 calculateFadeAlpha(progressProvider(), HERO_REVEAL_THRESHOLD)
-                            // 飞行期间本体隐藏，由浮层接管显示
-                            alpha = if (coverTransition.shouldShowSource()) heroReveal else 0f
+                            alpha = heroReveal
                             translationY = (1f - heroReveal) * 48f
                             scaleX = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
                             scaleY = floatLerp(COLLAPSED_HERO_SCALE, 1f, heroReveal)
@@ -554,8 +540,7 @@ private fun PlayerPage(
                             enabled = coverEffectsEnabled,
                             highlightColor = Color.White,
                             spectralColor = MaterialTheme.colorScheme.tertiary,
-                        ).geometrySource(coverTransition)
-                        .clip(Shapes.LargeCornerBasedShape),
+                        ).clip(Shapes.LargeCornerBasedShape),
             ) {
                 AnimatedContent(
                     currentMediaItem.invoke(),
@@ -573,17 +558,13 @@ private fun PlayerPage(
                                 .clip(Shapes.LargeCornerBasedShape)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .clickHighlight {
-                                    // 防止重复点击！！
-                                    if (path.scenes.none { it is LyricScene } &&
-                                        coverTransition.phase.value == GeometryPhase.Source
-                                    ) {
-                                        path.push(
-                                            LyricScene(
+                                    if (backStack.none { it is LyricRoute }) {
+                                        backStack.add(
+                                            LyricRoute(
                                                 heroArtworkUri =
                                                     currentMediaItem
                                                         ?.mediaMetadata
                                                         ?.artworkUri,
-                                                coverTransition = coverTransition,
                                             ),
                                         )
                                     }
@@ -599,8 +580,6 @@ private fun PlayerPage(
         SongInfo(
             title = title,
             artist = artist,
-            titleTransition = titleTransition,
-            artistTransition = artistTransition,
             modifier =
                 Modifier.graphicsLayer {
                     val metaReveal = calculateFadeAlpha(progressProvider(), META_REVEAL_THRESHOLD)
@@ -614,18 +593,14 @@ private fun PlayerPage(
         // mini 歌词：点击跳转全屏歌词页面
         MiniLyric(
             onClick = {
-                // 防止重复点击！！
-                if (path.scenes.none { it is LyricScene } &&
-                    coverTransition.phase.value == GeometryPhase.Source
-                ) {
-                    path.push(
-                        LyricScene(
+                if (backStack.none { it is LyricRoute }) {
+                    backStack.add(
+                        LyricRoute(
                             heroArtworkUri =
                                 currentMediaItem
                                     .invoke()
                                     ?.mediaMetadata
                                     ?.artworkUri,
-                            coverTransition = coverTransition,
                         ),
                     )
                 }
@@ -920,19 +895,12 @@ private fun SeekBarSection(
 
 // ---------- 播放器控制组件 ----------
 
-/**
- * 歌曲信息
- *
- * [titleTransition] / [artistTransition] 非 null 时，歌名与作者文本作为
- * 跳转全屏歌词的共享元素源节点：飞行期间本体隐藏，静止阶段记录源矩形。
- */
+/** 歌曲信息 */
 @Composable
 private fun SongInfo(
     title: String,
     artist: String,
     modifier: Modifier = Modifier,
-    titleTransition: GeometryTransition? = null,
-    artistTransition: GeometryTransition? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -944,7 +912,6 @@ private fun SongInfo(
                 materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
             },
             contentKey = { it },
-            modifier = Modifier.geometrySourceFor(titleTransition),
         ) { title ->
             Text(
                 text = title,
@@ -964,7 +931,6 @@ private fun SongInfo(
             transitionSpec = {
                 materialSharedAxisYIn(true) togetherWith materialSharedAxisYOut(true)
             },
-            modifier = Modifier.geometrySourceFor(artistTransition),
         ) { artist ->
             Text(
                 text = artist,
@@ -977,16 +943,6 @@ private fun SongInfo(
         }
     }
 }
-
-private fun Modifier.geometrySourceFor(transition: GeometryTransition?): Modifier =
-    if (transition == null) {
-        this
-    } else {
-        this
-            .graphicsLayer {
-                alpha = if (transition.shouldShowSource()) 1f else 0f
-            }.geometrySource(transition)
-    }
 
 /** 控制按钮图标切换：高频触发——短时长强 ease-out，不带弹性 */
 private fun controlIconTransform() =

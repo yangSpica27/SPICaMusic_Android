@@ -102,15 +102,14 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
-import me.spica27.spicamusic.ui.dialog.SongMenuScene
-import me.spica27.spicamusic.ui.dialog.TextInputDialogScene
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.SongMenuRoute
+import me.spica27.spicamusic.ui.navigation.TextInputDialogRoute
 import me.spica27.spicamusic.ui.theme.EaseOutStrong
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
@@ -134,11 +133,9 @@ import org.koin.androidx.compose.koinViewModel
  * 「刊头收藏」排版：杂志刊头式大标题 + 双药丸操作行 + 搜索胶囊 + 通栏歌曲列表，
  * 纯色背景、零描边，计数全页唯一。
  */
-class FavoriteScene : StackScene() {
-    @Composable
-    override fun Content() {
-        FavoriteScreenContent()
-    }
+@Composable
+fun FavoriteScreen() {
+    FavoriteScreenContent()
 }
 
 /** 首屏入场交错间隔 */
@@ -163,7 +160,7 @@ private val ItemPlacementSpringSpec =
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FavoriteScreenContent() {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val viewModel: FavoriteViewModel = koinViewModel()
     val songs = viewModel.favoriteSongs.collectAsLazyPagingItems()
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
@@ -183,7 +180,7 @@ private fun FavoriteScreenContent() {
         if (isMultiSelectMode) {
             viewModel.exitMultiSelectMode()
         } else {
-            path.popTop()
+            backStack.removeLastOrNull()
         }
     }
 
@@ -338,7 +335,7 @@ private fun FavoriteScreenContent() {
                             },
                             onLongClick = {
                                 if (!isMultiSelectMode) {
-                                    path.push(SongMenuScene(song))
+                                    backStack.add(SongMenuRoute(song))
                                 }
                             },
                             onRemoveFavorite = { viewModel.toggleFavorite(song) },
@@ -378,7 +375,7 @@ private fun FavoriteScreenContent() {
             solid = mastheadGone,
             showPlayAll = mastheadGone && songCount > 0 && !isMultiSelectMode,
             onPlayAll = { viewModel.playAllSongs() },
-            onBack = { path.popTop() },
+            onBack = { backStack.removeLastOrNull() },
             modifier = Modifier.align(Alignment.TopStart),
         )
 
@@ -398,8 +395,8 @@ private fun FavoriteScreenContent() {
                     viewModel.exitMultiSelectMode()
                 },
                 onSaveAsPlaylist = {
-                    path.push(
-                        TextInputDialogScene(
+                    backStack.add(
+                        TextInputDialogRoute(
                             title = savePlaylistTitle,
                             initialValue = savePlaylistInitialName,
                             label = playlistNameLabel,

@@ -28,169 +28,165 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.path.LocalScene
-import me.spica27.navkit.scene.DialogScene
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 
-/** NavKit 承载的标准文本输入对话框。 */
-class TextInputDialogScene(
-    private val title: String,
-    private val initialValue: String,
-    private val label: String,
-    private val confirmLabel: String,
-    private val dismissLabel: String,
-    private val onConfirm: (String, dismiss: () -> Unit) -> Unit,
-) : DialogScene() {
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        var value by remember { mutableStateOf(initialValue) }
-        val dismiss = { path.pop(scene) }
+@Composable
+fun TextInputDialogContent(
+    title: String,
+    initialValue: String,
+    label: String,
+    confirmLabel: String,
+    dismissLabel: String,
+    onConfirm: (String, dismiss: () -> Unit) -> Unit,
+) {
+    val backStack = LocalBackStack.current
+    var value by remember { mutableStateOf(initialValue) }
+    val dismiss = {
+        backStack.removeLastOrNull()
+        Unit
+    }
 
-        fun submit() {
-            if (value.isNotBlank()) {
-                onConfirm(value.trim(), dismiss)
-            }
+    fun submit() {
+        if (value.isNotBlank()) {
+            onConfirm(value.trim(), dismiss)
         }
+    }
 
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = Shapes.ExtraLarge1CornerBasedShape,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = Shapes.ExtraLarge1CornerBasedShape,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.ExtraLarge),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Large),
         ) {
-            Column(
-                modifier = Modifier.padding(Spacing.ExtraLarge),
-                verticalArrangement = Arrangement.spacedBy(Spacing.Large),
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            OutlinedTextField(
+                value = value,
+                onValueChange = { value = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(label) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            submit()
+                        },
+                    ),
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = { value = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(label) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions =
-                        KeyboardActions(
-                            onDone = {
-                                submit()
-                            },
-                        ),
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+                TextButton(onClick = dismiss) {
+                    Text(dismissLabel)
+                }
+                TextButton(
+                    onClick = ::submit,
+                    enabled = value.isNotBlank(),
                 ) {
-                    TextButton(onClick = dismiss) {
-                        Text(dismissLabel)
-                    }
-                    TextButton(
-                        onClick = ::submit,
-                        enabled = value.isNotBlank(),
-                    ) {
-                        Text(confirmLabel)
-                    }
+                    Text(confirmLabel)
                 }
             }
         }
     }
 }
 
-/** NavKit 承载的标准确认/提示对话框。 */
-class ConfirmationDialogScene(
-    private val title: String,
-    private val message: String,
-    private val confirmLabel: String,
-    private val dismissLabel: String? = null,
-    private val icon: ImageVector? = null,
-    private val destructive: Boolean = false,
-    private val onConfirm: (dismiss: () -> Unit) -> Unit = { dismiss -> dismiss() },
-) : DialogScene() {
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val dismiss = { path.pop(scene) }
+@Composable
+fun ConfirmationDialogContent(
+    title: String,
+    message: String,
+    confirmLabel: String,
+    dismissLabel: String? = null,
+    icon: ImageVector? = null,
+    destructive: Boolean = false,
+    onConfirm: (dismiss: () -> Unit) -> Unit = { dismiss -> dismiss() },
+) {
+    val backStack = LocalBackStack.current
+    val dismiss = {
+        backStack.removeLastOrNull()
+        Unit
+    }
 
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = Shapes.ExtraLarge1CornerBasedShape,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = Shapes.ExtraLarge1CornerBasedShape,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.ExtraLarge),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Large),
         ) {
-            Column(
-                modifier = Modifier.padding(Spacing.ExtraLarge),
-                verticalArrangement = Arrangement.spacedBy(Spacing.Large),
-            ) {
-                icon?.let {
-                    Surface(
-                        modifier = Modifier.size(52.dp),
-                        shape = CircleShape,
-                        color =
-                            if (destructive) {
-                                MaterialTheme.colorScheme.errorContainer
-                            } else {
-                                MaterialTheme.colorScheme.primaryContainer
-                            },
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = it,
-                                contentDescription = null,
-                                tint =
-                                    if (destructive) {
-                                        MaterialTheme.colorScheme.onErrorContainer
-                                    } else {
-                                        MaterialTheme.colorScheme.onPrimaryContainer
-                                    },
-                                modifier = Modifier.size(26.dp),
-                            )
-                        }
+            icon?.let {
+                Surface(
+                    modifier = Modifier.size(52.dp),
+                    shape = CircleShape,
+                    color =
+                        if (destructive) {
+                            MaterialTheme.colorScheme.errorContainer
+                        } else {
+                            MaterialTheme.colorScheme.primaryContainer
+                        },
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = it,
+                            contentDescription = null,
+                            tint =
+                                if (destructive) {
+                                    MaterialTheme.colorScheme.onErrorContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                },
+                            modifier = Modifier.size(26.dp),
+                        )
                     }
                 }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
+            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                dismissLabel?.let {
+                    TextButton(onClick = dismiss) {
+                        Text(it)
+                    }
+                }
+                TextButton(
+                    onClick = { onConfirm(dismiss) },
+                    colors =
+                        if (destructive) {
+                            ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error,
+                            )
+                        } else {
+                            ButtonDefaults.textButtonColors()
+                        },
                 ) {
-                    dismissLabel?.let {
-                        TextButton(onClick = dismiss) {
-                            Text(it)
-                        }
-                    }
-                    TextButton(
-                        onClick = { onConfirm(dismiss) },
-                        colors =
-                            if (destructive) {
-                                ButtonDefaults.textButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error,
-                                )
-                            } else {
-                                ButtonDefaults.textButtonColors()
-                            },
-                    ) {
-                        Text(confirmLabel)
-                    }
+                    Text(confirmLabel)
                 }
             }
         }

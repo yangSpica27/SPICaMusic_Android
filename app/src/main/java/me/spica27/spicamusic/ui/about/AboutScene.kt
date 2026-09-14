@@ -32,91 +32,91 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.skydoves.landscapist.image.LandscapistImage
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.BuildConfig
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.navigation.AppLicenseRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.OpenSourceLicensesRoute
+import me.spica27.spicamusic.ui.navigation.PrivacyPolicyRoute
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 
 /** 项目 GitHub 主页地址。 */
 internal const val PROJECT_HOME_URL = "https://github.com/yangSpica27/SPICaMusic_Android"
 
-class AboutScene : StackScene() {
-    @Composable
-    override fun Content() {
-        val path = LocalNavigationPath.current
-        val context = LocalContext.current
-        val cannotOpenText = stringResource(R.string.about_cannot_open_link)
+@Composable
+fun AboutScreen() {
+    val backStack = LocalBackStack.current
+    val context = LocalContext.current
+    val cannotOpenText = stringResource(R.string.about_cannot_open_link)
 
-        fun openUrl(url: String) {
-            try {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, url.toUri()).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    },
+    fun openUrl(url: String) {
+        try {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, url.toUri()).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                },
+            )
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(context, cannotOpenText, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    AboutScaffold(title = stringResource(R.string.about_title)) {
+        item {
+            AboutHeroCard()
+        }
+
+        item {
+            AboutSectionCard(title = stringResource(R.string.about_section_intro)) {
+                Text(
+                    text = stringResource(R.string.about_intro_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = Spacing.Large),
                 )
-            } catch (_: ActivityNotFoundException) {
-                Toast.makeText(context, cannotOpenText, Toast.LENGTH_SHORT).show()
             }
         }
 
-        AboutScaffold(title = stringResource(R.string.about_title)) {
-            item {
-                AboutHeroCard()
-            }
-
-            item {
-                AboutSectionCard(title = stringResource(R.string.about_section_intro)) {
-                    Text(
-                        text = stringResource(R.string.about_intro_body),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = Spacing.Large),
-                    )
-                }
-            }
-
-            item {
-                AboutSectionCard(title = stringResource(R.string.about_section_more)) {
-                    AboutRow(
-                        title = stringResource(R.string.about_open_source),
-                        subtitle = stringResource(R.string.about_open_source_subtitle),
-                        icon = Icons.Default.Code,
-                        onClick = { path.push(OpenSourceLicensesScene()) },
-                        trailingContent = { ChevronRightIcon() },
-                    )
-                    AboutItemDivider()
-                    AboutRow(
-                        title = stringResource(R.string.about_app_license),
-                        subtitle = stringResource(R.string.about_app_license_subtitle),
-                        icon = Icons.Default.Description,
-                        onClick = { path.push(AppLicenseScene()) },
-                        trailingContent = { ChevronRightIcon() },
-                    )
-                    AboutItemDivider()
-                    AboutRow(
-                        title = stringResource(R.string.about_privacy),
-                        subtitle = stringResource(R.string.about_privacy_subtitle),
-                        icon = Icons.Default.PrivacyTip,
-                        onClick = { path.push(PrivacyPolicyScene()) },
-                        trailingContent = { ChevronRightIcon() },
-                    )
-                    AboutItemDivider()
-                    AboutRow(
-                        title = stringResource(R.string.about_project_home),
-                        subtitle = stringResource(R.string.about_project_home_subtitle),
-                        icon = Icons.AutoMirrored.Filled.OpenInNew,
-                        onClick = { openUrl(PROJECT_HOME_URL) },
-                        trailingContent = {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                    )
-                }
+        item {
+            AboutSectionCard(title = stringResource(R.string.about_section_more)) {
+                AboutRow(
+                    title = stringResource(R.string.about_open_source),
+                    subtitle = stringResource(R.string.about_open_source_subtitle),
+                    icon = Icons.Default.Code,
+                    onClick = { backStack.add(OpenSourceLicensesRoute) },
+                    trailingContent = { ChevronRightIcon() },
+                )
+                AboutItemDivider()
+                AboutRow(
+                    title = stringResource(R.string.about_app_license),
+                    subtitle = stringResource(R.string.about_app_license_subtitle),
+                    icon = Icons.Default.Description,
+                    onClick = { backStack.add(AppLicenseRoute) },
+                    trailingContent = { ChevronRightIcon() },
+                )
+                AboutItemDivider()
+                AboutRow(
+                    title = stringResource(R.string.about_privacy),
+                    subtitle = stringResource(R.string.about_privacy_subtitle),
+                    icon = Icons.Default.PrivacyTip,
+                    onClick = { backStack.add(PrivacyPolicyRoute) },
+                    trailingContent = { ChevronRightIcon() },
+                )
+                AboutItemDivider()
+                AboutRow(
+                    title = stringResource(R.string.about_project_home),
+                    subtitle = stringResource(R.string.about_project_home_subtitle),
+                    icon = Icons.AutoMirrored.Filled.OpenInNew,
+                    onClick = { openUrl(PROJECT_HOME_URL) },
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                )
             }
         }
     }

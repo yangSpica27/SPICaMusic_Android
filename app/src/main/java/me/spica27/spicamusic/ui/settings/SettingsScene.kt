@@ -83,17 +83,16 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.common.collect.ImmutableList
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
-import me.spica27.spicamusic.ui.about.AboutScene
-import me.spica27.spicamusic.ui.audioeffects.AudioEffectsScene
+import me.spica27.spicamusic.ui.navigation.AboutRoute
+import me.spica27.spicamusic.ui.navigation.AudioEffectsRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.SleepTimerRoute
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
-import me.spica27.spicamusic.ui.player.SleepTimerScene
 import me.spica27.spicamusic.ui.player.formatSleepTimerRemaining
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
@@ -108,134 +107,132 @@ import org.koin.compose.viewmodel.koinViewModel
 /**
  * 设置页
  */
-class SettingsScene : StackScene() {
-    @Composable
-    override fun Content() {
-        val path = LocalNavigationPath.current
-        val viewModel: SettingsViewModel = koinViewModel()
+@Composable
+fun SettingsScreen() {
+    val backStack = LocalBackStack.current
+    val viewModel: SettingsViewModel = koinViewModel()
 
-        val darkMode by viewModel.darkMode.collectAsStateWithLifecycle()
-        val liquidGlassEnabled by viewModel.liquidGlassEnabled.collectAsStateWithLifecycle()
-        val keepScreenOn by viewModel.keepScreenOn.collectAsStateWithLifecycle()
-        val backgroundValue by viewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
-        val coverTapValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
-        val progressWaveformValue by viewModel.progressBarStyle.collectAsStateWithLifecycle()
-        val colorStyleValue by viewModel.themeColorStyle.collectAsStateWithLifecycle()
-        val playerViewModel = LocalPlayerViewModel.current
-        val sleepTimer by playerViewModel.sleepTimer.collectAsStateWithLifecycle()
+    val darkMode by viewModel.darkMode.collectAsStateWithLifecycle()
+    val liquidGlassEnabled by viewModel.liquidGlassEnabled.collectAsStateWithLifecycle()
+    val keepScreenOn by viewModel.keepScreenOn.collectAsStateWithLifecycle()
+    val backgroundValue by viewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
+    val coverTapValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
+    val progressWaveformValue by viewModel.progressBarStyle.collectAsStateWithLifecycle()
+    val colorStyleValue by viewModel.themeColorStyle.collectAsStateWithLifecycle()
+    val playerViewModel = LocalPlayerViewModel.current
+    val sleepTimer by playerViewModel.sleepTimer.collectAsStateWithLifecycle()
 
-        // 只在页面首次呈现时播放一次入场
-        var entrancePlayed by remember { mutableStateOf(false) }
-        LaunchedEffect(Unit) {
-            waitAppear()
-            entrancePlayed = true
-        }
+    // 只在页面首次呈现时播放一次入场
+    var entrancePlayed by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        entrancePlayed = true
+    }
 
-        // 一次只展开一个选项组：避免整个页面同时膨胀成一大片选项海
-        var expandedRowKey by rememberSaveable { mutableStateOf<String?>(null) }
+    // 一次只展开一个选项组：避免整个页面同时膨胀成一大片选项海
+    var expandedRowKey by rememberSaveable { mutableStateOf<String?>(null) }
 
-        val listState = rememberLazyListState()
-        val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-        val mastheadGone by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+    val listState = rememberLazyListState()
+    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val mastheadGone by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
 
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+    ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding =
+                PaddingValues(
+                    top = statusBarTop + 56.dp,
+                    bottom = 96.dp,
+                ),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Large),
+            overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
         ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding =
-                    PaddingValues(
-                        top = statusBarTop + 56.dp,
-                        bottom = 96.dp,
-                    ),
-                verticalArrangement = Arrangement.spacedBy(Spacing.Large),
-                overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
-            ) {
-                item(key = "settings_masthead") {
-                    SettingsMasthead(
-                        modifier =
-                            Modifier
-                                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                                .padding(top = Spacing.Large)
-                                .entrance(order = 0, play = !entrancePlayed)
-                                .graphicsLayer {
-                                    val t = mastheadCollapse(listState)
-                                    transformOrigin = TransformOrigin(0f, 0f)
-                                    alpha = 1f - t
-                                    translationY = -t * 16.dp.toPx()
-                                    scaleX = 1f - 0.18f * t
-                                    scaleY = 1f - 0.18f * t
-                                },
+            item(key = "settings_masthead") {
+                SettingsMasthead(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                            .padding(top = Spacing.Large)
+                            .entrance(order = 0, play = !entrancePlayed)
+                            .graphicsLayer {
+                                val t = mastheadCollapse(listState)
+                                transformOrigin = TransformOrigin(0f, 0f)
+                                alpha = 1f - t
+                                translationY = -t * 16.dp.toPx()
+                                scaleX = 1f - 0.18f * t
+                                scaleY = 1f - 0.18f * t
+                            },
+                )
+            }
+
+            item(key = "settings_appearance") {
+                val colorStyleOptions = rememberColorStyleOptions()
+                SettingsSectionCard(
+                    title = stringResource(R.string.settings_appearance),
+                    subtitle = stringResource(R.string.settings_appearance_subtitle),
+                    modifier =
+                        Modifier
+                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                            .entrance(order = 1, play = !entrancePlayed),
+                ) {
+                    InlineSelectRow(
+                        rowKey = "color_style",
+                        title = stringResource(R.string.settings_color_style),
+                        summary = stringResource(R.string.settings_color_style_subtitle),
+                        icon = Icons.Default.Palette,
+                        options = colorStyleOptions,
+                        currentValue = colorStyleValue,
+                        expandedKey = expandedRowKey,
+                        onExpandChange = { expandedRowKey = it },
+                        onValueChange = viewModel::setThemeColorStyle,
+                    )
+                    SettingsItemDivider()
+                    SwitchRow(
+                        title = stringResource(R.string.settings_dark_mode_title),
+                        summary = stringResource(R.string.settings_dark_mode_toggle_subtitle),
+                        icon = Icons.Default.DarkMode,
+                        checked = darkMode,
+                        onCheckedChange = viewModel::setDarkMode,
+                    )
+                    SettingsItemDivider()
+                    SwitchRow(
+                        title = stringResource(R.string.settings_liquid_glass_title),
+                        summary = stringResource(R.string.settings_liquid_glass_subtitle),
+                        icon = Icons.Default.LensBlur,
+                        checked = liquidGlassEnabled,
+                        onCheckedChange = viewModel::setLiquidGlassEnabled,
                     )
                 }
+            }
 
-                item(key = "settings_appearance") {
-                    val colorStyleOptions = rememberColorStyleOptions()
-                    SettingsSectionCard(
-                        title = stringResource(R.string.settings_appearance),
-                        subtitle = stringResource(R.string.settings_appearance_subtitle),
-                        modifier =
-                            Modifier
-                                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                                .entrance(order = 1, play = !entrancePlayed),
-                    ) {
-                        InlineSelectRow(
-                            rowKey = "color_style",
-                            title = stringResource(R.string.settings_color_style),
-                            summary = stringResource(R.string.settings_color_style_subtitle),
-                            icon = Icons.Default.Palette,
-                            options = colorStyleOptions,
-                            currentValue = colorStyleValue,
-                            expandedKey = expandedRowKey,
-                            onExpandChange = { expandedRowKey = it },
-                            onValueChange = viewModel::setThemeColorStyle,
-                        )
-                        SettingsItemDivider()
-                        SwitchRow(
-                            title = stringResource(R.string.settings_dark_mode_title),
-                            summary = stringResource(R.string.settings_dark_mode_toggle_subtitle),
-                            icon = Icons.Default.DarkMode,
-                            checked = darkMode,
-                            onCheckedChange = viewModel::setDarkMode,
-                        )
-                        SettingsItemDivider()
-                        SwitchRow(
-                            title = stringResource(R.string.settings_liquid_glass_title),
-                            summary = stringResource(R.string.settings_liquid_glass_subtitle),
-                            icon = Icons.Default.LensBlur,
-                            checked = liquidGlassEnabled,
-                            onCheckedChange = viewModel::setLiquidGlassEnabled,
-                        )
-                    }
-                }
-
-                item(key = "settings_now_playing") {
-                    val backgroundOptions = rememberBackgroundOptions()
-                    val coverTapOptions = rememberCoverTapOptions()
-                    val progressWaveformOptions = rememberProgressWaveformOptions()
-                    SettingsSectionCard(
-                        title = stringResource(R.string.settings_section_player_visual),
-                        subtitle = stringResource(R.string.settings_section_player_visual_subtitle),
-                        modifier =
-                            Modifier
-                                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                                .entrance(order = 2, play = !entrancePlayed),
-                    ) {
-                        InlineSelectRow(
-                            rowKey = "player_background",
-                            title = stringResource(R.string.settings_player_background),
-                            summary = stringResource(R.string.settings_player_background_subtitle),
-                            icon = Icons.Default.Landscape,
-                            options = backgroundOptions,
-                            currentValue = backgroundValue,
-                            expandedKey = expandedRowKey,
-                            onExpandChange = { expandedRowKey = it },
-                            onValueChange = viewModel::setDynamicSpectrumBackground,
-                        )
+            item(key = "settings_now_playing") {
+                val backgroundOptions = rememberBackgroundOptions()
+                val coverTapOptions = rememberCoverTapOptions()
+                val progressWaveformOptions = rememberProgressWaveformOptions()
+                SettingsSectionCard(
+                    title = stringResource(R.string.settings_section_player_visual),
+                    subtitle = stringResource(R.string.settings_section_player_visual_subtitle),
+                    modifier =
+                        Modifier
+                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                            .entrance(order = 2, play = !entrancePlayed),
+                ) {
+                    InlineSelectRow(
+                        rowKey = "player_background",
+                        title = stringResource(R.string.settings_player_background),
+                        summary = stringResource(R.string.settings_player_background_subtitle),
+                        icon = Icons.Default.Landscape,
+                        options = backgroundOptions,
+                        currentValue = backgroundValue,
+                        expandedKey = expandedRowKey,
+                        onExpandChange = { expandedRowKey = it },
+                        onValueChange = viewModel::setDynamicSpectrumBackground,
+                    )
 //                        SettingsItemDivider()
 //                        InlineSelectRow(
 //                            rowKey = "cover_tap",
@@ -248,87 +245,86 @@ class SettingsScene : StackScene() {
 //                            onExpandChange = { expandedRowKey = it },
 //                            onValueChange = viewModel::setDynamicCoverType,
 //                        )
-                        SettingsItemDivider()
-                        InlineSelectRow(
-                            rowKey = "progress_waveform",
-                            title = stringResource(R.string.settings_progress_waveform),
-                            summary = stringResource(R.string.settings_progress_waveform_subtitle),
-                            icon = Icons.Default.GraphicEq,
-                            options = progressWaveformOptions,
-                            currentValue = progressWaveformValue,
-                            expandedKey = expandedRowKey,
-                            onExpandChange = { expandedRowKey = it },
-                            onValueChange = viewModel::setProgressBarStyle,
-                        )
-                    }
-                }
-
-                item(key = "settings_playback") {
-                    SettingsSectionCard(
-                        title = stringResource(R.string.settings_playback),
-                        subtitle = stringResource(R.string.settings_section_playback_subtitle),
-                        modifier =
-                            Modifier
-                                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                                .entrance(order = 3, play = !entrancePlayed),
-                    ) {
-                        NavigationRow(
-                            title = stringResource(R.string.settings_sound_effects),
-                            summary = stringResource(R.string.settings_sound_effects_subtitle),
-                            icon = Icons.Default.Tune,
-                            onClick = { path.push(AudioEffectsScene()) },
-                        )
-                        SettingsItemDivider()
-                        NavigationRow(
-                            title = stringResource(R.string.settings_sleep_timer),
-                            summary =
-                                sleepTimer?.let {
-                                    stringResource(
-                                        R.string.settings_sleep_timer_active,
-                                        formatSleepTimerRemaining(it.remainingMs),
-                                    )
-                                } ?: stringResource(R.string.settings_sleep_timer_subtitle),
-                            icon = Icons.Default.Bedtime,
-                            onClick = { path.push(SleepTimerScene()) },
-                        )
-                        SettingsItemDivider()
-                        SwitchRow(
-                            title = stringResource(R.string.settings_keep_screen_on),
-                            summary = stringResource(R.string.settings_keep_screen_on_subtitle),
-                            icon = Icons.Default.Visibility,
-                            checked = keepScreenOn,
-                            onCheckedChange = viewModel::setKeepScreenOn,
-                        )
-                    }
-                }
-
-                item(key = "settings_about") {
-                    SettingsSectionCard(
-                        title = stringResource(R.string.settings_about),
-                        subtitle = null,
-                        modifier =
-                            Modifier
-                                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                                .entrance(order = 4, play = !entrancePlayed),
-                    ) {
-                        NavigationRow(
-                            title = stringResource(R.string.settings_about),
-                            summary = stringResource(R.string.settings_about_subtitle),
-                            icon = Icons.Default.Info,
-                            onClick = { path.push(AboutScene()) },
-                        )
-                    }
+                    SettingsItemDivider()
+                    InlineSelectRow(
+                        rowKey = "progress_waveform",
+                        title = stringResource(R.string.settings_progress_waveform),
+                        summary = stringResource(R.string.settings_progress_waveform_subtitle),
+                        icon = Icons.Default.GraphicEq,
+                        options = progressWaveformOptions,
+                        currentValue = progressWaveformValue,
+                        expandedKey = expandedRowKey,
+                        onExpandChange = { expandedRowKey = it },
+                        onValueChange = viewModel::setProgressBarStyle,
+                    )
                 }
             }
 
-            SettingsTopBar(
-                title = stringResource(R.string.finder_settings_title),
-                listState = listState,
-                solid = mastheadGone,
-                onBack = { path.popTop() },
-                modifier = Modifier.align(Alignment.TopStart),
-            )
+            item(key = "settings_playback") {
+                SettingsSectionCard(
+                    title = stringResource(R.string.settings_playback),
+                    subtitle = stringResource(R.string.settings_section_playback_subtitle),
+                    modifier =
+                        Modifier
+                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                            .entrance(order = 3, play = !entrancePlayed),
+                ) {
+                    NavigationRow(
+                        title = stringResource(R.string.settings_sound_effects),
+                        summary = stringResource(R.string.settings_sound_effects_subtitle),
+                        icon = Icons.Default.Tune,
+                        onClick = { backStack.add(AudioEffectsRoute) },
+                    )
+                    SettingsItemDivider()
+                    NavigationRow(
+                        title = stringResource(R.string.settings_sleep_timer),
+                        summary =
+                            sleepTimer?.let {
+                                stringResource(
+                                    R.string.settings_sleep_timer_active,
+                                    formatSleepTimerRemaining(it.remainingMs),
+                                )
+                            } ?: stringResource(R.string.settings_sleep_timer_subtitle),
+                        icon = Icons.Default.Bedtime,
+                        onClick = { backStack.add(SleepTimerRoute) },
+                    )
+                    SettingsItemDivider()
+                    SwitchRow(
+                        title = stringResource(R.string.settings_keep_screen_on),
+                        summary = stringResource(R.string.settings_keep_screen_on_subtitle),
+                        icon = Icons.Default.Visibility,
+                        checked = keepScreenOn,
+                        onCheckedChange = viewModel::setKeepScreenOn,
+                    )
+                }
+            }
+
+            item(key = "settings_about") {
+                SettingsSectionCard(
+                    title = stringResource(R.string.settings_about),
+                    subtitle = null,
+                    modifier =
+                        Modifier
+                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                            .entrance(order = 4, play = !entrancePlayed),
+                ) {
+                    NavigationRow(
+                        title = stringResource(R.string.settings_about),
+                        summary = stringResource(R.string.settings_about_subtitle),
+                        icon = Icons.Default.Info,
+                        onClick = { backStack.add(AboutRoute) },
+                    )
+                }
+            }
         }
+
+        SettingsTopBar(
+            title = stringResource(R.string.finder_settings_title),
+            listState = listState,
+            solid = mastheadGone,
+            onBack = { backStack.removeLastOrNull() },
+            modifier = Modifier.align(Alignment.TopStart),
+        )
     }
 }
 

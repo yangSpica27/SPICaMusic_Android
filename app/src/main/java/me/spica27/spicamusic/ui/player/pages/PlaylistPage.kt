@@ -107,12 +107,12 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
-import me.spica27.spicamusic.ui.dialog.ConfirmationDialogScene
-import me.spica27.spicamusic.ui.dialog.TextInputDialogScene
 import me.spica27.spicamusic.ui.glass.LiquidGlassVariant
 import me.spica27.spicamusic.ui.glass.liquidGlass
+import me.spica27.spicamusic.ui.navigation.ConfirmationDialogRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.TextInputDialogRoute
 import me.spica27.spicamusic.ui.player.CurrentPlaylistPanelViewModel
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
@@ -143,7 +143,7 @@ fun CurrPlaylistPage(
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
 ) {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val panelViewModel: CurrentPlaylistPanelViewModel = koinViewModel()
     val currentPlaylist by viewModel.currentPlaylist.collectAsStateWithLifecycle()
     val currentMediaItem by viewModel.currentMediaItem.collectAsStateWithLifecycle()
@@ -446,8 +446,8 @@ fun CurrPlaylistPage(
     if (showCreateDialog) {
         LaunchedEffect(Unit) {
             showCreateDialog = false
-            path.push(
-                TextInputDialogScene(
+            backStack.add(
+                TextInputDialogRoute(
                     title = createPlaylistTitle,
                     initialValue = "",
                     label = playlistNameLabel,
@@ -483,8 +483,8 @@ fun CurrPlaylistPage(
         val deleteLabel = stringResource(R.string.delete)
         LaunchedEffect(Unit) {
             showDeleteConfirmDialog = false
-            path.push(
-                ConfirmationDialogScene(
+            backStack.add(
+                ConfirmationDialogRoute(
                     title = title,
                     message = message,
                     confirmLabel = deleteLabel,
@@ -530,8 +530,8 @@ fun CurrPlaylistPage(
         val clearLabel = stringResource(R.string.clear_playlist)
         LaunchedEffect(Unit) {
             showClearConfirmDialog = false
-            path.push(
-                ConfirmationDialogScene(
+            backStack.add(
+                ConfirmationDialogRoute(
                     title = title,
                     message = message,
                     confirmLabel = clearLabel,

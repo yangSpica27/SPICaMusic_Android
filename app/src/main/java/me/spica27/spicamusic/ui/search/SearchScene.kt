@@ -76,15 +76,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
-import me.spica27.spicamusic.ui.dialog.SongMenuScene
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.SongMenuRoute
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
@@ -129,128 +128,126 @@ private enum class SearchContentState { Idle, Loading, Empty, Results }
  * - 滚动结果列表时自动收起键盘（iOS 式）
  * - 键盘 Search 键收起键盘
  */
-class SearchScene : StackScene() {
-    @Composable
-    override fun Content() {
-        val path = LocalNavigationPath.current
-        val searchViewModel = koinViewModel<SearchViewModel>()
-        val searchKey by searchViewModel.searchKeyword.collectAsStateWithLifecycle()
-        val searchResult = searchViewModel.searchPagingResults.collectAsLazyPagingItems()
-        val playerViewModel = LocalPlayerViewModel.current
-        val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
+@Composable
+fun SearchScreen() {
+    val backStack = LocalBackStack.current
+    val searchViewModel = koinViewModel<SearchViewModel>()
+    val searchKey by searchViewModel.searchKeyword.collectAsStateWithLifecycle()
+    val searchResult = searchViewModel.searchPagingResults.collectAsLazyPagingItems()
+    val playerViewModel = LocalPlayerViewModel.current
+    val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
 
-        val focusRequester = remember { FocusRequester() }
-        val keyboardController = LocalSoftwareKeyboardController.current
-        val focusManager = LocalFocusManager.current
-        val listState = rememberLazyListState()
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val listState = rememberLazyListState()
 
-        // 等推场动画完成后再唤起键盘，避免键盘上升与场景滑入互相抢帧
-        LaunchedEffect(Unit) {
-            enterAnimEnd.first { it }
-            focusRequester.requestFocus()
-            keyboardController?.show()
+    // 等推场动画完成后再唤起键盘，避免键盘上升与场景滑入互相抢帧
+    LaunchedEffect(Unit) {
+        delay(350)
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
+    // 用户开始滚动结果时自动收起键盘，把屏幕还给内容
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }
+            .filter { it }
+            .collect {
+                keyboardController?.hide()
+                focusManager.clearFocus()
+            }
+    }
+
+    // 关键词变化时回到列表顶部
+    LaunchedEffect(searchKey) {
+        if (searchKey.isNotBlank()) {
+            listState.scrollToItem(0)
         }
+    }
 
-        // 用户开始滚动结果时自动收起键盘，把屏幕还给内容
-        LaunchedEffect(listState) {
-            snapshotFlow { listState.isScrollInProgress }
-                .filter { it }
-                .collect {
-                    keyboardController?.hide()
-                    focusManager.clearFocus()
-                }
-        }
+    // 只有 refresh 完成且确实没有条目才算"无结果"，
+    // 加载中（含防抖窗口，见 SearchViewModel 的停驻 Loading 处理）显示骨架
+    val contentState by remember(searchResult) {
+        derivedStateOf {
+            when {
+                searchKey.isBlank() -> SearchContentState.Idle
 
-        // 关键词变化时回到列表顶部
-        LaunchedEffect(searchKey) {
-            if (searchKey.isNotBlank()) {
-                listState.scrollToItem(0)
+                searchResult.loadState.refresh is LoadState.Loading &&
+                    searchResult.itemCount == 0 -> SearchContentState.Loading
+
+                searchResult.itemCount == 0 -> SearchContentState.Empty
+
+                else -> SearchContentState.Results
             }
         }
+    }
 
-        // 只有 refresh 完成且确实没有条目才算"无结果"，
-        // 加载中（含防抖窗口，见 SearchViewModel 的停驻 Loading 处理）显示骨架
-        val contentState by remember(searchResult) {
-            derivedStateOf {
-                when {
-                    searchKey.isBlank() -> SearchContentState.Idle
-
-                    searchResult.loadState.refresh is LoadState.Loading &&
-                        searchResult.itemCount == 0 -> SearchContentState.Loading
-
-                    searchResult.itemCount == 0 -> SearchContentState.Empty
-
-                    else -> SearchContentState.Results
-                }
-            }
-        }
-
-        Column(
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+    ) {
+        SearchHeader(
+            query = searchKey,
+            onQueryChange = searchViewModel::updateSearchKeyword,
+            onClear = searchViewModel::clearSearch,
+            onBack = {
+                keyboardController?.hide()
+                backStack.removeLastOrNull()
+            },
+            onImeSearch = { keyboardController?.hide() },
+            focusRequester = focusRequester,
+            listState = listState,
+            modifier = Modifier.entrance(order = 0),
+        )
+        Box(
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .imePadding()
+                    .entrance(order = 1),
         ) {
-            SearchHeader(
-                query = searchKey,
-                onQueryChange = searchViewModel::updateSearchKeyword,
-                onClear = searchViewModel::clearSearch,
-                onBack = {
-                    keyboardController?.hide()
-                    path.popTop()
+            AnimatedContent(
+                targetState = contentState,
+                transitionSpec = {
+                    (
+                        fadeIn(tween(220, easing = EaseOutCubic)) +
+                            slideInVertically(
+                                tween(
+                                    220,
+                                    easing = EaseOutCubic,
+                                ),
+                            ) { it / 12 }
+                    ).togetherWith(fadeOut(tween(120)))
                 },
-                onImeSearch = { keyboardController?.hide() },
-                focusRequester = focusRequester,
-                listState = listState,
-                modifier = Modifier.entrance(order = 0),
-            )
-            Box(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .imePadding()
-                        .entrance(order = 1),
-            ) {
-                AnimatedContent(
-                    targetState = contentState,
-                    transitionSpec = {
-                        (
-                            fadeIn(tween(220, easing = EaseOutCubic)) +
-                                slideInVertically(
-                                    tween(
-                                        220,
-                                        easing = EaseOutCubic,
-                                    ),
-                                ) { it / 12 }
-                        ).togetherWith(fadeOut(tween(120)))
-                    },
-                    label = "search_content",
-                ) { state ->
-                    when (state) {
-                        SearchContentState.Idle ->
-                            SearchIdleHint(modifier = Modifier.fillMaxSize())
+                label = "search_content",
+            ) { state ->
+                when (state) {
+                    SearchContentState.Idle ->
+                        SearchIdleHint(modifier = Modifier.fillMaxSize())
 
-                        SearchContentState.Loading ->
-                            SearchSkeletonList(modifier = Modifier.fillMaxSize())
+                    SearchContentState.Loading ->
+                        SearchSkeletonList(modifier = Modifier.fillMaxSize())
 
-                        SearchContentState.Empty ->
-                            SearchNoResultHint(
-                                query = searchKey,
-                                modifier = Modifier.fillMaxSize(),
-                            )
+                    SearchContentState.Empty ->
+                        SearchNoResultHint(
+                            query = searchKey,
+                            modifier = Modifier.fillMaxSize(),
+                        )
 
-                        SearchContentState.Results ->
-                            SearchResultList(
-                                listState = listState,
-                                searchResult = searchResult,
-                                keyword = searchKey,
-                                playingMediaId = currentMediaItem?.mediaId,
-                                onPlay = { song -> playerViewModel.playSong(song) },
-                                onMore = { song -> path.push(SongMenuScene(song)) },
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                    }
+                    SearchContentState.Results ->
+                        SearchResultList(
+                            listState = listState,
+                            searchResult = searchResult,
+                            keyword = searchKey,
+                            playingMediaId = currentMediaItem?.mediaId,
+                            onPlay = { song -> playerViewModel.playSong(song) },
+                            onMore = { song -> backStack.add(SongMenuRoute(song)) },
+                            modifier = Modifier.fillMaxSize(),
+                        )
                 }
             }
         }

@@ -1,9 +1,8 @@
 package me.spica27.spicamusic.ui.theme
 
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
 import kotlin.math.pow
-import me.spica27.navkit.motion.EaseOutEmphasized as NavkitEaseOutEmphasized
-import me.spica27.navkit.motion.EaseOutStrong as NavkitEaseOutStrong
 
 /**
  * Material emphasized-decelerate（强 ease-out）
@@ -14,9 +13,9 @@ import me.spica27.navkit.motion.EaseOutStrong as NavkitEaseOutStrong
  * 用法：
  *   tween(durationMillis = 180, easing = EaseOutEmphasized)
  */
-val EaseOutEmphasized: Easing = NavkitEaseOutEmphasized
+val EaseOutEmphasized: Easing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
 
-val EaseOutStrong: Easing = NavkitEaseOutStrong
+val EaseOutStrong: Easing = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 
 /**
  * 三次方缓入缓出（EaseInOutCubic）

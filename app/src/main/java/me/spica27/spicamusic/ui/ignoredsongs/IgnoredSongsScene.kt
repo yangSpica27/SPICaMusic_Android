@@ -88,12 +88,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.theme.EaseOutStrong
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
@@ -112,11 +111,9 @@ import org.koin.androidx.compose.koinViewModel
 /**
  * 已忽略歌曲管理
  */
-class IgnoredSongsScene : StackScene() {
-    @Composable
-    override fun Content() {
-        IgnoredSongsScreenContent()
-    }
+@Composable
+fun IgnoredSongsScreen() {
+    IgnoredSongsScreenContent()
 }
 
 /** 首屏入场交错间隔 */
@@ -133,7 +130,7 @@ private val MastheadCollapseDistance = 140.dp
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun IgnoredSongsScreenContent() {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val viewModel: IgnoredSongsViewModel = koinViewModel()
     val songs by viewModel.ignoredSongs.collectAsStateWithLifecycle()
     val searchKeyword by viewModel.searchKeyword.collectAsStateWithLifecycle()
@@ -145,7 +142,7 @@ private fun IgnoredSongsScreenContent() {
         if (isMultiSelectMode) {
             viewModel.exitMultiSelectMode()
         } else {
-            path.popTop()
+            backStack.removeLastOrNull()
         }
     }
 
@@ -312,7 +309,7 @@ private fun IgnoredSongsScreenContent() {
             title = stringResource(R.string.setting_ignore_music),
             listState = listState,
             solid = mastheadGone,
-            onBack = { path.popTop() },
+            onBack = { backStack.removeLastOrNull() },
             modifier = Modifier.align(Alignment.TopStart),
         )
 

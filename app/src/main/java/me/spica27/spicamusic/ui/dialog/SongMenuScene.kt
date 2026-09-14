@@ -45,7 +45,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,180 +58,154 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.image.LandscapistImage
-import kotlinx.coroutines.launch
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.path.LocalScene
-import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
-import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
-import me.spica27.spicamusic.ui.artistdetail.ArtistDetailScene
-import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScene
+import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
+import me.spica27.spicamusic.ui.navigation.ArtistDetailRoute
+import me.spica27.spicamusic.ui.navigation.CreatePlaylistForSongRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.PlaylistCreatorRoute
+import me.spica27.spicamusic.ui.navigation.PlaylistPickerRoute
+import me.spica27.spicamusic.ui.navigation.SongInfoRoute
 import me.spica27.spicamusic.ui.widget.CoverFallback
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
-class SongMenuScene(
-    val song: Song,
-) : DialogScene() {
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val scope = rememberCoroutineScope()
-        val viewModel: SongMenuViewModel =
-            koinViewModel(
-                key = "SongMenuViewModel_${song.mediaStoreId}",
-            ) { parametersOf(song) }
+@Composable
+fun SongMenuDialogContent(song: Song) {
+    val backStack = LocalBackStack.current
+    val viewModel: SongMenuViewModel =
+        koinViewModel(
+            key = "SongMenuViewModel_${song.mediaStoreId}",
+        ) { parametersOf(song) }
 
-        val isLiked by viewModel.isLiked.collectAsStateWithLifecycle()
-        val playlists by viewModel.availablePlaylists.collectAsStateWithLifecycle()
-        val album by viewModel.albumDetail.collectAsStateWithLifecycle()
-        val artist by viewModel.artistDetail.collectAsStateWithLifecycle()
+    val isLiked by viewModel.isLiked.collectAsStateWithLifecycle()
+    val playlists by viewModel.availablePlaylists.collectAsStateWithLifecycle()
+    val album by viewModel.albumDetail.collectAsStateWithLifecycle()
+    val artist by viewModel.artistDetail.collectAsStateWithLifecycle()
 
-        val keyboardController = LocalSoftwareKeyboardController.current
-        val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
-        LaunchedEffect(Unit) {
-            keyboardController?.hide()
-            focusManager.clearFocus()
-        }
-
-        fun closeMenu() {
-            path.pop(scene)
-        }
-
-        fun closeAndNavigate(navigate: () -> Unit) {
-            scope.launch {
-                path.pop(scene)
-                navigate()
-            }
-        }
-
-        val onPlayNext =
-            remember {
-                {
-                    viewModel.addToNext()
-                    closeMenu()
-                }
-            }
-        val onAddToQueue =
-            remember {
-                {
-                    viewModel.addToQueue()
-                    closeMenu()
-                }
-            }
-        val onToggleLike =
-            remember {
-                {
-                    viewModel.toggleLike()
-                    closeMenu()
-                }
-            }
-        val onShowPlaylistDialog =
-            remember {
-                {
-                    path.push(
-                        PlaylistPickerScene(
-                            parentScene = this@SongMenuScene,
-                            viewModel = viewModel,
-                            playlists = playlists,
-                        ),
-                    )
-                }
-            }
-        val onOpenAlbum = remember(album) { { closeAndNavigate { path.push(AlbumDetailScene(album)) } } }
-        val onOpenArtist = remember(artist) { { closeAndNavigate { path.push(ArtistDetailScene(artist)) } } }
-        val onOpenSongInfo = remember { { closeAndNavigate { path.push(SongInfoScene(song)) } } }
-        val onIgnoreSong =
-            remember {
-                {
-                    viewModel.ignoreSong()
-                    closeMenu()
-                }
-            }
-
-        SongMenuContent(
-            song = song,
-            isLiked = isLiked,
-            onClose = ::closeMenu,
-            onPlayNext = onPlayNext,
-            onAddToQueue = onAddToQueue,
-            onToggleLike = onToggleLike,
-            onShowPlaylistDialog = onShowPlaylistDialog,
-            onOpenAlbum = onOpenAlbum,
-            onOpenArtist = onOpenArtist,
-            onOpenSongInfo = onOpenSongInfo,
-            onIgnoreSong = onIgnoreSong,
-        )
+    LaunchedEffect(Unit) {
+        keyboardController?.hide()
+        focusManager.clearFocus()
     }
+
+    fun closeMenu() {
+        backStack.removeLastOrNull()
+    }
+
+    fun closeAndNavigate(navigate: () -> Unit) {
+        backStack.removeLastOrNull()
+        navigate()
+    }
+
+    val onPlayNext =
+        remember {
+            {
+                viewModel.addToNext()
+                closeMenu()
+            }
+        }
+    val onAddToQueue =
+        remember {
+            {
+                viewModel.addToQueue()
+                closeMenu()
+            }
+        }
+    val onToggleLike =
+        remember {
+            {
+                viewModel.toggleLike()
+                closeMenu()
+            }
+        }
+    val onShowPlaylistDialog =
+        remember {
+            {
+                backStack.add(PlaylistPickerRoute(songMediaStoreId = song.mediaStoreId))
+                Unit
+            }
+        }
+    val onOpenAlbum = remember(album) { { closeAndNavigate { backStack.add(AlbumDetailRoute(album)) } } }
+    val onOpenArtist = remember(artist) { { closeAndNavigate { backStack.add(ArtistDetailRoute(artist)) } } }
+    val onOpenSongInfo = remember { { closeAndNavigate { backStack.add(SongInfoRoute(song)) } } }
+    val onIgnoreSong =
+        remember {
+            {
+                viewModel.ignoreSong()
+                closeMenu()
+            }
+        }
+
+    SongMenuContent(
+        song = song,
+        isLiked = isLiked,
+        onClose = ::closeMenu,
+        onPlayNext = onPlayNext,
+        onAddToQueue = onAddToQueue,
+        onToggleLike = onToggleLike,
+        onShowPlaylistDialog = onShowPlaylistDialog,
+        onOpenAlbum = onOpenAlbum,
+        onOpenArtist = onOpenArtist,
+        onOpenSongInfo = onOpenSongInfo,
+        onIgnoreSong = onIgnoreSong,
+    )
 }
 
-private class PlaylistPickerScene(
-    private val parentScene: SongMenuScene,
-    private val viewModel: SongMenuViewModel,
-    private val playlists: List<me.spica27.spicamusic.common.entity.Playlist>,
-) : DialogScene() {
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val scope = rememberCoroutineScope()
+@Composable
+fun PlaylistPickerDialogContent(songMediaStoreId: Long) {
+    val backStack = LocalBackStack.current
+    val viewModel: SongMenuViewModel =
+        koinViewModel(key = "SongMenuViewModel_$songMediaStoreId")
+    val playlists by viewModel.availablePlaylists.collectAsStateWithLifecycle()
 
-        PlaylistPickerDialogContent(
-            playlists = playlists,
-            onDismiss = { path.pop(scene) },
-            onCreatePlaylist = {
-                scope.launch {
-                    path.pop(scene)
-                    path.push(CreatePlaylistScene(parentScene, viewModel))
-                }
-            },
-            onSelectPlaylist = { playlist ->
-                val playlistId = playlist.playlistId
-                if (playlistId != null) {
-                    viewModel.addToPlaylist(playlistId)
-                    scope.launch {
-                        path.pop(scene)
-                        path.pop(parentScene)
-                    }
-                } else {
-                    path.pop(scene)
-                }
-            },
-        )
-    }
+    PlaylistPickerContent(
+        playlists = playlists,
+        onDismiss = { backStack.removeLastOrNull() },
+        onCreatePlaylist = {
+            backStack.removeLastOrNull()
+            backStack.add(CreatePlaylistForSongRoute(songMediaStoreId))
+        },
+        onSelectPlaylist = { playlist ->
+            val playlistId = playlist.playlistId
+            if (playlistId != null) {
+                viewModel.addToPlaylist(playlistId)
+                // Pop self (PlaylistPicker) and parent (SongMenu)
+                backStack.removeLastOrNull()
+                backStack.removeLastOrNull()
+            } else {
+                backStack.removeLastOrNull()
+            }
+        },
+    )
 }
 
-private class CreatePlaylistScene(
-    private val parentScene: SongMenuScene,
-    private val viewModel: SongMenuViewModel,
-) : DialogScene() {
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val scope = rememberCoroutineScope()
+@Composable
+fun CreatePlaylistForSongDialogContent(songMediaStoreId: Long) {
+    val backStack = LocalBackStack.current
+    val viewModel: SongMenuViewModel =
+        koinViewModel(key = "SongMenuViewModel_$songMediaStoreId")
 
-        CreatePlaylistDialogContent(
-            onDismiss = { path.pop(scene) },
-            onConfirm = { name ->
-                viewModel.createPlaylistAndAdd(name)
-                scope.launch {
-                    path.pop(scene)
-                    path.pop(parentScene)
-                }
-            },
-            onOpenFullCreator = {
-                path.pop(scene)
-                path.pop(parentScene)
-                path.push(PlaylistCreatorScene())
-            },
-        )
-    }
+    CreatePlaylistContent(
+        onDismiss = { backStack.removeLastOrNull() },
+        onConfirm = { name ->
+            viewModel.createPlaylistAndAdd(name)
+            // Pop self (CreatePlaylist) and parent (SongMenu)
+            backStack.removeLastOrNull()
+            backStack.removeLastOrNull()
+        },
+        onOpenFullCreator = {
+            // Pop self (CreatePlaylist) and parent (SongMenu)
+            backStack.removeLastOrNull()
+            backStack.removeLastOrNull()
+            backStack.add(PlaylistCreatorRoute)
+        },
+    )
 }
 
 @Composable
@@ -516,7 +489,7 @@ private fun ControlItem(
 }
 
 @Composable
-private fun PlaylistPickerDialogContent(
+private fun PlaylistPickerContent(
     playlists: List<me.spica27.spicamusic.common.entity.Playlist>,
     onDismiss: () -> Unit,
     onCreatePlaylist: () -> Unit,
@@ -587,7 +560,7 @@ private fun PlaylistPickerDialogContent(
 }
 
 @Composable
-private fun CreatePlaylistDialogContent(
+private fun CreatePlaylistContent(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
     onOpenFullCreator: () -> Unit,

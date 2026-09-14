@@ -42,154 +42,149 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.path.LocalScene
-import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.feature.library.domain.ScanFolder
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import org.koin.compose.viewmodel.koinActivityViewModel
 
-class ScanFoldersScene : DialogScene() {
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val context = LocalContext.current
-        val viewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
-        val extraFolders by viewModel.extraFolders.collectAsStateWithLifecycle()
-        val ignoreFolders by viewModel.ignoreFolders.collectAsStateWithLifecycle()
+@Composable
+fun ScanFoldersDialogContent() {
+    val backStack = LocalBackStack.current
+    val context = LocalContext.current
+    val viewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
+    val extraFolders by viewModel.extraFolders.collectAsStateWithLifecycle()
+    val ignoreFolders by viewModel.ignoreFolders.collectAsStateWithLifecycle()
 
-        var pendingReauthFolderId by rememberSaveable { mutableLongStateOf(-1L) }
-        val addExtraLauncher =
-            rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-                uri?.let { viewModel.addExtraFolder(context, it) }
+    var pendingReauthFolderId by rememberSaveable { mutableLongStateOf(-1L) }
+    val addExtraLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            uri?.let { viewModel.addExtraFolder(context, it) }
+        }
+    val addIgnoreLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            uri?.let { viewModel.addIgnoreFolder(context, it) }
+        }
+    val reauthLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            val folderId = pendingReauthFolderId
+            if (uri != null && folderId >= 0) {
+                viewModel.reAuthorizeFolder(context, folderId, uri)
             }
-        val addIgnoreLauncher =
-            rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-                uri?.let { viewModel.addIgnoreFolder(context, it) }
-            }
-        val reauthLauncher =
-            rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-                val folderId = pendingReauthFolderId
-                if (uri != null && folderId >= 0) {
-                    viewModel.reAuthorizeFolder(context, folderId, uri)
-                }
-                pendingReauthFolderId = -1L
-            }
+            pendingReauthFolderId = -1L
+        }
 
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = Shapes.ExtraLarge1CornerBasedShape,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = Shapes.ExtraLarge1CornerBasedShape,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.Large),
         ) {
-            Column(
+            Row(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Spacing.Large),
+                        .padding(top = Spacing.Large, bottom = Spacing.Medium),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
             ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = Spacing.Large, bottom = Spacing.Medium),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.scan_folders_dialog_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.scan_folders_dialog_subtitle),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    Text(
+                        text = stringResource(R.string.scan_folders_dialog_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.scan_folders_dialog_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = { backStack.removeLastOrNull() }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.close),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            LazyColumn(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 560.dp),
+                contentPadding = PaddingValues(bottom = Spacing.Large),
+                verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+            ) {
+                item(key = "extra_header", contentType = "folder_header") {
+                    ScanFolderSectionHeader(
+                        title = stringResource(R.string.extra_scan_folders),
+                        description = stringResource(R.string.add_extra_folder_hint),
+                        actionLabel = stringResource(R.string.add_extra_folder),
+                        onAddClick = { addExtraLauncher.launch(null) },
+                    )
+                }
+                if (extraFolders.isEmpty()) {
+                    item(key = "extra_empty", contentType = "folder_empty") {
+                        ScanFolderEmptyHint(text = stringResource(R.string.no_extra_scan_folders))
                     }
-                    IconButton(onClick = { path.pop(scene) }) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(R.string.close),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                } else {
+                    items(
+                        items = extraFolders,
+                        key = { folder -> "extra_${folder.id}" },
+                        contentType = { "scan_folder" },
+                    ) { folder ->
+                        ScanFolderRow(
+                            folder = folder,
+                            onRemove = { viewModel.removeFolder(context, folder) },
+                            onReAuthorize =
+                                {
+                                    pendingReauthFolderId = folder.id
+                                    reauthLauncher.launch(null)
+                                }.takeIf { !folder.isAccessible },
                         )
                     }
                 }
 
-                LazyColumn(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 560.dp),
-                    contentPadding = PaddingValues(bottom = Spacing.Large),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.Small),
-                ) {
-                    item(key = "extra_header", contentType = "folder_header") {
-                        ScanFolderSectionHeader(
-                            title = stringResource(R.string.extra_scan_folders),
-                            description = stringResource(R.string.add_extra_folder_hint),
-                            actionLabel = stringResource(R.string.add_extra_folder),
-                            onAddClick = { addExtraLauncher.launch(null) },
+                item(key = "ignore_header", contentType = "folder_header") {
+                    ScanFolderSectionHeader(
+                        title = stringResource(R.string.ignore_folders),
+                        description = stringResource(R.string.add_ignore_folder_hint),
+                        actionLabel = stringResource(R.string.add_ignore_folder),
+                        onAddClick = { addIgnoreLauncher.launch(null) },
+                        modifier = Modifier.padding(top = Spacing.Medium),
+                    )
+                }
+                if (ignoreFolders.isEmpty()) {
+                    item(key = "ignore_empty", contentType = "folder_empty") {
+                        ScanFolderEmptyHint(text = stringResource(R.string.library_no_ignore_folders))
+                    }
+                } else {
+                    items(
+                        items = ignoreFolders,
+                        key = { folder -> "ignore_${folder.id}" },
+                        contentType = { "scan_folder" },
+                    ) { folder ->
+                        ScanFolderRow(
+                            folder = folder,
+                            onRemove = { viewModel.removeFolder(context, folder) },
+                            onReAuthorize = null,
                         )
-                    }
-                    if (extraFolders.isEmpty()) {
-                        item(key = "extra_empty", contentType = "folder_empty") {
-                            ScanFolderEmptyHint(text = stringResource(R.string.no_extra_scan_folders))
-                        }
-                    } else {
-                        items(
-                            items = extraFolders,
-                            key = { folder -> "extra_${folder.id}" },
-                            contentType = { "scan_folder" },
-                        ) { folder ->
-                            ScanFolderRow(
-                                folder = folder,
-                                onRemove = { viewModel.removeFolder(context, folder) },
-                                onReAuthorize =
-                                    {
-                                        pendingReauthFolderId = folder.id
-                                        reauthLauncher.launch(null)
-                                    }.takeIf { !folder.isAccessible },
-                            )
-                        }
-                    }
-
-                    item(key = "ignore_header", contentType = "folder_header") {
-                        ScanFolderSectionHeader(
-                            title = stringResource(R.string.ignore_folders),
-                            description = stringResource(R.string.add_ignore_folder_hint),
-                            actionLabel = stringResource(R.string.add_ignore_folder),
-                            onAddClick = { addIgnoreLauncher.launch(null) },
-                            modifier = Modifier.padding(top = Spacing.Medium),
-                        )
-                    }
-                    if (ignoreFolders.isEmpty()) {
-                        item(key = "ignore_empty", contentType = "folder_empty") {
-                            ScanFolderEmptyHint(text = stringResource(R.string.library_no_ignore_folders))
-                        }
-                    } else {
-                        items(
-                            items = ignoreFolders,
-                            key = { folder -> "ignore_${folder.id}" },
-                            contentType = { "scan_folder" },
-                        ) { folder ->
-                            ScanFolderRow(
-                                folder = folder,
-                                onRemove = { viewModel.removeFolder(context, folder) },
-                                onReAuthorize = null,
-                            )
-                        }
                     }
                 }
             }

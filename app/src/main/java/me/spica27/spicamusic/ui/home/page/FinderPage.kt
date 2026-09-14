@@ -83,23 +83,23 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.delay
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
-import me.spica27.spicamusic.ui.favorite.FavoriteScene
 import me.spica27.spicamusic.ui.home.HomePage
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
+import me.spica27.spicamusic.ui.navigation.AllPlaylistsRoute
+import me.spica27.spicamusic.ui.navigation.FavoriteRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.PlaylistDetailRoute
+import me.spica27.spicamusic.ui.navigation.ScannerRoute
+import me.spica27.spicamusic.ui.navigation.SearchRoute
+import me.spica27.spicamusic.ui.navigation.SettingsRoute
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
-import me.spica27.spicamusic.ui.playlist.AllPlaylistsScene
-import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
-import me.spica27.spicamusic.ui.scan.ScannerScene
-import me.spica27.spicamusic.ui.search.SearchScene
-import me.spica27.spicamusic.ui.settings.SettingsScene
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
@@ -136,7 +136,7 @@ private val ItemPlacementSpec: FiniteAnimationSpec<IntOffset> =
 
 @Composable
 fun FinderPage() {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
 
@@ -215,7 +215,7 @@ fun FinderPage() {
 
             item(key = "search", contentType = "search") {
                 SearchCapsule(
-                    onClick = { path.push(SearchScene()) },
+                    onClick = { backStack.add(SearchRoute) },
                     modifier = Modifier.entrance(order = 1, play = playEntrance),
                 )
             }
@@ -224,7 +224,7 @@ fun FinderPage() {
             if (allSongs.isEmpty()) {
                 item(key = "scan_guide", contentType = "scan_guide") {
                     ScanGuideCard(
-                        onClick = { path.push(ScannerScene()) },
+                        onClick = { backStack.add(ScannerRoute) },
                         modifier =
                             Modifier
                                 .animateItem(
@@ -291,7 +291,11 @@ fun FinderPage() {
                     title = stringResource(R.string.my_favorites),
                     subtitle = stringResource(R.string.songs_count_format, favoriteSongs.size),
                     actionLabel = stringResource(R.string.finder_more).takeIf { favoriteSongs.isNotEmpty() },
-                    onActionClick = { path.push(FavoriteScene()) }.takeIf { favoriteSongs.isNotEmpty() },
+                    onActionClick =
+                        {
+                            backStack.add(FavoriteRoute)
+                            Unit
+                        }.takeIf { favoriteSongs.isNotEmpty() },
                     modifier =
                         Modifier
                             .animateItem(
@@ -357,7 +361,11 @@ fun FinderPage() {
                     title = stringResource(R.string.finder_playlists_overview_title),
                     subtitle = stringResource(R.string.library_summary_playlists, playlists.size),
                     actionLabel = stringResource(R.string.finder_more).takeIf { playlists.size >= 2 },
-                    onActionClick = { path.push(AllPlaylistsScene()) }.takeIf { playlists.size >= 2 },
+                    onActionClick =
+                        {
+                            backStack.add(AllPlaylistsRoute)
+                            Unit
+                        }.takeIf { playlists.size >= 2 },
                     modifier =
                         Modifier
                             .animateItem(
@@ -388,7 +396,7 @@ fun FinderPage() {
                 item(key = "playlists_rail", contentType = "rail") {
                     PlaylistRail(
                         playlists = playlistsWithCover,
-                        onPlaylistClick = { item -> path.push(PlaylistDetailScene(item.playlist)) },
+                        onPlaylistClick = { item -> backStack.add(PlaylistDetailRoute(item.playlist)) },
                         modifier =
                             Modifier
                                 .animateItem(
@@ -456,7 +464,7 @@ fun FinderPage() {
                     subtitle = stringResource(R.string.finder_settings_subtitle),
                     icon = Icons.Default.Settings,
                     badgeColor = MaterialTheme.colorScheme.secondary,
-                    onClick = { path.push(SettingsScene()) },
+                    onClick = { backStack.add(SettingsRoute) },
                     modifier =
                         Modifier.animateItem(
                             fadeInSpec = ListItemFadeInSpec,
@@ -469,7 +477,7 @@ fun FinderPage() {
 
         FinderTopBar(
             listState = listState,
-            onSearchClick = { path.push(SearchScene()) },
+            onSearchClick = { backStack.add(SearchRoute) },
             modifier = Modifier.align(Alignment.TopStart),
         )
     }

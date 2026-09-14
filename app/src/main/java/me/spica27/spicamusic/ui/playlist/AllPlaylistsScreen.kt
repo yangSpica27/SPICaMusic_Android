@@ -36,10 +36,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
-import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScene
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.PlaylistCreatorRoute
+import me.spica27.spicamusic.ui.navigation.PlaylistDetailRoute
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
@@ -50,18 +51,18 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllPlaylistsScreen() {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val viewModel: PlaylistViewModel = koinActivityViewModel()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val playlistsWithCover by viewModel.playlistsWithCover.collectAsStateWithLifecycle()
 
-    BackHandler { path.popTop() }
+    BackHandler { backStack.removeLastOrNull() }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = { path.popTop() }) {
+                    IconButton(onClick = { backStack.removeLastOrNull() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(R.string.back),
@@ -70,7 +71,7 @@ fun AllPlaylistsScreen() {
                 },
                 title = { Text(stringResource(R.string.my_playlists)) },
                 actions = {
-                    IconButton(onClick = { path.push(PlaylistCreatorScene()) }) {
+                    IconButton(onClick = { backStack.add(PlaylistCreatorRoute) }) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = stringResource(R.string.create_playlist_title),
@@ -126,7 +127,7 @@ fun AllPlaylistsScreen() {
                 ) { item ->
                     AllPlaylistCard(
                         item = item,
-                        onClick = { path.push(PlaylistDetailScene(item.playlist)) },
+                        onClick = { backStack.add(PlaylistDetailRoute(item.playlist)) },
                         modifier = Modifier.animateItem(),
                     )
                 }

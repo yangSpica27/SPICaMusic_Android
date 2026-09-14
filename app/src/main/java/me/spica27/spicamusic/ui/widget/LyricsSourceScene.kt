@@ -36,12 +36,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.path.LocalScene
-import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricSource
 import me.spica27.spicamusic.common.entity.LyricSourceType
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.player.LyricsViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -54,33 +52,30 @@ import org.koin.compose.viewmodel.koinActivityViewModel
  *
  * 数据直接来自 Activity 作用域的 [LyricsViewModel]，选择来源或导入本地文件后自动关闭。
  */
-class LyricsSourceScene : DialogScene() {
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val viewModel: LyricsViewModel = koinActivityViewModel()
-        val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+@Composable
+fun LyricsSourceDialogContent() {
+    val backStack = LocalBackStack.current
+    val viewModel: LyricsViewModel = koinActivityViewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-        LyricsSourceDialogContent(
-            embedded = uiState.embeddedSource,
-            local = uiState.localSource,
-            online = uiState.onlineSources,
-            onlineLoading = uiState.onlineLoading,
-            currentSourceType = uiState.currentSourceType,
-            currentRawText = uiState.displayedRawText,
-            onSelect = { source ->
-                viewModel.selectSource(source)
-                path.pop(scene)
-            },
-            onImportLocalFile = { uri -> viewModel.importLocalFile(uri) },
-            onDismiss = { path.pop(scene) },
-        )
-    }
+    LyricsSourceDialogContentInternal(
+        embedded = uiState.embeddedSource,
+        local = uiState.localSource,
+        online = uiState.onlineSources,
+        onlineLoading = uiState.onlineLoading,
+        currentSourceType = uiState.currentSourceType,
+        currentRawText = uiState.displayedRawText,
+        onSelect = { source ->
+            viewModel.selectSource(source)
+            backStack.removeLastOrNull()
+        },
+        onImportLocalFile = { uri -> viewModel.importLocalFile(uri) },
+        onDismiss = { backStack.removeLastOrNull() },
+    )
 }
 
 @Composable
-private fun LyricsSourceDialogContent(
+private fun LyricsSourceDialogContentInternal(
     embedded: LyricSource.Embedded?,
     local: LyricSource.LocalFile?,
     online: List<LyricSource.Online>,

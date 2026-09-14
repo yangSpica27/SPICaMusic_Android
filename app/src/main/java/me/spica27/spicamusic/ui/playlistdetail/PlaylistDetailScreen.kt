@@ -131,21 +131,17 @@ import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.path.LocalScene
-import me.spica27.navkit.popup.PopupMenuAnchorState
-import me.spica27.navkit.popup.PopupMenuScene
-import me.spica27.navkit.popup.popupMenuAnchor
-import me.spica27.navkit.popup.rememberPopupMenuAnchorState
-import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
-import me.spica27.spicamusic.ui.dialog.ConfirmationDialogScene
-import me.spica27.spicamusic.ui.dialog.SongMenuScene
-import me.spica27.spicamusic.ui.dialog.TextInputDialogScene
+import me.spica27.spicamusic.ui.navigation.ConfirmationDialogRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.PlaylistOptionsRoute
+import me.spica27.spicamusic.ui.navigation.SongMenuRoute
+import me.spica27.spicamusic.ui.navigation.SongPickerRoute
+import me.spica27.spicamusic.ui.navigation.TextInputDialogRoute
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.ENTRANCE_STAGGER_MILLIS
 import me.spica27.spicamusic.ui.theme.LayoutTokens
@@ -210,8 +206,7 @@ private enum class SearchContentState { Idle, Loading, Empty, Results }
  */
 @Composable
 fun PlaylistDetailScreen(playlist: Playlist) {
-    val path = LocalNavigationPath.current
-    val scene = LocalScene.current
+    val backStack = LocalBackStack.current
     val viewModel =
         koinViewModel<PlaylistDetailViewModel>(
             key = "PlaylistDetailViewModel_${playlist.playlistId}",
@@ -229,7 +224,6 @@ fun PlaylistDetailScreen(playlist: Playlist) {
     val isMultiSelectMode by viewModel.isMultiSelectMode.collectAsStateWithLifecycle()
     val selectedSongs by viewModel.selectedSongs.collectAsStateWithLifecycle()
     val playlistDeleted by viewModel.playlistDeleted.collectAsStateWithLifecycle()
-    val moreMenuAnchor = rememberPopupMenuAnchorState()
 
     val playerViewModel = LocalPlayerViewModel.current
     val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
@@ -247,7 +241,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
 
     // 歌单被删除时返回上一页
     LaunchedEffect(playlistDeleted) {
-        if (playlistDeleted) path.pop(scene)
+        if (playlistDeleted) backStack.removeLastOrNull()
     }
 
     // ── 搜索覆盖层过渡（hoisted：键盘时序与关键字清理都依赖它）─────────────────
@@ -397,7 +391,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                     isSortMode = isSortMode,
                     playEnabled = !isPlaylistEmpty,
                     onPlayAll = viewModel::playAll,
-                    onAddSongs = { path.push(SongPickerDialogScene(viewModel)) },
+                    onAddSongs = { backStack.add(SongPickerRoute(playlist.playlistId ?: 0L)) },
                     modifier = Modifier.entrance(order = 3),
                 )
             }
@@ -405,7 +399,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
             // 空歌单引导
             if (isPlaylistEmpty && !isSortMode) {
                 item(key = "empty_state", contentType = "empty") {
-                    EmptyPlaylistHint(onAddSongs = { path.push(SongPickerDialogScene(viewModel)) })
+                    EmptyPlaylistHint(onAddSongs = { backStack.add(SongPickerRoute(playlist.playlistId ?: 0L)) })
                 }
             }
 
@@ -476,7 +470,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                 }
                                 viewModel.toggleSongSelection(song.mediaStoreId)
                             },
-                            onMore = { path.push(SongMenuScene(song)) },
+                            onMore = { backStack.add(SongMenuRoute(song)) },
                             modifier =
                                 Modifier
                                     .animateItem(
@@ -509,7 +503,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                 topPadding = statusBarTop + HEADER_HEIGHT,
                 playingMediaId = playingMediaId,
                 onPlay = viewModel::playSongInList,
-                onMore = { song -> path.push(SongMenuScene(song)) },
+                onMore = { song -> backStack.add(SongMenuRoute(song)) },
             )
         }
 
@@ -604,21 +598,17 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                             title = displayName,
                             collapseProgress = collapseProgress,
                             showSearchAction = !isMultiSelectMode && !isPlaylistEmpty,
-                            moreMenuAnchor = moreMenuAnchor,
-                            onBack = { path.popTop() },
+                            onBack = { backStack.removeLastOrNull() },
                             onSearch = viewModel::enterSearchMode,
                             onMore = {
-                                if (!moreMenuAnchor.isOpen) {
-                                    path.push(
-                                        PlaylistOptionsMenuScene(
-                                            anchorState = moreMenuAnchor,
-                                            playlistName = displayName,
-                                            isMultiSelectMode = isMultiSelectMode,
-                                            isPlaylistEmpty = isPlaylistEmpty,
-                                            viewModel = viewModel,
-                                        ),
-                                    )
-                                }
+                                backStack.add(
+                                    PlaylistOptionsRoute(
+                                        playlistName = displayName,
+                                        isMultiSelectMode = isMultiSelectMode,
+                                        isPlaylistEmpty = isPlaylistEmpty,
+                                        playlistId = playlist.playlistId ?: 0L,
+                                    ),
+                                )
                             },
                         )
 
@@ -677,8 +667,8 @@ fun PlaylistDetailScreen(playlist: Playlist) {
         val confirmLabel = stringResource(R.string.confirm)
         LaunchedEffect(Unit) {
             viewModel.hideSortModeLimitExceeded()
-            path.push(
-                ConfirmationDialogScene(
+            backStack.add(
+                ConfirmationDialogRoute(
                     title = title,
                     message = message,
                     confirmLabel = confirmLabel,
@@ -695,7 +685,6 @@ private fun BrowseTopBar(
     title: String,
     collapseProgress: Density.() -> Float,
     showSearchAction: Boolean,
-    moreMenuAnchor: PopupMenuAnchorState,
     onBack: () -> Unit,
     onSearch: () -> Unit,
     onMore: () -> Unit,
@@ -750,7 +739,6 @@ private fun BrowseTopBar(
         }
         IconButton(
             onClick = onMore,
-            modifier = Modifier.popupMenuAnchor(moreMenuAnchor),
         ) {
             Icon(
                 Icons.Default.MoreVert,
@@ -922,41 +910,31 @@ private fun SortTopBar(
 
 // ── 更多菜单条目 ──────────────────────────────────────────────────────────────
 
-private class PlaylistOptionsMenuScene(
-    anchorState: PopupMenuAnchorState,
-    private val playlistName: String,
-    private val isMultiSelectMode: Boolean,
-    private val isPlaylistEmpty: Boolean,
-    private val viewModel: PlaylistDetailViewModel,
-) : PopupMenuScene(anchorState) {
-    @Composable
-    override fun anchorContainerColor(): Color = Color.Transparent
+@Composable
+fun PlaylistOptionsDialogContent(
+    playlistName: String,
+    isMultiSelectMode: Boolean,
+    isPlaylistEmpty: Boolean,
+    playlistId: Long,
+) {
+    val backStack = LocalBackStack.current
+    val viewModel =
+        koinViewModel<PlaylistDetailViewModel>(
+            key = "PlaylistDetailViewModel_$playlistId",
+        ) { parametersOf(playlistId) }
+    val cancelLabel = stringResource(R.string.cancel)
 
-    @Composable
-    override fun AnchorGhostContent() {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
+    fun closeThen(action: () -> Unit) {
+        backStack.removeLastOrNull()
+        action()
     }
 
-    @Composable
-    override fun MenuContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val cancelLabel = stringResource(R.string.cancel)
-
-        fun closeThen(action: () -> Unit) {
-            path.pop(scene)
-            action()
-        }
-
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = Shapes.ExtraLarge1CornerBasedShape,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+    ) {
         Column(
             modifier =
                 Modifier
@@ -966,7 +944,7 @@ private class PlaylistOptionsMenuScene(
             PlaylistMenuItem(
                 text = stringResource(R.string.add_songs),
                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                onClick = { closeThen { path.push(SongPickerDialogScene(viewModel)) } },
+                onClick = { closeThen { backStack.add(SongPickerRoute(playlistId)) } },
             )
             if (isMultiSelectMode) {
                 PlaylistMenuItem(
@@ -1003,8 +981,8 @@ private class PlaylistOptionsMenuScene(
                 icon = Icons.Default.Edit,
                 onClick = {
                     closeThen {
-                        path.push(
-                            TextInputDialogScene(
+                        backStack.add(
+                            TextInputDialogRoute(
                                 title = renameTitle,
                                 initialValue = playlistName,
                                 label = playlistNameLabel,
@@ -1027,8 +1005,8 @@ private class PlaylistOptionsMenuScene(
                 destructive = true,
                 onClick = {
                     closeThen {
-                        path.push(
-                            ConfirmationDialogScene(
+                        backStack.add(
+                            ConfirmationDialogRoute(
                                 title = deleteTitle,
                                 message = deleteMessage,
                                 confirmLabel = deleteLabel,
@@ -1857,39 +1835,38 @@ private fun MultiSelectBar(
 
 // ── 添加歌曲选择对话框 ────────────────────────────────────────────────────────
 
-private class SongPickerDialogScene(
-    private val viewModel: PlaylistDetailViewModel,
-) : DialogScene() {
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
-        var pickerKeyword by remember { mutableStateOf("") }
+@Composable
+fun SongPickerDialogContent(playlistId: Long) {
+    val backStack = LocalBackStack.current
+    val viewModel =
+        koinViewModel<PlaylistDetailViewModel>(
+            key = "PlaylistDetailViewModel_$playlistId",
+        ) { parametersOf(playlistId) }
+    var selectedIds by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var pickerKeyword by remember { mutableStateOf("") }
 
-        LaunchedEffect(pickerKeyword) {
-            viewModel.updatePickerKeyword(pickerKeyword)
-        }
+    LaunchedEffect(pickerKeyword) {
+        viewModel.updatePickerKeyword(pickerKeyword)
+    }
 
-        val pickerSongs = viewModel.pickerSongsPaging.collectAsLazyPagingItems()
+    val pickerSongs = viewModel.pickerSongsPaging.collectAsLazyPagingItems()
 
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp,
-        ) {
-            SongPickerDialogContent(
-                viewModel = viewModel,
-                selectedIds = selectedIds,
-                onSelectedIdsChange = { selectedIds = it },
-                pickerKeyword = pickerKeyword,
-                onPickerKeywordChange = { pickerKeyword = it },
-                pickerSongs = pickerSongs,
-                onDismiss = { path.pop(scene) },
-            )
-        }
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+    ) {
+        SongPickerDialogContent(
+            viewModel = viewModel,
+            selectedIds = selectedIds,
+            onSelectedIdsChange = { selectedIds = it },
+            pickerKeyword = pickerKeyword,
+            onPickerKeywordChange = { pickerKeyword = it },
+            pickerSongs = pickerSongs,
+            onDismiss = { backStack.removeLastOrNull() },
+        )
     }
 }
 

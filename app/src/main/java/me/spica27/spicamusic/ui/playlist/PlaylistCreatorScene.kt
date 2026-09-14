@@ -67,12 +67,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
@@ -101,170 +100,167 @@ private val NAME_SUGGESTION_RES =
 /**
  * 创建歌单页。
  */
-class PlaylistCreatorScene : StackScene() {
-    @Composable
-    override fun Content() {
-        val path = LocalNavigationPath.current
-        val viewModel: PlaylistViewModel = koinActivityViewModel()
-        val playlists by viewModel.playlists.collectAsStateWithLifecycle()
-        val candidates by viewModel.creatorCandidates.collectAsStateWithLifecycle()
+@Composable
+fun PlaylistCreatorScreen() {
+    val backStack = LocalBackStack.current
+    val viewModel: PlaylistViewModel = koinActivityViewModel()
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val candidates by viewModel.creatorCandidates.collectAsStateWithLifecycle()
 
-        var name by remember { mutableStateOf("") }
-        // 提交过一次空名称后才显示"名称不能为空"，避免一进页面就红着
-        var submittedEmpty by remember { mutableStateOf(false) }
-        var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
-        val focusRequester = remember { FocusRequester() }
-        val keyboardController = LocalSoftwareKeyboardController.current
+    var name by remember { mutableStateOf("") }
+    // 提交过一次空名称后才显示"名称不能为空"，避免一进页面就红着
+    var submittedEmpty by remember { mutableStateOf(false) }
+    var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
-        val trimmedName = name.trim()
-        val duplicate =
-            trimmedName.isNotEmpty() &&
-                playlists.any { it.playlistName.equals(trimmedName, ignoreCase = true) }
-        val canCreate = trimmedName.isNotEmpty() && !duplicate
+    val trimmedName = name.trim()
+    val duplicate =
+        trimmedName.isNotEmpty() &&
+            playlists.any { it.playlistName.equals(trimmedName, ignoreCase = true) }
+    val canCreate = trimmedName.isNotEmpty() && !duplicate
 
-        val errorText =
-            when {
-                duplicate -> stringResource(R.string.playlist_name_error_duplicate)
-                submittedEmpty && trimmedName.isEmpty() ->
-                    stringResource(R.string.playlist_name_error_empty)
-                else -> null
-            }
-
-        // 错误时的水平抖动
-        val shakeOffset = remember { Animatable(0f) }
-        var shakeTrigger by remember { mutableIntStateOf(0) }
-
-        LaunchedEffect(Unit) {
-            // 等推场动画落定再唤起键盘，避免键盘上升与场景滑入互相抢帧
-            waitAppear()
-            focusRequester.requestFocus()
-            keyboardController?.show()
+    val errorText =
+        when {
+            duplicate -> stringResource(R.string.playlist_name_error_duplicate)
+            submittedEmpty && trimmedName.isEmpty() ->
+                stringResource(R.string.playlist_name_error_empty)
+            else -> null
         }
 
-        LaunchedEffect(shakeTrigger) {
-            if (shakeTrigger == 0) return@LaunchedEffect
-            shakeOffset.animateTo(
-                targetValue = 0f,
-                animationSpec =
-                    keyframes {
-                        durationMillis = 320
-                        (-12f) at 55 using FastOutSlowInEasing
-                        12f at 130 using FastOutSlowInEasing
-                        (-7f) at 205 using FastOutSlowInEasing
-                        4f at 270 using FastOutSlowInEasing
-                        0f at 320
-                    },
-            )
-        }
+    // 错误时的水平抖动
+    val shakeOffset = remember { Animatable(0f) }
+    var shakeTrigger by remember { mutableIntStateOf(0) }
 
-        fun confirm() {
-            if (trimmedName.isEmpty()) {
-                submittedEmpty = true
-                shakeTrigger++
-                return
-            }
-            if (duplicate) {
-                shakeTrigger++
-                return
-            }
-            keyboardController?.hide()
-            viewModel.createPlaylist(trimmedName, selectedIds.toList())
-            path.popTop()
-        }
+    LaunchedEffect(Unit) {
+        // 等推场动画落定再唤起键盘，避免键盘上升与场景滑入互相抢帧
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
 
-        Column(
+    LaunchedEffect(shakeTrigger) {
+        if (shakeTrigger == 0) return@LaunchedEffect
+        shakeOffset.animateTo(
+            targetValue = 0f,
+            animationSpec =
+                keyframes {
+                    durationMillis = 320
+                    (-12f) at 55 using FastOutSlowInEasing
+                    12f at 130 using FastOutSlowInEasing
+                    (-7f) at 205 using FastOutSlowInEasing
+                    4f at 270 using FastOutSlowInEasing
+                    0f at 320
+                },
+        )
+    }
+
+    fun confirm() {
+        if (trimmedName.isEmpty()) {
+            submittedEmpty = true
+            shakeTrigger++
+            return
+        }
+        if (duplicate) {
+            shakeTrigger++
+            return
+        }
+        keyboardController?.hide()
+        viewModel.createPlaylist(trimmedName, selectedIds.toList())
+        backStack.removeLastOrNull()
+    }
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .clickHighlight {},
+    ) {
+        // 顶部只有返回键：输入框就是页面标题，不再需要第二处标题
+        Row(
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .clickHighlight {},
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall)
+                    .entrance(order = 0),
         ) {
-            // 顶部只有返回键：输入框就是页面标题，不再需要第二处标题
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall)
-                        .entrance(order = 0),
+            IconButton(
+                onClick = {
+                    keyboardController?.hide()
+                    backStack.removeLastOrNull()
+                },
             ) {
-                IconButton(
-                    onClick = {
-                        keyboardController?.hide()
-                        path.popTop()
-                    },
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back),
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                )
             }
-
-            NameHeadlineField(
-                name = name,
-                onNameChange = { newValue ->
-                    // 长度上限已由输入框内的 InputTransformation.maxLength 保证
-                    name = newValue
-                    if (newValue.isNotBlank()) submittedEmpty = false
-                },
-                onClear = {
-                    name = ""
-                    focusRequester.requestFocus()
-                },
-                errorText = errorText,
-                onImeDone = { keyboardController?.hide() },
-                focusRequester = focusRequester,
-                modifier =
-                    Modifier
-                        .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                        .offset { IntOffset(shakeOffset.value.roundToInt(), 0) }
-                        .entrance(order = 1),
-            )
-
-            Spacer(Modifier.height(Spacing.Medium))
-
-            SuggestionSection(
-                currentName = trimmedName,
-                takenNames = remember(playlists) { playlists.map { it.playlistName } },
-                onPick = {
-                    name = it
-                    submittedEmpty = false
-                },
-                modifier =
-                    Modifier
-                        .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                        .entrance(order = 2),
-            )
-
-            Spacer(Modifier.height(Spacing.Large))
-
-            // 选歌区吃掉全部剩余空间；键盘弹起时随操作条抬升等量收缩
-            SongPickerSection(
-                candidates = candidates,
-                selectedIds = selectedIds,
-                onToggle = { mediaStoreId ->
-                    selectedIds =
-                        if (mediaStoreId in selectedIds) {
-                            selectedIds - mediaStoreId
-                        } else {
-                            selectedIds + mediaStoreId
-                        }
-                },
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .entrance(order = 3),
-            )
-
-            CreatorActionBar(
-                enabled = canCreate,
-                selectedCount = selectedIds.size,
-                onCreate = { confirm() },
-            )
         }
+
+        NameHeadlineField(
+            name = name,
+            onNameChange = { newValue ->
+                // 长度上限已由输入框内的 InputTransformation.maxLength 保证
+                name = newValue
+                if (newValue.isNotBlank()) submittedEmpty = false
+            },
+            onClear = {
+                name = ""
+                focusRequester.requestFocus()
+            },
+            errorText = errorText,
+            onImeDone = { keyboardController?.hide() },
+            focusRequester = focusRequester,
+            modifier =
+                Modifier
+                    .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                    .offset { IntOffset(shakeOffset.value.roundToInt(), 0) }
+                    .entrance(order = 1),
+        )
+
+        Spacer(Modifier.height(Spacing.Medium))
+
+        SuggestionSection(
+            currentName = trimmedName,
+            takenNames = remember(playlists) { playlists.map { it.playlistName } },
+            onPick = {
+                name = it
+                submittedEmpty = false
+            },
+            modifier =
+                Modifier
+                    .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                    .entrance(order = 2),
+        )
+
+        Spacer(Modifier.height(Spacing.Large))
+
+        // 选歌区吃掉全部剩余空间；键盘弹起时随操作条抬升等量收缩
+        SongPickerSection(
+            candidates = candidates,
+            selectedIds = selectedIds,
+            onToggle = { mediaStoreId ->
+                selectedIds =
+                    if (mediaStoreId in selectedIds) {
+                        selectedIds - mediaStoreId
+                    } else {
+                        selectedIds + mediaStoreId
+                    }
+            },
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .entrance(order = 3),
+        )
+
+        CreatorActionBar(
+            enabled = canCreate,
+            selectedCount = selectedIds.size,
+            onCreate = { confirm() },
+        )
     }
 }
 

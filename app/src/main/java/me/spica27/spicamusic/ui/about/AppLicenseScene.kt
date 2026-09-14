@@ -10,7 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
@@ -41,24 +40,22 @@ private val MIT_LICENSE_TEXT =
     SOFTWARE.
     """.trimIndent()
 
-class AppLicenseScene : StackScene() {
-    @Composable
-    override fun Content() {
-        AboutScaffold(title = stringResource(R.string.app_license_title)) {
-            item {
-                Text(
-                    text = MIT_LICENSE_TEXT,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(Shapes.ExtraLargeCornerBasedShape)
-                            .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.86f))
-                            .padding(Spacing.Large),
-                )
-            }
+@Composable
+fun AppLicenseScreen() {
+    AboutScaffold(title = stringResource(R.string.app_license_title)) {
+        item {
+            Text(
+                text = MIT_LICENSE_TEXT,
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(Shapes.ExtraLargeCornerBasedShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.86f))
+                        .padding(Spacing.Large),
+            )
         }
     }
 }

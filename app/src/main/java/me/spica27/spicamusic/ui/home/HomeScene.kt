@@ -21,9 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.rememberHazeState
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.path.LocalScene
-import me.spica27.navkit.scene.StackScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.home.page.FinderPage
@@ -32,62 +29,60 @@ import me.spica27.spicamusic.ui.home.page.MusicPage
 import me.spica27.spicamusic.ui.home.player_bar.BottomBarScrollConnection
 import me.spica27.spicamusic.ui.home.player_bar.BottomMediaBarV2
 import me.spica27.spicamusic.ui.home.player_bar.rememberBottomBarScrollConnection
+import me.spica27.spicamusic.ui.navigation.HomeRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import org.koin.compose.viewmodel.koinActivityViewModel
 
-class HomeScene : StackScene() {
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    override fun Content() {
-        val homeViewModel: HomeViewModel = koinActivityViewModel()
-        val navigationPath = LocalNavigationPath.current
-        val scene = LocalScene.current
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen() {
+    val homeViewModel: HomeViewModel = koinActivityViewModel()
+    val backStack = LocalBackStack.current
 
-        // 当前是不是显示
-        val isSceneVisible by remember(navigationPath, scene) {
-            derivedStateOf {
-                navigationPath.isForeground(scene)
-            }
+    val isSceneVisible by remember {
+        derivedStateOf {
+            backStack.lastOrNull() is HomeRoute
         }
+    }
 
-        val currentPage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
+    val currentPage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
 
-        val bottomBarScrollConnection = rememberBottomBarScrollConnection()
-        // One source for the home content lets the persistent bottom surfaces share one capture.
-        val hazeState = rememberHazeState()
+    val bottomBarScrollConnection = rememberBottomBarScrollConnection()
+    // One source for the home content lets the persistent bottom surfaces share one capture.
+    val hazeState = rememberHazeState()
 
-        CompositionLocalProvider(
-            LocalBottomBarScrollConnection provides bottomBarScrollConnection,
+    CompositionLocalProvider(
+        LocalBottomBarScrollConnection provides bottomBarScrollConnection,
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter,
         ) {
+            // 底栏切页是每天上百次的动作 —— 不做转场动画：任何转场都会
+            // 让最高频的操作显得迟滞。切页即时生效，感知延迟为零。
+            //
+            // SaveableStateHolder 让离开的页面保留可保存状态（列表滚动位置、
+            // 入场动画已播标记等），切回时不重建、不重播入场 stagger。
+            val pageStateHolder = rememberSaveableStateHolder()
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.BottomCenter,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .liquidGlassSource(hazeState),
             ) {
-                // 底栏切页是每天上百次的动作 —— 不做转场动画：任何转场都会
-                // 让最高频的操作显得迟滞。切页即时生效，感知延迟为零。
-                //
-                // SaveableStateHolder 让离开的页面保留可保存状态（列表滚动位置、
-                // 入场动画已播标记等），切回时不重建、不重播入场 stagger。
-                val pageStateHolder = rememberSaveableStateHolder()
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .liquidGlassSource(hazeState),
-                ) {
-                    pageStateHolder.SaveableStateProvider(key = currentPage) {
-                        when (currentPage) {
-                            HomePage.Finder -> FinderPage()
-                            HomePage.Music -> MusicPage()
-                            HomePage.Library -> LibraryPage()
-                        }
+                pageStateHolder.SaveableStateProvider(key = currentPage) {
+                    when (currentPage) {
+                        HomePage.Finder -> FinderPage()
+                        HomePage.Music -> MusicPage()
+                        HomePage.Library -> LibraryPage()
                     }
                 }
-                BottomMediaBarV2(
-                    bottomBarScrollConnection = bottomBarScrollConnection,
-                    hazeState = hazeState,
-                    animationsEnabled = isSceneVisible,
-                )
             }
+            BottomMediaBarV2(
+                bottomBarScrollConnection = bottomBarScrollConnection,
+                hazeState = hazeState,
+                animationsEnabled = isSceneVisible,
+            )
         }
     }
 }

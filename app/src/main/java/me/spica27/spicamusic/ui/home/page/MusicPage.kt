@@ -94,26 +94,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
-import me.spica27.navkit.geometry.GeometryTransition
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.popup.PopupMenuAnchorState
-import me.spica27.navkit.popup.popupMenuAnchor
-import me.spica27.navkit.popup.rememberPopupMenuAnchorState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
-import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
-import me.spica27.spicamusic.ui.artistdetail.ArtistDetailScene
-import me.spica27.spicamusic.ui.dialog.SongMenuScene
 import me.spica27.spicamusic.ui.dialog.SortMenuOption
-import me.spica27.spicamusic.ui.dialog.SortMenuScene
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
+import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
+import me.spica27.spicamusic.ui.navigation.ArtistDetailRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.ScannerRoute
+import me.spica27.spicamusic.ui.navigation.SongMenuRoute
+import me.spica27.spicamusic.ui.navigation.SortMenuDialogRoute
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
-import me.spica27.spicamusic.ui.scan.ScannerScene
 import me.spica27.spicamusic.ui.theme.ENTRANCE_GATE_MILLIS
 import me.spica27.spicamusic.ui.theme.ENTRANCE_STAGGER_MILLIS
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
@@ -261,7 +257,7 @@ private enum class ArtistSortMode(
 
 @Composable
 fun MusicPage() {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
 
@@ -324,16 +320,13 @@ fun MusicPage() {
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    // 排序菜单锚点：挂在页面作用域，锚点图标本身在 Lazy item 内
-    val sortAnchor = rememberPopupMenuAnchorState()
 
+    // 排序菜单锚点：挂在页面作用域，锚点图标本身在 Lazy item 内
     fun openSortMenu() {
-        if (sortAnchor.isOpen) return
-        val scene =
+        val route =
             when (selectedTab) {
                 MusicBrowserTab.Songs ->
-                    SortMenuScene(
-                        anchorState = sortAnchor,
+                    SortMenuDialogRoute(
                         anchorIcon = Icons.AutoMirrored.Filled.Sort,
                         options = SongSortMode.entries.map { it.option },
                         selectedId = songSortMode.option.id,
@@ -345,8 +338,7 @@ fun MusicPage() {
                     )
 
                 MusicBrowserTab.Albums ->
-                    SortMenuScene(
-                        anchorState = sortAnchor,
+                    SortMenuDialogRoute(
                         anchorIcon = Icons.AutoMirrored.Filled.Sort,
                         options = AlbumSortMode.entries.map { it.option },
                         selectedId = albumSortMode.option.id,
@@ -358,8 +350,7 @@ fun MusicPage() {
                     )
 
                 MusicBrowserTab.Artists ->
-                    SortMenuScene(
-                        anchorState = sortAnchor,
+                    SortMenuDialogRoute(
                         anchorIcon = Icons.AutoMirrored.Filled.Sort,
                         options = ArtistSortMode.entries.map { it.option },
                         selectedId = artistSortMode.option.id,
@@ -370,7 +361,7 @@ fun MusicPage() {
                         },
                     )
             }
-        path.push(scene)
+        backStack.add(route)
     }
     // 用户开始滚动结果时自动收起键盘，把屏幕还给内容
     LaunchedEffect(listState) {
@@ -469,7 +460,6 @@ fun MusicPage() {
                             MusicBrowserTab.Albums -> filteredAlbums.size
                             MusicBrowserTab.Artists -> filteredArtists.size
                         },
-                    sortAnchor = sortAnchor,
                     onSortClick = ::openSortMenu,
                     modifier =
                         Modifier.animateItem(
@@ -507,7 +497,11 @@ fun MusicPage() {
                                         },
                                     ),
                                 actionLabel = stringResource(R.string.scan_local_music).takeIf { allSongs.isEmpty() },
-                                onActionClick = { path.push(ScannerScene()) }.takeIf { allSongs.isEmpty() },
+                                onActionClick =
+                                    {
+                                        backStack.add(ScannerRoute)
+                                        Unit
+                                    }.takeIf { allSongs.isEmpty() },
                             )
                         }
                     } else {
@@ -521,7 +515,7 @@ fun MusicPage() {
                                 song = song,
                                 isPlaying = currentMediaItem?.mediaId == song.mediaStoreId.toString(),
                                 onLongClick = {
-                                    path.push(SongMenuScene(song))
+                                    backStack.add(SongMenuRoute(song))
                                 },
                                 onClick = {
                                     playerViewModel.updatePlaylistWithSongs(
@@ -568,28 +562,10 @@ fun MusicPage() {
                             key = { index, album -> album.id },
                             contentType = { index, _ -> "album" },
                         ) { index, album ->
-                            // 共享元素过渡挂在行级：同一行复用同一对实例，
-                            // LazyColumn 条目离屏销毁时自动弃用（点击发生时必然在屏）
-                            val albumCoverTransition =
-                                remember(album.id) {
-                                    GeometryTransition(
-                                        key = "album_cover_${album.id}",
-                                        sourceClipRadius = 16.dp,
-                                        targetClipRadius = 12.dp,
-                                    )
-                                }
                             MusicAlbumRow(
                                 album = album,
                                 onClick = {
-                                    if (albumCoverTransition.phase.value ==
-                                        GeometryTransition.GeometryPhase.Source
-                                    ) {
-                                        path.push(
-                                            AlbumDetailScene(
-                                                album,
-                                            ),
-                                        )
-                                    }
+                                    backStack.add(AlbumDetailRoute(album))
                                 },
                                 modifier =
                                     Modifier
@@ -631,7 +607,7 @@ fun MusicPage() {
                         ) { index, artist ->
                             MusicArtistRow(
                                 artist = artist,
-                                onClick = { path.push(ArtistDetailScene(artist)) },
+                                onClick = { backStack.add(ArtistDetailRoute(artist)) },
                                 modifier =
                                     Modifier
                                         .animateItem(
@@ -999,7 +975,6 @@ private fun MusicSearchBar(
 private fun MusicSectionHeader(
     tab: MusicBrowserTab,
     count: Int,
-    sortAnchor: PopupMenuAnchorState,
     onSortClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1026,11 +1001,9 @@ private fun MusicSectionHeader(
                 maxLines = 1,
             )
         }
-        // 排序锚点：点击后图标原地过渡成排序菜单（SortMenuScene）
         Box(
             modifier =
                 Modifier
-                    .popupMenuAnchor(sortAnchor)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .clickHighlight(

@@ -31,11 +31,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.spica27.navkit.path.LocalNavigationPath
-import me.spica27.navkit.path.LocalScene
-import me.spica27.navkit.scene.DialogScene
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.feature.library.domain.ScanFormats
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.clickHighlight
@@ -45,131 +43,128 @@ import org.koin.compose.viewmodel.koinActivityViewModel
  * 扫描规则配置对话框（与 ScanFoldersScene 同一套呈现），
  * 配置最短时长 / 最小文件体积 / 收录格式，改动即时持久化，下次扫描生效。
  */
-class ScanRulesScene : DialogScene() {
-    @OptIn(ExperimentalLayoutApi::class)
-    @Composable
-    override fun DialogContent() {
-        val path = LocalNavigationPath.current
-        val scene = LocalScene.current
-        val viewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
-        val rules by viewModel.scanRules.collectAsStateWithLifecycle()
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ScanRulesDialogContent() {
+    val backStack = LocalBackStack.current
+    val viewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
+    val rules by viewModel.scanRules.collectAsStateWithLifecycle()
 
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp,
-            shadowElevation = 8.dp,
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.Large),
         ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.Large, bottom = Spacing.Medium),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+                ) {
+                    Text(
+                        text = stringResource(R.string.scanner_rules_row_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(R.string.scanner_rules_sheet_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = { backStack.removeLastOrNull() }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = stringResource(R.string.close),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
             Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Spacing.Large),
+                        .heightIn(max = 560.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = Spacing.Large),
+                verticalArrangement = Arrangement.spacedBy(Spacing.Large),
             ) {
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = Spacing.Large, bottom = Spacing.Medium),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+                ScanRuleSection(
+                    title = stringResource(R.string.scanner_rule_min_duration_title),
+                    description = stringResource(R.string.scanner_rule_min_duration_desc),
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
                     ) {
-                        Text(
-                            text = stringResource(R.string.scanner_rules_row_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = stringResource(R.string.scanner_rules_sheet_subtitle),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    IconButton(onClick = { path.pop(scene) }) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(R.string.close),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        ScanRulePresets.durationSecOptions.forEach { seconds ->
+                            ScanRuleChip(
+                                label =
+                                    if (seconds <= 0) {
+                                        stringResource(R.string.scanner_rule_any)
+                                    } else {
+                                        stringResource(R.string.scanner_rule_seconds_format, seconds)
+                                    },
+                                selected = rules.minDurationSec == seconds,
+                                onClick = { viewModel.setMinDurationSec(seconds) },
+                            )
+                        }
                     }
                 }
 
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 560.dp)
-                            .verticalScroll(rememberScrollState())
-                            .padding(bottom = Spacing.Large),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.Large),
+                ScanRuleSection(
+                    title = stringResource(R.string.scanner_rule_min_size_title),
+                    description = stringResource(R.string.scanner_rule_min_size_desc),
                 ) {
-                    ScanRuleSection(
-                        title = stringResource(R.string.scanner_rule_min_duration_title),
-                        description = stringResource(R.string.scanner_rule_min_duration_desc),
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
                     ) {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-                            verticalArrangement = Arrangement.spacedBy(Spacing.Small),
-                        ) {
-                            ScanRulePresets.durationSecOptions.forEach { seconds ->
-                                ScanRuleChip(
-                                    label =
-                                        if (seconds <= 0) {
-                                            stringResource(R.string.scanner_rule_any)
-                                        } else {
-                                            stringResource(R.string.scanner_rule_seconds_format, seconds)
-                                        },
-                                    selected = rules.minDurationSec == seconds,
-                                    onClick = { viewModel.setMinDurationSec(seconds) },
-                                )
-                            }
+                        ScanRulePresets.sizeKbOptions.forEach { kb ->
+                            ScanRuleChip(
+                                label =
+                                    when {
+                                        kb <= 0 -> stringResource(R.string.scanner_rule_any)
+                                        kb >= 1024 -> stringResource(R.string.scanner_size_mb_format, kb / 1024)
+                                        else -> stringResource(R.string.scanner_size_kb_format, kb)
+                                    },
+                                selected = rules.minFileSizeKb == kb,
+                                onClick = { viewModel.setMinFileSizeKb(kb) },
+                            )
                         }
                     }
+                }
 
-                    ScanRuleSection(
-                        title = stringResource(R.string.scanner_rule_min_size_title),
-                        description = stringResource(R.string.scanner_rule_min_size_desc),
+                ScanRuleSection(
+                    title = stringResource(R.string.scanner_rule_formats_title),
+                    description = stringResource(R.string.scanner_rule_formats_desc),
+                ) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
                     ) {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-                            verticalArrangement = Arrangement.spacedBy(Spacing.Small),
-                        ) {
-                            ScanRulePresets.sizeKbOptions.forEach { kb ->
-                                ScanRuleChip(
-                                    label =
-                                        when {
-                                            kb <= 0 -> stringResource(R.string.scanner_rule_any)
-                                            kb >= 1024 -> stringResource(R.string.scanner_size_mb_format, kb / 1024)
-                                            else -> stringResource(R.string.scanner_size_kb_format, kb)
-                                        },
-                                    selected = rules.minFileSizeKb == kb,
-                                    onClick = { viewModel.setMinFileSizeKb(kb) },
-                                )
-                            }
-                        }
-                    }
-
-                    ScanRuleSection(
-                        title = stringResource(R.string.scanner_rule_formats_title),
-                        description = stringResource(R.string.scanner_rule_formats_desc),
-                    ) {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-                            verticalArrangement = Arrangement.spacedBy(Spacing.Small),
-                        ) {
-                            ScanFormats.all.forEach { format ->
-                                ScanRuleChip(
-                                    label = format.label,
-                                    selected = format.key in rules.enabledFormatKeys,
-                                    onClick = { viewModel.toggleFormat(format.key) },
-                                )
-                            }
+                        ScanFormats.all.forEach { format ->
+                            ScanRuleChip(
+                                label = format.label,
+                                selected = format.key in rules.enabledFormatKeys,
+                                onClick = { viewModel.toggleFormat(format.key) },
+                            )
                         }
                     }
                 }

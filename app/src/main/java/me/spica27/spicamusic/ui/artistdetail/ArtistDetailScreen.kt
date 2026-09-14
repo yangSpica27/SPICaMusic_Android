@@ -65,14 +65,14 @@ import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.delay
-import me.spica27.navkit.path.LocalNavigationPath
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
-import me.spica27.spicamusic.ui.albumdetail.AlbumDetailScene
-import me.spica27.spicamusic.ui.dialog.SongMenuScene
+import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
+import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.SongMenuRoute
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.entrance
@@ -95,7 +95,7 @@ private val ART_COLLAPSED = 42.dp
 
 @Composable
 fun ArtistDetailScreen(artist: Artist) {
-    val path = LocalNavigationPath.current
+    val backStack = LocalBackStack.current
     val viewModel: ArtistDetailViewModel =
         koinViewModel(key = "ArtistDetailViewModel_${artist.name}") {
             parametersOf(artist.name)
@@ -236,7 +236,7 @@ fun ArtistDetailScreen(artist: Artist) {
                 ArtistSongRow(
                     song = song,
                     onClick = { viewModel.playSongInList(song) },
-                    onMore = { path.push(SongMenuScene(song)) },
+                    onMore = { backStack.add(SongMenuRoute(song)) },
                     modifier =
                         Modifier
                             .animateItem(
@@ -265,7 +265,7 @@ fun ArtistDetailScreen(artist: Artist) {
                     OtherAlbumsShelf(
                         artistName = artist.name,
                         albums = albums,
-                        onAlbumClick = { path.push(AlbumDetailScene(it)) },
+                        onAlbumClick = { backStack.add(AlbumDetailRoute(it)) },
                         modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
                     )
                 }
@@ -289,7 +289,7 @@ fun ArtistDetailScreen(artist: Artist) {
                     .padding(bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { path.popTop() }) {
+                IconButton(onClick = { backStack.removeLastOrNull() }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back),
