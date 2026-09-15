@@ -1,7 +1,8 @@
 package me.spica27.spicamusic.ui.navigation
 
-import android.net.Uri
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Playlist
@@ -10,103 +11,133 @@ import me.spica27.spicamusic.ui.dialog.SortMenuOption
 
 sealed interface Route
 
+@Serializable
+sealed interface ScreenRoute :
+    Route,
+    NavKey
+
+sealed interface DialogRoute : Route
+
 // ──────────────────────────────────────────────────────────────────────────
 // Stack Routes（全屏页面）
 // ──────────────────────────────────────────────────────────────────────────
 
-data object HomeRoute : Route
+@Serializable
+data object HomeRoute : ScreenRoute
 
+@Serializable
 data class AlbumDetailRoute(
     val album: Album,
-) : Route
+) : ScreenRoute
 
+@Serializable
 data class ArtistDetailRoute(
     val artist: Artist,
-) : Route
+) : ScreenRoute
 
+@Serializable
 data class PlaylistDetailRoute(
     val playlist: Playlist,
-) : Route
+) : ScreenRoute
 
-data object AllPlaylistsRoute : Route
+@Serializable
+data object AllPlaylistsRoute : ScreenRoute
 
-data object PlaylistCreatorRoute : Route
+@Serializable
+data object PlaylistCreatorRoute : ScreenRoute
 
-data object SearchRoute : Route
+@Serializable
+data object SearchRoute : ScreenRoute
 
-data object SettingsRoute : Route
+@Serializable
+data object SettingsRoute : ScreenRoute
 
-data object AboutRoute : Route
+@Serializable
+data object AboutRoute : ScreenRoute
 
-data object AppLicenseRoute : Route
+@Serializable
+data object AppLicenseRoute : ScreenRoute
 
-data object OpenSourceLicensesRoute : Route
+@Serializable
+data object OpenSourceLicensesRoute : ScreenRoute
 
-data object PrivacyPolicyRoute : Route
+@Serializable
+data object PrivacyPolicyRoute : ScreenRoute
 
-data object AudioEffectsRoute : Route
+@Serializable
+data object AudioEffectsRoute : ScreenRoute
 
-data object FavoriteRoute : Route
+@Serializable
+data object FavoriteRoute : ScreenRoute
 
-data object IgnoredSongsRoute : Route
+@Serializable
+data object IgnoredSongsRoute : ScreenRoute
 
-data object ScannerRoute : Route
+@Serializable
+data object ScannerRoute : ScreenRoute
 
+@Serializable
 data class LyricRoute(
-    val heroArtworkUri: Uri? = null,
-) : Route
+    val heroArtworkUri: String? = null,
+) : ScreenRoute
 
 // ──────────────────────────────────────────────────────────────────────────
 // Dialog Routes（对话框 / 菜单）
 // ──────────────────────────────────────────────────────────────────────────
 
-data object CurrentListRoute : Route
+data object CurrentListRoute : DialogRoute
 
-data object SleepTimerRoute : Route
+data object SleepTimerRoute : DialogRoute
 
-data object ScanFoldersRoute : Route
+data object ScanFoldersRoute : DialogRoute
 
-data object ScanRulesRoute : Route
+data object ScanRulesRoute : DialogRoute
 
-data object LyricsSourceRoute : Route
+data object LyricsSourceRoute : DialogRoute
 
 data class SongMenuRoute(
     val song: Song,
-) : Route
+) : DialogRoute
 
 data class SongInfoRoute(
     val song: Song,
-) : Route
+) : DialogRoute
 
 data class AlbumMenuRoute(
     val album: Album,
-) : Route
+) : DialogRoute
 
 data class PlaylistPickerRoute(
-    val songMediaStoreId: Long,
-) : Route
+    val song: Song,
+) : DialogRoute
 
 data class CreatePlaylistForSongRoute(
-    val songMediaStoreId: Long,
-) : Route
+    val song: Song,
+) : DialogRoute
 
 data class SongPickerRoute(
     val playlistId: Long,
-) : Route
+) : DialogRoute
 
-data class PlaylistOptionsRoute(
+class PlaylistOptionsRoute(
     val playlistName: String,
     val isMultiSelectMode: Boolean,
     val isPlaylistEmpty: Boolean,
     val playlistId: Long,
-) : Route
+    val onSelectAll: () -> Unit,
+    val onDeselectAll: () -> Unit,
+    val onEnterSortMode: () -> Unit,
+    val onToggleMultiSelectMode: () -> Unit,
+    val onRename: (String, onSuccess: () -> Unit) -> Unit,
+    val onDelete: (onSuccess: () -> Unit) -> Unit,
+) : DialogRoute
 
 class SortMenuDialogRoute(
     val anchorIcon: ImageVector,
     val options: List<SortMenuOption>,
     val selectedId: String,
     val onSelect: (String) -> Unit,
-) : Route
+) : DialogRoute
 
 class TextInputDialogRoute(
     val title: String,
@@ -115,7 +146,7 @@ class TextInputDialogRoute(
     val confirmLabel: String,
     val dismissLabel: String,
     val onConfirm: (String, dismiss: () -> Unit) -> Unit,
-) : Route
+) : DialogRoute
 
 class ConfirmationDialogRoute(
     val title: String,
@@ -125,4 +156,4 @@ class ConfirmationDialogRoute(
     val icon: ImageVector? = null,
     val destructive: Boolean = false,
     val onConfirm: (dismiss: () -> Unit) -> Unit = { dismiss -> dismiss() },
-) : Route
+) : DialogRoute

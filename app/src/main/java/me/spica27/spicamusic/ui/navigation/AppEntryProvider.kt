@@ -1,8 +1,8 @@
 package me.spica27.spicamusic.ui.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.scene.DialogSceneStrategy
@@ -48,9 +48,9 @@ private val dialogMetadata =
     )
 
 @Composable
-fun appEntryProvider(backStack: SnapshotStateList<Any>): (Any) -> NavEntry<Any> =
-    remember(backStack) {
-        { key: Any ->
+fun appEntryProvider(): (Route) -> NavEntry<Route> =
+    remember {
+        { key: Route ->
             when (key) {
                 // ── Stack Routes ─────────────────────────────────────────
                 is HomeRoute -> NavEntry(key) { HomeScreen() }
@@ -69,7 +69,10 @@ fun appEntryProvider(backStack: SnapshotStateList<Any>): (Any) -> NavEntry<Any> 
                 is FavoriteRoute -> NavEntry(key) { FavoriteScreen() }
                 is IgnoredSongsRoute -> NavEntry(key) { IgnoredSongsScreen() }
                 is ScannerRoute -> NavEntry(key) { ScannerScreen() }
-                is LyricRoute -> NavEntry(key) { LyricScreen(heroArtworkUri = key.heroArtworkUri) }
+                is LyricRoute ->
+                    NavEntry(key) {
+                        LyricScreen(heroArtworkUri = key.heroArtworkUri?.let(Uri::parse))
+                    }
 
                 // ── Dialog Routes ────────────────────────────────────────
                 is CurrentListRoute -> NavEntry(key, metadata = dialogMetadata) { CurrentListDialogContent() }
@@ -84,10 +87,10 @@ fun appEntryProvider(backStack: SnapshotStateList<Any>): (Any) -> NavEntry<Any> 
                     NavEntry(
                         key,
                         metadata = dialogMetadata,
-                    ) { PlaylistPickerDialogContent(songMediaStoreId = key.songMediaStoreId) }
+                    ) { PlaylistPickerDialogContent(song = key.song) }
                 is CreatePlaylistForSongRoute ->
                     NavEntry(key, metadata = dialogMetadata) {
-                        CreatePlaylistForSongDialogContent(songMediaStoreId = key.songMediaStoreId)
+                        CreatePlaylistForSongDialogContent(song = key.song)
                     }
                 is SongPickerRoute -> NavEntry(key, metadata = dialogMetadata) { SongPickerDialogContent(playlistId = key.playlistId) }
                 is PlaylistOptionsRoute ->
@@ -97,6 +100,12 @@ fun appEntryProvider(backStack: SnapshotStateList<Any>): (Any) -> NavEntry<Any> 
                             isMultiSelectMode = key.isMultiSelectMode,
                             isPlaylistEmpty = key.isPlaylistEmpty,
                             playlistId = key.playlistId,
+                            onSelectAll = key.onSelectAll,
+                            onDeselectAll = key.onDeselectAll,
+                            onEnterSortMode = key.onEnterSortMode,
+                            onToggleMultiSelectMode = key.onToggleMultiSelectMode,
+                            onRename = key.onRename,
+                            onDelete = key.onDelete,
                         )
                     }
                 is SortMenuDialogRoute ->
@@ -130,8 +139,6 @@ fun appEntryProvider(backStack: SnapshotStateList<Any>): (Any) -> NavEntry<Any> 
                             onConfirm = key.onConfirm,
                         )
                     }
-
-                else -> NavEntry(key) { /* Unknown route */ }
             }
         }
     }

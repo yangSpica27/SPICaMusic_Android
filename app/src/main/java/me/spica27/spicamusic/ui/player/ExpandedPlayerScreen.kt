@@ -564,7 +564,8 @@ private fun PlayerPage(
                                                 heroArtworkUri =
                                                     currentMediaItem
                                                         ?.mediaMetadata
-                                                        ?.artworkUri,
+                                                        ?.artworkUri
+                                                        ?.toString(),
                                             ),
                                         )
                                     }
@@ -600,7 +601,8 @@ private fun PlayerPage(
                                 currentMediaItem
                                     .invoke()
                                     ?.mediaMetadata
-                                    ?.artworkUri,
+                                    ?.artworkUri
+                                    ?.toString(),
                         ),
                     )
                 }

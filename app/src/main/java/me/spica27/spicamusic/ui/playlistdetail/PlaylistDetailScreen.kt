@@ -607,6 +607,12 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                         isMultiSelectMode = isMultiSelectMode,
                                         isPlaylistEmpty = isPlaylistEmpty,
                                         playlistId = playlist.playlistId ?: 0L,
+                                        onSelectAll = viewModel::selectAll,
+                                        onDeselectAll = viewModel::deselectAll,
+                                        onEnterSortMode = viewModel::enterSortMode,
+                                        onToggleMultiSelectMode = viewModel::toggleMultiSelectMode,
+                                        onRename = viewModel::renamePlaylist,
+                                        onDelete = viewModel::deletePlaylist,
                                     ),
                                 )
                             },
@@ -916,12 +922,14 @@ fun PlaylistOptionsDialogContent(
     isMultiSelectMode: Boolean,
     isPlaylistEmpty: Boolean,
     playlistId: Long,
+    onSelectAll: () -> Unit,
+    onDeselectAll: () -> Unit,
+    onEnterSortMode: () -> Unit,
+    onToggleMultiSelectMode: () -> Unit,
+    onRename: (String, onSuccess: () -> Unit) -> Unit,
+    onDelete: (onSuccess: () -> Unit) -> Unit,
 ) {
     val backStack = LocalBackStack.current
-    val viewModel =
-        koinViewModel<PlaylistDetailViewModel>(
-            key = "PlaylistDetailViewModel_$playlistId",
-        ) { parametersOf(playlistId) }
     val cancelLabel = stringResource(R.string.cancel)
 
     fun closeThen(action: () -> Unit) {
@@ -950,23 +958,23 @@ fun PlaylistOptionsDialogContent(
                 PlaylistMenuItem(
                     text = stringResource(R.string.select_all),
                     icon = Icons.Default.CheckBox,
-                    onClick = { closeThen(viewModel::selectAll) },
+                    onClick = { closeThen(onSelectAll) },
                 )
                 PlaylistMenuItem(
                     text = stringResource(R.string.deselect_all),
                     icon = Icons.Default.CheckBoxOutlineBlank,
-                    onClick = { closeThen(viewModel::deselectAll) },
+                    onClick = { closeThen(onDeselectAll) },
                 )
             } else if (!isPlaylistEmpty) {
                 PlaylistMenuItem(
                     text = stringResource(R.string.sort_songs),
                     icon = Icons.Default.DragIndicator,
-                    onClick = { closeThen(viewModel::enterSortMode) },
+                    onClick = { closeThen(onEnterSortMode) },
                 )
                 PlaylistMenuItem(
                     text = stringResource(R.string.multi_select),
                     icon = Icons.Default.CheckBoxOutlineBlank,
-                    onClick = { closeThen(viewModel::toggleMultiSelectMode) },
+                    onClick = { closeThen(onToggleMultiSelectMode) },
                 )
             }
             HorizontalDivider(
@@ -989,7 +997,7 @@ fun PlaylistOptionsDialogContent(
                                 confirmLabel = confirmLabel,
                                 dismissLabel = cancelLabel,
                                 onConfirm = { name, dismiss ->
-                                    viewModel.renamePlaylist(name, dismiss)
+                                    onRename(name, dismiss)
                                 },
                             ),
                         )
@@ -1013,7 +1021,7 @@ fun PlaylistOptionsDialogContent(
                                 dismissLabel = cancelLabel,
                                 icon = Icons.Default.Delete,
                                 destructive = true,
-                                onConfirm = { dismiss -> viewModel.deletePlaylist(dismiss) },
+                                onConfirm = onDelete,
                             ),
                         )
                     }

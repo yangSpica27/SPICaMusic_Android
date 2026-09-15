@@ -9,20 +9,22 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.ui.glass.LiquidGlassConfig
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
-import me.spica27.spicamusic.ui.navigation.HomeRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.Route
 import me.spica27.spicamusic.ui.navigation.appEntryProvider
+import me.spica27.spicamusic.ui.navigation.rememberAppNavigator
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.theme.SPICaMusicTheme
@@ -64,24 +66,32 @@ fun AppScaffold() {
         WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDarkMode
     }
 
+    val navigator = rememberAppNavigator()
+    val dialogStrategy = remember { DialogSceneStrategy<Route>() }
+    val sceneStrategies = remember(dialogStrategy) { listOf(dialogStrategy) }
+    val saveableStateDecorator = rememberSaveableStateHolderNavEntryDecorator<Route>()
+    val viewModelStoreDecorator = rememberViewModelStoreNavEntryDecorator<Route>()
+    val entryDecorators =
+        remember(saveableStateDecorator, viewModelStoreDecorator) {
+            listOf(saveableStateDecorator, viewModelStoreDecorator)
+        }
+    val entryProvider = appEntryProvider()
+
     SPICaMusicTheme(
         darkTheme = isDarkMode,
         themeColor = color,
         themeColorStyle = ThemeColorStyle.fromString(themeColorStyleValue),
     ) {
-        val backStack = remember { mutableStateListOf<Any>(HomeRoute) }
-        val dialogStrategy = remember { DialogSceneStrategy<Any>() }
-        val entryProvider = appEntryProvider(backStack)
-
         CompositionLocalProvider(
             LocalLiquidGlassConfig provides LiquidGlassConfig(enabled = liquidGlassEnabled),
             LocalPlayerViewModel provides playerViewModel,
-            LocalBackStack provides backStack,
+            LocalBackStack provides navigator,
         ) {
             NavDisplay(
-                backStack = backStack,
-                onBack = { backStack.removeLastOrNull() },
-                sceneStrategies = listOf(dialogStrategy),
+                backStack = navigator.entries,
+                onBack = { navigator.removeLastOrNull() },
+                entryDecorators = entryDecorators,
+                sceneStrategies = sceneStrategies,
                 entryProvider = entryProvider,
                 transitionSpec = {
                     slideInHorizontally { it } togetherWith slideOutHorizontally { -it / 4 }

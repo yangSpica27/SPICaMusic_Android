@@ -28,8 +28,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,7 +39,6 @@ import me.spica27.spicamusic.ui.player.LyricsPanel
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
-import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 
 @Composable
@@ -75,15 +72,14 @@ fun LyricScreen(heroArtworkUri: Uri? = null) {
         )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        FluidMusicBackground(
-            modifier = Modifier.fillMaxSize(),
-            coverColor = coverColor,
-            isDarkMode = MaterialTheme.colorScheme.surface.luminance() < 0.5f,
-            coverUri = { artworkUri },
-        )
+//        FluidMusicBackground(
+//            modifier = Modifier.fillMaxSize(),
+//            coverColor = coverColor,
+//            isDarkMode = MaterialTheme.colorScheme.surface.luminance() < 0.5f,
+//            coverUri = { artworkUri },
+//        )
 
         Scaffold(
-            containerColor = Color.Transparent,
             topBar = {
                 LyricsHeader(
                     title = title,

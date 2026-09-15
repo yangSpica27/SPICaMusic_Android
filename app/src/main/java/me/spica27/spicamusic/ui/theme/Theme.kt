@@ -14,10 +14,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.materialkolor.DynamicMaterialTheme
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.ktx.animateColorScheme
+import com.materialkolor.rememberDynamicColorScheme
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.ui.widget.rememberClickHighlightIndication
 
@@ -80,35 +80,40 @@ fun SPICaMusicTheme(
     themeColorStyle: ThemeColorStyle = ThemeColorStyle.Textured,
     content: @Composable () -> Unit,
 ) {
-    when (themeColorStyle) {
-        ThemeColorStyle.Textured ->
-            DynamicMaterialTheme(
-                seedColor = themeColor,
-                isDark = darkTheme,
-                animate = true,
-                specVersion = ColorSpec.SpecVersion.SPEC_2021,
-                style = PaletteStyle.TonalSpot,
-            ) {
-                ProvideAppInteractionIndication(content = content)
+    val colorScheme =
+        when (themeColorStyle) {
+            ThemeColorStyle.Textured -> {
+                val targetScheme =
+                    rememberDynamicColorScheme(
+                        seedColor = themeColor,
+                        isDark = darkTheme,
+                        specVersion = ColorSpec.SpecVersion.SPEC_2021,
+                        style = PaletteStyle.TonalSpot,
+                    )
+                animateColorScheme(
+                    colorScheme = targetScheme,
+                    label = "TexturedColorSchemeAnimation",
+                )
             }
 
-        ThemeColorStyle.Flat -> {
-            // 目标色板只在种子色/深浅变化时重建；animateColorScheme 用 updateTransition 逐角色
-            val targetScheme =
-                remember(themeColor, darkTheme) {
-                    antFlatColorScheme(
-                        seedColor = themeColor,
-                        darkTheme = darkTheme,
-                    )
-                }
-            val colorScheme =
+            ThemeColorStyle.Flat -> {
+                // 目标色板只在种子色/深浅变化时重建；animateColorScheme 用 updateTransition 逐角色
+                val targetScheme =
+                    remember(themeColor, darkTheme) {
+                        antFlatColorScheme(
+                            seedColor = themeColor,
+                            darkTheme = darkTheme,
+                        )
+                    }
                 animateColorScheme(
                     targetScheme,
                     animationSpec = { tween(durationMillis = 200, easing = EaseOutEmphasized) },
+                    label = "FlatColorSchemeAnimation",
                 )
-            MaterialTheme(colorScheme = colorScheme) {
-                ProvideAppInteractionIndication(content = content)
             }
         }
+
+    MaterialTheme(colorScheme = colorScheme) {
+        ProvideAppInteractionIndication(content = content)
     }
 }

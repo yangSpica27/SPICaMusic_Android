@@ -2,34 +2,18 @@ package me.spica27.spicamusic.utils.blurhash
 
 import android.graphics.Bitmap
 import android.graphics.Color
-import androidx.collection.SparseArrayCompat
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.withSign
 
 internal object BlurHashDecoder {
-    // cache Math.cos() calculations to improve performance.
-    // The number of calculations can be huge for many bitmaps: width * height * numCompX * numCompY * 2 * nBitmaps
-    // the cache is enabled by default, it is recommended to disable it only when just a few images are displayed
-    private val cacheCosinesX = SparseArrayCompat<DoubleArray>()
-    private val cacheCosinesY = SparseArrayCompat<DoubleArray>()
+    private data class CosineCacheKey(
+        val size: Int,
+        val componentCount: Int,
+    )
 
-    /**
-     * Clear calculations stored in memory cache.
-     * The cache is not big, but will increase when many image sizes are used,
-     * if the app needs memory it is recommended to clear it.
-     */
-    private fun clearCache() {
-        cacheCosinesX.clear()
-        cacheCosinesY.clear()
-    }
+    private val cosineCache = ConcurrentHashMap<CosineCacheKey, DoubleArray>()
 
     /**
      * Decode a blur hash into a new bitmap.
@@ -126,92 +110,54 @@ internal object BlurHashDecoder {
         colors: Array<FloatArray>,
         useCache: Boolean,
     ): Bitmap {
-        // use an array for better performance when writing pixel colors
         val imageArray = IntArray(width * height)
-        val calculateCosX = !useCache || !cacheCosinesX.containsKey(width * numCompX)
-        val cosinesX = getArrayForCosinesX(calculateCosX, width, numCompX)
-        val calculateCosY = !useCache || !cacheCosinesY.containsKey(height * numCompY)
-        val cosinesY = getArrayForCosinesY(calculateCosY, height, numCompY)
-        runBlocking {
-            CoroutineScope(SupervisorJob() + Dispatchers.IO)
-                .launch {
-                    val tasks = ArrayList<Deferred<Unit>>()
-                    tasks.add(
-                        async {
-                            for (y in 0 until height) {
-                                for (x in 0 until width) {
-                                    var r = 0f
-                                    var g = 0f
-                                    var b = 0f
-                                    for (j in 0 until numCompY) {
-                                        for (i in 0 until numCompX) {
-                                            val cosX =
-                                                cosinesX.getCos(calculateCosX, i, numCompX, x, width)
-                                            val cosY =
-                                                cosinesY.getCos(calculateCosY, j, numCompY, y, height)
-                                            val basis = (cosX * cosY).toFloat()
-                                            val color = colors[j * numCompX + i]
-                                            r += color[0] * basis
-                                            g += color[1] * basis
-                                            b += color[2] * basis
-                                        }
-                                    }
-                                    imageArray[x + width * y] =
-                                        Color.rgb(linearToSrgb(r), linearToSrgb(g), linearToSrgb(b))
-                                }
-                            }
-                            return@async
-                        },
-                    )
-                    tasks.forEach { it.await() }
-                }.join()
+        val cosinesX = getCosines(width, numCompX, useCache)
+        val cosinesY = getCosines(height, numCompY, useCache)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                var r = 0f
+                var g = 0f
+                var b = 0f
+                for (j in 0 until numCompY) {
+                    for (i in 0 until numCompX) {
+                        val basis =
+                            (cosinesX[x * numCompX + i] * cosinesY[y * numCompY + j]).toFloat()
+                        val color = colors[j * numCompX + i]
+                        r += color[0] * basis
+                        g += color[1] * basis
+                        b += color[2] * basis
+                    }
+                }
+                imageArray[x + width * y] =
+                    Color.rgb(linearToSrgb(r), linearToSrgb(g), linearToSrgb(b))
+            }
         }
 
         return Bitmap.createBitmap(imageArray, width, height, Bitmap.Config.ARGB_8888)
     }
 
-    private fun getArrayForCosinesY(
-        calculate: Boolean,
-        height: Int,
-        numCompY: Int,
-    ) = when {
-        calculate -> {
-            DoubleArray(height * numCompY).also {
-                cacheCosinesY.put(height * numCompY, it)
-            }
-        }
-
-        else -> {
-            cacheCosinesY.get(height * numCompY)!!
-        }
-    }
-
-    private fun getArrayForCosinesX(
-        calculate: Boolean,
-        width: Int,
-        numCompX: Int,
-    ) = when {
-        calculate -> {
-            DoubleArray(width * numCompX).also {
-                cacheCosinesX.put(width * numCompX, it)
-            }
-        }
-
-        else -> cacheCosinesX.get(width * numCompX)!!
-    }
-
-    private fun DoubleArray.getCos(
-        calculate: Boolean,
-        x: Int,
-        numComp: Int,
-        y: Int,
+    private fun getCosines(
         size: Int,
-    ): Double {
-        if (calculate) {
-            this[x + numComp * y] = cos(Math.PI * y * x / size)
+        componentCount: Int,
+        useCache: Boolean,
+    ): DoubleArray {
+        val key = CosineCacheKey(size, componentCount)
+        return if (useCache) {
+            cosineCache.computeIfAbsent(key) { createCosines(size, componentCount) }
+        } else {
+            createCosines(size, componentCount)
         }
-        return this[x + numComp * y]
     }
+
+    private fun createCosines(
+        size: Int,
+        componentCount: Int,
+    ): DoubleArray =
+        DoubleArray(size * componentCount) { index ->
+            val component = index % componentCount
+            val position = index / componentCount
+            cos(Math.PI * position * component / size)
+        }
 
     private fun linearToSrgb(value: Float): Int {
         val v = value.coerceIn(0f, 1f)

@@ -286,6 +286,12 @@ fun MusicPage() {
     var artistSortMode by rememberSaveable { mutableStateOf(ArtistSortMode.NameAsc) }
     var playEntrance by remember { mutableStateOf(true) }
     var playlistEntrance by remember { mutableStateOf(true) }
+    var foldTarget by remember { mutableStateOf(false) }
+    val foldFactor by animateFloatAsState(
+        targetValue = if (foldTarget) 1f else 0f,
+        animationSpec = tween(durationMillis = 600, easing = EaseOutEmphasized),
+        label = "foldFactor",
+    )
     LaunchedEffect(Unit) {
         if (playEntrance) {
             delay(ENTRANCE_GATE_MILLIS)
@@ -295,9 +301,11 @@ fun MusicPage() {
 
     LaunchedEffect(playlistEntrance) {
         if (playlistEntrance) {
+            foldTarget = false
             delay(ENTRANCE_STAGGER_MILLIS)
             playlistEntrance = false
         }
+        foldTarget = true
     }
 
     @OptIn(FlowPreview::class)
@@ -544,7 +552,7 @@ fun MusicPage() {
                                         ).entrance(
                                             order = minOf(index + 4, 10),
                                             play = playlistEntrance,
-                                        ).bottomFold(listState, song.mediaStoreId)
+                                        ).bottomFold(listState, song.mediaStoreId, foldFactor)
                                         .zIndex(-index.toFloat()),
                             )
                         }
@@ -587,7 +595,7 @@ fun MusicPage() {
                                         ).entrance(
                                             order = minOf(index + 4, 10),
                                             play = playlistEntrance,
-                                        ).bottomFold(listState, album.id)
+                                        ).bottomFold(listState, album.id, foldFactor)
                                         .zIndex(-index.toFloat()),
                             )
                         }
@@ -628,7 +636,7 @@ fun MusicPage() {
                                         ).entrance(
                                             order = minOf(index + 4, 10),
                                             play = playlistEntrance,
-                                        ).bottomFold(listState, artist.name)
+                                        ).bottomFold(listState, artist.name, foldFactor)
                                         .zIndex(-index.toFloat()),
                             )
                         }
@@ -657,8 +665,10 @@ private const val ListItemFoldMinAlpha = 0f
 private fun Modifier.bottomFold(
     listState: LazyListState,
     key: Any,
+    factor: Float = 1f,
 ): Modifier =
     graphicsLayer {
+        if (factor <= 0f) return@graphicsLayer
         val layout = listState.layoutInfo
         val info = layout.visibleItemsInfo.firstOrNull { it.key == key } ?: return@graphicsLayer
         val foldLine = layout.viewportEndOffset - ListItemFoldBottomInset.toPx()
@@ -666,12 +676,13 @@ private fun Modifier.bottomFold(
         val sink = itemBottom - foldLine // >0：已越过基准线，正沉入底栏
         if (sink <= 0f) return@graphicsLayer // 基准线以上：完全不动，杜绝末尾留白
         val p = (sink / ListItemFoldDistance.toPx()).coerceIn(0f, 1f)
-        transformOrigin = TransformOrigin(0.5f, 1f) // 以底边为锚，缩放时底边不动
-        translationY = -sink // 把底边钉在基准线，不再滑到栏后
-        val scale = lerp(1f, ListItemFoldMinScale, p)
+        val effectiveP = p * factor
+        transformOrigin = TransformOrigin(0.5f, 1f)
+        translationY = -sink * factor
+        val scale = lerp(1f, ListItemFoldMinScale, effectiveP)
         scaleX = scale
         scaleY = scale
-        alpha = lerp(1f, ListItemFoldMinAlpha, p)
+        alpha = lerp(1f, ListItemFoldMinAlpha, effectiveP)
     }
 
 private fun Density.mastheadCollapse(listState: LazyListState): Float {

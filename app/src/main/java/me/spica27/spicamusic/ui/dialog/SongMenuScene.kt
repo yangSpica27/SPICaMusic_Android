@@ -127,7 +127,7 @@ fun SongMenuDialogContent(song: Song) {
     val onShowPlaylistDialog =
         remember {
             {
-                backStack.add(PlaylistPickerRoute(songMediaStoreId = song.mediaStoreId))
+                backStack.add(PlaylistPickerRoute(song = song))
                 Unit
             }
         }
@@ -158,10 +158,10 @@ fun SongMenuDialogContent(song: Song) {
 }
 
 @Composable
-fun PlaylistPickerDialogContent(songMediaStoreId: Long) {
+fun PlaylistPickerDialogContent(song: Song) {
     val backStack = LocalBackStack.current
     val viewModel: SongMenuViewModel =
-        koinViewModel(key = "SongMenuViewModel_$songMediaStoreId")
+        koinViewModel(key = "SongMenuViewModel_${song.mediaStoreId}") { parametersOf(song) }
     val playlists by viewModel.availablePlaylists.collectAsStateWithLifecycle()
 
     PlaylistPickerContent(
@@ -169,7 +169,7 @@ fun PlaylistPickerDialogContent(songMediaStoreId: Long) {
         onDismiss = { backStack.removeLastOrNull() },
         onCreatePlaylist = {
             backStack.removeLastOrNull()
-            backStack.add(CreatePlaylistForSongRoute(songMediaStoreId))
+            backStack.add(CreatePlaylistForSongRoute(song))
         },
         onSelectPlaylist = { playlist ->
             val playlistId = playlist.playlistId
@@ -186,10 +186,10 @@ fun PlaylistPickerDialogContent(songMediaStoreId: Long) {
 }
 
 @Composable
-fun CreatePlaylistForSongDialogContent(songMediaStoreId: Long) {
+fun CreatePlaylistForSongDialogContent(song: Song) {
     val backStack = LocalBackStack.current
     val viewModel: SongMenuViewModel =
-        koinViewModel(key = "SongMenuViewModel_$songMediaStoreId")
+        koinViewModel(key = "SongMenuViewModel_${song.mediaStoreId}") { parametersOf(song) }
 
     CreatePlaylistContent(
         onDismiss = { backStack.removeLastOrNull() },
