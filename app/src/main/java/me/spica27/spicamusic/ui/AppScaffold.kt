@@ -15,13 +15,13 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.ui.glass.LiquidGlassConfig
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.MotionDialogSceneStrategy
 import me.spica27.spicamusic.ui.navigation.Route
 import me.spica27.spicamusic.ui.navigation.appEntryProvider
 import me.spica27.spicamusic.ui.navigation.rememberAppNavigator
@@ -67,7 +67,7 @@ fun AppScaffold() {
     }
 
     val navigator = rememberAppNavigator()
-    val dialogStrategy = remember { DialogSceneStrategy<Route>() }
+    val dialogStrategy = remember { MotionDialogSceneStrategy<Route>() }
     val sceneStrategies = remember(dialogStrategy) { listOf(dialogStrategy) }
     val saveableStateDecorator = rememberSaveableStateHolderNavEntryDecorator<Route>()
     val viewModelStoreDecorator = rememberViewModelStoreNavEntryDecorator<Route>()

@@ -18,6 +18,17 @@ val EaseOutEmphasized: Easing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
 val EaseOutStrong: Easing = CubicBezierEasing(0.23f, 1f, 0.32f, 1f)
 
 /**
+ * Dialog 使用的减速插值器。
+ *
+ * 对应 `DecelerateEasing(1.5f)`，曲线为 `1 - (1 - t)^3`：开始阶段快速响应，
+ * 接近终点时平滑减速。Dialog 的遮罩和退出动画共用这条曲线。
+ */
+val DialogDecelerateEasing: Easing =
+    Easing { fraction ->
+        1f - (1f - fraction).pow(3)
+    }
+
+/**
  * 三次方缓入缓出（EaseInOutCubic）
  *
  * 前半段（0..0.5）用加速立方曲线，后半段（0.5..1）用减速立方曲线，

@@ -1,0 +1,238 @@
+package me.spica27.spicamusic.ui.navigation
+
+import android.view.WindowManager
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.rememberLifecycleOwner
+import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.get
+import androidx.navigation3.scene.DialogSceneStrategy
+import androidx.navigation3.scene.OverlayScene
+import androidx.navigation3.scene.Scene
+import androidx.navigation3.scene.SceneStrategy
+import androidx.navigation3.scene.SceneStrategyScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import me.spica27.spicamusic.ui.theme.DialogDecelerateEasing
+
+/**
+ * Navigation 3 dialog scene that ports dialog motion to every [DialogRoute].
+ */
+class MotionDialogSceneStrategy<T : Any> : SceneStrategy<T> {
+    override fun SceneStrategyScope<T>.calculateScene(entries: List<NavEntry<T>>): Scene<T>? {
+        val entry = entries.lastOrNull() ?: return null
+        val dialogProperties = entry.metadata[DialogSceneStrategy.Companion.DialogKey] ?: return null
+
+        return MotionDialogScene(
+            key = entry.contentKey,
+            entry = entry,
+            previousEntries = entries.dropLast(1),
+            overlaidEntries = entries.dropLast(1),
+            dialogProperties = dialogProperties,
+            onBack = onBack,
+        )
+    }
+}
+
+private class MotionDialogScene<T : Any>(
+    override val key: Any,
+    private val entry: NavEntry<T>,
+    override val previousEntries: List<NavEntry<T>>,
+    override val overlaidEntries: List<NavEntry<T>>,
+    private val dialogProperties: DialogProperties,
+    private val onBack: () -> Unit,
+) : OverlayScene<T> {
+    override val entries: List<NavEntry<T>> = listOf(entry)
+
+    private val contentProgress = Animatable(0f, visibilityThreshold = 0.0001f)
+    private val dimProgress = Animatable(0f, visibilityThreshold = 0.0001f)
+    private val removeMutex = Mutex()
+
+    override val content: @Composable () -> Unit = {
+        val lifecycleOwner = rememberLifecycleOwner()
+
+        Dialog(
+            onDismissRequest = onBack,
+            properties = dialogProperties,
+        ) {
+            disablePlatformDialogDefaultEffects()
+            CompositionLocalProvider(LocalLifecycleOwner provides lifecycleOwner) {
+                MotionDialogRouteLayout(
+                    contentProgress = contentProgress,
+                    dimProgress = dimProgress,
+                    dialogProperties = dialogProperties,
+                    onDismissRequest = onBack,
+                    content = { entry.Content() },
+                )
+            }
+        }
+    }
+
+    override suspend fun onRemove() {
+        // NavDisplay can ask an overlay to leave more than once before its first removal finishes.
+        // Serializing the work keeps every caller suspended until the one visible exit completes.
+        removeMutex.withLock {
+            coroutineScope {
+                launch {
+                    dimProgress.animateTo(
+                        targetValue = 0f,
+                        animationSpec = tween(durationMillis = 250, easing = DialogDecelerateEasing),
+                    )
+                }
+                contentProgress.animateTo(
+                    targetValue = 0f,
+                    animationSpec = tween(durationMillis = 260, easing = DialogDecelerateEasing),
+                )
+            }
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is MotionDialogScene<*>) return false
+
+        return key == other.key &&
+            entry == other.entry &&
+            previousEntries == other.previousEntries &&
+            overlaidEntries == other.overlaidEntries &&
+            dialogProperties == other.dialogProperties
+    }
+
+    override fun hashCode(): Int =
+        (
+            ((key.hashCode() * 31 + entry.hashCode()) * 31 + previousEntries.hashCode()) * 31 +
+                overlaidEntries.hashCode()
+        ) * 31 + dialogProperties.hashCode()
+}
+
+@Composable
+private fun MotionDialogRouteLayout(
+    contentProgress: Animatable<Float, *>,
+    dimProgress: Animatable<Float, *>,
+    dialogProperties: DialogProperties,
+    onDismissRequest: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val windowInfo = LocalWindowInfo.current
+    val isLargeScreen =
+        windowInfo.containerDpSize.width >= 840.dp && windowInfo.containerDpSize.height >= 480.dp
+    val scrimColor =
+        MaterialTheme.colorScheme.scrim.copy(
+            alpha = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) 0.6f else 0.3f,
+        )
+
+    LaunchedEffect(Unit) {
+        coroutineScope {
+            launch {
+                dimProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 300, easing = DialogDecelerateEasing),
+                )
+            }
+            contentProgress.animateTo(
+                targetValue = 1f,
+                animationSpec =
+                    if (isLargeScreen) {
+                        spring(
+                            dampingRatio = 0.9f,
+                            stiffness = 438.6f,
+                            visibilityThreshold = 0.0001f,
+                        )
+                    } else {
+                        spring(
+                            dampingRatio = 0.88f,
+                            stiffness = 450f,
+                            visibilityThreshold = 0.0001f,
+                        )
+                    },
+            )
+        }
+    }
+
+    val dismissModifier =
+        if (dialogProperties.dismissOnClickOutside) {
+            Modifier.pointerInput(onDismissRequest) {
+                detectTapGestures(onTap = { onDismissRequest() })
+            }
+        } else {
+            Modifier
+        }
+
+    Box(
+        modifier = Modifier.fillMaxSize().then(dismissModifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .drawBehind {
+                        drawRect(scrimColor.copy(alpha = scrimColor.alpha * dimProgress.value))
+                    },
+        )
+
+        // This consumes taps inside the dialog bounds, allowing the full-window layer above to
+        // dismiss only genuine outside taps while preserving every child click handler.
+        Box(
+            modifier =
+                Modifier
+                    .graphicsLayer {
+                        val progress = contentProgress.value
+                        if (isLargeScreen) {
+                            val scale = 0.8f + 0.2f * progress
+                            scaleX = scale
+                            scaleY = scale
+                            alpha = progress
+                            translationY = 0f
+                        } else {
+                            scaleX = 1f
+                            scaleY = 1f
+                            alpha = 1f
+                            translationY = (1f - progress) * windowInfo.containerSize.height
+                        }
+                    }.pointerInput(Unit) {
+                        detectTapGestures(onTap = {})
+                    },
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun disablePlatformDialogDefaultEffects() {
+    val parent = LocalView.current.parent
+
+    DisposableEffect(parent) {
+        val window = (parent as? DialogWindowProvider)?.window
+        window?.setWindowAnimations(0)
+        window?.setDimAmount(0f)
+        window?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+
+        onDispose {}
+    }
+}
