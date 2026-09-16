@@ -78,6 +78,9 @@ interface SongDao {
     @Query("SELECT * FROM song WHERE (isIgnore == 0)")
     fun getAll(): Flow<List<SongEntity>>
 
+    @Query("SELECT * FROM song WHERE (isIgnore == 0) LIMIT :limit")
+    fun getAllLimited(limit: Int): Flow<List<SongEntity>>
+
     @Query("SELECT COUNT(*) FROM song WHERE isIgnore == 0")
     fun getSongsCountFlow(): Flow<Int>
 

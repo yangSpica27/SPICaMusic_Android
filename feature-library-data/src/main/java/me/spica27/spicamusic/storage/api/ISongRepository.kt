@@ -19,6 +19,12 @@ interface ISongRepository {
     fun getAllSongsFlow(): Flow<List<Song>>
 
     /**
+     * 获取最多 [limit] 首歌曲的 Flow。
+     * 用于只需要少量候选歌曲的场景，避免加载整个曲库。
+     */
+    fun getAllSongsLimitedFlow(limit: Int): Flow<List<Song>>
+
+    /**
      * 曲库歌曲总数（不含已忽略）的 Flow
      */
     fun getSongsCountFlow(): Flow<Int>

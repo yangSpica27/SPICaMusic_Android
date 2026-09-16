@@ -24,6 +24,9 @@ class SongRepositoryImpl(
     override fun getAllSongsFlow(): Flow<List<Song>> =
         songDao.getAll().map { list -> list.map { it.toCommon() } }
 
+    override fun getAllSongsLimitedFlow(limit: Int): Flow<List<Song>> =
+        songDao.getAllLimited(limit.coerceAtLeast(0)).map { list -> list.map { it.toCommon() } }
+
     override fun getSongsCountFlow(): Flow<Int> =
         songDao.getSongsCountFlow().distinctUntilChanged()
 

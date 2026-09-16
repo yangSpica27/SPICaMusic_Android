@@ -24,6 +24,9 @@ import timber.log.Timber
 /** 创建歌单页「顺便选几首」的候选歌曲数量上限 */
 private const val CREATOR_CANDIDATE_LIMIT = 30
 
+/** 常听歌曲最多返回 10 首，因此最多读取 40 首即可补齐 30 个不重复候选。 */
+private const val CREATOR_CANDIDATE_FETCH_LIMIT = CREATOR_CANDIDATE_LIMIT + 10
+
 /**
  * 歌单页面 ViewModel
  */
@@ -48,7 +51,7 @@ class PlaylistViewModel(
     val creatorCandidates: StateFlow<List<Song>> =
         combine(
             songRepository.getOftenListenSong10Flow(),
-            songRepository.getAllSongsFlow(),
+            songRepository.getAllSongsLimitedFlow(CREATOR_CANDIDATE_FETCH_LIMIT),
         ) { often, all ->
             val ordered = LinkedHashMap<Long, Song>(CREATOR_CANDIDATE_LIMIT)
             (often + all).forEach { song ->
