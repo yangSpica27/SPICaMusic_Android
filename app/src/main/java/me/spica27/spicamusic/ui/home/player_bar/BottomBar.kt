@@ -101,6 +101,7 @@ import me.spica27.spicamusic.ui.player.DEFAULT_PAGE
 import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
 import me.spica27.spicamusic.ui.player.LargeBottomPlayerBar
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.player.QUEUE_PAGE
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
@@ -328,7 +329,7 @@ fun BottomMediaBar(bottomBarScrollConnection: BottomBarScrollConnection = LocalB
                                     }
                                 },
                                 onExpandToPlaylist = {
-                                    initialPage = 0
+                                    initialPage = QUEUE_PAGE
                                     coroutineScope.launch {
                                         draggableState.animateTo(PlayerSheetValue.Expanded)
                                     }
@@ -589,7 +590,7 @@ fun BottomMediaBarV2(
                                 sheetState.expand()
                             },
                             onExpandToPlaylist = {
-                                initialPage = 0
+                                initialPage = QUEUE_PAGE
                                 sheetState.expand()
                             },
                         )

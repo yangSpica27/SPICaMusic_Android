@@ -58,6 +58,11 @@ interface IMusicPlayer {
     val currentTimelineItems: StateFlow<List<MediaItem>>
 
     /**
+     * 当前媒体项在 [currentTimelineItems] 中的索引；没有时为 -1
+     */
+    val currentMediaItemIndex: StateFlow<Int>
+
+    /**
      * 当前播放位置（毫秒）
      */
     val currentPosition: Long

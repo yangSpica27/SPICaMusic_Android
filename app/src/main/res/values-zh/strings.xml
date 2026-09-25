@@ -754,4 +754,21 @@
   <string name="settings_sleep_timer_hours">%1$d 小时</string>
   <string name="settings_sleep_timer_preset_subtitle">定时结束后暂停播放</string>
   <string name="settings_sleep_timer_cancel">取消定时</string>
+
+  <!-- 播放列表页 -->
+  <string name="queue_title">播放列表</string>
+  <string name="back_to_player">返回播放页</string>
+  <string name="queue_position_format">第 %1$d / %2$d 首</string>
+  <string name="play_mode_loop">列表循环</string>
+  <string name="play_mode_repeat_one">单曲循环</string>
+  <string name="queue_save_short">存为歌单</string>
+  <string name="queue_shuffle_hint">随机播放中，列表顺序不代表播放顺序，已暂停拖动排序</string>
+  <string name="remove_from_queue">移出播放列表</string>
+  <string name="undo">撤销</string>
+  <string name="queue_removed_one_format">已移除「%s」</string>
+  <string name="queue_removed_many_format">已移除 %d 首</string>
+  <string name="queue_empty_title">播放列表是空的</string>
+  <string name="queue_empty_hint">播放任意歌曲、专辑或歌单即可开始</string>
+  <string name="move_up">上移</string>
+  <string name="move_down">下移</string>
 </resources>

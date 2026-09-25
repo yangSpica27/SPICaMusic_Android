@@ -67,6 +67,21 @@ sealed class PlayerAction {
     ) : PlayerAction()
 
     /**
+     * 在播放列表内移动一项（索引均为移动前的时间轴位置）
+     */
+    data class MoveItem(
+        val fromIndex: Int,
+        val toIndex: Int,
+    ) : PlayerAction()
+
+    /**
+     * 按时间轴索引播放（重复歌曲也能精确命中）
+     */
+    data class PlayAtIndex(
+        val index: Int,
+    ) : PlayerAction()
+
+    /**
      * 添加到队列末尾
      */
     data class AddToQueue(
@@ -99,3 +114,9 @@ internal fun normalizedRemovalIndices(
         .filter { it in 0 until itemCount }
         .sortedDescending()
         .toList()
+
+internal fun isValidQueueMove(
+    fromIndex: Int,
+    toIndex: Int,
+    itemCount: Int,
+): Boolean = fromIndex != toIndex && fromIndex in 0 until itemCount && toIndex in 0 until itemCount

@@ -24,14 +24,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -41,6 +45,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
@@ -139,6 +144,7 @@ import androidx.compose.ui.util.lerp as floatLerp
 // 展开动画透明度阈值常量
 private const val PAGE_COUNT = 2
 const val DEFAULT_PAGE = 0
+const val QUEUE_PAGE = 1
 private const val HERO_REVEAL_THRESHOLD = 0.08f
 private const val META_REVEAL_THRESHOLD = 0.18f
 private const val MINI_LYRIC_REVEAL_THRESHOLD = 0.24f
@@ -396,14 +402,22 @@ fun ExpandedPlayerScreen(
                 }
             } else {
                 // 播放列表
-                ShowOnIdleContent(true) {
-                    Box(
-                        modifier = Modifier,
-                    ) {
-                        CurrPlaylistPage(
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
+                ShowOnIdleContent(true, modifier = Modifier.fillMaxSize()) {
+                    CurrPlaylistPage(
+                        onNavigateBack = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(
+                                    DEFAULT_PAGE,
+                                    animationSpec = tween(durationMillis = 300, easing = EaseOutCubic),
+                                )
+                            }
+                        },
+                        navigationIcon = Icons.Rounded.KeyboardArrowDown,
+                        navigationContentDescription = stringResource(R.string.back_to_player),
+                        chromeColor = MaterialTheme.colorScheme.surface,
+                        contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Vertical),
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
             }
         }

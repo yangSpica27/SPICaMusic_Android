@@ -105,6 +105,11 @@ class PlayerViewModel(
     val currentPlaylist: StateFlow<List<MediaItem>> = player.currentTimelineItems
 
     /**
+     * 当前歌曲在 [currentPlaylist] 中的索引（区分重复歌曲）；没有时为 -1
+     */
+    val currentMediaItemIndex: StateFlow<Int> = player.currentMediaItemIndex
+
+    /**
      * 当前播放位置 (毫秒)
      */
     val currentPosition: StateFlow<Long> =
@@ -237,6 +242,23 @@ class PlayerViewModel(
         song.mediaStoreId.toString().let { id ->
             playByMediaStoreId(id)
         }
+    }
+
+    /**
+     * 按播放列表索引播放
+     */
+    fun playQueueIndex(index: Int) {
+        player.doAction(PlayerAction.PlayAtIndex(index))
+    }
+
+    /**
+     * 在播放列表内移动一项
+     */
+    fun moveQueueItem(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
+        player.doAction(PlayerAction.MoveItem(fromIndex, toIndex))
     }
 
     /**

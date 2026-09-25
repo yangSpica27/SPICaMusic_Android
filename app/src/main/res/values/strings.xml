@@ -754,4 +754,21 @@
   <string name="settings_sleep_timer_hours">%1$d h</string>
   <string name="settings_sleep_timer_preset_subtitle">Pause playback when the timer ends</string>
   <string name="settings_sleep_timer_cancel">Cancel timer</string>
+
+  <!-- 播放列表页 -->
+  <string name="queue_title">Queue</string>
+  <string name="back_to_player">Back to player</string>
+  <string name="queue_position_format">Song %1$d of %2$d</string>
+  <string name="play_mode_loop">Repeat all</string>
+  <string name="play_mode_repeat_one">Repeat one</string>
+  <string name="queue_save_short">Save</string>
+  <string name="queue_shuffle_hint">Shuffle is on, so list order isn\'t play order. Reordering is paused.</string>
+  <string name="remove_from_queue">Remove from queue</string>
+  <string name="undo">Undo</string>
+  <string name="queue_removed_one_format">Removed “%s”</string>
+  <string name="queue_removed_many_format">Removed %d songs</string>
+  <string name="queue_empty_title">Nothing in the queue</string>
+  <string name="queue_empty_hint">Play any song, album or playlist to start</string>
+  <string name="move_up">Move up</string>
+  <string name="move_down">Move down</string>
 </resources>

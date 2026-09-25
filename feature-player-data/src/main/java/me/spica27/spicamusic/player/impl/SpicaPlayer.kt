@@ -34,6 +34,7 @@ import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.PlayerAction
 import me.spica27.spicamusic.player.api.SleepTimerState
+import me.spica27.spicamusic.player.api.isValidQueueMove
 import me.spica27.spicamusic.player.api.normalizedRemovalIndices
 import me.spica27.spicamusic.player.impl.dsp.NativeFftProcessor
 import me.spica27.spicamusic.player.impl.utils.MediaLibrary
@@ -127,6 +128,9 @@ class SpicaPlayer(
 
     private val _currentTimelineItems = MutableStateFlow<List<MediaItem>>(emptyList())
     override val currentTimelineItems: StateFlow<List<MediaItem>> = _currentTimelineItems
+
+    private val _currentMediaItemIndex = MutableStateFlow(-1)
+    override val currentMediaItemIndex: StateFlow<Int> = _currentMediaItemIndex
 
     // 记录当前播放会话的开始信息，用于计算 playedDuration
     private var playSessionMediaId: String? = null
@@ -355,6 +359,22 @@ class SpicaPlayer(
                     PlayerAction.ReloadAndPlay -> {
                         Timber.tag(TAG).w("ReloadAndPlay not implemented yet")
                         // TODO: 实现重新加载并播放逻辑
+                    }
+
+                    is PlayerAction.MoveItem -> {
+                        if (isValidQueueMove(action.fromIndex, action.toIndex, browser.mediaItemCount)) {
+                            browser.moveMediaItem(action.fromIndex, action.toIndex)
+                        }
+                    }
+
+                    is PlayerAction.PlayAtIndex -> {
+                        if (action.index in 0 until browser.mediaItemCount) {
+                            if (browser.playbackState == Player.STATE_IDLE) {
+                                browser.prepare()
+                            }
+                            browser.seekTo(action.index, 0)
+                            browser.playWhenReady = true
+                        }
                     }
 
                     is PlayerAction.AddToQueue -> {
@@ -609,6 +629,7 @@ class SpicaPlayer(
 
         Timber.e("onMediaItemTransition $mediaItem $reason")
         _currentMediaItem.value = mediaItem
+        _currentMediaItemIndex.value = browserInstance?.currentMediaItemIndex ?: -1
         // A repeat transition can keep the same media ID while resetting the
         // position to zero, so it must establish a fresh position anchor too.
         // Do not read browser.currentPosition here: during the callback it can
@@ -661,6 +682,7 @@ class SpicaPlayer(
     override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
         Timber.e("onMediaMetadataChanged $mediaMetadata")
         _currentMediaItem.value = browserInstance?.currentMediaItem
+        _currentMediaItemIndex.value = browserInstance?.currentMediaItemIndex ?: -1
         _currentMediaMetadata.value = mediaMetadata
         // 优先使用 metadata 中的 durationMs，其次从 browser 实例取当前 duration
         val metaDuration = mediaMetadata.durationMs ?: 0L
@@ -697,6 +719,9 @@ class SpicaPlayer(
     private fun updateItems(timeline: Timeline?) {
         val items = timeline?.toMediaItems() ?: emptyList()
         _currentTimelineItems.value = items
+        // 移动/删除会改变当前项的索引而不触发 onMediaItemTransition
+        _currentMediaItemIndex.value =
+            browserInstance?.currentMediaItemIndex?.takeIf { items.isNotEmpty() } ?: -1
 
         val ids = _currentTimelineItems.value.map { it.mediaId }
         playerKVUtils.setHistoryIds(ids.mapNotNull { it.toLongOrNull() })
