@@ -123,7 +123,7 @@ private val MastheadCollapseDistance = 140.dp
 private const val ENTRANCE_MAX_CARD = 6
 
 /** 首屏元素在编排中的槽位：刊头=0 操作行=1 收藏区头=2 歌单区头=3 歌单卡从 4 开始 */
-private const val ENTRANCE_ORDER_CARD_BASE = 4
+private const val ENTRANCE_ORDER_CARD_BASE = 2
 
 /** 收藏预览最多展示的歌曲数 */
 private const val FavoritePreviewSongCount = 5

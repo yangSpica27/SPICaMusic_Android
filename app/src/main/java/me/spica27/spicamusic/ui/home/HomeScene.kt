@@ -58,9 +58,6 @@ fun HomeScreen() {
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.BottomCenter,
         ) {
-            // 底栏切页是每天上百次的动作 —— 不做转场动画：任何转场都会
-            // 让最高频的操作显得迟滞。切页即时生效，感知延迟为零。
-            //
             // SaveableStateHolder 让离开的页面保留可保存状态（列表滚动位置、
             // 入场动画已播标记等），切回时不重建、不重播入场 stagger。
             val pageStateHolder = rememberSaveableStateHolder()

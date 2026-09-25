@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 const val ENTRANCE_STAGGER_MILLIS = 35L
 
 /** 首屏入场动画的最长等待时间。 */
-const val ENTRANCE_GATE_MILLIS = 1000L
+const val ENTRANCE_GATE_MILLIS = 850L
 
 /** 入场上浮距离。 */
 private const val ENTRANCE_TRANSLATION_DP = 28f
