@@ -1,9 +1,6 @@
 package me.spica27.spicamusic.ui
 
 import android.app.Activity
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -33,6 +30,7 @@ import me.spica27.spicamusic.ui.navigation.rememberAppNavigator
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.theme.SPICaMusicTheme
+import me.spica27.spicamusic.utils.Nav3Transitions
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinActivityViewModel
 
@@ -106,10 +104,10 @@ fun AppScaffold() {
                 sceneStrategies = sceneStrategies,
                 entryProvider = entryProvider,
                 transitionSpec = {
-                    slideInHorizontally { it } togetherWith slideOutHorizontally { -it / 4 }
+                    Nav3Transitions.iosStyle()
                 },
                 popTransitionSpec = {
-                    slideInHorizontally { -it / 4 } togetherWith slideOutHorizontally { it }
+                    Nav3Transitions.iosStylePop()
                 },
             )
         }
