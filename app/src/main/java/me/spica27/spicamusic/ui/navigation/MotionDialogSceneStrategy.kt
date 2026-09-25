@@ -329,7 +329,7 @@ private fun BoxScope.AnchoredPopupContent(
                 .onSizeChanged { menuSize = it }
                 .graphicsLayer {
                     val progress = contentProgress.value
-                    val scale = 0.85f + 0.15f * progress
+                    val scale = 0.05f + 0.95f * progress
                     scaleX = scale
                     scaleY = scale
                     alpha = progress
