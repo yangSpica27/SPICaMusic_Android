@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui.navigation
 
-import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.window.DialogProperties
@@ -26,7 +25,6 @@ import me.spica27.spicamusic.ui.home.HomeScreen
 import me.spica27.spicamusic.ui.ignoredsongs.IgnoredSongsScreen
 import me.spica27.spicamusic.ui.player.SleepTimerDialogContent
 import me.spica27.spicamusic.ui.player.scene.CurrentListDialogContent
-import me.spica27.spicamusic.ui.player.scene.LyricScreen
 import me.spica27.spicamusic.ui.playlist.AllPlaylistsScreen
 import me.spica27.spicamusic.ui.playlist.PlaylistCreatorScreen
 import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailScreen
@@ -79,11 +77,6 @@ fun appEntryProvider(): (Route) -> NavEntry<Route> =
                 is FavoriteRoute -> NavEntry(key) { FavoriteScreen() }
                 is IgnoredSongsRoute -> NavEntry(key) { IgnoredSongsScreen() }
                 is ScannerRoute -> NavEntry(key) { ScannerScreen() }
-                is LyricRoute ->
-                    NavEntry(key) {
-                        LyricScreen(heroArtworkUri = key.heroArtworkUri?.let(Uri::parse))
-                    }
-
                 // ── Dialog Routes ────────────────────────────────────────
                 is CurrentListRoute -> NavEntry(key, metadata = dialogMetadata) { CurrentListDialogContent() }
                 is SleepTimerRoute -> NavEntry(key, metadata = dialogMetadata) { SleepTimerDialogContent() }

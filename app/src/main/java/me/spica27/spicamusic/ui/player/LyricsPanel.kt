@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -45,12 +46,15 @@ import org.koin.compose.viewmodel.koinActivityViewModel
  * - 歌词偏移量调节（持久化到数据库）
  * - 多歌词源切换（通过预览面板选择后缓存）
  * - AMLL 扩展字段显示策略（翻译版本、Ruby、敏感词、段落和歌手标签）
+ *
+ * [toolbarBottomInset] 用于给宿主的底部播放控制预留空间。
  */
 @Composable
 fun LyricsPanel(
     modifier: Modifier = Modifier,
     displayMode: LyricsDisplayMode = LyricsDisplayMode.Fullscreen,
     displayOptions: LyricsDisplayOptions = LyricsDisplayOptions(),
+    toolbarBottomInset: Dp = 0.dp,
 ) {
     // Activity 作用域共享实例：与 mini 歌词同源，
     // 此处切换歌词源 / 调整偏移量会同步反映到 mini 歌词
@@ -141,7 +145,9 @@ fun LyricsPanel(
                     .align(Alignment.BottomEnd)
                     .padding(
                         end = if (displayMode == LyricsDisplayMode.Compact) 12.dp else 16.dp,
-                        bottom = if (displayMode == LyricsDisplayMode.Compact) 12.dp else 24.dp,
+                        bottom =
+                            (if (displayMode == LyricsDisplayMode.Compact) 12.dp else 24.dp) +
+                                toolbarBottomInset,
                     ),
         )
     }

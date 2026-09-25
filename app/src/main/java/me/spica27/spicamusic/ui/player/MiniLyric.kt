@@ -43,7 +43,7 @@ private const val LOADING_PLACEHOLDER = "· · ·"
 /**
  * mini 歌词：单行展示当前播放到的歌词，跟随播放进度自动切换。
  *
- * 直接嵌入播放器页面，点击后跳转全屏歌词页面；
+ * 直接嵌入播放器页面，点击后切换到播放器内的全屏歌词模式；
  * 无歌词时显示占位文案（仍可点击进入全屏页搜索/切换歌词源）。
  */
 @Composable
@@ -51,8 +51,8 @@ fun MiniLyric(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Activity 作用域共享实例：与全屏歌词页同源，
-    // 全屏页内切换歌词源 / 调整偏移量后 mini 歌词同步生效
+    // Activity 作用域共享实例：与全屏歌词模式同源，
+    // 全屏歌词内切换歌词源 / 调整偏移量后 mini 歌词同步生效
     val viewModel: LyricsViewModel = koinActivityViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 

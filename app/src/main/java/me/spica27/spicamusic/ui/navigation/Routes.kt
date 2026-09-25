@@ -89,11 +89,6 @@ data object IgnoredSongsRoute : ScreenRoute
 @Serializable
 data object ScannerRoute : ScreenRoute
 
-@Serializable
-data class LyricRoute(
-    val heroArtworkUri: String? = null,
-) : ScreenRoute
-
 // ──────────────────────────────────────────────────────────────────────────
 // Dialog Routes（对话框 / 菜单）
 // ──────────────────────────────────────────────────────────────────────────

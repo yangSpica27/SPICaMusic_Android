@@ -25,7 +25,7 @@ import me.spica27.spicamusic.player.api.PlayerAction
 import timber.log.Timber
 
 /**
- * 歌词页面 ViewModel
+ * 播放器歌词状态 ViewModel
  *
  * 负责多来源歌词的加载、选择与偏移量持久化。来源决策遵循「缓存权威 + 自动优先级 + 手动覆盖」：
  * 1. 已存在缓存行（手动选择，或自动持久化的在线结果）→ 直接显示，**不联网、不再解析来源**。

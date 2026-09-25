@@ -87,7 +87,6 @@ class AppNavigatorTest {
                 FavoriteRoute,
                 IgnoredSongsRoute,
                 ScannerRoute,
-                LyricRoute(heroArtworkUri = "content://artwork/1"),
             )
 
         routes.forEach { route ->

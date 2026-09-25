@@ -5,6 +5,7 @@ import android.text.TextUtils
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.Spring
@@ -14,6 +15,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -110,7 +112,6 @@ import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.glass.liquidGlass
 import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
-import me.spica27.spicamusic.ui.navigation.LyricRoute
 import me.spica27.spicamusic.ui.navigation.SleepTimerRoute
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
@@ -128,6 +129,7 @@ import me.spica27.spicamusic.ui.widget.holographicCoverTilt
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYOut
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
+import me.spica27.spicamusic.utils.Nav3Transitions
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.koinInject
 import timber.log.Timber
@@ -145,6 +147,8 @@ import androidx.compose.ui.util.lerp as floatLerp
 private const val PAGE_COUNT = 2
 const val DEFAULT_PAGE = 0
 const val QUEUE_PAGE = 1
+private const val PLAYER_SURFACE_ENTER_DURATION_MILLIS = 240
+private const val PLAYER_SURFACE_EXIT_DURATION_MILLIS = 160
 private const val HERO_REVEAL_THRESHOLD = 0.08f
 private const val META_REVEAL_THRESHOLD = 0.18f
 private const val MINI_LYRIC_REVEAL_THRESHOLD = 0.24f
@@ -153,6 +157,61 @@ private const val SEEKBAR_REVEAL_THRESHOLD = 0.34f
 private const val PLAYER_CONTROLS_REVEAL_THRESHOLD = 0.48f
 private const val COLLAPSED_HERO_SCALE = 0.82f
 private val EmptyFftDrawData = FloatArray(0)
+
+private enum class PlayerSurface {
+    Player,
+    Lyrics,
+}
+
+private fun playerSurfaceTransform(reducedMotion: Boolean): ContentTransform =
+    if (reducedMotion) {
+        fadeIn(
+            tween(
+                durationMillis = PLAYER_SURFACE_EXIT_DURATION_MILLIS,
+                easing = EaseOutEmphasized,
+            ),
+        ) togetherWith
+            fadeOut(
+                tween(
+                    durationMillis = PLAYER_SURFACE_EXIT_DURATION_MILLIS,
+                    easing = EaseOutEmphasized,
+                ),
+            )
+    } else {
+        (
+            fadeIn(
+                tween(
+                    durationMillis = PLAYER_SURFACE_ENTER_DURATION_MILLIS,
+                    delayMillis = 40,
+                    easing = EaseOutEmphasized,
+                ),
+            ) +
+                scaleIn(
+                    animationSpec =
+                        tween(
+                            durationMillis = PLAYER_SURFACE_ENTER_DURATION_MILLIS,
+                            easing = EaseOutEmphasized,
+                        ),
+                    initialScale = 0.985f,
+                )
+        ) togetherWith
+            (
+                fadeOut(
+                    tween(
+                        durationMillis = PLAYER_SURFACE_EXIT_DURATION_MILLIS,
+                        easing = EaseOutEmphasized,
+                    ),
+                ) +
+                    scaleOut(
+                        animationSpec =
+                            tween(
+                                durationMillis = PLAYER_SURFACE_ENTER_DURATION_MILLIS,
+                                easing = EaseOutEmphasized,
+                            ),
+                        targetScale = 0.96f,
+                    )
+            )
+    }
 
 /** 保存动态波形的最后一帧，场景被覆盖时停掉订阅但不让底层 UI 闪为空。 */
 private class FftDrawDataHolder {
@@ -185,6 +244,7 @@ fun ExpandedPlayerScreen(
     animationsEnabled: Boolean = true,
 ) {
     val backStack = LocalBackStack.current
+    var playerSurface by remember { mutableStateOf(PlayerSurface.Player) }
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val sleepTimer by viewModel.sleepTimer.collectAsStateWithLifecycle()
     val playMode by viewModel.playMode.collectAsStateWithLifecycle()
@@ -245,10 +305,6 @@ fun ExpandedPlayerScreen(
         derivedStateOf { progressProvider() > .4f }
     }
 
-    BackHandler(isFullyExpanded) {
-        onCollapse.invoke()
-    }
-
     // 将播放位置同步到 seekbar：用 snapshotFlow 在协程中观察位置变化，
     // 避免在组合作用域读取高频 state 而导致重组。
     LaunchedEffect(mediaId, animationsEnabled) {
@@ -267,13 +323,23 @@ fun ExpandedPlayerScreen(
 
     // Pager 状态，使用传入的初始页面
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { PAGE_COUNT })
+    val amplitudeCache = remember { linkedMapOf<String, List<Int>>() }
 
-    BackHandler(pagerState.currentPage == 1) {
-        coroutineScope.launch {
-            pagerState.animateScrollToPage(
-                0,
-                animationSpec = tween(durationMillis = 300, easing = EaseOutCubic),
-            )
+    BackHandler(isFullyExpanded) {
+        when {
+            playerSurface == PlayerSurface.Lyrics -> playerSurface = PlayerSurface.Player
+            pagerState.currentPage != DEFAULT_PAGE -> {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage(
+                        DEFAULT_PAGE,
+                        animationSpec = tween(durationMillis = 300, easing = EaseOutCubic),
+                    )
+                }
+            }
+            else -> {
+                playerSurface = PlayerSurface.Player
+                onCollapse.invoke()
+            }
         }
     }
 
@@ -299,6 +365,13 @@ fun ExpandedPlayerScreen(
             fallbackColor = MaterialTheme.colorScheme.primary,
         )
     val hazeState = rememberHazeState()
+    val lyricsScrimAlpha =
+        animateFloatAsState(
+            targetValue = if (playerSurface == PlayerSurface.Lyrics) 1f else 0f,
+            animationSpec = tween(durationMillis = PLAYER_SURFACE_ENTER_DURATION_MILLIS, easing = EaseOutEmphasized),
+            label = "lyricsScrimAlpha",
+        )
+    val lyricsScrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.14f)
 
     Box(
         modifier =
@@ -321,101 +394,158 @@ fun ExpandedPlayerScreen(
             enabled = animationsEnabled && isAppInForeground,
         )
 
-        // 内容层
-        VerticalPager(
+        // 歌词模式只压暗同一份动态背景，不创建第二个背景实例。
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = lyricsScrimAlpha.value }
+                    .background(lyricsScrimColor),
+        )
+
+        // 播放器与全屏歌词是同一播放器容器中的两种前景模式，而非两个导航目的地。
+        AnimatedContent(
+            targetState = playerSurface,
             modifier = Modifier.fillMaxSize(),
-            state = pagerState,
-            key = { it },
-            overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
-            flingBehavior =
-                PagerDefaults.flingBehavior(
-                    state = pagerState,
-                    snapPositionalThreshold = .2f,
-                ),
-        ) {
-            if (it == 0) {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .statusBarsPadding(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    // 水平 Pager 内容区域
-                    // 播放器页面
-                    ShowOnIdleContent(
-                        modifier = Modifier.weight(1f),
-                        visible = isPlayerPageRevealed,
-                    ) {
-                        PlayerPage(
-                            playerViewModel = viewModel,
-                            hazeState = hazeState,
-                            isSeekingState = isSeekingState,
-                            currentMediaItem = { currentMediaItem },
-                            audioQualityInfo = audioQualityInfo,
-                            realPositionProvider = {
-                                if (animationsEnabled) positionState.value.toFloat() else positionHolder.realPosition
-                            },
-                            seekPositionProvider = {
-                                if (animationsEnabled) seekValueState.floatValue else positionHolder.seekPosition
-                            },
-                            duration = duration,
-                            isPlaying = isPlaying,
-                            isLike = songLikeState,
-                            playMode = playMode,
-                            onValueChange = {
-                                isSeekingState = true
-                                seekValueState.floatValue = it * duration
-                                positionHolder.seekPosition = seekValueState.floatValue
-                            },
-                            onValueChangeFinished = {
-                                viewModel.seekTo(seekValueState.floatValue.toLong())
-                                isSeekingState = false
-                            },
-                            onPlayPauseClick = { viewModel.togglePlayPause() },
-                            onPreviousClick = { viewModel.skipToPrevious() },
-                            onNextClick = { viewModel.skipToNext() },
-                            onPlayModeClick = { viewModel.togglePlayMode() },
-                            onFavoriteClick = {
-                                viewModel.toggleLikeCurrentSong()
-                            },
-                            onSleepTimerClick = { backStack.add(SleepTimerRoute) },
-                            sleepTimer = sleepTimer,
-                            onPlaylistClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(
-                                        1,
-                                        animationSpec =
-                                            tween(
-                                                durationMillis = 320,
-                                                easing = EaseOutEmphasized,
-                                            ),
+            transitionSpec = {
+                Nav3Transitions.zoom()
+            },
+            contentKey = { it },
+            label = "playerSurface",
+        ) { surface ->
+            when (surface) {
+                PlayerSurface.Player -> {
+                    VerticalPager(
+                        modifier = Modifier.fillMaxSize(),
+                        state = pagerState,
+                        key = { page -> page },
+                        overscrollEffect = rememberIOSOverScrollEffect(orientation = Orientation.Vertical),
+                        flingBehavior =
+                            PagerDefaults.flingBehavior(
+                                state = pagerState,
+                                snapPositionalThreshold = .2f,
+                            ),
+                    ) { page ->
+                        if (page == DEFAULT_PAGE) {
+                            Column(
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .statusBarsPadding(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                ShowOnIdleContent(
+                                    modifier = Modifier.weight(1f),
+                                    visible = isPlayerPageRevealed,
+                                ) {
+                                    PlayerPage(
+                                        playerViewModel = viewModel,
+                                        hazeState = hazeState,
+                                        isSeekingState = isSeekingState,
+                                        currentMediaItem = { currentMediaItem },
+                                        audioQualityInfo = audioQualityInfo,
+                                        realPositionProvider = {
+                                            if (animationsEnabled) {
+                                                positionState.value.toFloat()
+                                            } else {
+                                                positionHolder.realPosition
+                                            }
+                                        },
+                                        seekPositionProvider = {
+                                            if (animationsEnabled) {
+                                                seekValueState.floatValue
+                                            } else {
+                                                positionHolder.seekPosition
+                                            }
+                                        },
+                                        duration = duration,
+                                        isPlaying = isPlaying,
+                                        isLike = songLikeState,
+                                        playMode = playMode,
+                                        onValueChange = {
+                                            isSeekingState = true
+                                            seekValueState.floatValue = it * duration
+                                            positionHolder.seekPosition = seekValueState.floatValue
+                                        },
+                                        onValueChangeFinished = {
+                                            viewModel.seekTo(seekValueState.floatValue.toLong())
+                                            isSeekingState = false
+                                        },
+                                        onPlayPauseClick = { viewModel.togglePlayPause() },
+                                        onPreviousClick = { viewModel.skipToPrevious() },
+                                        onNextClick = { viewModel.skipToNext() },
+                                        onPlayModeClick = { viewModel.togglePlayMode() },
+                                        onFavoriteClick = { viewModel.toggleLikeCurrentSong() },
+                                        onSleepTimerClick = { backStack.add(SleepTimerRoute) },
+                                        onLyricsClick = { playerSurface = PlayerSurface.Lyrics },
+                                        sleepTimer = sleepTimer,
+                                        onPlaylistClick = {
+                                            coroutineScope.launch {
+                                                pagerState.animateScrollToPage(
+                                                    QUEUE_PAGE,
+                                                    animationSpec =
+                                                        tween(
+                                                            durationMillis = 320,
+                                                            easing = EaseOutEmphasized,
+                                                        ),
+                                                )
+                                            }
+                                        },
+                                        progressProvider = progressProvider,
+                                        isAppInForeground = isAppInForeground,
+                                        animationsEnabled = animationsEnabled,
+                                        amplitudeCache = amplitudeCache,
+                                        modifier = Modifier.fillMaxSize(),
                                     )
                                 }
-                            },
-                            progressProvider = progressProvider,
-                            isAppInForeground = isAppInForeground,
-                            animationsEnabled = animationsEnabled,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-                }
-            } else {
-                // 播放列表
-                ShowOnIdleContent(true, modifier = Modifier.fillMaxSize()) {
-                    CurrPlaylistPage(
-                        onNavigateBack = {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(
-                                    DEFAULT_PAGE,
-                                    animationSpec = tween(durationMillis = 300, easing = EaseOutCubic),
+                            }
+                        } else {
+                            ShowOnIdleContent(true, modifier = Modifier.fillMaxSize()) {
+                                CurrPlaylistPage(
+                                    onNavigateBack = {
+                                        coroutineScope.launch {
+                                            pagerState.animateScrollToPage(
+                                                DEFAULT_PAGE,
+                                                animationSpec =
+                                                    tween(
+                                                        durationMillis = 300,
+                                                        easing = EaseOutCubic,
+                                                    ),
+                                            )
+                                        }
+                                    },
+                                    navigationIcon = Icons.Rounded.KeyboardArrowDown,
+                                    navigationContentDescription = stringResource(R.string.back_to_player),
+                                    chromeColor = MaterialTheme.colorScheme.surface,
+                                    contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Vertical),
+                                    modifier = Modifier.fillMaxSize(),
                                 )
                             }
-                        },
-                        navigationIcon = Icons.Rounded.KeyboardArrowDown,
-                        navigationContentDescription = stringResource(R.string.back_to_player),
-                        chromeColor = MaterialTheme.colorScheme.surface,
-                        contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Vertical),
+                        }
+                    }
+                }
+
+                PlayerSurface.Lyrics -> {
+                    FullscreenLyricsSurface(
+                        title =
+                            currentMediaItem
+                                ?.mediaMetadata
+                                ?.title
+                                ?.toString()
+                                ?: stringResource(R.string.unknown_song),
+                        artist =
+                            currentMediaItem
+                                ?.mediaMetadata
+                                ?.artist
+                                ?.toString()
+                                ?: stringResource(R.string.unknown_artist),
+                        artworkUri = currentMediaItem?.mediaMetadata?.artworkUri,
+                        hazeState = hazeState,
+                        isPlaying = isPlaying,
+                        onBack = { playerSurface = PlayerSurface.Player },
+                        onPlayPauseClick = { viewModel.togglePlayPause() },
+                        onPreviousClick = { viewModel.skipToPrevious() },
+                        onNextClick = { viewModel.skipToNext() },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -476,11 +606,13 @@ private fun PlayerPage(
     onPlayModeClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onSleepTimerClick: () -> Unit,
+    onLyricsClick: () -> Unit,
     onPlaylistClick: () -> Unit,
     sleepTimer: SleepTimerState?,
     progressProvider: () -> Float,
     isAppInForeground: Boolean,
     animationsEnabled: Boolean,
+    amplitudeCache: MutableMap<String, List<Int>>,
     modifier: Modifier = Modifier,
     isSeekingState: Boolean = false,
 ) {
@@ -502,7 +634,6 @@ private fun PlayerPage(
         }
     val songUseCases = koinInject<SongUseCases>()
 
-    val backStack = LocalBackStack.current
     val coverEffectsEnabled = animationsEnabled && isAppInForeground && !LocalReducedMotion.current
 
     val title =
@@ -538,7 +669,7 @@ private fun PlayerPage(
                     .padding(vertical = Spacing.Medium),
             contentAlignment = Alignment.Center,
         ) {
-            // 封面（跳转全屏歌词时作为共享元素飞入歌词页 header）
+            // 点击封面，在当前播放器容器内切换到全屏歌词。
             Box(
                 modifier =
                     Modifier
@@ -571,19 +702,7 @@ private fun PlayerPage(
                                 .fillMaxSize()
                                 .clip(Shapes.LargeCornerBasedShape)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                .clickHighlight {
-                                    if (backStack.none { it is LyricRoute }) {
-                                        backStack.add(
-                                            LyricRoute(
-                                                heroArtworkUri =
-                                                    currentMediaItem
-                                                        ?.mediaMetadata
-                                                        ?.artworkUri
-                                                        ?.toString(),
-                                            ),
-                                        )
-                                    }
-                                },
+                                .clickHighlight(onClick = onLyricsClick),
                     )
                 }
             }
@@ -605,22 +724,9 @@ private fun PlayerPage(
 
         Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
 
-        // mini 歌词：点击跳转全屏歌词页面
+        // mini 歌词：点击在播放器内部切换到全屏歌词模式。
         MiniLyric(
-            onClick = {
-                if (backStack.none { it is LyricRoute }) {
-                    backStack.add(
-                        LyricRoute(
-                            heroArtworkUri =
-                                currentMediaItem
-                                    .invoke()
-                                    ?.mediaMetadata
-                                    ?.artworkUri
-                                    ?.toString(),
-                        ),
-                    )
-                }
-            },
+            onClick = onLyricsClick,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -634,8 +740,7 @@ private fun PlayerPage(
 
         val amplituda: Amplituda = koinInject<Amplituda>()
 
-        // 优化：使用缓存机制避免重复加载波形数据
-        val amplitudeCache = remember { linkedMapOf<String, List<Int>>() }
+        // 缓存由模式切换层持有，歌词返回后不会重复提取波形。
         var ampState by remember { mutableStateOf(listOf<Int>()) }
 
         // 音频波形数据
@@ -972,7 +1077,7 @@ private fun controlIconTransform() =
 
 /** 主播放控制：上一曲、播放/暂停、下一曲。 */
 @Composable
-private fun TransportControls(
+internal fun TransportControls(
     modifier: Modifier,
     hazeState: HazeState,
     isPlaying: Boolean,
