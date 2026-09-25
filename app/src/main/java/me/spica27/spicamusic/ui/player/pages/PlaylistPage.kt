@@ -67,7 +67,6 @@ import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.DragIndicator
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.PlaylistRemove
 import androidx.compose.material.icons.rounded.Repeat
@@ -573,12 +572,11 @@ fun CurrPlaylistPage(
                                 isMultiSelectMode = isMultiSelectMode,
                                 isSelected = entry.key in editor.selectedKeys,
                                 isDragging = isDragging,
-                                showHandle = !isMultiSelectMode && !shuffle,
                                 isDissolving = entry.key in editor.dissolvingKeys,
                                 enabled = pendingDeletion == null && !reorderState.isAnyItemDragging,
                                 reducedMotion = reducedMotion,
                                 handleModifier =
-                                    Modifier.draggableHandle(
+                                    Modifier.longPressDraggableHandle(
                                         enabled = canReorder,
                                         onDragStarted = {
                                             editor.startDrag()
@@ -601,10 +599,6 @@ fun CurrPlaylistPage(
                                     } else {
                                         editor.play(entry, latestCurrentKey.value)
                                     }
-                                },
-                                onLongClick = {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    editor.enterMultiSelect(entry.key)
                                 },
                                 onDissolveComplete = { editor.completedDissolveKeys += entry.key },
                             )
@@ -1424,7 +1418,6 @@ private fun QueueRow(
     isMultiSelectMode: Boolean,
     isSelected: Boolean,
     isDragging: Boolean,
-    showHandle: Boolean,
     isDissolving: Boolean,
     enabled: Boolean,
     reducedMotion: Boolean,
@@ -1436,7 +1429,6 @@ private fun QueueRow(
     onMoveDown: () -> Unit,
     onRemove: () -> Unit,
     onClick: () -> Unit,
-    onLongClick: () -> Unit,
     onDissolveComplete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1520,11 +1512,10 @@ private fun QueueRow(
                                 )
                             }
                         }
-                }.combinedClickHighlight(
+                }.then(handleModifier)
+                .combinedClickHighlight(
                     enabled = enabled,
                     onClickLabel = if (isMultiSelectMode) null else clickLabel,
-                    onLongClickLabel = stringResource(R.string.multi_select),
-                    onLongClick = if (isMultiSelectMode) null else onLongClick,
                     onClick = onClick,
                 ).padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
         verticalAlignment = Alignment.CenterVertically,
@@ -1585,27 +1576,6 @@ private fun QueueRow(
             maxLines = 1,
             modifier = Modifier.widthIn(min = 36.dp),
         )
-        AnimatedVisibility(
-            visible = showHandle,
-            enter = expandHorizontally() + fadeIn(tween(durationMillis = 180)),
-            exit = shrinkHorizontally(tween(durationMillis = 150)) + fadeOut(tween(durationMillis = 120)),
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .then(handleModifier),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.DragIndicator,
-                    contentDescription = stringResource(R.string.drag_to_reorder),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
     }
 }
 
