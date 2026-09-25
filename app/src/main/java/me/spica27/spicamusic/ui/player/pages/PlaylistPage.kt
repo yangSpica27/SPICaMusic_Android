@@ -170,6 +170,7 @@ import me.spica27.spicamusic.ui.widget.combinedClickHighlight
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import me.spica27.spicamusic.ui.widget.particleDissolve
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
+import me.spica27.spicamusic.utils.Nav3Transitions
 import org.koin.compose.viewmodel.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -1022,7 +1023,7 @@ private fun QueueTopBar(
                 .height(insetTop + TopBarHeight)
                 .drawBehind {
                     // 背景不透明度在 Draw 阶段跟随滚动，避免每帧重组
-                    drawRect(color = chromeColor.copy(alpha = chromeColor.alpha * mastheadCollapse(listState)))
+                    drawRect(color = chromeColor.copy(alpha = chromeColor.alpha * mastheadCollapse(listState) * 0.5f))
                 },
     ) {
         // 全页唯一分隔线：顶栏收起后出现
@@ -1044,6 +1045,7 @@ private fun QueueTopBar(
                 Icon(
                     imageVector = navigationIcon,
                     contentDescription = navigationContentDescription,
+                    tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
             Text(
@@ -1056,6 +1058,7 @@ private fun QueueTopBar(
                     Modifier
                         .weight(1f)
                         .graphicsLayer { alpha = mastheadCollapse(listState) },
+                color = MaterialTheme.colorScheme.onSurface,
             )
             // 当前歌曲滚出可视区时弹出的「定位」胶囊
             AnimatedVisibility(
@@ -1146,7 +1149,7 @@ private fun QueueMasthead(
                 ) {
                     AnimatedContent(
                         targetState = isMultiSelectMode,
-                        transitionSpec = { materialSharedAxisZ(forward = true) },
+                        transitionSpec = { Nav3Transitions.cube() },
                         label = "queueMultiSelectPill",
                     ) { active ->
                         Row(
