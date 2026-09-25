@@ -12,7 +12,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -21,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
 
@@ -31,12 +31,10 @@ fun CurrentListDialogContent() {
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    Surface(
+    DialogContainer(
         modifier = Modifier.fillMaxSize(),
         shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
+        enableGlass = false,
     ) {
         Scaffold(
             topBar = {

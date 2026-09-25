@@ -79,6 +79,8 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -108,6 +110,7 @@ import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
 import me.spica27.spicamusic.ui.navigation.ArtistDetailRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.PopupAnchor
 import me.spica27.spicamusic.ui.navigation.ScannerRoute
 import me.spica27.spicamusic.ui.navigation.SongMenuRoute
 import me.spica27.spicamusic.ui.navigation.SortMenuDialogRoute
@@ -339,8 +342,8 @@ fun MusicPage() {
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
-    // 排序菜单锚点：挂在页面作用域，锚点图标本身在 Lazy item 内
-    fun openSortMenu() {
+    // 排序菜单按触发按钮在窗口中的位置显示。
+    fun openSortMenu(anchor: PopupAnchor) {
         val route =
             when (selectedTab) {
                 MusicBrowserTab.Songs ->
@@ -353,6 +356,7 @@ fun MusicPage() {
                                 .firstOrNull { it.option.id == id }
                                 ?.let { songSortMode = it }
                         },
+                        anchor = anchor,
                     )
 
                 MusicBrowserTab.Albums ->
@@ -365,6 +369,7 @@ fun MusicPage() {
                                 .firstOrNull { it.option.id == id }
                                 ?.let { albumSortMode = it }
                         },
+                        anchor = anchor,
                     )
 
                 MusicBrowserTab.Artists ->
@@ -377,6 +382,7 @@ fun MusicPage() {
                                 .firstOrNull { it.option.id == id }
                                 ?.let { artistSortMode = it }
                         },
+                        anchor = anchor,
                     )
             }
         backStack.add(route)
@@ -996,9 +1002,10 @@ private fun MusicSearchBar(
 private fun MusicSectionHeader(
     tab: MusicBrowserTab,
     count: Int,
-    onSortClick: () -> Unit,
+    onSortClick: (PopupAnchor) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var sortAnchor by remember { mutableStateOf<PopupAnchor?>(null) }
     Row(
         modifier =
             modifier
@@ -1025,11 +1032,20 @@ private fun MusicSectionHeader(
         Box(
             modifier =
                 Modifier
-                    .clip(CircleShape)
+                    .onGloballyPositioned { coords ->
+                        val pos = coords.positionInWindow()
+                        sortAnchor =
+                            PopupAnchor(
+                                x = pos.x,
+                                y = pos.y,
+                                width = coords.size.width.toFloat(),
+                                height = coords.size.height.toFloat(),
+                            )
+                    }.clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .clickHighlight(
                         onClickLabel = stringResource(R.string.music_sort_cd),
-                        onClick = onSortClick,
+                        onClick = { sortAnchor?.let(onSortClick) },
                     ).padding(Spacing.Small),
         ) {
             Icon(

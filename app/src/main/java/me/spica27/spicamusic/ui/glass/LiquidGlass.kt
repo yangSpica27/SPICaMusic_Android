@@ -28,6 +28,9 @@ data class LiquidGlassConfig(
 
 val LocalLiquidGlassConfig = staticCompositionLocalOf { LiquidGlassConfig() }
 
+// 对话框与页面共享模糊状态；未提供时使用不透明背景。
+val LocalDialogHazeState = staticCompositionLocalOf<HazeState?> { null }
+
 @Composable
 fun Modifier.liquidGlassSource(hazeState: HazeState): Modifier =
     if (LocalLiquidGlassConfig.current.enabled) {
@@ -41,6 +44,8 @@ enum class LiquidGlassVariant {
     PlayerBar,
     TopBar,
     PlayButton,
+    Dialog,
+    PopupMenu,
 }
 
 @Composable
@@ -61,7 +66,10 @@ fun Modifier.liquidGlass(
         style = style,
         performanceMode =
             when (variant) {
-                LiquidGlassVariant.TopBar -> HazePerformanceMode.Balanced
+                LiquidGlassVariant.TopBar,
+                LiquidGlassVariant.Dialog,
+                LiquidGlassVariant.PopupMenu,
+                -> HazePerformanceMode.Balanced
                 LiquidGlassVariant.Navigation,
                 LiquidGlassVariant.PlayerBar,
                 LiquidGlassVariant.PlayButton,
@@ -85,6 +93,9 @@ private fun liquidBlurStyle(
 
             LiquidGlassVariant.TopBar -> MaterialTheme.colorScheme.surfaceContainer
             LiquidGlassVariant.PlayButton -> MaterialTheme.colorScheme.primary
+            LiquidGlassVariant.Dialog,
+            LiquidGlassVariant.PopupMenu,
+            -> MaterialTheme.colorScheme.surface
         }
     val blurRadius =
         when (variant) {
@@ -92,6 +103,8 @@ private fun liquidBlurStyle(
             LiquidGlassVariant.PlayerBar -> 28.dp
             LiquidGlassVariant.TopBar -> 18.dp
             LiquidGlassVariant.PlayButton -> 24.dp
+            LiquidGlassVariant.Dialog -> 32.dp
+            LiquidGlassVariant.PopupMenu -> 26.dp
         }
     val tintAlpha =
         when (variant) {
@@ -99,11 +112,26 @@ private fun liquidBlurStyle(
             LiquidGlassVariant.PlayerBar -> 0.46f
             LiquidGlassVariant.TopBar -> 0.32f
             LiquidGlassVariant.PlayButton -> 0.22f
+            LiquidGlassVariant.Dialog -> 0.55f
+            LiquidGlassVariant.PopupMenu -> 0.50f
         }
-    val fallbackAlpha = if (variant == LiquidGlassVariant.PlayButton) 0.96f else 0.78f
+    val fallbackAlpha =
+        when (variant) {
+            LiquidGlassVariant.PlayButton -> 0.96f
+            LiquidGlassVariant.Dialog,
+            LiquidGlassVariant.PopupMenu,
+            -> 1.0f
+            else -> 0.78f
+        }
+    val saturation =
+        when (variant) {
+            LiquidGlassVariant.Dialog,
+            LiquidGlassVariant.PopupMenu,
+            -> 1.15f
+            else -> 1.08f
+        }
 
-    return remember(variant, panelColor, fallbackColor) {
-        val saturation = 1.08f
+    return remember(variant, panelColor, fallbackColor, saturation) {
         val inverseSaturation = 1f - saturation
         val luminanceRed = 0.213f * inverseSaturation
         val luminanceGreen = 0.715f * inverseSaturation

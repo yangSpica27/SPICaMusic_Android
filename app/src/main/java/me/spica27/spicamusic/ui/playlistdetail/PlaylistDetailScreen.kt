@@ -76,7 +76,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -110,6 +109,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -136,9 +137,13 @@ import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.ui.component.DialogContainer
+import me.spica27.spicamusic.ui.component.DialogMenuItem
+import me.spica27.spicamusic.ui.component.PopupMenuContainer
 import me.spica27.spicamusic.ui.navigation.ConfirmationDialogRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.PlaylistOptionsRoute
+import me.spica27.spicamusic.ui.navigation.PopupAnchor
 import me.spica27.spicamusic.ui.navigation.SongMenuRoute
 import me.spica27.spicamusic.ui.navigation.SongPickerRoute
 import me.spica27.spicamusic.ui.navigation.TextInputDialogRoute
@@ -600,7 +605,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                             showSearchAction = !isMultiSelectMode && !isPlaylistEmpty,
                             onBack = { backStack.removeLastOrNull() },
                             onSearch = viewModel::enterSearchMode,
-                            onMore = {
+                            onMore = { anchor ->
                                 backStack.add(
                                     PlaylistOptionsRoute(
                                         playlistName = displayName,
@@ -613,6 +618,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                                         onToggleMultiSelectMode = viewModel::toggleMultiSelectMode,
                                         onRename = viewModel::renamePlaylist,
                                         onDelete = viewModel::deletePlaylist,
+                                        anchor = anchor,
                                     ),
                                 )
                             },
@@ -693,8 +699,9 @@ private fun BrowseTopBar(
     showSearchAction: Boolean,
     onBack: () -> Unit,
     onSearch: () -> Unit,
-    onMore: () -> Unit,
+    onMore: (PopupAnchor) -> Unit,
 ) {
+    var moreAnchor by remember { mutableStateOf<PopupAnchor?>(null) }
     Row(
         Modifier
             .fillMaxWidth()
@@ -744,7 +751,18 @@ private fun BrowseTopBar(
             }
         }
         IconButton(
-            onClick = onMore,
+            onClick = { moreAnchor?.let(onMore) },
+            modifier =
+                Modifier.onGloballyPositioned { coords ->
+                    val pos = coords.positionInWindow()
+                    moreAnchor =
+                        PopupAnchor(
+                            x = pos.x,
+                            y = pos.y,
+                            width = coords.size.width.toFloat(),
+                            height = coords.size.height.toFloat(),
+                        )
+                },
         ) {
             Icon(
                 Icons.Default.MoreVert,
@@ -937,55 +955,48 @@ fun PlaylistOptionsDialogContent(
         action()
     }
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = Shapes.ExtraLarge1CornerBasedShape,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    PopupMenuContainer(modifier = Modifier.width(252.dp)) {
         Column(
-            modifier =
-                Modifier
-                    .width(252.dp)
-                    .padding(vertical = 8.dp),
+            modifier = Modifier.padding(vertical = 8.dp),
         ) {
-            PlaylistMenuItem(
-                text = stringResource(R.string.add_songs),
+            DialogMenuItem(
+                title = stringResource(R.string.add_songs),
                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
                 onClick = { closeThen { backStack.add(SongPickerRoute(playlistId)) } },
+                showDivider = true,
             )
             if (isMultiSelectMode) {
-                PlaylistMenuItem(
-                    text = stringResource(R.string.select_all),
+                DialogMenuItem(
+                    title = stringResource(R.string.select_all),
                     icon = Icons.Default.CheckBox,
                     onClick = { closeThen(onSelectAll) },
+                    showDivider = true,
                 )
-                PlaylistMenuItem(
-                    text = stringResource(R.string.deselect_all),
+                DialogMenuItem(
+                    title = stringResource(R.string.deselect_all),
                     icon = Icons.Default.CheckBoxOutlineBlank,
                     onClick = { closeThen(onDeselectAll) },
+                    showDivider = true,
                 )
             } else if (!isPlaylistEmpty) {
-                PlaylistMenuItem(
-                    text = stringResource(R.string.sort_songs),
+                DialogMenuItem(
+                    title = stringResource(R.string.sort_songs),
                     icon = Icons.Default.DragIndicator,
                     onClick = { closeThen(onEnterSortMode) },
+                    showDivider = true,
                 )
-                PlaylistMenuItem(
-                    text = stringResource(R.string.multi_select),
+                DialogMenuItem(
+                    title = stringResource(R.string.multi_select),
                     icon = Icons.Default.CheckBoxOutlineBlank,
                     onClick = { closeThen(onToggleMultiSelectMode) },
+                    showDivider = true,
                 )
             }
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
-            )
             val renameTitle = stringResource(R.string.rename_playlist_dialog_title)
             val playlistNameLabel = stringResource(R.string.playlist_name_label)
             val confirmLabel = stringResource(R.string.confirm)
-            PlaylistMenuItem(
-                text = stringResource(R.string.rename),
+            DialogMenuItem(
+                title = stringResource(R.string.rename),
                 icon = Icons.Default.Edit,
                 onClick = {
                     closeThen {
@@ -1003,12 +1014,13 @@ fun PlaylistOptionsDialogContent(
                         )
                     }
                 },
+                showDivider = true,
             )
             val deleteTitle = stringResource(R.string.delete_playlist_title)
             val deleteMessage = stringResource(R.string.confirm_delete_playlist_full, playlistName)
             val deleteLabel = stringResource(R.string.delete)
-            PlaylistMenuItem(
-                text = deleteTitle,
+            DialogMenuItem(
+                title = deleteTitle,
                 icon = Icons.Default.Delete,
                 destructive = true,
                 onClick = {
@@ -1026,68 +1038,6 @@ fun PlaylistOptionsDialogContent(
                         )
                     }
                 },
-            )
-        }
-    }
-}
-
-@Composable
-private fun PlaylistMenuItem(
-    text: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    destructive: Boolean = false,
-) {
-    val contentColor =
-        if (destructive) {
-            MaterialTheme.colorScheme.error
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        }
-    val iconContainerColor =
-        if (destructive) {
-            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.72f)
-        } else {
-            MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
-        }
-    val iconColor =
-        if (destructive) {
-            MaterialTheme.colorScheme.onErrorContainer
-        } else {
-            MaterialTheme.colorScheme.onSecondaryContainer
-        }
-
-    Row(
-        modifier =
-            Modifier
-                .padding(horizontal = 8.dp, vertical = 2.dp)
-                .fillMaxWidth()
-                .clip(Shapes.LargeCornerBasedShape)
-                .clickHighlight(onClick = onClick)
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Surface(
-            modifier = Modifier.size(32.dp),
-            shape = RoundedCornerShape(11.dp),
-            color = iconContainerColor,
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        }
-        Box(modifier = Modifier.weight(1f)) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = contentColor,
             )
         }
     }
@@ -1859,12 +1809,10 @@ fun SongPickerDialogContent(playlistId: Long) {
 
     val pickerSongs = viewModel.pickerSongsPaging.collectAsLazyPagingItems()
 
-    Surface(
+    DialogContainer(
         modifier = Modifier.fillMaxSize(),
         shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
+        enableGlass = false,
     ) {
         SongPickerDialogContent(
             viewModel = viewModel,

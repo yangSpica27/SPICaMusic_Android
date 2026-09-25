@@ -53,6 +53,7 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.player.formatTime
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -77,16 +78,7 @@ fun SongInfoDialogContent(song: Song) {
         }
     }
 
-    Surface(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .systemBarsPadding(),
-        shape = Shapes.ExtraLarge1CornerBasedShape,
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    DialogContainer(modifier = Modifier.systemBarsPadding()) {
         Column(
             modifier =
                 Modifier

@@ -4,22 +4,27 @@ import android.app.Activity
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.ui.glass.LiquidGlassConfig
+import me.spica27.spicamusic.ui.glass.LocalDialogHazeState
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
+import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.MotionDialogSceneStrategy
 import me.spica27.spicamusic.ui.navigation.Route
@@ -76,6 +81,7 @@ fun AppScaffold() {
             listOf(saveableStateDecorator, viewModelStoreDecorator)
         }
     val entryProvider = appEntryProvider()
+    val dialogHazeState = rememberHazeState()
 
     SPICaMusicTheme(
         darkTheme = isDarkMode,
@@ -84,10 +90,16 @@ fun AppScaffold() {
     ) {
         CompositionLocalProvider(
             LocalLiquidGlassConfig provides LiquidGlassConfig(enabled = liquidGlassEnabled),
+            LocalDialogHazeState provides dialogHazeState,
             LocalPlayerViewModel provides playerViewModel,
             LocalBackStack provides navigator,
         ) {
+            // 页面层单独提供模糊源，避免对话框采样到自身。
             NavDisplay(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .liquidGlassSource(dialogHazeState),
                 backStack = navigator.entries,
                 onBack = { navigator.removeLastOrNull() },
                 entryDecorators = entryDecorators,

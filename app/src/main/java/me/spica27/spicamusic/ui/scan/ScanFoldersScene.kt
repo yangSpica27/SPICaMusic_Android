@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.feature.library.domain.ScanFolder
+import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -77,13 +78,7 @@ fun ScanFoldersDialogContent() {
             pendingReauthFolderId = -1L
         }
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = Shapes.ExtraLarge1CornerBasedShape,
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    DialogContainer {
         Column(
             modifier =
                 Modifier

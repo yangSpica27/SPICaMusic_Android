@@ -62,6 +62,8 @@ import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
+import me.spica27.spicamusic.ui.component.DialogContainer
+import me.spica27.spicamusic.ui.component.DialogMenuItem
 import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
 import me.spica27.spicamusic.ui.navigation.ArtistDetailRoute
 import me.spica27.spicamusic.ui.navigation.CreatePlaylistForSongRoute
@@ -222,13 +224,7 @@ private fun SongMenuContent(
     onOpenSongInfo: () -> Unit,
     onIgnoreSong: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    DialogContainer {
         Column(
             modifier =
                 Modifier
@@ -359,31 +355,35 @@ private fun SongMenuContent(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
             )
-            ControlItem(
+            DialogMenuItem(
                 title = stringResource(R.string.add_to_playlist),
                 subtitle = stringResource(R.string.add_to_playlist_subtitle_menu),
                 icon = Icons.AutoMirrored.Default.PlaylistAdd,
                 onClick = onShowPlaylistDialog,
+                showDivider = true,
             )
-            ControlItem(
+            DialogMenuItem(
                 title = stringResource(R.string.title_add_to_ignore_list),
                 subtitle = stringResource(R.string.desc_add_to_ignore_list),
                 icon = Icons.Default.MusicOff,
                 onClick = onIgnoreSong,
+                showDivider = true,
             )
-            ControlItem(
+            DialogMenuItem(
                 title = stringResource(R.string.view_album),
                 subtitle = song.album,
                 icon = Icons.Default.Album,
                 onClick = onOpenAlbum,
+                showDivider = true,
             )
-            ControlItem(
+            DialogMenuItem(
                 title = stringResource(R.string.view_artist),
                 subtitle = song.artist,
                 icon = Icons.Default.SportsMartialArts,
                 onClick = onOpenArtist,
+                showDivider = true,
             )
-            ControlItem(
+            DialogMenuItem(
                 title = stringResource(R.string.song_info_menu_title),
                 subtitle = stringResource(R.string.song_info_menu_subtitle),
                 icon = Icons.Default.Info,
@@ -433,75 +433,13 @@ private fun ControlButton(
 }
 
 @Composable
-private fun ControlItem(
-    modifier: Modifier = Modifier,
-    title: String,
-    subtitle: String? = null,
-    icon: ImageVector,
-    onClick: () -> Unit,
-) {
-    Surface(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 3.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        color = Color.Transparent,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Surface(
-                modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        icon,
-                        contentDescription = title,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(21.dp),
-                    )
-                }
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                if (!subtitle.isNullOrBlank()) {
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun PlaylistPickerContent(
     playlists: List<me.spica27.spicamusic.common.entity.Playlist>,
     onDismiss: () -> Unit,
     onCreatePlaylist: () -> Unit,
     onSelectPlaylist: (me.spica27.spicamusic.common.entity.Playlist) -> Unit,
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    DialogContainer {
         Column(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -567,13 +505,7 @@ private fun CreatePlaylistContent(
 ) {
     var playlistName by remember { mutableStateOf("") }
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    DialogContainer {
         Column(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),

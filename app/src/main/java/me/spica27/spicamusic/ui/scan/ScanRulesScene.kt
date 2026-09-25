@@ -13,14 +13,12 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.feature.library.domain.ScanFormats
+import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.theme.Spacing
@@ -50,13 +49,7 @@ fun ScanRulesDialogContent() {
     val viewModel: MediaLibrarySourceViewModel = koinActivityViewModel()
     val rules by viewModel.scanRules.collectAsStateWithLifecycle()
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    DialogContainer {
         Column(
             modifier =
                 Modifier

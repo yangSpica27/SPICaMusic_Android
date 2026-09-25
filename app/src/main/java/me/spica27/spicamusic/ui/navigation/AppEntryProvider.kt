@@ -47,6 +47,16 @@ private val dialogMetadata =
         ),
     )
 
+/** 对话框锚点的导航元数据键。 */
+const val PopupAnchorMetadataKey: String = "me.spica27.spicamusic.PopupAnchor"
+
+private fun dialogMetadataWith(anchor: PopupAnchor?): Map<String, Any> =
+    if (anchor == null) {
+        dialogMetadata
+    } else {
+        dialogMetadata + (PopupAnchorMetadataKey to anchor)
+    }
+
 @Composable
 fun appEntryProvider(): (Route) -> NavEntry<Route> =
     remember {
@@ -94,7 +104,7 @@ fun appEntryProvider(): (Route) -> NavEntry<Route> =
                     }
                 is SongPickerRoute -> NavEntry(key, metadata = dialogMetadata) { SongPickerDialogContent(playlistId = key.playlistId) }
                 is PlaylistOptionsRoute ->
-                    NavEntry(key, metadata = dialogMetadata) {
+                    NavEntry(key, metadata = dialogMetadataWith(key.anchor)) {
                         PlaylistOptionsDialogContent(
                             playlistName = key.playlistName,
                             isMultiSelectMode = key.isMultiSelectMode,
@@ -109,7 +119,7 @@ fun appEntryProvider(): (Route) -> NavEntry<Route> =
                         )
                     }
                 is SortMenuDialogRoute ->
-                    NavEntry(key, metadata = dialogMetadata) {
+                    NavEntry(key, metadata = dialogMetadataWith(key.anchor)) {
                         SortMenuDialogContent(
                             options = key.options,
                             selectedId = key.selectedId,

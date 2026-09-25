@@ -18,6 +18,19 @@ sealed interface ScreenRoute :
 
 sealed interface DialogRoute : Route
 
+/** 触发控件在应用窗口中的像素区域。 */
+data class PopupAnchor(
+    val x: Float,
+    val y: Float,
+    val width: Float,
+    val height: Float,
+)
+
+/** 可携带弹出菜单锚点的对话框路由。 */
+interface AnchoredPopupRoute {
+    val anchor: PopupAnchor?
+}
+
 // ──────────────────────────────────────────────────────────────────────────
 // Stack Routes（全屏页面）
 // ──────────────────────────────────────────────────────────────────────────
@@ -130,14 +143,18 @@ class PlaylistOptionsRoute(
     val onToggleMultiSelectMode: () -> Unit,
     val onRename: (String, onSuccess: () -> Unit) -> Unit,
     val onDelete: (onSuccess: () -> Unit) -> Unit,
-) : DialogRoute
+    override val anchor: PopupAnchor? = null,
+) : DialogRoute,
+    AnchoredPopupRoute
 
 class SortMenuDialogRoute(
     val anchorIcon: ImageVector,
     val options: List<SortMenuOption>,
     val selectedId: String,
     val onSelect: (String) -> Unit,
-) : DialogRoute
+    override val anchor: PopupAnchor? = null,
+) : DialogRoute,
+    AnchoredPopupRoute
 
 class TextInputDialogRoute(
     val title: String,

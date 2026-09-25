@@ -6,20 +6,36 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -38,10 +54,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import me.spica27.spicamusic.ui.theme.DialogDecelerateEasing
+import kotlin.math.roundToInt
 
-/**
- * Navigation 3 dialog scene that ports dialog motion to every [DialogRoute].
- */
+/** 为 [DialogRoute] 提供平台对话框和自定义转场，并跨窗口采样背景。 */
 class MotionDialogSceneStrategy<T : Any> : SceneStrategy<T> {
     override fun SceneStrategyScope<T>.calculateScene(entries: List<NavEntry<T>>): Scene<T>? {
         val entry = entries.lastOrNull() ?: return null
@@ -74,9 +89,21 @@ private class MotionDialogScene<T : Any>(
 
     override val content: @Composable () -> Unit = {
         val lifecycleOwner = rememberLifecycleOwner()
+        val dismissing = remember { mutableStateOf(false) }
+        val dismiss =
+            remember(onBack) {
+                {
+                    if (!dismissing.value) {
+                        dismissing.value = true
+                        onBack()
+                    }
+                }
+            }
+
+        val anchor = entry.metadata[PopupAnchorMetadataKey] as? PopupAnchor
 
         Dialog(
-            onDismissRequest = onBack,
+            onDismissRequest = dismiss,
             properties = dialogProperties,
         ) {
             disablePlatformDialogDefaultEffects()
@@ -85,7 +112,8 @@ private class MotionDialogScene<T : Any>(
                     contentProgress = contentProgress,
                     dimProgress = dimProgress,
                     dialogProperties = dialogProperties,
-                    onDismissRequest = onBack,
+                    anchor = anchor,
+                    onDismissRequest = dismiss,
                     content = { entry.Content() },
                 )
             }
@@ -134,6 +162,7 @@ private fun MotionDialogRouteLayout(
     contentProgress: Animatable<Float, *>,
     dimProgress: Animatable<Float, *>,
     dialogProperties: DialogProperties,
+    anchor: PopupAnchor?,
     onDismissRequest: () -> Unit,
     content: @Composable () -> Unit,
 ) {
@@ -156,7 +185,7 @@ private fun MotionDialogRouteLayout(
             contentProgress.animateTo(
                 targetValue = 1f,
                 animationSpec =
-                    if (isLargeScreen) {
+                    if (isLargeScreen || anchor != null) {
                         spring(
                             dampingRatio = 0.9f,
                             stiffness = 438.6f,
@@ -184,7 +213,6 @@ private fun MotionDialogRouteLayout(
 
     Box(
         modifier = Modifier.fillMaxSize().then(dismissModifier),
-        contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier =
@@ -195,31 +223,122 @@ private fun MotionDialogRouteLayout(
                     },
         )
 
-        // This consumes taps inside the dialog bounds, allowing the full-window layer above to
-        // dismiss only genuine outside taps while preserving every child click handler.
-        Box(
-            modifier =
-                Modifier
-                    .graphicsLayer {
-                        val progress = contentProgress.value
-                        if (isLargeScreen) {
-                            val scale = 0.8f + 0.2f * progress
-                            scaleX = scale
-                            scaleY = scale
-                            alpha = progress
-                            translationY = 0f
-                        } else {
-                            scaleX = 1f
-                            scaleY = 1f
-                            alpha = 1f
-                            translationY = (1f - progress) * windowInfo.containerSize.height
-                        }
-                    }.pointerInput(Unit) {
-                        detectTapGestures(onTap = {})
-                    },
-        ) {
-            content()
+        if (anchor != null) {
+            AnchoredPopupContent(
+                anchor = anchor,
+                contentProgress = contentProgress,
+                content = content,
+            )
+        } else {
+            DockedDialogContent(
+                isLargeScreen = isLargeScreen,
+                contentProgress = contentProgress,
+                windowHeight = windowInfo.containerSize.height,
+                content = content,
+            )
         }
+    }
+}
+
+@Composable
+private fun BoxScope.DockedDialogContent(
+    isLargeScreen: Boolean,
+    contentProgress: Animatable<Float, *>,
+    windowHeight: Int,
+    content: @Composable () -> Unit,
+) {
+    val alignment = if (isLargeScreen) Alignment.Center else Alignment.BottomCenter
+    val contentPadding =
+        if (isLargeScreen) {
+            PaddingValues(0.dp)
+        } else {
+            PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+        }
+
+    Box(
+        modifier =
+            Modifier
+                .align(alignment)
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(contentPadding)
+                .graphicsLayer {
+                    val progress = contentProgress.value
+                    if (isLargeScreen) {
+                        val scale = 0.8f + 0.2f * progress
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = progress
+                        translationY = 0f
+                    } else {
+                        scaleX = 1f
+                        scaleY = 1f
+                        alpha = 1f
+                        translationY = (1f - progress) * windowHeight
+                    }
+                }.pointerInput(Unit) {
+                    detectTapGestures(onTap = {})
+                },
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun BoxScope.AnchoredPopupContent(
+    anchor: PopupAnchor,
+    contentProgress: Animatable<Float, *>,
+    content: @Composable () -> Unit,
+) {
+    val density = LocalDensity.current
+    val windowInfo = LocalWindowInfo.current
+    val windowW = windowInfo.containerSize.width
+    val windowH = windowInfo.containerSize.height
+    val margin = with(density) { 8.dp.roundToPx() }
+
+    var menuSize by remember { mutableStateOf(IntSize.Zero) }
+
+    // 优先显示在锚点下方，空间不足时移至上方；水平方向右对齐并限制在窗口内。
+    val (offset, origin) =
+        remember(anchor, menuSize, windowW, windowH, margin) {
+            val menuW = menuSize.width
+            val menuH = menuSize.height
+
+            val below = (anchor.y + anchor.height).roundToInt() + margin / 2
+            val above = (anchor.y).roundToInt() - menuH - margin / 2
+            val fitsBelow = below + menuH + margin <= windowH
+            val y = if (fitsBelow || above < margin) below else above
+
+            val preferredX = (anchor.x + anchor.width - menuW).roundToInt()
+            val minX = margin
+            val maxX = maxOf(minX, windowW - menuW - margin)
+            val x = preferredX.coerceIn(minX, maxX)
+
+            val originX =
+                if (menuW <= 0) 0.5f else ((anchor.x + anchor.width / 2f) - x) / menuW
+            val originY = if (fitsBelow || above < margin) 0f else 1f
+            IntOffset(x, y) to TransformOrigin(originX.coerceIn(0f, 1f), originY)
+        }
+
+    Box(
+        modifier =
+            Modifier
+                .align(Alignment.TopStart)
+                .offset { offset }
+                .wrapContentSize()
+                .onSizeChanged { menuSize = it }
+                .graphicsLayer {
+                    val progress = contentProgress.value
+                    val scale = 0.85f + 0.15f * progress
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = progress
+                    transformOrigin = origin
+                }.pointerInput(Unit) {
+                    detectTapGestures(onTap = {})
+                },
+    ) {
+        content()
     }
 }
 

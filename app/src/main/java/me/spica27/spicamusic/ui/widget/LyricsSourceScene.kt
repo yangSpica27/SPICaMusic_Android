@@ -23,7 +23,6 @@ import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,9 +38,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricSource
 import me.spica27.spicamusic.common.entity.LyricSourceType
+import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.player.LyricsViewModel
-import me.spica27.spicamusic.ui.theme.Shapes
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
@@ -99,14 +98,7 @@ private fun LyricsSourceDialogContentInternal(
             }
         }
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = Shapes.ExtraLarge1CornerBasedShape,
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    DialogContainer {
         Column(
             modifier =
                 Modifier

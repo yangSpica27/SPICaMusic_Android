@@ -54,7 +54,6 @@ import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -94,6 +93,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.player.api.SleepTimerState
+import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.theme.EaseInOutCubic
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
@@ -195,14 +195,7 @@ fun SleepTimerDialogContent() {
         editing = true
     }
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = Shapes.ExtraLarge1CornerBasedShape,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    DialogContainer {
         Column(
             modifier =
                 Modifier

@@ -28,8 +28,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
-import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 
 @Composable
@@ -54,13 +54,7 @@ fun TextInputDialogContent(
         }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = Shapes.ExtraLarge1CornerBasedShape,
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    DialogContainer {
         Column(
             modifier = Modifier.padding(Spacing.ExtraLarge),
             verticalArrangement = Arrangement.spacedBy(Spacing.Large),
@@ -118,13 +112,7 @@ fun ConfirmationDialogContent(
         Unit
     }
 
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = Shapes.ExtraLarge1CornerBasedShape,
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-        shadowElevation = 8.dp,
-    ) {
+    DialogContainer {
         Column(
             modifier = Modifier.padding(Spacing.ExtraLarge),
             verticalArrangement = Arrangement.spacedBy(Spacing.Large),
