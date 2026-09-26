@@ -4,7 +4,9 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalRippleConfiguration
@@ -12,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.materialkolor.PaletteStyle
@@ -114,6 +117,13 @@ fun SPICaMusicTheme(
         }
 
     MaterialTheme(colorScheme = colorScheme) {
-        ProvideAppInteractionIndication(content = content)
+        Box(
+            modifier =
+                Modifier.background(
+                    if (darkTheme) Color.Black else Color.White,
+                ),
+        ) {
+            ProvideAppInteractionIndication(content = content)
+        }
     }
 }
