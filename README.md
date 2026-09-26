@@ -1,178 +1,78 @@
 <div align="center">
 
-# 🍋 柠檬音乐 (SPICa Music)
+# 柠檬音乐 · SPICa Music
 
-**现代化 Android 音乐播放器 | Jetpack Compose + Media3 + Koin + navkit**
+**专注本地音乐播放的 Android 开源播放器**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Android](https://img.shields.io/badge/Android-29+-green.svg)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3+-purple.svg)](https://kotlinlang.org)
+多来源歌词 · 原生音频处理 · 动态视觉效果
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Android](https://img.shields.io/badge/Android-10+-green.svg)](https://developer.android.com)
 [![GitHub release](https://img.shields.io/github/v/release/yangSpica27/SPICaMusic_Android?include_prereleases)](https://github.com/yangSpica27/SPICaMusic_Android/releases)
 
-[下载最新版](https://github.com/yangSpica27/SPICaMusic_Android/releases) ·
-[查看源码](https://github.com/yangSpica27/SPICaMusic_Android) ·
+[下载 APK](https://github.com/yangSpica27/SPICaMusic_Android/releases) ·
 [反馈问题](https://github.com/yangSpica27/SPICaMusic_Android/issues)
 
+支持 Android 10（API 29）及以上，目前仅提供 `arm64-v8a` 架构。
+
 </div>
 
-## ✨ 预览
+## 核心特性
 
-### 亮色主题
+- **本地音乐库**：全库或指定文件夹扫描，按歌曲、专辑、艺术家浏览，支持收藏、歌单与播放历史。
+- **多来源歌词**：内嵌歌词、本地文件导入与在线搜索，支持 LRC、YRC、AMLL/TTML 解析及时间偏移调整。
+- **原生音频处理**：10 段均衡器、响度归一化与实时 FFT 频谱分析，基于 C++ Native DSP 实现。
+- **动态界面**：亮暗主题、封面取色、动态背景与波形进度条。
+- **日常播放**：后台播放、媒体通知、播放队列，以及顺序、随机和单曲循环模式。
+- **多格式解码**：基于 Media3 与 FFmpeg，支持 FLAC、ALAC、Opus、MP3、AAC、WAV 等格式。
+
+## 界面预览
+
+亮色主题
 
 <p align="center">
-<img src="/img/light_1.png" width="22%"/>
-<img src="/img/light_2.png" width="22%"/>
-<img src="/img/light_3.png" width="22%"/>
-<img src="/img/light_4.png" width="22%"/>
+  <img src="img/light_1.png" alt="亮色主题预览 1" width="22%" />
+  <img src="img/light_2.png" alt="亮色主题预览 2" width="22%" />
+  <img src="img/light_3.png" alt="亮色主题预览 3" width="22%" />
+  <img src="img/light_4.png" alt="亮色主题预览 4" width="22%" />
 </p>
 
-### 暗色主题
+暗色主题
 
 <p align="center">
-<img src="/img/night_1.png" width="22%"/>
-<img src="/img/night_2.png" width="22%"/>
-<img src="/img/night_3.png" width="22%"/>
-<img src="/img/night_4.png" width="22%"/>
+  <img src="img/night_1.png" alt="暗色主题预览 1" width="22%" />
+  <img src="img/night_2.png" alt="暗色主题预览 2" width="22%" />
+  <img src="img/night_3.png" alt="暗色主题预览 3" width="22%" />
+  <img src="img/night_4.png" alt="暗色主题预览 4" width="22%" />
 </p>
 
-## 📖 项目简介
+## 技术与结构
 
-柠檬音乐是一款面向本地音乐播放的现代化 Android 应用，基于 **Media3 ExoPlayer**、**Jetpack Compose** 与 **Koin** 构建，支持 Android 10 及以上系统。
+使用 **Kotlin + Jetpack Compose** 构建界面，**Media3 ExoPlayer + MediaSession** 负责播放，搭配 Navigation 3、Koin、Room 与 DataStore。项目按音乐库、播放、歌词和设置拆分模块。
 
-应用可扫描设备中的音乐文件，并提供收藏、歌单、播放历史、在线歌词、均衡器、响度归一化和实时频谱等功能。项目采用**分层 + 多模块**架构：`app` 负责 Compose UI、应用级 DI 与后台播放服务；`feature-*-domain` 暴露 use case / facade；`feature-*-data` 提供数据实现；`common` 与 `core-preferences` 提供跨模块共享能力。
+| 模块 | 职责 |
+| --- | --- |
+| `app` | 界面、ViewModel、后台播放服务与依赖装配 |
+| `feature-*-domain` | 各功能的业务用例与统一入口 |
+| `feature-*-data` | 音乐库、播放与歌词的数据实现 |
+| `feature-player-native-dsp` | 原生均衡器、响度处理与频谱分析，见 [DSP 文档](feature-player-native-dsp/README.md) |
+| `common` / `core-preferences` | 共享模型与偏好存储 |
+| `baselineprofile` | Baseline Profile 生成与性能基准测试 |
 
-## 🏗️ 架构设计
+## 从源码构建
 
-### 模块职责
-
-| 模块 | 当前职责 |
-|------|----------|
-| `app` | Compose UI、ViewModel、`PlaybackService`、应用级 `AppModule`、Koin 启动与运行时装配 |
-| `common` | 跨层共享实体、模型与部分导航参数对象 |
-| `core-preferences` | `PreferencesManager` + DataStore 偏好存储基础设施 |
-| `feature-library-data` | Room 数据库、DAO、MediaStore 扫描、音乐库/歌单/播放历史仓库实现 |
-| `feature-library-domain` | Song / Album / Playlist / PlayHistory / MusicScan 等 use case facade |
-| `feature-player-data` | `IMusicPlayer`、`PlayerAction`、`PlayMode`、`SpicaPlayer`（MediaBrowser 客户端桥接） |
-| `feature-player-domain` | 播放控制与播放器状态 facade |
-| `feature-lyrics-data` | 歌词 API 能力与数据实现 |
-| `feature-lyrics-domain` | 歌词查询 facade |
-| `feature-settings-domain` | 设置读写 facade，复用 `core-preferences` |
-
-依赖方向保持为 `app → feature-*-domain → feature-*-data → common / core-*`。播放器界面通过 `IMusicPlayer` 与 `MediaBrowser` 连接 `PlaybackService`，由服务统一管理 ExoPlayer、MediaSession 和音频处理链。
-
-## 🎵 功能特性
-
-| 功能类别 | 具体特性 |
-|----------|----------|
-| 📚 本地音乐库 | MediaStore 扫描、指定文件夹扫描、歌曲 / 专辑 / 艺术家分类 |
-| 🎧 音频格式 | FLAC、ALAC、Opus、Vorbis、MP3、AAC、WAV、AC3、EAC3、DCA、MLP、TrueHD 等 |
-| 📝 音乐管理 | 收藏歌曲，新增 / 编辑 / 删除歌单，最近播放与最常播放 |
-| 🎨 主题切换 | 亮色 / 暗色模式，动态取色 |
-| 🎤 歌词功能 | 在线歌词搜索与同步显示 |
-| 🎛️ 音效调节 | 10 段 EQ 均衡器与响度归一化 |
-| 📊 音频分析 | FFT 频谱分析，振幅波形显示 |
-| 🔄 播放体验 | 后台播放、媒体通知、顺序 / 随机 / 单曲循环 |
-
-## 🚧 开发计划
-
-- [ ] 播放队列管理
-- [x] 指定文件夹扫描
-- [x] 最常播放、最近播放等智能歌单能力
-- [ ] 新的 EQ 和音效增强功能
-- [ ] 更多在线歌词源支持
-- [ ] 主题和界面自定义功能
-- [ ] 其他 UI 和交互细节优化
-
-## 🚀 快速开始
-
-### 安装
-
-从 [Releases](https://github.com/yangSpica27/SPICaMusic_Android/releases) 下载最新 APK 并安装。目前 APK 仅提供 `arm64-v8a` 架构，设备需运行 Android 10（API 29）或更高版本。
-
-### 从源码构建
+准备 JDK 21、Android SDK 37，以及 Android SDK Manager 中的 NDK 和 CMake（3.22.1+）。Gradle 使用项目自带 Wrapper，插件版本见 [版本配置](gradle/libs.versions.toml)。
 
 ```bash
-# 1. 克隆仓库
 git clone https://github.com/yangSpica27/SPICaMusic_Android.git
-
-# 2. 进入项目并执行调试构建（Windows）
 cd SPICaMusic_Android
-.\gradlew.bat :app:assembleDebug
+./gradlew :app:assembleDebug
 ```
 
-**环境要求**:
-- 支持 AGP 9.4.0 的 Android Studio 版本
-- Gradle 9.6.0（项目已通过 Gradle Wrapper 固定版本）
-- JDK 21+
-- Android SDK 29+（`minSdk 29` / `targetSdk 37` / `compileSdk 37`）
+Windows 使用 `gradlew.bat :app:assembleDebug`。生成的 APK 位于 `app/build/outputs/apk/debug/`。
 
-### 常用 Gradle 任务
+> 构建会自动执行 `ktlintFormat`，可能修改 Kotlin 源码格式。
 
-| 场景 | 命令 |
-|------|------|
-| 调试构建 | `.\gradlew.bat :app:assembleDebug` |
-| Release 构建 | `.\gradlew.bat :app:assembleRelease` |
-| Kotlin 格式化 | `.\gradlew.bat :app:ktlintFormat` |
-| Kotlin 检查 | `.\gradlew.bat :app:ktlintCheck` |
-| App 单元测试 | `.\gradlew.bat :app:testDebugUnitTest` |
-| 生成 Baseline Profile | `.\gradlew.bat :app:generateBaselineProfile` |
+## 许可证
 
-> `app` 模块的 `preBuild` 会自动依赖 `:app:ktlintFormat`，因此构建前会先格式化 Kotlin 源码。
-
-## ⚠️ 注意事项
-
-本仓库源码遵循 [MIT 协议](LICENSE)。
-
-部分音频格式的软解码依赖 FFmpeg，其许可条款与本项目不同。项目默认使用
-[jellyfin-androidx-media](https://github.com/jellyfin/jellyfin-androidx-media/releases)
-提供的预编译产物；如需自行编译，请参考 Media3 的
-[FFmpeg 解码器文档](https://github.com/androidx/media/tree/release/libraries/decoder_ffmpeg)。
-
-## 📚 技术栈
-
-| 类别 | 技术 |
-|------|------|
-| **UI 框架** | [Jetpack Compose](https://developer.android.com/compose) - 声明式 UI |
-| **媒体播放** | [Media3 ExoPlayer](https://github.com/androidx/media) + MediaSession / MediaLibraryService |
-| **依赖注入** | [Koin](https://github.com/InsertKoinIO/koin) - 轻量级 DI 框架 |
-| **本地存储** | [Room](https://developer.android.com/training/data-storage/room) + DataStore |
-| **网络请求** | [Retrofit](https://github.com/square/retrofit) + [OkHttp](https://github.com/square/okhttp) |
-| **JSON 解析** | [Moshi](https://github.com/square/moshi) |
-| **图片加载** | [Coil3](https://github.com/coil-kt/coil) |
-| **音频分析** | PFFFT + Native DSP |
-| **视觉效果** | [AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) - 液态玻璃效果 |
-| **解码器** | [FFmpeg](https://github.com/FFmpeg/FFmpeg) - 多格式音频解码 |
-
-## 📄 License
-
-```
-MIT License
-
-Copyright (c) 2024 杨为智
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
----
-
-<div align="center">
-
-**如果这个项目对你有帮助，欢迎给个 ⭐ Star！**
-
-</div>
+项目源码采用 [MIT License](LICENSE)。FFmpeg 解码器使用 [jellyfin-androidx-media](https://github.com/jellyfin/jellyfin-androidx-media/releases) 的预编译产物；FFmpeg 与其他第三方依赖遵循各自的许可证。
