@@ -39,9 +39,9 @@ fun HomeScreen() {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val backStack = LocalBackStack.current
 
-    val isSceneVisible by remember {
+    val isSceneVisible by remember(backStack) {
         derivedStateOf {
-            backStack.lastOrNull() is HomeRoute
+            backStack.lastScreenOrNull() is HomeRoute
         }
     }
 

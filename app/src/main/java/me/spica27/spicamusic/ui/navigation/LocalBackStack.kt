@@ -49,7 +49,10 @@ class AppNavigator internal constructor(
 
     fun lastOrNull(): Route? =
         dialogBackStack.lastOrNull()
-            ?: screenBackStack.lastOrNull() as? ScreenRoute
+            ?: lastScreenOrNull()
+
+    /** 最上层全屏页面；弹窗不会遮住整个页面，因此不影响背景特效的可见性判断。 */
+    fun lastScreenOrNull(): ScreenRoute? = screenBackStack.lastOrNull() as? ScreenRoute
 
     fun none(predicate: (Route) -> Boolean): Boolean = entries.none(predicate)
 }

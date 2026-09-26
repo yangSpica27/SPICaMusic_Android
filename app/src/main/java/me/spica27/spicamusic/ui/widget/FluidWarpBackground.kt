@@ -89,19 +89,20 @@ fun FluidWarpBackground(
         if (surfaceView == null) {
             onDispose {}
         } else {
+            // DialogRoute 覆盖时页面仍处于 STARTED，只有不可见时才暂停背景渲染。
             val observer =
                 object : DefaultLifecycleObserver {
-                    override fun onResume(owner: LifecycleOwner) {
+                    override fun onStart(owner: LifecycleOwner) {
                         if (enabled) surfaceView.onResume() else surfaceView.onPause()
                     }
 
-                    override fun onPause(owner: LifecycleOwner) {
+                    override fun onStop(owner: LifecycleOwner) {
                         surfaceView.onPause()
                     }
                 }
 
             lifecycleOwner.lifecycle.addObserver(observer)
-            if (enabled && lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            if (enabled && lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
                 surfaceView.onResume()
             } else {
                 surfaceView.onPause()
