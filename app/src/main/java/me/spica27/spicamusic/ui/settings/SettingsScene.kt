@@ -779,7 +779,17 @@ private fun OptionCard(
                 color = descriptionColor,
             )
         }
-        // 选中态：小圆点里含 Check，比 RadioButton 更收敛
+        // 固定尾部槽位，避免选中动画改变文案宽度和 Row 间距
+        OptionSelectedIndicator(selected = selected)
+    }
+}
+
+@Composable
+private fun OptionSelectedIndicator(selected: Boolean) {
+    Box(
+        modifier = Modifier.size(22.dp),
+        contentAlignment = Alignment.Center,
+    ) {
         AnimatedVisibility(
             visible = selected,
             enter =
@@ -793,7 +803,7 @@ private fun OptionCard(
             Box(
                 modifier =
                     Modifier
-                        .size(22.dp)
+                        .fillMaxSize()
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center,

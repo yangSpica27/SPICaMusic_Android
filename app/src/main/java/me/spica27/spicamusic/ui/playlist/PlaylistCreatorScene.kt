@@ -321,27 +321,10 @@ private fun NameHeadlineField(
                     )
                 },
             )
-            AnimatedVisibility(
+            NameClearButton(
                 visible = name.isNotEmpty(),
-                enter = fadeIn(tween(durationMillis = 160, easing = EaseOutEmphasized)),
-                exit = fadeOut(tween(durationMillis = 120, easing = EaseOutEmphasized)),
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .clickHighlight(onClick = onClear),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.clear_input),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
+                onClick = onClear,
+            )
         }
 
         Spacer(Modifier.height(Spacing.Small))
@@ -373,6 +356,39 @@ private fun NameHeadlineField(
                         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     },
             )
+        }
+    }
+}
+
+@Composable
+private fun NameClearButton(
+    visible: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier.size(36.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn(tween(durationMillis = 160, easing = EaseOutEmphasized)),
+            exit = fadeOut(tween(durationMillis = 120, easing = EaseOutEmphasized)),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .clickHighlight(onClick = onClick),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.clear_input),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
     }
 }

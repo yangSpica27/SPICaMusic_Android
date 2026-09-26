@@ -855,20 +855,25 @@ private fun FavoriteSongRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
-        AnimatedVisibility(visible = isMultiSelectMode) {
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = { onClick() },
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AnimatedVisibility(visible = isMultiSelectMode) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = { onClick() },
+                    )
+                    Spacer(modifier = Modifier.width(Spacing.Medium))
+                }
+            }
+            AudioCover(
+                uri = song.getCoverUri(),
+                fallbackUri = song.getAlbumCoverUri(),
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .clip(Shapes.MediumCornerBasedShape),
             )
         }
-        AudioCover(
-            uri = song.getCoverUri(),
-            fallbackUri = song.getAlbumCoverUri(),
-            modifier =
-                Modifier
-                    .size(48.dp)
-                    .clip(Shapes.MediumCornerBasedShape),
-        )
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = song.displayName,
@@ -886,48 +891,53 @@ private fun FavoriteSongRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
-            text = song.getFormattedDuration(),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.End,
-            maxLines = 1,
-            modifier = Modifier.widthIn(min = 36.dp),
-        )
-        AnimatedVisibility(visible = !isMultiSelectMode) {
-            IconButton(
-                onClick = {
-                    if (heartScale.isRunning) return@IconButton
-                    scope.launch {
-                        heartScale.animateTo(
-                            targetValue = 1.28f,
-                            animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
-                        )
-                        launch {
-                            heartAlpha.animateTo(0f, tween(durationMillis = 160, easing = EaseOutStrong))
-                        }
-                        heartScale.animateTo(
-                            targetValue = ScaleDismissTo,
-                            animationSpec = tween(durationMillis = 160, easing = EaseOutStrong),
-                        )
-                        onRemoveFavorite()
-                    }
-                },
-                modifier =
-                    Modifier
-                        .size(40.dp)
-                        .graphicsLayer {
-                            scaleX = heartScale.value
-                            scaleY = heartScale.value
-                            alpha = heartAlpha.value
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = song.getFormattedDuration(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                modifier = Modifier.widthIn(min = 36.dp),
+            )
+            AnimatedVisibility(visible = !isMultiSelectMode) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(modifier = Modifier.width(Spacing.Medium))
+                    IconButton(
+                        onClick = {
+                            if (heartScale.isRunning) return@IconButton
+                            scope.launch {
+                                heartScale.animateTo(
+                                    targetValue = 1.28f,
+                                    animationSpec = tween(durationMillis = 120, easing = FastOutSlowInEasing),
+                                )
+                                launch {
+                                    heartAlpha.animateTo(0f, tween(durationMillis = 160, easing = EaseOutStrong))
+                                }
+                                heartScale.animateTo(
+                                    targetValue = ScaleDismissTo,
+                                    animationSpec = tween(durationMillis = 160, easing = EaseOutStrong),
+                                )
+                                onRemoveFavorite()
+                            }
                         },
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Favorite,
-                    contentDescription = stringResource(R.string.remove_from_favorites),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.82f),
-                    modifier = Modifier.size(20.dp),
-                )
+                        modifier =
+                            Modifier
+                                .size(40.dp)
+                                .graphicsLayer {
+                                    scaleX = heartScale.value
+                                    scaleY = heartScale.value
+                                    alpha = heartAlpha.value
+                                },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = stringResource(R.string.remove_from_favorites),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.82f),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
             }
         }
     }

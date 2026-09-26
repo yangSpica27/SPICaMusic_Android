@@ -1252,60 +1252,79 @@ private fun PlaylistSongRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
-        AnimatedVisibility(
-            visible = isMultiSelectMode,
-            enter =
-                expandHorizontally(spring(stiffness = Spring.StiffnessMediumLow)) +
-                    fadeIn(tween(180)),
-            exit = shrinkHorizontally(tween(150)) + fadeOut(tween(120)),
-        ) {
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = { onClick() },
-            )
-        }
-        SongCoverImage(song = song)
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = song.displayName,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.W500,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color =
-                    if (isPlaying) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-            )
-            Text(
-                text = song.artist,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        if (!isMultiSelectMode) {
-            if (isReorderEnabled) {
-                Icon(
-                    Icons.Default.DragIndicator,
-                    contentDescription = stringResource(R.string.drag_to_reorder),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier =
-                        dragHandleModifier
-                            .clip(CircleShape)
-                            .padding(Spacing.Medium)
-                            .size(22.dp),
-                )
-            } else {
-                IconButton(onClick = onMore) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        contentDescription = stringResource(R.string.more),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AnimatedVisibility(
+                visible = isMultiSelectMode,
+                enter =
+                    expandHorizontally(spring(stiffness = Spring.StiffnessMediumLow)) +
+                        fadeIn(tween(180)),
+                exit = shrinkHorizontally(tween(150)) + fadeOut(tween(120)),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = { onClick() },
                     )
+                    Spacer(modifier = Modifier.width(Spacing.Medium))
+                }
+            }
+            SongCoverImage(song = song)
+        }
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = song.displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.W500,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color =
+                        if (isPlaying) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                )
+                Text(
+                    text = song.artist,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            AnimatedVisibility(
+                visible = !isMultiSelectMode,
+                enter =
+                    expandHorizontally(spring(stiffness = Spring.StiffnessMediumLow)) +
+                        fadeIn(tween(180)),
+                exit = shrinkHorizontally(tween(150)) + fadeOut(tween(120)),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(modifier = Modifier.width(Spacing.Medium))
+                    if (isReorderEnabled) {
+                        Icon(
+                            Icons.Default.DragIndicator,
+                            contentDescription = stringResource(R.string.drag_to_reorder),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier =
+                                dragHandleModifier
+                                    .clip(CircleShape)
+                                    .padding(Spacing.Medium)
+                                    .size(22.dp),
+                        )
+                    } else {
+                        IconButton(onClick = onMore) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.more),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
         }

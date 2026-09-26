@@ -1521,35 +1521,40 @@ private fun QueueRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
-        AnimatedVisibility(
-            visible = isMultiSelectMode,
-            enter =
-                expandHorizontally(spring(stiffness = Spring.StiffnessMediumLow)) +
-                    fadeIn(tween(durationMillis = 180)),
-            exit = shrinkHorizontally(tween(durationMillis = 150)) + fadeOut(tween(durationMillis = 120)),
-        ) {
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = { onClick() },
-                enabled = enabled,
-            )
-        }
-        Box(
-            modifier =
-                Modifier
-                    .size(48.dp)
-                    .clip(Shapes.MediumCornerBasedShape),
-        ) {
-            AudioCover(
-                uri = metadata.artworkUri,
-                fallbackUri = entry.item.albumCoverUri(),
-                modifier = Modifier.fillMaxSize(),
-            )
-            NowPlayingCoverOverlay(
-                visible = isCurrent,
-                isPlaying = isPlaying,
-                reducedMotion = reducedMotion,
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AnimatedVisibility(
+                visible = isMultiSelectMode,
+                enter =
+                    expandHorizontally(spring(stiffness = Spring.StiffnessMediumLow)) +
+                        fadeIn(tween(durationMillis = 180)),
+                exit = shrinkHorizontally(tween(durationMillis = 150)) + fadeOut(tween(durationMillis = 120)),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = { onClick() },
+                        enabled = enabled,
+                    )
+                    Spacer(modifier = Modifier.width(Spacing.Medium))
+                }
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .clip(Shapes.MediumCornerBasedShape),
+            ) {
+                AudioCover(
+                    uri = metadata.artworkUri,
+                    fallbackUri = entry.item.albumCoverUri(),
+                    modifier = Modifier.fillMaxSize(),
+                )
+                NowPlayingCoverOverlay(
+                    visible = isCurrent,
+                    isPlaying = isPlaying,
+                    reducedMotion = reducedMotion,
+                )
+            }
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
