@@ -14,7 +14,6 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -1436,7 +1435,7 @@ private fun QueueRow(
     val title = metadata.title?.toString() ?: stringResource(R.string.unknown_song)
     val artist = metadata.artist?.toString() ?: stringResource(R.string.unknown_artist)
 
-    // 拖起：浮起阴影 + 轻微放大 + 不透明底色盖住下方内容
+    // 拖起：轻微放大 + 不透明底色盖住下方内容
     val fillColor by animateColorAsState(
         targetValue =
             when {
@@ -1446,11 +1445,6 @@ private fun QueueRow(
             },
         animationSpec = tween(durationMillis = 160, easing = EaseOutEmphasized),
         label = "queueRowFill",
-    )
-    val lift by animateDpAsState(
-        targetValue = if (isDragging) 8.dp else 0.dp,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "queueRowLift",
     )
     val liftScale by animateFloatAsState(
         targetValue = if (isDragging && !reducedMotion) 1.02f else 1f,
@@ -1476,7 +1470,6 @@ private fun QueueRow(
                 .particleDissolve(isDissolving = isDissolving, onComplete = onDissolveComplete)
                 .padding(horizontal = Spacing.Small)
                 .graphicsLayer {
-                    shadowElevation = lift.toPx()
                     shape = Shapes.MediumCornerBasedShape
                     clip = true
                     scaleX = liftScale
