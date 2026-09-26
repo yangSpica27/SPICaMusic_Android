@@ -9,32 +9,23 @@ import android.graphics.Paint
 import android.graphics.Shader
 import android.net.Uri
 import android.opengl.GLES20
-import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.ColorUtils
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.util.concurrent.atomic.AtomicReference
-import javax.microedition.khronos.egl.EGLConfig
-import javax.microedition.khronos.opengles.GL10
 import kotlin.math.exp
 import kotlin.math.sqrt
 
@@ -48,7 +39,7 @@ import kotlin.math.sqrt
  * @param fftDrawData FFT 频谱数据（31 频段，0..1）
  * @param isDarkMode 暗色模式；null 时按当前主题背景亮度自动判断
  * @param coverUri 封面 Uri 提供器
- * @param enabled 是否启用渲染循环；关闭时暂停 GLSurfaceView 并保留当前帧
+ * @param enabled 是否启用渲染循环；关闭时暂停 TextureView 绘制并保留当前帧
  */
 @Composable
 fun FluidWarpBackground(
@@ -60,9 +51,7 @@ fun FluidWarpBackground(
     enabled: Boolean = true,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
     val renderer = remember { FluidWarpRenderer() }
-    val surfaceViewHolder = remember { mutableStateOf<FluidWarpSurfaceView?>(null) }
     val effectiveIsDarkMode = isDarkMode ?: (MaterialTheme.colorScheme.background.luminance() < 0.5f)
 
     SideEffect {
@@ -84,47 +73,10 @@ fun FluidWarpBackground(
         renderer.submitCover(bitmap)
     }
 
-    DisposableEffect(lifecycleOwner, surfaceViewHolder.value, enabled) {
-        val surfaceView = surfaceViewHolder.value
-        if (surfaceView == null) {
-            onDispose {}
-        } else {
-            // DialogRoute 覆盖时页面仍处于 STARTED，只有不可见时才暂停背景渲染。
-            val observer =
-                object : DefaultLifecycleObserver {
-                    override fun onStart(owner: LifecycleOwner) {
-                        if (enabled) surfaceView.onResume() else surfaceView.onPause()
-                    }
-
-                    override fun onStop(owner: LifecycleOwner) {
-                        surfaceView.onPause()
-                    }
-                }
-
-            lifecycleOwner.lifecycle.addObserver(observer)
-            if (enabled && lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
-                surfaceView.onResume()
-            } else {
-                surfaceView.onPause()
-            }
-
-            onDispose {
-                lifecycleOwner.lifecycle.removeObserver(observer)
-                surfaceView.onPause()
-            }
-        }
-    }
-
-    AndroidView(
+    OpenGlBackground(
+        renderer = renderer,
         modifier = modifier,
-        factory = { ctx ->
-            FluidWarpSurfaceView(ctx, renderer).also {
-                surfaceViewHolder.value = it
-            }
-        },
-        update = { surfaceView ->
-            surfaceViewHolder.value = surfaceView
-        },
+        enabled = enabled,
     )
 }
 
@@ -205,22 +157,10 @@ private fun createGradientFallback(color: Color): Bitmap {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// GLSurfaceView / Renderer
+// OpenGL Renderer
 // ──────────────────────────────────────────────────────────────────────────
 
-private class FluidWarpSurfaceView(
-    context: Context,
-    renderer: FluidWarpRenderer,
-) : GLSurfaceView(context) {
-    init {
-        setEGLContextClientVersion(2)
-        preserveEGLContextOnPause = true
-        setRenderer(renderer)
-        renderMode = RENDERMODE_CONTINUOUSLY
-    }
-}
-
-private class FluidWarpRenderer : GLSurfaceView.Renderer {
+private class FluidWarpRenderer : OpenGlBackgroundRenderer {
     // ── UI 线程写入、GL 线程读取的输入 ──
     private val pendingCover = AtomicReference<Bitmap?>(null)
 
@@ -344,10 +284,7 @@ private class FluidWarpRenderer : GLSurfaceView.Renderer {
         var height = 0
     }
 
-    override fun onSurfaceCreated(
-        gl: GL10?,
-        config: EGLConfig?,
-    ) {
+    override fun onSurfaceCreated() {
         val extensions = GLES20.glGetString(GLES20.GL_EXTENSIONS).orEmpty()
         halfFloatSupported =
             extensions.contains("GL_OES_texture_half_float") &&
@@ -404,7 +341,6 @@ private class FluidWarpRenderer : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceChanged(
-        gl: GL10?,
         width: Int,
         height: Int,
     ) {
@@ -418,7 +354,7 @@ private class FluidWarpRenderer : GLSurfaceView.Renderer {
         warpFbo = createFbo(warpW, warpH)
     }
 
-    override fun onDrawFrame(gl: GL10?) {
+    override fun onDrawFrame() {
         val now = System.nanoTime()
         val dt =
             if (lastFrameNs == 0L) {

@@ -1,9 +1,7 @@
 package me.spica27.spicamusic.ui.widget
 
-import android.content.Context
 import android.graphics.RuntimeShader
 import android.opengl.GLES20
-import android.opengl.GLSurfaceView
 import android.os.Build
 import android.os.SystemClock
 import androidx.annotation.RequiresApi
@@ -16,26 +14,18 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import org.intellij.lang.annotations.Language
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
-import javax.microedition.khronos.egl.EGLConfig
-import javax.microedition.khronos.opengles.GL10
 import kotlin.math.sqrt
 
 /**
@@ -162,7 +152,7 @@ fun TunnelShaderBackground(
  * @param coverColor 封面主色，用于色彩调整
  * @param fftDrawData FFT 频谱数据
  * @param isDarkMode 暗色模式（true）或亮色模式（false），null时自动判断
- * @param enabled 是否启用渲染循环；关闭时暂停 GLSurfaceView 并保留当前帧
+ * @param enabled 是否启用渲染循环；关闭时暂停 TextureView 绘制并保留当前帧
  */
 @Composable
 fun EffectShaderBackground(
@@ -172,8 +162,6 @@ fun EffectShaderBackground(
     isDarkMode: Boolean? = false,
     enabled: Boolean = true,
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val surfaceViewHolder = remember { mutableStateOf<EffectShaderSurfaceView?>(null) }
     val renderer = remember { EffectShaderRenderer() }
     val effectiveIsDarkMode = isDarkMode ?: (MaterialTheme.colorScheme.background.luminance() < 0.5f)
 
@@ -185,47 +173,10 @@ fun EffectShaderBackground(
         )
     }
 
-    DisposableEffect(lifecycleOwner, surfaceViewHolder.value, enabled) {
-        val surfaceView = surfaceViewHolder.value
-        if (surfaceView == null) {
-            onDispose {}
-        } else {
-            // DialogRoute 覆盖时页面仍处于 STARTED，只有不可见时才暂停背景渲染。
-            val observer =
-                object : DefaultLifecycleObserver {
-                    override fun onStart(owner: LifecycleOwner) {
-                        if (enabled) surfaceView.onResume() else surfaceView.onPause()
-                    }
-
-                    override fun onStop(owner: LifecycleOwner) {
-                        surfaceView.onPause()
-                    }
-                }
-
-            lifecycleOwner.lifecycle.addObserver(observer)
-            if (enabled && lifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
-                surfaceView.onResume()
-            } else {
-                surfaceView.onPause()
-            }
-
-            onDispose {
-                lifecycleOwner.lifecycle.removeObserver(observer)
-                surfaceView.onPause()
-            }
-        }
-    }
-
-    AndroidView(
+    OpenGlBackground(
+        renderer = renderer,
         modifier = modifier,
-        factory = { context ->
-            EffectShaderSurfaceView(context, renderer).also {
-                surfaceViewHolder.value = it
-            }
-        },
-        update = { surfaceView ->
-            surfaceViewHolder.value = surfaceView
-        },
+        enabled = enabled,
     )
 }
 
@@ -280,19 +231,7 @@ private fun analyzeEffectSpectrum(fftDrawData: FloatArray): EffectSpectrumLevels
     )
 }
 
-private class EffectShaderSurfaceView(
-    context: Context,
-    renderer: EffectShaderRenderer,
-) : GLSurfaceView(context) {
-    init {
-        setEGLContextClientVersion(2)
-        preserveEGLContextOnPause = true
-        setRenderer(renderer)
-        renderMode = RENDERMODE_CONTINUOUSLY
-    }
-}
-
-private class EffectShaderRenderer : GLSurfaceView.Renderer {
+private class EffectShaderRenderer : OpenGlBackgroundRenderer {
     @Volatile
     private var musicLevel: Float = 0f
 
@@ -361,10 +300,7 @@ private class EffectShaderRenderer : GLSurfaceView.Renderer {
         this.isDarkMode = isDarkMode
     }
 
-    override fun onSurfaceCreated(
-        gl: GL10?,
-        config: EGLConfig?,
-    ) {
+    override fun onSurfaceCreated() {
         program = createProgram(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE)
         positionHandle = GLES20.glGetAttribLocation(program, "aPosition")
         texCoordHandle = GLES20.glGetAttribLocation(program, "aTexCoord")
@@ -384,7 +320,6 @@ private class EffectShaderRenderer : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceChanged(
-        gl: GL10?,
         width: Int,
         height: Int,
     ) {
@@ -393,7 +328,7 @@ private class EffectShaderRenderer : GLSurfaceView.Renderer {
         GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight)
     }
 
-    override fun onDrawFrame(gl: GL10?) {
+    override fun onDrawFrame() {
         if (program == 0) return
 
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
