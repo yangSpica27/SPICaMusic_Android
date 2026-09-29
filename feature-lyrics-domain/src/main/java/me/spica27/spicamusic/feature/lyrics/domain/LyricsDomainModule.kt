@@ -4,5 +4,5 @@ import org.koin.dsl.module
 
 val lyricsDomainModule =
     module {
-        single { LyricsUseCases(get(), get(), get()) }
+        single { LyricsUseCases(apiClient = get(), lyricRepository = get(), lyricSourceReader = get()) }
     }

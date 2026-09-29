@@ -1,0 +1,20 @@
+<resources>
+    <string name="library_transfer_title">Library transfer</string>
+    <string name="library_transfer_subtitle">Move your music, playlists, favorites, and selected lyrics together</string>
+    <string name="library_transfer_export">Export complete library</string>
+    <string name="library_transfer_export_description">Include every song’s audio, including hidden songs</string>
+    <string name="library_transfer_import">Import complete package</string>
+    <string name="library_transfer_import_description">Preview and merge a SPICaMusic package into this library</string>
+    <string name="library_transfer_preparing">Preparing library transfer</string>
+    <string name="library_transfer_preview_title">Import preview</string>
+    <string name="library_transfer_preview_counts">Songs: %1$d · Playlists: %2$d</string>
+    <string name="library_transfer_preview_merge">New songs: %1$d\nExisting songs reused: %2$d\nNew playlists: %3$d</string>
+    <string name="library_transfer_preview_space">Audio to restore: %1$s</string>
+    <string name="library_transfer_merge_policy">Existing favorites and playlist order are kept. New songs are appended in package order. Playlists with the same name but different identities remain separate.</string>
+    <string name="library_transfer_lyric_conflicts">Lyrics selection or timing conflicts: %1$d. Current selections, including “No matching lyrics”, are kept by default.</string>
+    <string name="library_transfer_replace_lyrics">Use package lyrics selections for conflicting songs</string>
+    <string name="library_transfer_start_import">Start import</string>
+    <string name="library_transfer_pause">Pause</string>
+    <string name="library_transfer_resume">Continue</string>
+    <string name="library_transfer_discard">Cancel transfer</string>
+</resources>

@@ -15,6 +15,9 @@ interface ILyricSourceReader {
      */
     suspend fun readEmbedded(mediaStoreId: Long): String?
 
+    /** 区分读取失败与歌曲没有内嵌歌词。 */
+    suspend fun readEmbeddedForSnapshot(mediaStoreId: Long): String? = readEmbedded(mediaStoreId)
+
     /**
      * 读取本地歌词文件内容（用于导入时快照入库）。
      * @param uri SAF 文档 URI 字符串
@@ -45,8 +48,8 @@ sealed interface LocalLyricReadResult {
 data class LocalLyricFile(
     val text: String,
     val displayName: String,
-    /** Provider 返回的 MIME；部分 provider 可能返回 null 或 application/octet-stream。 */
+    /** 内容提供方返回的 MIME 类型；可能为空或为 application/octet-stream。 */
     val mimeType: String? = null,
-    /** Provider 返回的大小；未知时为 null。 */
+    /** 内容提供方返回的文件大小；未知时为 null。 */
     val sizeBytes: Long? = null,
 )

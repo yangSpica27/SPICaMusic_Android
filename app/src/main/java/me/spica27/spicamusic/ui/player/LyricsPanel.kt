@@ -105,6 +105,14 @@ fun LyricsPanel(
                     textAlign = TextAlign.Center,
                 )
             }
+            uiState.lyricsSuppressed -> {
+                Text(
+                    text = stringResource(R.string.lyrics_no_match_selected),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center,
+                )
+            }
             uiState.displayed != null -> {
                 val displayed = uiState.displayed!!
                 // 面板每帧随 currentTime 重组，若在此每帧 copyOf 会全量拷贝整份歌词。
@@ -134,6 +142,7 @@ fun LyricsPanel(
 
         // 浮动工具栏（右下角）：切换入口常驻，保证无内嵌/在线时仍可进入选择本地文件
         FloatingLyricsToolbar(
+            offsetEnabled = !uiState.lyricsSuppressed,
             offsetMs = uiState.lyricsOffsetMs,
             onOffsetChange = { viewModel.updateOffset(it) },
             onOpenLyricsSwitcher = {

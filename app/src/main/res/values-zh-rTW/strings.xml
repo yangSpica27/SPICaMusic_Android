@@ -247,6 +247,9 @@
   <string name="lyrics_source_none_embedded">此歌曲沒有內嵌歌詞</string>
   <string name="lyrics_source_online_empty">找不到線上歌詞</string>
   <string name="lyrics_source_current">使用中</string>
+  <string name="lyrics_no_match">無匹配歌詞</string>
+  <string name="lyrics_no_match_subtitle">此歌曲不顯示歌詞，也不再自動匹配</string>
+  <string name="lyrics_no_match_selected">已設為無匹配歌詞</string>
   <string name="lyrics_preview">預覽</string>
   <string name="pager_format">%1$d/%2$d</string>
   <string name="albums_title">專輯</string>

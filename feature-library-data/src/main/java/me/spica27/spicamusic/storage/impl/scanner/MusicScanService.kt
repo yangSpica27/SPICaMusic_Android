@@ -60,6 +60,7 @@ class MusicScanService(
     private val scanFolderRepository: IScanFolderRepository,
     private val scanRulesRepository: IScanRulesRepository,
     private val preferencesManager: PreferencesManager,
+    private val accessGate: me.spica27.spicamusic.storage.api.LibraryAccessGate,
 ) : IMusicScanService {
 
     private val _scanProgress = MutableStateFlow<ScanProgress?>(null)
@@ -358,7 +359,10 @@ class MusicScanService(
             PackageManager.PERMISSION_GRANTED
     }
 
-    override suspend fun scanMediaStore(forceRescan: Boolean): ScanResult = withContext(Dispatchers.IO) {
+    override suspend fun scanMediaStore(forceRescan: Boolean): ScanResult =
+        accessGate.withAccess { scanMediaStoreUnlocked(forceRescan) }
+
+    private suspend fun scanMediaStoreUnlocked(forceRescan: Boolean): ScanResult = withContext(Dispatchers.IO) {
         if (_isScanning.value) {
             Timber.tag(TAG).w("扫描已在进行中")
             return@withContext ScanResult(0, 0, 0, 0)
@@ -413,16 +417,8 @@ class MusicScanService(
                 MediaStore.Audio.Media.TRACK,
             )
 
-            val selection =
-                buildString {
-                    append("${MediaStore.Audio.Media.IS_MUSIC} = 1")
-                    if (ruleMatcher.rules.minDurationMs > 0) {
-                        append(" AND ${MediaStore.Audio.Media.DURATION} >= ${ruleMatcher.rules.minDurationMs}")
-                    }
-                    if (ruleMatcher.rules.minFileSizeBytes > 0) {
-                        append(" AND ${MediaStore.Audio.Media.SIZE} >= ${ruleMatcher.rules.minFileSizeBytes}")
-                    }
-                }
+            // 时长、体积和格式稍后过滤，以保留导入的歌曲。
+            val selection = "${MediaStore.Audio.Media.IS_MUSIC} = 1"
             val sortOrder = "${MediaStore.Audio.Media.DATE_ADDED} DESC"
 
             val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -473,7 +469,8 @@ class MusicScanService(
                     val track = cursor.getInt(trackColumn)
 
                     // 按用户扫描规则过滤（格式/时长/体积），并跳过忽略文件夹中的文件
-                    if (!isMediaStoreSongEligible(ruleMatcher, mimeType, duration, size, path, ignorePrefixes)) {
+                    if (existingScanInfoMap[mediaStoreId]?.explicitlyImported != true &&
+                        !isMediaStoreSongEligible(ruleMatcher, mimeType, duration, size, path, ignorePrefixes)) {
                         continue
                     }
 
@@ -580,6 +577,11 @@ class MusicScanService(
     private suspend fun scanMediaStoreDelta(
         changedMediaStoreIds: Set<Long>,
         deletedMediaStoreIds: Set<Long>,
+    ): ScanResult = accessGate.withAccess { scanMediaStoreDeltaUnlocked(changedMediaStoreIds, deletedMediaStoreIds) }
+
+    private suspend fun scanMediaStoreDeltaUnlocked(
+        changedMediaStoreIds: Set<Long>,
+        deletedMediaStoreIds: Set<Long>,
     ): ScanResult =
         withContext(Dispatchers.IO) {
             val candidateIds = (changedMediaStoreIds + deletedMediaStoreIds)
@@ -667,7 +669,8 @@ class MusicScanService(
                             val track = cursor.getInt(trackColumn)
                             val existingInfo = existingInfoMap[mediaStoreId]
 
-                            if (!isMediaStoreSongEligible(ruleMatcher, mimeType, duration, size, path, ignorePrefixes)) {
+                            if (existingInfo?.explicitlyImported != true &&
+                                !isMediaStoreSongEligible(ruleMatcher, mimeType, duration, size, path, ignorePrefixes)) {
                                 existingInfo?.albumId?.let(affectedAlbumIds::add)
                                 Timber.tag(TAG).d("MediaStore 变更文件不符合条件，跳过: $displayName")
                                 continue
@@ -786,7 +789,9 @@ class MusicScanService(
         return ScanResult(0, 0, 0, 0)
     }
 
-    override suspend fun scanExtraFolders(): ScanResult = withContext(Dispatchers.IO) {
+    override suspend fun scanExtraFolders(): ScanResult = accessGate.withAccess { scanExtraFoldersUnlocked() }
+
+    private suspend fun scanExtraFoldersUnlocked(): ScanResult = withContext(Dispatchers.IO) {
         val extraFolders = try {
             scanFolderRepository.getExtraFoldersSync()
         } catch (e: Exception) {

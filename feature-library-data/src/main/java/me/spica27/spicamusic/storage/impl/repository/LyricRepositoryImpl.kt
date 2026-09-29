@@ -19,6 +19,8 @@ class LyricRepositoryImpl(
                 sourceType = lyric.sourceType,
                 isManual = lyric.isManual,
                 sourceUri = lyric.sourceUri,
+                restoredSnapshot = lyric.restoredSnapshot,
+                lyricsSuppressed = lyric.lyricsSuppressed,
             )
         }
 
@@ -27,6 +29,10 @@ class LyricRepositoryImpl(
         delay: Long,
     ) {
         extraInfoDao.updateDelay(mediaId, delay)
+    }
+
+    override suspend fun suppressLyrics(mediaId: Long) {
+        extraInfoDao.suppressLyrics(mediaId)
     }
 
     override suspend fun saveLyrics(
@@ -39,16 +45,7 @@ class LyricRepositoryImpl(
         isManual: Boolean,
         sourceUri: String,
     ) {
-        val existing = extraInfoDao.getLyricWithMediaId(mediaId)
-        if (existing != null) {
-            extraInfoDao.updateLyricsAndSource(mediaId, lyrics, sourceName, sourceType, isManual, sourceUri)
-            if (existing.delay != delay) {
-                extraInfoDao.updateDelay(mediaId, delay)
-            }
-            return
-        }
-
-        extraInfoDao.insertLyric(
+        extraInfoDao.saveSelectedLyrics(
             ExtraInfoEntity(
                 mediaId = mediaId,
                 lyrics = lyrics,

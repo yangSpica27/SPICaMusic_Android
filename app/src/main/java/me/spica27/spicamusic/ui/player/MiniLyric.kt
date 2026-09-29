@@ -138,7 +138,7 @@ fun MiniLyric(
         ) { line ->
             val isPlaceholder = line == null || line == LOADING_PLACEHOLDER
             Text(
-                text = line ?: stringResource(R.string.no_lyrics),
+                text = line ?: stringResource(if (uiState.lyricsSuppressed) R.string.lyrics_no_match else R.string.no_lyrics),
                 style = MaterialTheme.typography.bodyMedium,
                 color =
                     if (isPlaceholder) {

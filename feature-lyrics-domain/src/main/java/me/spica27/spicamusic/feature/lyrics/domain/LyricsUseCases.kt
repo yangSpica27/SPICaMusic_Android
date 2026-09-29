@@ -1,6 +1,8 @@
 package me.spica27.spicamusic.feature.lyrics.domain
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import me.spcia.lyric_core.ApiClient
 import me.spcia.lyric_core.entity.SongLyrics
 import me.spcia.lyric_core.parser.YrcParser
@@ -12,7 +14,9 @@ import me.spica27.spicamusic.storage.api.LocalLyricFile
 import me.spica27.spicamusic.storage.api.LocalLyricReadResult
 
 sealed interface LocalLyricsImportResult {
-    data class Success(val cached: CachedLyrics) : LocalLyricsImportResult
+    data class Success(
+        val cached: CachedLyrics,
+    ) : LocalLyricsImportResult
 
     enum class FailureReason {
         READ_FAILED,
@@ -22,10 +26,12 @@ sealed interface LocalLyricsImportResult {
         INVALID_CONTENT,
     }
 
-    data class Failure(val reason: FailureReason) : LocalLyricsImportResult
+    data class Failure(
+        val reason: FailureReason,
+    ) : LocalLyricsImportResult
 }
 
-/** File-name-aware validation used before a local lyric snapshot is persisted. */
+/** 保存前按文件扩展名校验歌词内容。 */
 internal object LocalLyricValidator {
     fun isValid(file: LocalLyricFile): Boolean {
         val extension = file.displayName.substringAfterLast('.', "").lowercase()
@@ -33,7 +39,7 @@ internal object LocalLyricValidator {
             "ttml", "ttml2", "xml" -> AmllParser.parseDetailed(file.text).items.isNotEmpty()
             "yrc" -> runCatching { YrcParser.parseToLyricItems(file.text).isNotEmpty() }.getOrDefault(false)
             "lrc" -> runCatching { LrcParser.parse(file.text).isNotEmpty() }.getOrDefault(false)
-            // .txt and extension-less documents are allowed for unsynchronised lyrics.
+            // 文本文件和无扩展名文件允许使用无时间戳歌词。
             "", "txt" -> file.text.lineSequence().any { it.trim().isNotEmpty() }
             else -> false
         }
@@ -41,10 +47,13 @@ internal object LocalLyricValidator {
 }
 
 class LyricsUseCases(
-    private val apiClient: ApiClient,
     private val lyricRepository: ILyricRepository,
     private val lyricSourceReader: ILyricSourceReader,
+    private val searchLyrics: suspend (String) -> List<SongLyrics>,
 ) {
+    constructor(apiClient: ApiClient, lyricRepository: ILyricRepository, lyricSourceReader: ILyricSourceReader) :
+        this(lyricRepository, lyricSourceReader, apiClient::searchAllLyrics)
+
     suspend fun getCachedLyrics(mediaStoreId: Long): CachedLyrics? =
         lyricRepository.getLyrics(mediaStoreId)?.let { lyric ->
             CachedLyrics(
@@ -56,52 +65,73 @@ class LyricsUseCases(
                 sourceType = lyric.sourceType,
                 isManual = lyric.isManual,
                 sourceUri = lyric.sourceUri,
+                restoredSnapshot = lyric.restoredSnapshot,
+                lyricsSuppressed = lyric.lyricsSuppressed,
             )
         }
 
-    /** 读取音频文件内嵌歌词原始文本，无则返回 null */
-    suspend fun getEmbeddedLyrics(mediaStoreId: Long): String? =
-        lyricSourceReader.readEmbedded(mediaStoreId)
+    /** 按禁用状态、手动快照及自动优先级读取离线歌词。 */
+    suspend fun getSelectedOfflineLyrics(mediaStoreId: Long): CachedLyrics? {
+        val selected =
+            me.spica27.spicamusic.storage.api.SelectedLyricsResolver.resolve(
+                mediaStoreId,
+                lyricRepository.getLyrics(mediaStoreId),
+            ) { lyricSourceReader.readEmbedded(mediaStoreId) } ?: return null
+        return CachedLyrics(
+            mediaId = selected.mediaId,
+            lyrics = selected.lyrics,
+            delay = selected.delay,
+            lyricSourceName = selected.sourceName,
+            cover = selected.cover,
+            sourceType = selected.sourceType,
+            isManual = selected.isManual,
+            sourceUri = selected.sourceUri,
+            restoredSnapshot = selected.restoredSnapshot,
+            lyricsSuppressed = selected.lyricsSuppressed,
+        )
+    }
+
+    suspend fun getEmbeddedLyrics(mediaStoreId: Long): String? = lyricSourceReader.readEmbedded(mediaStoreId)
 
     /**
-     * 导入本地歌词文件：读取内容并**快照入库**（type=LOCAL_FILE, isManual=true），
-     * 之后即使原文件被移动/删除也能离线复现。
-     * @return 入库后的缓存形态；读取、格式校验或保存失败返回 null
+     * 导入并保存本地歌词快照，不依赖原文件长期存在。
+     * @return 保存后的快照，导入失败返回 null。
      */
     suspend fun importLocalLyrics(
         mediaStoreId: Long,
         uri: String,
         delayMs: Long,
-    ): CachedLyrics? = when (val result = importLocalLyricsResult(mediaStoreId, uri, delayMs)) {
-        is LocalLyricsImportResult.Success -> getCachedLyrics(mediaStoreId) ?: result.cached
-        is LocalLyricsImportResult.Failure -> null
-    }
+    ): CachedLyrics? =
+        when (val result = importLocalLyricsResult(mediaStoreId, uri, delayMs)) {
+            is LocalLyricsImportResult.Success -> getCachedLyrics(mediaStoreId) ?: result.cached
+            is LocalLyricsImportResult.Failure -> null
+        }
 
-    /**
-     * Reads and validates a local file before touching the cache. A failed import is side-effect free:
-     * the existing source and delay remain unchanged.
-     */
+    /** 校验通过后保存；导入失败时保留原歌词状态。 */
     suspend fun importLocalLyricsResult(
         mediaStoreId: Long,
         uri: String,
         delayMs: Long,
     ): LocalLyricsImportResult {
-        val readResult = try {
-            lyricSourceReader.readLocalFileResult(uri)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            return LocalLyricsImportResult.Failure(LocalLyricsImportResult.FailureReason.READ_FAILED)
-        }
-        val file = when (val result = readResult) {
-            is LocalLyricReadResult.Success -> result.file
-            is LocalLyricReadResult.Failure ->
-                return LocalLyricsImportResult.Failure(result.reason.toImportFailureReason())
-        }
+        val readResult =
+            try {
+                lyricSourceReader.readLocalFileResult(uri)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                return LocalLyricsImportResult.Failure(LocalLyricsImportResult.FailureReason.READ_FAILED)
+            }
+        val file =
+            when (val result = readResult) {
+                is LocalLyricReadResult.Success -> result.file
+                is LocalLyricReadResult.Failure ->
+                    return LocalLyricsImportResult.Failure(result.reason.toImportFailureReason())
+            }
         if (!LocalLyricValidator.isValid(file)) {
             return LocalLyricsImportResult.Failure(LocalLyricsImportResult.FailureReason.INVALID_CONTENT)
         }
         return try {
+            currentCoroutineContext().ensureActive()
             lyricRepository.saveLyrics(
                 mediaId = mediaStoreId,
                 lyrics = file.text,
@@ -139,7 +169,9 @@ class LyricsUseCases(
             LocalLyricReadResult.FailureReason.READ_FAILED -> LocalLyricsImportResult.FailureReason.READ_FAILED
         }
 
-    suspend fun searchAllLyrics(title: String): List<SongLyrics> = apiClient.searchAllLyrics(title)
+    suspend fun searchAllLyrics(title: String): List<SongLyrics> = searchLyrics(title)
+
+    suspend fun suppressLyrics(mediaStoreId: Long) = lyricRepository.suppressLyrics(mediaStoreId)
 
     suspend fun updateDelay(
         mediaStoreId: Long,

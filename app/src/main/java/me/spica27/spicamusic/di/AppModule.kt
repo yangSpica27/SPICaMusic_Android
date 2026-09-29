@@ -17,6 +17,7 @@ import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.feature.lyrics.domain.LyricsUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
 import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
+import me.spica27.spicamusic.feature.transfer.data.LibraryTransferCoordinator
 import me.spica27.spicamusic.ui.album.AlbumViewModel
 import me.spica27.spicamusic.ui.albumdetail.AlbumDetailViewModel
 import me.spica27.spicamusic.ui.allsong.AllSongsViewModel
@@ -36,6 +37,7 @@ import me.spica27.spicamusic.ui.player.PlayerViewModel
 import me.spica27.spicamusic.ui.playlist.PlaylistViewModel
 import me.spica27.spicamusic.ui.playlistdetail.PlaylistDetailViewModel
 import me.spica27.spicamusic.ui.search.SearchViewModel
+import me.spica27.spicamusic.ui.settings.LibraryTransferViewModel
 import me.spica27.spicamusic.ui.settings.MediaLibrarySourceViewModel
 import me.spica27.spicamusic.ui.settings.SettingsViewModel
 import okhttp3.OkHttpClient
@@ -137,6 +139,14 @@ object AppModule {
             }
 
             // 设置页面 ViewModel
+            single {
+                me.spica27.spicamusic.feature.transfer.data
+                    .LibraryTransferCoordinator(androidContext(), get(), get(), get())
+            }
+            viewModel {
+                me.spica27.spicamusic.ui.settings
+                    .LibraryTransferViewModel(androidApplication(), get())
+            }
             viewModel {
                 SettingsViewModel(
                     settingsUseCases = get<SettingsUseCases>(),

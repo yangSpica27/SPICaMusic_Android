@@ -26,11 +26,17 @@ class LyricSourceReaderImpl(
     private val context: Context,
 ) : ILyricSourceReader {
 
-    override suspend fun readEmbedded(mediaStoreId: Long): String? =
+    override suspend fun readEmbedded(mediaStoreId: Long): String? = readEmbeddedInternal(mediaStoreId, false)
+
+    override suspend fun readEmbeddedForSnapshot(mediaStoreId: Long): String? = readEmbeddedInternal(mediaStoreId, true)
+
+    private suspend fun readEmbeddedInternal(mediaStoreId: Long, strict: Boolean): String? =
         withContext(Dispatchers.IO) {
             try {
                 val uri = "content://media/external/audio/media/$mediaStoreId".toUri()
-                context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
+                    ?: error("无法读取歌曲内嵌歌词")
+                descriptor.use { pfd ->
                     // detachFd() 将 fd 所有权转移给 TagLib，TagLib 用完后负责关闭
                     val fd = pfd.detachFd()
                     val metadata = TagLib.getMetadata(fd = fd, readPictures = false)
@@ -41,7 +47,10 @@ class LyricSourceReaderImpl(
                         .mapNotNull { key -> map[key]?.firstOrNull()?.takeIf { it.isNotBlank() } }
                         .firstOrNull()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
+                if (strict) throw e
                 Timber.tag(TAG).w(e, "读取内嵌歌词失败 mediaStoreId=$mediaStoreId")
                 null
             }

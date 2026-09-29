@@ -1,0 +1,20 @@
+<resources>
+    <string name="library_transfer_title">曲库迁移</string>
+    <string name="library_transfer_subtitle">一起迁移歌曲音频、歌单、收藏和当前歌词</string>
+    <string name="library_transfer_export">导出完整曲库</string>
+    <string name="library_transfer_export_description">包含全部歌曲的音频文件，包括已隐藏的歌曲</string>
+    <string name="library_transfer_import">导入完整包</string>
+    <string name="library_transfer_import_description">预览并合并 SPICaMusic 完整包到当前曲库</string>
+    <string name="library_transfer_preparing">准备曲库传输</string>
+    <string name="library_transfer_preview_title">导入预览</string>
+    <string name="library_transfer_preview_counts">%1$d 首歌曲 · %2$d 个歌单</string>
+    <string name="library_transfer_preview_merge">新增 %1$d 首歌曲，复用 %2$d 首已有歌曲，新建 %3$d 个歌单。</string>
+    <string name="library_transfer_preview_space">需要恢复的音频：%1$s</string>
+    <string name="library_transfer_merge_policy">保留已有收藏与歌单顺序，新歌曲按包内顺序追加。同名但来源不同的歌单会分别保留。</string>
+    <string name="library_transfer_lyric_conflicts">%1$d 首歌曲的歌词选择或时间偏移不同，默认保留当前选择（包括“无匹配歌词”）。</string>
+    <string name="library_transfer_replace_lyrics">冲突歌曲使用包内歌词选择</string>
+    <string name="library_transfer_start_import">开始导入</string>
+    <string name="library_transfer_pause">暂停</string>
+    <string name="library_transfer_resume">继续</string>
+    <string name="library_transfer_discard">取消传输</string>
+</resources>

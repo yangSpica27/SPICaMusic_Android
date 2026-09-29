@@ -299,6 +299,15 @@ fun SettingsScreen() {
                 }
             }
 
+            item(key = "settings_library_transfer") {
+                LibraryTransferSettings(
+                    modifier =
+                        Modifier
+                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                            .entrance(order = 4, play = !entrancePlayed),
+                )
+            }
+
             item(key = "settings_about") {
                 SettingsSectionCard(
                     title = stringResource(R.string.settings_about),
@@ -410,7 +419,7 @@ private fun SettingsTopBar(
 
 /** 圆角容器分组卡 */
 @Composable
-private fun SettingsSectionCard(
+internal fun SettingsSectionCard(
     title: String,
     subtitle: String?,
     modifier: Modifier = Modifier,
@@ -602,16 +611,18 @@ private fun SwitchRow(
 
 /** 跳转行：整行可点，右侧显示 chevron。 */
 @Composable
-private fun NavigationRow(
+internal fun NavigationRow(
     title: String,
     summary: String,
     icon: ImageVector,
     onClick: () -> Unit,
+    enabled: Boolean = true,
 ) {
     SettingsRowFrame(
         icon = icon,
         highlighted = false,
         onClick = onClick,
+        enabled = enabled,
     ) {
         Column(
             modifier = Modifier.weight(1f),
@@ -644,6 +655,7 @@ private fun SettingsRowFrame(
     highlighted: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     iconModifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit,
 ) {
@@ -671,7 +683,8 @@ private fun SettingsRowFrame(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clickHighlight(onClick = onClick)
+                .clickHighlight(enabled = enabled, onClick = onClick)
+                .graphicsLayer { alpha = if (enabled) 1f else 0.45f }
                 .padding(horizontal = Spacing.Large, vertical = Spacing.Medium),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
@@ -696,7 +709,7 @@ private fun SettingsRowFrame(
 }
 
 @Composable
-private fun SettingsItemDivider() {
+internal fun SettingsItemDivider() {
     Box(
         modifier =
             Modifier

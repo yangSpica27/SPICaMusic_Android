@@ -32,6 +32,8 @@ import me.spica27.spicamusic.ui.glass.LocalDialogHazeState
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.glass.liquidGlass
 import me.spica27.spicamusic.ui.theme.Shapes
+import me.spica27.spicamusic.ui.widget.ElasticDragDefaults
+import me.spica27.spicamusic.ui.widget.elasticDrag
 
 /** 统一的对话框容器；关闭玻璃效果时使用不透明背景。 */
 @Composable
@@ -43,18 +45,19 @@ fun DialogContainer(
 ) {
     val glassEnabled = LocalLiquidGlassConfig.current.enabled
     val hazeState = LocalDialogHazeState.current
+    val containerModifier = modifier.fillMaxWidth().elasticDrag(ElasticDragDefaults.Dialog)
 
     if (enableGlass && glassEnabled && hazeState != null) {
         GlassSurface(
             hazeState = hazeState,
             variant = LiquidGlassVariant.Dialog,
             shape = shape,
-            modifier = modifier.fillMaxWidth(),
+            modifier = containerModifier,
             content = content,
         )
     } else {
         Surface(
-            modifier = modifier.fillMaxWidth(),
+            modifier = containerModifier,
             shape = shape,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,
@@ -76,19 +79,20 @@ fun PopupMenuContainer(
 ) {
     val glassEnabled = LocalLiquidGlassConfig.current.enabled
     val hazeState = LocalDialogHazeState.current
-    val sizeModifier = Modifier.widthIn(min = minWidth, max = maxWidth)
+    val containerModifier =
+        modifier.widthIn(min = minWidth, max = maxWidth).elasticDrag(ElasticDragDefaults.Dialog)
 
     if (glassEnabled && hazeState != null) {
         GlassSurface(
             hazeState = hazeState,
             variant = LiquidGlassVariant.PopupMenu,
             shape = shape,
-            modifier = modifier.then(sizeModifier),
+            modifier = containerModifier,
             content = content,
         )
     } else {
         Surface(
-            modifier = modifier.then(sizeModifier),
+            modifier = containerModifier,
             shape = shape,
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 6.dp,

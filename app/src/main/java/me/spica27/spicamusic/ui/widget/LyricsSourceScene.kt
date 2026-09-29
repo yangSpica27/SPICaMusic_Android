@@ -1,5 +1,6 @@
 package me.spica27.spicamusic.ui.widget
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -20,17 +21,21 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.MusicOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,26 +49,31 @@ import me.spica27.spicamusic.ui.player.LyricsViewModel
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
- * 歌词来源选择对话框（分区列表）
- *
- * 按来源类型分区展示：内嵌歌词（0/1 条）、本地文件（导入入口 + 已导入项）、在线（N 条候选，懒加载）。
- * 点击任一候选即选中并关闭；本地区点击"从文件选择"触发 SAF picker。
- *
- * 数据直接来自 Activity 作用域的 [LyricsViewModel]，选择来源或导入本地文件后自动关闭。
+ * 歌词来源弹窗：顶部固定“无匹配歌词”，下方按来源分区。
+ * 与播放页共享 [LyricsViewModel]，选择来源或导入文件后关闭。
  */
 @Composable
 fun LyricsSourceDialogContent() {
     val backStack = LocalBackStack.current
     val viewModel: LyricsViewModel = koinActivityViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val onlineSources =
+        remember(uiState.cachedOnlineSource, uiState.onlineSources) {
+            (listOfNotNull(uiState.cachedOnlineSource) + uiState.onlineSources).distinctBy { it.rawLyrics }
+        }
 
     LyricsSourceDialogContentInternal(
         embedded = uiState.embeddedSource,
         local = uiState.localSource,
-        online = uiState.onlineSources,
+        online = onlineSources,
         onlineLoading = uiState.onlineLoading,
         currentSourceType = uiState.currentSourceType,
         currentRawText = uiState.displayedRawText,
+        lyricsSuppressed = uiState.lyricsSuppressed,
+        onSelectNoMatchingLyrics = {
+            viewModel.selectNoMatchingLyrics()
+            backStack.removeLastOrNull()
+        },
         onSelect = { source ->
             viewModel.selectSource(source)
             backStack.removeLastOrNull()
@@ -81,11 +91,13 @@ private fun LyricsSourceDialogContentInternal(
     onlineLoading: Boolean,
     currentSourceType: LyricSourceType,
     currentRawText: String?,
+    lyricsSuppressed: Boolean,
+    onSelectNoMatchingLyrics: () -> Unit,
     onSelect: (LyricSource) -> Unit,
     onImportLocalFile: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    // SAF 文档选择器：限文本类，回传 uri 字符串给上层快照入库
+    // 使用系统文件选择器，回传地址供读取和保存快照。
     val picker =
         androidx.activity.compose.rememberLauncherForActivityResult(
             contract =
@@ -103,6 +115,7 @@ private fun LyricsSourceDialogContentInternal(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .animateContentSize()
                     .heightIn(min = 320.dp, max = 560.dp),
         ) {
             // 标题栏
@@ -120,8 +133,17 @@ private fun LyricsSourceDialogContentInternal(
                 )
             }
 
+            // 固定入口，不受候选加载状态影响。
+            SourceRow(
+                icon = Icons.Rounded.MusicOff,
+                title = stringResource(R.string.lyrics_no_match),
+                subtitle = stringResource(R.string.lyrics_no_match_subtitle),
+                selected = lyricsSuppressed,
+                onClick = onSelectNoMatchingLyrics,
+            )
+
             LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
                 contentPadding =
                     androidx.compose.foundation.layout
                         .PaddingValues(bottom = 24.dp),
@@ -134,7 +156,7 @@ private fun LyricsSourceDialogContentInternal(
                             icon = Icons.Rounded.MusicNote,
                             title = stringResource(R.string.lyrics_source_embedded),
                             subtitle = stringResource(R.string.lyrics_source_embedded_subtitle),
-                            selected = currentSourceType == LyricSourceType.EMBEDDED,
+                            selected = !lyricsSuppressed && currentSourceType == LyricSourceType.EMBEDDED,
                             onClick = {
                                 onSelect(embedded)
                             },
@@ -152,7 +174,7 @@ private fun LyricsSourceDialogContentInternal(
                             icon = Icons.Rounded.LibraryMusic,
                             title = local.fileName,
                             subtitle = stringResource(R.string.lyrics_source_local),
-                            selected = currentSourceType == LyricSourceType.LOCAL_FILE,
+                            selected = !lyricsSuppressed && currentSourceType == LyricSourceType.LOCAL_FILE,
                             onClick = {
                                 onSelect(local)
                             },
@@ -166,8 +188,7 @@ private fun LyricsSourceDialogContentInternal(
                         subtitle = null,
                         selected = false,
                         onClick = {
-                            // .lrc/.yrc 没有统一 MIME，使用文本/XML 与 octet-stream 覆盖常见 provider。
-                            // 读取器仍会按扩展名、MIME、大小和内容再次校验，不能仅依赖 picker 过滤。
+                            // 歌词扩展名没有统一的 MIME，读取时仍需校验类型、大小和内容。
                             picker.launch(
                                 arrayOf(
                                     "text/plain",
@@ -191,44 +212,43 @@ private fun LyricsSourceDialogContentInternal(
                         },
                     )
                 }
-                when {
-                    onlineLoading ->
-                        item {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 20.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(28.dp),
-                                    color = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        }
-
-                    online.isEmpty() ->
-                        item { EmptyHint(stringResource(R.string.lyrics_source_online_empty)) }
-
-                    else ->
-                        itemsIndexed(
-                            items = online,
-                            // 服务端 id 可能重复或为 0，叠加下标保证 LazyColumn key 唯一，避免重复 key 崩溃
-                            key = { index, item -> "${item.stableKey}#$index" },
-                        ) { _, source ->
-                            SourceRow(
-                                icon = Icons.Rounded.Language,
-                                title = source.title,
-                                subtitle = source.subtitle,
-                                selected =
-                                    currentSourceType == LyricSourceType.ONLINE &&
-                                        currentRawText == source.rawLyrics,
-                                onClick = {
-                                    onSelect(source)
-                                },
+                if (onlineLoading) {
+                    item {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 20.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(28.dp),
+                                color = MaterialTheme.colorScheme.primary,
                             )
                         }
+                    }
+                }
+                if (online.isEmpty() && !onlineLoading) {
+                    item { EmptyHint(stringResource(R.string.lyrics_source_online_empty)) }
+                } else {
+                    itemsIndexed(
+                        items = online,
+                        // 服务端标识可能重复，附加下标保证列表键唯一。
+                        key = { index, item -> "${item.stableKey}#$index" },
+                    ) { _, source ->
+                        SourceRow(
+                            icon = Icons.Rounded.Language,
+                            title = source.title,
+                            subtitle = source.subtitle,
+                            selected =
+                                !lyricsSuppressed &&
+                                    currentSourceType == LyricSourceType.ONLINE &&
+                                    currentRawText == source.rawLyrics,
+                            onClick = {
+                                onSelect(source)
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -278,6 +298,7 @@ private fun SourceRow(
                         androidx.compose.ui.graphics.Color.Transparent
                     },
                 ).clickable(onClick = onClick)
+                .semantics { this.selected = selected }
                 .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

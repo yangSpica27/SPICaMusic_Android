@@ -437,6 +437,8 @@ fun ExpandedPlayerScreen(
                                 ShowOnIdleContent(
                                     modifier = Modifier.weight(1f),
                                     visible = isPlayerPageRevealed,
+                                    delayMillis = 225,
+                                    enter = Nav3Transitions.slideUpPop().targetContentEnter,
                                 ) {
                                     PlayerPage(
                                         playerViewModel = viewModel,
@@ -500,7 +502,12 @@ fun ExpandedPlayerScreen(
                                 }
                             }
                         } else {
-                            ShowOnIdleContent(true, modifier = Modifier.fillMaxSize()) {
+                            ShowOnIdleContent(
+                                true,
+                                modifier = Modifier.fillMaxSize(),
+                                delayMillis = 225,
+                                enter = Nav3Transitions.slideUp().targetContentEnter,
+                            ) {
                                 CurrPlaylistPage(
                                     onNavigateBack = {
                                         coroutineScope.launch {

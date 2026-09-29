@@ -247,6 +247,9 @@
   <string name="lyrics_source_none_embedded">No embedded lyrics in this song</string>
   <string name="lyrics_source_online_empty">No online lyrics found</string>
   <string name="lyrics_source_current">In use</string>
+  <string name="lyrics_no_match">No matching lyrics</string>
+  <string name="lyrics_no_match_subtitle">Hide lyrics for this song and stop automatic matching</string>
+  <string name="lyrics_no_match_selected">Set to no matching lyrics</string>
   <string name="lyrics_preview">Preview</string>
   <string name="pager_format">%1$d/%2$d</string>
   <string name="albums_title">Albums</string>

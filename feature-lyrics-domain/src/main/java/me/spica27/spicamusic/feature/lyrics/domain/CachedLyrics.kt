@@ -12,4 +12,6 @@ data class CachedLyrics(
     val isManual: Boolean,
     /** 本地文件来源出处，仅展示用 */
     val sourceUri: String,
+    val restoredSnapshot: Boolean = false,
+    val lyricsSuppressed: Boolean = false,
 )

@@ -3,13 +3,19 @@ package me.spica27.spicamusic.ui.player
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import me.spcia.lyric_core.entity.SongLyrics
 import me.spcia.lyric_core.parser.YrcParser
@@ -25,22 +31,19 @@ import me.spica27.spicamusic.player.api.PlayerAction
 import timber.log.Timber
 
 /**
- * 播放器歌词状态 ViewModel
- *
- * 负责多来源歌词的加载、选择与偏移量持久化。来源决策遵循「缓存权威 + 自动优先级 + 手动覆盖」：
- * 1. 已存在缓存行（手动选择，或自动持久化的在线结果）→ 直接显示，**不联网、不再解析来源**。
- * 2. 无缓存 → 自动按 **内嵌 > 在线** 决定首屏：内嵌实时读取（不联网、不落库），
- *    仅当无内嵌时才联网搜索一次并落库，避免后续重复联网。
- * 3. 用户在切换面板中的选择记为手动（isManual=1），永久优先。
- *
- * 面板的内嵌 / 在线候选按需懒加载（[openPanel]），本地文件通过 SAF 导入（[importLocalFile]）。
+ * 管理歌词加载、来源选择和时间偏移。
+ * 选择“无匹配歌词”后保留快照并停止自动加载。
+ * 优先使用手动或恢复的快照，否则依次尝试内嵌、缓存和在线歌词。
+ * 候选按需加载，手动选择保存为快照。
  */
 @Stable
 class LyricsViewModel(
     private val player: PlayerUseCases,
     private val lyricsUseCases: LyricsUseCases,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val parseDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
-    /** 已解析、可直接渲染的歌词。[isSynced] 为 false 时为无时间戳纯文本，UI 应静态展示、不高亮。 */
+    /** 解析后的歌词；[isSynced] 为 false 时静态显示。 */
     data class ParsedLyrics(
         val items: List<LyricItem>,
         val isSynced: Boolean,
@@ -60,63 +63,107 @@ class LyricsViewModel(
         // 当前来源原始文本，用于面板"正在使用"匹配与重存
         val displayedRawText: String? = null,
         val currentSourceType: LyricSourceType = LyricSourceType.NONE,
+        val lyricsSuppressed: Boolean = false,
         // 切换面板三分区（按需懒加载）
         val embeddedSource: LyricSource.Embedded? = null,
         val localSource: LyricSource.LocalFile? = null,
         val onlineSources: List<LyricSource.Online> = emptyList(),
+        val cachedOnlineSource: LyricSource.Online? = null,
         val onlineLoading: Boolean = false,
     )
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
+    // 串行写入，防止已取消任务的数据库写入覆盖新选择。
+    // 切歌后仍将手动选择保存到原歌曲。
+    private val writeMutex = Mutex()
+    private var loadJob: Job? = null
+    private var panelJob: Job? = null
+
+    private data class SelectionTask(
+        val job: Job,
+        val suppress: Boolean,
+    )
+
+    private val selectionJobs = mutableMapOf<Long, SelectionTask>()
+    private var generation = 0L
+    private var songGeneration = 0L
+
     init {
         viewModelScope.launch {
-            // collectLatest：切歌时取消上一首尚未完成的加载，避免结果错位
-            player.currentMediaItem.collectLatest { mediaItem ->
-                loadLyrics(mediaItem?.mediaId, mediaItem?.mediaMetadata?.title?.toString())
+            player.currentMediaItem.collect { mediaItem ->
+                generation++
+                songGeneration++
+                loadJob?.cancel()
+                panelJob?.cancel()
+                val version = generation
+                loadJob =
+                    launch {
+                        loadLyrics(mediaItem?.mediaId, mediaItem?.mediaMetadata?.title?.toString(), version)
+                    }
             }
         }
     }
 
+    private fun isCurrent(
+        id: Long,
+        version: Long,
+    ): Boolean = generation == version && _uiState.value.currentMediaStoreId == id
+
     private suspend fun loadLyrics(
         mediaId: String?,
         title: String?,
+        version: Long,
     ) {
         if (mediaId == null) {
             _uiState.value = UiState()
             return
         }
-
         val id = mediaId.toLongOrNull() ?: 0L
         _uiState.value = UiState(isLoading = true, currentMediaStoreId = id, currentTitle = title)
-
         try {
-            val cached = withContext(Dispatchers.IO) { lyricsUseCases.getCachedLyrics(id) }
-            // 持久化的偏移量按歌恢复，应用到任何最终展示的来源（含实时内嵌）
-            val savedDelay = cached?.delay ?: 0L
-
-            // 1. 手动锁定的缓存：权威来源，跳过自动优先级，直接显示、不联网
-            if (cached != null && cached.isManual && cached.lyrics.isNotBlank()) {
-                val parsed = parseOffMain(cached.lyrics)
+            val selected =
+                writeMutex.withLock {
+                    withContext(ioDispatcher) { lyricsUseCases.getSelectedOfflineLyrics(id) }
+                }
+            if (!isCurrent(id, version)) return
+            if (selected != null && (selected.lyricsSuppressed || selected.lyrics.isNotBlank())) {
                 val type =
-                    runCatching { LyricSourceType.valueOf(cached.sourceType) }
+                    runCatching { LyricSourceType.valueOf(selected.sourceType) }
                         .getOrDefault(LyricSourceType.ONLINE)
+                val parsed = if (selected.lyricsSuppressed) null else parseOffMain(selected.lyrics)
+                if (!isCurrent(id, version)) return
                 _uiState.update {
                     it.copy(
                         isLoading = false,
                         displayed = parsed,
-                        displayedRawText = cached.lyrics,
+                        displayedRawText = selected.lyrics.takeUnless { selected.lyricsSuppressed },
                         currentSourceType = type,
-                        lyricsOffsetMs = savedDelay,
-                        errorMessage = if (parsed.items.isEmpty()) "歌词解析失败" else null,
-                        localSource =
-                            if (type == LyricSourceType.LOCAL_FILE) {
-                                LyricSource.LocalFile(
-                                    uri = cached.sourceUri,
-                                    fileName = cached.lyricSourceName,
-                                    rawLyrics = cached.lyrics,
+                        lyricsSuppressed = selected.lyricsSuppressed,
+                        lyricsOffsetMs = selected.delay,
+                        errorMessage = if (parsed?.items?.isEmpty() == true) "歌词解析失败" else null,
+                        embeddedSource =
+                            if (type == LyricSourceType.EMBEDDED && selected.lyrics.isNotBlank()) {
+                                LyricSource.Embedded(rawLyrics = selected.lyrics)
+                            } else {
+                                null
+                            },
+                        cachedOnlineSource =
+                            if (type == LyricSourceType.ONLINE && selected.lyrics.isNotBlank()) {
+                                LyricSource.Online(
+                                    id = 0,
+                                    title = title ?: selected.lyricSourceName,
+                                    subtitle = selected.lyricSourceName,
+                                    rawLyrics = selected.lyrics,
+                                    stableKey = "cached-online:$id",
                                 )
+                            } else {
+                                null
+                            },
+                        localSource =
+                            if (type == LyricSourceType.LOCAL_FILE && selected.lyrics.isNotBlank()) {
+                                LyricSource.LocalFile(selected.sourceUri, selected.lyricSourceName, selected.lyrics)
                             } else {
                                 null
                             },
@@ -124,206 +171,209 @@ class LyricsViewModel(
                 }
                 return
             }
-
-            // 2. 自动优先级：内嵌优先（实时读取，不联网、不落库）
-            val embedded = if (id > 0L) withContext(Dispatchers.IO) { lyricsUseCases.getEmbeddedLyrics(id) } else null
-            if (!embedded.isNullOrBlank()) {
-                val parsed = parseOffMain(embedded)
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        displayed = parsed,
-                        displayedRawText = embedded,
-                        currentSourceType = LyricSourceType.EMBEDDED,
-                        embeddedSource = LyricSource.Embedded(rawLyrics = embedded),
-                        lyricsOffsetMs = savedDelay,
-                        errorMessage = if (parsed.items.isEmpty()) "歌词解析失败" else null,
-                    )
-                }
-                return
-            }
-
-            // 3. 自动优先级：无内嵌时用已自动缓存的在线结果（不重复联网）
-            if (cached != null && cached.lyrics.isNotBlank()) {
-                val parsed = parseOffMain(cached.lyrics)
-                val type =
-                    runCatching { LyricSourceType.valueOf(cached.sourceType) }
-                        .getOrDefault(LyricSourceType.ONLINE)
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        displayed = parsed,
-                        displayedRawText = cached.lyrics,
-                        currentSourceType = type,
-                        lyricsOffsetMs = savedDelay,
-                        errorMessage = if (parsed.items.isEmpty()) "歌词解析失败" else null,
-                    )
-                }
-                return
-            }
-
-            // 4. 自动优先级：在线兜底（联网搜索一次并落库，后续读缓存不再联网）
             if (title.isNullOrBlank()) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "歌曲信息缺失") }
                 return
             }
-            val results = withContext(Dispatchers.IO) { lyricsUseCases.searchAllLyrics(title) }
+            val results = withContext(ioDispatcher) { lyricsUseCases.searchAllLyrics(title) }
+            if (!isCurrent(id, version)) return
             if (results.isEmpty()) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "暂无歌词") }
                 return
             }
             val first = results.first()
             val parsed = parseOffMain(first.lyrics)
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    displayed = parsed,
-                    displayedRawText = first.lyrics,
-                    currentSourceType = LyricSourceType.ONLINE,
-                    onlineSources = results.toOnlineSources(),
-                    errorMessage = if (parsed.items.isEmpty()) "歌词解析失败" else null,
-                )
-            }
-            // 持久化自动在线结果（isManual=false），下次读缓存直接命中；
-            // isManual=false 保证后续若出现内嵌仍走内嵌优先（见分支 2）
-            if (id > 0L) {
-                withContext(Dispatchers.IO) {
-                    lyricsUseCases.saveLyricsSource(
-                        mediaStoreId = id,
-                        lyrics = first.lyrics,
-                        sourceName = "${first.artist} - ${first.name}",
-                        delayMs = 0L,
-                        sourceType = LyricSourceType.ONLINE.name,
-                        isManual = false,
+            if (!isCurrent(id, version)) return
+            writeMutex.withLock {
+                currentCoroutineContext().ensureActive()
+                if (!isCurrent(id, version)) return
+                if (id > 0L) {
+                    withContext(ioDispatcher) {
+                        lyricsUseCases.saveLyricsSource(
+                            mediaStoreId = id,
+                            lyrics = first.lyrics,
+                            sourceName = "${first.artist} - ${first.name}",
+                            delayMs = 0L,
+                            sourceType = LyricSourceType.ONLINE.name,
+                            isManual = false,
+                        )
+                    }
+                }
+                if (!isCurrent(id, version)) return
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        displayed = parsed,
+                        displayedRawText = first.lyrics,
+                        currentSourceType = LyricSourceType.ONLINE,
+                        onlineSources = results.toOnlineSources(),
+                        errorMessage = if (parsed.items.isEmpty()) "歌词解析失败" else null,
                     )
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Timber.e(e, "Failed to load lyrics")
-            _uiState.update { state ->
-                state.copy(
-                    isLoading = false,
-                    // 网络失败但已有显示内容时保留
-                    errorMessage = if (state.displayed == null) "加载歌词失败: ${e.message ?: "未知错误"}" else null,
-                )
+            if (isCurrent(id, version)) {
+                _uiState.update { it.copy(isLoading = false, errorMessage = "加载歌词失败: ${e.message ?: "未知错误"}") }
             }
         }
     }
 
-    /** 打开切换面板：按需加载内嵌（实时）与在线（联网）候选到对应分区 */
+    /** 仅加载候选，不改变当前歌词选择。 */
     fun openPanel() {
-        val id = _uiState.value.currentMediaStoreId
-        val title = _uiState.value.currentTitle
-        viewModelScope.launch {
-            if (_uiState.value.embeddedSource == null && id > 0L) {
-                val emb = withContext(Dispatchers.IO) { lyricsUseCases.getEmbeddedLyrics(id) }
-                // 期间可能已切歌，仅当仍是同一首时才写回，避免把上一首的候选灌进新歌
-                if (!emb.isNullOrBlank() && _uiState.value.currentMediaStoreId == id) {
-                    _uiState.update { it.copy(embeddedSource = LyricSource.Embedded(rawLyrics = emb)) }
-                }
-            }
-            if (_uiState.value.onlineSources.isEmpty() && !title.isNullOrBlank()) {
-                _uiState.update { it.copy(onlineLoading = true) }
-                val results =
-                    try {
-                        withContext(Dispatchers.IO) { lyricsUseCases.searchAllLyrics(title) }
-                    } catch (e: Exception) {
-                        Timber.w(e, "在线歌词搜索失败")
-                        emptyList()
+        val state = _uiState.value
+        val id = state.currentMediaStoreId
+        val epoch = songGeneration
+        panelJob?.cancel()
+        panelJob =
+            viewModelScope.launch {
+                try {
+                    if (state.embeddedSource == null && id > 0L) {
+                        val embedded = withContext(ioDispatcher) { lyricsUseCases.getEmbeddedLyrics(id) }
+                        if (epoch != songGeneration) return@launch
+                        if (!embedded.isNullOrBlank()) {
+                            _uiState.update { it.copy(embeddedSource = LyricSource.Embedded(rawLyrics = embedded)) }
+                        }
                     }
-                // 搜索是挂起点，返回时可能已切歌：结果只属于发起时的那首歌
-                if (_uiState.value.currentMediaStoreId == id) {
-                    _uiState.update { it.copy(onlineLoading = false, onlineSources = results.toOnlineSources()) }
+                    if (_uiState.value.onlineSources.isEmpty() && !state.currentTitle.isNullOrBlank()) {
+                        _uiState.update { it.copy(onlineLoading = true) }
+                        val results = withContext(ioDispatcher) { lyricsUseCases.searchAllLyrics(state.currentTitle) }
+                        if (epoch == songGeneration) {
+                            _uiState.update { it.copy(onlineSources = results.toOnlineSources()) }
+                        }
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.w(e, "歌词候选加载失败")
+                } finally {
+                    if (epoch == songGeneration) _uiState.update { it.copy(onlineLoading = false) }
                 }
             }
+    }
+
+    private fun startSelection(
+        suppress: Boolean = false,
+        action: suspend (UiState, Long) -> Unit,
+    ) {
+        val state = _uiState.value
+        val id = state.currentMediaStoreId
+        if (id <= 0L) return
+        generation++
+        val version = generation
+        loadJob?.cancel()
+        // 先保存“无匹配歌词”，避免后续无效选择导致设置丢失。
+        selectionJobs[id]?.takeUnless { it.suppress }?.job?.cancel()
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                errorMessage = null,
+                lyricsSuppressed = suppress || it.lyricsSuppressed,
+                displayed = if (suppress) null else it.displayed,
+                displayedRawText = if (suppress) null else it.displayedRawText,
+            )
+        }
+        val job =
+            viewModelScope.launch {
+                try {
+                    writeMutex.withLock {
+                        currentCoroutineContext().ensureActive()
+                        action(state, version)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to save lyric selection")
+                    if (isCurrent(id, version)) {
+                        _uiState.update {
+                            it.copy(errorMessage = if (suppress) "无匹配歌词设置未保存成功，请重新选择" else "歌词选择未保存成功，请重试")
+                        }
+                    }
+                }
+            }
+        selectionJobs[id] = SelectionTask(job, suppress)
+        job.invokeOnCompletion {
+            if (selectionJobs[id]?.job === job) selectionJobs.remove(id)
         }
     }
 
-    /** 手动选择某个来源（内嵌 / 在线候选），快照入库并标记为手动锁定 */
+    fun selectNoMatchingLyrics() {
+        startSelection(suppress = true) { state, _ ->
+            withContext(ioDispatcher) { lyricsUseCases.suppressLyrics(state.currentMediaStoreId) }
+        }
+    }
+
+    /** 新歌词校验并保存成功后，才解除禁用。 */
     fun selectSource(source: LyricSource) {
-        val id = _uiState.value.currentMediaStoreId
-        val offset = _uiState.value.lyricsOffsetMs
-        viewModelScope.launch {
+        startSelection { state, version ->
+            val id = state.currentMediaStoreId
             val parsed = parseOffMain(source.rawLyrics)
             if (parsed.items.isEmpty()) {
-                _uiState.update { it.copy(errorMessage = "歌词为空或无法解析") }
-                return@launch
+                if (isCurrent(id, version)) _uiState.update { it.copy(errorMessage = "歌词为空或无法解析") }
+                return@startSelection
             }
-            _uiState.update {
-                it.copy(
-                    displayed = parsed,
-                    displayedRawText = source.rawLyrics,
-                    currentSourceType = source.type,
-                    errorMessage = null,
-                )
-            }
-            if (id <= 0L) return@launch
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 lyricsUseCases.saveLyricsSource(
                     mediaStoreId = id,
                     lyrics = source.rawLyrics,
                     sourceName = source.title,
-                    delayMs = offset,
+                    delayMs = state.lyricsOffsetMs,
                     sourceType = source.type.name,
                     isManual = true,
                     sourceUri = (source as? LyricSource.LocalFile)?.uri.orEmpty(),
                 )
             }
+            if (isCurrent(id, version)) {
+                _uiState.update {
+                    it.copy(
+                        displayed = parsed,
+                        displayedRawText = source.rawLyrics,
+                        currentSourceType = source.type,
+                        lyricsSuppressed = false,
+                        localSource = (source as? LyricSource.LocalFile) ?: it.localSource,
+                        cachedOnlineSource = (source as? LyricSource.Online) ?: it.cachedOnlineSource,
+                        errorMessage = null,
+                    )
+                }
+            }
         }
     }
 
-    /** 导入本地歌词文件：验证通过后才快照入库（LOCAL_FILE + 手动锁定）。 */
     fun importLocalFile(uri: String) {
-        val id = _uiState.value.currentMediaStoreId
-        if (id <= 0L) {
-            _uiState.update { it.copy(errorMessage = "请先播放一首歌曲再导入歌词") }
-            return
-        }
-        val offset = _uiState.value.lyricsOffsetMs
-        viewModelScope.launch {
+        startSelection { state, version ->
+            val id = state.currentMediaStoreId
             val result =
-                withContext(Dispatchers.IO) {
-                    lyricsUseCases.importLocalLyricsResult(id, uri, offset)
+                withContext(ioDispatcher) {
+                    lyricsUseCases.importLocalLyricsResult(id, uri, state.lyricsOffsetMs)
                 }
-            if (_uiState.value.currentMediaStoreId != id) return@launch
+            if (!isCurrent(id, version)) return@startSelection
             when (result) {
-                is LocalLyricsImportResult.Failure -> {
+                is LocalLyricsImportResult.Failure ->
                     _uiState.update {
                         it.copy(
-                            // 读取器和内容验证均在写缓存前完成，失败时保留当前歌词与来源。
                             errorMessage =
                                 when (result.reason) {
                                     LocalLyricsImportResult.FailureReason.INVALID_CONTENT -> "歌词文件为空或无法解析"
                                     LocalLyricsImportResult.FailureReason.UNSUPPORTED_FILE -> "不支持的文件类型，请选择歌词文件"
                                     LocalLyricsImportResult.FailureReason.FILE_TOO_LARGE -> "歌词文件过大（最大 4 MiB）"
                                     LocalLyricsImportResult.FailureReason.BINARY_FILE -> "文件不是有效的文本歌词"
-                                    LocalLyricsImportResult.FailureReason.READ_FAILED -> "无法读取该歌词文件"
+                                    LocalLyricsImportResult.FailureReason.READ_FAILED -> "无法读取或保存该歌词文件"
                                 },
                         )
                     }
-                    return@launch
-                }
-
                 is LocalLyricsImportResult.Success -> {
                     val cached = result.cached
                     val parsed = parseOffMain(cached.lyrics)
-                    if (parsed.items.isEmpty()) {
-                        // 防御性检查：UseCase 已验证，解析器升级后仍不应污染当前显示。
-                        _uiState.update { it.copy(errorMessage = "歌词文件为空或无法解析") }
-                        return@launch
-                    }
+                    if (!isCurrent(id, version)) return@startSelection
                     _uiState.update {
                         it.copy(
                             displayed = parsed,
                             displayedRawText = cached.lyrics,
                             currentSourceType = LyricSourceType.LOCAL_FILE,
-                            localSource =
-                                LyricSource.LocalFile(
-                                    uri = uri,
-                                    fileName = cached.lyricSourceName,
-                                    rawLyrics = cached.lyrics,
-                                ),
-                            lyricsOffsetMs = offset,
+                            lyricsSuppressed = false,
+                            localSource = LyricSource.LocalFile(uri, cached.lyricSourceName, cached.lyrics),
                             errorMessage = null,
                         )
                     }
@@ -332,33 +382,33 @@ class LyricsViewModel(
         }
     }
 
-    /**
-     * 更新歌词偏移量并持久化。
-     * 内嵌歌词首屏不落库（见 loadLyrics 分支 2），此处首次调整时把当前来源快照入库，
-     * 否则偏移量在切歌/重进后丢失。
-     */
+    /** 禁用歌词时保留原时间偏移。 */
     fun updateOffset(offsetMs: Long) {
         val state = _uiState.value
-        val mediaStoreId = state.currentMediaStoreId
+        if (state.lyricsSuppressed) return
+        val id = state.currentMediaStoreId
+        val version = generation
         _uiState.update { it.copy(lyricsOffsetMs = offsetMs) }
-        if (mediaStoreId <= 0L) return
-        val rawText = state.displayedRawText
-        val sourceType = state.currentSourceType
-        viewModelScope.launch(Dispatchers.IO) {
-            val existing = lyricsUseCases.getCachedLyrics(mediaStoreId)
-            if (existing != null) {
-                lyricsUseCases.updateDelay(mediaStoreId, offsetMs)
-            } else if (!rawText.isNullOrBlank()) {
-                // 尚无缓存行（当前多为实时内嵌）：快照入库以承载偏移量。
-                // isManual=false：不改变来源优先级，仅让 delay 得以持久化。
-                lyricsUseCases.saveLyricsSource(
-                    mediaStoreId = mediaStoreId,
-                    lyrics = rawText,
-                    sourceName = sourceType.name,
-                    delayMs = offsetMs,
-                    sourceType = sourceType.name,
-                    isManual = false,
-                )
+        if (id <= 0L) return
+        viewModelScope.launch {
+            writeMutex.withLock {
+                if (!isCurrent(id, version)) return@withLock
+                withContext(ioDispatcher) {
+                    val existing = lyricsUseCases.getCachedLyrics(id)
+                    if (existing?.lyricsSuppressed == true) return@withContext
+                    if (existing != null) {
+                        lyricsUseCases.updateDelay(id, offsetMs)
+                    } else if (!state.displayedRawText.isNullOrBlank()) {
+                        lyricsUseCases.saveLyricsSource(
+                            mediaStoreId = id,
+                            lyrics = state.displayedRawText,
+                            sourceName = state.currentSourceType.name,
+                            delayMs = offsetMs,
+                            sourceType = state.currentSourceType.name,
+                            isManual = false,
+                        )
+                    }
+                }
             }
         }
     }
@@ -372,7 +422,7 @@ class LyricsViewModel(
     fun getCurrentPositionMs(): Long = player.currentPosition
 
     /** 在后台线程解析歌词，避免大段 YRC/LRC 阻塞主线程 */
-    private suspend fun parseOffMain(text: String): ParsedLyrics = withContext(Dispatchers.Default) { parseAnyLyrics(text) }
+    private suspend fun parseOffMain(text: String): ParsedLyrics = withContext(parseDispatcher) { parseAnyLyrics(text) }
 
     private fun List<SongLyrics>.toOnlineSources(): List<LyricSource.Online> =
         map { s ->
@@ -438,7 +488,7 @@ class LyricsViewModel(
                 )
             }
 
-            // AMLL was already parsed above; only try the other timestamp formats here.
+            // AMLL 已解析，仅尝试其他时间戳格式。
             val synced = parseNonAmllLyrics(lyricsText)
             if (!synced.isNullOrEmpty()) {
                 return ParsedLyrics(

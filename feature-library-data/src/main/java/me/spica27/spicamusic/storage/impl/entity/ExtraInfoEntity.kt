@@ -24,4 +24,8 @@ data class ExtraInfoEntity(
     var isManual: Boolean = false,
     // 本地文件来源的原始 URI/文件名，仅作展示与提示（内容已快照入库，不依赖其长期有效）
     var sourceUri: String = "",
+    @androidx.room.ColumnInfo(defaultValue = "0")
+    var restoredSnapshot: Boolean = false,
+    @androidx.room.ColumnInfo(defaultValue = "0")
+    var lyricsSuppressed: Boolean = false,
 )

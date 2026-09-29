@@ -1,24 +1,31 @@
 package me.spica27.spicamusic.ui.glass
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.ExperimentalHazeApi
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazePerformanceMode
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.HazeBlurStyle
 import dev.chrisbanes.haze.blur.HazeColorEffect
 import dev.chrisbanes.haze.blur.hazeBlur
+import dev.chrisbanes.haze.glass.GlassStyle
+import dev.chrisbanes.haze.glass.hazeGlass
+import dev.chrisbanes.haze.glass.material3.material3
 import dev.chrisbanes.haze.hazeSource
 
 @Immutable
@@ -49,6 +56,7 @@ enum class LiquidGlassVariant {
 }
 
 @Composable
+@OptIn(ExperimentalHazeApi::class)
 fun Modifier.liquidGlass(
     hazeState: HazeState,
     variant: LiquidGlassVariant,
@@ -58,6 +66,33 @@ fun Modifier.liquidGlass(
     val config = LocalLiquidGlassConfig.current
     if (!config.enabled) {
         return clip(shape).backgroundFallback(fallbackColor)
+    }
+
+    if ((variant == LiquidGlassVariant.Dialog || variant == LiquidGlassVariant.PopupMenu) &&
+        shape is RoundedCornerShape
+    ) {
+        val baseStyle =
+            GlassStyle.clear.material3(
+                containerColor = fallbackColor,
+                tint = fallbackColor.copy(alpha = if (fallbackColor.luminance() < 0.5f) 0.36f else 0.28f),
+            )
+        val glassStyle =
+            remember(baseStyle, shape) {
+                baseStyle.then {
+                    shape(shape)
+                    lightPosition(Alignment.TopStart)
+                    optics(
+                        blurRadius = 24.dp,
+                    )
+                }
+            }
+        // 形状同时用于裁剪和折射边界；只处理背景，子内容保持清晰。
+        return clip(shape).hazeGlass(
+            input = HazeInput.Sources(hazeState),
+            style = glassStyle,
+            performanceMode = HazePerformanceMode.Default,
+            expandLayerBounds = false,
+        )
     }
 
     val style = liquidBlurStyle(variant, fallbackColor)

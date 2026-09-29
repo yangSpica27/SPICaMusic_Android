@@ -159,6 +159,7 @@ interface SongDao {
         val like: Boolean,
         val isIgnore: Boolean,
         val sort: Int,
+        val explicitlyImported: Boolean = false,
     )
 
     /**
@@ -166,13 +167,15 @@ interface SongDao {
      * 只查询必要列，避免全量加载
      */
     @Query(
-        "SELECT songId, mediaStoreId, albumId, dateModified, waveformData, `like`, isIgnore, sort " +
+        "SELECT songId, mediaStoreId, albumId, dateModified, waveformData, `like`, isIgnore, sort, " +
+            "EXISTS(SELECT 1 FROM TransferIdentity WHERE kind = 'imported_track' AND localId = song.songId) AS explicitlyImported " +
             "FROM song"
     )
     suspend fun getAllScanInfo(): List<SongScanInfo>
 
     @Query(
-        "SELECT songId, mediaStoreId, albumId, dateModified, waveformData, `like`, isIgnore, sort " +
+        "SELECT songId, mediaStoreId, albumId, dateModified, waveformData, `like`, isIgnore, sort, " +
+            "EXISTS(SELECT 1 FROM TransferIdentity WHERE kind = 'imported_track' AND localId = song.songId) AS explicitlyImported " +
             "FROM song WHERE mediaStoreId IN (:mediaStoreIds)"
     )
     suspend fun getScanInfoByMediaStoreIds(mediaStoreIds: List<Long>): List<SongScanInfo>

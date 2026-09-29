@@ -1,0 +1,29 @@
+plugins {
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.jetbrains.kotlin.serialization)
+}
+
+android {
+    namespace = 'me.spica27.spicamusic.feature.transfer.data'
+    compileSdk = 37
+    defaultConfig {
+        minSdk = 29
+        testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    api project(':feature-transfer-domain')
+    implementation project(':feature-library-data')
+    implementation libs.androidx.core.ktx
+    implementation libs.kotlinx.serialization.json
+    implementation libs.timber
+    testImplementation libs.junit
+    androidTestImplementation libs.androidx.junit
+    androidTestImplementation libs.androidx.espresso.core
+    androidTestImplementation project(':core-preferences')
+}
