@@ -90,8 +90,8 @@ fun Modifier.liquidGlass(
         return clip(shape).hazeGlass(
             input = HazeInput.Sources(hazeState),
             style = glassStyle,
-            performanceMode = HazePerformanceMode.Default,
-            expandLayerBounds = false,
+            performanceMode = HazePerformanceMode.Fixed(.45f),
+            expandLayerBounds = true,
         )
     }
 
