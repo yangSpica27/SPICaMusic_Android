@@ -1061,7 +1061,7 @@ private fun QueueTopBar(
                 .height(insetTop + TopBarHeight)
                 .drawBehind {
                     // 背景不透明度在 Draw 阶段跟随滚动，避免每帧重组
-                    drawRect(color = chromeColor.copy(alpha = chromeColor.alpha * mastheadCollapse(listState)))
+                    drawRect(color = chromeColor.copy(alpha = chromeColor.alpha * mastheadCollapse(listState) * 0.5f))
                 },
     ) {
         // 全页唯一分隔线：顶栏收起后出现

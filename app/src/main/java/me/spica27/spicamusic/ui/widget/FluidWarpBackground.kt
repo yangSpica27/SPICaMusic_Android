@@ -52,18 +52,13 @@ fun FluidWarpBackground(
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val renderer = remember { FluidWarpRenderer() }
-    val colors = MaterialTheme.colorScheme
-    val effectiveIsDarkMode = isDarkMode ?: (colors.background.luminance() < 0.5f)
-    val luminanceRange =
-        remember(effectiveIsDarkMode, colors.onSurface, colors.onSurfaceVariant) {
-            fluidLuminanceRange(effectiveIsDarkMode, colors.onSurface, colors.onSurfaceVariant)
-        }
+    val effectiveIsDarkMode = isDarkMode ?: (MaterialTheme.colorScheme.background.luminance() < 0.5f)
 
     SideEffect {
         val (level, beat) = analyzeFluidSpectrum(fftDrawData)
         renderer.updateAudio(level = level, beat = beat)
         renderer.updateTintColor(coverColor)
-        renderer.updateLuminanceRange(luminanceRange)
+        renderer.updateDarkMode(effectiveIsDarkMode)
     }
 
     // 封面变化时在 IO 线程解码小图（≤256px），失败/缺封面时回退主色渐变。
@@ -71,16 +66,11 @@ fun FluidWarpBackground(
     val uri = coverUri()
     val fallbackColorKey = if (uri == null) coverColor else null
     LaunchedEffect(uri, fallbackColorKey) {
-        val cover =
+        val bitmap =
             withContext(Dispatchers.IO) {
-                val bitmap = decodeCoverBitmap(context, uri) ?: createGradientFallback(coverColor)
-                val sample = Bitmap.createScaledBitmap(bitmap, 32, 32, true)
-                val pixels = IntArray(32 * 32)
-                sample.getPixels(pixels, 0, 32, 0, 0, 32, 32)
-                if (sample !== bitmap) sample.recycle()
-                FluidCover(bitmap, fluidCoverLuminanceKey(pixels))
+                decodeCoverBitmap(context, uri) ?: createGradientFallback(coverColor)
             }
-        renderer.submitCover(cover)
+        renderer.submitCover(bitmap)
     }
 
     OpenGlBackground(
@@ -170,14 +160,9 @@ private fun createGradientFallback(color: Color): Bitmap {
 // OpenGL Renderer
 // ──────────────────────────────────────────────────────────────────────────
 
-internal data class FluidCover(
-    val bitmap: Bitmap,
-    val luminanceKey: Float,
-)
-
-internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
+private class FluidWarpRenderer : OpenGlBackgroundRenderer {
     // ── UI 线程写入、GL 线程读取的输入 ──
-    private val pendingCover = AtomicReference<FluidCover?>(null)
+    private val pendingCover = AtomicReference<Bitmap?>(null)
 
     @Volatile
     private var rawLevel = 0f
@@ -186,14 +171,23 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
     private var rawBeat = 0f
 
     @Volatile
-    private var tintColor = Color(0xFF28283C)
+    private var tintR = 0.157f
 
     @Volatile
-    private var luminanceRange = fluidLuminanceRange(true, Color.White, Color(0xFFADADAD))
+    private var tintG = 0.157f
 
-    fun submitCover(cover: FluidCover) {
+    @Volatile
+    private var tintB = 0.235f
+
+    @Volatile
+    private var tintDirty = false
+
+    @Volatile
+    private var isDarkMode = true
+
+    fun submitCover(bitmap: Bitmap) {
         // 覆盖尚未消费的旧封面即可，Bitmap 交给 GC 回收（256px 小图，无手动 recycle 的竞态风险）
-        pendingCover.set(cover)
+        pendingCover.set(bitmap)
     }
 
     fun updateAudio(
@@ -205,20 +199,33 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
     }
 
     fun updateTintColor(color: Color) {
-        tintColor = color
+        // 暗部 tint 色取主色调压暗版本，接近 kawarp 默认深色 tint 的观感
+        val r = color.red * 0.55f
+        val g = color.green * 0.55f
+        val b = color.blue * 0.55f
+        if (r != tintR || g != tintG || b != tintB) {
+            tintR = r
+            tintG = g
+            tintB = b
+            tintDirty = true
+        }
     }
 
-    fun updateLuminanceRange(range: FluidLuminanceRange) {
-        luminanceRange = range
+    fun updateDarkMode(dark: Boolean) {
+        isDarkMode = dark
     }
 
     // ── 以下状态仅 GL 线程访问 ──
+    private var tintProgram = 0
     private var blurProgram = 0
     private var blendProgram = 0
     private var warpProgram = 0
     private var outputProgram = 0
 
     // uniform 位置
+    private var uTintTexture = 0
+    private var uTintColor = 0
+    private var uTintIntensity = 0
     private var uBlurTexture = 0
     private var uBlurResolution = 0
     private var uBlurOffset = 0
@@ -235,9 +242,6 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
     private var uOutScale = 0
     private var uOutResolution = 0
     private var uOutDark = 0
-    private var uOutLuminanceRange = 0
-    private var uOutCoverKey = 0
-    private var uOutTintColor = 0
 
     private var sourceTexture = 0
     private var blurFbo1 = Fbo()
@@ -259,13 +263,8 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
     private var surfaceHeight = 1
 
     /** 上一次成功处理的封面，用于 EGL 上下文重建后恢复画面 */
-    private var lastCover: FluidCover? = null
+    private var lastCover: Bitmap? = null
     private var snapNextCover = false
-    private var currentCoverKey = 0.18f
-    private var nextCoverKey = 0.18f
-    private var smoothedTintR = 0f
-    private var smoothedTintG = 0f
-    private var smoothedTintB = 0f
 
     // 动画状态（kawarp 的 accumulatedTime / animationSpeed 平滑）
     private var lastFrameNs = 0L
@@ -291,11 +290,15 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
             extensions.contains("GL_OES_texture_half_float") &&
             extensions.contains("GL_OES_texture_half_float_linear")
 
+        tintProgram = createProgram(VERTEX_SHADER, TINT_SHADER)
         blurProgram = createProgram(VERTEX_SHADER, KAWASE_BLUR_SHADER)
         blendProgram = createProgram(VERTEX_SHADER, BLEND_SHADER)
         warpProgram = createProgram(VERTEX_SHADER, DOMAIN_WARP_SHADER)
         outputProgram = createProgram(VERTEX_SHADER, OUTPUT_SHADER)
 
+        uTintTexture = GLES20.glGetUniformLocation(tintProgram, "uTexture")
+        uTintColor = GLES20.glGetUniformLocation(tintProgram, "uTintColor")
+        uTintIntensity = GLES20.glGetUniformLocation(tintProgram, "uTintIntensity")
         uBlurTexture = GLES20.glGetUniformLocation(blurProgram, "uTexture")
         uBlurResolution = GLES20.glGetUniformLocation(blurProgram, "uResolution")
         uBlurOffset = GLES20.glGetUniformLocation(blurProgram, "uOffset")
@@ -312,9 +315,6 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
         uOutScale = GLES20.glGetUniformLocation(outputProgram, "uScale")
         uOutResolution = GLES20.glGetUniformLocation(outputProgram, "uResolution")
         uOutDark = GLES20.glGetUniformLocation(outputProgram, "uDark")
-        uOutLuminanceRange = GLES20.glGetUniformLocation(outputProgram, "uLuminanceRange")
-        uOutCoverKey = GLES20.glGetUniformLocation(outputProgram, "uCoverKey")
-        uOutTintColor = GLES20.glGetUniformLocation(outputProgram, "uTintColor")
 
         sourceTexture = createTexture()
 
@@ -334,10 +334,6 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
         hasContent = false
         isTransitioning = false
         lastFrameNs = 0L
-        val tint = tintColor
-        smoothedTintR = tint.red
-        smoothedTintG = tint.green
-        smoothedTintB = tint.blue
         lastCover?.let {
             pendingCover.compareAndSet(null, it)
             snapNextCover = true
@@ -370,18 +366,16 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
 
         // 1. 有新封面则上传并重建模糊色场（仅换图时执行，等价 kawarp processNewImage）。
         // 首张封面直接落定：此时另一块 album FBO 内容未初始化，不能作为淡出源
-        pendingCover.getAndSet(null)?.let { cover ->
-            uploadAndProcessCover(cover, snap = snapNextCover || !hasContent, now = now)
+        pendingCover.getAndSet(null)?.let { bitmap ->
+            uploadAndProcessCover(bitmap, snap = snapNextCover || !hasContent)
             snapNextCover = false
         }
 
-        // 2. 平滑更新暗部补色，无需重建模糊纹理。
-        val tint = tintColor
-        val tintBlend = smoothingFactor(dt, 4f)
-        smoothedTintR += (tint.red - smoothedTintR) * tintBlend
-        smoothedTintG += (tint.green - smoothedTintG) * tintBlend
-        smoothedTintB += (tint.blue - smoothedTintB) * tintBlend
-        val range = luminanceRange
+        // 2. tint 色变化（调色板异步就绪）时原地重新模糊，不触发过渡（kawarp reblurCurrentImage）
+        if (tintDirty && hasContent) {
+            tintDirty = false
+            blurSourceInto(nextAlbum)
+        }
 
         // 3. 音频包络：快攻慢放平滑，节拍推高流速与扭曲强度
         smoothedBeat += (rawBeat - smoothedBeat) * smoothingFactor(dt, if (rawBeat > smoothedBeat) 12f else 3f)
@@ -398,19 +392,36 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
         if (!hasContent) {
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
             GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight)
-            val clear = if (range.dark) 0f else 1f
-            GLES20.glClearColor(clear, clear, clear, 1f)
+            if (isDarkMode) {
+                GLES20.glClearColor(0.05f, 0.05f, 0.06f, 1f)
+            } else {
+                GLES20.glClearColor(0.96f, 0.96f, 0.97f, 1f)
+            }
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
             return
         }
 
         // 4. 过渡混合（换歌交叉淡化）
-        val blendFactor = coverBlendFactor(now)
-        if (blendFactor >= 1f) isTransitioning = false
+        var blendFactor = 1f
+        if (isTransitioning) {
+            val elapsedMs = (now - transitionStartNs) / 1_000_000f
+            blendFactor = (elapsedMs / TRANSITION_DURATION_MS).coerceAtMost(1f)
+            if (blendFactor >= 1f) isTransitioning = false
+        }
 
         val warpSourceTexture =
             if (isTransitioning) {
-                blendAlbumsInto(blurFbo1, blendFactor)
+                GLES20.glUseProgram(blendProgram)
+                bindFbo(blurFbo1)
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, currentAlbum.texture)
+                GLES20.glUniform1i(uBlendTexture1, 0)
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, nextAlbum.texture)
+                GLES20.glUniform1i(uBlendTexture2, 1)
+                GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+                GLES20.glUniform1f(uBlendFactor, blendFactor)
+                drawQuad(texCoordBuffer)
                 blurFbo1.texture
             } else {
                 nextAlbum.texture
@@ -426,7 +437,7 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
         GLES20.glUniform1f(uWarpIntensity, WARP_INTENSITY_BASE + smoothedBeat * WARP_INTENSITY_BEAT)
         drawQuad(texCoordBuffer)
 
-        // 6. 曝光随封面过渡，亮度边界同步主题文字。
+        // 6. 输出：暗角 + 饱和度 + 明暗适配 + 时间抖动
         GLES20.glUseProgram(outputProgram)
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
         GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight)
@@ -437,57 +448,19 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
         GLES20.glUniform1f(uOutTime, accumulatedTime)
         GLES20.glUniform1f(uOutScale, OUTPUT_SCALE)
         GLES20.glUniform2f(uOutResolution, surfaceWidth.toFloat(), surfaceHeight.toFloat())
-        GLES20.glUniform1f(uOutDark, if (range.dark) 1f else 0f)
-        GLES20.glUniform2f(uOutLuminanceRange, range.min, range.max)
-        GLES20.glUniform1f(uOutCoverKey, currentCoverKey + (nextCoverKey - currentCoverKey) * blendFactor)
-        GLES20.glUniform3f(uOutTintColor, smoothedTintR, smoothedTintG, smoothedTintB)
+        GLES20.glUniform1f(uOutDark, if (isDarkMode) 1f else 0f)
         drawQuad(texCoordBuffer)
     }
 
-    private fun coverBlendFactor(now: Long): Float =
-        if (isTransitioning) {
-            ((now - transitionStartNs) / 1_000_000f / TRANSITION_DURATION_MS).coerceIn(0f, 1f)
-        } else {
-            1f
-        }
-
-    private fun blendAlbumsInto(
-        target: Fbo,
-        blendFactor: Float,
-    ) {
-        GLES20.glUseProgram(blendProgram)
-        bindFbo(target)
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, currentAlbum.texture)
-        GLES20.glUniform1i(uBlendTexture1, 0)
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, nextAlbum.texture)
-        GLES20.glUniform1i(uBlendTexture2, 1)
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glUniform1f(uBlendFactor, blendFactor)
-        drawQuad(texCoordBuffer)
-    }
-
-    /** 上传封面及曝光基准，共用过渡进度。 */
+    /** 上传封面 → tint+模糊到 nextAlbum，必要时启动交叉淡化（kawarp processNewImage） */
     private fun uploadAndProcessCover(
-        cover: FluidCover,
+        bitmap: Bitmap,
         snap: Boolean,
-        now: Long,
     ) {
-        val bitmap = cover.bitmap
         if (bitmap.isRecycled) return
-
-        // 快速切歌从当前混合画面接续过渡。
-        val blendFactor = coverBlendFactor(now)
-        currentCoverKey += (nextCoverKey - currentCoverKey) * blendFactor
-        if (isTransitioning && !snap) {
-            blendAlbumsInto(blurFbo1, blendFactor)
-            copyTextureInto(blurFbo1.texture, nextAlbum)
-        }
-        nextCoverKey = cover.luminanceKey
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, sourceTexture)
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
-        lastCover = cover
+        lastCover = bitmap
 
         // 交换 current/next：current 变为淡出的旧图
         val swap = currentAlbum
@@ -499,31 +472,23 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
 
         if (snap || TRANSITION_DURATION_MS <= 0f) {
             isTransitioning = false
-            currentCoverKey = nextCoverKey
         } else {
             isTransitioning = true
-            transitionStartNs = now
+            transitionStartNs = System.nanoTime()
         }
     }
 
-    private fun copyTextureInto(
-        texture: Int,
-        target: Fbo,
-        flipped: Boolean = false,
-    ) {
-        GLES20.glUseProgram(blurProgram)
-        bindFbo(target)
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture)
-        GLES20.glUniform1i(uBlurTexture, 0)
-        GLES20.glUniform2f(uBlurResolution, BLUR_SIZE.toFloat(), BLUR_SIZE.toFloat())
-        GLES20.glUniform1f(uBlurOffset, 0f)
-        drawQuad(if (flipped) flippedTexCoordBuffer else texCoordBuffer)
-    }
-
-    /** 修正封面方向，模糊后写入目标纹理。 */
+    /** tint → N 次 Kawase 模糊 → 拷入目标 FBO（kawarp blurSourceInto） */
     private fun blurSourceInto(target: Fbo) {
-        copyTextureInto(sourceTexture, blurFbo1, flipped = true)
+        // Step 1: 暗部着色。使用垂直翻转纹理坐标修正 Bitmap 上传方向
+        GLES20.glUseProgram(tintProgram)
+        bindFbo(blurFbo1)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, sourceTexture)
+        GLES20.glUniform1i(uTintTexture, 0)
+        GLES20.glUniform3f(uTintColor, tintR, tintG, tintB)
+        GLES20.glUniform1f(uTintIntensity, TINT_INTENSITY)
+        drawQuad(flippedTexCoordBuffer)
 
         // Step 2: Kawase 模糊 ping-pong
         GLES20.glUseProgram(blurProgram)
@@ -714,6 +679,9 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
         /** 换歌交叉淡化时长（kawarp transitionDuration 默认 1000ms） */
         const val TRANSITION_DURATION_MS = 900f
 
+        /** 暗部着色强度（kawarp tintIntensity 默认 0.15，略调高让主色更显） */
+        const val TINT_INTENSITY = 0.35f
+
         /** 基础流速与节拍增益：无声时缓慢漂移，重拍时明显加速 */
         const val BASE_SPEED = 0.55f
         const val BEAT_SPEED_BOOST = 2.6f
@@ -722,9 +690,9 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
         const val WARP_INTENSITY_BASE = 0.85f
         const val WARP_INTENSITY_BEAT = 0.3f
 
-        /** 在线性光空间温和增强色彩。 */
-        const val SATURATION_BASE = 1.15f
-        const val SATURATION_LEVEL_BOOST = 0.15f
+        /** 饱和度（kawarp 默认 1.5）与响度增益 */
+        const val SATURATION_BASE = 1.45f
+        const val SATURATION_LEVEL_BOOST = 0.35f
 
         /** 抖动幅度（kawarp 默认 0.008，防色带） */
         const val DITHERING = 0.008f
@@ -810,6 +778,23 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
             void main() {
                 gl_Position = vec4(aPosition, 0.0, 1.0);
                 vTexCoord = aTexCoord;
+            }
+            """
+
+        /** 暗部向主色调着色（kawarp TINT_SHADER） */
+        const val TINT_SHADER =
+            PRECISION_HEADER + """
+            uniform sampler2D uTexture;
+            uniform vec3 uTintColor;
+            uniform float uTintIntensity;
+            varying vec2 vTexCoord;
+
+            void main() {
+                vec4 color = texture2D(uTexture, vTexCoord);
+                float luma = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                float darkMask = 1.0 - smoothstep(0.0, 0.5, luma);
+                color.rgb = mix(color.rgb, uTintColor, darkMask * uTintIntensity);
+                gl_FragColor = color;
             }
             """
 
@@ -907,7 +892,7 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
             }
             """
 
-        /** 约束背景的线性亮度并保留色相。 */
+        /** 输出：暗角 + 饱和度 + 抖动（kawarp OUTPUT_SHADER）+ 本地明暗适配 */
         const val OUTPUT_SHADER =
             PRECISION_HEADER + """
             uniform sampler2D uTexture;
@@ -917,21 +902,7 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
             uniform float uScale;
             uniform vec2 uResolution;
             uniform float uDark;
-            uniform vec2 uLuminanceRange;
-            uniform float uCoverKey;
-            uniform vec3 uTintColor;
             varying vec2 vTexCoord;
-
-            const vec3 LUMINANCE = vec3(0.2126, 0.7152, 0.0722);
-
-            vec3 toLinear(vec3 srgb) {
-                return mix(srgb / 12.92, pow((srgb + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), srgb));
-            }
-
-            vec3 toSrgb(vec3 linear) {
-                return mix(linear * 12.92, 1.055 * pow(linear, vec3(1.0 / 2.4)) - 0.055,
-                    step(vec3(0.0031308), linear));
-            }
 
             float hash(vec3 p) {
                 p = fract(p * 0.1031);
@@ -943,38 +914,25 @@ internal class FluidWarpRenderer : OpenGlBackgroundRenderer {
                 vec2 uv = (vTexCoord - 0.5) / uScale + 0.5;
                 uv = clamp(uv, 0.0, 1.0);
 
-                vec3 linear = toLinear(clamp(texture2D(uTexture, uv).rgb, 0.0, 1.0));
-                float sourceLuma = dot(linear, LUMINANCE);
+                vec4 color = texture2D(uTexture, uv);
 
-                // 仅为近黑区域少量补色。
-                float shadowWeight = 1.0 - smoothstep(0.002, 0.04, sourceLuma);
-                vec3 tint = toLinear(uTintColor);
-                tint = mix(vec3(dot(tint, LUMINANCE)), tint, 0.35);
-                linear += tint * (0.008 * shadowWeight);
-                float luma = dot(linear, LUMINANCE);
-
-                // 根据封面亮度平滑映射到目标区间。
-                float tone = luma / (luma + max(uCoverKey, 0.004));
-                float target = mix(uLuminanceRange.x, uLuminanceRange.y, tone);
                 vec2 center = vTexCoord - 0.5;
-                float edge = dot(center, center) * 2.0;
-                float vignette = edge * 0.08 * smoothstep(0.01, 0.15, uCoverKey);
-                float edgeLuma = mix(uLuminanceRange.y, uLuminanceRange.x, uDark);
-                target = mix(target, edgeLuma, vignette);
+                float vignette = 1.0 - dot(center, center) * 0.3;
+                color.rgb *= vignette;
 
-                // 超出色域时降低饱和度，保持目标亮度。
-                vec3 chroma = (linear - vec3(luma)) * uSaturation * target / max(luma, 0.005);
-                float positive = max(max(chroma.r, chroma.g), chroma.b);
-                float negative = -min(min(chroma.r, chroma.g), chroma.b);
-                float gamutScale = min(1.0, min((1.0 - target) / max(positive, 0.00001),
-                    target / max(negative, 0.00001)));
-                vec3 color = toSrgb(clamp(vec3(target) + chroma * gamutScale, 0.0, 1.0));
+                float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                color.rgb = mix(vec3(gray), color.rgb, uSaturation);
+
+                // 明暗模式适配：暗色压暗保证前景可读，亮色向白提亮成柔和水彩
+                vec3 lightened = mix(color.rgb, vec3(1.0), 0.42);
+                vec3 darkened = color.rgb * 0.6;
+                color.rgb = mix(lightened, darkened, uDark);
 
                 vec2 pixelPos = floor(vTexCoord * uResolution);
                 float noise = hash(vec3(pixelPos, floor(uTime * 60.0)));
-                color += (noise - 0.5) * uDithering;
+                color.rgb += (noise - 0.5) * uDithering;
 
-                gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+                gl_FragColor = vec4(color.rgb, 1.0);
             }
             """
     }
