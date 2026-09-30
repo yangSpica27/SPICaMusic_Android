@@ -371,7 +371,8 @@ fun ExpandedPlayerScreen(
             animationSpec = tween(durationMillis = PLAYER_SURFACE_ENTER_DURATION_MILLIS, easing = EaseOutEmphasized),
             label = "lyricsScrimAlpha",
         )
-    val lyricsScrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.14f)
+    // 遮罩随主题底色变化，改善歌词对比度。
+    val lyricsScrimColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.14f)
 
     Box(
         modifier =
@@ -394,7 +395,7 @@ fun ExpandedPlayerScreen(
             enabled = animationsEnabled && isAppInForeground,
         )
 
-        // 歌词模式只压暗同一份动态背景，不创建第二个背景实例。
+        // 为歌词叠加轻量阅读底色。
         Box(
             modifier =
                 Modifier
