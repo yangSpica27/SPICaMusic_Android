@@ -438,7 +438,7 @@ fun ExpandedPlayerScreen(
                                     modifier = Modifier.weight(1f),
                                     visible = isPlayerPageRevealed,
                                     delayMillis = 225,
-                                    enter = Nav3Transitions.slideUpPop().targetContentEnter,
+                                    enter = Nav3Transitions.expand().targetContentEnter,
                                 ) {
                                     PlayerPage(
                                         playerViewModel = viewModel,
