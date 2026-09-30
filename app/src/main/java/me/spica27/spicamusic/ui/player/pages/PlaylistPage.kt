@@ -19,6 +19,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
@@ -26,7 +27,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
@@ -63,6 +63,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.rounded.Checklist
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteSweep
@@ -133,6 +134,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -157,7 +159,6 @@ import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
-import me.spica27.spicamusic.ui.theme.ScaleExitTo
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.theme.entrance
@@ -183,6 +184,9 @@ private val MastheadCollapseDistance = 140.dp
 
 /** 列表头部的固定项：刊头 + 操作行 */
 private const val QUEUE_HEADER_COUNT = 2
+
+/** 滚动边界附近短暂反向时，不立即反转顶栏胶囊的显隐动画 */
+private const val QUEUE_ACTION_VISIBILITY_DELAY_MILLIS = 100L
 
 /** 首屏元素在编排中的槽位：刊头=0 操作行=1 歌曲行从 2 开始 */
 private const val ENTRANCE_ROW_BASE = 2
@@ -307,8 +311,16 @@ fun CurrPlaylistPage(
             val key = latestCurrentKey.value ?: return@derivedStateOf false
             if (editor.isMultiSelectMode || reorderState.isAnyItemDragging) return@derivedStateOf false
             val info = listState.layoutInfo
+            if (info.visibleItemsInfo.isEmpty()) return@derivedStateOf false
             val item = info.visibleItemsInfo.firstOrNull { it.key == key }
             item == null || item.offset < 0 || item.offset + item.size > info.viewportEndOffset - info.afterContentPadding
+        }
+    }
+
+    // 显示回到顶部
+    val showScrollToTop by remember(listState) {
+        derivedStateOf {
+            listState.firstVisibleItemIndex != 0
         }
     }
 
@@ -377,6 +389,12 @@ fun CurrPlaylistPage(
                 val viewport = info.viewportSize.height - info.beforeContentPadding - info.afterContentPadding
                 listState.animateScrollToItem(QUEUE_HEADER_COUNT + index, -viewport / 3)
             }
+        }
+    }
+
+    val scrollToTop: () -> Unit = {
+        scope.launch {
+            listState.animateScrollToItem(0)
         }
     }
 
@@ -616,7 +634,10 @@ fun CurrPlaylistPage(
             navigationContentDescription = navigationContentDescription,
             onNavigateBack = onNavigateBack,
             showLocate = showLocate,
+            showScrollToTop = showScrollToTop,
             onLocate = locateCurrent,
+            onScrollToTop = scrollToTop,
+            reducedMotion = reducedMotion,
             modifier = Modifier.align(Alignment.TopStart),
         )
 
@@ -1005,10 +1026,34 @@ private fun QueueTopBar(
     navigationContentDescription: String,
     onNavigateBack: () -> Unit,
     showLocate: Boolean,
+    showScrollToTop: Boolean,
     onLocate: () -> Unit,
+    onScrollToTop: () -> Unit,
+    reducedMotion: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val solid by remember(listState) { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
+    var locateVisible by remember { mutableStateOf(showLocate) }
+    var scrollToTopVisible by remember { mutableStateOf(showScrollToTop) }
+    // 目标连续稳定一小段时间后一起更新；新目标会取消旧任务，不排队播放过期状态。
+    LaunchedEffect(showLocate, showScrollToTop) {
+        delay(QUEUE_ACTION_VISIBILITY_DELAY_MILLIS)
+        locateVisible = showLocate
+        scrollToTopVisible = showScrollToTop
+    }
+    val pillSizeSpec =
+        if (reducedMotion) {
+            snap<IntSize>()
+        } else {
+            spring<IntSize>(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
+        }
+    // 进出都动画化实际占位宽度，避免退出结束时突然释放空间、把相邻胶囊和标题挤跳。
+    val pillEnter =
+        expandHorizontally(animationSpec = pillSizeSpec, expandFrom = Alignment.End) +
+            fadeIn(tween(durationMillis = 160))
+    val pillExit =
+        shrinkHorizontally(animationSpec = pillSizeSpec, shrinkTowards = Alignment.End) +
+            fadeOut(tween(durationMillis = 160))
     Box(
         modifier =
             modifier
@@ -1053,23 +1098,42 @@ private fun QueueTopBar(
                         .graphicsLayer { alpha = mastheadCollapse(listState) },
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            // 回到顶部的胶囊
+            AnimatedVisibility(
+                visible = scrollToTopVisible,
+                enter = pillEnter,
+                exit = pillExit,
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .padding(end = Spacing.Small)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.tertiary)
+                            .clickHighlight(enabled = showScrollToTop, onClick = onScrollToTop)
+                            .padding(horizontal = Spacing.Medium, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowUpward,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = stringResource(R.string.scroll_to_top_hint),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onTertiary,
+                    )
+                }
+            }
             // 当前歌曲滚出可视区时弹出的「定位」胶囊
             AnimatedVisibility(
-                visible = showLocate,
-                enter =
-                    scaleIn(
-                        animationSpec =
-                            spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMediumLow,
-                            ),
-                        initialScale = ScaleEnterFrom,
-                    ) + fadeIn(tween(durationMillis = 160)),
-                exit =
-                    scaleOut(
-                        animationSpec = tween(durationMillis = 140),
-                        targetScale = ScaleExitTo,
-                    ) + fadeOut(tween(durationMillis = 140)),
+                visible = locateVisible,
+                enter = pillEnter,
+                exit = pillExit,
             ) {
                 Row(
                     modifier =
@@ -1077,7 +1141,7 @@ private fun QueueTopBar(
                             .padding(end = Spacing.Small)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary)
-                            .clickHighlight(onClick = onLocate)
+                            .clickHighlight(enabled = showLocate, onClick = onLocate)
                             .padding(horizontal = Spacing.Medium, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
@@ -1440,7 +1504,7 @@ private fun QueueRow(
         targetValue =
             when {
                 isDragging -> MaterialTheme.colorScheme.surfaceContainerHigh
-                isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                isSelected -> MaterialTheme.colorScheme.primaryContainer
                 else -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0f)
             },
         animationSpec = tween(durationMillis = 160, easing = EaseOutEmphasized),
