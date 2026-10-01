@@ -106,7 +106,7 @@
   <string name="setting_about">About</string>
   <string name="setting_faq">FAQ</string>
   <string name="setting_eq">Sound Effects</string>
-  <string name="setting_ignore_music">Ignore Music</string>
+  <string name="setting_ignore_music">Ignored songs</string>
   <string name="setting_scanner">Scanner</string>
   <string name="setting_light_mode">Light Mode</string>
   <string name="setting_dark_mode">Dark Mode</string>
@@ -374,6 +374,7 @@
   <string name="theme_color_style_textured">Textured</string>
   <string name="theme_color_style_flat">Flat</string>
   <string name="settings_media_library">Media Library</string>
+  <string name="settings_ignored_songs_subtitle">View and restore ignored songs</string>
   <string name="settings_media_library_source_subtitle">Manage music scan paths</string>
 
   <!-- Most played time range chips -->

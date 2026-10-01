@@ -107,7 +107,7 @@
   <string name="setting_about">关于</string>
   <string name="setting_faq">反馈</string>
   <string name="setting_eq">音效</string>
-  <string name="setting_ignore_music">忽略的歌曲</string>
+  <string name="setting_ignore_music">已忽略歌曲</string>
   <string name="setting_scanner">扫描</string>
   <string name="setting_light_mode">亮色模式</string>
   <string name="setting_dark_mode">暗色模式</string>
@@ -373,6 +373,7 @@
   <string name="theme_color_style_textured">質感化</string>
   <string name="theme_color_style_flat">扁平化</string>
   <string name="settings_media_library">媒體庫</string>
+  <string name="settings_ignored_songs_subtitle">查看和還原已忽略的歌曲</string>
   <string name="settings_media_library_source_subtitle">管理音樂掃描路徑</string>
 
   <!-- Most played time range chips -->

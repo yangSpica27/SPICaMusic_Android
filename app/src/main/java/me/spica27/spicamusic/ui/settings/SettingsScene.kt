@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LensBlur
 import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Tune
@@ -90,6 +91,7 @@ import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.ui.navigation.AboutRoute
 import me.spica27.spicamusic.ui.navigation.AudioEffectsRoute
+import me.spica27.spicamusic.ui.navigation.IgnoredSongsRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.SleepTimerRoute
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
@@ -299,12 +301,30 @@ fun SettingsScreen() {
                 }
             }
 
+            item(key = "settings_media_library") {
+                SettingsSectionCard(
+                    title = stringResource(R.string.settings_media_library),
+                    subtitle = null,
+                    modifier =
+                        Modifier
+                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                            .entrance(order = 4, play = !entrancePlayed),
+                ) {
+                    NavigationRow(
+                        title = stringResource(R.string.setting_ignore_music),
+                        summary = stringResource(R.string.settings_ignored_songs_subtitle),
+                        icon = Icons.Default.MusicOff,
+                        onClick = { backStack.add(IgnoredSongsRoute) },
+                    )
+                }
+            }
+
             item(key = "settings_library_transfer") {
                 LibraryTransferSettings(
                     modifier =
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                            .entrance(order = 4, play = !entrancePlayed),
+                            .entrance(order = 5, play = !entrancePlayed),
                 )
             }
 
@@ -315,7 +335,7 @@ fun SettingsScreen() {
                     modifier =
                         Modifier
                             .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                            .entrance(order = 4, play = !entrancePlayed),
+                            .entrance(order = 6, play = !entrancePlayed),
                 ) {
                     NavigationRow(
                         title = stringResource(R.string.settings_about),
