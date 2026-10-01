@@ -1841,6 +1841,7 @@ private fun QueueEmptyState(
         Text(
             text = stringResource(R.string.queue_empty_title),
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.SemiBold,
         )
         Text(
