@@ -68,7 +68,12 @@ fun Modifier.liquidGlass(
         return clip(shape).backgroundFallback(fallbackColor)
     }
 
-    if ((variant == LiquidGlassVariant.Dialog || variant == LiquidGlassVariant.PopupMenu) &&
+    if ((
+            variant == LiquidGlassVariant.PlayerBar ||
+                variant == LiquidGlassVariant.Dialog ||
+                variant == LiquidGlassVariant.PopupMenu ||
+                variant == LiquidGlassVariant.Navigation
+        ) &&
         shape is RoundedCornerShape
     ) {
         val baseStyle =
@@ -77,12 +82,12 @@ fun Modifier.liquidGlass(
                 tint = fallbackColor.copy(alpha = if (fallbackColor.luminance() < 0.5f) 0.36f else 0.28f),
             )
         val glassStyle =
-            remember(baseStyle, shape) {
+            remember(baseStyle, shape, variant) {
                 baseStyle.then {
                     shape(shape)
                     lightPosition(Alignment.TopStart)
                     optics(
-                        blurRadius = 24.dp,
+                        blurRadius = if (variant == LiquidGlassVariant.PlayerBar) 28.dp else 24.dp,
                     )
                 }
             }
