@@ -13,7 +13,7 @@ def majorVersion = providers.gradleProperty("MAJOR_VERSION").get().toInteger()
 def minorVersion = providers.gradleProperty("MINOR_VERSION").get().toInteger()
 def buildVersion = providers.gradleProperty("BUILD_VERSION").get().toInteger()
 def appVersionCode = majorVersion * 1_000_000 + minorVersion * 10_000 + buildVersion
-def appVersionName = "$majorVersion.$minorVersion.$buildVersion RC"
+def appVersionName = "$majorVersion.$minorVersion.$buildVersion PRE"
 
 println("buildVersionCode = $appVersionCode")
 println("buildVersionName = $appVersionName")
