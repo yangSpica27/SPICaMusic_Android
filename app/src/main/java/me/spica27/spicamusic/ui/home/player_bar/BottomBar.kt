@@ -2,21 +2,16 @@ package me.spica27.spicamusic.ui.home.player_bar
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -31,7 +26,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,7 +50,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -65,17 +58,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -92,7 +80,6 @@ import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.ui.glass.LiquidGlassVariant
 import me.spica27.spicamusic.ui.glass.liquidGlass
-import me.spica27.spicamusic.ui.home.HomePage
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
@@ -751,154 +738,13 @@ private fun HomePageSwitcher(
     hazeState: HazeState? = null,
 ) {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
-    val tabs = remember { HomePage.entries.toTypedArray() }
-    val selectIndex = homeViewModel.currentPage.collectAsStateWithLifecycle().value
-    val tabPositions = remember { mutableStateMapOf<HomePage, Dp>() }
-    val tabWidths = remember { mutableStateMapOf<HomePage, Dp>() }
-    val tabHeight = remember { mutableStateMapOf<HomePage, Dp>() }
-    val density = LocalDensity.current
-
-    val indicatorSpec =
-        remember {
-            spring<Dp>(
-                stiffness = Spring.StiffnessMedium,
-                dampingRatio = Spring.DampingRatioNoBouncy,
-                visibilityThreshold = Dp.VisibilityThreshold,
-            )
-        }
-    val indicatorOffset by animateDpAsState(
-        targetValue = tabPositions.getOrElse(selectIndex) { 0.dp },
-        label = "indicatorOffset",
-        animationSpec = indicatorSpec,
+    val selectedPage by homeViewModel.currentPage.collectAsStateWithLifecycle()
+    GlassHomeNavigationBar(
+        selectedPage = selectedPage,
+        onPageSelected = homeViewModel::navigateToPage,
+        modifier = modifier,
+        hazeState = hazeState,
     )
-    val indicatorWidth by animateDpAsState(
-        targetValue = tabWidths.getOrElse(selectIndex) { 0.dp },
-        label = "indicatorWidth",
-        animationSpec = indicatorSpec,
-    )
-    val indicatorHeight by animateDpAsState(
-        targetValue = tabHeight.getOrElse(selectIndex) { 0.dp },
-        label = "indicatorHeight",
-        animationSpec = indicatorSpec,
-    )
-    val indicatorColor = MaterialTheme.colorScheme.primaryContainer
-    val surfaceModifier =
-        if (hazeState != null) {
-            Modifier.liquidGlass(
-                hazeState = hazeState,
-                variant = LiquidGlassVariant.Navigation,
-                shape = CircleShape,
-            )
-        } else {
-            Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
-        }
-
-    Row(
-        modifier =
-            modifier
-                .height(56.dp)
-                .padding(end = 12.dp)
-                .then(surfaceModifier)
-                .drawWithCache {
-                    val paddingValues = 6.dp.toPx()
-                    onDrawBehind {
-                        if (indicatorWidth > 0.dp && indicatorHeight > 0.dp) {
-                            drawRoundRect(
-                                color = indicatorColor,
-                                topLeft =
-                                    Offset(
-                                        indicatorOffset.toPx() + paddingValues,
-                                        paddingValues,
-                                    ),
-                                size =
-                                    Size(
-                                        indicatorWidth.toPx() - 2 * paddingValues,
-                                        indicatorHeight.toPx() - 2 * paddingValues,
-                                    ),
-                                cornerRadius =
-                                    CornerRadius(
-                                        100f,
-                                        100f,
-                                    ),
-                            )
-                        }
-                    }
-                },
-        // 移除 animateContentSize()：本 Row 高度固定 56dp、子项数量固定，
-        // 尺寸从不变化，白付一趟测量开销（且挂在常驻底栏上）
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        for (page in tabs) {
-            HomePageSwitchItem(
-                modifier =
-                    Modifier
-                        .onGloballyPositioned {
-                            tabPositions[page] = with(density) { it.positionInParent().x.toDp() }
-                            tabWidths[page] = with(density) { it.size.width.toDp() }
-                            tabHeight[page] = with(density) { it.size.height.toDp() }
-                        }.weight(1f),
-                icon = {
-                    Icon(
-                        page.icon,
-                        contentDescription = "Discover",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                },
-                title = stringResource(page.titleRes),
-                bandHomePage = page,
-            )
-        }
-    }
-}
-
-@Composable
-private fun HomePageSwitchItem(
-    modifier: Modifier,
-    icon: @Composable () -> Unit,
-    title: String,
-    bandHomePage: HomePage,
-) {
-    val homeViewModel: HomeViewModel = koinActivityViewModel()
-
-    val currentHomePage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
-
-    val isSelected =
-        remember(currentHomePage) {
-            currentHomePage == bandHomePage
-        }
-
-    Row(
-        modifier =
-            modifier
-                .clickable {
-                    if (!isSelected) {
-                        homeViewModel.navigateToPage(bandHomePage)
-                    }
-                }.height(56.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        AnimatedVisibility(
-            isSelected,
-            enter = expandHorizontally(expandFrom = Alignment.Start) + fadeIn(),
-            exit = shrinkHorizontally(shrinkTowards = Alignment.Start) + fadeOut(),
-        ) {
-            Row {
-                icon()
-                Spacer(modifier = Modifier.width(2.dp))
-            }
-        }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            color =
-                if (isSelected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-        )
-    }
 }
 
 @Composable
