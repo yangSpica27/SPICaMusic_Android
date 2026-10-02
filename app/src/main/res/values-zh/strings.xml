@@ -422,15 +422,15 @@
   <!-- 音乐页面 -->
   <string name="music_page_title">音乐</string>
   <string name="music_summary_format">%1$d 首歌曲 · %2$d 张专辑 · %3$d 位歌手</string>
-  <string name="music_tab_songs">全部歌曲</string>
+  <string name="music_tab_songs">歌曲</string>
   <string name="music_tab_albums">专辑</string>
   <string name="music_tab_artists">歌手</string>
-  <string name="music_tab_songs_count">%d首</string>
-  <string name="music_tab_albums_count">%d张</string>
-  <string name="music_tab_artists_count">%d位</string>
   <string name="music_search_songs_hint">搜索歌曲…</string>
   <string name="music_search_albums_hint">搜索专辑…</string>
   <string name="music_search_artists_hint">搜索歌手…</string>
+  <string name="music_found_songs">找到 %d 首歌曲</string>
+  <string name="music_found_albums">找到 %d 张专辑</string>
+  <string name="music_found_artists">找到 %d 位歌手</string>
   <string name="music_sort_cd">排序</string>
   <string name="sort_song_title_az">标题 A–Z</string>
   <string name="sort_song_title_za">标题 Z–A</string>

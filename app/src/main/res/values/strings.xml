@@ -425,12 +425,12 @@
   <string name="music_tab_songs">Songs</string>
   <string name="music_tab_albums">Albums</string>
   <string name="music_tab_artists">Artists</string>
-  <string name="music_tab_songs_count">%d</string>
-  <string name="music_tab_albums_count">%d</string>
-  <string name="music_tab_artists_count">%d</string>
   <string name="music_search_songs_hint">Search songs…</string>
   <string name="music_search_albums_hint">Search albums…</string>
   <string name="music_search_artists_hint">Search artists…</string>
+  <string name="music_found_songs">Found %d songs</string>
+  <string name="music_found_albums">Found %d albums</string>
+  <string name="music_found_artists">Found %d artists</string>
   <string name="music_sort_cd">Sort</string>
   <string name="sort_song_title_az">Title A–Z</string>
   <string name="sort_song_title_za">Title Z–A</string>

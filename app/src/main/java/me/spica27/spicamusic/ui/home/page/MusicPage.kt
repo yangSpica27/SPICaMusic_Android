@@ -2,27 +2,36 @@
 
 package me.spica27.spicamusic.ui.home.page
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +40,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,19 +49,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FormatListNumbered
-import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material.icons.filled.Schedule
@@ -65,12 +81,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -78,23 +95,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -109,6 +136,7 @@ import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SortMenuOption
 import me.spica27.spicamusic.ui.home.HomeViewModel
+import me.spica27.spicamusic.ui.home.player_bar.GlassNavigationIndicatorState
 import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
 import me.spica27.spicamusic.ui.navigation.ArtistDetailRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
@@ -118,11 +146,11 @@ import me.spica27.spicamusic.ui.navigation.SongMenuRoute
 import me.spica27.spicamusic.ui.navigation.SortMenuDialogRoute
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.ENTRANCE_GATE_MILLIS
-import me.spica27.spicamusic.ui.theme.ENTRANCE_STAGGER_MILLIS
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
+import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.ScaleExitTo
 import me.spica27.spicamusic.ui.theme.Shapes
@@ -132,13 +160,40 @@ import me.spica27.spicamusic.ui.widget.AnimatedCursorTextField
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.combinedClickHighlight
+import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinActivityViewModel
-import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
+/** 音乐页：歌曲 / 专辑 / 歌手浏览 */
+
+/** 大标题收缩距离上限 */
 private val MastheadCollapseDistance = 140.dp
 
-// 复用列表项动画。
+/** 分段控件高度与滑块内缩 */
+private val SegmentedHeight = 44.dp
+private val SegmentedInset = 4.dp
+
+/** 搜索胶囊与排序按钮高度 */
+private val ControlHeight = 44.dp
+
+/** 列表行封面尺寸 */
+private val RowCoverSize = 48.dp
+
+/** 首屏入场槽位：刊头 0、分段 1、搜索行 2，条目从 3 起 */
+private const val ENTRANCE_ORDER_ITEM_BASE = 3
+private const val ENTRANCE_MAX_ORDER = 10
+
+/** 切页入场位移参数 */
+private const val TAB_ENTER_MAX_ORDER = 6
+private const val TAB_ENTER_STAGGER_MILLIS = 18
+private const val TAB_ENTER_DURATION_MILLIS = 260
+private val TabEnterTranslation = 20.dp
+
+/** 切页入场闸门：关闭后滚入的条目不再播放 */
+private const val TAB_ENTER_GATE_MILLIS = 420L
+
+/** 条目重排位移动画 */
 private val ItemPlacementSpringSpec =
     spring<IntOffset>(
         dampingRatio = Spring.DampingRatioLowBouncy,
@@ -148,28 +203,24 @@ private val ItemPlacementSpringSpec =
 
 @Immutable
 private enum class MusicBrowserTab(
-    val titleRes: Int,
-    val countRes: Int,
-    val searchHintRes: Int,
-    val icon: ImageVector,
+    @param:StringRes val titleRes: Int,
+    @param:StringRes val searchHintRes: Int,
+    @param:StringRes val foundRes: Int,
 ) {
     Songs(
         titleRes = R.string.music_tab_songs,
-        countRes = R.string.music_tab_songs_count,
         searchHintRes = R.string.music_search_songs_hint,
-        icon = Icons.Default.MusicNote,
+        foundRes = R.string.music_found_songs,
     ),
     Albums(
         titleRes = R.string.music_tab_albums,
-        countRes = R.string.music_tab_albums_count,
         searchHintRes = R.string.music_search_albums_hint,
-        icon = Icons.Default.Album,
+        foundRes = R.string.music_found_albums,
     ),
     Artists(
         titleRes = R.string.music_tab_artists,
-        countRes = R.string.music_tab_artists_count,
         searchHintRes = R.string.music_search_artists_hint,
-        icon = Icons.Default.Person,
+        foundRes = R.string.music_found_artists,
     ),
 }
 
@@ -268,6 +319,7 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
 
     val allSongs by homeViewModel.allSongs.collectAsStateWithLifecycle()
     val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
+    val playingMediaId = currentMediaItem?.mediaId
 
     val unknownAlbum = stringResource(R.string.unknown_album)
     val unknownArtist = stringResource(R.string.unknown_artist)
@@ -287,28 +339,31 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
     var songSortMode by rememberSaveable { mutableStateOf(SongSortMode.TitleAsc) }
     var albumSortMode by rememberSaveable { mutableStateOf(AlbumSortMode.TitleAsc) }
     var artistSortMode by rememberSaveable { mutableStateOf(ArtistSortMode.NameAsc) }
+
+    // 首屏入场只播一次
     var playEntrance by remember { mutableStateOf(true) }
-    var playlistEntrance by remember { mutableStateOf(true) }
-    var foldTarget by remember { mutableStateOf(false) }
-    val foldFactor by animateFloatAsState(
-        targetValue = if (foldTarget) 1f else 0f,
-        animationSpec = tween(durationMillis = 600, easing = EaseOutEmphasized),
-        label = "foldFactor",
-    )
     LaunchedEffect(Unit) {
-        if (playEntrance) {
-            delay(ENTRANCE_GATE_MILLIS)
-            playEntrance = false
-        }
+        delay(ENTRANCE_GATE_MILLIS)
+        playEntrance = false
     }
 
-    LaunchedEffect(playlistEntrance) {
-        if (playlistEntrance) {
-            foldTarget = false
-            delay(ENTRANCE_STAGGER_MILLIS)
-            playlistEntrance = false
+    // 切页令牌与方向，驱动新条目的入场位移
+    var switchToken by remember { mutableIntStateOf(0) }
+    var switchDirection by remember { mutableIntStateOf(0) }
+    var playTabEnter by remember { mutableStateOf(false) }
+    LaunchedEffect(switchToken) {
+        if (switchToken == 0) return@LaunchedEffect
+        delay(TAB_ENTER_GATE_MILLIS)
+        playTabEnter = false
+    }
+    val selectTab: (MusicBrowserTab) -> Unit = { tab ->
+        if (tab != selectedTab) {
+            switchDirection = if (tab.ordinal > selectedTab.ordinal) 1 else -1
+            selectedTab = tab
+            // 与条目同帧置位，首帧即带位移起点
+            playTabEnter = true
+            switchToken++
         }
-        foldTarget = true
     }
 
     @OptIn(FlowPreview::class)
@@ -336,11 +391,29 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                 .filterArtistsBy(debouncedQuery)
                 .sortedWith(artistSortMode.comparator)
         }
+    val searching = debouncedQuery.isNotBlank()
+    val visibleCount =
+        when (selectedTab) {
+            MusicBrowserTab.Songs -> filteredSongs.size
+            MusicBrowserTab.Albums -> filteredAlbums.size
+            MusicBrowserTab.Artists -> filteredArtists.size
+        }
+    val sortIsDefault =
+        when (selectedTab) {
+            MusicBrowserTab.Songs -> songSortMode == SongSortMode.TitleAsc
+            MusicBrowserTab.Albums -> albumSortMode == AlbumSortMode.TitleAsc
+            MusicBrowserTab.Artists -> artistSortMode == ArtistSortMode.NameAsc
+        }
 
-    val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
+    val scope = rememberCoroutineScope()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    val dismissKeyboard = {
+        keyboardController?.hide()
+        focusManager.clearFocus()
+    }
 
     // 排序菜单按触发按钮在窗口中的位置显示。
     fun openSortMenu(anchor: PopupAnchor) {
@@ -387,46 +460,48 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
             }
         backStack.add(route)
     }
-    // 用户开始滚动结果时自动收起键盘，把屏幕还给内容
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress }
+
+    // 开始滚动时收起键盘
+    LaunchedEffect(gridState) {
+        snapshotFlow { gridState.isScrollInProgress }
             .filter { it }
-            .collect {
-                keyboardController?.hide()
-                focusManager.clearFocus()
-            }
+            .collect { dismissKeyboard() }
     }
+
     Box(
         modifier =
             Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background),
     ) {
-        LazyColumn(
-            state = listState,
-            modifier =
-                Modifier
-                    .fillMaxSize(),
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize(),
             contentPadding =
                 PaddingValues(
+                    start = LayoutTokens.MusicHeaderHorizontalPadding,
+                    end = LayoutTokens.MusicHeaderHorizontalPadding,
                     top = statusBarTop + 56.dp,
                     bottom = bottomContentPadding + Spacing.Large,
                 ),
-            verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
             overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
         ) {
-            item(key = "masthead", contentType = "masthead") {
+            item(key = "masthead", span = { GridItemSpan(maxLineSpan) }, contentType = "masthead") {
                 MusicMasthead(
                     songsCount = allSongs.size,
                     albumsCount = albums.size,
                     artistsCount = artists.size,
+                    searching = searching,
+                    tab = selectedTab,
+                    foundCount = visibleCount,
                     modifier =
                         Modifier
-                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
                             .padding(top = Spacing.Large)
                             .entrance(order = 0, play = playEntrance)
                             .graphicsLayer {
-                                val t = mastheadCollapse(listState)
+                                val t = mastheadCollapse(gridState)
                                 transformOrigin = TransformOrigin(0f, 0f)
                                 alpha = 1f - t
                                 translationY = -t * 16.dp.toPx()
@@ -435,73 +510,47 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                             },
                 )
             }
-            item(key = "tabs", contentType = "tabs") {
-                MusicTabStrip(
+
+            item(key = "tabs", span = { GridItemSpan(maxLineSpan) }, contentType = "tabs") {
+                MusicSegmentedTabs(
                     selectedTab = selectedTab,
-                    songsCount = allSongs.size,
-                    albumsCount = albums.size,
-                    artistsCount = artists.size,
-                    onSelect = {
-                        selectedTab = it
-                        searchQuery = ""
-                        playlistEntrance = true
-                    },
+                    onSelect = selectTab,
                     modifier =
                         Modifier
-                            .animateItem(
-                                fadeInSpec =
-                                ListItemFadeInSpec,
-                                placementSpec = null,
-                                fadeOutSpec = ListItemFadeOutSpec,
-                            ).entrance(order = 2, play = playEntrance),
+                            .padding(top = Spacing.Large)
+                            .entrance(order = 1, play = playEntrance),
                 )
             }
 
-            item(key = "search", contentType = "search") {
-                MusicSearchBar(
-                    query = searchQuery,
-                    hint = stringResource(selectedTab.searchHintRes),
-                    onQueryChange = { searchQuery = it },
-                    onClear = { searchQuery = "" },
+            item(key = "search", span = { GridItemSpan(maxLineSpan) }, contentType = "search") {
+                Row(
                     modifier =
                         Modifier
-                            .animateItem(
-                                fadeInSpec =
-                                ListItemFadeInSpec,
-                                placementSpec = null,
-                                fadeOutSpec = ListItemFadeOutSpec,
-                            ).entrance(order = 3, play = playEntrance),
-                )
-            }
-
-            item(key = "section_header", contentType = "section_header") {
-                MusicSectionHeader(
-                    tab = selectedTab,
-                    count =
-                        when (selectedTab) {
-                            MusicBrowserTab.Songs -> filteredSongs.size
-                            MusicBrowserTab.Albums -> filteredAlbums.size
-                            MusicBrowserTab.Artists -> filteredArtists.size
-                        },
-                    onSortClick = ::openSortMenu,
-                    modifier =
-                        Modifier.animateItem(
-                            fadeInSpec = ListItemFadeInSpec,
-                            placementSpec =
-                                spring(
-                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                    stiffness = Spring.StiffnessMediumLow,
-                                    visibilityThreshold = IntOffset.VisibilityThreshold,
-                                ),
-                            fadeOutSpec = ListItemFadeOutSpec,
-                        ),
-                )
+                            .fillMaxWidth()
+                            .padding(top = Spacing.Small, bottom = Spacing.Small)
+                            .entrance(order = 2, play = playEntrance),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                ) {
+                    MusicSearchPill(
+                        query = searchQuery,
+                        hint = stringResource(selectedTab.searchHintRes),
+                        onQueryChange = { searchQuery = it },
+                        onClear = { searchQuery = "" },
+                        onSubmit = dismissKeyboard,
+                        modifier = Modifier.weight(1f),
+                    )
+                    MusicSortButton(
+                        active = !sortIsDefault,
+                        onClick = ::openSortMenu,
+                    )
+                }
             }
 
             when (selectedTab) {
                 MusicBrowserTab.Songs -> {
                     if (filteredSongs.isEmpty()) {
-                        item(key = "songs_empty", contentType = "empty") {
+                        item(key = "songs_empty", span = { GridItemSpan(maxLineSpan) }, contentType = "empty") {
                             MusicEmptyState(
                                 title =
                                     stringResource(
@@ -525,21 +574,24 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                         backStack.add(ScannerRoute)
                                         Unit
                                     }.takeIf { allSongs.isEmpty() },
+                                modifier =
+                                    Modifier.animateItem(
+                                        fadeInSpec = ListItemFadeInSpec,
+                                        placementSpec = null,
+                                        fadeOutSpec = ListItemFadeOutSpec,
+                                    ),
                             )
                         }
                     } else {
                         itemsIndexed(
                             items = filteredSongs,
-                            key = { _, song -> song.mediaStoreId },
+                            key = { _, song -> "song:${song.mediaStoreId}" },
+                            span = { _, _ -> GridItemSpan(maxLineSpan) },
                             contentType = { _, _ -> "song" },
                         ) { index, song ->
                             MusicSongRow(
-                                index = index,
                                 song = song,
-                                isPlaying = currentMediaItem?.mediaId == song.mediaStoreId.toString(),
-                                onLongClick = {
-                                    backStack.add(SongMenuRoute(song))
-                                },
+                                isPlaying = playingMediaId == song.mediaStoreId.toString(),
                                 onClick = {
                                     playerViewModel.updatePlaylistWithSongs(
                                         songs = filteredSongs,
@@ -547,17 +599,22 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                         autoStart = true,
                                     )
                                 },
+                                onLongClick = { backStack.add(SongMenuRoute(song)) },
                                 modifier =
                                     Modifier
                                         .animateItem(
-                                            fadeInSpec =
-                                            ListItemFadeInSpec,
+                                            fadeInSpec = ListItemFadeInSpec,
                                             placementSpec = ItemPlacementSpringSpec,
                                             fadeOutSpec = ListItemFadeOutSpec,
                                         ).entrance(
-                                            order = minOf(index + 4, 10),
-                                            play = playlistEntrance,
-                                        ).zIndex(-index.toFloat()),
+                                            order = minOf(index + ENTRANCE_ORDER_ITEM_BASE, ENTRANCE_MAX_ORDER),
+                                            play = playEntrance,
+                                        ).tabEnter(
+                                            token = switchToken,
+                                            direction = switchDirection,
+                                            order = minOf(index, TAB_ENTER_MAX_ORDER),
+                                            play = playTabEnter,
+                                        ),
                             )
                         }
                     }
@@ -565,7 +622,7 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
 
                 MusicBrowserTab.Albums -> {
                     if (filteredAlbums.isEmpty()) {
-                        item(key = "albums_empty", contentType = "empty") {
+                        item(key = "albums_empty", span = { GridItemSpan(maxLineSpan) }, contentType = "empty") {
                             MusicEmptyState(
                                 title =
                                     stringResource(
@@ -576,30 +633,40 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                         },
                                     ),
                                 subtitle = stringResource(R.string.music_empty_albums_subtitle),
+                                modifier =
+                                    Modifier.animateItem(
+                                        fadeInSpec = ListItemFadeInSpec,
+                                        placementSpec = null,
+                                        fadeOutSpec = ListItemFadeOutSpec,
+                                    ),
                             )
                         }
                     } else {
                         itemsIndexed(
                             items = filteredAlbums,
-                            key = { index, album -> album.id },
-                            contentType = { index, _ -> "album" },
+                            key = { _, album -> "album:${album.id}" },
+                            contentType = { _, _ -> "album" },
                         ) { index, album ->
-                            MusicAlbumRow(
+                            // 同排两张卡共用一个槽位
+                            val row = index / 2
+                            MusicAlbumCard(
                                 album = album,
-                                onClick = {
-                                    backStack.add(AlbumDetailRoute(album))
-                                },
+                                onClick = { backStack.add(AlbumDetailRoute(album)) },
                                 modifier =
                                     Modifier
                                         .animateItem(
-                                            fadeInSpec =
-                                            ListItemFadeInSpec,
+                                            fadeInSpec = ListItemFadeInSpec,
                                             placementSpec = ItemPlacementSpringSpec,
                                             fadeOutSpec = ListItemFadeOutSpec,
                                         ).entrance(
-                                            order = minOf(index + 4, 10),
-                                            play = playlistEntrance,
-                                        ).zIndex(-index.toFloat()),
+                                            order = minOf(row + ENTRANCE_ORDER_ITEM_BASE, ENTRANCE_MAX_ORDER),
+                                            play = playEntrance,
+                                        ).tabEnter(
+                                            token = switchToken,
+                                            direction = switchDirection,
+                                            order = minOf(row, TAB_ENTER_MAX_ORDER),
+                                            play = playTabEnter,
+                                        ),
                             )
                         }
                     }
@@ -607,7 +674,7 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
 
                 MusicBrowserTab.Artists -> {
                     if (filteredArtists.isEmpty()) {
-                        item(key = "artists_empty", contentType = "empty") {
+                        item(key = "artists_empty", span = { GridItemSpan(maxLineSpan) }, contentType = "empty") {
                             MusicEmptyState(
                                 title =
                                     stringResource(
@@ -618,13 +685,20 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                         },
                                     ),
                                 subtitle = stringResource(R.string.music_empty_artists_subtitle),
+                                modifier =
+                                    Modifier.animateItem(
+                                        fadeInSpec = ListItemFadeInSpec,
+                                        placementSpec = null,
+                                        fadeOutSpec = ListItemFadeOutSpec,
+                                    ),
                             )
                         }
                     } else {
                         itemsIndexed(
                             items = filteredArtists,
-                            key = { index, artist -> artist.name },
-                            contentType = { index, _ -> "artist" },
+                            key = { _, artist -> "artist:${artist.name}" },
+                            span = { _, _ -> GridItemSpan(maxLineSpan) },
+                            contentType = { _, _ -> "artist" },
                         ) { index, artist ->
                             MusicArtistRow(
                                 artist = artist,
@@ -632,14 +706,18 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                 modifier =
                                     Modifier
                                         .animateItem(
-                                            fadeInSpec =
-                                            ListItemFadeInSpec,
+                                            fadeInSpec = ListItemFadeInSpec,
                                             placementSpec = ItemPlacementSpringSpec,
                                             fadeOutSpec = ListItemFadeOutSpec,
                                         ).entrance(
-                                            order = minOf(index + 4, 10),
-                                            play = playlistEntrance,
-                                        ).zIndex(-index.toFloat()),
+                                            order = minOf(index + ENTRANCE_ORDER_ITEM_BASE, ENTRANCE_MAX_ORDER),
+                                            play = playEntrance,
+                                        ).tabEnter(
+                                            token = switchToken,
+                                            direction = switchDirection,
+                                            order = minOf(index, TAB_ENTER_MAX_ORDER),
+                                            play = playTabEnter,
+                                        ),
                             )
                         }
                     }
@@ -648,100 +726,107 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
         }
 
         MusicTopBar(
-            listState = listState,
+            gridState = gridState,
+            onScrollToTop = {
+                scope.launch { gridState.animateScrollToItem(0) }
+            },
             modifier = Modifier.align(Alignment.TopStart),
         )
     }
 }
 
-// 折叠基准线相对视口物理底边的上移量
-private val ListItemFoldBottomInset = 120.dp
-
-// 条目底边越过基准线后、再继续下沉这段距离即完全折叠（缩到底、淡尽）。
-private val ListItemFoldDistance = 96.dp
-
-// 折到底时的最小缩放/透明度。缩到 0.86、淡到 0：像被收进底栏后溶解。
-private const val ListItemFoldMinScale = 0.86f
-private const val ListItemFoldMinAlpha = 0f
-
-private fun Modifier.bottomFold(
-    listState: LazyListState,
-    key: Any,
-    factor: Float = 1f,
-): Modifier =
-    graphicsLayer {
-        if (factor <= 0f) return@graphicsLayer
-        val layout = listState.layoutInfo
-        val info = layout.visibleItemsInfo.firstOrNull { it.key == key } ?: return@graphicsLayer
-        val foldLine = layout.viewportEndOffset - ListItemFoldBottomInset.toPx()
-        val itemBottom = info.offset + info.size
-        val sink = itemBottom - foldLine // >0：已越过基准线，正沉入底栏
-        if (sink <= 0f) return@graphicsLayer // 基准线以上：完全不动，杜绝末尾留白
-        val p = (sink / ListItemFoldDistance.toPx()).coerceIn(0f, 1f)
-        val effectiveP = p * factor
-        transformOrigin = TransformOrigin(0.5f, 1f)
-        translationY = -sink * factor
-        val scale = lerp(1f, ListItemFoldMinScale, effectiveP)
-        scaleX = scale
-        scaleY = scale
-        alpha = lerp(1f, ListItemFoldMinAlpha, effectiveP)
-    }
-
-private fun Density.mastheadCollapse(listState: LazyListState): Float {
-    if (listState.firstVisibleItemIndex > 0) return 1f
-    val layoutInfo = listState.layoutInfo
+/** 大标题收缩进度：0f 展开，1f 收进顶栏；在绘制阶段读取 */
+private fun Density.mastheadCollapse(gridState: LazyGridState): Float {
+    if (gridState.firstVisibleItemIndex > 0) return 1f
+    val layoutInfo = gridState.layoutInfo
     val masthead = layoutInfo.visibleItemsInfo.firstOrNull() ?: return 0f
     val scrollOutDistance =
-        (masthead.size + layoutInfo.mainAxisItemSpacing)
+        (masthead.size.height + layoutInfo.mainAxisItemSpacing)
             .toFloat()
             .coerceIn(1f, MastheadCollapseDistance.toPx())
-    return (listState.firstVisibleItemScrollOffset / scrollOutDistance).coerceIn(0f, 1f)
+    return (gridState.firstVisibleItemScrollOffset / scrollOutDistance).coerceIn(0f, 1f)
 }
 
+/** 让条目越过网格水平内边距通栏铺满，内容由自身 padding 对齐回页边距 */
+private fun Modifier.bleedHorizontal(amount: Dp): Modifier =
+    layout { measurable, constraints ->
+        val extra = amount.roundToPx() * 2
+        val placeable =
+            measurable.measure(
+                constraints.copy(
+                    minWidth = constraints.minWidth + extra,
+                    maxWidth = if (constraints.hasBoundedWidth) constraints.maxWidth + extra else constraints.maxWidth,
+                ),
+            )
+        val width = (placeable.width - extra).coerceIn(constraints.minWidth, constraints.maxWidth)
+        layout(width, placeable.height) {
+            placeable.place(-extra / 2, 0)
+        }
+    }
+
+/** 切页入场：沿滑块方向轻移归位，按 [order] 错落；淡入交给 animateItem */
 @Composable
-private fun rememberPressScale(interactionSource: MutableInteractionSource): State<Float> {
-    val isPressed by interactionSource.collectIsPressedAsState()
-    return animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec =
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = 1100f,
-            ),
-        label = "musicPressScale",
-    )
+private fun Modifier.tabEnter(
+    token: Int,
+    direction: Int,
+    order: Int,
+    play: Boolean,
+): Modifier {
+    val reducedMotion = LocalReducedMotion.current
+    val progress = remember(token) { Animatable(if (play && token > 0 && !reducedMotion) 0f else 1f) }
+    LaunchedEffect(progress) {
+        if (progress.value < 1f) {
+            progress.animateTo(
+                targetValue = 1f,
+                animationSpec =
+                    tween(
+                        durationMillis = TAB_ENTER_DURATION_MILLIS,
+                        delayMillis = order * TAB_ENTER_STAGGER_MILLIS,
+                        easing = EaseOutEmphasized,
+                    ),
+            )
+        }
+    }
+    return graphicsLayer {
+        val p = progress.value
+        if (p < 1f) translationX = direction * (1f - p) * TabEnterTranslation.toPx()
+    }
 }
 
+/** 固定顶栏：随刊头收缩显形，收起后弹出「回到顶部」药丸 */
 @Composable
 private fun MusicTopBar(
-    listState: LazyListState,
+    gridState: LazyGridState,
+    onScrollToTop: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val backgroundColor = MaterialTheme.colorScheme.background
-    val solid by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
-    val scope = rememberCoroutineScope()
+    // 派生状态放在顶栏作用域，翻转只重组顶栏
+    val solid by remember { derivedStateOf { gridState.firstVisibleItemIndex > 0 } }
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
                 .height(statusBarTop + 56.dp)
                 .drawBehind {
-                    drawRect(color = backgroundColor.copy(alpha = mastheadCollapse(listState)))
+                    drawRect(color = backgroundColor.copy(alpha = mastheadCollapse(gridState)))
                 },
     ) {
+        // 全页唯一分隔线：顶栏收起后出现
         if (solid) {
             HorizontalDivider(
                 modifier = Modifier.align(Alignment.BottomStart),
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.14f),
             )
         }
-        Box(
+        Row(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(top = statusBarTop)
                     .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = stringResource(R.string.music_page_title),
@@ -752,18 +837,20 @@ private fun MusicTopBar(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier =
                     Modifier
-                        .align(Alignment.CenterStart)
-                        .graphicsLayer { alpha = mastheadCollapse(listState) },
+                        .weight(1f)
+                        .graphicsLayer { alpha = mastheadCollapse(gridState) },
             )
             AnimatedVisibility(
-                modifier = Modifier.align(Alignment.CenterEnd),
                 visible = solid,
-                // 越过滚动阈值时，以相同的缓出时长淡入并缩放。
                 enter =
                     scaleIn(
-                        animationSpec = tween(durationMillis = 180, easing = EaseOutEmphasized),
+                        animationSpec =
+                            spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMediumLow,
+                            ),
                         initialScale = ScaleEnterFrom,
-                    ) + fadeIn(tween(durationMillis = 180, easing = EaseOutEmphasized)),
+                    ) + fadeIn(tween(durationMillis = 160)),
                 exit =
                     scaleOut(
                         animationSpec = tween(durationMillis = 140),
@@ -775,11 +862,7 @@ private fun MusicTopBar(
                         Modifier
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary)
-                            .clickHighlight(onClick = {
-                                scope.launch {
-                                    listState.animateScrollToItem(0)
-                                }
-                            })
+                            .clickHighlight(onClick = onScrollToTop)
                             .padding(horizontal = Spacing.Medium, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
@@ -802,13 +885,34 @@ private fun MusicTopBar(
     }
 }
 
+/** 刊头 meta 行：文案与决定滚动方向的计数 */
+@Immutable
+private data class MusicMeta(
+    val text: String,
+    val count: Int,
+)
+
+/** 刊头：大标题 + meta 行，搜索时切成「找到 N 首」 */
 @Composable
 private fun MusicMasthead(
     songsCount: Int,
     albumsCount: Int,
     artistsCount: Int,
+    searching: Boolean,
+    tab: MusicBrowserTab,
+    foundCount: Int,
     modifier: Modifier = Modifier,
 ) {
+    val summary = stringResource(R.string.music_summary_format, songsCount, albumsCount, artistsCount)
+    val found = stringResource(tab.foundRes, foundCount)
+    val meta =
+        remember(searching, summary, found, foundCount, songsCount, albumsCount, artistsCount) {
+            if (searching) {
+                MusicMeta(text = found, count = foundCount)
+            } else {
+                MusicMeta(text = summary, count = songsCount + albumsCount + artistsCount)
+            }
+        }
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = stringResource(R.string.music_page_title),
@@ -819,394 +923,451 @@ private fun MusicMasthead(
             overflow = TextOverflow.Ellipsis,
         )
         AnimatedContent(
-            targetState = Triple(songsCount, albumsCount, artistsCount),
+            targetState = meta,
             transitionSpec = {
-                val targetSum = targetState.first + targetState.second + targetState.third
-                val initialSum = initialState.first + initialState.second + initialState.third
-                val direction = if (targetSum >= initialSum) 1 else -1
+                val direction = if (targetState.count >= initialState.count) 1 else -1
                 (
                     slideInVertically { height -> direction * height / 2 } +
-                        fadeIn(
-                            tween(
-                                durationMillis = 240,
-                            ),
-                        )
-                ) togetherWith (
-                    slideOutVertically { height -> -direction * height / 2 } +
-                        fadeOut(
-                            tween(durationMillis = 160),
-                        )
-                ) using SizeTransform(clip = false)
+                        fadeIn(tween(durationMillis = 240))
+                ) togetherWith
+                    (
+                        slideOutVertically { height -> -direction * height / 2 } +
+                            fadeOut(tween(durationMillis = 160))
+                    ) using SizeTransform(clip = false)
             },
             modifier = Modifier.padding(top = 6.dp),
-            label = "musicSummaryRoll",
-        ) { (songs, albums, artists) ->
+            label = "musicMetaRoll",
+        ) { state ->
             Text(
-                text = stringResource(R.string.music_summary_format, songs, albums, artists),
+                text = state.text,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
 
+/** 分段切换：胶囊轨道 + 弹性滑块，手势与运动复用底栏指示器状态 */
 @Composable
-private fun MusicTabStrip(
+private fun MusicSegmentedTabs(
     selectedTab: MusicBrowserTab,
-    songsCount: Int,
-    albumsCount: Int,
-    artistsCount: Int,
     onSelect: (MusicBrowserTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    val tabs = MusicBrowserTab.entries
+    val scope = rememberCoroutineScope()
+    val indicator = remember(scope) { GlassNavigationIndicatorState(selectedTab.ordinal, tabs.size, scope) }
+    val currentSelection by rememberUpdatedState(selectedTab)
+    val onSelection by rememberUpdatedState(onSelect)
+    val reducedMotion = LocalReducedMotion.current
+    val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
+    val density = LocalDensity.current
+    val colors = MaterialTheme.colorScheme
+    var bounds by remember { mutableStateOf(IntSize.Zero) }
+    val inset = with(density) { SegmentedInset.toPx() }
+    val segmentWidth = ((bounds.width - 2f * inset) / tabs.size).coerceAtLeast(0f)
+    val interacting = indicator.isInteracting && !reducedMotion
+    val press by animateFloatAsState(
+        targetValue = if (interacting) 1f else 0f,
+        animationSpec =
+            when {
+                reducedMotion -> snap()
+                interacting -> spring(dampingRatio = 0.85f, stiffness = 900f)
+                else -> tween(140)
+            },
+        label = "musicSegmentPress",
+    )
+
+    LaunchedEffect(selectedTab, reducedMotion) { indicator.synchronize(selectedTab.ordinal, reducedMotion) }
+
+    Box(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-    ) {
-        MusicBrowserTab.entries.forEach { tab ->
-            val count =
-                when (tab) {
-                    MusicBrowserTab.Songs -> songsCount
-                    MusicBrowserTab.Albums -> albumsCount
-                    MusicBrowserTab.Artists -> artistsCount
-                }
-            MusicTabChip(
-                tab = tab,
-                count = count,
-                selected = tab == selectedTab,
-                onClick = { onSelect(tab) },
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun MusicTabChip(
-    tab: MusicBrowserTab,
-    count: Int,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressScale by rememberPressScale(interactionSource)
-    val container =
-        if (selected) {
-            MaterialTheme.colorScheme.tertiaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerHigh
-        }
-    val content =
-        if (selected) {
-            MaterialTheme.colorScheme.onTertiaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        }
-    Column(
-        modifier =
-            modifier
-                .height(LayoutTokens.MusicTabHeight)
-                .graphicsLayer {
-                    scaleX = pressScale
-                    scaleY = pressScale
-                }.clip(Shapes.LargeCornerBasedShape)
-                .background(container)
-                .clickHighlight(interactionSource = interactionSource, onClick = onClick)
-                .padding(horizontal = Spacing.Small, vertical = Spacing.Small),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Icon(
-            imageVector = tab.icon,
-            contentDescription = null,
-            tint = content,
-            modifier = Modifier.size(20.dp),
-        )
-        Text(
-            text = stringResource(tab.countRes, count),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = content,
-            maxLines = 1,
-        )
-    }
-}
-
-@Composable
-private fun MusicSearchBar(
-    query: String,
-    hint: String,
-    onQueryChange: (String) -> Unit,
-    onClear: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                .height(52.dp)
+                .height(SegmentedHeight)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                .padding(start = Spacing.Large, end = Spacing.Small),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
-    ) {
-        Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp),
-        )
-        Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AnimatedCursorTextField(
-                value = query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.weight(1f),
-                textStyle =
-                    MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurface,
-                    ),
-                cursorColor = MaterialTheme.colorScheme.primary,
-                placeholder = {
-                    Text(
-                        text = hint,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                    )
-                },
-            )
-            AnimatedVisibility(
-                visible = query.isNotEmpty(),
-                enter =
-                    expandHorizontally(spring(stiffness = Spring.StiffnessMediumLow)) +
-                        fadeIn(tween(180)),
-                exit = shrinkHorizontally(tween(150)) + fadeOut(tween(120)),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Spacer(modifier = Modifier.width(Spacing.Small))
-                    IconButton(onClick = onClear) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                .background(colors.surfaceContainerHigh)
+                .selectableGroup()
+                .onSizeChanged { bounds = it }
+                .pointerInput(indicator, segmentWidth, isLtr, reducedMotion) {
+                    if (segmentWidth <= 0f) return@pointerInput
+                    val direction = if (isLtr) 1f else -1f
+                    val lastIndex = tabs.lastIndex
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val tracker = VelocityTracker()
+                        tracker.addPosition(down.uptimeMillis, down.position)
+                        indicator.press()
+                        try {
+                            val dragStart =
+                                awaitHorizontalTouchSlopOrCancellation(down.id) { change, overSlop ->
+                                    // 从滑块当前位置起步跟手
+                                    indicator.beginDrag()
+                                    tracker.addPosition(change.uptimeMillis, change.position)
+                                    indicator.dragBy(direction * overSlop / segmentWidth, 0f)
+                                    change.consume()
+                                }
+                            if (dragStart != null) {
+                                val completed =
+                                    horizontalDrag(dragStart.id) { change ->
+                                        tracker.addPosition(change.uptimeMillis, change.position)
+                                        indicator.dragBy(
+                                            direction * change.positionChange().x / segmentWidth,
+                                            direction * tracker.calculateVelocity().x / segmentWidth,
+                                        )
+                                        change.consume()
+                                    }
+                                val target =
+                                    if (completed) {
+                                        tabs[indicator.nearestIndex().coerceIn(0, lastIndex)]
+                                    } else {
+                                        currentSelection
+                                    }
+                                indicator.animateTo(target.ordinal, reducedMotion)
+                                if (completed && target != currentSelection) onSelection(target)
+                            }
+                        } finally {
+                            indicator.release()
+                            if (indicator.isDragging) indicator.animateTo(currentSelection.ordinal, reducedMotion)
+                        }
                     }
+                },
+    ) {
+        // 滑块在文字下层，位置在图层阶段读取
+        if (bounds.width > 0 && bounds.height > 0 && segmentWidth > 0f) {
+            val thumbHeight = (bounds.height - 2f * inset).coerceAtLeast(1f)
+            Box(
+                modifier =
+                    Modifier
+                        .size(with(density) { segmentWidth.toDp() }, with(density) { thumbHeight.toDp() })
+                        .graphicsLayer {
+                            val stretch = (abs(indicator.velocity) / 6f).coerceIn(0f, 1f) * press
+                            scaleX = 1f + 0.03f * press + 0.02f * stretch
+                            scaleY = 1f + 0.05f * press - 0.02f * stretch
+                            translationX =
+                                if (isLtr) {
+                                    inset + indicator.position * segmentWidth
+                                } else {
+                                    bounds.width - inset - (indicator.position + 1f) * segmentWidth
+                                }
+                            translationY = inset
+                        }.clip(CircleShape)
+                        .background(colors.primaryContainer)
+                        .clearAndSetSemantics {},
+            )
+        }
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(SegmentedInset),
+        ) {
+            tabs.forEach { tab ->
+                val selected = tab == selectedTab
+                val labelColor by animateColorAsState(
+                    targetValue = if (selected) colors.onPrimaryContainer else colors.onSurfaceVariant,
+                    animationSpec = tween(durationMillis = 200, easing = EaseOutEmphasized),
+                    label = "musicSegmentLabel",
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .selectable(
+                                selected = selected,
+                                role = Role.Tab,
+                                interactionSource = null,
+                                indication = null,
+                                onClick = {
+                                    indicator.animateTo(tab.ordinal, reducedMotion)
+                                    if (tab != currentSelection) onSelection(tab)
+                                },
+                            ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(tab.titleRes),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = labelColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
     }
 }
 
+/** 搜索胶囊：占位随分段淡切，有输入时浮出清除键 */
 @Composable
-private fun MusicSectionHeader(
-    tab: MusicBrowserTab,
-    count: Int,
-    onSortClick: (PopupAnchor) -> Unit,
+private fun MusicSearchPill(
+    query: String,
+    hint: String,
+    onQueryChange: (String) -> Unit,
+    onClear: () -> Unit,
+    onSubmit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var sortAnchor by remember { mutableStateOf<PopupAnchor?>(null) }
     Row(
         modifier =
             modifier
-                .fillMaxWidth()
-                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                .padding(top = Spacing.Medium),
+                .height(ControlHeight)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .padding(start = Spacing.Large, end = Spacing.ExtraSmall),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(tab.titleRes),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-            )
-            Text(
-                text = stringResource(tab.countRes, count),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-            )
-        }
-        Box(
-            modifier =
-                Modifier
-                    .onGloballyPositioned { coords ->
-                        val pos = coords.positionInWindow()
-                        sortAnchor =
-                            PopupAnchor(
-                                x = pos.x,
-                                y = pos.y,
-                                width = coords.size.width.toFloat(),
-                                height = coords.size.height.toFloat(),
-                            )
-                    }.clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickHighlight(
-                        onClickLabel = stringResource(R.string.music_sort_cd),
-                        onClick = { sortAnchor?.let(onSortClick) },
-                    ).padding(Spacing.Small),
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Sort,
-                contentDescription = stringResource(R.string.music_sort_cd),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp),
-            )
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(Modifier.width(Spacing.Small))
+        AnimatedCursorTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.weight(1f),
+            textStyle =
+                MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+            cursorColor = MaterialTheme.colorScheme.primary,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            onImeAction = onSubmit,
+            placeholder = {
+                AnimatedContent(
+                    targetState = hint,
+                    transitionSpec = {
+                        fadeIn(tween(durationMillis = 180, easing = EaseOutEmphasized)) togetherWith
+                            fadeOut(tween(durationMillis = 120))
+                    },
+                    label = "musicSearchHint",
+                ) { text ->
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        maxLines = 1,
+                    )
+                }
+            },
+        )
+        AnimatedContent(
+            targetState = query.isNotBlank(),
+            transitionSpec = { materialSharedAxisZ(forward = true) },
+            label = "musicSearchClear",
+        ) { hasKeyword ->
+            if (hasKeyword) {
+                IconButton(
+                    onClick = onClear,
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            } else {
+                Spacer(Modifier.size(40.dp))
+            }
         }
     }
 }
 
+/** 排序按钮：非默认排序时图标转主题色 */
+@Composable
+private fun MusicSortButton(
+    active: Boolean,
+    onClick: (PopupAnchor) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var anchor by remember { mutableStateOf<PopupAnchor?>(null) }
+    val tint by animateColorAsState(
+        targetValue =
+            if (active) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        animationSpec = tween(durationMillis = 200, easing = EaseOutEmphasized),
+        label = "musicSortTint",
+    )
+    val label = stringResource(R.string.music_sort_cd)
+    Box(
+        modifier =
+            modifier
+                .size(ControlHeight)
+                .onGloballyPositioned { coords ->
+                    val pos = coords.positionInWindow()
+                    anchor =
+                        PopupAnchor(
+                            x = pos.x,
+                            y = pos.y,
+                            width = coords.size.width.toFloat(),
+                            height = coords.size.height.toFloat(),
+                        )
+                }.clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .clickHighlight(
+                    onClickLabel = label,
+                    onClick = { anchor?.let(onClick) },
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.Sort,
+            contentDescription = label,
+            tint = tint,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+/** 通栏歌曲行：播放中标题转主题色、行尾换律动条 */
 @Composable
 private fun MusicSongRow(
-    modifier: Modifier = Modifier,
-    index: Int,
     song: Song,
     isPlaying: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit = {},
+    onLongClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
+    val colors = MaterialTheme.colorScheme
+    val highlight by animateColorAsState(
+        targetValue = if (isPlaying) colors.primaryContainer.copy(alpha = 0.35f) else Color.Transparent,
+        animationSpec = tween(durationMillis = 300, easing = EaseOutEmphasized),
+        label = "musicSongHighlight",
+    )
+    val titleColor by animateColorAsState(
+        targetValue = if (isPlaying) colors.primary else colors.onSurface,
+        animationSpec = tween(durationMillis = 300, easing = EaseOutEmphasized),
+        label = "musicSongTitle",
+    )
     Row(
         modifier =
             modifier
+                .bleedHorizontal(LayoutTokens.MusicHeaderHorizontalPadding)
                 .fillMaxWidth()
-                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                .clip(Shapes.ExtraLargeCornerBasedShape)
-                .background(
-                    if (isPlaying) {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f)
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerLow
-                    },
-                ).combinedClickHighlight(
+                .drawBehind { drawRect(highlight) }
+                .combinedClickHighlight(
                     onClick = onClick,
                     onLongClick = onLongClick,
-                ).padding(Spacing.Small),
+                ).padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding, vertical = Spacing.Small),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
-        Text(
-            text = "${index + 1}",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color =
-                if (isPlaying) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            modifier = Modifier.width(28.dp),
-            textAlign = TextAlign.Center,
-        )
         AudioCover(
             uri = song.getCoverUri(),
             fallbackUri = song.getAlbumCoverUri(),
             modifier =
                 Modifier
-                    .size(56.dp)
-                    .clip(Shapes.LargeCornerBasedShape),
+                    .size(RowCoverSize)
+                    .clip(Shapes.MediumCornerBasedShape),
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = song.displayName,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = titleColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = "${song.artist} · ${song.album}",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = colors.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        AnimatedContent(isPlaying) { isPlaying ->
-            if (isPlaying) {
-                Text(
-                    text = stringResource(R.string.playing),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier,
-                    textAlign = TextAlign.End,
-                )
+        AnimatedContent(
+            targetState = isPlaying,
+            transitionSpec = {
+                (
+                    fadeIn(tween(durationMillis = 200, easing = EaseOutEmphasized)) +
+                        scaleIn(
+                            animationSpec = tween(durationMillis = 200, easing = EaseOutEmphasized),
+                            initialScale = ScaleEnterFrom,
+                        )
+                ) togetherWith
+                    (
+                        fadeOut(tween(durationMillis = 120)) +
+                            scaleOut(animationSpec = tween(durationMillis = 120), targetScale = ScaleExitTo)
+                    )
+            },
+            label = "musicSongTrailing",
+        ) { playing ->
+            if (playing) {
+                PlayingBarsIndicator(modifier = Modifier.widthIn(min = 36.dp))
             } else {
                 Text(
                     text = song.getFormattedDuration(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(42.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.onSurfaceVariant,
                     textAlign = TextAlign.End,
+                    maxLines = 1,
+                    modifier = Modifier.widthIn(min = 36.dp),
                 )
             }
         }
     }
 }
 
+/** 专辑卡：方形封面 + 标题 + 「歌手 · N 首」 */
 @Composable
-private fun MusicAlbumRow(
+private fun MusicAlbumCard(
     album: Album,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Column(
         modifier =
             modifier
-                .fillMaxWidth()
-                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+                .padding(bottom = Spacing.Medium)
                 .clip(Shapes.ExtraLargeCornerBasedShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .clickHighlight(onClick = onClick)
-                .padding(Spacing.Small),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+                .clickHighlight(onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
         AudioCover(
             uri = album.getCoverUri(),
             modifier =
                 Modifier
-                    .size(64.dp)
-                    .clip(Shapes.LargeCornerBasedShape),
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(Shapes.ExtraLargeCornerBasedShape),
         )
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier.padding(bottom = Spacing.Small),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
             Text(
                 text = album.title,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier =
-                Modifier,
             )
             Text(
-                text = album.artist,
+                text = "${album.artist} · ${stringResource(R.string.songs_count_format, album.numberOfSongs)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
-            text = stringResource(R.string.songs_count_format, album.numberOfSongs),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
+/** 通栏歌手行：圆形封面 + 名称 + 歌曲数 */
 @Composable
 private fun MusicArtistRow(
     artist: Artist,
@@ -1216,12 +1377,10 @@ private fun MusicArtistRow(
     Row(
         modifier =
             modifier
+                .bleedHorizontal(LayoutTokens.MusicHeaderHorizontalPadding)
                 .fillMaxWidth()
-                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                .clip(Shapes.ExtraLargeCornerBasedShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .clickHighlight(onClick = onClick)
-                .padding(Spacing.Small),
+                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding, vertical = Spacing.Small),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
@@ -1229,7 +1388,7 @@ private fun MusicArtistRow(
             uri = artist.getCoverUri(),
             modifier =
                 Modifier
-                    .size(64.dp)
+                    .size(RowCoverSize)
                     .clip(CircleShape),
         )
         Column(modifier = Modifier.weight(1f)) {
@@ -1249,19 +1408,56 @@ private fun MusicArtistRow(
             )
         }
         Icon(
-            imageVector = Icons.Default.LibraryMusic,
+            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier =
-                Modifier
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(Spacing.Small)
-                    .size(18.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.size(20.dp),
         )
     }
 }
 
+/** 播放中指示：三根错相起伏的竖条，降级动效时静止 */
+@Composable
+private fun PlayingBarsIndicator(modifier: Modifier = Modifier) {
+    val reducedMotion = LocalReducedMotion.current
+    val transition = rememberInfiniteTransition(label = "musicPlayingBars")
+    val barHeights =
+        List(3) { i ->
+            transition.animateFloat(
+                initialValue = 4f,
+                targetValue = 14f,
+                animationSpec =
+                    infiniteRepeatable(
+                        animation =
+                            tween(
+                                durationMillis = 420 + i * 130,
+                                easing = FastOutSlowInEasing,
+                            ),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "bar$i",
+            )
+        }
+    val staticHeights = listOf(8f, 13f, 6f)
+    Row(
+        modifier = modifier.height(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.End),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        barHeights.forEachIndexed { index, heightAnim ->
+            val barHeight = if (reducedMotion) staticHeights[index] else heightAnim.value
+            Box(
+                Modifier
+                    .width(3.dp)
+                    .height(barHeight.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.primary),
+            )
+        }
+    }
+}
+
+/** 空态：浮动音符 + 文案，可选引导药丸 */
 @Composable
 private fun MusicEmptyState(
     title: String,
@@ -1270,30 +1466,43 @@ private fun MusicEmptyState(
     actionLabel: String? = null,
     onActionClick: (() -> Unit)? = null,
 ) {
+    val reducedMotion = LocalReducedMotion.current
+    val floatTransition = rememberInfiniteTransition(label = "musicEmptyFloat")
+    val bob by floatTransition.animateFloat(
+        initialValue = -1f,
+        targetValue = 1f,
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 2200, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "musicEmptyBob",
+    )
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                .clip(Shapes.ExtraLarge1CornerBasedShape)
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .padding(Spacing.ExtraLarge),
+                .padding(top = Spacing.ExtraLarge, bottom = Spacing.Huge),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
         Box(
             modifier =
                 Modifier
                     .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .graphicsLayer {
+                        if (!reducedMotion) {
+                            translationY = bob * 5.dp.toPx()
+                            rotationZ = bob * 6f
+                        }
+                    }.clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Rounded.MusicNote,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(28.dp),
+                tint = MaterialTheme.colorScheme.primary,
             )
         }
         Text(
@@ -1305,15 +1514,17 @@ private fun MusicEmptyState(
         )
         Text(
             text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
         )
         if (actionLabel != null && onActionClick != null) {
             Row(
                 modifier =
                     Modifier
-                        .padding(top = Spacing.Small)
+                        .padding(top = Spacing.ExtraSmall)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
                         .clickHighlight(onClick = onActionClick)
@@ -1335,17 +1546,6 @@ private fun MusicEmptyState(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun rememberTotalDurationText(totalDuration: Long): String {
-    val hours = TimeUnit.MILLISECONDS.toHours(totalDuration)
-    val minutes = TimeUnit.MILLISECONDS.toMinutes(totalDuration) % 60
-    return when {
-        hours > 0 -> stringResource(R.string.hours_minutes, hours, minutes)
-        minutes > 0 -> stringResource(R.string.minutes, minutes)
-        else -> stringResource(R.string.less_than_1_minute)
     }
 }
 
@@ -1379,10 +1579,7 @@ private fun List<Song>.filterSongsBy(query: String): List<Song> {
     if (normalized.isEmpty()) return this
     return filter { song ->
         song.displayName.contains(normalized, ignoreCase = true) ||
-            song.artist.contains(
-                normalized,
-                ignoreCase = true,
-            ) ||
+            song.artist.contains(normalized, ignoreCase = true) ||
             song.album.contains(normalized, ignoreCase = true)
     }
 }
@@ -1392,10 +1589,7 @@ private fun List<Album>.filterAlbumsBy(query: String): List<Album> {
     if (normalized.isEmpty()) return this
     return filter { album ->
         album.title.contains(normalized, ignoreCase = true) ||
-            album.artist.contains(
-                normalized,
-                ignoreCase = true,
-            )
+            album.artist.contains(normalized, ignoreCase = true)
     }
 }
 
