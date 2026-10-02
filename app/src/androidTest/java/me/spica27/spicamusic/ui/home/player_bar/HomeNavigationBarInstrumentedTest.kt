@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -19,9 +20,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.isSelectable
@@ -30,14 +33,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
-import me.spica27.spicamusic.ui.glass.LiquidGlassConfig
-import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.home.HomePage
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import org.junit.Assert.assertEquals
@@ -47,7 +47,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class GlassHomeNavigationBarInstrumentedTest {
+class HomeNavigationBarInstrumentedTest {
     @get:Rule
     val compose = createComposeRule()
 
@@ -149,19 +149,29 @@ class GlassHomeNavigationBarInstrumentedTest {
         compose.runOnIdle { assertTrue(selections.isEmpty()) }
     }
 
+    @Test
+    fun darkNavigationKeepsAllLabelsVisibleAtLargeFontScale() {
+        setNavigation(glassEnabled = true, fontScale = 2f, darkTheme = true)
+        HomePage.entries.forEach { tab(it).assertIsDisplayed() }
+        tab(HomePage.Library).performClick()
+        tab(HomePage.Library).assertIsSelected()
+        savePreview("navigation-dark-large-font.png")
+    }
+
     private fun setNavigation(
         glassEnabled: Boolean,
         reducedMotion: Boolean = false,
         layoutDirection: LayoutDirection = LayoutDirection.Ltr,
+        fontScale: Float = 1f,
+        darkTheme: Boolean = false,
     ) {
         compose.setContent {
-            MaterialTheme(colorScheme = lightColorScheme(primary = Color(0xFFAC365C))) {
+            MaterialTheme(colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme(primary = Color(0xFFAC365C))) {
                 CompositionLocalProvider(
-                    LocalLiquidGlassConfig provides LiquidGlassConfig(enabled = glassEnabled),
                     LocalReducedMotion provides reducedMotion,
                     LocalLayoutDirection provides layoutDirection,
+                    LocalDensity provides Density(LocalDensity.current.density, fontScale),
                 ) {
-                    val pageSource = rememberHazeState()
                     Box(
                         Modifier.fillMaxSize().pointerInput(Unit) {
                             detectVerticalDragGestures { change, distance ->
@@ -171,19 +181,19 @@ class GlassHomeNavigationBarInstrumentedTest {
                         },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Canvas(Modifier.fillMaxSize().hazeSource(pageSource)) {
+                        Canvas(Modifier.fillMaxSize()) {
                             drawRect(
                                 Brush.linearGradient(listOf(Color(0xFFFFDBC8), Color(0xFFEADCF6), Color(0xFFCCE3EF))),
                             )
                         }
-                        GlassHomeNavigationBar(
+                        HomeNavigationBar(
                             selectedPage = selectedPage,
                             onPageSelected = {
                                 selections += it
                                 selectedPage = it
                             },
                             modifier = Modifier.width(320.dp).testTag("navigation"),
-                            hazeState = pageSource,
+                            glassEnabled = glassEnabled,
                         )
                     }
                 }

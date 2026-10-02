@@ -81,7 +81,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalFocusManager
@@ -91,6 +90,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
@@ -109,7 +109,6 @@ import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SortMenuOption
 import me.spica27.spicamusic.ui.home.HomeViewModel
-import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
 import me.spica27.spicamusic.ui.navigation.ArtistDetailRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
@@ -139,7 +138,7 @@ import java.util.concurrent.TimeUnit
 
 private val MastheadCollapseDistance = 140.dp
 
-// 复用的item动画对象
+// 复用列表项动画。
 private val ItemPlacementSpringSpec =
     spring<IntOffset>(
         dampingRatio = Spring.DampingRatioLowBouncy,
@@ -174,9 +173,7 @@ private enum class MusicBrowserTab(
     ),
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// 各 Tab 的排序方式
-// ──────────────────────────────────────────────────────────────────────────
+// 各标签页的排序方式。
 
 @Immutable
 private enum class SongSortMode(
@@ -264,7 +261,7 @@ private enum class ArtistSortMode(
 }
 
 @Composable
-fun MusicPage() {
+fun MusicPage(bottomContentPadding: Dp = 0.dp) {
     val backStack = LocalBackStack.current
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
@@ -409,12 +406,11 @@ fun MusicPage() {
             state = listState,
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .nestedScroll(LocalBottomBarScrollConnection.current),
+                    .fillMaxSize(),
             contentPadding =
                 PaddingValues(
                     top = statusBarTop + 56.dp,
-                    bottom = 200.dp,
+                    bottom = bottomContentPadding + Spacing.Large,
                 ),
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
             overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
@@ -561,8 +557,7 @@ fun MusicPage() {
                                         ).entrance(
                                             order = minOf(index + 4, 10),
                                             play = playlistEntrance,
-                                        ).bottomFold(listState, song.mediaStoreId, foldFactor)
-                                        .zIndex(-index.toFloat()),
+                                        ).zIndex(-index.toFloat()),
                             )
                         }
                     }
@@ -604,8 +599,7 @@ fun MusicPage() {
                                         ).entrance(
                                             order = minOf(index + 4, 10),
                                             play = playlistEntrance,
-                                        ).bottomFold(listState, album.id, foldFactor)
-                                        .zIndex(-index.toFloat()),
+                                        ).zIndex(-index.toFloat()),
                             )
                         }
                     }
@@ -645,8 +639,7 @@ fun MusicPage() {
                                         ).entrance(
                                             order = minOf(index + 4, 10),
                                             play = playlistEntrance,
-                                        ).bottomFold(listState, artist.name, foldFactor)
-                                        .zIndex(-index.toFloat()),
+                                        ).zIndex(-index.toFloat()),
                             )
                         }
                     }
@@ -765,8 +758,7 @@ private fun MusicTopBar(
             AnimatedVisibility(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 visible = solid,
-                // 高频触发（滚动过阈值即出现）：短时长强 ease-out，不带弹性；
-                // 淡入与缩放同时长，时间轴对齐
+                // 越过滚动阈值时，以相同的缓出时长淡入并缩放。
                 enter =
                     scaleIn(
                         animationSpec = tween(durationMillis = 180, easing = EaseOutEmphasized),

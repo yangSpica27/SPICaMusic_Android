@@ -139,9 +139,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 import androidx.compose.ui.util.lerp as floatLerp
 
-// ============================================
 // 常量定义
-// ============================================
 
 // 展开动画透明度阈值常量
 private const val PAGE_COUNT = 2
@@ -227,9 +225,7 @@ private class PlaybackPositionHolder {
     var seekPosition: Float = 0f
 }
 
-// ============================================
 // 主屏幕组件
-// ============================================
 
 /**
  * 全屏播放器页面
@@ -242,6 +238,7 @@ fun ExpandedPlayerScreen(
     progressProvider: () -> Float = { 1f }, // 展开进度提供器，避免整棵树每帧重组
     initialPage: Int = DEFAULT_PAGE, // 初始页面索引
     animationsEnabled: Boolean = true,
+    dragHandle: @Composable () -> Unit = {},
 ) {
     val backStack = LocalBackStack.current
     var playerSurface by remember { mutableStateOf(PlayerSurface.Player) }
@@ -255,9 +252,7 @@ fun ExpandedPlayerScreen(
             currentMediaItem.toAudioQualityInfo()
         }
 
-    // 判断应用是否在前台（可见状态）。
-    // 不能用 collectAsStateWithLifecycle 去收集 currentStateFlow——那个收集器自身在
-    // 跌破 STARTED 时就停了，永远观察不到向下的转变，标志会锁死为 true，
+    // 直接监听生命周期，避免后台停止收集后无法更新前台状态。
     val lifecycleOwner = LocalLifecycleOwner.current
     var isAppInForeground by remember {
         mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
@@ -272,11 +267,9 @@ fun ExpandedPlayerScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    // 当前播放位置（定时更新）
-    // 使用 currentMediaItem?.mediaId 作为 key，切歌时自动重置 seek 状态
+    // 切歌时重置拖动进度。
     val mediaId = currentMediaItem?.mediaId
-    // 注意：保留 State 引用而非用 by 解包，避免每秒的播放位置更新触发整个播放器树重组。
-    // 位置读取下沉到 SeekBarSection 叶子组件，通过 provider lambda 局部消费。
+    // 保留状态引用，在进度条中读取，避免整页随播放位置更新。
     val seekValueState = remember(mediaId) { mutableFloatStateOf(0f) }
     var isSeekingState by remember(mediaId) { mutableStateOf(false) }
 
@@ -295,9 +288,7 @@ fun ExpandedPlayerScreen(
         Timber.tag("ExpandedPlayerScreen").d("当前歌曲收藏状态: $songLikeState")
     }
 
-    // progressProvider 里读的是动画/拖拽的 snapshot state，直接在组合期调用会让整棵播放器树
-    // 每帧重组，抵消掉「用 provider 传进度」的本意。包成 derivedStateOf 后每帧只重算这个
-    // 布尔值，仅在跨过阈值时才真正失效重组。
+    // 将连续进度转换为阈值状态，仅跨过阈值时触发重组。
     val isFullyExpanded by remember(progressProvider) {
         derivedStateOf { progressProvider() > .99f }
     }
@@ -305,8 +296,7 @@ fun ExpandedPlayerScreen(
         derivedStateOf { progressProvider() > .4f }
     }
 
-    // 将播放位置同步到 seekbar：用 snapshotFlow 在协程中观察位置变化，
-    // 避免在组合作用域读取高频 state 而导致重组。
+    // 在协程中同步播放位置，避免组合阶段读取高频状态。
     LaunchedEffect(mediaId, animationsEnabled) {
         if (!animationsEnabled) return@LaunchedEffect
         snapshotFlow { positionState.value }
@@ -321,11 +311,11 @@ fun ExpandedPlayerScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
-    // Pager 状态，使用传入的初始页面
+    // 使用指定的初始页面。
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { PAGE_COUNT })
     val amplitudeCache = remember { linkedMapOf<String, List<Int>>() }
 
-    BackHandler(isFullyExpanded) {
+    BackHandler(isFullyExpanded && animationsEnabled) {
         when {
             playerSurface == PlayerSurface.Lyrics -> playerSurface = PlayerSurface.Player
             pagerState.currentPage != DEFAULT_PAGE -> {
@@ -343,9 +333,7 @@ fun ExpandedPlayerScreen(
         }
     }
 
-    // 兜底吸附：快速向下滑动 / 手指滑出屏幕边缘导致手势被取消、未触发正常 fling 时，
-    // Pager 可能停在两页之间（offsetFraction != 0）。这里监听滚动结束，
-    // 若仍处于中间态则强制吸附到最近的页面，避免卡死在中间态。
+    // 滚动结束后吸附到最近页面，避免手势取消时停在两页之间。
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.isScrollInProgress }
             .collect { scrolling ->
@@ -381,8 +369,7 @@ fun ExpandedPlayerScreen(
                 }.background(MaterialTheme.colorScheme.surface)
                 .fillMaxSize(),
     ) {
-        // 流动背景仅在当前场景可见且应用处于前台时启用。
-        // NavigationStack 会保留底层场景，不能只依赖 Activity 生命周期判断可见性。
+        // 仅在页面可见且应用在前台时启用动态背景。
         FluidMusicBackground(
             modifier =
                 Modifier
@@ -434,6 +421,7 @@ fun ExpandedPlayerScreen(
                                         .statusBarsPadding(),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
+                                dragHandle()
                                 ShowOnIdleContent(
                                     modifier = Modifier.weight(1f),
                                     visible = isPlayerPageRevealed,
@@ -561,8 +549,7 @@ fun ExpandedPlayerScreen(
     }
 }
 
-// ============================================
-// ---------- 音频信息组件 ----------
+// 音频信息组件
 
 @Immutable
 private data class AudioQualityInfo(
@@ -588,7 +575,7 @@ private fun MediaItem?.toAudioQualityInfo(): AudioQualityInfo {
     )
 }
 
-// ---------- 播放器页面 ----------
+// 播放器页面
 
 /**
  * 播放器页面（原有的播放器内容）
@@ -666,8 +653,7 @@ private fun PlayerPage(
                 .padding(top = Spacing.Medium, bottom = Spacing.Large),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        // 封面区：弹性吸收剩余高度——矮屏上封面自动缩小而不挤压下方控件，
-        // 高屏上封面在区域内垂直居中，信息与控制区始终贴底对齐
+        // 封面使用剩余空间，下方信息和控件保持底部对齐。
         Box(
             modifier =
                 Modifier
@@ -731,7 +717,7 @@ private fun PlayerPage(
 
         Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
 
-        // mini 歌词：点击在播放器内部切换到全屏歌词模式。
+        // 点击迷你歌词，切换到全屏歌词。
         MiniLyric(
             onClick = onLyricsClick,
             modifier =
@@ -776,7 +762,7 @@ private fun PlayerPage(
             }
         }
         Spacer(modifier = Modifier.height(Spacing.Small))
-        // 音质标签：固定高度槽位保持版面节奏，无标签时留白而不是显示空药丸
+        // 固定音质标签区域高度，避免布局跳动。
         val qualityTags =
             buildList {
                 if (audioQualityInfo.sampleRate > 0) {
@@ -877,15 +863,9 @@ private fun PlayerPage(
     }
 }
 
-// ============================================
-// UI 子组件
-// ============================================
+// 界面子组件
 
-/**
- * 进度条区块。
- * 单独抽出该叶子组件，使每秒的播放位置更新只重组这里，
- * 而不是连带整个 [PlayerPage] 一起重组。
- */
+/** 独立进度条，局部读取播放位置。 */
 @Composable
 private fun SeekBarSection(
     seekPositionProvider: () -> Float,
@@ -968,7 +948,7 @@ private fun SeekBarSection(
             }
         }
         Spacer(modifier = Modifier.height(Spacing.Small))
-        // 当前位置 和 总时长（等宽数字避免走时跳动，两端与波形边缘对齐）
+        // 时间使用等宽数字，避免跳动。
         val timeStyle =
             MaterialTheme.typography.labelMedium.copy(
                 fontFeatureSettings = "tnum",
@@ -1021,7 +1001,7 @@ private fun SeekBarSection(
     }
 }
 
-// ---------- 播放器控制组件 ----------
+// 播放器控制组件
 
 /** 歌曲信息 */
 @Composable
@@ -1072,7 +1052,7 @@ private fun SongInfo(
     }
 }
 
-/** 控制按钮图标切换：高频触发——短时长强 ease-out，不带弹性 */
+/** 控制图标以短时缓出动画切换。 */
 private fun controlIconTransform() =
     (
         fadeIn(tween(durationMillis = 160, easing = EaseOutEmphasized)) +
@@ -1301,9 +1281,7 @@ private fun SecondaryActions(
     }
 }
 
-// ============================================
 // 工具函数
-// ============================================
 
 /**
  * 格式化时间 (毫秒 -> mm:ss)

@@ -47,8 +47,6 @@ fun Modifier.liquidGlassSource(hazeState: HazeState): Modifier =
     }
 
 enum class LiquidGlassVariant {
-    Navigation,
-    PlayerBar,
     TopBar,
     PlayButton,
     Dialog,
@@ -69,10 +67,8 @@ fun Modifier.liquidGlass(
     }
 
     if ((
-            variant == LiquidGlassVariant.PlayerBar ||
-                variant == LiquidGlassVariant.Dialog ||
-                variant == LiquidGlassVariant.PopupMenu ||
-                variant == LiquidGlassVariant.Navigation
+            variant == LiquidGlassVariant.Dialog ||
+                variant == LiquidGlassVariant.PopupMenu
         ) &&
         shape is RoundedCornerShape
     ) {
@@ -87,7 +83,7 @@ fun Modifier.liquidGlass(
                     shape(shape)
                     lightPosition(Alignment.TopStart)
                     optics(
-                        blurRadius = if (variant == LiquidGlassVariant.PlayerBar) 28.dp else 24.dp,
+                        blurRadius = 24.dp,
                     )
                 }
             }
@@ -110,12 +106,10 @@ fun Modifier.liquidGlass(
                 LiquidGlassVariant.Dialog,
                 LiquidGlassVariant.PopupMenu,
                 -> HazePerformanceMode.Balanced
-                LiquidGlassVariant.Navigation,
-                LiquidGlassVariant.PlayerBar,
                 LiquidGlassVariant.PlayButton,
                 -> HazePerformanceMode.Performance
             },
-        // The surfaces are clipped already; avoiding layer expansion keeps the blur bounds small.
+        // 容器已裁剪，无需扩展模糊图层。
         expandLayerBounds = false,
     )
 }
@@ -127,10 +121,6 @@ private fun liquidBlurStyle(
 ): HazeBlurStyle {
     val panelColor =
         when (variant) {
-            LiquidGlassVariant.Navigation,
-            LiquidGlassVariant.PlayerBar,
-            -> MaterialTheme.colorScheme.surfaceContainerHigh
-
             LiquidGlassVariant.TopBar -> MaterialTheme.colorScheme.surfaceContainer
             LiquidGlassVariant.PlayButton -> MaterialTheme.colorScheme.primary
             LiquidGlassVariant.Dialog,
@@ -139,8 +129,6 @@ private fun liquidBlurStyle(
         }
     val blurRadius =
         when (variant) {
-            LiquidGlassVariant.Navigation -> 20.dp
-            LiquidGlassVariant.PlayerBar -> 28.dp
             LiquidGlassVariant.TopBar -> 18.dp
             LiquidGlassVariant.PlayButton -> 24.dp
             LiquidGlassVariant.Dialog -> 32.dp
@@ -148,8 +136,6 @@ private fun liquidBlurStyle(
         }
     val tintAlpha =
         when (variant) {
-            LiquidGlassVariant.Navigation -> 0.38f
-            LiquidGlassVariant.PlayerBar -> 0.46f
             LiquidGlassVariant.TopBar -> 0.32f
             LiquidGlassVariant.PlayButton -> 0.22f
             LiquidGlassVariant.Dialog -> 0.55f

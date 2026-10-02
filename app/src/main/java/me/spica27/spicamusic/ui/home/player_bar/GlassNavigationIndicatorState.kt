@@ -47,11 +47,12 @@ internal class GlassNavigationIndicatorState(
         isPressed = false
     }
 
-    fun beginDrag() {
+    fun beginDrag(startPosition: Float = position) {
         motionJob?.cancel()
         isSettling = false
         isDragging = true
-        dragPosition = position
+        dragPosition = startPosition
+        position = startPosition
         velocity = 0f
     }
 

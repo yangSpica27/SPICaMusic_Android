@@ -4,97 +4,128 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AllInbox
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.home.page.FinderPage
 import me.spica27.spicamusic.ui.home.page.LibraryPage
 import me.spica27.spicamusic.ui.home.page.MusicPage
-import me.spica27.spicamusic.ui.home.player_bar.BottomBarScrollConnection
-import me.spica27.spicamusic.ui.home.player_bar.BottomMediaBarV2
-import me.spica27.spicamusic.ui.home.player_bar.rememberBottomBarScrollConnection
+import me.spica27.spicamusic.ui.home.player_bar.HomeNavigationBar
+import me.spica27.spicamusic.ui.home.player_bar.HomePlayerScaffold
+import me.spica27.spicamusic.ui.home.player_bar.MiniPlayerBar
+import me.spica27.spicamusic.ui.home.player_bar.PlayerSheetHandle
+import me.spica27.spicamusic.ui.home.player_bar.rememberPlayerSheetState
 import me.spica27.spicamusic.ui.navigation.HomeRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.player.DEFAULT_PAGE
+import me.spica27.spicamusic.ui.player.ExpandedPlayerScreen
+import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
+import me.spica27.spicamusic.ui.player.QUEUE_PAGE
+import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import org.koin.compose.viewmodel.koinActivityViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen() {
     val homeViewModel: HomeViewModel = koinActivityViewModel()
+    val playerViewModel = LocalPlayerViewModel.current
     val backStack = LocalBackStack.current
-
-    val isSceneVisible by remember(backStack) {
-        derivedStateOf {
-            backStack.lastScreenOrNull() is HomeRoute
-        }
-    }
-
-    val currentPage = homeViewModel.currentPage.collectAsStateWithLifecycle().value
-
-    val bottomBarScrollConnection = rememberBottomBarScrollConnection()
-    // One source for the home content lets the persistent bottom surfaces share one capture.
+    val active by remember(backStack) { derivedStateOf { backStack.lastScreenOrNull() is HomeRoute } }
+    val currentPage by homeViewModel.currentPage.collectAsStateWithLifecycle()
+    val mediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
+    // 保留歌曲信息，供退出动画显示。
+    var lastMediaItem by remember { mutableStateOf(mediaItem) }
+    if (mediaItem != null) SideEffect { lastMediaItem = mediaItem }
+    val displayedMediaItem = mediaItem ?: lastMediaItem
+    val glassEnabled = LocalLiquidGlassConfig.current.enabled
     val hazeState = rememberHazeState()
+    val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
+    val position = playerViewModel.currentPosition.collectAsStateWithLifecycle()
+    val duration = playerViewModel.currentDuration.collectAsStateWithLifecycle()
+    val reducedMotion = LocalReducedMotion.current
+    val sheetState = rememberPlayerSheetState()
+    var initialPlayerPage by rememberSaveable { mutableIntStateOf(DEFAULT_PAGE) }
+    val pageStateHolder = rememberSaveableStateHolder()
 
-    CompositionLocalProvider(
-        LocalBottomBarScrollConnection provides bottomBarScrollConnection,
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            // SaveableStateHolder 让离开的页面保留可保存状态（列表滚动位置、
-            // 入场动画已播标记等），切回时不重建、不重播入场 stagger。
-            val pageStateHolder = rememberSaveableStateHolder()
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .liquidGlassSource(hazeState),
-            ) {
-                pageStateHolder.SaveableStateProvider(key = currentPage) {
-                    when (currentPage) {
-                        HomePage.Finder -> FinderPage()
-                        HomePage.Music -> MusicPage()
-                        HomePage.Library -> LibraryPage()
-                    }
+    HomePlayerScaffold(
+        playerAvailable = mediaItem != null,
+        sheetState = sheetState,
+        active = active,
+        onMiniPlayerDragStart = { initialPlayerPage = DEFAULT_PAGE },
+        navigationBar = { HomeNavigationBar(currentPage, homeViewModel::navigateToPage, glassEnabled = glassEnabled) },
+        miniPlayer = { dragModifier ->
+            val metadata = displayedMediaItem?.mediaMetadata
+            MiniPlayerBar(
+                title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song),
+                artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist),
+                artworkUri = metadata?.artworkUri,
+                isPlaying = isPlaying,
+                onExpand = {
+                    initialPlayerPage = DEFAULT_PAGE
+                    sheetState.animateTo(true, reducedMotion)
+                },
+                onPlayPause = playerViewModel::togglePlayPause,
+                onOpenQueue = {
+                    initialPlayerPage = QUEUE_PAGE
+                    sheetState.animateTo(true, reducedMotion)
+                },
+                modifier = dragModifier,
+                progress = { if (duration.value > 0L) position.value.toFloat() / duration.value else 0f },
+                hazeState = hazeState,
+                glassEnabled = glassEnabled,
+            )
+        },
+        fullScreenPlayer = { progress, dragModifier ->
+            val collapse = { sheetState.animateTo(false, reducedMotion) }
+            ExpandedPlayerScreen(
+                onCollapse = collapse,
+                progressProvider = progress,
+                initialPage = initialPlayerPage,
+                animationsEnabled = active,
+                dragHandle = { PlayerSheetHandle(collapse, dragModifier) },
+            )
+        },
+    ) { padding ->
+        Box(Modifier.fillMaxSize().liquidGlassSource(hazeState)) {
+            pageStateHolder.SaveableStateProvider(currentPage) {
+                when (currentPage) {
+                    HomePage.Finder -> FinderPage(bottomContentPadding = padding.calculateBottomPadding())
+                    HomePage.Music -> MusicPage(bottomContentPadding = padding.calculateBottomPadding())
+                    HomePage.Library -> LibraryPage(bottomContentPadding = padding.calculateBottomPadding())
                 }
             }
-            BottomMediaBarV2(
-                bottomBarScrollConnection = bottomBarScrollConnection,
-                hazeState = hazeState,
-                animationsEnabled = isSceneVisible,
-            )
         }
     }
 }
 
 @Immutable
 enum class HomePage(
-    @StringRes val titleRes: Int,
+    @param:StringRes val titleRes: Int,
     val icon: ImageVector,
+    val selectedIcon: ImageVector,
 ) {
-    Finder(R.string.nav_tab_finder, Icons.Default.AllInbox),
-    Music(R.string.nav_tab_music, Icons.Default.MusicNote),
-    Library(R.string.nav_tab_library, Icons.Default.LibraryMusic),
+    Finder(R.string.nav_tab_finder, Icons.Outlined.Explore, Icons.Filled.Explore),
+    Music(R.string.nav_tab_music, Icons.Outlined.MusicNote, Icons.Filled.MusicNote),
+    Library(R.string.nav_tab_library, Icons.Outlined.LibraryMusic, Icons.Filled.LibraryMusic),
 }
-
-val LocalBottomBarScrollConnection =
-    compositionLocalOf<BottomBarScrollConnection> {
-        error("No BottomBarScrollConnection provided. This composable must be called inside a Scene's content lambda.")
-    }

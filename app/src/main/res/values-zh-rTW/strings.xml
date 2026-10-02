@@ -282,10 +282,10 @@
   <string name="playlist_detail_title">歌单详情</string>
   <string name="play_count_format">%d 次播放</string>
 
-  <!-- Navigation -->
+  <!-- 导航 -->
   <string name="nav_library">媒體庫</string>
 
-  <!-- Common UI actions -->
+  <!-- 通用界面操作 -->
   <string name="confirm">確定</string>
   <string name="close">關閉</string>
   <string name="back">返回</string>
@@ -293,7 +293,7 @@
   <string name="hide">隱藏</string>
   <string name="collapse">收起</string>
 
-  <!-- Player controls -->
+  <!-- 播放控制 -->
   <string name="pause">暫停</string>
   <string name="previous_track">上一首</string>
   <string name="next_track">下一首</string>
@@ -312,14 +312,14 @@
   <string name="clear_current_playlist_title">清空目前播放清單</string>
   <string name="clear_current_playlist_message">確定移除目前播放清單中的所有歌曲嗎？</string>
 
-  <!-- Metadata fallbacks -->
+  <!-- 歌曲信息默认值 -->
   <string name="unknown_song">未知歌曲</string>
   <string name="unknown_artist">未知藝術家</string>
   <string name="unknown_album">未知專輯</string>
   <string name="unknown_format">未知格式</string>
   <string name="cover_placeholder">封面佔位符</string>
 
-  <!-- Audio info card -->
+  <!-- 音频信息卡片 -->
   <string name="audio_info">音訊資訊</string>
   <string name="audio_format_label">格式</string>
   <string name="sample_rate_label">取樣率</string>
@@ -329,17 +329,17 @@
   <string name="channels_format">%d 聲道</string>
   <string name="channel_count_label">聲道數</string>
 
-  <!-- Album -->
+  <!-- 专辑 -->
   <string name="album_details">專輯詳情</string>
   <string name="album_year_songs_format">%1$s · %2$d 首</string>
 
-  <!-- Playlist save operations -->
+  <!-- 歌单保存 -->
   <string name="save_as_playlist">儲存為播放清單</string>
   <string name="saved_as_playlist_format">已儲存為播放清單「%s」</string>
   <string name="save_failed">儲存失敗</string>
   <string name="save_as_playlist_succcess">儲存成功</string>
 
-  <!-- Song picker sheet -->
+  <!-- 歌曲选择面板 -->
   <string name="add_songs_title">新增歌曲</string>
   <string name="search_song_or_artist">搜尋歌名或藝術家</string>
   <string name="songs_available_format">共 %d 首可選</string>
@@ -348,15 +348,15 @@
   <string name="confirm_add">確認新增</string>
   <string name="confirm_add_format">確認新增 (%d)</string>
 
-  <!-- Lyrics toolbar -->
+  <!-- 歌词工具栏 -->
   <string name="lyrics_tool">歌詞工具</string>
   <string name="advance_half_second">提前 0.5 秒</string>
   <string name="delay_half_second">延遲 0.5 秒</string>
 
-  <!-- Scan -->
+  <!-- 扫描 -->
   <string name="preparing_scan">準備掃描...</string>
 
-  <!-- Settings screen sections -->
+  <!-- 设置分区 -->
   <string name="settings_appearance">外觀</string>
   <string name="settings_dark_mode_subtitle">啟用深色主題</string>
   <string name="settings_playback">播放</string>
@@ -376,12 +376,12 @@
   <string name="settings_ignored_songs_subtitle">查看和還原已忽略的歌曲</string>
   <string name="settings_media_library_source_subtitle">管理音樂掃描路徑</string>
 
-  <!-- Most played time range chips -->
+  <!-- 常听时间范围 -->
   <string name="range_week">本週</string>
   <string name="range_year">本年</string>
   <string name="range_all_time">全部</string>
 
-  <!-- Library Page -->
+  <!-- 资料库页面 -->
   <string name="library_title">資料庫</string>
   <string name="library_summary_playlists">%d 個歌單</string>
   <string name="library_summary_scan_folders">%d 個掃描目錄</string>
@@ -417,7 +417,7 @@
   <string name="no_playlists_yet">還沒有歌單</string>
   <string name="library_no_ignore_folders">沒有忽略目錄</string>
 
-  <!-- Music Page -->
+  <!-- 音乐页面 -->
   <string name="music_page_title">音樂</string>
   <string name="music_summary_format">%1$d 首歌曲 · %2$d 張專輯 · %3$d 位歌手</string>
   <string name="music_tab_songs">全部歌曲</string>
@@ -457,7 +457,7 @@
   <string name="music_no_albums_title">還沒有專輯</string>
   <string name="music_no_artists_title">還沒有歌手</string>
 
-  <!-- Finder Page -->
+  <!-- 发现页面 -->
   <string name="finder_title">發現</string>
   <string name="finder_summary_format">%1$d 首常聽 · %2$d 首收藏 · %3$d 個歌單</string>
   <string name="finder_search_title">搜尋音樂</string>
@@ -494,16 +494,16 @@
   <string name="finder_search_action">搜尋</string>
   <string name="finder_quick_entries_title">快捷入口</string>
 
-  <!-- Crash screen -->
+  <!-- 崩溃页面 -->
   <string name="crash_app_crashed">應用程式崩潰了</string>
   <string name="crash_share_log">分享日誌</string>
   <string name="crash_restart_app">重啟應用</string>
 
-  <!-- Common actions -->
+  <!-- 通用操作 -->
   <string name="shuffle_play">隨機播放</string>
   <string name="no_song_playing">沒有正在播放的歌曲</string>
 
-  <!-- Song menu -->
+  <!-- 歌曲菜单 -->
   <string name="play_next">下一首播放</string>
   <string name="view_album">查看專輯</string>
   <string name="view_artist">查看歌手</string>
@@ -519,7 +519,7 @@
   <string name="create_empty_only">僅創建空歌單</string>
   <string name="create_and_add">創建並加入</string>
 
-  <!-- Song info dialog -->
+  <!-- 歌曲信息对话框 -->
   <string name="song_info_dialog_title">歌曲資訊</string>
   <string name="info_file_path">檔案路徑</string>
   <string name="info_file_size">檔案大小</string>
@@ -531,7 +531,7 @@
   <string name="copy_field_format">複製%s</string>
   <string name="sample_rate_format">%s kHz</string>
 
-  <!-- Scanner -->
+  <!-- 扫描页面 -->
   <string name="scanner_hero_title">讓 SPICa 發現你的音樂</string>
   <string name="scanner_hero_subtitle">掃描僅讀取裝置上的音訊檔案，用於建立本地音樂庫和播放清單。</string>
   <string name="scanner_idle_title">準備整理你的音樂宇宙</string>
@@ -580,7 +580,7 @@
   <string name="scanner_rules_summary_formats_all">全部格式</string>
   <string name="scanner_rules_summary_formats">%1$d 種格式</string>
 
-  <!-- Search -->
+  <!-- 搜索 -->
   <string name="search_songs_albums_artists">搜尋歌曲、專輯、歌手</string>
   <string name="clear_input">清除</string>
   <string name="search_your_music_title">搜尋你的音樂</string>
@@ -588,7 +588,7 @@
   <string name="search_no_results_format">沒有找到「%s」</string>
   <string name="search_try_different_keywords">試試換個關鍵字，或檢查拼寫是否正確</string>
 
-  <!-- Playlist detail -->
+  <!-- 歌单详情 -->
   <string name="search_in_playlist_hint">搜尋歌單內歌曲</string>
   <string name="search_songs_artists_albums">搜尋歌曲、歌手或專輯</string>
   <string name="close_search_cd">關閉搜尋</string>
@@ -602,7 +602,7 @@
   <string name="add_n_songs_format">添加 %d 首</string>
   <string name="confirm_delete_playlist_full">確定要刪除歌單「%1$s」嗎？此操作不可撤銷。</string>
 
-  <!-- Settings -->
+  <!-- 设置 -->
   <string name="settings_hero_title">定制你的音樂空間</string>
   <string name="settings_hero_subtitle">主題、動態背景與播放偏好統一管理</string>
   <string name="settings_appearance_subtitle">整個應用的配色與深淺色主題</string>
@@ -613,11 +613,11 @@
   <string name="settings_playback_subtitle">讓聆聽體驗更順手</string>
   <string name="settings_light_mode_label">淺色模式</string>
 
-  <!-- Lyrics -->
+  <!-- 歌词 -->
   <string name="no_lyrics">暫無歌詞</string>
   <string name="seek_to_lyric_line">定位到此行</string>
 
-  <!-- Playlist creator -->
+  <!-- 创建歌单 -->
   <string name="playlist_name_label">歌單名稱</string>
   <string name="playlist_name_default">我的歌單</string>
   <string name="playlist_name_placeholder_hint">給歌單起個名字吧</string>
@@ -630,12 +630,12 @@
   <string name="playlist_suggestion_4">深夜電台</string>
   <string name="playlist_suggestion_5">學習專注</string>
 
-  <!-- Navigation tabs -->
+  <!-- 导航标签 -->
   <string name="nav_tab_finder">發現</string>
   <string name="nav_tab_music">音樂</string>
   <string name="nav_tab_library">資料庫</string>
 
-  <!-- About -->
+  <!-- 关于 -->
   <string name="settings_about">關於</string>
   <string name="settings_about_subtitle">版本、開源聲明與隱私</string>
   <string name="about_title">關於</string>
@@ -654,15 +654,15 @@
   <string name="about_project_home_subtitle">在 GitHub 檢視原始碼</string>
   <string name="about_cannot_open_link">無法開啟連結</string>
 
-  <!-- Open-source licenses page -->
+  <!-- 开源许可页面 -->
   <string name="licenses_title">開源授權</string>
   <string name="licenses_header">本應用的實現離不開以下開源專案，在此感謝所有作者與貢獻者。</string>
   <string name="licenses_count_format">%1$d 個函式庫</string>
 
-  <!-- App license page -->
+  <!-- 应用许可页面 -->
   <string name="app_license_title">應用授權</string>
 
-  <!-- Privacy policy page -->
+  <!-- 隐私政策页面 -->
   <string name="privacy_title">隱私政策</string>
   <string name="privacy_updated_format">最後更新：%1$s</string>
   <string name="privacy_updated_value">2026 年 6 月</string>
@@ -680,7 +680,7 @@
   <string name="privacy_section_contact_title">聯絡方式</string>
   <string name="privacy_section_contact_body">如對本隱私政策有任何疑問，請在專案的 GitHub 儲存庫提交 issue。</string>
 
-  <!-- Settings screen (redesigned) -->
+  <!-- 设置页面 -->
   <string name="settings_masthead_subtitle">主題、播放頁視覺與播放行為</string>
   <string name="settings_section_player_visual">播放頁</string>
   <string name="settings_section_player_visual_subtitle">播放頁面的觀感與動效</string>
@@ -696,7 +696,7 @@
   <string name="settings_expand_options">展開選項</string>
   <string name="settings_collapse_options">收起選項</string>
 
-  <!-- Settings option labels and hints -->
+  <!-- 设置选项和提示 -->
   <string name="settings_option_off">關閉</string>
   <string name="color_style_textured_desc">從封面取色，產生柔和的同色系配色</string>
   <string name="color_style_flat_desc">高對比度的純色扁平配色</string>
@@ -719,7 +719,7 @@
   <string name="waveform_dynamic_desc">波形柱隨聲音實時跳動</string>
   <string name="waveform_time_domain_desc">預先展示整首歌的波形輪廓</string>
 
-  <!-- Playlist creator (redesigned) -->
+  <!-- 歌单创建页面 -->
   <string name="playlist_name_error_duplicate">已有同名歌單</string>
   <string name="playlist_creator_add_songs_label">順便加幾首？</string>
   <string name="playlist_creator_add_songs_optional">可略過</string>
@@ -728,7 +728,7 @@
   <string name="playlist_creator_no_songs">音樂庫裡還沒有歌曲</string>
 
 
-  <!-- Album detail -->
+  <!-- 专辑详情 -->
   <string name="album_settings">專輯設定</string>
   <string name="save_to_playlist">儲存為播放清單</string>
   <string name="save_to_playlist_subtitle">將整張專輯寫入已有或新增播放清單</string>
@@ -774,4 +774,5 @@
   <string name="queue_empty_hint">播放任意歌曲、專輯或播放清單即可開始</string>
   <string name="move_up">上移</string>
   <string name="move_down">下移</string>
+  <string name="open_player">開啟播放器</string>
 </resources>

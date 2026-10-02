@@ -214,7 +214,7 @@
   <string name="preset_rock">Rock</string>
   <string name="preset_classical">Classical</string>
   <string name="preset_jazz">Jazz</string>
-  <!-- Audio effects screen -->
+  <!-- 音效设置 -->
   <string name="settings_sound_effects">Sound Effects</string>
   <string name="audio_effects_subtitle">Tune the equalizer and loudness to taste</string>
   <string name="audio_effects_section_equalizer">Equalizer</string>
@@ -282,10 +282,10 @@
   <string name="playlist_detail_title">Playlist Details</string>
   <string name="play_count_format">%d plays</string>
 
-  <!-- Navigation -->
+  <!-- 导航 -->
   <string name="nav_library">Media Library</string>
 
-  <!-- Common UI actions -->
+  <!-- 通用界面操作 -->
   <string name="confirm">Confirm</string>
   <string name="close">Close</string>
   <string name="back">Back</string>
@@ -293,7 +293,7 @@
   <string name="hide">Hide</string>
   <string name="collapse">Collapse</string>
 
-  <!-- Player controls -->
+  <!-- 播放控制 -->
   <string name="pause">Pause</string>
   <string name="previous_track">Previous track</string>
   <string name="next_track">Next track</string>
@@ -313,14 +313,14 @@
   <string name="clear_current_playlist_title">Clear current playlist</string>
   <string name="clear_current_playlist_message">Remove all songs from the current playlist?</string>
 
-  <!-- Metadata fallbacks -->
+  <!-- 歌曲信息默认值 -->
   <string name="unknown_song">Unknown Song</string>
   <string name="unknown_artist">Unknown Artist</string>
   <string name="unknown_album">Unknown Album</string>
   <string name="unknown_format">Unknown format</string>
   <string name="cover_placeholder">Cover placeholder</string>
 
-  <!-- Audio info card -->
+  <!-- 音频信息卡片 -->
   <string name="audio_info">Audio Info</string>
   <string name="audio_format_label">Format</string>
   <string name="sample_rate_label">Sample Rate</string>
@@ -330,17 +330,17 @@
   <string name="channels_format">%d channels</string>
   <string name="channel_count_label">Channels</string>
 
-  <!-- Album -->
+  <!-- 专辑 -->
   <string name="album_details">Album Details</string>
   <string name="album_year_songs_format">%1$s · %2$d songs</string>
 
-  <!-- Playlist save operations -->
+  <!-- 歌单保存 -->
   <string name="save_as_playlist">Save as Playlist</string>
   <string name="save_as_playlist_succcess">Save as Playlist Success</string>
   <string name="saved_as_playlist_format">Saved as playlist \"%s\"</string>
   <string name="save_failed">Save failed</string>
 
-  <!-- Song picker sheet -->
+  <!-- 歌曲选择面板 -->
   <string name="add_songs_title">Add Songs</string>
   <string name="search_song_or_artist">Search song or artist</string>
   <string name="songs_available_format">%d songs available</string>
@@ -349,15 +349,15 @@
   <string name="confirm_add">Confirm Add</string>
   <string name="confirm_add_format">Confirm Add (%d)</string>
 
-  <!-- Lyrics toolbar -->
+  <!-- 歌词工具栏 -->
   <string name="lyrics_tool">Lyrics Tool</string>
   <string name="advance_half_second">Advance 0.5s</string>
   <string name="delay_half_second">Delay 0.5s</string>
 
-  <!-- Scan -->
+  <!-- 扫描 -->
   <string name="preparing_scan">Preparing scan…</string>
 
-  <!-- Settings screen sections -->
+  <!-- 设置分区 -->
   <string name="settings_appearance">Appearance</string>
   <string name="settings_dark_mode_subtitle">Enable dark theme</string>
   <string name="settings_playback">Playback</string>
@@ -377,13 +377,13 @@
   <string name="settings_ignored_songs_subtitle">View and restore ignored songs</string>
   <string name="settings_media_library_source_subtitle">Manage music scan paths</string>
 
-  <!-- Most played time range chips -->
+  <!-- 常听时间范围 -->
   <string name="range_week">This Week</string>
   <string name="range_year">This Year</string>
   <string name="range_all_time">All Time</string>
   <string name="audio_playback_attribution" translatable="false">\"This app plays audio\"</string>
 
-  <!-- Library Page -->
+  <!-- 资料库页面 -->
   <string name="library_title">Media Library</string>
   <string name="library_summary_playlists">%d playlists</string>
   <string name="library_summary_scan_folders">%d scan folders</string>
@@ -419,7 +419,7 @@
   <string name="no_playlists_yet">No Playlists Yet</string>
   <string name="library_no_ignore_folders">No Ignore Folders</string>
 
-  <!-- Music Page -->
+  <!-- 音乐页面 -->
   <string name="music_page_title">Music</string>
   <string name="music_summary_format">%1$d songs · %2$d albums · %3$d artists</string>
   <string name="music_tab_songs">Songs</string>
@@ -459,7 +459,7 @@
   <string name="music_no_albums_title">No albums yet</string>
   <string name="music_no_artists_title">No artists yet</string>
 
-  <!-- Finder Page -->
+  <!-- 发现页面 -->
   <string name="finder_title">Discover</string>
   <string name="finder_summary_format">%1$d frequent · %2$d favorites · %3$d playlists</string>
   <string name="finder_search_title">Search Music</string>
@@ -496,16 +496,16 @@
   <string name="finder_search_action">Search</string>
   <string name="finder_quick_entries_title">Quick Access</string>
 
-  <!-- Crash screen -->
+  <!-- 崩溃页面 -->
   <string name="crash_app_crashed">App Crashed</string>
   <string name="crash_share_log">Share Log</string>
   <string name="crash_restart_app">Restart App</string>
 
-  <!-- Common actions -->
+  <!-- 通用操作 -->
   <string name="shuffle_play">Shuffle</string>
   <string name="no_song_playing">No song playing</string>
 
-  <!-- Song menu -->
+  <!-- 歌曲菜单 -->
   <string name="play_next">Play Next</string>
   <string name="view_album">View Album</string>
   <string name="view_artist">View Artist</string>
@@ -521,7 +521,7 @@
   <string name="create_empty_only">Create empty playlist only</string>
   <string name="create_and_add">Create and Add</string>
 
-  <!-- Song info dialog -->
+  <!-- 歌曲信息对话框 -->
   <string name="song_info_dialog_title">Song Info</string>
   <string name="info_file_path">File Path</string>
   <string name="info_file_size">File Size</string>
@@ -533,7 +533,7 @@
   <string name="copy_field_format">Copy %s</string>
   <string name="sample_rate_format">%s kHz</string>
 
-  <!-- Scanner -->
+  <!-- 扫描页面 -->
   <string name="scanner_hero_title">Let SPICa discover your music</string>
   <string name="scanner_hero_subtitle">Only audio files on your device are read to build your local library.</string>
   <string name="scanner_idle_title">Ready to organize your music universe</string>
@@ -582,7 +582,7 @@
   <string name="scanner_rules_summary_formats_all">All formats</string>
   <string name="scanner_rules_summary_formats">%1$d formats</string>
 
-  <!-- Search -->
+  <!-- 搜索 -->
   <string name="search_songs_albums_artists">Search songs, albums, artists</string>
   <string name="clear_input">Clear</string>
   <string name="search_your_music_title">Search your music</string>
@@ -590,7 +590,7 @@
   <string name="search_no_results_format">No results for \"%s\"</string>
   <string name="search_try_different_keywords">Try different keywords, or check your spelling</string>
 
-  <!-- Playlist detail -->
+  <!-- 歌单详情 -->
   <string name="search_in_playlist_hint">Search songs in playlist</string>
   <string name="search_songs_artists_albums">Search songs, artists, or albums</string>
   <string name="close_search_cd">Close search</string>
@@ -604,7 +604,7 @@
   <string name="add_n_songs_format">Add %d songs</string>
   <string name="confirm_delete_playlist_full">Are you sure you want to delete \"%1$s\"? This cannot be undone.</string>
 
-  <!-- Settings -->
+  <!-- 设置 -->
   <string name="settings_hero_title">Customize your music space</string>
   <string name="settings_hero_subtitle">Theme, dynamic background and playback in one place</string>
   <string name="settings_appearance_subtitle">Colors and light or dark theme across the app</string>
@@ -615,11 +615,11 @@
   <string name="settings_playback_subtitle">Make the listening experience smoother</string>
   <string name="settings_light_mode_label">Light Mode</string>
 
-  <!-- Lyrics -->
+  <!-- 歌词 -->
   <string name="no_lyrics">No lyrics</string>
   <string name="seek_to_lyric_line">Seek to this line</string>
 
-  <!-- Playlist creator -->
+  <!-- 创建歌单 -->
   <string name="playlist_name_label">Playlist Name</string>
   <string name="playlist_name_default">My Playlist</string>
   <string name="playlist_name_placeholder_hint">Give the playlist a name</string>
@@ -632,12 +632,12 @@
   <string name="playlist_suggestion_4">Late Night Radio</string>
   <string name="playlist_suggestion_5">Study Focus</string>
 
-  <!-- Navigation tabs -->
+  <!-- 导航标签 -->
   <string name="nav_tab_finder">Discover</string>
   <string name="nav_tab_music">Music</string>
   <string name="nav_tab_library">Library</string>
 
-  <!-- About -->
+  <!-- 关于 -->
   <string name="settings_about">About</string>
   <string name="settings_about_subtitle">Version, open-source notices, and privacy</string>
   <string name="about_title">About</string>
@@ -656,15 +656,15 @@
   <string name="about_project_home_subtitle">View the source code on GitHub</string>
   <string name="about_cannot_open_link">Could not open the link</string>
 
-  <!-- Open-source licenses page -->
+  <!-- 开源许可页面 -->
   <string name="licenses_title">Open-source licenses</string>
   <string name="licenses_header">This app is made possible by the following open-source projects. Thanks to all their authors and contributors.</string>
   <string name="licenses_count_format">%1$d libraries</string>
 
-  <!-- App license page -->
+  <!-- 应用许可页面 -->
   <string name="app_license_title">App license</string>
 
-  <!-- Privacy policy page -->
+  <!-- 隐私政策页面 -->
   <string name="privacy_title">Privacy policy</string>
   <string name="privacy_updated_format">Last updated: %1$s</string>
   <string name="privacy_updated_value">June 2026</string>
@@ -682,7 +682,7 @@
   <string name="privacy_section_contact_title">Contact</string>
   <string name="privacy_section_contact_body">If you have any questions about this privacy policy, please open an issue on the project’s GitHub repository.</string>
 
-  <!-- Settings screen (redesigned) -->
+  <!-- 设置页面 -->
   <string name="settings_masthead_subtitle">Theme, player visuals, and playback</string>
   <string name="settings_section_player_visual">Now Playing</string>
   <string name="settings_section_player_visual_subtitle">How the player screen looks and moves</string>
@@ -698,7 +698,7 @@
   <string name="settings_expand_options">Show options</string>
   <string name="settings_collapse_options">Hide options</string>
 
-  <!-- Settings option labels and hints -->
+  <!-- 设置选项和提示 -->
   <string name="settings_option_off">Off</string>
   <string name="color_style_textured_desc">A tonal palette derived from the album art</string>
   <string name="color_style_flat_desc">Flat, high-contrast solid colors</string>
@@ -721,7 +721,7 @@
   <string name="waveform_dynamic_desc">Bars react to the sound in real time</string>
   <string name="waveform_time_domain_desc">Shows the whole track’s waveform up front</string>
 
-  <!-- Playlist creator (redesigned) -->
+  <!-- 歌单创建页面 -->
   <string name="playlist_name_error_duplicate">A playlist with this name already exists</string>
   <string name="playlist_creator_add_songs_label">Add a few songs?</string>
   <string name="playlist_creator_add_songs_optional">Optional</string>
@@ -730,7 +730,7 @@
   <string name="playlist_creator_no_songs">No songs in your library yet</string>
 
 
-  <!-- Album detail -->
+  <!-- 专辑详情 -->
   <string name="album_settings">Album settings</string>
   <string name="save_to_playlist">Save to playlist</string>
   <string name="save_to_playlist_subtitle">Write all tracks into an existing or new playlist</string>
@@ -775,4 +775,5 @@
   <string name="queue_empty_hint">Play any song, album or playlist to start</string>
   <string name="move_up">Move up</string>
   <string name="move_down">Move down</string>
+  <string name="open_player">Open player</string>
 </resources>

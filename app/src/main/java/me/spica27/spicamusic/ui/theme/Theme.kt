@@ -54,9 +54,6 @@ object LayoutTokens {
     val PageHeaderFollowDistance = 240.dp
     val PageHeaderCollapsedTitleScale = 0.82f
     val PageHeaderCollapsedTabHeight = 52.dp
-    val PlayerCollapsedHorizontalInset = 16.dp
-    val PlayerCollapsedTopInset = 12.dp
-    val PlayerCollapsedCornerRadius = 28.dp
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,7 +66,7 @@ fun ProvideAppInteractionIndication(content: @Composable () -> Unit) {
     CompositionLocalProvider(
         LocalIndication provides clickHighlightIndication,
         LocalRippleConfiguration provides null,
-        // 唯一注入点：Theme 的两个分支与 CrashActivity 都经过这里
+        // 主题和崩溃页面统一在此配置交互反馈。
         LocalReducedMotion provides rememberSystemReducedMotion(),
         content = content,
     )
@@ -100,7 +97,7 @@ fun SPICaMusicTheme(
             }
 
             ThemeColorStyle.Flat -> {
-                // 目标色板只在种子色/深浅变化时重建；animateColorScheme 用 updateTransition 逐角色
+                // 颜色变化时重建色板，并平滑切换主题色。
                 val targetScheme =
                     remember(themeColor, darkTheme) {
                         antFlatColorScheme(

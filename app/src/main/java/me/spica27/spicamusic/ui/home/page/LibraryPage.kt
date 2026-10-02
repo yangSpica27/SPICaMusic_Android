@@ -72,12 +72,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -89,7 +89,6 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.home.HomeViewModel
-import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
 import me.spica27.spicamusic.ui.navigation.FavoriteRoute
@@ -129,7 +128,7 @@ private const val ENTRANCE_ORDER_CARD_BASE = 2
 private const val FavoritePreviewSongCount = 5
 
 @Composable
-fun LibraryPage() {
+fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
     val backStack = LocalBackStack.current
     val viewModel: LibraryPageViewModel = koinActivityViewModel()
     val homeViewModel: HomeViewModel = koinActivityViewModel()
@@ -173,14 +172,13 @@ fun LibraryPage() {
             columns = GridCells.Fixed(2),
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .nestedScroll(LocalBottomBarScrollConnection.current),
+                    .fillMaxSize(),
             contentPadding =
                 PaddingValues(
                     start = LayoutTokens.MusicHeaderHorizontalPadding,
                     end = LayoutTokens.MusicHeaderHorizontalPadding,
                     top = statusBarTop + 56.dp,
-                    bottom = 200.dp,
+                    bottom = bottomContentPadding + Spacing.Large,
                 ),
             horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
@@ -391,7 +389,7 @@ fun LibraryPage() {
 }
 
 /**
- * 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在 Draw 阶段读取，滚动零重组）
+ * 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在绘制阶段读取，避免滚动触发重组）
  */
 private fun Density.mastheadCollapse(gridState: LazyGridState): Float {
     if (gridState.firstVisibleItemIndex > 0) return 1f
@@ -494,7 +492,7 @@ private fun LibraryTopBar(
     }
 }
 
-/** 刊头：大标题 + 歌单计数 meta 行（计数全页唯一） */
+/** 页面顶部：大标题和歌单计数。 */
 @Composable
 private fun LibraryMasthead(
     playlistCount: Int,
@@ -601,7 +599,7 @@ private fun LibraryCommandPill(
     }
 }
 
-/** 分区头：标题 + 计数 meta + 可选「更多」胶囊 */
+/** 分区标题、计数和可选的更多按钮。 */
 @Composable
 private fun SectionHeader(
     title: String,

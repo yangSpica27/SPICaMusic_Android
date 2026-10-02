@@ -28,10 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
-import me.spica27.spicamusic.ui.glass.LiquidGlassConfig
-import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.home.HomePage
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -39,9 +35,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.atomic.AtomicReference
 
-/** 使用系统触摸注入，直接验证浮层越界像素，避免依赖 Espresso 的主线程同步。 */
+/** 验证玻璃指示器变化及绘制边界。 */
 @RunWith(AndroidJUnit4::class)
-class GlassNavigationFloatingInstrumentedTest {
+class HomeNavigationRenderingInstrumentedTest {
     @get:Rule
     val activity = ActivityScenarioRule(ComponentActivity::class.java)
 
@@ -49,26 +45,25 @@ class GlassNavigationFloatingInstrumentedTest {
     private val density = AtomicReference(1f)
 
     @Test
-    fun pressedAndMovingLensDrawsAboveAndBelowTheNavigationContainer() {
+    fun pressedAndMovingLensStaysInsideTheNavigationContainer() {
         activity.scenario.onActivity { host ->
             host.setContent {
                 MaterialTheme {
-                    CompositionLocalProvider(LocalLiquidGlassConfig provides LiquidGlassConfig(enabled = true)) {
-                        val pageSource = rememberHazeState()
+                    CompositionLocalProvider {
                         var selectedPage by remember { mutableStateOf(HomePage.Music) }
                         density.set(LocalDensity.current.density)
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Canvas(Modifier.fillMaxSize().hazeSource(pageSource)) {
+                            Canvas(Modifier.fillMaxSize()) {
                                 drawRect(Brush.linearGradient(listOf(Color(0xFFFFDBC8), Color(0xFFCCE3EF))))
                             }
-                            GlassHomeNavigationBar(
+                            HomeNavigationBar(
                                 selectedPage = selectedPage,
+                                glassEnabled = true,
                                 onPageSelected = { selectedPage = it },
                                 modifier =
                                     Modifier.width(320.dp).onGloballyPositioned {
                                         bounds.set(it.boundsInWindow())
                                     },
-                                hazeState = pageSource,
                             )
                         }
                     }
@@ -77,7 +72,7 @@ class GlassNavigationFloatingInstrumentedTest {
         }
         SystemClock.sleep(1000)
         val navigation = checkNotNull(bounds.get())
-        val tabWidth = (navigation.width - 12f * density.get()) / 3f
+        val tabWidth = navigation.width / 3f
         val x = navigation.left + 1.5f * tabWidth
         val y = navigation.center.y
         val downTime = SystemClock.uptimeMillis()
@@ -86,11 +81,11 @@ class GlassNavigationFloatingInstrumentedTest {
         try {
             SystemClock.sleep(700)
             val pressed = screenshot("navigation-floating-pressed.png")
-            assertOutsidePixelsChanged(rest, pressed, navigation, x)
+            assertLensIsContained(rest, pressed, navigation, x)
             injectTouch(MotionEvent.ACTION_MOVE, x + tabWidth * 0.5f, y, downTime)
             SystemClock.sleep(400)
             val moving = screenshot("navigation-floating-moving.png")
-            assertOutsidePixelsChanged(rest, moving, navigation, x + tabWidth * 0.4f)
+            assertLensIsContained(rest, moving, navigation, x + tabWidth * 0.4f)
         } finally {
             injectTouch(MotionEvent.ACTION_UP, x + tabWidth * 0.5f, y, downTime)
         }
@@ -127,7 +122,7 @@ class GlassNavigationFloatingInstrumentedTest {
         return bitmap
     }
 
-    private fun assertOutsidePixelsChanged(
+    private fun assertLensIsContained(
         rest: Bitmap,
         active: Bitmap,
         navigation: Rect,
@@ -151,12 +146,16 @@ class GlassNavigationFloatingInstrumentedTest {
             return count
         }
         assertTrue(
-            "The floating lens should draw above the capsule",
-            changes((navigation.top - 6f * margin).toInt(), (navigation.top - margin).toInt()) > 10,
+            "Pressing and dragging must visibly change the glass lens",
+            changes((navigation.top + 8f * margin).toInt(), (navigation.bottom - 8f * margin).toInt()) > 10,
         )
         assertTrue(
-            "The floating lens should draw below the capsule",
-            changes((navigation.bottom + margin).toInt(), (navigation.bottom + 6f * margin).toInt()) > 10,
+            "The lens must not paint over the mini player",
+            changes((navigation.top - 6f * margin).toInt(), (navigation.top - margin).toInt()) == 0,
+        )
+        assertTrue(
+            "The lens must not paint over the system navigation area",
+            changes((navigation.bottom + margin).toInt(), (navigation.bottom + 6f * margin).toInt()) == 0,
         )
     }
 }

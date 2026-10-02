@@ -68,12 +68,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -87,7 +87,6 @@ import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.home.HomePage
 import me.spica27.spicamusic.ui.home.HomeViewModel
-import me.spica27.spicamusic.ui.home.LocalBottomBarScrollConnection
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.ScannerRoute
 import me.spica27.spicamusic.ui.navigation.SearchRoute
@@ -122,7 +121,7 @@ private val ItemPlacementSpec: FiniteAnimationSpec<IntOffset> =
     )
 
 @Composable
-fun FinderPage() {
+fun FinderPage(bottomContentPadding: Dp = 0.dp) {
     val backStack = LocalBackStack.current
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
@@ -167,12 +166,11 @@ fun FinderPage() {
             state = listState,
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .nestedScroll(LocalBottomBarScrollConnection.current),
+                    .fillMaxSize(),
             contentPadding =
                 PaddingValues(
                     top = statusBarTop + 56.dp,
-                    bottom = 200.dp,
+                    bottom = bottomContentPadding + Spacing.Large,
                 ),
             verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
         ) {
@@ -362,7 +360,7 @@ fun FinderPage() {
 }
 
 /**
- * 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在 Draw 阶段读取，滚动零重组）。
+ * 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在绘制阶段读取，避免滚动触发重组）。
  */
 private fun Density.mastheadCollapse(listState: LazyListState): Float {
     if (listState.firstVisibleItemIndex > 0) return 1f
@@ -483,7 +481,7 @@ private fun FinderTopBar(
     }
 }
 
-/** 刊头：大标题 + 三维统计 meta 行（数字变化时上下滚动切换） */
+/** 页面顶部：大标题和三项统计，数值变化时滚动切换。 */
 @Composable
 private fun FinderMasthead(
     frequentCount: Int,
