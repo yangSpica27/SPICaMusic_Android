@@ -728,7 +728,9 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
         MusicTopBar(
             gridState = gridState,
             onScrollToTop = {
-                scope.launch { gridState.animateScrollToItem(0) }
+                scope.launch {
+                    gridState.requestScrollToItem(0)
+                }
             },
             modifier = Modifier.align(Alignment.TopStart),
         )
