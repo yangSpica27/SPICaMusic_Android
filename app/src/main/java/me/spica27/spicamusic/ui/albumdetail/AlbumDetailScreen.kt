@@ -71,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.getCoverUri
@@ -131,6 +132,7 @@ fun AlbumDetailScreen(album: Album) {
     }
 
     val coverUri = remember(album) { album.getCoverUri() }
+    val coverArtwork = remember(album) { album.artwork() }
     val dominantColor =
         rememberDominantColorFromUri(uri = coverUri, fallbackColor = Color(0xFF1E1E2E))
     val animatedDominantColor =
@@ -330,7 +332,7 @@ fun AlbumDetailScreen(album: Album) {
                 ),
         ) {
             AudioCover(
-                uri = coverUri,
+                artwork = coverArtwork,
                 modifier = Modifier.fillMaxSize(),
             )
         }

@@ -2,6 +2,7 @@ package me.spica27.spicamusic
 
 import android.app.Application
 import androidx.annotation.OptIn
+import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -9,13 +10,18 @@ import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import me.spcia.lyric_core.di.extraInfoModule
+import me.spica27.spicamusic.artwork.ArtworkLoader
+import me.spica27.spicamusic.artwork.ArtworkTreeRoot
 import me.spica27.spicamusic.audioeffects.AudioEffectsApplier
 import me.spica27.spicamusic.crash.CrashHandler
 import me.spica27.spicamusic.di.AppModule
 import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
 import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
+import me.spica27.spicamusic.feature.library.domain.ScanFolderUseCases
 import me.spica27.spicamusic.feature.library.domain.libraryDomainModule
 import me.spica27.spicamusic.feature.lyrics.domain.lyricsDomainModule
 import me.spica27.spicamusic.feature.player.domain.playerDomainModule
@@ -43,6 +49,8 @@ class App : Application() {
 
     private val audioEffectsApplier: AudioEffectsApplier by inject()
 
+    private val scanFolderUseCases: ScanFolderUseCases by inject()
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @OptIn(UnstableApi::class)
@@ -54,6 +62,9 @@ class App : Application() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+
+        // 进程唯一的封面加载器，Compose / 通知 / MediaSession 共用
+        ArtworkLoader.install(this)
 
         // 初始化 Koin 依赖注入
         startKoin {
@@ -69,6 +80,20 @@ class App : Application() {
                 AppModule.appModule, // 应用模块
                 extraInfoModule,
             )
+        }
+
+        // 额外扫描目录的 SAF 权限供封面解析读取同目录图片
+        appScope.launch {
+            scanFolderUseCases
+                .getExtraFoldersFlow()
+                .map { folders ->
+                    folders
+                        .filter { it.isAccessible }
+                        .mapNotNull { folder ->
+                            folder.pathPrefix?.let { ArtworkTreeRoot(folder.uriString.toUri(), it.trimEnd('/')) }
+                        }
+                }.distinctUntilChanged()
+                .collect(ArtworkLoader::updateTreeRoots)
         }
 
         // Koin 启动后：加载并应用持久化音效设置

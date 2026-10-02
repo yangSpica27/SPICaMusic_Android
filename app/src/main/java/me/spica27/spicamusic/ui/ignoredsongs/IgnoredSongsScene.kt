@@ -89,9 +89,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
-import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.theme.EaseOutStrong
 import me.spica27.spicamusic.ui.theme.LayoutTokens
@@ -621,8 +620,7 @@ private fun IgnoredSongRow(
             )
         }
         AudioCover(
-            uri = song.getCoverUri(),
-            fallbackUri = song.getAlbumCoverUri(),
+            artwork = song.artwork(),
             modifier =
                 Modifier
                     .size(48.dp)

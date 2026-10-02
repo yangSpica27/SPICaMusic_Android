@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui.player
 
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.MusicArtwork
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -50,7 +50,7 @@ private val LyricsToolbarBottomInset = 112.dp
 internal fun FullscreenLyricsSurface(
     title: String,
     artist: String,
-    artworkUri: Uri?,
+    artwork: MusicArtwork?,
     hazeState: HazeState,
     isPlaying: Boolean,
     onBack: () -> Unit,
@@ -104,7 +104,7 @@ internal fun FullscreenLyricsSurface(
         FullscreenLyricsHeader(
             title = title,
             artist = artist,
-            artworkUri = artworkUri,
+            artwork = artwork,
             onBack = onBack,
             modifier = Modifier.align(Alignment.TopCenter),
         )
@@ -129,7 +129,7 @@ internal fun FullscreenLyricsSurface(
 private fun FullscreenLyricsHeader(
     title: String,
     artist: String,
-    artworkUri: Uri?,
+    artwork: MusicArtwork?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -165,7 +165,7 @@ private fun FullscreenLyricsHeader(
                     .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
             AudioCover(
-                uri = artworkUri,
+                artwork = artwork,
                 modifier = Modifier.fillMaxSize(),
             )
         }

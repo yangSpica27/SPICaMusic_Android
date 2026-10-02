@@ -177,7 +177,8 @@ class PlaybackService : MediaLibraryService() {
 //                            )
 //                        }
                     },
-                ).setSessionActivity(
+                ).setBitmapLoader(ArtworkBitmapLoader())
+                .setSessionActivity(
                     android.app.PendingIntent.getActivity(
                         this,
                         0,

@@ -27,6 +27,8 @@ fun Song.toMediaItem(): MediaItem =
                 .setExtras(Bundle().apply {
                     putLong("mediaStoreId", mediaStoreId)
                     putLong("albumId", albumId)
+                    putString("path", path)
+                    putLong("size", size)
                     putInt("sampleRate", sampleRate)
                     putInt("bitRate", bitRate)
                     putInt("channels", channels)

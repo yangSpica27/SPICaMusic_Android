@@ -129,11 +129,10 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
-import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.dialog.SortMenuOption
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.player_bar.GlassNavigationIndicatorState
@@ -1264,8 +1263,7 @@ private fun MusicSongRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
         AudioCover(
-            uri = song.getCoverUri(),
-            fallbackUri = song.getAlbumCoverUri(),
+            artwork = song.artwork(),
             modifier =
                 Modifier
                     .size(RowCoverSize)
@@ -1337,7 +1335,7 @@ private fun MusicAlbumCard(
         verticalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
         AudioCover(
-            uri = album.getCoverUri(),
+            artwork = album.artwork(),
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -1385,7 +1383,7 @@ private fun MusicArtistRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
         AudioCover(
-            uri = artist.getCoverUri(),
+            artwork = artist.artwork(),
             modifier =
                 Modifier
                     .size(RowCoverSize)

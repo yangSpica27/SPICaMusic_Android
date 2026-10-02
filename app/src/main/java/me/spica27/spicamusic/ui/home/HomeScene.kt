@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.home.page.FinderPage
@@ -79,7 +80,7 @@ fun HomeScreen() {
             MiniPlayerBar(
                 title = metadata?.title?.toString() ?: stringResource(R.string.unknown_song),
                 artist = metadata?.artist?.toString() ?: stringResource(R.string.unknown_artist),
-                artworkUri = metadata?.artworkUri,
+                artwork = metadata?.artwork(),
                 isPlaying = isPlaying,
                 onExpand = {
                     initialPlayerPage = DEFAULT_PAGE

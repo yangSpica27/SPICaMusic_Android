@@ -1,6 +1,7 @@
 package me.spica27.spicamusic.ui
 
 import android.app.Activity
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -15,6 +16,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.skydoves.landscapist.core.Landscapist
+import com.skydoves.landscapist.image.LocalLandscapist
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
@@ -92,25 +95,29 @@ fun AppScaffold() {
             LocalDialogHazeState provides dialogHazeState,
             LocalPlayerViewModel provides playerViewModel,
             LocalBackStack provides navigator,
+            LocalLandscapist provides Landscapist.getInstance(),
         ) {
             // 页面层单独提供模糊源，避免对话框采样到自身。
-            NavDisplay(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .liquidGlassSource(dialogHazeState),
-                backStack = navigator.entries,
-                onBack = { navigator.removeLastOrNull() },
-                entryDecorators = entryDecorators,
-                sceneStrategies = sceneStrategies,
-                entryProvider = entryProvider,
-                transitionSpec = {
-                    Nav3Transitions.iosStyle()
-                },
-                popTransitionSpec = {
-                    Nav3Transitions.iosStylePop()
-                },
-            )
+            SharedTransitionLayout {
+                NavDisplay(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .liquidGlassSource(dialogHazeState),
+                    backStack = navigator.entries,
+                    onBack = { navigator.removeLastOrNull() },
+                    entryDecorators = entryDecorators,
+                    sceneStrategies = sceneStrategies,
+                    entryProvider = entryProvider,
+                    transitionSpec = {
+                        Nav3Transitions.iosStyle()
+                    },
+                    popTransitionSpec = {
+                        Nav3Transitions.iosStylePop()
+                    },
+                    sharedTransitionScope = this,
+                )
+            }
         }
     }
 }

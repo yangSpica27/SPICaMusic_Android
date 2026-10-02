@@ -68,9 +68,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
-import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
@@ -606,8 +605,7 @@ private fun CandidateSongRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
         AudioCover(
-            uri = song.getCoverUri(),
-            fallbackUri = song.getAlbumCoverUri(),
+            artwork = song.artwork(),
             modifier =
                 Modifier
                     .size(44.dp)

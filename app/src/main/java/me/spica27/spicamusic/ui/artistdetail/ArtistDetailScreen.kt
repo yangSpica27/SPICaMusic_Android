@@ -4,7 +4,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -51,10 +50,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,12 +60,11 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.delay
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
 import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
@@ -76,7 +72,7 @@ import me.spica27.spicamusic.ui.navigation.SongMenuRoute
 import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
 import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.entrance
-import me.spica27.spicamusic.ui.widget.CoverFallback
+import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.OtherAlbumsShelf
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import me.spica27.spicamusic.utils.calculateLuminance
@@ -104,6 +100,7 @@ fun ArtistDetailScreen(artist: Artist) {
     val albums by viewModel.albums.collectAsStateWithLifecycle()
 
     val coverUri = remember(artist) { artist.getCoverUri() }
+    val coverArtwork = remember(artist) { artist.artwork() }
     val dominantColor =
         rememberDominantColorFromUri(uri = coverUri, fallbackColor = Color(0xFF1E1E2E))
     // stiffness 50f 要 1.5-2 秒落定；收敛到 200f 并保持 State 形态（只在 draw 读取）
@@ -315,8 +312,8 @@ fun ArtistDetailScreen(artist: Artist) {
         }
 
         // 圆形歌手头像（浮动层，随滚动折叠为小圆角方形）
-        LandscapistImage(
-            imageModel = { coverUri },
+        AudioCover(
+            artwork = coverArtwork,
             modifier =
                 Modifier
                     // 位置/尺寸在 Layout 阶段按进度导出，圆角在 Draw 阶段插值：
@@ -343,29 +340,6 @@ fun ArtistDetailScreen(artist: Artist) {
                             )
                         clip = true
                     },
-            success = { _, painter ->
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            },
-            failure = {
-                Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.default_cover),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            },
         )
     }
 }
@@ -426,28 +400,14 @@ private fun ArtistSongRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // 每行缓存封面 Uri：getCoverUri() 每次都拼串 + Uri.parse，长列表 fling 时逐行分配
-        val songCoverUri = remember(song.mediaStoreId) { song.getCoverUri() }
-        LandscapistImage(
-            imageModel = { songCoverUri },
+        // 每行缓存封面模型，长列表 fling 时不逐行分配
+        val songArtwork = remember(song.mediaStoreId) { song.artwork() }
+        AudioCover(
+            artwork = songArtwork,
             modifier =
                 Modifier
                     .size(48.dp)
                     .clip(MaterialTheme.shapes.small),
-            success = { _, painter ->
-                Image(
-                    painter = painter,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            },
-            failure = {
-                CoverFallback(
-                    fallbackUri = song.getAlbumCoverUri(),
-                    modifier = Modifier.fillMaxSize(),
-                )
-            },
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(

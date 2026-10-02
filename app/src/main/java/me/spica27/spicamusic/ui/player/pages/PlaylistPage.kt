@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui.player.pages
 
-import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -136,7 +135,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import kotlinx.coroutines.CoroutineScope
@@ -145,6 +143,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.ui.navigation.ConfirmationDialogRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
@@ -1602,8 +1601,7 @@ private fun QueueRow(
                         .clip(Shapes.MediumCornerBasedShape),
             ) {
                 AudioCover(
-                    uri = metadata.artworkUri,
-                    fallbackUri = entry.item.albumCoverUri(),
+                    artwork = metadata.artwork(),
                     modifier = Modifier.fillMaxSize(),
                 )
                 NowPlayingCoverOverlay(
@@ -1640,13 +1638,6 @@ private fun QueueRow(
         )
     }
 }
-
-/** 歌曲本体无内嵌封面时回退专辑图（与 Song.getAlbumCoverUri 同规则） */
-private fun MediaItem.albumCoverUri(): Uri? =
-    mediaMetadata.extras
-        ?.getLong("albumId")
-        ?.takeIf { it > 0 }
-        ?.let { "content://media/external/audio/albumart/$it".toUri() }
 
 /** 左滑露出的移除底：只画已露出的部分（行本身透明，不能整块铺底） */
 @Composable

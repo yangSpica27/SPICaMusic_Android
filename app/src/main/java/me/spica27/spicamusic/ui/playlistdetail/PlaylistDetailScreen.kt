@@ -24,7 +24,6 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -108,7 +107,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalFocusManager
@@ -128,15 +126,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
-import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.component.DialogMenuItem
 import me.spica27.spicamusic.ui.component.PopupMenuContainer
@@ -155,7 +151,7 @@ import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.theme.entrance
-import me.spica27.spicamusic.ui.widget.CoverFallback
+import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.PlaylistCoverView
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.combinedClickHighlight
@@ -1334,26 +1330,12 @@ private fun PlaylistSongRow(
 /** 歌曲封面（48dp，失败时渲染专辑占位） */
 @Composable
 private fun SongCoverImage(song: Song) {
-    LandscapistImage(
-        imageModel = { song.getCoverUri() },
+    AudioCover(
+        artwork = song.artwork(),
         modifier =
             Modifier
                 .size(48.dp)
                 .clip(Shapes.SmallCornerBasedShape),
-        success = { _, painter ->
-            Image(
-                painter = painter,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        },
-        failure = {
-            CoverFallback(
-                fallbackUri = song.getAlbumCoverUri(),
-                modifier = Modifier.fillMaxSize(),
-            )
-        },
     )
 }
 
@@ -2076,26 +2058,12 @@ private fun PickerSongRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            LandscapistImage(
-                imageModel = { song.getCoverUri() },
+            AudioCover(
+                artwork = song.artwork(),
                 modifier =
                     Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(14.dp)),
-                success = { _, painter ->
-                    Image(
-                        painter = painter,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                },
-                failure = {
-                    CoverFallback(
-                        fallbackUri = song.getAlbumCoverUri(),
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                },
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(

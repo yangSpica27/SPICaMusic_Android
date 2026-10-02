@@ -29,13 +29,18 @@ import androidx.media3.session.SessionCommand
 import com.google.common.collect.ImmutableList
 import com.skydoves.landscapist.core.ImageRequest
 import com.skydoves.landscapist.core.Landscapist
+import com.skydoves.landscapist.core.model.CachePolicy
 import com.skydoves.landscapist.core.model.ImageResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import java.util.Arrays
 import kotlin.coroutines.CoroutineContext
+
+/** 通知大图边长；默认封面同尺寸，保持方形 */
+private const val NOTIFICATION_ARTWORK_EDGE = 256
 
 @UnstableApi
 internal class SpicaNotificationProvider(
@@ -310,8 +315,9 @@ internal class SpicaNotificationProvider(
         Landscapist.getInstance().enqueue(
             ImageRequest
                 .builder()
-                .model(metadata.artworkUri)
-                .size(100, 100)
+                .model(metadata.artwork() ?: metadata.artworkUri)
+                .size(NOTIFICATION_ARTWORK_EDGE, NOTIFICATION_ARTWORK_EDGE)
+                .diskCachePolicy(CachePolicy.DISABLED)
                 .build(),
         ) { result ->
             if (result is ImageResult.Success) {
@@ -324,7 +330,7 @@ internal class SpicaNotificationProvider(
                         .getDrawable(
                             context,
                             R.drawable.default_cover,
-                        )?.toBitmap(64, 42),
+                        )?.toBitmap(NOTIFICATION_ARTWORK_EDGE, NOTIFICATION_ARTWORK_EDGE),
                 )
             }
             onNotificationChangedCallback.onNotificationChanged(

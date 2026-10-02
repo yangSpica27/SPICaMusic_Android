@@ -166,6 +166,7 @@ dependencies {
 
   implementation(libs.landscapist.core)
   implementation(libs.landscapist.image)
+  implementation(libs.taglib)
 
   // 播放器相关依赖 (实现层需要)
   implementation libs.androidx.media3.exoplayer

@@ -1,8 +1,5 @@
 package me.spica27.spicamusic.ui.widget
 
-import android.net.Uri
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -11,15 +8,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.core.net.toUri
-import com.skydoves.landscapist.image.LandscapistImage
+import me.spica27.spicamusic.artwork.MusicArtwork
+import me.spica27.spicamusic.artwork.albumArtwork
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -28,8 +23,6 @@ private const val COMBINATION_ROTATION_DEGREES = -30f
 private const val COMBINATION_SCALE = 2.15f
 private const val COMBINATION_FOCUS_OFFSET_X = -0.485f
 private const val COMBINATION_FOCUS_OFFSET_Y = -0.21f
-
-private fun albumCoverUri(albumId: Long): Uri = "content://media/external/audio/albumart/$albumId".toUri()
 
 /**
  * 歌单组合封面。
@@ -62,7 +55,7 @@ fun PlaylistCoverView(
                     SingleAlbumCover(albumIds.first(), Modifier.fillMaxSize())
                 else ->
                     FinalPerfectCollage(
-                        covers = albumIds.take(COMBINATION_COVER_COUNT).map(::albumCoverUri),
+                        covers = albumIds.take(COMBINATION_COVER_COUNT).map(::albumArtwork),
                         modifier = Modifier.fillMaxSize(),
                     )
             }
@@ -81,43 +74,25 @@ private fun SingleAlbumCover(
     modifier: Modifier,
 ) {
     PlaylistCoverImage(
-        uri = albumCoverUri(albumId),
+        artwork = albumArtwork(albumId),
         modifier = modifier,
     )
 }
 
 @Composable
 private fun PlaylistCoverImage(
-    uri: Uri,
+    artwork: MusicArtwork?,
     modifier: Modifier,
 ) {
-    LandscapistImage(
-        imageModel = { uri },
-        modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh),
-        success = { _, painter ->
-            Image(
-                painter = painter,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        },
-        failure = { DefaultMusicCover() },
-    )
+    AudioCover(artwork = artwork, modifier = modifier)
 }
 
 /**
- * Renders the MeiloX-style grid:
- *
- * [0] [1]
- * [2] [3] [4] [ ]
- *
- * The collage is laid out at its natural 4:3 ratio, then rotated and scaled so the first
- * image becomes the focal point of the square viewport.
+ * 类 MeiloX 网格UI
  */
 @Composable
 private fun FinalPerfectCollage(
-    covers: List<Uri>,
+    covers: List<MusicArtwork?>,
     modifier: Modifier = Modifier,
 ) {
     if (covers.size < COMBINATION_COVER_COUNT) return
@@ -126,8 +101,6 @@ private fun FinalPerfectCollage(
         val density = LocalDensity.current
         val viewportWidthPx = with(density) { maxWidth.toPx() }
         val viewportHeightPx = with(density) { maxHeight.toPx() }
-
-        // The actual grid is 1/2 W high on top and 1/4 W high on the bottom.
         val collageWidthPx = viewportWidthPx
         val topRowHeightPx = collageWidthPx / 2f
         val bottomRowHeightPx = collageWidthPx / 4f
@@ -143,9 +116,6 @@ private fun FinalPerfectCollage(
         val vectorY = (firstImageCenterY - collageCenterY) * COMBINATION_SCALE
         val rotatedVectorX = vectorX * cos(angleRad).toFloat() - vectorY * sin(angleRad).toFloat()
         val rotatedVectorY = vectorX * sin(angleRad).toFloat() + vectorY * cos(angleRad).toFloat()
-
-        // Move the focal tile slightly toward the upper-left so the enlarged collage fully
-        // bleeds past the viewport edges instead of exposing a transparent corner.
         val focalPointX = viewportWidthPx * (0.5f + COMBINATION_FOCUS_OFFSET_X)
         val focalPointY = viewportHeightPx * (0.5f + COMBINATION_FOCUS_OFFSET_Y)
         val computedTranslationX = focalPointX - (collageCenterX + rotatedVectorX)
@@ -170,7 +140,7 @@ private fun FinalPerfectCollage(
 
 @Composable
 private fun ImageCollageContent(
-    covers: List<Uri>,
+    covers: List<MusicArtwork?>,
     modifier: Modifier = Modifier,
 ) {
     if (covers.size < COMBINATION_COVER_COUNT) return
@@ -178,25 +148,25 @@ private fun ImageCollageContent(
     Column(modifier = modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth()) {
             PlaylistCoverImage(
-                uri = covers[0],
+                artwork = covers[0],
                 modifier = Modifier.weight(1f).aspectRatio(1f),
             )
             PlaylistCoverImage(
-                uri = covers[1],
+                artwork = covers[1],
                 modifier = Modifier.weight(1f).aspectRatio(1f),
             )
         }
         Row(Modifier.fillMaxWidth()) {
             PlaylistCoverImage(
-                uri = covers[2],
+                artwork = covers[2],
                 modifier = Modifier.weight(1f).aspectRatio(1f),
             )
             PlaylistCoverImage(
-                uri = covers[3],
+                artwork = covers[3],
                 modifier = Modifier.weight(1f).aspectRatio(1f),
             )
             PlaylistCoverImage(
-                uri = covers[4],
+                artwork = covers[4],
                 modifier = Modifier.weight(1f).aspectRatio(1f),
             )
             Spacer(Modifier.weight(1f).aspectRatio(1f))

@@ -101,6 +101,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
@@ -534,7 +535,7 @@ fun ExpandedPlayerScreen(
                                 ?.artist
                                 ?.toString()
                                 ?: stringResource(R.string.unknown_artist),
-                        artworkUri = currentMediaItem?.mediaMetadata?.artworkUri,
+                        artwork = currentMediaItem?.mediaMetadata?.artwork(),
                         hazeState = hazeState,
                         isPlaying = isPlaying,
                         onBack = { playerSurface = PlayerSurface.Player },
@@ -689,7 +690,7 @@ private fun PlayerPage(
                     contentKey = { it?.mediaId ?: "-1" },
                 ) { currentMediaItem ->
                     AudioCover(
-                        uri = currentMediaItem?.mediaMetadata?.artworkUri,
+                        artwork = currentMediaItem?.mediaMetadata?.artwork(),
                         modifier =
                             Modifier
                                 .fillMaxSize()

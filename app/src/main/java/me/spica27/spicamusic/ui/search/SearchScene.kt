@@ -79,9 +79,8 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
-import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.SongMenuRoute
 import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
@@ -554,8 +553,7 @@ private fun SearchSongItem(
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
         AudioCover(
-            uri = song.getCoverUri(),
-            fallbackUri = song.getAlbumCoverUri(),
+            artwork = song.artwork(),
             modifier =
                 Modifier
                     .size(56.dp)

@@ -47,18 +47,16 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
-import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.player.formatTime
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
-import me.spica27.spicamusic.ui.widget.CoverFallback
+import me.spica27.spicamusic.ui.widget.AudioCover
 import java.util.Locale
 
 @Composable
@@ -240,15 +238,9 @@ private fun SongInfoHeader(
             shape = Shapes.ExtraLargeCornerBasedShape,
             tonalElevation = 3.dp,
         ) {
-            LandscapistImage(
-                imageModel = { song.getCoverUri() },
+            AudioCover(
+                artwork = song.artwork(),
                 modifier = Modifier.fillMaxSize(),
-                failure = {
-                    CoverFallback(
-                        fallbackUri = song.getAlbumCoverUri(),
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                },
             )
         }
         Column(

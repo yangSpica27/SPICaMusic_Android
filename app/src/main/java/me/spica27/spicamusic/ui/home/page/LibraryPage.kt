@@ -85,9 +85,8 @@ import com.google.common.collect.ImmutableList
 import kotlinx.coroutines.delay
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
-import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.library.LibraryPageViewModel
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
@@ -714,8 +713,7 @@ private fun FavoriteSongRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
         AudioCover(
-            uri = song.getCoverUri(),
-            fallbackUri = song.getAlbumCoverUri(),
+            artwork = song.artwork(),
             modifier =
                 Modifier
                     .size(48.dp)

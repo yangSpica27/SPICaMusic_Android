@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui.home.player_bar
 
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,6 +48,7 @@ import dev.chrisbanes.haze.glass.GlassStyle
 import dev.chrisbanes.haze.glass.RefractionProfile
 import dev.chrisbanes.haze.glass.hazeGlass
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.MusicArtwork
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.widget.AudioCover
 
@@ -57,7 +57,7 @@ import me.spica27.spicamusic.ui.widget.AudioCover
 internal fun MiniPlayerBar(
     title: String,
     artist: String,
-    artworkUri: Uri?,
+    artwork: MusicArtwork?,
     isPlaying: Boolean,
     onExpand: () -> Unit,
     onPlayPause: () -> Unit,
@@ -117,7 +117,7 @@ internal fun MiniPlayerBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            AudioCover(uri = artworkUri, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)))
+            AudioCover(artwork = artwork, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(title, color = foreground, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(

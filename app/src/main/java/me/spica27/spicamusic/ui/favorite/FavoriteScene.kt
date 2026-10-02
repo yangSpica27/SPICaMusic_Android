@@ -104,9 +104,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
-import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.SongMenuRoute
 import me.spica27.spicamusic.ui.navigation.TextInputDialogRoute
@@ -866,8 +865,7 @@ private fun FavoriteSongRow(
                 }
             }
             AudioCover(
-                uri = song.getCoverUri(),
-                fallbackUri = song.getAlbumCoverUri(),
+                artwork = song.artwork(),
                 modifier =
                     Modifier
                         .size(48.dp)

@@ -20,8 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Album
-import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 
@@ -75,7 +75,7 @@ private fun OtherAlbumCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val coverUri = remember(album.id) { album.getCoverUri() }
+    val coverArtwork = remember(album.id) { album.artwork() }
     Column(
         modifier =
             modifier
@@ -85,7 +85,7 @@ private fun OtherAlbumCard(
                 .padding(Spacing.ExtraSmall),
     ) {
         AudioCover(
-            uri = coverUri,
+            artwork = coverArtwork,
             modifier =
                 Modifier
                     .size(CARD_WIDTH - Spacing.ExtraSmall * 2)

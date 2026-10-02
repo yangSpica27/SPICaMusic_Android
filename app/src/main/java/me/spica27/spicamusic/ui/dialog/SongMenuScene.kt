@@ -57,11 +57,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.getAlbumCoverUri
-import me.spica27.spicamusic.common.entity.getCoverUri
 import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.component.DialogMenuItem
 import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
@@ -71,7 +69,7 @@ import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.PlaylistCreatorRoute
 import me.spica27.spicamusic.ui.navigation.PlaylistPickerRoute
 import me.spica27.spicamusic.ui.navigation.SongInfoRoute
-import me.spica27.spicamusic.ui.widget.CoverFallback
+import me.spica27.spicamusic.ui.widget.AudioCover
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -252,15 +250,9 @@ private fun SongMenuContent(
                     shape = RoundedCornerShape(18.dp),
                     tonalElevation = 3.dp,
                 ) {
-                    LandscapistImage(
-                        imageModel = { song.getCoverUri() },
+                    AudioCover(
+                        artwork = song.artwork(),
                         modifier = Modifier.fillMaxSize(),
-                        failure = {
-                            CoverFallback(
-                                fallbackUri = song.getAlbumCoverUri(),
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        },
                     )
                 }
                 Column(
