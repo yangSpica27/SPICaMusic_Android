@@ -9,6 +9,7 @@ import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
@@ -185,8 +186,8 @@ private const val ENTRANCE_MAX_ORDER = 10
 
 /** 切页入场位移参数 */
 private const val TAB_ENTER_MAX_ORDER = 6
-private const val TAB_ENTER_STAGGER_MILLIS = 18
-private const val TAB_ENTER_DURATION_MILLIS = 260
+private const val TAB_ENTER_STAGGER_MILLIS = 65
+private const val TAB_ENTER_DURATION_MILLIS = 255
 private val TabEnterTranslation = 20.dp
 
 /** 切页入场闸门：关闭后滚入的条目不再播放 */
@@ -779,16 +780,18 @@ private fun Modifier.tabEnter(
                 targetValue = 1f,
                 animationSpec =
                     tween(
-                        durationMillis = TAB_ENTER_DURATION_MILLIS,
-                        delayMillis = order * TAB_ENTER_STAGGER_MILLIS,
-                        easing = EaseOutEmphasized,
+                        durationMillis = TAB_ENTER_DURATION_MILLIS + order * TAB_ENTER_STAGGER_MILLIS,
+                        easing = LinearOutSlowInEasing,
                     ),
             )
         }
     }
     return graphicsLayer {
         val p = progress.value
-        if (p < 1f) translationX = direction * (1f - p) * TabEnterTranslation.toPx()
+        if (p < 1f) alpha = p
+        if (p < 1f) transformOrigin = TransformOrigin(.5f, 0.5f)
+        if (p < 1f) scaleY = .8f + p * .2f
+        if (p < 1f) scaleX = 0.8f + p * .2f
     }
 }
 
