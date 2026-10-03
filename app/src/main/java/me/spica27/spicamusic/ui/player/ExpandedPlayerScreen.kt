@@ -83,6 +83,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -103,13 +104,16 @@ import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.artwork.artwork
+import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
+import me.spica27.spicamusic.common.entity.SongFilter
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.SleepTimerState
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
+import me.spica27.spicamusic.ui.navigation.ArtistDetailRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.SleepTimerRoute
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
@@ -466,6 +470,9 @@ fun ExpandedPlayerScreen(
                                         onPlayModeClick = { viewModel.togglePlayMode() },
                                         onFavoriteClick = { viewModel.toggleLikeCurrentSong() },
                                         onSleepTimerClick = { backStack.add(SleepTimerRoute) },
+                                        onArtistClick = { artist ->
+                                            backStack.add(ArtistDetailRoute(artist))
+                                        },
                                         onLyricsClick = { playerSurface = PlayerSurface.Lyrics },
                                         sleepTimer = sleepTimer,
                                         onPlaylistClick = {
@@ -600,6 +607,7 @@ private fun PlayerPage(
     onPlayModeClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onSleepTimerClick: () -> Unit,
+    onArtistClick: (Artist) -> Unit,
     onLyricsClick: () -> Unit,
     onPlaylistClick: () -> Unit,
     sleepTimer: SleepTimerState?,
@@ -627,6 +635,8 @@ private fun PlayerPage(
             ProgressBarStyle.fromString(progressBarStyleValue)
         }
     val songUseCases = koinInject<SongUseCases>()
+    val scope = rememberCoroutineScope()
+    var openingArtist by remember { mutableStateOf(false) }
 
     val coverEffectsEnabled = animationsEnabled && isAppInForeground && !LocalReducedMotion.current
 
@@ -637,13 +647,14 @@ private fun PlayerPage(
             ?.title
             ?.toString()
             ?: stringResource(R.string.unknown_song)
-    val artist =
+    val artistName =
         currentMediaItem
             .invoke()
             ?.mediaMetadata
             ?.artist
             ?.toString()
-            ?: stringResource(R.string.unknown_artist)
+            ?.takeIf { it.isNotBlank() }
+    val artist = artistName ?: stringResource(R.string.unknown_artist)
 
     Column(
         modifier =
@@ -707,6 +718,28 @@ private fun PlayerPage(
         SongInfo(
             title = title,
             artist = artist,
+            onArtistClick =
+                if (artistName != null && !openingArtist) {
+                    { clickedArtist ->
+                        openingArtist = true
+                        scope.launch {
+                            try {
+                                val songs = songUseCases.getSongs(filter = SongFilter(artists = listOf(clickedArtist)))
+                                onArtistClick(
+                                    Artist(
+                                        name = clickedArtist,
+                                        songCount = songs.size,
+                                        coverAlbumId = songs.firstOrNull()?.albumId ?: 0L,
+                                    ),
+                                )
+                            } finally {
+                                openingArtist = false
+                            }
+                        }
+                    }
+                } else {
+                    null
+                },
             modifier =
                 Modifier.graphicsLayer {
                     val metaReveal = calculateFadeAlpha(progressProvider(), META_REVEAL_THRESHOLD)
@@ -1008,6 +1041,7 @@ private fun SeekBarSection(
 private fun SongInfo(
     title: String,
     artist: String,
+    onArtistClick: ((String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -1042,6 +1076,15 @@ private fun SongInfo(
         ) { artist ->
             Text(
                 text = artist,
+                modifier =
+                    Modifier
+                        .clip(Shapes.SmallCornerBasedShape)
+                        .clickHighlight(
+                            enabled = onArtistClick != null,
+                            onClickLabel = stringResource(R.string.view_artist),
+                            role = Role.Button,
+                            onClick = { onArtistClick?.invoke(artist) },
+                        ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
