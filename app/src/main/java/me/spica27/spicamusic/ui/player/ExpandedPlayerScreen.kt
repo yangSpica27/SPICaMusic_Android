@@ -108,9 +108,7 @@ import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.SleepTimerState
-import me.spica27.spicamusic.ui.glass.LiquidGlassVariant
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
-import me.spica27.spicamusic.ui.glass.liquidGlass
 import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.SleepTimerRoute
@@ -1115,12 +1113,7 @@ internal fun TransportControls(
                 modifier =
                     Modifier
                         .size(80.dp)
-                        .liquidGlass(
-                            hazeState = hazeState,
-                            variant = LiquidGlassVariant.PlayButton,
-                            shape = CircleShape,
-                            fallbackColor = MaterialTheme.colorScheme.primary,
-                        ),
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
             ) {
                 Box(
                     modifier =
