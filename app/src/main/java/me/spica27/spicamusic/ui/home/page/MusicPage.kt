@@ -697,7 +697,10 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
             gridState = gridState,
             onScrollToTop = {
                 scope.launch {
-                    gridState.requestScrollToItem(0)
+                    if (gridState.firstVisibleItemIndex > 6) {
+                        gridState.scrollToItem(3)
+                    }
+                    gridState.animateScrollToItem(0)
                 }
             },
             modifier = Modifier.align(Alignment.TopStart),
