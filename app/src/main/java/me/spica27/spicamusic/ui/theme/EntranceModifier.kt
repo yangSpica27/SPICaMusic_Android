@@ -50,6 +50,7 @@ private class EntranceModifierNode(
     var play: Boolean,
     /** `null` 表示跟随 [LocalReducedMotion]。 */
     var reducedMotionOverride: Boolean?,
+    var replayKey: Int,
 ) : Modifier.Node(),
     LayoutModifierNode,
     CompositionLocalConsumerModifierNode {
@@ -115,16 +116,21 @@ private class EntranceModifierNode(
         newOrder: Int,
         newPlay: Boolean,
         newReducedMotionOverride: Boolean?,
+        newReplayKey: Int,
     ) {
         val oldPlay = play
         val oldReducedMotionOverride = reducedMotionOverride
+        val oldReplayKey = replayKey
 
         order = newOrder
         play = newPlay
         reducedMotionOverride = newReducedMotionOverride
+        replayKey = newReplayKey
 
-        // false -> true 表示请求重新播放。
-        if (!oldPlay && newPlay && progress.value >= 1f) {
+        // 标识变化时允许打断并重播，覆盖快速切页时 play 一直为 true 的情况。
+        if (newPlay && (oldReplayKey != newReplayKey || !oldPlay && progress.value >= 1f)) {
+            animationJob?.cancel()
+            animationJob = null
             progress = Animatable(0f)
             hasStarted = false
         }
@@ -141,7 +147,7 @@ private class EntranceModifierNode(
             }
         }
 
-        if (!oldPlay && newPlay && !hasStarted && progress.value < 1f) {
+        if (newPlay && !hasStarted && progress.value < 1f) {
             startAnimation()
         }
     }
@@ -196,11 +202,12 @@ private data class EntranceNodeElement(
     val order: Int,
     val play: Boolean,
     val reducedMotionOverride: Boolean?,
+    val replayKey: Int,
 ) : ModifierNodeElement<EntranceModifierNode>() {
-    override fun create(): EntranceModifierNode = EntranceModifierNode(order, play, reducedMotionOverride)
+    override fun create(): EntranceModifierNode = EntranceModifierNode(order, play, reducedMotionOverride, replayKey)
 
     override fun update(node: EntranceModifierNode) {
-        node.update(order, play, reducedMotionOverride)
+        node.update(order, play, reducedMotionOverride, replayKey)
     }
 
     override fun InspectorInfo.inspectableProperties() {
@@ -208,13 +215,15 @@ private data class EntranceNodeElement(
         properties["order"] = order
         properties["play"] = play
         properties["reducedMotion"] = reducedMotionOverride
+        properties["replayKey"] = replayKey
     }
 }
 
-/** 添加一次性的交错入场动画。 */
+/** 添加交错入场动画；[play] 为 true 时，改变 [replayKey] 可重新播放。 */
 @Stable
 fun Modifier.entrance(
     order: Int,
     play: Boolean = true,
     reducedMotion: Boolean? = null,
-): Modifier = then(EntranceNodeElement(order, play, reducedMotion))
+    replayKey: Int = 0,
+): Modifier = then(EntranceNodeElement(order, play, reducedMotion, replayKey))

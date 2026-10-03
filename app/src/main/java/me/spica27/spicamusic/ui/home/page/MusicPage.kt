@@ -84,6 +84,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -180,7 +181,7 @@ private val RowCoverSize = 48.dp
 private const val ENTRANCE_ORDER_ITEM_BASE = 3
 private const val ENTRANCE_MAX_ORDER = 10
 
-/** 列表更新只做短淡入淡出，不叠加缩放或逐行延迟。 */
+/** 搜索、排序等列表更新使用短淡入淡出；标签切换由 entrance 负责入场。 */
 private val ItemFadeInSpec = tween<Float>(durationMillis = 160, easing = LinearOutSlowInEasing)
 private val ItemFadeOutSpec = tween<Float>(durationMillis = 100, easing = LinearEasing)
 
@@ -333,17 +334,23 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
     var albumSortMode by rememberSaveable { mutableStateOf(AlbumSortMode.TitleAsc) }
     var artistSortMode by rememberSaveable { mutableStateOf(ArtistSortMode.NameAsc) }
 
-    // 首屏入场只播一次
+    // 刊头、标签和搜索行只在首屏入场；列表在每次切换标签时重新入场。
     var playEntrance by remember { mutableStateOf(true) }
-    LaunchedEffect(Unit) {
+    var playItemEntrance by remember { mutableStateOf(true) }
+    var itemEntranceReplayKey by remember { mutableIntStateOf(0) }
+    LaunchedEffect(itemEntranceReplayKey) {
         delay(ENTRANCE_GATE_MILLIS)
         playEntrance = false
+        playItemEntrance = false
     }
+    val itemEntranceOrderBase = if (itemEntranceReplayKey == 0) ENTRANCE_ORDER_ITEM_BASE else 0
+    val itemFadeInSpec = if (playItemEntrance) null else ItemFadeInSpec
 
     val selectTab: (MusicBrowserTab) -> Unit = { tab ->
         if (tab != selectedTab) {
-            // 首屏尚未播完时切页，也只使用列表更新的淡入淡出。
             playEntrance = false
+            playItemEntrance = true
+            itemEntranceReplayKey++
             selectedTab = tab
         }
     }
@@ -558,11 +565,16 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                         Unit
                                     }.takeIf { allSongs.isEmpty() },
                                 modifier =
-                                    Modifier.animateItem(
-                                        fadeInSpec = ItemFadeInSpec,
-                                        placementSpec = null,
-                                        fadeOutSpec = ItemFadeOutSpec,
-                                    ),
+                                    Modifier
+                                        .animateItem(
+                                            fadeInSpec = itemFadeInSpec,
+                                            placementSpec = null,
+                                            fadeOutSpec = ItemFadeOutSpec,
+                                        ).entrance(
+                                            order = itemEntranceOrderBase,
+                                            play = playItemEntrance,
+                                            replayKey = itemEntranceReplayKey,
+                                        ),
                             )
                         }
                     } else {
@@ -586,12 +598,13 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                 modifier =
                                     Modifier
                                         .animateItem(
-                                            fadeInSpec = ItemFadeInSpec,
+                                            fadeInSpec = itemFadeInSpec,
                                             placementSpec = itemPlacementSpec,
                                             fadeOutSpec = ItemFadeOutSpec,
                                         ).entrance(
-                                            order = minOf(index + ENTRANCE_ORDER_ITEM_BASE, ENTRANCE_MAX_ORDER),
-                                            play = playEntrance,
+                                            order = minOf(index, ENTRANCE_MAX_ORDER - ENTRANCE_ORDER_ITEM_BASE) + itemEntranceOrderBase,
+                                            play = playItemEntrance,
+                                            replayKey = itemEntranceReplayKey,
                                         ),
                             )
                         }
@@ -612,11 +625,16 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                     ),
                                 subtitle = stringResource(R.string.music_empty_albums_subtitle),
                                 modifier =
-                                    Modifier.animateItem(
-                                        fadeInSpec = ItemFadeInSpec,
-                                        placementSpec = null,
-                                        fadeOutSpec = ItemFadeOutSpec,
-                                    ),
+                                    Modifier
+                                        .animateItem(
+                                            fadeInSpec = itemFadeInSpec,
+                                            placementSpec = null,
+                                            fadeOutSpec = ItemFadeOutSpec,
+                                        ).entrance(
+                                            order = itemEntranceOrderBase,
+                                            play = playItemEntrance,
+                                            replayKey = itemEntranceReplayKey,
+                                        ),
                             )
                         }
                     } else {
@@ -633,12 +651,13 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                 modifier =
                                     Modifier
                                         .animateItem(
-                                            fadeInSpec = ItemFadeInSpec,
+                                            fadeInSpec = itemFadeInSpec,
                                             placementSpec = itemPlacementSpec,
                                             fadeOutSpec = ItemFadeOutSpec,
                                         ).entrance(
-                                            order = minOf(row + ENTRANCE_ORDER_ITEM_BASE, ENTRANCE_MAX_ORDER),
-                                            play = playEntrance,
+                                            order = minOf(row, ENTRANCE_MAX_ORDER - ENTRANCE_ORDER_ITEM_BASE) + itemEntranceOrderBase,
+                                            play = playItemEntrance,
+                                            replayKey = itemEntranceReplayKey,
                                         ),
                             )
                         }
@@ -659,11 +678,16 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                     ),
                                 subtitle = stringResource(R.string.music_empty_artists_subtitle),
                                 modifier =
-                                    Modifier.animateItem(
-                                        fadeInSpec = ItemFadeInSpec,
-                                        placementSpec = null,
-                                        fadeOutSpec = ItemFadeOutSpec,
-                                    ),
+                                    Modifier
+                                        .animateItem(
+                                            fadeInSpec = itemFadeInSpec,
+                                            placementSpec = null,
+                                            fadeOutSpec = ItemFadeOutSpec,
+                                        ).entrance(
+                                            order = itemEntranceOrderBase,
+                                            play = playItemEntrance,
+                                            replayKey = itemEntranceReplayKey,
+                                        ),
                             )
                         }
                     } else {
@@ -679,12 +703,13 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                 modifier =
                                     Modifier
                                         .animateItem(
-                                            fadeInSpec = ItemFadeInSpec,
+                                            fadeInSpec = itemFadeInSpec,
                                             placementSpec = itemPlacementSpec,
                                             fadeOutSpec = ItemFadeOutSpec,
                                         ).entrance(
-                                            order = minOf(index + ENTRANCE_ORDER_ITEM_BASE, ENTRANCE_MAX_ORDER),
-                                            play = playEntrance,
+                                            order = minOf(index, ENTRANCE_MAX_ORDER - ENTRANCE_ORDER_ITEM_BASE) + itemEntranceOrderBase,
+                                            play = playItemEntrance,
+                                            replayKey = itemEntranceReplayKey,
                                         ),
                             )
                         }
