@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.Icon
@@ -25,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -33,12 +32,12 @@ import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.artwork.MusicArtwork
+import me.spica27.spicamusic.ui.glass.LiquidGlassVariant
+import me.spica27.spicamusic.ui.glass.liquidGlass
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
 
-private val LyricsTopChromeHeight = 128.dp
-private val LyricsBottomChromeHeight = 168.dp
 private val LyricsToolbarBottomInset = 112.dp
 
 /**
@@ -59,46 +58,10 @@ internal fun FullscreenLyricsSurface(
     onNextClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val surfaceColor = MaterialTheme.colorScheme.surface
-
     Box(modifier = modifier.fillMaxSize()) {
         LyricsPanel(
             modifier = Modifier.fillMaxSize(),
             toolbarBottomInset = LyricsToolbarBottomInset,
-        )
-
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .height(LyricsTopChromeHeight)
-                    .background(
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    surfaceColor.copy(alpha = 0.56f),
-                                    Color.Transparent,
-                                ),
-                        ),
-                    ),
-        )
-
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(LyricsBottomChromeHeight)
-                    .background(
-                        Brush.verticalGradient(
-                            colors =
-                                listOf(
-                                    Color.Transparent,
-                                    surfaceColor.copy(alpha = 0.64f),
-                                ),
-                        ),
-                    ),
         )
 
         FullscreenLyricsHeader(
@@ -107,20 +70,7 @@ internal fun FullscreenLyricsSurface(
             artwork = artwork,
             onBack = onBack,
             modifier = Modifier.align(Alignment.TopCenter),
-        )
-
-        TransportControls(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = Spacing.ExtraLarge, vertical = Spacing.Medium),
             hazeState = hazeState,
-            isPlaying = isPlaying,
-            onPlayPauseClick = onPlayPauseClick,
-            onPreviousClick = onPreviousClick,
-            onNextClick = onNextClick,
         )
     }
 }
@@ -132,6 +82,7 @@ private fun FullscreenLyricsHeader(
     artwork: MusicArtwork?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    hazeState: HazeState,
 ) {
     Row(
         modifier =
@@ -143,10 +94,18 @@ private fun FullscreenLyricsHeader(
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
         IconButton(
+            modifier =
+                Modifier
+                    .clip(CircleShape)
+                    .liquidGlass(
+                        hazeState,
+                        variant = LiquidGlassVariant.TopBar,
+                        shape = CircleShape,
+                    ),
             onClick = onBack,
             colors =
                 IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.76f),
+                    containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
         ) {

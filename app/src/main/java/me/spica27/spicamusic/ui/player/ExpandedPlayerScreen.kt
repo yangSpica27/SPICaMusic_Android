@@ -18,6 +18,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -86,7 +87,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -1056,12 +1056,12 @@ private fun SongInfo(
             contentKey = { it },
         ) { title ->
             Text(
+                modifier = Modifier.fillMaxWidth().basicMarquee(),
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
             )
         }
@@ -1078,7 +1078,7 @@ private fun SongInfo(
                 text = artist,
                 modifier =
                     Modifier
-                        .clip(Shapes.SmallCornerBasedShape)
+                        .fillMaxWidth()
                         .clickHighlight(
                             enabled = onArtistClick != null,
                             onClickLabel = stringResource(R.string.view_artist),
@@ -1088,7 +1088,6 @@ private fun SongInfo(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
             )
         }
