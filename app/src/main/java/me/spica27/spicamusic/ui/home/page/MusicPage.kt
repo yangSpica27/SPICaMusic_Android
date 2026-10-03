@@ -96,7 +96,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -1245,13 +1244,11 @@ private fun MusicSongRow(
 ) {
     val colors = MaterialTheme.colorScheme
     val highlight by animateColorAsState(
-        targetValue = if (isPlaying) colors.primaryContainer.copy(alpha = 0.35f) else Color.Transparent,
-        animationSpec = tween(durationMillis = 300, easing = EaseOutEmphasized),
+        targetValue = if (isPlaying) colors.primaryContainer.copy(alpha = 0.35f) else colors.primaryContainer.copy(alpha = 0.0f),
         label = "musicSongHighlight",
     )
     val titleColor by animateColorAsState(
         targetValue = if (isPlaying) colors.primary else colors.onSurface,
-        animationSpec = tween(durationMillis = 300, easing = EaseOutEmphasized),
         label = "musicSongTitle",
     )
     Row(

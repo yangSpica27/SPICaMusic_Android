@@ -45,15 +45,7 @@ object Spacing {
 }
 
 object LayoutTokens {
-    val MusicHeaderHorizontalPadding = 20.dp
-    val MusicHeaderTopPadding = 20.dp
-    val MusicHeaderBottomPadding = 4.dp
-    val MusicTabContainerPadding = 4.dp
-    val MusicTabHeight = 64.dp
-    val MusicActionRowMinHeight = 72.dp
-    val PageHeaderFollowDistance = 240.dp
-    val PageHeaderCollapsedTitleScale = 0.82f
-    val PageHeaderCollapsedTabHeight = 52.dp
+    val MusicHeaderHorizontalPadding = 16.dp
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
