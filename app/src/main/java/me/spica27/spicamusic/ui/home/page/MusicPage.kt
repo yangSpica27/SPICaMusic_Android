@@ -7,8 +7,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -84,7 +84,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -147,8 +146,6 @@ import me.spica27.spicamusic.ui.player.LocalPlayerViewModel
 import me.spica27.spicamusic.ui.theme.ENTRANCE_GATE_MILLIS
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LayoutTokens
-import me.spica27.spicamusic.ui.theme.ListItemFadeInSpec
-import me.spica27.spicamusic.ui.theme.ListItemFadeOutSpec
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.ScaleExitTo
@@ -183,20 +180,15 @@ private val RowCoverSize = 48.dp
 private const val ENTRANCE_ORDER_ITEM_BASE = 3
 private const val ENTRANCE_MAX_ORDER = 10
 
-/** 切页入场位移参数 */
-private const val TAB_ENTER_MAX_ORDER = 6
-private const val TAB_ENTER_STAGGER_MILLIS = 65
-private const val TAB_ENTER_DURATION_MILLIS = 255
-private val TabEnterTranslation = 20.dp
+/** 列表更新只做短淡入淡出，不叠加缩放或逐行延迟。 */
+private val ItemFadeInSpec = tween<Float>(durationMillis = 160, easing = LinearOutSlowInEasing)
+private val ItemFadeOutSpec = tween<Float>(durationMillis = 100, easing = LinearEasing)
 
-/** 切页入场闸门：关闭后滚入的条目不再播放 */
-private const val TAB_ENTER_GATE_MILLIS = 420L
-
-/** 条目重排位移动画 */
+/** 条目重排平稳归位，不越过目标位置或回弹。 */
 private val ItemPlacementSpringSpec =
     spring<IntOffset>(
-        dampingRatio = Spring.DampingRatioLowBouncy,
-        stiffness = Spring.StiffnessMediumLow,
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMedium,
         visibilityThreshold = IntOffset.VisibilityThreshold,
     )
 
@@ -315,6 +307,8 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
     val backStack = LocalBackStack.current
     val homeViewModel: HomeViewModel = koinActivityViewModel()
     val playerViewModel = LocalPlayerViewModel.current
+    val reducedMotion = LocalReducedMotion.current
+    val itemPlacementSpec = if (reducedMotion) null else ItemPlacementSpringSpec
 
     val allSongs by homeViewModel.allSongs.collectAsStateWithLifecycle()
     val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
@@ -346,22 +340,11 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
         playEntrance = false
     }
 
-    // 切页令牌与方向，驱动新条目的入场位移
-    var switchToken by remember { mutableIntStateOf(0) }
-    var switchDirection by remember { mutableIntStateOf(0) }
-    var playTabEnter by remember { mutableStateOf(false) }
-    LaunchedEffect(switchToken) {
-        if (switchToken == 0) return@LaunchedEffect
-        delay(TAB_ENTER_GATE_MILLIS)
-        playTabEnter = false
-    }
     val selectTab: (MusicBrowserTab) -> Unit = { tab ->
         if (tab != selectedTab) {
-            switchDirection = if (tab.ordinal > selectedTab.ordinal) 1 else -1
+            // 首屏尚未播完时切页，也只使用列表更新的淡入淡出。
+            playEntrance = false
             selectedTab = tab
-            // 与条目同帧置位，首帧即带位移起点
-            playTabEnter = true
-            switchToken++
         }
     }
 
@@ -576,9 +559,9 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                     }.takeIf { allSongs.isEmpty() },
                                 modifier =
                                     Modifier.animateItem(
-                                        fadeInSpec = ListItemFadeInSpec,
+                                        fadeInSpec = ItemFadeInSpec,
                                         placementSpec = null,
-                                        fadeOutSpec = ListItemFadeOutSpec,
+                                        fadeOutSpec = ItemFadeOutSpec,
                                     ),
                             )
                         }
@@ -603,17 +586,12 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                 modifier =
                                     Modifier
                                         .animateItem(
-                                            fadeInSpec = ListItemFadeInSpec,
-                                            placementSpec = ItemPlacementSpringSpec,
-                                            fadeOutSpec = ListItemFadeOutSpec,
+                                            fadeInSpec = ItemFadeInSpec,
+                                            placementSpec = itemPlacementSpec,
+                                            fadeOutSpec = ItemFadeOutSpec,
                                         ).entrance(
                                             order = minOf(index + ENTRANCE_ORDER_ITEM_BASE, ENTRANCE_MAX_ORDER),
                                             play = playEntrance,
-                                        ).tabEnter(
-                                            token = switchToken,
-                                            direction = switchDirection,
-                                            order = minOf(index, TAB_ENTER_MAX_ORDER),
-                                            play = playTabEnter,
                                         ),
                             )
                         }
@@ -635,9 +613,9 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                 subtitle = stringResource(R.string.music_empty_albums_subtitle),
                                 modifier =
                                     Modifier.animateItem(
-                                        fadeInSpec = ListItemFadeInSpec,
+                                        fadeInSpec = ItemFadeInSpec,
                                         placementSpec = null,
-                                        fadeOutSpec = ListItemFadeOutSpec,
+                                        fadeOutSpec = ItemFadeOutSpec,
                                     ),
                             )
                         }
@@ -655,17 +633,12 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                 modifier =
                                     Modifier
                                         .animateItem(
-                                            fadeInSpec = ListItemFadeInSpec,
-                                            placementSpec = ItemPlacementSpringSpec,
-                                            fadeOutSpec = ListItemFadeOutSpec,
+                                            fadeInSpec = ItemFadeInSpec,
+                                            placementSpec = itemPlacementSpec,
+                                            fadeOutSpec = ItemFadeOutSpec,
                                         ).entrance(
                                             order = minOf(row + ENTRANCE_ORDER_ITEM_BASE, ENTRANCE_MAX_ORDER),
                                             play = playEntrance,
-                                        ).tabEnter(
-                                            token = switchToken,
-                                            direction = switchDirection,
-                                            order = minOf(row, TAB_ENTER_MAX_ORDER),
-                                            play = playTabEnter,
                                         ),
                             )
                         }
@@ -687,9 +660,9 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                 subtitle = stringResource(R.string.music_empty_artists_subtitle),
                                 modifier =
                                     Modifier.animateItem(
-                                        fadeInSpec = ListItemFadeInSpec,
+                                        fadeInSpec = ItemFadeInSpec,
                                         placementSpec = null,
-                                        fadeOutSpec = ListItemFadeOutSpec,
+                                        fadeOutSpec = ItemFadeOutSpec,
                                     ),
                             )
                         }
@@ -706,17 +679,12 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                                 modifier =
                                     Modifier
                                         .animateItem(
-                                            fadeInSpec = ListItemFadeInSpec,
-                                            placementSpec = ItemPlacementSpringSpec,
-                                            fadeOutSpec = ListItemFadeOutSpec,
+                                            fadeInSpec = ItemFadeInSpec,
+                                            placementSpec = itemPlacementSpec,
+                                            fadeOutSpec = ItemFadeOutSpec,
                                         ).entrance(
                                             order = minOf(index + ENTRANCE_ORDER_ITEM_BASE, ENTRANCE_MAX_ORDER),
                                             play = playEntrance,
-                                        ).tabEnter(
-                                            token = switchToken,
-                                            direction = switchDirection,
-                                            order = minOf(index, TAB_ENTER_MAX_ORDER),
-                                            play = playTabEnter,
                                         ),
                             )
                         }
@@ -765,37 +733,6 @@ private fun Modifier.bleedHorizontal(amount: Dp): Modifier =
             placeable.place(-extra / 2, 0)
         }
     }
-
-/** 切页入场：沿滑块方向轻移归位，按 [order] 错落；淡入交给 animateItem */
-@Composable
-private fun Modifier.tabEnter(
-    token: Int,
-    direction: Int,
-    order: Int,
-    play: Boolean,
-): Modifier {
-    val reducedMotion = LocalReducedMotion.current
-    val progress = remember(token) { Animatable(if (play && token > 0 && !reducedMotion) 0f else 1f) }
-    LaunchedEffect(progress) {
-        if (progress.value < 1f) {
-            progress.animateTo(
-                targetValue = 1f,
-                animationSpec =
-                    tween(
-                        durationMillis = TAB_ENTER_DURATION_MILLIS + order * TAB_ENTER_STAGGER_MILLIS,
-                        easing = LinearOutSlowInEasing,
-                    ),
-            )
-        }
-    }
-    return graphicsLayer {
-        val p = progress.value
-        if (p < 1f) alpha = p
-        if (p < 1f) transformOrigin = TransformOrigin(.5f, 0.5f)
-        if (p < 1f) scaleY = .8f + p * .2f
-        if (p < 1f) scaleX = 0.8f + p * .2f
-    }
-}
 
 /** 固定顶栏：随刊头收缩显形，收起后弹出「回到顶部」药丸 */
 @Composable
