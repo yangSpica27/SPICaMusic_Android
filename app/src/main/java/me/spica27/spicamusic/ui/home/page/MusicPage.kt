@@ -416,6 +416,7 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
 
     // 排序菜单按触发按钮在窗口中的位置显示。
     fun openSortMenu(anchor: PopupAnchor) {
+        dismissKeyboard.invoke()
         val route =
             when (selectedTab) {
                 MusicBrowserTab.Songs ->
