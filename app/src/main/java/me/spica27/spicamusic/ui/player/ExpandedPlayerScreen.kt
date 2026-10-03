@@ -115,7 +115,6 @@ import me.spica27.spicamusic.ui.navigation.SleepTimerRoute
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
-import me.spica27.spicamusic.ui.theme.ScaleEnterFrom
 import me.spica27.spicamusic.ui.theme.Shapes
 import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.widget.AudioCover
@@ -1051,15 +1050,8 @@ private fun SongInfo(
     }
 }
 
-/** 控制图标以短时缓出动画切换。 */
-private fun controlIconTransform() =
-    (
-        fadeIn(tween(durationMillis = 160, easing = EaseOutEmphasized)) +
-            scaleIn(
-                animationSpec = tween(durationMillis = 160, easing = EaseOutEmphasized),
-                initialScale = ScaleEnterFrom,
-            )
-    ).togetherWith(fadeOut(tween(durationMillis = 120, easing = EaseOutEmphasized)))
+/** 播放按钮动画 */
+private fun controlIconTransform() = Nav3Transitions.rocket()
 
 /** 主播放控制：上一曲、播放/暂停、下一曲。 */
 @Composable
