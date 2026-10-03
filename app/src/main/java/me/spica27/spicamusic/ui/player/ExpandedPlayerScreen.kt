@@ -95,6 +95,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import com.linc.amplituda.Amplituda
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -109,7 +110,6 @@ import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.SleepTimerState
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
-import me.spica27.spicamusic.ui.glass.liquidGlassSource
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.SleepTimerRoute
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
@@ -372,7 +372,8 @@ fun ExpandedPlayerScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .liquidGlassSource(hazeState),
+                    // 队列顶栏在关闭玻璃时仍需采样动态背景，用于渐变模糊。
+                    .hazeSource(hazeState),
             coverColor = coverColor,
             isDarkMode = MaterialTheme.colorScheme.surface.luminance() < 0.5f,
             coverUri = { currentMediaItem?.mediaMetadata?.artworkUri },
@@ -512,6 +513,7 @@ fun ExpandedPlayerScreen(
                                     chromeColor = MaterialTheme.colorScheme.surface,
                                     contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Vertical),
                                     modifier = Modifier.fillMaxSize(),
+                                    hazeState = hazeState,
                                 )
                             }
                         }

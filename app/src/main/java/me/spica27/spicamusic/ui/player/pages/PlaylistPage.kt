@@ -59,6 +59,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
@@ -73,7 +74,6 @@ import androidx.compose.material.icons.rounded.RepeatOne
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -105,6 +105,7 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -137,6 +138,17 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
+import dev.chrisbanes.haze.ExperimentalHazeApi
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.HazePerformanceMode
+import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.HazeColorEffect
+import dev.chrisbanes.haze.blur.hazeBlur
+import dev.chrisbanes.haze.glass.GlassStyle
+import dev.chrisbanes.haze.glass.hazeGlass
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
@@ -145,6 +157,7 @@ import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.player.api.PlayMode
+import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.navigation.ConfirmationDialogRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.TextInputDialogRoute
@@ -221,7 +234,7 @@ private val ItemPlacementSpringSpec =
 /**
  * 当前播放列表页面
  *
- * @param chromeColor 刊头收起后顶栏的填充色
+ * @param chromeColor 刊头收起后顶栏材质的底色
  * @param contentWindowInsets 页面需要自行避让的系统栏（宿主已处理的传 0）
  */
 @Composable
@@ -233,6 +246,7 @@ fun CurrPlaylistPage(
     contentWindowInsets: WindowInsets,
     modifier: Modifier = Modifier,
     viewModel: PlayerViewModel = LocalPlayerViewModel.current,
+    hazeState: HazeState,
 ) {
     val backStack = LocalBackStack.current
     val context = LocalContext.current
@@ -472,7 +486,7 @@ fun CurrPlaylistPage(
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().hazeSource(hazeState, zIndex = 1f),
             userScrollEnabled = pendingDeletion == null,
             contentPadding = PaddingValues(top = insetTop + TopBarHeight, bottom = listBottomPadding),
             verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -627,6 +641,7 @@ fun CurrPlaylistPage(
         QueueTopBar(
             title = queueTitle,
             listState = listState,
+            hazeState = hazeState,
             chromeColor = chromeColor,
             insetTop = insetTop,
             navigationIcon = navigationIcon,
@@ -1016,9 +1031,11 @@ private suspend fun heartThump(pulse: Animatable<Float, AnimationVector1D>) {
 }
 
 @Composable
+@OptIn(ExperimentalHazeApi::class)
 private fun QueueTopBar(
     title: String,
     listState: LazyListState,
+    hazeState: HazeState,
     chromeColor: Color,
     insetTop: Dp,
     navigationIcon: ImageVector,
@@ -1031,6 +1048,43 @@ private fun QueueTopBar(
     reducedMotion: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val backgroundModifier =
+        if (LocalLiquidGlassConfig.current.enabled) {
+            val style =
+                remember(chromeColor) {
+                    GlassStyle.clear.then {
+                        shape(RoundedCornerShape(0.dp))
+                        lightPosition(Alignment.TopStart)
+                        optics(blurRadius = 18.dp)
+                        backgroundColor(chromeColor.copy(alpha = 0.16f))
+                        tint(chromeColor.copy(alpha = 0.28f))
+                    }
+                }
+            Modifier.hazeGlass(
+                input = HazeInput.Sources(hazeState),
+                style = style,
+                performanceMode = HazePerformanceMode.Balanced,
+            )
+        } else {
+            val style =
+                remember(chromeColor) {
+                    HazeBlurStyle {
+                        blurRadius(24.dp)
+                        noiseFactor(0f)
+                        backgroundColor(chromeColor.copy(alpha = 0.16f))
+                        colorEffects(listOf(HazeColorEffect.tint(chromeColor.copy(alpha = 0.28f))))
+                        fallbackColorEffect(HazeColorEffect.tint(chromeColor.copy(alpha = 0.8f)))
+                        progressive(
+                            HazeProgressive.verticalGradient(startIntensity = 1f, endIntensity = 0f),
+                        )
+                    }
+                }
+            Modifier.hazeBlur(
+                input = HazeInput.Sources(hazeState),
+                style = style,
+                performanceMode = HazePerformanceMode.Balanced,
+            )
+        }
     val solid by remember(listState) { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
     var locateVisible by remember { mutableStateOf(showLocate) }
     var scrollToTopVisible by remember { mutableStateOf(showScrollToTop) }
@@ -1057,19 +1111,16 @@ private fun QueueTopBar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(insetTop + TopBarHeight)
-                .drawBehind {
-                    // 背景不透明度在 Draw 阶段跟随滚动，避免每帧重组
-                    drawRect(color = chromeColor.copy(alpha = chromeColor.alpha * mastheadCollapse(listState) * 0.5f))
-                },
+                .height(insetTop + TopBarHeight),
     ) {
-        // 全页唯一分隔线：顶栏收起后出现
-        if (solid) {
-            HorizontalDivider(
-                modifier = Modifier.align(Alignment.BottomStart),
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.14f),
-            )
-        }
+        Box(
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .clipToBounds()
+                    .graphicsLayer { alpha = mastheadCollapse(listState) }
+                    .then(backgroundModifier),
+        )
         Row(
             modifier =
                 Modifier
