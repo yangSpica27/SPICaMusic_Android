@@ -53,15 +53,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.dropShadow
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
@@ -89,7 +88,6 @@ import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.OtherAlbumsShelf
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
-import me.spica27.spicamusic.utils.calculateLuminance
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -141,8 +139,6 @@ fun AlbumDetailScreen(album: Album) {
             animationSpec = spring(stiffness = 200f),
             label = "dominantColor",
         )
-    val luminance = remember(dominantColor) { calculateLuminance(dominantColor) }
-    val onDominantColor = if (luminance > 0.65f) Color.Black else Color.White
 
     val lazyListState = rememberLazyListState()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -197,15 +193,55 @@ fun AlbumDetailScreen(album: Album) {
                         Brush.verticalGradient(
                             0f to animatedDominantColor.value.copy(alpha = 0.92f),
                             0.3f to animatedDominantColor.value.copy(alpha = 0.65f),
-                            0.4f to animatedDominantColor.value.copy(alpha = 0.65f),
-                            0.6f to animatedDominantColor.value.copy(alpha = 0.55f),
-                            0.8f to animatedDominantColor.value.copy(alpha = 0.45f),
-                            0.85f to animatedDominantColor.value.copy(alpha = 0.35f),
+                            0.4f to animatedDominantColor.value.copy(alpha = 0.45f),
+                            0.6f to animatedDominantColor.value.copy(alpha = 0.35f),
+                            0.8f to animatedDominantColor.value.copy(alpha = 0.25f),
+                            0.85f to animatedDominantColor.value.copy(alpha = 0.15f),
                             1f to Color.Transparent,
                         ),
                     )
                 },
         )
+
+        // ── 浮动封面（滚动直接映射，全部运动收敛在一个 graphicsLayer）──────
+        val collapsedScale = COVER_COLLAPSED / coverExpanded
+        Box(
+            Modifier
+                .padding(
+                    start = coverStartExpanded,
+                    top = statusBarTop + HEADER_HEIGHT + Spacing.Small,
+                ).size(coverExpanded)
+                .graphicsLayer {
+                    val p = collapseProgress()
+                    val s = lerp(1f, collapsedScale, p)
+                    scaleX = s
+                    scaleY = s
+                    // 折叠终点在顶栏内容区内垂直居中（状态栏高度在展开/折叠位中相消）
+                    translationY =
+                        lerp(
+                            0f,
+                            ((HEADER_HEIGHT - COVER_COLLAPSED) / 2 - HEADER_HEIGHT - Spacing.Small)
+                                .toPx(),
+                            p,
+                        )
+                    clip = true
+                    shape = Shapes.LargeCornerBasedShape
+                    alpha = 1f - p
+                }.dropShadow(
+                    shape = RoundedCornerShape(16.dp),
+                    shadow =
+                        Shadow(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f),
+                            radius = 12.dp,
+                            spread = 2.dp,
+                        ),
+                ),
+        ) {
+            AudioCover(
+                artwork = coverArtwork,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
 
         // ── 歌曲列表 ────────────────────────────────────────────────────
         LazyColumn(
@@ -230,7 +266,7 @@ fun AlbumDetailScreen(album: Album) {
                     album = album,
                     songCount = songs.size,
                     totalDurationMs = songs.sumOf { it.duration },
-                    onDominantColor = onDominantColor,
+                    onDominantColor = MaterialTheme.colorScheme.onSurface,
                     collapseProgress = collapseProgress,
                     modifier = Modifier.entrance(order = 1),
                 )
@@ -254,10 +290,11 @@ fun AlbumDetailScreen(album: Album) {
                 contentType = { "song" },
             ) { index ->
                 val song = songs[index]
+                val isPlaying = playingMediaId == song.mediaStoreId.toString()
                 AlbumSongRow(
                     index = index + 1,
                     song = song,
-                    isPlaying = playingMediaId == song.mediaStoreId.toString(),
+                    isPlaying = isPlaying,
                     onClick = { viewModel.playSongInList(song) },
                     onMore = { backStack.add(SongMenuRoute(song)) },
                     modifier =
@@ -274,6 +311,21 @@ fun AlbumDetailScreen(album: Album) {
                             ).entrance(
                                 order = Math.min(3 + index, 8),
                                 play = listEntrancePlay.value,
+                            ).padding(horizontal = Spacing.Large)
+                            .background(
+                                shape =
+                                    RoundedCornerShape(
+                                        topStart = if (index == 0) Spacing.Large else 0.dp,
+                                        topEnd = if (index == 0) Spacing.Large else 0.dp,
+                                        bottomStart = if (index == songs.size - 1) Spacing.Large else 0.dp,
+                                        bottomEnd = if (index == songs.size - 1) Spacing.Large else 0.dp,
+                                    ),
+                                color =
+                                    if (isPlaying) {
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.30f)
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceContainerLow
+                                    },
                             ),
                 )
             }
@@ -296,68 +348,12 @@ fun AlbumDetailScreen(album: Album) {
             }
         }
 
-        // ── 浮动封面（滚动直接映射，全部运动收敛在一个 graphicsLayer）──────
-        val collapsedScale = COVER_COLLAPSED / coverExpanded
-        Box(
-            Modifier
-                .padding(
-                    start = coverStartExpanded,
-                    top = statusBarTop + HEADER_HEIGHT + Spacing.Small,
-                ).size(coverExpanded)
-                .graphicsLayer {
-                    val p = collapseProgress()
-                    val s = lerp(1f, collapsedScale, p)
-                    transformOrigin = TransformOrigin(0f, 0f)
-                    scaleX = s
-                    scaleY = s
-                    translationX = lerp(0f, (COVER_COLLAPSED_START - coverStartExpanded).toPx(), p)
-                    // 折叠终点在顶栏内容区内垂直居中（状态栏高度在展开/折叠位中相消）
-                    translationY =
-                        lerp(
-                            0f,
-                            ((HEADER_HEIGHT - COVER_COLLAPSED) / 2 - HEADER_HEIGHT - Spacing.Small)
-                                .toPx(),
-                            p,
-                        )
-                    clip = true
-                    shape = Shapes.LargeCornerBasedShape
-                }.dropShadow(
-                    shape = RoundedCornerShape(16.dp),
-                    shadow =
-                        Shadow(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f),
-                            radius = 12.dp,
-                            spread = 2.dp,
-                        ),
-                ),
-        ) {
-            AudioCover(
-                artwork = coverArtwork,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-
         // ── [L3] 固定顶栏（背景/标题在折叠尾段浮现）────────────────────────────
-        val topBarBg = MaterialTheme.colorScheme.background
-        val hairlineColor = MaterialTheme.colorScheme.outlineVariant
         Box(
             Modifier
                 .fillMaxWidth()
                 .height(statusBarTop + HEADER_HEIGHT)
-                .align(Alignment.TopStart)
-                .drawBehind {
-                    val scrollAlpha = ((collapseProgress() - 0.55f) / 0.45f).coerceIn(0f, 1f)
-                    drawRect(topBarBg.copy(alpha = scrollAlpha))
-                    if (scrollAlpha > 0f) {
-                        drawRect(
-                            color = hairlineColor.copy(alpha = 0.14f * scrollAlpha),
-                            topLeft =
-                                androidx.compose.ui.geometry
-                                    .Offset(0f, size.height - 1.dp.toPx()),
-                            size = Size(size.width, 1.dp.toPx()),
-                        )
-                    }
-                },
+                .align(Alignment.TopStart),
         ) {
             Row(
                 Modifier
@@ -366,7 +362,10 @@ fun AlbumDetailScreen(album: Album) {
                     .align(Alignment.BottomCenter),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { backStack.removeLastOrNull() }) {
+                IconButton(
+                    modifier = Modifier,
+                    onClick = { backStack.removeLastOrNull() },
+                ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.back),
@@ -425,10 +424,11 @@ private fun AlbumHeader(
     ) {
         Text(
             text = album.title,
-            modifier = Modifier,
+            modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = onDominantColor,
+            textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(Spacing.ExtraSmall))
         Text(
@@ -436,15 +436,18 @@ private fun AlbumHeader(
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = onDominantColor,
-            maxLines = 1,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(Spacing.ExtraSmall))
         Text(
+            modifier = Modifier.fillMaxWidth(),
             text = albumMetaText(album, songCount, totalDurationMs),
             style = MaterialTheme.typography.bodySmall,
             color = onDominantColor.copy(alpha = 0.62f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -570,15 +573,7 @@ private fun AlbumSongRow(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = Spacing.Medium)
-                .clip(Shapes.MediumCornerBasedShape)
-                .background(
-                    if (isPlaying) {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.30f)
-                    } else {
-                        Color.Transparent
-                    },
-                ).clickHighlight(onClick = onClick)
+                .clickHighlight(onClick = onClick)
                 .padding(horizontal = Spacing.Small, vertical = Spacing.Small),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
