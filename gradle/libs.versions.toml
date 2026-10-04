@@ -31,7 +31,7 @@ constraintlayout = "2.2.2"
 loggingInterceptorVersion = "5.3.2"
 material3Version = "1.4.0"
 materialIconsCoreVersion = "1.7.8"
-media3ExoplayerVersion = "1.11.0"
+media3ExoplayerVersion = "1.11.1"
 mediaVersion = "1.8.0"
 okhttpVersion = "5.4.0"
 pagingVersion = "3.5.1"
@@ -48,7 +48,7 @@ kotlinxSerializationCore = "1.11.0"
 moshiKotlin = "1.15.2"
 materialKolor = "5.0.1"
 paletteVersion = "1.0.0"
-media3SessionVersion = "1.10.0"
+media3SessionVersion = "1.11.1"
 ksp = "2.3.7"
 roomVersion = "2.8.5"
 miuixAndroid = "0.9.0"
@@ -59,7 +59,6 @@ uiautomator = "2.4.0"
 reorderable = "3.1.0"
 [libraries]
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
-androidx-media3-exoplayer-ffmpeg = { module = "org.jellyfin.media3:media3-ffmpeg-decoder", version = "1.9.0+1" }
 androidautosize = { module = "com.github.JessYanCoding:AndroidAutoSize", version.ref = "androidautosize" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistVersion" }
 amplituda = { module = "com.github.lincollincol:amplituda", version.ref = "amplitudaVersion" }
