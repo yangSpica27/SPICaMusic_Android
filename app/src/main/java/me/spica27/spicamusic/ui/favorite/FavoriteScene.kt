@@ -69,6 +69,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -476,7 +477,13 @@ private fun FavoriteTopBar(
                     .padding(horizontal = Spacing.Small),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onBack) {
+            IconButton(
+                onClick = onBack,
+                colors =
+                    IconButtonDefaults.iconButtonColors().copy(
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.back),
