@@ -53,6 +53,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import me.spica27.spicamusic.ui.adaptive.LocalAppWindowInfo
 import me.spica27.spicamusic.ui.theme.DialogDecelerateEasing
 import kotlin.math.roundToInt
 
@@ -167,8 +168,13 @@ private fun MotionDialogRouteLayout(
     content: @Composable () -> Unit,
 ) {
     val windowInfo = LocalWindowInfo.current
+    val appWindowInfo = LocalAppWindowInfo.current
     val isLargeScreen =
-        windowInfo.containerDpSize.width >= 840.dp && windowInfo.containerDpSize.height >= 480.dp
+        if (appWindowInfo != null) {
+            appWindowInfo.widthDp >= 840f && appWindowInfo.heightDp >= 480f
+        } else {
+            windowInfo.containerDpSize.width >= 840.dp && windowInfo.containerDpSize.height >= 480.dp
+        }
     val scrimColor =
         MaterialTheme.colorScheme.scrim.copy(
             alpha = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) 0.6f else 0.3f,
