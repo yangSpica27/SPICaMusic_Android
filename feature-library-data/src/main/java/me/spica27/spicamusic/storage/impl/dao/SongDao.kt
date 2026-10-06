@@ -538,14 +538,19 @@ interface SongDao {
         @androidx.room.ColumnInfo(name = "artist") val name: String,
         @androidx.room.ColumnInfo(name = "songCount") val songCount: Int,
         @androidx.room.ColumnInfo(name = "coverAlbumId") val coverAlbumId: Long,
+        @androidx.room.ColumnInfo(name = "coverMediaStoreId") val coverMediaStoreId: Long,
     )
 
     /**
      * 分页获取歌手列表（按艺术家名分组，支持关键词过滤）
+     *
+     * 代表曲取 mediaStoreId 最小的一首：聚合里只有一个 MIN() 时，SQLite 保证裸列 albumId
+     * 取自同一行，两个封面字段因此出自同一首歌（裸列在无 MIN/MAX 时取值不确定）。
      */
     @Query(
         """
-        SELECT artist, COUNT(*) AS songCount, albumId AS coverAlbumId
+        SELECT artist, COUNT(*) AS songCount,
+            MIN(mediaStoreId) AS coverMediaStoreId, albumId AS coverAlbumId
         FROM song
         WHERE isIgnore == 0
         AND (

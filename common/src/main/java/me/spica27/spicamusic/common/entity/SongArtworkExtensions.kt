@@ -23,5 +23,10 @@ fun Song.getAlbumCoverUri(): Uri? =
 fun Album.getCoverUri(): Uri? =
     id.toLongOrNull()?.takeIf { it > 0 }?.let { "content://media/external/audio/albumart/$it".toUri() }
 
+/** 歌手封面：同 [Song.getCoverUri]，优先按代表曲本体取图，规避伪专辑串图 */
 fun Artist.getCoverUri(): Uri? =
-    if (coverAlbumId > 0) "content://media/external/audio/albumart/$coverAlbumId".toUri() else null
+    when {
+        coverMediaStoreId > 0 -> "content://media/external/audio/media/$coverMediaStoreId/albumart".toUri()
+        coverAlbumId > 0 -> "content://media/external/audio/albumart/$coverAlbumId".toUri()
+        else -> null
+    }

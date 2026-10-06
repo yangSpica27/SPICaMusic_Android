@@ -368,7 +368,14 @@ class SongRepositoryImpl(
             ),
             pagingSourceFactory = { songDao.getArtistsPaging(keyword) },
         ).flow.map { pagingData ->
-            pagingData.map { Artist(name = it.name, songCount = it.songCount, coverAlbumId = it.coverAlbumId) }
+            pagingData.map {
+                Artist(
+                    name = it.name,
+                    songCount = it.songCount,
+                    coverAlbumId = it.coverAlbumId,
+                    coverMediaStoreId = it.coverMediaStoreId,
+                )
+            }
         }
 
     override suspend fun updateSongWaveform(mediaId: Long, waveformData: String) = withContext(Dispatchers.IO) {

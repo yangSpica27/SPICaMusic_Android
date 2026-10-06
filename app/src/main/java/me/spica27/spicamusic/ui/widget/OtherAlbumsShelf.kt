@@ -36,10 +36,11 @@ fun OtherAlbumsShelf(
     albums: List<Album>,
     onAlbumClick: (Album) -> Unit,
     modifier: Modifier = Modifier,
+    title: String = stringResource(R.string.more_from_artist, artistName),
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = stringResource(R.string.more_from_artist, artistName),
+            text = title,
             modifier =
                 Modifier
                     .fillMaxWidth()

@@ -413,6 +413,7 @@
   <string name="accessible">Accessible</string>
   <string name="inaccessible">Inaccessible</string>
   <string name="songs_count">%d songs</string>
+  <string name="artist_albums_count">%d albums</string>
   <string name="hours_minutes">%dh %dm</string>
   <string name="minutes">%dmin</string>
   <string name="less_than_1_minute">Less than 1 min</string>

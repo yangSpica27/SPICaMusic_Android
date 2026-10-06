@@ -55,7 +55,12 @@ class MusicArtworkFetcher(
             return FetchResult.Error(NoArtworkException(key))
         }
         return withContext(Dispatchers.IO) {
-            val resolved = if (artwork.mediaStoreId <= 0L) resolveAlbumSong(artwork) else artwork
+            val resolved =
+                when {
+                    artwork.mediaStoreId <= 0L -> resolveAlbumSong(artwork)
+                    artwork.path.isBlank() -> resolveSongFile(artwork)
+                    else -> artwork
+                }
             ensureActive()
             val bytes =
                 embeddedPicture(resolved)
@@ -104,6 +109,26 @@ class MusicArtworkFetcher(
                 }
         }.getOrNull() ?: artwork
     }
+
+    /** 只有歌曲 id（如歌手代表曲）时补全路径，让目录图回退与歌曲行一致 */
+    @Suppress("DEPRECATION")
+    private fun resolveSongFile(artwork: MusicArtwork): MusicArtwork =
+        runCatching {
+            resolver
+                .query(
+                    ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, artwork.mediaStoreId),
+                    arrayOf(MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.SIZE),
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    if (!cursor.moveToFirst()) return@use null
+                    artwork.copy(
+                        path = cursor.getString(0).orEmpty(),
+                        size = cursor.getLong(1),
+                    )
+                }
+        }.getOrNull() ?: artwork
 
     /** 内嵌图：TagLib 优先（FLAC / Ogg / APE 等平台解码器读不到的格式），平台解码器兜底 */
     private fun embeddedPicture(artwork: MusicArtwork): ByteArray? {

@@ -33,7 +33,13 @@ fun Song.artwork(): MusicArtwork =
 
 fun Album.artwork(): MusicArtwork? = albumArtwork(id.toLongOrNull() ?: 0L)
 
-fun Artist.artwork(): MusicArtwork? = albumArtwork(coverAlbumId)
+/** 按代表曲本体取图（路径由 fetcher 补全）；旧数据没有代表曲时才退回按专辑 */
+fun Artist.artwork(): MusicArtwork? =
+    if (coverMediaStoreId > 0L) {
+        MusicArtwork(mediaStoreId = coverMediaStoreId, albumId = coverAlbumId)
+    } else {
+        albumArtwork(coverAlbumId)
+    }
 
 fun albumArtwork(albumId: Long): MusicArtwork? = if (albumId > 0L) MusicArtwork(albumId = albumId) else null
 

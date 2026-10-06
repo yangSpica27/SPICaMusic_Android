@@ -413,6 +413,7 @@
   <string name="accessible">可用</string>
   <string name="inaccessible">失效</string>
   <string name="songs_count">%d 首歌曲</string>
+  <string name="artist_albums_count">%d 张专辑</string>
   <string name="hours_minutes">%d小时%d分</string>
   <string name="minutes">%d分钟</string>
   <string name="less_than_1_minute">少于1分钟</string>

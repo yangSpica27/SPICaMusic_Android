@@ -108,6 +108,7 @@ import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
 import me.spica27.spicamusic.common.entity.SongFilter
+import me.spica27.spicamusic.common.entity.artistOf
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
@@ -725,13 +726,7 @@ private fun PlayerPage(
                         scope.launch {
                             try {
                                 val songs = songUseCases.getSongs(filter = SongFilter(artists = listOf(clickedArtist)))
-                                onArtistClick(
-                                    Artist(
-                                        name = clickedArtist,
-                                        songCount = songs.size,
-                                        coverAlbumId = songs.firstOrNull()?.albumId ?: 0L,
-                                    ),
-                                )
+                                onArtistClick(artistOf(clickedArtist, songs))
                             } finally {
                                 openingArtist = false
                             }

@@ -133,6 +133,7 @@ import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
+import me.spica27.spicamusic.common.entity.artistOf
 import me.spica27.spicamusic.ui.dialog.SortMenuOption
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.player_bar.GlassNavigationIndicatorState
@@ -1532,13 +1533,8 @@ private fun List<Song>.toAlbums(
 
 private fun List<Song>.toArtists(unknownArtist: String): List<Artist> =
     groupBy { it.artist.ifBlank { unknownArtist } }
-        .map { (name, songs) ->
-            Artist(
-                name = name,
-                songCount = songs.size,
-                coverAlbumId = songs.first().albumId,
-            )
-        }.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+        .map { (name, songs) -> artistOf(name, songs) }
+        .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
 private fun List<Song>.filterSongsBy(query: String): List<Song> {
     val normalized = query.trim()

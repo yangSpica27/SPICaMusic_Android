@@ -13,6 +13,7 @@ import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.SongFilter
+import me.spica27.spicamusic.common.entity.artistOf
 import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
@@ -66,13 +67,8 @@ class SongMenuViewModel(
     val artistDetail: StateFlow<Artist> =
         songRepository
             .getSongsFlow(filter = SongFilter(artists = listOf(song.artist)))
-            .map { songs ->
-                Artist(
-                    name = song.artist,
-                    songCount = songs.size,
-                    coverAlbumId = song.albumId,
-                )
-            }.stateIn(
+            .map { songs -> artistOf(song.artist, songs) }
+            .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue =
@@ -80,6 +76,7 @@ class SongMenuViewModel(
                         name = song.artist,
                         songCount = 0,
                         coverAlbumId = song.albumId,
+                        coverMediaStoreId = song.mediaStoreId,
                     ),
             )
 

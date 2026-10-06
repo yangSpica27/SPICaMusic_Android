@@ -54,6 +54,10 @@ class IOSOverscrollEffect(
 
     private fun transformOverscroll(value: Float): Float = cubicEasing.transform(value / (length * 1.5f)) * length
 
+    /** 当前回弹位移（px，已做阻尼映射）；在 layout/draw 阶段读取可与列表内容同帧对齐 */
+    val overscrollOffset: Float
+        get() = transformOverscroll(overscrollAmountAnimatable.value)
+
     private fun getRelevantDelta(offset: Offset): Float =
         when (orientation) {
             Orientation.Vertical -> offset.y
