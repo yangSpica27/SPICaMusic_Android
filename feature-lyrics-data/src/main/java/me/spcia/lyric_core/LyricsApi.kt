@@ -11,9 +11,13 @@ import retrofit2.http.Query
 interface LyricsApi {
 
     /**
-     * 根据歌曲标题搜索歌词
+     * 根据歌曲标题和歌手搜索歌词
      * @param title 歌曲标题
+     * @param artist 歌手，缺失时仅按标题搜索
      */
     @GET("http://106.54.25.152:4141/api/lyrics")
-    suspend fun searchLyrics(@Query("title") title: String): ApiResponse<LyricsApiResponse>
+    suspend fun searchLyrics(
+        @Query("title") title: String,
+        @Query("artist") artist: String = ""
+    ): ApiResponse<LyricsApiResponse>
 }

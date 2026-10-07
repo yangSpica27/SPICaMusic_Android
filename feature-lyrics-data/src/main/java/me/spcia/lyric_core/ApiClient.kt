@@ -24,13 +24,14 @@ class ApiClient(
     /**
      * 搜索歌词并返回所有匹配结果
      * @param displayName 歌曲标题
+     * @param artist 歌手，缺失时仅按标题搜索
      * @return 所有匹配的歌词结果列表，失败时返回空列表
      */
-    suspend fun searchAllLyrics(displayName: String): List<SongLyrics> = withContext(Dispatchers.IO) {
-        Timber.tag("ApiClient").d("搜索所有歌词: $displayName")
+    suspend fun searchAllLyrics(displayName: String, artist: String = ""): List<SongLyrics> = withContext(Dispatchers.IO) {
+        Timber.tag("ApiClient").d("搜索所有歌词: $displayName - $artist")
 
         try {
-            val response = api.searchLyrics(displayName).getOrNull()
+            val response = api.searchLyrics(displayName, artist).getOrNull()
 
             if (response == null || response.code != 200) {
                 Timber.tag("ApiClient").w("API请求失败: ${response?.message}")

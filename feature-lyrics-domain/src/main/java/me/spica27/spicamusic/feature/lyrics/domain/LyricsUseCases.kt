@@ -49,7 +49,7 @@ internal object LocalLyricValidator {
 class LyricsUseCases(
     private val lyricRepository: ILyricRepository,
     private val lyricSourceReader: ILyricSourceReader,
-    private val searchLyrics: suspend (String) -> List<SongLyrics>,
+    private val searchLyrics: suspend (String, String) -> List<SongLyrics>,
 ) {
     constructor(apiClient: ApiClient, lyricRepository: ILyricRepository, lyricSourceReader: ILyricSourceReader) :
         this(lyricRepository, lyricSourceReader, apiClient::searchAllLyrics)
@@ -169,7 +169,7 @@ class LyricsUseCases(
             LocalLyricReadResult.FailureReason.READ_FAILED -> LocalLyricsImportResult.FailureReason.READ_FAILED
         }
 
-    suspend fun searchAllLyrics(title: String): List<SongLyrics> = searchLyrics(title)
+    suspend fun searchAllLyrics(title: String, artist: String = ""): List<SongLyrics> = searchLyrics(title, artist)
 
     suspend fun suppressLyrics(mediaStoreId: Long) = lyricRepository.suppressLyrics(mediaStoreId)
 

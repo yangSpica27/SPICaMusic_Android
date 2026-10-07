@@ -72,7 +72,7 @@ class LyricsSelectionTest {
             }
         return LyricsViewModel(
             PlayerUseCases(player),
-            LyricsUseCases(repository, reader) { search(it) },
+            LyricsUseCases(repository, reader) { title, _ -> search(title) },
             dispatcher,
             dispatcher,
         ).also { store.put("lyrics", it) }

@@ -58,6 +58,7 @@ class LyricsViewModel(
         val lyricsOffsetMs: Long = 0L,
         val currentMediaStoreId: Long = 0L,
         val currentTitle: String? = null,
+        val currentArtist: String? = null,
         // 当前显示的歌词
         val displayed: ParsedLyrics? = null,
         // 当前来源原始文本，用于面板"正在使用"匹配与重存
@@ -100,7 +101,12 @@ class LyricsViewModel(
                 val version = generation
                 loadJob =
                     launch {
-                        loadLyrics(mediaItem?.mediaId, mediaItem?.mediaMetadata?.title?.toString(), version)
+                        loadLyrics(
+                            mediaItem?.mediaId,
+                            mediaItem?.mediaMetadata?.title?.toString(),
+                            mediaItem?.mediaMetadata?.artist?.toString(),
+                            version,
+                        )
                     }
             }
         }
@@ -114,6 +120,7 @@ class LyricsViewModel(
     private suspend fun loadLyrics(
         mediaId: String?,
         title: String?,
+        artist: String?,
         version: Long,
     ) {
         if (mediaId == null) {
@@ -121,7 +128,7 @@ class LyricsViewModel(
             return
         }
         val id = mediaId.toLongOrNull() ?: 0L
-        _uiState.value = UiState(isLoading = true, currentMediaStoreId = id, currentTitle = title)
+        _uiState.value = UiState(isLoading = true, currentMediaStoreId = id, currentTitle = title, currentArtist = artist)
         try {
             val selected =
                 writeMutex.withLock {
@@ -175,7 +182,7 @@ class LyricsViewModel(
                 _uiState.update { it.copy(isLoading = false, errorMessage = "歌曲信息缺失") }
                 return
             }
-            val results = withContext(ioDispatcher) { lyricsUseCases.searchAllLyrics(title) }
+            val results = withContext(ioDispatcher) { lyricsUseCases.searchAllLyrics(title, artist.orEmpty()) }
             if (!isCurrent(id, version)) return
             if (results.isEmpty()) {
                 _uiState.update { it.copy(isLoading = false, errorMessage = "暂无歌词") }
@@ -239,7 +246,10 @@ class LyricsViewModel(
                     }
                     if (_uiState.value.onlineSources.isEmpty() && !state.currentTitle.isNullOrBlank()) {
                         _uiState.update { it.copy(onlineLoading = true) }
-                        val results = withContext(ioDispatcher) { lyricsUseCases.searchAllLyrics(state.currentTitle) }
+                        val results =
+                            withContext(ioDispatcher) {
+                                lyricsUseCases.searchAllLyrics(state.currentTitle, state.currentArtist.orEmpty())
+                            }
                         if (epoch == songGeneration) {
                             _uiState.update { it.copy(onlineSources = results.toOnlineSources()) }
                         }
