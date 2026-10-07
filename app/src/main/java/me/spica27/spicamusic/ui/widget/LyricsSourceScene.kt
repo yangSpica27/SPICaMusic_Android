@@ -46,6 +46,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.skydoves.landscapist.components.rememberImageComponent
+import com.skydoves.landscapist.crossfade.CrossfadePlugin
 import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricSource
@@ -320,6 +322,10 @@ private fun SourceRow(
         if (!albumArt.isNullOrBlank()) {
             LandscapistImage(
                 imageModel = { albumArt },
+                component =
+                    rememberImageComponent {
+                        +CrossfadePlugin(duration = 550)
+                    },
                 modifier =
                     Modifier
                         .matchParentSize()
