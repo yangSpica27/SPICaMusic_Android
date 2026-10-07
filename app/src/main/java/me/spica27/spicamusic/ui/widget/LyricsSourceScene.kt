@@ -32,6 +32,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
@@ -40,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.skydoves.landscapist.image.LandscapistImage
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.common.entity.LyricSource
 import me.spica27.spicamusic.common.entity.LyricSourceType
@@ -59,7 +66,15 @@ fun LyricsSourceDialogContent() {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onlineSources =
         remember(uiState.cachedOnlineSource, uiState.onlineSources) {
-            (listOfNotNull(uiState.cachedOnlineSource) + uiState.onlineSources).distinctBy { it.rawLyrics }
+            (listOfNotNull(uiState.cachedOnlineSource) + uiState.onlineSources)
+                .groupBy { it.rawLyrics }
+                .values
+                .map { sources ->
+                    val source = sources.first()
+                    val albumArt = sources.firstOrNull { it.albumArt.isNotBlank() }?.albumArt
+                    // 仅补上相同歌词候选的封面，保持原候选的标题、顺序和标识。
+                    if (source.albumArt.isBlank() && albumArt != null) source.copy(albumArt = albumArt) else source
+                }
         }
 
     LyricsSourceDialogContentInternal(
@@ -244,6 +259,7 @@ private fun LyricsSourceDialogContentInternal(
                                 !lyricsSuppressed &&
                                     currentSourceType == LyricSourceType.ONLINE &&
                                     currentRawText == source.rawLyrics,
+                            albumArt = source.albumArt,
                             onClick = {
                                 onSelect(source)
                             },
@@ -283,9 +299,10 @@ private fun SourceRow(
     title: String,
     subtitle: String?,
     selected: Boolean,
+    albumArt: String? = null,
     onClick: () -> Unit,
 ) {
-    Row(
+    Box(
         modifier =
             Modifier
                 .fillMaxWidth()
@@ -295,58 +312,86 @@ private fun SourceRow(
                     if (selected) {
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                     } else {
-                        androidx.compose.ui.graphics.Color.Transparent
+                        Color.Transparent
                     },
                 ).clickable(onClick = onClick)
-                .semantics { this.selected = selected }
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+                .semantics { this.selected = selected },
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
+        if (!albumArt.isNullOrBlank()) {
+            LandscapistImage(
+                imageModel = { albumArt },
+                modifier =
+                    Modifier
+                        .matchParentSize()
+                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                        .drawWithCache {
+                            val fade =
+                                Brush.horizontalGradient(
+                                    0f to Color.Black.copy(alpha = 0.32f),
+                                    0.8f to Color.Transparent,
+                                )
+                            onDrawWithContent {
+                                drawContent()
+                                // 仅对封面应用透明蒙版，保留文字和选中状态。
+                                drawRect(brush = fade, blendMode = BlendMode.DstIn)
+                            }
+                        },
             )
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (!subtitle.isNullOrBlank()) {
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
-        }
 
-        if (selected) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.Rounded.Check,
-                contentDescription = stringResource(R.string.lyrics_source_current),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
-            )
+            if (selected) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = stringResource(R.string.lyrics_source_current),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
     }
 }
