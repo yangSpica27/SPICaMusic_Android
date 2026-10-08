@@ -102,7 +102,7 @@ class SettingsViewModel(
         settingsUseCases
             .getString(
                 SettingsUseCases.Keys.PROGRESS_BAR_STYLE,
-                ProgressBarStyle.TimeDomainWaveform.value,
+                ProgressBarStyle.DynamicWaveform.value,
             ).stateIn(viewModelScope, SharingStarted.Eagerly, ProgressBarStyle.DynamicWaveform.value)
 
     fun setProgressBarStyle(value: String) {
