@@ -919,6 +919,12 @@ private fun rememberBackgroundOptions(): ImmutableList<SettingsOption> {
         ImmutableList.copyOf(
             listOf(
                 SettingsOption(
+                    DynamicSpectrumBackground.FluidWarp.value,
+                    warp,
+                    warpDesc,
+                    Icons.Default.LensBlur,
+                ),
+                SettingsOption(
                     DynamicSpectrumBackground.TopGlow.value,
                     topGlow,
                     topGlowDesc,
@@ -935,12 +941,6 @@ private fun rememberBackgroundOptions(): ImmutableList<SettingsOption> {
                     shader,
                     shaderDesc,
                     Icons.Default.BlurOn,
-                ),
-                SettingsOption(
-                    DynamicSpectrumBackground.FluidWarp.value,
-                    warp,
-                    warpDesc,
-                    Icons.Default.LensBlur,
                 ),
                 SettingsOption(
                     DynamicSpectrumBackground.BlurCover.value,
