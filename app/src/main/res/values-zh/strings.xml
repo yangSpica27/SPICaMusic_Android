@@ -371,6 +371,7 @@
   <string name="settings_progress_bar_style">进度条样式</string>
   <string name="progress_bar_style_dynamic_waveform">动态波形</string>
   <string name="progress_bar_style_time_domain_waveform">时域波形</string>
+  <string name="progress_bar_style_glow_particles">辉光粒子</string>
   <string name="settings_theme_color_style">主题色风格</string>
   <string name="theme_color_style_textured">质感化</string>
   <string name="theme_color_style_flat">扁平化</string>
@@ -694,7 +695,7 @@
   <string name="settings_player_background_subtitle">播放页面封面后的背景效果</string>
   <string name="settings_cover_tap_effect">点击封面效果</string>
   <string name="settings_cover_tap_effect_subtitle">轻点专辑封面后显示的效果</string>
-  <string name="settings_progress_waveform">进度条波形</string>
+  <string name="settings_progress_waveform">进度条样式</string>
   <string name="settings_progress_waveform_subtitle">拖动条的形态</string>
   <string name="settings_expand_options">展开选项</string>
   <string name="settings_collapse_options">收起选项</string>
@@ -721,6 +722,7 @@
   <string name="cover_off_desc">点击封面不做任何响应</string>
   <string name="waveform_dynamic_desc">波形柱随声音实时跳动</string>
   <string name="waveform_time_domain_desc">预先展示整首歌的波形轮廓</string>
+  <string name="waveform_glow_particles_desc">纤细轨道、发光端点与轻盈粒子拖尾</string>
 
   <!-- 歌单创建页面 -->
   <string name="playlist_name_error_duplicate">已有同名歌单</string>

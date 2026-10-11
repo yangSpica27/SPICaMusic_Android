@@ -999,7 +999,9 @@ private fun rememberProgressWaveformOptions(): ImmutableList<SettingsOption> {
     val dynamicDesc = stringResource(R.string.waveform_dynamic_desc)
     val timeDomain = stringResource(R.string.progress_bar_style_time_domain_waveform)
     val timeDomainDesc = stringResource(R.string.waveform_time_domain_desc)
-    return remember(dynamic, dynamicDesc, timeDomain, timeDomainDesc) {
+    val glow = stringResource(R.string.progress_bar_style_glow_particles)
+    val glowDesc = stringResource(R.string.waveform_glow_particles_desc)
+    return remember(dynamic, dynamicDesc, timeDomain, timeDomainDesc, glow, glowDesc) {
         ImmutableList.copyOf(
             listOf(
                 SettingsOption(
@@ -1013,6 +1015,12 @@ private fun rememberProgressWaveformOptions(): ImmutableList<SettingsOption> {
                     timeDomain,
                     timeDomainDesc,
                     Icons.AutoMirrored.Filled.ShowChart,
+                ),
+                SettingsOption(
+                    ProgressBarStyle.GlowParticles.value,
+                    glow,
+                    glowDesc,
+                    Icons.Default.AutoAwesome,
                 ),
             ),
         )

@@ -20,6 +20,11 @@ sealed class ProgressBarStyle(
         "时域波形",
     )
 
+    object GlowParticles : ProgressBarStyle(
+        "glow_particles",
+        "辉光粒子",
+    )
+
     override fun toString(): String = name
 
     companion object {
@@ -27,10 +32,11 @@ sealed class ProgressBarStyle(
             when (value) {
                 DynamicWaveform.value -> DynamicWaveform
                 TimeDomainWaveform.value -> TimeDomainWaveform
+                GlowParticles.value -> GlowParticles
                 else -> TimeDomainWaveform
             }
 
         val presets: List<ProgressBarStyle>
-            get() = listOf(DynamicWaveform, TimeDomainWaveform)
+            get() = listOf(DynamicWaveform, TimeDomainWaveform, GlowParticles)
     }
 }

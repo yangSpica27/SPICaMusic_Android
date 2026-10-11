@@ -370,6 +370,7 @@
   <string name="settings_progress_bar_style">Progress Bar Style</string>
   <string name="progress_bar_style_dynamic_waveform">Dynamic Waveform</string>
   <string name="progress_bar_style_time_domain_waveform">Time-domain Waveform</string>
+  <string name="progress_bar_style_glow_particles">Glow particles</string>
   <string name="settings_theme_color_style">Theme Color Style</string>
   <string name="theme_color_style_textured">Textured</string>
   <string name="theme_color_style_flat">Flat</string>
@@ -694,7 +695,7 @@
   <string name="settings_player_background_subtitle">Backdrop behind the now-playing screen</string>
   <string name="settings_cover_tap_effect">Cover Tap Effect</string>
   <string name="settings_cover_tap_effect_subtitle">Shown when you tap the album art</string>
-  <string name="settings_progress_waveform">Progress Waveform</string>
+  <string name="settings_progress_waveform">Progress Bar Style</string>
   <string name="settings_progress_waveform_subtitle">Shape of the seek bar</string>
   <string name="settings_expand_options">Show options</string>
   <string name="settings_collapse_options">Hide options</string>
@@ -721,6 +722,7 @@
   <string name="cover_off_desc">Tapping the cover does nothing</string>
   <string name="waveform_dynamic_desc">Bars react to the sound in real time</string>
   <string name="waveform_time_domain_desc">Shows the whole track’s waveform up front</string>
+  <string name="waveform_glow_particles_desc">A thin rail with a glowing head and a gentle particle trail</string>
 
   <!-- 歌单创建页面 -->
   <string name="playlist_name_error_duplicate">A playlist with this name already exists</string>

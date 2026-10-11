@@ -127,6 +127,7 @@ import me.spica27.spicamusic.ui.widget.FluidMusicBackground
 import me.spica27.spicamusic.ui.widget.ShowOnIdleContent
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioDynamicWaveSlider
 import me.spica27.spicamusic.ui.widget.audio_seekbar.AudioWaveSlider
+import me.spica27.spicamusic.ui.widget.audio_seekbar.GlowParticleSeekBar
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.holographicCoverTilt
 import me.spica27.spicamusic.ui.widget.materialSharedAxisYIn
@@ -852,6 +853,7 @@ private fun PlayerPage(
             amplitudes = ampState,
             progressBarStyle = progressBarStyle,
             playerViewModel = playerViewModel,
+            isPlaying = isPlaying,
             isAppInForeground = isAppInForeground,
             animationsEnabled = animationsEnabled,
             isSeekingState = isSeekingState,
@@ -902,6 +904,7 @@ private fun SeekBarSection(
     amplitudes: List<Int>,
     progressBarStyle: ProgressBarStyle,
     playerViewModel: PlayerViewModel,
+    isPlaying: Boolean,
     isAppInForeground: Boolean,
     animationsEnabled: Boolean,
     isSeekingState: Boolean,
@@ -972,6 +975,16 @@ private fun SeekBarSection(
                         Modifier
                             .fillMaxWidth()
                             .height(80.dp),
+                )
+            }
+
+            ProgressBarStyle.GlowParticles -> {
+                GlowParticleSeekBar(
+                    progress = sliderProgress,
+                    onProgressChange = onValueChange,
+                    onProgressChangeFinished = onValueChangeFinished,
+                    animationsEnabled = isPlaying && isAppInForeground && animationsEnabled && !LocalReducedMotion.current,
+                    modifier = Modifier.fillMaxWidth().height(80.dp),
                 )
             }
         }
