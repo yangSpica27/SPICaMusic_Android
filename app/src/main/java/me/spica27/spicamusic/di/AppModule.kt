@@ -128,6 +128,7 @@ object AppModule {
                     songRepository = get<SongUseCases>(),
                     playlistRepository = get<PlaylistUseCases>(),
                     historyRepository = get<PlayHistoryUseCases>(),
+                    settingsUseCases = get<SettingsUseCases>(),
                 )
             }
 

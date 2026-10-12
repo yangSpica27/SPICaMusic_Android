@@ -54,6 +54,7 @@ fun HomeScreen() {
     val backStack = LocalBackStack.current
     val active by remember(backStack) { derivedStateOf { backStack.lastScreenOrNull() is HomeRoute } }
     val currentPage by homeViewModel.currentPage.collectAsStateWithLifecycle()
+    val bottomBarLayout by homeViewModel.bottomBarLayout.collectAsStateWithLifecycle()
     val mediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
     // 保留歌曲信息，供退出动画显示。
     var lastMediaItem by remember { mutableStateOf(mediaItem) }
@@ -72,9 +73,18 @@ fun HomeScreen() {
     HomePlayerScaffold(
         playerAvailable = mediaItem != null,
         sheetState = sheetState,
+        layout = bottomBarLayout,
         active = active,
         onMiniPlayerDragStart = { initialPlayerPage = DEFAULT_PAGE },
-        navigationBar = { HomeNavigationBar(currentPage, homeViewModel::navigateToPage, glassEnabled = glassEnabled) },
+        navigationBar = {
+            HomeNavigationBar(
+                currentPage,
+                homeViewModel::navigateToPage,
+                glassEnabled = glassEnabled,
+                hazeState = hazeState,
+                layout = bottomBarLayout,
+            )
+        },
         miniPlayer = { dragModifier ->
             val metadata = displayedMediaItem?.mediaMetadata
             MiniPlayerBar(
@@ -95,6 +105,7 @@ fun HomeScreen() {
                 progress = { if (duration.value > 0L) position.value.toFloat() / duration.value else 0f },
                 hazeState = hazeState,
                 glassEnabled = glassEnabled,
+                layout = bottomBarLayout,
             )
         },
         fullScreenPlayer = { progress, dragModifier ->

@@ -15,9 +15,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.common.entity.BottomBarLayout
 import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
@@ -26,6 +28,7 @@ import me.spica27.spicamusic.common.entity.SongSortOrder
 import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
+import me.spica27.spicamusic.feature.settings.domain.SettingsUseCases
 import me.spica27.spicamusic.ui.model.PlaylistWithCover
 import timber.log.Timber
 import kotlin.coroutines.cancellation.CancellationException
@@ -41,7 +44,14 @@ class HomeViewModel(
     private val songRepository: SongUseCases,
     private val playlistRepository: PlaylistUseCases,
     private val historyRepository: PlayHistoryUseCases,
+    settingsUseCases: SettingsUseCases,
 ) : ViewModel() {
+    val bottomBarLayout =
+        settingsUseCases
+            .getString(SettingsUseCases.Keys.BOTTOM_BAR_LAYOUT, BottomBarLayout.Traditional.value)
+            .map(BottomBarLayout::fromString)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, BottomBarLayout.Traditional)
+
     private val _weeklyStats = MutableStateFlow<PlayStats?>(null)
     val weeklyStats: StateFlow<PlayStats?> = _weeklyStats.asStateFlow()
 

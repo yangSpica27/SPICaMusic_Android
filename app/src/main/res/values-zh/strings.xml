@@ -613,6 +613,12 @@
   <string name="settings_dark_mode_title">深色模式</string>
   <string name="settings_dark_mode_toggle_subtitle">切换深色 / 浅色主题</string>
   <string name="settings_liquid_glass_title">液态玻璃</string>
+  <string name="settings_bottom_bar_layout_title">底栏布局</string>
+  <string name="settings_bottom_bar_layout_subtitle">选择迷你播放器与导航栏的排列方式</string>
+  <string name="bottom_bar_layout_traditional">传统（默认）</string>
+  <string name="bottom_bar_layout_traditional_desc">播放器与导航栏贴底排列，紧密衔接</string>
+  <string name="bottom_bar_layout_floating">悬浮分栏</string>
+  <string name="bottom_bar_layout_floating_desc">两条独立圆角栏，周围保留间距</string>
   <string name="settings_liquid_glass_subtitle">为部分播放界面启用半透明模糊效果</string>
   <string name="settings_playback_subtitle">让收听体验更顺手</string>
   <string name="settings_light_mode_label">浅色模式</string>

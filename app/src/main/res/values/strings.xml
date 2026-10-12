@@ -613,6 +613,12 @@
   <string name="settings_dark_mode_title">Dark Mode</string>
   <string name="settings_dark_mode_toggle_subtitle">Toggle dark / light theme</string>
   <string name="settings_liquid_glass_title">Liquid glass</string>
+  <string name="settings_bottom_bar_layout_title">Bottom bar layout</string>
+  <string name="settings_bottom_bar_layout_subtitle">Choose how the mini player and navigation bar are arranged</string>
+  <string name="bottom_bar_layout_traditional">Traditional (default)</string>
+  <string name="bottom_bar_layout_traditional_desc">Full-width player and navigation bars attached to the bottom</string>
+  <string name="bottom_bar_layout_floating">Floating split bars</string>
+  <string name="bottom_bar_layout_floating_desc">Separate rounded bars with space around them</string>
   <string name="settings_liquid_glass_subtitle">Blur selected player surfaces for a translucent look</string>
   <string name="settings_playback_subtitle">Make the listening experience smoother</string>
   <string name="settings_light_mode_label">Light Mode</string>

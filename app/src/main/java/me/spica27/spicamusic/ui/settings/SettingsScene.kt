@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material.icons.filled.WbSunny
@@ -85,6 +86,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.common.collect.ImmutableList
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.common.entity.BottomBarLayout
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
@@ -116,6 +118,7 @@ fun SettingsScreen() {
 
     val darkMode by viewModel.darkMode.collectAsStateWithLifecycle()
     val liquidGlassEnabled by viewModel.liquidGlassEnabled.collectAsStateWithLifecycle()
+    val bottomBarLayout by viewModel.bottomBarLayout.collectAsStateWithLifecycle()
     val keepScreenOn by viewModel.keepScreenOn.collectAsStateWithLifecycle()
     val backgroundValue by viewModel.dynamicSpectrumBackground.collectAsStateWithLifecycle()
     val coverTapValue by viewModel.dynamicCoverType.collectAsStateWithLifecycle()
@@ -174,6 +177,7 @@ fun SettingsScreen() {
 
             item(key = "settings_appearance") {
                 val colorStyleOptions = rememberColorStyleOptions()
+                val bottomBarLayoutOptions = rememberBottomBarLayoutOptions()
                 SettingsSectionCard(
                     title = stringResource(R.string.settings_appearance),
                     subtitle = stringResource(R.string.settings_appearance_subtitle),
@@ -192,6 +196,18 @@ fun SettingsScreen() {
                         expandedKey = expandedRowKey,
                         onExpandChange = { expandedRowKey = it },
                         onValueChange = viewModel::setThemeColorStyle,
+                    )
+                    SettingsItemDivider()
+                    InlineSelectRow(
+                        rowKey = "bottom_bar_layout",
+                        title = stringResource(R.string.settings_bottom_bar_layout_title),
+                        summary = stringResource(R.string.settings_bottom_bar_layout_subtitle),
+                        icon = Icons.Default.ViewAgenda,
+                        options = bottomBarLayoutOptions,
+                        currentValue = bottomBarLayout.value,
+                        expandedKey = expandedRowKey,
+                        onExpandChange = { expandedRowKey = it },
+                        onValueChange = { viewModel.setBottomBarLayout(BottomBarLayout.fromString(it)) },
                     )
                     SettingsItemDivider()
                     SwitchRow(
@@ -861,6 +877,32 @@ private data class SettingsOption(
     val description: String,
     val icon: ImageVector,
 )
+
+@Composable
+private fun rememberBottomBarLayoutOptions(): ImmutableList<SettingsOption> {
+    val traditionalLabel = stringResource(R.string.bottom_bar_layout_traditional)
+    val traditionalDescription = stringResource(R.string.bottom_bar_layout_traditional_desc)
+    val floatingLabel = stringResource(R.string.bottom_bar_layout_floating)
+    val floatingDescription = stringResource(R.string.bottom_bar_layout_floating_desc)
+    return remember(traditionalLabel, traditionalDescription, floatingLabel, floatingDescription) {
+        ImmutableList.copyOf(
+            listOf(
+                SettingsOption(
+                    BottomBarLayout.Traditional.value,
+                    traditionalLabel,
+                    traditionalDescription,
+                    Icons.Default.ViewAgenda,
+                ),
+                SettingsOption(
+                    BottomBarLayout.Floating.value,
+                    floatingLabel,
+                    floatingDescription,
+                    Icons.Default.Layers,
+                ),
+            ),
+        )
+    }
+}
 
 @Composable
 private fun rememberColorStyleOptions(): ImmutableList<SettingsOption> {

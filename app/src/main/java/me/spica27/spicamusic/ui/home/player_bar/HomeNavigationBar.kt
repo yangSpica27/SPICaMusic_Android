@@ -1,6 +1,5 @@
 package me.spica27.spicamusic.ui.home.player_bar
 
-import android.os.Build
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -51,27 +48,26 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import dev.chrisbanes.haze.ExperimentalHazeApi
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
+import dev.chrisbanes.haze.HazeState
+import me.spica27.spicamusic.common.entity.BottomBarLayout
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
 import me.spica27.spicamusic.ui.home.HomePage
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import kotlin.math.abs
 
-private val NavigationMinHeight = 76.dp
 private val IndicatorInset = 8.dp
-private val IndicatorShape = RoundedCornerShape(20.dp)
 
-/** 固定底栏，玻璃指示器仅采样导航项。 */
-@OptIn(ExperimentalHazeApi::class)
+/** 两种布局共用导航交互，悬浮布局与迷你播放器共享页面玻璃背景。 */
 @Composable
 internal fun HomeNavigationBar(
     selectedPage: HomePage,
     onPageSelected: (HomePage) -> Unit,
     modifier: Modifier = Modifier,
     glassEnabled: Boolean = LocalLiquidGlassConfig.current.enabled,
+    hazeState: HazeState? = null,
+    layout: BottomBarLayout = BottomBarLayout.Traditional,
 ) {
+    val appearance = BottomBarAppearance.forLayout(layout)
     val pages = HomePage.entries
     val scope = rememberCoroutineScope()
     val indicator = remember(scope) { GlassNavigationIndicatorState(selectedPage.ordinal, pages.size, scope) }
@@ -81,8 +77,6 @@ internal fun HomeNavigationBar(
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     val density = LocalDensity.current
     val colors = MaterialTheme.colorScheme
-    val useGlass = glassEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-    val source = rememberHazeState()
     var bounds by remember { mutableStateOf(IntSize.Zero) }
     val tabWidth = bounds.width.toFloat() / pages.size
     val inset = with(density) { IndicatorInset.toPx() }
@@ -104,8 +98,13 @@ internal fun HomeNavigationBar(
     Box(
         modifier
             .fillMaxWidth()
-            .clipToBounds()
-            .selectableGroup()
+            .playerBarSurface(
+                hazeState,
+                appearance.navigationContainerColor(colors),
+                glassEnabled && appearance.isFloating,
+                appearance.navigationShape,
+                appearance.isFloating,
+            ).selectableGroup()
             .onSizeChanged { bounds = it }
             .pointerInput(indicator, tabWidth, isLtr, reducedMotion) {
                 if (tabWidth <= 0f) return@pointerInput
@@ -145,12 +144,9 @@ internal fun HomeNavigationBar(
                 }
             },
     ) {
-        // 导航项与指示器分层，避免采样自身。
+        // 前景导航项与指示器分层，玻璃背景只采样页面。
         Row(
-            Modifier
-                .fillMaxWidth()
-                .then(if (useGlass) Modifier.hazeSource(source) else Modifier)
-                .background(colors.surface),
+            Modifier.fillMaxWidth(),
         ) {
             pages.forEach { page ->
                 val selected = page == selectedPage
@@ -158,7 +154,7 @@ internal fun HomeNavigationBar(
                 Column(
                     Modifier
                         .weight(1f)
-                        .heightIn(min = NavigationMinHeight)
+                        .heightIn(min = appearance.navigationMinHeight)
                         .selectable(
                             selected = selected,
                             role = Role.Tab,
@@ -168,7 +164,7 @@ internal fun HomeNavigationBar(
                                 indicator.animateTo(page.ordinal, reducedMotion)
                                 if (page != currentSelection) onSelection(page)
                             },
-                        ).padding(horizontal = 8.dp, vertical = 12.dp),
+                        ).padding(horizontal = 8.dp, vertical = appearance.navigationVerticalPadding),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
                 ) {
@@ -202,7 +198,7 @@ internal fun HomeNavigationBar(
                             }
                         translationX = x.coerceIn(inset / 2f, (bounds.width - lensWidth - inset / 2f).coerceAtLeast(inset / 2f))
                         translationY = inset
-                    }.clip(IndicatorShape)
+                    }.clip(appearance.indicatorShape)
                     .then(
                         Modifier.background(colors.primary.copy(alpha = 0.09f)),
                     ).clearAndSetSemantics {},

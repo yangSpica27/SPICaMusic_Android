@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -38,8 +39,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -48,6 +51,7 @@ import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.SubcomposeLayoutState
 import androidx.compose.ui.layout.SubcomposeSlotReusePolicy
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -58,6 +62,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.common.entity.BottomBarLayout
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
 import me.spica27.spicamusic.ui.theme.LocalReducedMotion
 import kotlin.math.roundToInt
@@ -79,6 +84,9 @@ private class PlayerLayoutMeasurements {
 private class PlayerRevealShape(
     private val height: Float,
     private val radius: Float,
+    private val bottomRadius: Float,
+    private val leftInset: Float,
+    private val rightInset: Float,
 ) : Shape {
     override fun createOutline(
         size: Size,
@@ -87,12 +95,14 @@ private class PlayerRevealShape(
     ): Outline =
         Outline.Rounded(
             RoundRect(
-                left = 0f,
+                left = leftInset,
                 top = 0f,
-                right = size.width,
+                right = size.width - rightInset,
                 bottom = height.coerceIn(0f, size.height),
                 topLeftCornerRadius = CornerRadius(radius),
                 topRightCornerRadius = CornerRadius(radius),
+                bottomLeftCornerRadius = CornerRadius(bottomRadius),
+                bottomRightCornerRadius = CornerRadius(bottomRadius),
             ),
         )
 }
@@ -109,12 +119,22 @@ internal fun HomePlayerScaffold(
     modifier: Modifier = Modifier,
     active: Boolean = true,
     onMiniPlayerDragStart: () -> Unit = {},
+    layout: BottomBarLayout = BottomBarLayout.Traditional,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val reducedMotion = LocalReducedMotion.current
     val keyboardVisible = WindowInsets.isImeVisible
     val colors = MaterialTheme.colorScheme
+    val appearance = BottomBarAppearance.forLayout(layout)
+    val collapsedPlayerColor = appearance.miniPlayerContainerColor(colors)
     val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+    val safeInsets = WindowInsets.safeDrawing
+    val horizontalMargin = with(density) { appearance.horizontalMargin.toPx() }
+    val leftInset = if (appearance.isFloating) horizontalMargin + safeInsets.getLeft(density, layoutDirection) else 0f
+    val rightInset = if (appearance.isFloating) horizontalMargin + safeInsets.getRight(density, layoutDirection) else 0f
+    val miniPlayerGap = with(density) { appearance.gap.toPx() }
+    val navigationBottomPadding = safeInsets.getBottom(density) + with(density) { appearance.bottomMargin.toPx() }
     val measurements = remember { PlayerLayoutMeasurements() }
     val layoutState = remember { SubcomposeLayoutState(SubcomposeSlotReusePolicy(1)) }
     val progress = remember(sheetState) { { sheetState.progress } }
@@ -159,7 +179,7 @@ internal fun HomePlayerScaffold(
 
     // 复用槽位内容，展开进度仅在布局和绘制阶段读取。
     val miniSlot: @Composable () -> Unit =
-        remember(playerAvailable, keyboardVisible, miniPlayer, dragModifier, enter, exit, hiddenSemantics) {
+        remember(playerAvailable, keyboardVisible, miniPlayer, dragModifier, appearance, enter, exit, hiddenSemantics) {
             {
                 Box(
                     hiddenSemantics.graphicsLayer {
@@ -167,13 +187,27 @@ internal fun HomePlayerScaffold(
                     },
                 ) {
                     AnimatedVisibility(visible = playerAvailable && !keyboardVisible, enter = enter, exit = exit) {
-                        miniPlayer(dragModifier)
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (appearance.isFloating) {
+                                        Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+                                    } else {
+                                        Modifier
+                                    },
+                                ).padding(
+                                    start = appearance.horizontalMargin,
+                                    end = appearance.horizontalMargin,
+                                    bottom = appearance.gap,
+                                ),
+                        ) { miniPlayer(dragModifier) }
                     }
                 }
             }
         }
     val navigationSlot: @Composable () -> Unit =
-        remember(keyboardVisible, navigationBar, colors.surface, enter, exit, hiddenSemantics) {
+        remember(keyboardVisible, navigationBar, appearance, colors.surface, navigationBottomPadding, enter, exit, hiddenSemantics) {
             {
                 Box(
                     hiddenSemantics.graphicsLayer {
@@ -186,9 +220,32 @@ internal fun HomePlayerScaffold(
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .background(colors.surface)
-                                .windowInsetsPadding(
+                                .then(
+                                    if (appearance.isFloating) {
+                                        Modifier.drawBehind {
+                                            // 悬浮栏下方渐隐至主题底色，衔接系统手势区。
+                                            val fadeStart = (size.height - navigationBottomPadding - 24.dp.toPx()).coerceAtLeast(0f)
+                                            val fadeEnd = size.height - navigationBottomPadding + appearance.bottomMargin.toPx()
+                                            drawRect(
+                                                brush =
+                                                    Brush.verticalGradient(
+                                                        listOf(colors.surface.copy(alpha = 0f), colors.surface),
+                                                        startY = fadeStart,
+                                                        endY = fadeEnd,
+                                                    ),
+                                                topLeft = Offset(0f, fadeStart),
+                                                size = Size(size.width, size.height - fadeStart),
+                                            )
+                                        }
+                                    } else {
+                                        Modifier.background(colors.surface)
+                                    },
+                                ).windowInsetsPadding(
                                     WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+                                ).padding(
+                                    start = appearance.horizontalMargin,
+                                    end = appearance.horizontalMargin,
+                                    bottom = appearance.bottomMargin,
                                 ),
                         ) { navigationBar() }
                     }
@@ -196,7 +253,17 @@ internal fun HomePlayerScaffold(
             }
         }
     val playerSlot: @Composable () -> Unit =
-        remember(sheetVisible, fullScreenPlayer, dragModifier, colors) {
+        remember(
+            sheetVisible,
+            fullScreenPlayer,
+            dragModifier,
+            colors,
+            appearance,
+            collapsedPlayerColor,
+            leftInset,
+            rightInset,
+            miniPlayerGap,
+        ) {
             {
                 Box(
                     if (sheetVisible) {
@@ -204,10 +271,18 @@ internal fun HomePlayerScaffold(
                             .fillMaxSize()
                             .graphicsLayer {
                                 val fraction = progress()
-                                val cardHeight = measurements.miniPlayerHeight + (size.height - measurements.miniPlayerHeight) * fraction
-                                shape = PlayerRevealShape(cardHeight, 20.dp.toPx() * (1f - fraction))
+                                val miniHeight = (measurements.miniPlayerHeight - miniPlayerGap).coerceAtLeast(0f)
+                                val cardHeight = miniHeight + (size.height - miniHeight) * fraction
+                                shape =
+                                    PlayerRevealShape(
+                                        cardHeight,
+                                        appearance.revealTopRadius.toPx() * (1f - fraction),
+                                        appearance.revealBottomRadius.toPx() * (1f - fraction),
+                                        leftInset * (1f - fraction),
+                                        rightInset * (1f - fraction),
+                                    )
                                 clip = true
-                            }.drawBehind { drawRect(lerp(colors.primaryContainer, colors.surface, progress())) }
+                            }.drawBehind { drawRect(lerp(collapsedPlayerColor, colors.surface, progress())) }
                     } else {
                         Modifier
                     },

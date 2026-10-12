@@ -4,8 +4,10 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import me.spica27.spicamusic.common.entity.BottomBarLayout
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.DynamicSpectrumBackground
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
@@ -40,6 +42,19 @@ class SettingsViewModel(
     fun setLiquidGlassEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsUseCases.setBoolean(SettingsUseCases.Keys.LIQUID_GLASS_ENABLED, enabled)
+        }
+    }
+
+    // 底栏布局独立于玻璃材质，默认传统。
+    val bottomBarLayout =
+        settingsUseCases
+            .getString(SettingsUseCases.Keys.BOTTOM_BAR_LAYOUT, BottomBarLayout.Traditional.value)
+            .map(BottomBarLayout::fromString)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, BottomBarLayout.Traditional)
+
+    fun setBottomBarLayout(layout: BottomBarLayout) {
+        viewModelScope.launch {
+            settingsUseCases.setString(SettingsUseCases.Keys.BOTTOM_BAR_LAYOUT, layout.value)
         }
     }
 
