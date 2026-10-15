@@ -108,7 +108,7 @@ fun SongInfoDialogContent(song: Song) {
                     InfoItem(
                         Icons.Default.Person,
                         stringResource(R.string.song_artist),
-                        song.artist,
+                        song.artist.ifBlank { stringResource(R.string.unknown_artist) },
                         copyLabel,
                         onCopy,
                     )
@@ -119,6 +119,45 @@ fun SongInfoDialogContent(song: Song) {
                         copyLabel,
                         onCopy,
                     )
+                    if (song.trackNumber > 0 || song.discNumber > 0) {
+                        InfoItem(
+                            Icons.Default.Album,
+                            stringResource(R.string.song_track_position),
+                            listOfNotNull(
+                                song.discNumber.takeIf { it > 0 }?.let { stringResource(R.string.song_disc_format, it) },
+                                song.trackNumber.takeIf { it > 0 }?.let { stringResource(R.string.song_track_format, it) },
+                            ).joinToString(" · "),
+                            copyLabel,
+                            onCopy,
+                        )
+                    }
+                    if (song.year > 0) {
+                        InfoItem(
+                            Icons.Default.Schedule,
+                            stringResource(R.string.song_year),
+                            song.year.toString(),
+                            copyLabel,
+                            onCopy,
+                        )
+                    }
+                    if (song.composer.isNotBlank()) {
+                        InfoItem(
+                            Icons.Default.Person,
+                            stringResource(R.string.artist_role_composer),
+                            song.composer,
+                            copyLabel,
+                            onCopy,
+                        )
+                    }
+                    if (song.lyricist.isNotBlank()) {
+                        InfoItem(
+                            Icons.Default.Person,
+                            stringResource(R.string.artist_role_lyricist),
+                            song.lyricist,
+                            copyLabel,
+                            onCopy,
+                        )
+                    }
                     InfoItem(
                         Icons.Default.Schedule,
                         stringResource(R.string.song_duration),

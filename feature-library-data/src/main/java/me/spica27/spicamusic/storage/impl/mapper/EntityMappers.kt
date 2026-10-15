@@ -1,17 +1,21 @@
 package me.spica27.spicamusic.storage.impl.mapper
 
 import me.spica27.spicamusic.common.entity.Album
+import me.spica27.spicamusic.common.entity.Artist
+import me.spica27.spicamusic.common.entity.ArtistCredit
 import me.spica27.spicamusic.common.entity.Lyric
 import me.spica27.spicamusic.common.entity.PlayHistory
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.PlaylistWithSongs
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.storage.impl.entity.AlbumEntity
+import me.spica27.spicamusic.storage.impl.dao.AlbumDao
+import me.spica27.spicamusic.storage.impl.dao.ArtistDao
 import me.spica27.spicamusic.storage.impl.entity.ExtraInfoEntity
 import me.spica27.spicamusic.storage.impl.entity.PlayHistoryEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistWithSongsEntity
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
+import me.spica27.spicamusic.storage.impl.index.TagJson
 
 fun SongEntity.toCommon() = Song(
     songId = songId,
@@ -35,40 +39,39 @@ fun SongEntity.toCommon() = Song(
     album = album,
     waveformData = waveformData,
     trackNumber = trackNumber,
-)
-
-fun AlbumEntity.toCommon() = Album(
-    id = id,
-    title = title,
-    artist = artist,
-    artworkUri = artworkUri,
+    discNumber = discNumber,
     year = year,
-    numberOfSongs = numberOfSongs,
-    dateModified = dateModified,
+    composer = TagJson.decode(composerTags).joinToString(" / "),
+    lyricist = TagJson.decode(lyricistTags).joinToString(" / "),
 )
 
-fun Song.toEntity() = SongEntity(
-    songId = songId,
-    mediaStoreId = mediaStoreId,
-    path = path,
-    displayName = displayName,
-    artist = artist,
-    size = size,
-    like = like,
-    duration = duration,
-    sort = sort,
-    mimeType = mimeType,
-    albumId = albumId,
-    sampleRate = sampleRate,
-    bitRate = bitRate,
-    channels = channels,
-    digit = digit,
-    isIgnore = isIgnore,
-    sortName = sortName,
-    codec = codec,
-    album = album,
-    waveformData = waveformData,
-    trackNumber = trackNumber,
+fun AlbumDao.AlbumRow.toCommon() = Album(
+    id = album.albumId,
+    title = album.title,
+    artist = album.artist,
+    year = album.year,
+    numberOfSongs = songCount,
+    coverMediaStoreId = coverMediaStoreId ?: 0L,
+)
+
+fun ArtistDao.ArtistRow.toCommon() = Artist(
+    artistId = artist.artistId,
+    name = artist.name,
+    songCount = songCount,
+    coverMediaStoreId = coverMediaStoreId ?: 0L,
+    kind = artist.kind,
+)
+
+fun ArtistDao.CreditRow.toCommon() = ArtistCredit(
+    artist =
+        Artist(
+            artistId = artist.artistId,
+            name = artist.name,
+            songCount = songCount,
+            coverMediaStoreId = coverMediaStoreId ?: 0L,
+            kind = artist.kind,
+        ),
+    role = role,
 )
 
 fun PlaylistEntity.toCommon() = Playlist(

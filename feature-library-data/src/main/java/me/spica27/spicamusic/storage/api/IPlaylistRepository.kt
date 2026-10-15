@@ -113,10 +113,10 @@ interface IPlaylistRepository {
     suspend fun reorderPlaylistSongs(playlistId: Long, orderedMediaIds: List<Long>)
 
     /**
-     * 获取歌单封面所需的前 5 个不同专辑 ID（Flow），用于组合封面渲染。
+     * 获取歌单组合封面的代表曲 mediaStoreId（Flow）：最近加入的 5 个不同专辑各取一首。
      * 结果列表长度 0–5，调用方根据长度选择渲染策略。
      */
-    fun getPlaylistCoverAlbumIds(playlistId: Long): Flow<List<Long>>
+    fun getPlaylistCoverMediaStoreIds(playlistId: Long): Flow<List<Long>>
 
 
     /**

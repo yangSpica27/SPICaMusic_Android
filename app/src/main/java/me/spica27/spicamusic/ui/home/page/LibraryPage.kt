@@ -863,7 +863,7 @@ private fun PlaylistCard(
         verticalArrangement = Arrangement.spacedBy(Spacing.Small),
     ) {
         PlaylistCoverView(
-            albumIds = item.coverAlbumIds,
+            coverMediaStoreIds = item.coverMediaStoreIds,
             modifier =
                 Modifier
                     .fillMaxWidth()

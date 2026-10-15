@@ -54,8 +54,8 @@ class PlaylistDetailViewModel(
         )
 
     // 歌单封面所需的专辑 ID（最多 5 个，用于组合封面）
-    val coverAlbumIds: StateFlow<List<Long>> =
-        playlistRepository.getPlaylistCoverAlbumIds(playlistId).stateIn(
+    val coverMediaStoreIds: StateFlow<List<Long>> =
+        playlistRepository.getPlaylistCoverMediaStoreIds(playlistId).stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList(),

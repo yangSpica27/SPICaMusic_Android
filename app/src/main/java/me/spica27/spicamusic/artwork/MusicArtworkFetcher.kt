@@ -55,12 +55,7 @@ class MusicArtworkFetcher(
             return FetchResult.Error(NoArtworkException(key))
         }
         return withContext(Dispatchers.IO) {
-            val resolved =
-                when {
-                    artwork.mediaStoreId <= 0L -> resolveAlbumSong(artwork)
-                    artwork.path.isBlank() -> resolveSongFile(artwork)
-                    else -> artwork
-                }
+            val resolved = if (artwork.path.isBlank()) resolveSongFile(artwork) else artwork
             ensureActive()
             val bytes =
                 embeddedPicture(resolved)
@@ -79,35 +74,6 @@ class MusicArtworkFetcher(
                 FetchResult.Success(data = bytes, mimeType = null, dataSource = DataSource.LOCAL)
             }
         }
-    }
-
-    /** 只有专辑 id 时取该专辑曲目号最小的一首作代表 */
-    @Suppress("DEPRECATION")
-    private fun resolveAlbumSong(artwork: MusicArtwork): MusicArtwork {
-        if (artwork.albumId <= 0L) return artwork
-        val projection =
-            arrayOf(
-                MediaStore.Audio.Media._ID,
-                MediaStore.Audio.Media.DATA,
-                MediaStore.Audio.Media.SIZE,
-            )
-        return runCatching {
-            resolver
-                .query(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                    projection,
-                    "${MediaStore.Audio.Media.ALBUM_ID} = ?",
-                    arrayOf(artwork.albumId.toString()),
-                    "${MediaStore.Audio.Media.TRACK} ASC",
-                )?.use { cursor ->
-                    if (!cursor.moveToFirst()) return@use null
-                    artwork.copy(
-                        mediaStoreId = cursor.getLong(0),
-                        path = cursor.getString(1).orEmpty(),
-                        size = cursor.getLong(2),
-                    )
-                }
-        }.getOrNull() ?: artwork
     }
 
     /** 只有歌曲 id（如歌手代表曲）时补全路径，让目录图回退与歌曲行一致 */
@@ -267,22 +233,15 @@ class MusicArtworkFetcher(
         name.equals(Environment.DIRECTORY_MUSIC, ignoreCase = true) ||
             name.equals(Environment.DIRECTORY_DOWNLOADS, ignoreCase = true)
 
-    /** MediaStore 缩略图：先按歌曲再按专辑，都是 provider 生成的固定尺寸图 */
+    /**
+     * MediaStore 按歌曲生成的缩略图。不再取 albumart/{albumId}：
+     * 系统专辑按目录名合并伪专辑，那条路径会显示成别的歌的封面
+     */
     private fun mediaStoreThumbnail(artwork: MusicArtwork): ByteArray? {
-        val candidates =
-            buildList {
-                if (artwork.mediaStoreId > 0L) {
-                    add("content://media/external/audio/media/${artwork.mediaStoreId}/albumart".toUri())
-                }
-                if (artwork.albumId > 0L) {
-                    add("content://media/external/audio/albumart/${artwork.albumId}".toUri())
-                }
-            }
-        for (uri in candidates) {
-            val bytes = runCatching { resolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-            if (bytes != null && bytes.isNotEmpty()) return bytes
-        }
-        return null
+        val uri = "content://media/external/audio/media/${artwork.mediaStoreId}/albumart".toUri()
+        return runCatching { resolver.openInputStream(uri)?.use { it.readBytes() } }
+            .getOrNull()
+            ?.takeIf { it.isNotEmpty() }
     }
 
     private companion object {

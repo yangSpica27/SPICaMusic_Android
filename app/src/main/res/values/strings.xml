@@ -785,4 +785,21 @@
   <string name="move_up">Move up</string>
   <string name="move_down">Move down</string>
   <string name="open_player">Open player</string>
+  <string name="various_artists">Various Artists</string>
+  <string name="artist_appearances_title">Appears On</string>
+  <string name="artist_composed_title">Composed</string>
+  <string name="artist_written_title">Lyrics Written</string>
+  <string name="choose_artist">Choose Artist</string>
+  <string name="choose_artist_subtitle">This song credits several artists</string>
+  <string name="artist_role_artist">Artist</string>
+  <string name="artist_role_composer">Composer</string>
+  <string name="artist_role_lyricist">Lyricist</string>
+  <string name="song_track_position">Disc / Track</string>
+  <string name="song_disc_format">Disc %1$d</string>
+  <string name="song_track_format">Track %1$d</string>
+  <string name="song_year">Year</string>
+  <string name="scanner_rule_split_artists_title">Split artist names</string>
+  <string name="scanner_rule_split_artists_desc">Treat A/B, A、B, A &amp; B and feat. as separate artists. Tags that already hold several values are not affected. Applies right away without rescanning.</string>
+  <string name="scanner_rule_split_off">Keep as is</string>
+  <string name="scanner_rule_split_on">Split</string>
 </resources>

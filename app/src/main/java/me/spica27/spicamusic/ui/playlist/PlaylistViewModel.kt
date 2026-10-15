@@ -76,7 +76,7 @@ class PlaylistViewModel(
                         list.map { playlist ->
                             val id = playlist.playlistId ?: 0L
                             combine(
-                                playlistRepository.getPlaylistCoverAlbumIds(id),
+                                playlistRepository.getPlaylistCoverMediaStoreIds(id),
                                 playlistRepository.getSongSizeInPlaylist(id),
                             ) { albumIds, size ->
                                 PlaylistWithCover(playlist, ImmutableList.copyOf(albumIds), size)

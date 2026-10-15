@@ -5,18 +5,25 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import me.spica27.spicamusic.storage.impl.dao.AlbumDao
+import me.spica27.spicamusic.storage.impl.dao.ArtistDao
 import me.spica27.spicamusic.storage.impl.dao.ExtraInfoDao
+import me.spica27.spicamusic.storage.impl.dao.LibraryDao
 import me.spica27.spicamusic.storage.impl.dao.PlayHistoryDao
 import me.spica27.spicamusic.storage.impl.dao.PlaylistDao
 import me.spica27.spicamusic.storage.impl.dao.ScanFolderDao
 import me.spica27.spicamusic.storage.impl.dao.SongDao
 import me.spica27.spicamusic.storage.impl.dao.TransferDao
+import me.spica27.spicamusic.storage.impl.entity.AlbumArtistEntity
 import me.spica27.spicamusic.storage.impl.entity.AlbumEntity
+import me.spica27.spicamusic.storage.impl.entity.ArtistEntity
 import me.spica27.spicamusic.storage.impl.entity.ExtraInfoEntity
+import me.spica27.spicamusic.storage.impl.entity.LegacySongCarryOverEntity
+import me.spica27.spicamusic.storage.impl.entity.LibraryStateEntity
 import me.spica27.spicamusic.storage.impl.entity.PlayHistoryEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistSongCrossRefEntity
 import me.spica27.spicamusic.storage.impl.entity.ScanFolderEntity
+import me.spica27.spicamusic.storage.impl.entity.SongArtistEntity
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
 import me.spica27.spicamusic.storage.impl.entity.SongPlayStatEntity
 import me.spica27.spicamusic.storage.impl.entity.TransferIdentityEntity
@@ -28,9 +35,11 @@ import me.spica27.spicamusic.storage.impl.entity.TransferReceiptEntity
         ExtraInfoEntity::class, PlayHistoryEntity::class, AlbumEntity::class,
         ScanFolderEntity::class, SongPlayStatEntity::class,
         TransferIdentityEntity::class, TransferReceiptEntity::class,
+        ArtistEntity::class, SongArtistEntity::class, AlbumArtistEntity::class,
+        LibraryStateEntity::class, LegacySongCarryOverEntity::class,
     ],
-    version = 22,
-    exportSchema = false,
+    version = 23,
+    exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun songDao(): SongDao
@@ -43,11 +52,79 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun albumDao(): AlbumDao
 
+    abstract fun artistDao(): ArtistDao
+
+    abstract fun libraryDao(): LibraryDao
+
     abstract fun scanFolderDao(): ScanFolderDao
 
     abstract fun transferDao(): TransferDao
 
     companion object {
+        /**
+         * v22 -> v23: 曲库按 TagLib 标签自建艺人与专辑。
+         * 歌曲表与系统专辑缓存直接丢弃，启动后重新扫描；喜欢 / 导入标记按 MediaStore ID 暂存，
+         * 重扫入库时回填。歌单、歌词、播放历史、统计按 MediaStore ID 关联，表不动。
+         * CREATE 语句与 schemas/23.json 一致，修改 Entity 后须同步。
+         */
+        val MIGRATION_22_23 =
+            object : Migration(22, 23) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `LegacySongCarryOver` (`mediaStoreId` INTEGER NOT NULL, `isLiked` INTEGER NOT NULL DEFAULT 0, `isImported` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`mediaStoreId`))",
+                    )
+                    db.execSQL(
+                        """
+                        INSERT OR IGNORE INTO LegacySongCarryOver (mediaStoreId, isLiked, isImported)
+                        SELECT s.mediaStoreId, s.`like`,
+                               EXISTS (SELECT 1 FROM TransferIdentity AS t
+                                       WHERE t.kind = 'imported_track' AND t.localId = s.songId)
+                        FROM Song AS s
+                        WHERE s.`like` = 1
+                           OR EXISTS (SELECT 1 FROM TransferIdentity AS t
+                                      WHERE t.kind = 'imported_track' AND t.localId = s.songId)
+                        """.trimIndent(),
+                    )
+                    // 歌曲类传输身份关联旧 songId，随重建失效；歌单身份保留
+                    db.execSQL("DELETE FROM TransferIdentity WHERE kind IN ('track', 'imported_track')")
+                    db.execSQL("DROP TABLE IF EXISTS `Song`")
+                    db.execSQL("DROP TABLE IF EXISTS `AlbumEntity`")
+
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `Album` (`albumId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `groupKey` TEXT NOT NULL, `title` TEXT NOT NULL, `artist` TEXT NOT NULL, `sortName` TEXT NOT NULL, `year` INTEGER NOT NULL DEFAULT 0, `isCompilation` INTEGER NOT NULL DEFAULT 0)",
+                    )
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_Album_groupKey` ON `Album` (`groupKey`)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_Album_sortName` ON `Album` (`sortName`)")
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `Song` (`songId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `mediaStoreId` INTEGER NOT NULL, `path` TEXT NOT NULL, `size` INTEGER NOT NULL, `mimeType` TEXT NOT NULL, `dateModified` INTEGER NOT NULL, `displayName` TEXT NOT NULL, `artist` TEXT NOT NULL, `album` TEXT NOT NULL, `artistTags` TEXT NOT NULL DEFAULT '[]', `albumArtistTags` TEXT NOT NULL DEFAULT '[]', `composerTags` TEXT NOT NULL DEFAULT '[]', `lyricistTags` TEXT NOT NULL DEFAULT '[]', `trackNumber` INTEGER NOT NULL DEFAULT 0, `discNumber` INTEGER NOT NULL DEFAULT 0, `year` INTEGER NOT NULL DEFAULT 0, `isCompilation` INTEGER NOT NULL DEFAULT 0, `duration` INTEGER NOT NULL, `sampleRate` INTEGER NOT NULL DEFAULT 0, `bitRate` INTEGER NOT NULL DEFAULT 0, `channels` INTEGER NOT NULL DEFAULT 0, `digit` INTEGER NOT NULL DEFAULT 0, `codec` TEXT NOT NULL, `tagStatus` TEXT NOT NULL, `tagVersion` INTEGER NOT NULL, `albumId` INTEGER, `sortName` TEXT NOT NULL, `like` INTEGER NOT NULL DEFAULT 0, `isIgnore` INTEGER NOT NULL DEFAULT 0, `isImported` INTEGER NOT NULL DEFAULT 0, `sort` INTEGER NOT NULL DEFAULT 0, `waveformData` TEXT, FOREIGN KEY(`albumId`) REFERENCES `Album`(`albumId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+                    )
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_Song_mediaStoreId` ON `Song` (`mediaStoreId`)")
+                    db.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_Song_albumId_discNumber_trackNumber` ON `Song` (`albumId`, `discNumber`, `trackNumber`)",
+                    )
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_Song_sortName` ON `Song` (`sortName`)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_Song_displayName` ON `Song` (`displayName`)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_Song_isIgnore` ON `Song` (`isIgnore`)")
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `Artist` (`artistId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nameKey` TEXT NOT NULL, `name` TEXT NOT NULL, `sortName` TEXT NOT NULL, `kind` TEXT NOT NULL DEFAULT 'NORMAL')",
+                    )
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_Artist_nameKey` ON `Artist` (`nameKey`)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_Artist_sortName` ON `Artist` (`sortName`)")
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `SongArtist` (`songId` INTEGER NOT NULL, `role` TEXT NOT NULL, `artistId` INTEGER NOT NULL, `creditOrder` INTEGER NOT NULL, PRIMARY KEY(`songId`, `role`, `artistId`), FOREIGN KEY(`songId`) REFERENCES `Song`(`songId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`artistId`) REFERENCES `Artist`(`artistId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+                    )
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_SongArtist_artistId_role` ON `SongArtist` (`artistId`, `role`)")
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `AlbumArtist` (`albumId` INTEGER NOT NULL, `artistId` INTEGER NOT NULL, `creditOrder` INTEGER NOT NULL, PRIMARY KEY(`albumId`, `artistId`), FOREIGN KEY(`albumId`) REFERENCES `Album`(`albumId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`artistId`) REFERENCES `Artist`(`artistId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+                    )
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_AlbumArtist_artistId` ON `AlbumArtist` (`artistId`)")
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `LibraryState` (`id` INTEGER NOT NULL, `pendingRebuild` INTEGER NOT NULL DEFAULT 0, `indexPolicy` TEXT NOT NULL DEFAULT '', PRIMARY KEY(`id`))",
+                    )
+                    db.execSQL("INSERT OR REPLACE INTO LibraryState (id, pendingRebuild, indexPolicy) VALUES (1, 1, '')")
+                }
+            }
+
         val MIGRATION_21_22 =
             object : Migration(21, 22) {
                 override fun migrate(db: SupportSQLiteDatabase) {

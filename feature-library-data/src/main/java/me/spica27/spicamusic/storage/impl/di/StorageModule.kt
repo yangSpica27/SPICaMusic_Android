@@ -3,6 +3,7 @@ package me.spica27.spicamusic.storage.impl.di
 import android.app.Application
 import androidx.room.Room
 import me.spica27.spicamusic.storage.api.IAlbumRepository
+import me.spica27.spicamusic.storage.api.IArtistRepository
 import me.spica27.spicamusic.storage.api.ILyricRepository
 import me.spica27.spicamusic.storage.api.ILyricSourceReader
 import me.spica27.spicamusic.storage.api.IMusicScanService
@@ -14,6 +15,7 @@ import me.spica27.spicamusic.storage.api.ISongRepository
 import me.spica27.spicamusic.storage.api.LibraryAccessGate
 import me.spica27.spicamusic.storage.impl.db.AppDatabase
 import me.spica27.spicamusic.storage.impl.repository.AlbumRepositoryImpl
+import me.spica27.spicamusic.storage.impl.repository.ArtistRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.LyricRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.LyricSourceReaderImpl
 import me.spica27.spicamusic.storage.impl.repository.PlayHistoryRepositoryImpl
@@ -49,6 +51,7 @@ val storageModule =
                     AppDatabase.MIGRATION_19_20,
                     AppDatabase.MIGRATION_20_21,
                     AppDatabase.MIGRATION_21_22,
+                    AppDatabase.MIGRATION_22_23,
                 )
                 // 版本链在 6→9、10→12 之间仍有缺口（那几版没留下 Migration，
                 // 原始表结构已无从考证），只能保留破坏性回退兜底，
@@ -65,6 +68,7 @@ val storageModule =
         single { get<AppDatabase>().lyricDao() }
         single { get<AppDatabase>().playHistoryDao() }
         single { get<AppDatabase>().albumDao() }
+        single { get<AppDatabase>().artistDao() }
         single { get<AppDatabase>().scanFolderDao() }
 
         // 仓库接口
@@ -72,6 +76,7 @@ val storageModule =
         single<IPlaylistRepository> { PlaylistRepositoryImpl(get(), get()) }
         single<IPlayHistoryRepository> { PlayHistoryRepositoryImpl(get(), get()) }
         single<IAlbumRepository> { AlbumRepositoryImpl(get()) }
+        single<IArtistRepository> { ArtistRepositoryImpl(get()) }
         single<ILyricRepository> { LyricRepositoryImpl(get()) }
         single<ILyricSourceReader> { LyricSourceReaderImpl(get<Application>()) }
         single<IScanFolderRepository> { ScanFolderRepositoryImpl(get()) }
@@ -79,5 +84,5 @@ val storageModule =
 
         // 扫描服务
         single { LibraryAccessGate() }
-        single<IMusicScanService> { MusicScanService(get(), get(), get(), get(), get(), get(), get()) }
+        single<IMusicScanService> { MusicScanService(get(), get(), get(), get(), get()) }
     }

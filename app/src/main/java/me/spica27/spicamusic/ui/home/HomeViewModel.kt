@@ -19,12 +19,16 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.R
+import me.spica27.spicamusic.common.entity.Album
+import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.BottomBarLayout
 import me.spica27.spicamusic.common.entity.PlayStats
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.SongFilter
 import me.spica27.spicamusic.common.entity.SongSortOrder
+import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
+import me.spica27.spicamusic.feature.library.domain.ArtistUseCases
 import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
@@ -44,6 +48,8 @@ class HomeViewModel(
     private val songRepository: SongUseCases,
     private val playlistRepository: PlaylistUseCases,
     private val historyRepository: PlayHistoryUseCases,
+    albumUseCases: AlbumUseCases,
+    artistUseCases: ArtistUseCases,
     settingsUseCases: SettingsUseCases,
 ) : ViewModel() {
     val bottomBarLayout =
@@ -90,6 +96,20 @@ class HomeViewModel(
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList(),
             )
+
+    /** 曲库页专辑列表：应用按标签建立的专辑，排序与筛选在页面内完成 */
+    val albums: StateFlow<List<Album>> =
+        albumUseCases
+            .getAllAlbumsFlow()
+            .flowOn(Dispatchers.IO)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** 曲库页艺人列表：演唱者与专辑艺人 */
+    val artists: StateFlow<List<Artist>> =
+        artistUseCases
+            .getAllArtistsFlow()
+            .flowOn(Dispatchers.IO)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /**
      * 喜欢的歌曲
@@ -144,7 +164,7 @@ class HomeViewModel(
                         limited.map { playlist ->
                             val id = playlist.playlistId ?: 0L
                             combine(
-                                playlistRepository.getPlaylistCoverAlbumIds(id),
+                                playlistRepository.getPlaylistCoverMediaStoreIds(id),
                                 playlistRepository.getSongSizeInPlaylist(id),
                             ) { albumIds, size ->
                                 PlaylistWithCover(playlist, ImmutableList.copyOf(albumIds), size)

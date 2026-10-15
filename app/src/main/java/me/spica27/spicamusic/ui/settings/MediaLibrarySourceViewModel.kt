@@ -166,6 +166,19 @@ class MediaLibrarySourceViewModel(
         }
     }
 
+    /** 切换艺人拆分：持久化后按已保存的标签重建艺人与专辑关系，不重读文件 */
+    fun setSplitArtistNames(enabled: Boolean) {
+        viewModelScope.launch {
+            if (scanRulesUseCases.getRulesFlow().first().splitArtistNames == enabled) return@launch
+            scanRulesUseCases.setSplitArtistNames(enabled)
+            try {
+                scanService.ensureLibraryUpToDate()
+            } catch (e: Exception) {
+                Timber.w(e, "重建艺人与专辑关系失败")
+            }
+        }
+    }
+
     private suspend fun markScanCompleted() {
         try {
             settingsUseCases.setString(

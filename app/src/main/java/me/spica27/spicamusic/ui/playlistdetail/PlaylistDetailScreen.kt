@@ -216,7 +216,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
     // ── State collection ───────────────────────────────────────────────────
     val currentPlaylist by viewModel.playlist.collectAsStateWithLifecycle()
     val browseSongs = viewModel.browseSongs.collectAsLazyPagingItems()
-    val coverAlbumIds by viewModel.coverAlbumIds.collectAsStateWithLifecycle()
+    val coverMediaStoreIds by viewModel.coverMediaStoreIds.collectAsStateWithLifecycle()
     val songCount by viewModel.songCount.collectAsStateWithLifecycle()
     val isSearchMode by viewModel.isSearchMode.collectAsStateWithLifecycle()
     val isSortMode by viewModel.isSortMode.collectAsStateWithLifecycle()
@@ -542,7 +542,7 @@ fun PlaylistDetailScreen(playlist: Playlist) {
                 },
         ) {
             PlaylistCoverView(
-                albumIds = coverAlbumIds,
+                coverMediaStoreIds = coverMediaStoreIds,
                 modifier = Modifier.fillMaxSize(),
             )
         }

@@ -784,4 +784,21 @@
   <string name="move_up">上移</string>
   <string name="move_down">下移</string>
   <string name="open_player">開啟播放器</string>
+  <string name="various_artists">群星</string>
+  <string name="artist_appearances_title">參與作品</string>
+  <string name="artist_composed_title">作曲作品</string>
+  <string name="artist_written_title">作詞作品</string>
+  <string name="choose_artist">選擇藝人</string>
+  <string name="choose_artist_subtitle">這首歌有多位署名</string>
+  <string name="artist_role_artist">演唱</string>
+  <string name="artist_role_composer">作曲</string>
+  <string name="artist_role_lyricist">作詞</string>
+  <string name="song_track_position">碟號 / 曲號</string>
+  <string name="song_disc_format">第 %1$d 碟</string>
+  <string name="song_track_format">第 %1$d 首</string>
+  <string name="song_year">年份</string>
+  <string name="scanner_rule_split_artists_title">拆分多藝人名稱</string>
+  <string name="scanner_rule_split_artists_desc">把 A/B、A、B、A &amp; B 和 feat. 識別為多位藝人。標籤裡本來就是多個值的不受影響。修改後立即生效，無需重新掃描。</string>
+  <string name="scanner_rule_split_off">不拆分</string>
+  <string name="scanner_rule_split_on">拆分</string>
 </resources>

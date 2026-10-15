@@ -24,18 +24,27 @@ data class Song(
     val duration: Long,
     val sort: Int,
     val mimeType: String,
-    val albumId: Long,
-    val sampleRate: Int, // 采样率
-    val bitRate: Int, // 比特率
-    val channels: Int, // 声道数
-    val digit: Int, // 位深度
+    /** 应用自建专辑的 ID；没有专辑标签的歌曲为 null */
+    val albumId: Long?,
+    val sampleRate: Int, // 采样率，0 表示未知
+    val bitRate: Int, // 比特率，0 表示未知
+    val channels: Int, // 声道数，0 表示未知
+    val digit: Int, // 位深度，0 表示未知
     val isIgnore: Boolean,
     val sortName: String,
     val codec: String,
     val album: String,
     val waveformData: String? = "",
-    /** 专辑内曲目序号（源自 MediaStore.Audio.Media.TRACK，多碟编码为 disc*1000+track），0 表示未知 */
+    /** 碟内曲目序号（来自标签），0 表示未知 */
     val trackNumber: Int = 0,
+    /** 碟号（来自标签），0 表示未知 */
+    val discNumber: Int = 0,
+    /** 发行年份（来自标签），0 表示未知 */
+    val year: Int = 0,
+    /** 作曲者显示串，多位以 " / " 连接 */
+    val composer: String = "",
+    /** 作词者显示串，多位以 " / " 连接 */
+    val lyricist: String = "",
 ) : Parcelable {
 
     private fun formatTime(millis: Long): String {

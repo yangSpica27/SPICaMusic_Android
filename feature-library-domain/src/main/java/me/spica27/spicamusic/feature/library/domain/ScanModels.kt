@@ -45,6 +45,8 @@ data class ScanRules(
     val minDurationMs: Long,
     val minFileSizeBytes: Long,
     val enabledFormatKeys: Set<String>,
+    /** 把单个艺人字符串拆成多位艺人 */
+    val splitArtistNames: Boolean = false,
 ) {
     val minDurationSec: Int get() = (minDurationMs / 1000L).toInt()
 
@@ -58,6 +60,7 @@ data class ScanRules(
                 minDurationMs = StorageScanRules.DEFAULT.minDurationMs,
                 minFileSizeBytes = StorageScanRules.DEFAULT.minFileSizeBytes,
                 enabledFormatKeys = StorageScanRules.DEFAULT.enabledFormatKeys,
+                splitArtistNames = StorageScanRules.DEFAULT.splitArtistNames,
             )
     }
 }
@@ -119,4 +122,5 @@ internal fun StorageScanRules.toDomain(): ScanRules =
         minDurationMs = minDurationMs,
         minFileSizeBytes = minFileSizeBytes,
         enabledFormatKeys = enabledFormatKeys,
+        splitArtistNames = splitArtistNames,
     )

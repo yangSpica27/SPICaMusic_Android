@@ -4,29 +4,17 @@ import android.net.Uri
 import androidx.core.net.toUri
 
 /**
- * 歌曲封面：优先按歌曲本体取封面（audio/media/{id}/albumart 直接读取该文件的内嵌图），
- * 规避 MediaStore 专辑分组不可靠导致的串图 —— 尤其是额外目录扫描注册进 MediaStore 的歌曲：
- * 扁平下载目录里同名/空专辑会被并进同一 albumId，albumart/{albumId} 会显示成别的歌的封面。
- * 没有 mediaStoreId 时回退按专辑取图；两者都无效返回 null（UI 显示占位图）。
+ * 封面一律按歌曲本体取图（audio/media/{id}/albumart 直接读取该文件的内嵌图）。
+ * 专辑、歌手由应用自建，不再使用 MediaStore 的 albumart/{albumId}：
+ * 系统按目录名合并的伪专辑会让那条路径显示成别的歌的封面。
  */
-fun Song.getCoverUri(): Uri? =
-    when {
-        mediaStoreId > 0 -> "content://media/external/audio/media/$mediaStoreId/albumart".toUri()
-        albumId > 0 -> "content://media/external/audio/albumart/$albumId".toUri()
-        else -> null
-    }
+private fun songCoverUri(mediaStoreId: Long): Uri? =
+    if (mediaStoreId > 0) "content://media/external/audio/media/$mediaStoreId/albumart".toUri() else null
 
-/** 歌曲所属 MediaStore 专辑的封面：本体无内嵌封面时的兜底图源 */
-fun Song.getAlbumCoverUri(): Uri? =
-    if (albumId > 0) "content://media/external/audio/albumart/$albumId".toUri() else null
+fun Song.getCoverUri(): Uri? = songCoverUri(mediaStoreId)
 
-fun Album.getCoverUri(): Uri? =
-    id.toLongOrNull()?.takeIf { it > 0 }?.let { "content://media/external/audio/albumart/$it".toUri() }
+/** 专辑封面：取代表曲的封面 */
+fun Album.getCoverUri(): Uri? = songCoverUri(coverMediaStoreId)
 
-/** 歌手封面：同 [Song.getCoverUri]，优先按代表曲本体取图，规避伪专辑串图 */
-fun Artist.getCoverUri(): Uri? =
-    when {
-        coverMediaStoreId > 0 -> "content://media/external/audio/media/$coverMediaStoreId/albumart".toUri()
-        coverAlbumId > 0 -> "content://media/external/audio/albumart/$coverAlbumId".toUri()
-        else -> null
-    }
+/** 歌手封面：取代表曲的封面 */
+fun Artist.getCoverUri(): Uri? = songCoverUri(coverMediaStoreId)

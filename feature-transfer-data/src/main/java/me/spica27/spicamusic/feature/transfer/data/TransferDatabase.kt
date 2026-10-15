@@ -37,7 +37,7 @@ internal suspend fun AppDatabase.readTransferSnapshot(assignIdentities: Boolean 
         if (assignIdentities) {
             val existing = identities.map { it.kind to it.localId }.toSet()
             val missing =
-                songs.map { TRACK_IDENTITY to requireNotNull(it.songId) } +
+                songs.map { TRACK_IDENTITY to it.songId } +
                     playlists.map { PLAYLIST_IDENTITY to requireNotNull(it.playlistId) }
             missing.filterNot { it in existing }.forEach { (kind, localId) ->
                 val identity = TransferIdentityEntity(kind, UUID.randomUUID().toString(), localId)

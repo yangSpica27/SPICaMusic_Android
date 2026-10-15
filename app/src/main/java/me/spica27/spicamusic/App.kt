@@ -105,10 +105,10 @@ class App : Application() {
                 .onFailure { Timber.w(it, "播放历史裁剪失败") }
         }
 
-        // 扫描 schema 版本升级时后台静默补扫（如新增 trackNumber 字段），无权限/版本最新则内部直接返回
+        // 曲库检查：数据库升级后的重建、标签提取版本升级、解释规则变化时后台处理；无权限或已是最新则直接返回
         appScope.launch {
-            runCatching { musicScanService.syncIfSchemaVersionChanged() }
-                .onFailure { Timber.w(it, "扫描 schema 版本补扫失败") }
+            runCatching { musicScanService.ensureLibraryUpToDate() }
+                .onFailure { Timber.w(it, "曲库检查失败") }
         }
 
         // 启动 MediaStore 变更监听

@@ -40,7 +40,8 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
  * 扫描规则配置对话框（与 ScanFoldersScene 同一套呈现），
- * 配置最短时长 / 最小文件体积 / 收录格式，改动即时持久化，下次扫描生效。
+ * 配置最短时长 / 最小文件体积 / 收录格式，改动即时持久化，下次扫描生效；
+ * 艺人拆分只影响标签解释，切换后立即重建艺人与专辑关系。
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -159,6 +160,27 @@ fun ScanRulesDialogContent() {
                                 onClick = { viewModel.toggleFormat(format.key) },
                             )
                         }
+                    }
+                }
+
+                ScanRuleSection(
+                    title = stringResource(R.string.scanner_rule_split_artists_title),
+                    description = stringResource(R.string.scanner_rule_split_artists_desc),
+                ) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+                    ) {
+                        ScanRuleChip(
+                            label = stringResource(R.string.scanner_rule_split_off),
+                            selected = !rules.splitArtistNames,
+                            onClick = { viewModel.setSplitArtistNames(false) },
+                        )
+                        ScanRuleChip(
+                            label = stringResource(R.string.scanner_rule_split_on),
+                            selected = rules.splitArtistNames,
+                            onClick = { viewModel.setSplitArtistNames(true) },
+                        )
                     }
                 }
             }

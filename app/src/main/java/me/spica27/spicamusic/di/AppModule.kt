@@ -8,6 +8,7 @@ import me.spica27.spicamusic.audioeffects.AudioEffectsApplier
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
+import me.spica27.spicamusic.feature.library.domain.ArtistUseCases
 import me.spica27.spicamusic.feature.library.domain.MusicScanUseCases
 import me.spica27.spicamusic.feature.library.domain.PlayHistoryUseCases
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
@@ -128,6 +129,8 @@ object AppModule {
                     songRepository = get<SongUseCases>(),
                     playlistRepository = get<PlaylistUseCases>(),
                     historyRepository = get<PlayHistoryUseCases>(),
+                    albumUseCases = get<AlbumUseCases>(),
+                    artistUseCases = get<ArtistUseCases>(),
                     settingsUseCases = get<SettingsUseCases>(),
                 )
             }
@@ -195,7 +198,7 @@ object AppModule {
             // 专辑详情页面 ViewModel
             viewModel { parameters ->
                 AlbumDetailViewModel(
-                    albumId = parameters.get<String>(),
+                    albumId = parameters.get<Long>(),
                     albumRepository = get<AlbumUseCases>(),
                     playlistRepository = get<PlaylistUseCases>(),
                     player = get<PlayerUseCases>(),
@@ -209,6 +212,7 @@ object AppModule {
                     songRepository = get<SongUseCases>(),
                     playlistRepository = get<PlaylistUseCases>(),
                     albumRepository = get<AlbumUseCases>(),
+                    artistRepository = get<ArtistUseCases>(),
                     player = get<PlayerUseCases>(),
                 )
             }
@@ -230,15 +234,15 @@ object AppModule {
             // 歌手页面 ViewModel
             viewModel {
                 ArtistViewModel(
-                    songUseCases = get<SongUseCases>(),
+                    artistUseCases = get<ArtistUseCases>(),
                 )
             }
 
             // 歌手详情页面 ViewModel
             viewModel { parameters ->
                 ArtistDetailViewModel(
-                    artistName = parameters.get<String>(),
-                    songUseCases = get<SongUseCases>(),
+                    artistId = parameters.get<Long>(),
+                    artistUseCases = get<ArtistUseCases>(),
                     albumUseCases = get<AlbumUseCases>(),
                     player = get<PlayerUseCases>(),
                 )

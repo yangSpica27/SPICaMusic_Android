@@ -133,7 +133,6 @@ import me.spica27.spicamusic.artwork.artwork
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.artistOf
 import me.spica27.spicamusic.ui.dialog.SortMenuOption
 import me.spica27.spicamusic.ui.home.HomeViewModel
 import me.spica27.spicamusic.ui.home.player_bar.GlassNavigationIndicatorState
@@ -156,8 +155,10 @@ import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.AnimatedCursorTextField
 import me.spica27.spicamusic.ui.widget.AudioCover
+import me.spica27.spicamusic.ui.widget.artistDisplay
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.combinedClickHighlight
+import me.spica27.spicamusic.ui.widget.displayName
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -316,17 +317,9 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
     val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
     val playingMediaId = currentMediaItem?.mediaId
 
-    val unknownAlbum = stringResource(R.string.unknown_album)
-    val unknownArtist = stringResource(R.string.unknown_artist)
-
-    val albums =
-        remember(allSongs, unknownAlbum, unknownArtist) {
-            allSongs.toAlbums(unknownAlbum = unknownAlbum, unknownArtist = unknownArtist)
-        }
-    val artists =
-        remember(allSongs, unknownArtist) {
-            allSongs.toArtists(unknownArtist = unknownArtist)
-        }
+    // 专辑与艺人由应用按标签建立，同一位艺人的不同写法、多艺人署名都已合并
+    val albums by homeViewModel.albums.collectAsStateWithLifecycle()
+    val artists by homeViewModel.artists.collectAsStateWithLifecycle()
 
     var selectedTab by rememberSaveable { mutableStateOf(MusicBrowserTab.Songs) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -694,7 +687,7 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
                     } else {
                         itemsIndexed(
                             items = filteredArtists,
-                            key = { _, artist -> "artist:${artist.name}" },
+                            key = { _, artist -> "artist:${artist.artistId}" },
                             span = { _, _ -> GridItemSpan(maxLineSpan) },
                             contentType = { _, _ -> "artist" },
                         ) { index, artist ->
@@ -1248,7 +1241,10 @@ private fun MusicSongRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${song.artist} · ${song.album}",
+                text =
+                    listOf(song.artist.ifBlank { stringResource(R.string.unknown_artist) }, song.album)
+                        .filter(String::isNotBlank)
+                        .joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
                 maxLines = 1,
@@ -1324,7 +1320,7 @@ private fun MusicAlbumCard(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${album.artist} · ${stringResource(R.string.songs_count_format, album.numberOfSongs)}",
+                text = "${album.artistDisplay()} · ${stringResource(R.string.songs_count_format, album.numberOfSongs)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -1360,7 +1356,7 @@ private fun MusicArtistRow(
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = artist.name,
+                text = artist.displayName(),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -1515,26 +1511,6 @@ private fun MusicEmptyState(
         }
     }
 }
-
-private fun List<Song>.toAlbums(
-    unknownAlbum: String,
-    unknownArtist: String,
-): List<Album> =
-    groupBy { it.albumId }
-        .map { (albumId, songs) ->
-            val first = songs.first()
-            Album(
-                id = albumId.toString(),
-                title = first.album.ifBlank { unknownAlbum },
-                artist = first.artist.ifBlank { unknownArtist },
-                numberOfSongs = songs.size,
-            )
-        }.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
-
-private fun List<Song>.toArtists(unknownArtist: String): List<Artist> =
-    groupBy { it.artist.ifBlank { unknownArtist } }
-        .map { (name, songs) -> artistOf(name, songs) }
-        .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
 private fun List<Song>.filterSongsBy(query: String): List<Song> {
     val normalized = query.trim()

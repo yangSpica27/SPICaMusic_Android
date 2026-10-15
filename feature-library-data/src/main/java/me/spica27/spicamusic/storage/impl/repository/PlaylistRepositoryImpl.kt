@@ -196,8 +196,8 @@ class PlaylistRepositoryImpl(
             }
         }
 
-    override fun getPlaylistCoverAlbumIds(playlistId: Long): Flow<List<Long>> =
-        playlistDao.getCoverAlbumIds(playlistId)
+    override fun getPlaylistCoverMediaStoreIds(playlistId: Long): Flow<List<Long>> =
+        playlistDao.getCoverMediaStoreIds(playlistId)
 
     override fun getSongSizeInPlaylist(playlistId: Long): Flow<Int> {
         return playlistDao.getSongSizeByPlaylistId(playlistId)
