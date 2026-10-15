@@ -7,6 +7,7 @@ val libraryDomainModule =
         single { SongUseCases(get()) }
         single { PlaylistUseCases(get()) }
         single { AlbumUseCases(get()) }
+        single { ArtistUseCases(get()) }
         single { PlayHistoryUseCases(get()) }
         single { MusicScanUseCases(get()) }
         single { ScanFolderUseCases(get()) }

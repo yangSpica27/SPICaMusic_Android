@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.common.entity.SongFilter
 import me.spica27.spicamusic.common.entity.SongGroup
@@ -192,7 +191,7 @@ class SongRepositoryImpl(
         }
         filter.albums?.let { albumList ->
             if (albumList.isNotEmpty()) {
-                result = result.filter { it.albumId in albumList }
+                result = result.filter { song -> song.albumId?.let { it in albumList } == true }
             }
         }
         filter.mimeTypes?.let { mimeList ->
@@ -355,27 +354,6 @@ class SongRepositoryImpl(
     override suspend fun getLikeMediaStoreIds(keyword: String?): List<Long> =
         withContext(Dispatchers.IO) {
             songDao.getLikeMediaStoreIds(keyword)
-        }
-
-    // ===== 艺术家分页 API 实现 =====
-
-    override fun getArtistsPagingFlow(keyword: String?): Flow<PagingData<Artist>> =
-        Pager(
-            config = PagingConfig(
-                pageSize = PAGE_SIZE,
-                prefetchDistance = PREFETCH_DISTANCE,
-                enablePlaceholders = false,
-            ),
-            pagingSourceFactory = { songDao.getArtistsPaging(keyword) },
-        ).flow.map { pagingData ->
-            pagingData.map {
-                Artist(
-                    name = it.name,
-                    songCount = it.songCount,
-                    coverAlbumId = it.coverAlbumId,
-                    coverMediaStoreId = it.coverMediaStoreId,
-                )
-            }
         }
 
     override suspend fun updateSongWaveform(mediaId: Long, waveformData: String) = withContext(Dispatchers.IO) {

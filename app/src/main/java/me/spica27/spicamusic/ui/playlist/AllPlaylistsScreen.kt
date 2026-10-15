@@ -155,7 +155,7 @@ private fun AllPlaylistCard(
                     .fillMaxWidth()
                     .aspectRatio(1f)
                     .clip(Shapes.ExtraLargeCornerBasedShape),
-            albumIds = item.coverAlbumIds,
+            coverMediaStoreIds = item.coverMediaStoreIds,
         )
         Text(
             text = item.playlist.playlistName,

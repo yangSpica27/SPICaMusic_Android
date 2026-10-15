@@ -10,11 +10,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
-import me.spica27.spicamusic.feature.library.domain.SongUseCases
+import me.spica27.spicamusic.feature.library.domain.ArtistUseCases
 
 @Stable
 class ArtistViewModel(
-    private val songUseCases: SongUseCases,
+    private val artistUseCases: ArtistUseCases,
 ) : ViewModel() {
     private val _searchKeyword = MutableStateFlow("")
 
@@ -25,7 +25,7 @@ class ArtistViewModel(
         _searchKeyword
             .debounce(500)
             .flatMapLatest { keyword ->
-                songUseCases.getArtistsPagingFlow(keyword.ifEmpty { null })
+                artistUseCases.getArtistsPagingFlow(keyword.ifEmpty { null })
             }.cachedIn(viewModelScope)
 
     fun updateSearchKeyword(keyword: String) {

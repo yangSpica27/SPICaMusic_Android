@@ -22,13 +22,19 @@ import me.spica27.spicamusic.storage.api.ILyricSourceReader
 import me.spica27.spicamusic.storage.api.SelectedLyricsResolver
 import me.spica27.spicamusic.storage.api.StoredLyrics
 import me.spica27.spicamusic.storage.impl.db.AppDatabase
-import me.spica27.spicamusic.storage.impl.entity.AlbumEntity
 import me.spica27.spicamusic.storage.impl.entity.ExtraInfoEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistSongCrossRefEntity
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
+import me.spica27.spicamusic.storage.impl.entity.TagStatus
 import me.spica27.spicamusic.storage.impl.entity.TransferIdentityEntity
 import me.spica27.spicamusic.storage.impl.entity.TransferReceiptEntity
+import me.spica27.spicamusic.storage.impl.index.IndexPolicy
+import me.spica27.spicamusic.storage.impl.scanner.AndroidIndexText
+import me.spica27.spicamusic.storage.impl.scanner.LibraryWriter
+import me.spica27.spicamusic.storage.impl.scanner.MediaFileRow
+import me.spica27.spicamusic.storage.impl.scanner.SongRowBuilder
+import me.spica27.spicamusic.storage.impl.scanner.TagExtractor
 import java.io.File
 import java.util.Locale
 import java.util.zip.ZipFile
@@ -64,7 +70,7 @@ internal class LibraryPackageImporter(
         var conflicts = 0
 
         suspend fun hash(song: SongEntity): String? {
-            val id = requireNotNull(song.songId)
+            val id = song.songId
             if (hashes.containsKey(id)) return hashes[id]
             val result =
                 try {
@@ -86,10 +92,10 @@ internal class LibraryPackageImporter(
                 val asset = assets.getValue(track.audio)
                 val identitySong = identities[track.id]?.localId?.let(songsById::get)
                 val candidates = (listOfNotNull(identitySong) + bySize[asset.size].orEmpty()).distinctBy { it.songId }
-                val match = candidates.firstOrNull { requireNotNull(it.songId) !in usedSongs && hash(it) == asset.sha256 }
+                val match = candidates.firstOrNull { it.songId !in usedSongs && hash(it) == asset.sha256 }
                 if (match != null) {
                     matches[track.id] = match
-                    usedSongs.add(requireNotNull(match.songId))
+                    usedSongs.add(match.songId)
                     val lyrics =
                         SelectedLyricsResolver.resolve(match.mediaStoreId, local.lyrics[match.mediaStoreId]?.stored()) {
                             lyricReader.readEmbedded(match.mediaStoreId)
@@ -207,13 +213,13 @@ internal class LibraryPackageImporter(
                             TransferIdentityEntity(
                                 TRACK_IDENTITY,
                                 track.id,
-                                requireNotNull(song.songId),
+                                song.songId,
                                 PackageJson.encodeToString(track.sources),
                             ),
                         )
                         // 明确导入的歌曲不受本机扫描筛选规则影响。
-                        dao.putIdentity(TransferIdentityEntity("imported_track", track.id, requireNotNull(song.songId)))
-                        if (track.favorite && !song.like) database.songDao().likeSongs(requireNotNull(song.songId), true)
+                        if (!song.isImported) database.songDao().markImported(song.songId)
+                        if (track.favorite && !song.like) database.songDao().likeSongs(song.songId, true)
                         val existing = current.lyrics[song.mediaStoreId]
                         val localSelection =
                             if (existing?.stored().hasLyricsSelection()) {
@@ -268,13 +274,12 @@ internal class LibraryPackageImporter(
                         )
                         database.playlistDao().setNeedUpdate(playlistId)
                     }
-                    val allSongs = dao.songs()
-                    val affectedAlbums = newSongs.values.map { it.albumId }.toSet()
-                    database.albumDao().insertAll(
-                        allSongs.filter { it.albumId in affectedAlbums }.groupBy { it.albumId }.map { (id, songs) ->
-                            AlbumEntity(id.toString(), songs.first().album, songs.first().artist, numberOfSongs = songs.size)
-                        },
-                    )
+                    // 新歌按与扫描相同的规则归入艺人和专辑；导入拿不到设置，沿用上次重建的规则，
+                    // 与当前设置不同时下次启动检查会再重建一次
+                    if (newSongs.isNotEmpty()) {
+                        val policy = database.libraryDao().state()?.indexPolicy?.let(IndexPolicy::parse) ?: IndexPolicy.DEFAULT
+                        LibraryWriter(database).reindexInTransaction(policy)
+                    }
                     dao.putReceipt(TransferReceiptEntity(taskId, library.manifest.archiveId, library.tracks.size, library.playlists.size))
                 }
             }
@@ -306,49 +311,44 @@ internal class LibraryPackageImporter(
         File(context.filesDir, "library-artwork/$taskId").deleteRecursively()
     }
 
+    /** 写入完成的音频按与扫描相同的方式读取标签；读取失败时标题、艺人、专辑用包内记录 */
     private fun restoredSong(
         uri: Uri,
         track: PackageTrack,
         size: Long,
     ): SongEntity {
         var path = ""
-        var albumId = 0L
         var modified = 0L
         resolver
             .query(
                 uri,
-                arrayOf(MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.ALBUM_ID, MediaStore.Audio.Media.DATE_MODIFIED),
+                arrayOf(MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.DATE_MODIFIED),
                 null,
                 null,
                 null,
             )?.use {
                 check(it.moveToFirst()) { "恢复的音频无法访问" }
                 path = it.getString(0).orEmpty()
-                albumId = it.getLong(1)
-                modified = it.getLong(2)
+                modified = it.getLong(1)
             } ?: error("无法读取恢复的音频信息")
-        return SongEntity(
-            mediaStoreId = ContentUris.parseId(uri),
-            path = path,
-            displayName = track.title,
-            artist = track.artist,
-            size = size,
-            like = track.favorite,
-            duration = track.durationMs,
-            sort = 0,
-            sortName = track.title.uppercase(Locale.ROOT),
-            mimeType = track.mimeType,
-            albumId = albumId,
-            album = track.album,
-            sampleRate = track.sampleRate,
-            bitRate = track.bitRate,
-            channels = track.channels,
-            digit = track.bitDepth,
-            isIgnore = track.ignored,
-            dateModified = modified,
-            codec = track.codec,
-            trackNumber = track.trackNumber,
-        )
+        val file =
+            MediaFileRow(
+                mediaStoreId = ContentUris.parseId(uri),
+                path = path,
+                fileName = path.substringAfterLast('/').ifEmpty { track.fileName },
+                size = size,
+                mimeType = track.mimeType,
+                dateModified = modified,
+                durationMs = track.durationMs,
+                title = track.title,
+                artist = track.artist,
+                bitRate = track.bitRate,
+            )
+        val song =
+            SongRowBuilder.build(file, TagExtractor(resolver).extract(uri), existing = null, text = AndroidIndexText.instance, isImported = true)
+        // 扫描不回退 MediaStore 专辑名（会是目录名），包内专辑名来自原设备的标签，可以沿用
+        val album = if (song.tagStatus == TagStatus.FALLBACK) track.album else song.album
+        return song.copy(album = album, like = track.favorite, isIgnore = track.ignored)
     }
 
     private fun taskFolder(taskId: String): String {

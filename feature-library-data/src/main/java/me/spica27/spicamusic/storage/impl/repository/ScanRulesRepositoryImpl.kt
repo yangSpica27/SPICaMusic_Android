@@ -21,11 +21,13 @@ class ScanRulesRepositoryImpl(
             preferencesManager.getString(PreferencesManager.Keys.SCAN_MIN_DURATION_SEC),
             preferencesManager.getString(PreferencesManager.Keys.SCAN_MIN_FILE_SIZE_KB),
             preferencesManager.getString(PreferencesManager.Keys.SCAN_ENABLED_FORMATS),
-        ) { minDurationSec, minFileSizeKb, enabledFormats ->
+            preferencesManager.getBoolean(PreferencesManager.Keys.ARTIST_SPLIT_ENABLED, false),
+        ) { minDurationSec, minFileSizeKb, enabledFormats, splitArtistNames ->
             ScanRules(
                 minDurationMs = parseMinDurationSec(minDurationSec) * 1000L,
                 minFileSizeBytes = (minFileSizeKb.toLongOrNull()?.coerceAtLeast(0L) ?: 0L) * 1024L,
                 enabledFormatKeys = parseFormatKeys(enabledFormats),
+                splitArtistNames = splitArtistNames,
             )
         }.distinctUntilChanged()
 
@@ -51,6 +53,10 @@ class ScanRulesRepositoryImpl(
             PreferencesManager.Keys.SCAN_ENABLED_FORMATS,
             sanitized.joinToString(","),
         )
+    }
+
+    override suspend fun setSplitArtistNames(enabled: Boolean) {
+        preferencesManager.setBoolean(PreferencesManager.Keys.ARTIST_SPLIT_ENABLED, enabled)
     }
 
     private fun parseMinDurationSec(raw: String): Long =

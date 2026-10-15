@@ -26,7 +26,6 @@ fun Song.toMediaItem(): MediaItem =
                 .setSubtitle(artist)
                 .setExtras(Bundle().apply {
                     putLong("mediaStoreId", mediaStoreId)
-                    putLong("albumId", albumId)
                     putString("path", path)
                     putLong("size", size)
                     putInt("sampleRate", sampleRate)

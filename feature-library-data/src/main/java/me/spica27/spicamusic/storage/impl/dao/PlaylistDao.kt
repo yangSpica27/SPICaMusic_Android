@@ -104,17 +104,22 @@ interface PlaylistDao {
     fun getSongSizeByPlaylistIdOnce(playlistId: Long): Int
 
     /**
-     * 获取歌单前 5 个不同专辑 ID，用于组合封面渲染。
-     * 按歌曲加入时间倒序取最新的 5 个不同 albumId。
+     * 歌单组合封面：取最近加入的 5 个不同专辑的代表曲 mediaStoreId。
+     * 没有专辑的歌按 -songId 各算一组（负数不会与 albumId 冲突）。
+     * 单个 MAX() 聚合时，SQLite 保证裸列 mediaStoreId 来自取得最大值的那一行。
      */
     @Query(
-        """SELECT DISTINCT s.albumId FROM Song AS s
-           JOIN PlaylistSongCrossRef AS psc ON s.mediaStoreId = psc.mediaId
-           WHERE psc.playlistId = :playlistId
-           ORDER BY psc.sortOrder DESC, psc.insertTime DESC, psc.mediaId DESC
+        """SELECT c.mediaStoreId FROM (
+               SELECT s.mediaStoreId, MAX(psc.sortOrder) AS latestOrder
+               FROM Song AS s
+               JOIN PlaylistSongCrossRef AS psc ON psc.mediaId = s.mediaStoreId
+               WHERE psc.playlistId = :playlistId
+               GROUP BY COALESCE(s.albumId, -s.songId)
+           ) AS c
+           ORDER BY c.latestOrder DESC
            LIMIT 5"""
     )
-    fun getCoverAlbumIds(playlistId: Long): Flow<List<Long>>
+    fun getCoverMediaStoreIds(playlistId: Long): Flow<List<Long>>
 
     /** 在指定歌单内按关键字（曲名 / 艺术家）过滤歌曲，按自定义顺序 */
     @Query(

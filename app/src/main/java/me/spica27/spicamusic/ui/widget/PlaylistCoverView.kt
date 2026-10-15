@@ -14,7 +14,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import me.spica27.spicamusic.artwork.MusicArtwork
-import me.spica27.spicamusic.artwork.albumArtwork
+import me.spica27.spicamusic.artwork.songArtwork
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -32,14 +32,14 @@ private const val COMBINATION_FOCUS_OFFSET_Y = -0.21f
  *
  * 使用方式（歌单列表 item 示例）：
  * ```kotlin
- * val coverIds by viewModel.getPlaylistCoverAlbumIds(playlist.playlistId!!).collectAsStateWithLifecycle()
- * PlaylistCoverView(albumIds = coverIds, modifier = Modifier.size(56.dp))
+ * val coverIds by viewModel.getPlaylistCoverMediaStoreIds(playlist.playlistId!!).collectAsStateWithLifecycle()
+ * PlaylistCoverView(coverMediaStoreIds = coverIds, modifier = Modifier.size(56.dp))
  * ```
- * @param albumIds   最多 5 个专辑 ID，长度决定渲染策略（0/1-4/5）
+ * @param coverMediaStoreIds 最多 5 首代表曲（各来自不同专辑），长度决定渲染策略（0/1-4/5）
  */
 @Composable
 fun PlaylistCoverView(
-    albumIds: List<Long>,
+    coverMediaStoreIds: List<Long>,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
@@ -50,12 +50,12 @@ fun PlaylistCoverView(
             delayMillis = 335,
         ) {
             when {
-                albumIds.isEmpty() -> DefaultMusicCover(Modifier.fillMaxSize())
-                albumIds.size < COMBINATION_COVER_COUNT ->
-                    SingleAlbumCover(albumIds.first(), Modifier.fillMaxSize())
+                coverMediaStoreIds.isEmpty() -> DefaultMusicCover(Modifier.fillMaxSize())
+                coverMediaStoreIds.size < COMBINATION_COVER_COUNT ->
+                    SingleAlbumCover(coverMediaStoreIds.first(), Modifier.fillMaxSize())
                 else ->
                     FinalPerfectCollage(
-                        covers = albumIds.take(COMBINATION_COVER_COUNT).map(::albumArtwork),
+                        covers = coverMediaStoreIds.take(COMBINATION_COVER_COUNT).map(::songArtwork),
                         modifier = Modifier.fillMaxSize(),
                     )
             }
@@ -67,14 +67,14 @@ fun PlaylistCoverView(
 // 内部渲染分支
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** 歌单少于 5 首时，直接显示第一首的专辑封面 */
+/** 歌单少于 5 个专辑时，直接显示最近加入的那首的封面 */
 @Composable
 private fun SingleAlbumCover(
-    albumId: Long,
+    mediaStoreId: Long,
     modifier: Modifier,
 ) {
     PlaylistCoverImage(
-        artwork = albumArtwork(albumId),
+        artwork = songArtwork(mediaStoreId),
         modifier = modifier,
     )
 }

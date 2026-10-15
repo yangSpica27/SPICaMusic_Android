@@ -29,13 +29,16 @@ enum class ScanFormat(
 }
 
 /**
- * 扫描规则：决定哪些音频会被收录进曲库。
- * 对全量扫描、MediaStore 观察者触发的局部同步和额外目录扫描统一生效。
+ * 扫描规则：决定哪些音频会被收录进曲库，以及如何解释艺人标签。
+ * 收录规则对全量扫描、MediaStore 观察者触发的局部同步和额外目录扫描统一生效；
+ * [splitArtistNames] 变化后只重建艺人与专辑关系，不重读文件。
  */
 data class ScanRules(
     val minDurationMs: Long,
     val minFileSizeBytes: Long,
     val enabledFormatKeys: Set<String>,
+    /** 把单个艺人字符串按 / 、 ; & feat. 等拆成多位艺人；标签里本来就是多个值的不受影响 */
+    val splitArtistNames: Boolean = false,
 ) {
     fun allowedMimeTypes(): Set<String> =
         ScanFormat.fromKeys(enabledFormatKeys).flatMapTo(mutableSetOf()) { it.mimeTypes }
@@ -65,4 +68,6 @@ interface IScanRulesRepository {
     suspend fun setMinFileSizeKb(kb: Int)
 
     suspend fun setEnabledFormats(keys: Set<String>)
+
+    suspend fun setSplitArtistNames(enabled: Boolean)
 }

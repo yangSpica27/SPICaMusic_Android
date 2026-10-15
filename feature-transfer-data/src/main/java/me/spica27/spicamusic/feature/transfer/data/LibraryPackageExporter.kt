@@ -93,7 +93,7 @@ internal class LibraryPackageExporter(
                         .flatMap { PackageJson.decodeFromString<List<SourceReference>>(it.sourcesJson) }
                         .distinct()
                 PackageTrack(
-                    id = snapshot.id(TRACK_IDENTITY, requireNotNull(song.songId)),
+                    id = snapshot.id(TRACK_IDENTITY, song.songId),
                     title = song.displayName,
                     artist = song.artist,
                     album = song.album,
@@ -113,7 +113,7 @@ internal class LibraryPackageExporter(
                     sources = sources,
                 )
             }
-        val trackIds = snapshot.songs.associate { it.mediaStoreId to snapshot.id(TRACK_IDENTITY, requireNotNull(it.songId)) }
+        val trackIds = snapshot.songs.associate { it.mediaStoreId to snapshot.id(TRACK_IDENTITY, it.songId) }
         val entriesByPlaylist = snapshot.entries.groupBy { it.playlistId }
         val playlists =
             snapshot.playlists.map { playlist ->

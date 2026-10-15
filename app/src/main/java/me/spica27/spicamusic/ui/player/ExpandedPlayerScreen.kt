@@ -104,18 +104,17 @@ import kotlinx.coroutines.withContext
 import me.spica27.spicamusic.App
 import me.spica27.spicamusic.R
 import me.spica27.spicamusic.artwork.artwork
-import me.spica27.spicamusic.common.entity.Artist
 import me.spica27.spicamusic.common.entity.DynamicCoverType
 import me.spica27.spicamusic.common.entity.ProgressBarStyle
-import me.spica27.spicamusic.common.entity.SongFilter
-import me.spica27.spicamusic.common.entity.artistOf
 import me.spica27.spicamusic.core.preferences.PreferencesManager
+import me.spica27.spicamusic.feature.library.domain.ArtistUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.player.api.PlayMode
 import me.spica27.spicamusic.player.api.SleepTimerState
+import me.spica27.spicamusic.ui.dialog.artistRouteFor
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
-import me.spica27.spicamusic.ui.navigation.ArtistDetailRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
+import me.spica27.spicamusic.ui.navigation.Route
 import me.spica27.spicamusic.ui.navigation.SleepTimerRoute
 import me.spica27.spicamusic.ui.player.pages.CurrPlaylistPage
 import me.spica27.spicamusic.ui.theme.EaseOutEmphasized
@@ -472,9 +471,7 @@ fun ExpandedPlayerScreen(
                                         onPlayModeClick = { viewModel.togglePlayMode() },
                                         onFavoriteClick = { viewModel.toggleLikeCurrentSong() },
                                         onSleepTimerClick = { backStack.add(SleepTimerRoute) },
-                                        onArtistClick = { artist ->
-                                            backStack.add(ArtistDetailRoute(artist))
-                                        },
+                                        onArtistClick = { route -> backStack.add(route) },
                                         onLyricsClick = { playerSurface = PlayerSurface.Lyrics },
                                         sleepTimer = sleepTimer,
                                         onPlaylistClick = {
@@ -609,7 +606,8 @@ private fun PlayerPage(
     onPlayModeClick: () -> Unit,
     onFavoriteClick: () -> Unit,
     onSleepTimerClick: () -> Unit,
-    onArtistClick: (Artist) -> Unit,
+    /** 一位艺人时为详情页路由，多位署名时为选择框路由 */
+    onArtistClick: (Route) -> Unit,
     onLyricsClick: () -> Unit,
     onPlaylistClick: () -> Unit,
     sleepTimer: SleepTimerState?,
@@ -637,6 +635,7 @@ private fun PlayerPage(
             ProgressBarStyle.fromString(progressBarStyleValue)
         }
     val songUseCases = koinInject<SongUseCases>()
+    val artistUseCases = koinInject<ArtistUseCases>()
     val scope = rememberCoroutineScope()
     var openingArtist by remember { mutableStateOf(false) }
 
@@ -722,14 +721,16 @@ private fun PlayerPage(
             artist = artist,
             onArtistClick =
                 if (artistName != null && !openingArtist) {
-                    { clickedArtist ->
-                        openingArtist = true
-                        scope.launch {
-                            try {
-                                val songs = songUseCases.getSongs(filter = SongFilter(artists = listOf(clickedArtist)))
-                                onArtistClick(artistOf(clickedArtist, songs))
-                            } finally {
-                                openingArtist = false
+                    { _ ->
+                        val mediaStoreId = currentMediaItem.invoke()?.mediaId?.toLongOrNull()
+                        if (mediaStoreId != null) {
+                            openingArtist = true
+                            scope.launch {
+                                try {
+                                    artistRouteFor(artistUseCases.getSongCredits(mediaStoreId))?.let(onArtistClick)
+                                } finally {
+                                    openingArtist = false
+                                }
                             }
                         }
                     }

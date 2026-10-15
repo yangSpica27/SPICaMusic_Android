@@ -86,6 +86,7 @@ import me.spica27.spicamusic.ui.theme.Spacing
 import me.spica27.spicamusic.ui.theme.entrance
 import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.OtherAlbumsShelf
+import me.spica27.spicamusic.ui.widget.artistDisplay
 import me.spica27.spicamusic.ui.widget.clickHighlight
 import me.spica27.spicamusic.ui.widget.rememberIOSOverScrollEffect
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
@@ -333,7 +334,7 @@ fun AlbumDetailScreen(album: Album) {
             if (otherAlbums.isNotEmpty()) {
                 item(key = "other_albums", contentType = "other_albums") {
                     OtherAlbumsShelf(
-                        artistName = album.artist,
+                        artistName = album.artistDisplay(),
                         albums = otherAlbums,
                         onAlbumClick = { backStack.add(AlbumDetailRoute(it)) },
                         modifier = Modifier.padding(top = Spacing.ExtraLarge),
@@ -432,7 +433,7 @@ private fun AlbumHeader(
         )
         Spacer(Modifier.height(Spacing.ExtraSmall))
         Text(
-            text = album.artist.ifBlank { stringResource(R.string.unknown_artist) },
+            text = album.artistDisplay(),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = onDominantColor,

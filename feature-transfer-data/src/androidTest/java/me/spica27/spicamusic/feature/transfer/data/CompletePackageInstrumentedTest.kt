@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.spica27.spicamusic.core.preferences.PreferencesManager
 import me.spica27.spicamusic.feature.transfer.domain.LibraryPackage
 import me.spica27.spicamusic.feature.transfer.domain.PackageJson
 import me.spica27.spicamusic.feature.transfer.domain.TransferState
@@ -30,9 +29,11 @@ import me.spica27.spicamusic.storage.impl.entity.ExtraInfoEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistEntity
 import me.spica27.spicamusic.storage.impl.entity.PlaylistSongCrossRefEntity
 import me.spica27.spicamusic.storage.impl.entity.SongEntity
+import me.spica27.spicamusic.storage.impl.entity.TagStatus
 import me.spica27.spicamusic.storage.impl.repository.LyricRepositoryImpl
 import me.spica27.spicamusic.storage.impl.repository.ScanFolderRepositoryImpl
 import me.spica27.spicamusic.storage.impl.scanner.MusicScanService
+import me.spica27.spicamusic.storage.impl.scanner.SongRowBuilder
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -139,13 +140,13 @@ class CompletePackageInstrumentedTest {
             val existing = database.lyricDao().getLyricWithMediaId(favorite.mediaStoreId)!!
             database.lyricDao().insertLyric(existing.copy(lyrics = "本地新歌词", delay = 500))
             val other = database.transferDao().songs().first { !it.like }
-            database.songDao().likeSongs(other.songId!!, true)
+            database.songDao().likeSongs(other.songId, true)
             val importer = LibraryPackageImporter(context, database, reader)
             val keep = importer.prepare(file) {}
             assertEquals(1, keep.preview.lyricConflicts)
             importer.commit(newTask(), file, keep, false) {}
             assertEquals("本地新歌词", database.lyricDao().getLyricWithMediaId(favorite.mediaStoreId)!!.lyrics)
-            assertTrue(database.songDao().getSongWithId(other.songId!!)!!.like)
+            assertTrue(database.songDao().getSongWithId(other.songId)!!.like)
             importer.commit(newTask(), file, importer.prepare(file) {}, true) {}
             assertEquals(existing.lyrics, database.lyricDao().getLyricWithMediaId(favorite.mediaStoreId)!!.lyrics)
             assertEquals(-275L, database.lyricDao().getLyricWithMediaId(favorite.mediaStoreId)!!.delay)
@@ -252,15 +253,15 @@ class CompletePackageInstrumentedTest {
                     override suspend fun setMinFileSizeKb(kb: Int) = Unit
 
                     override suspend fun setEnabledFormats(keys: Set<String>) = Unit
+
+                    override suspend fun setSplitArtistNames(enabled: Boolean) = Unit
                 }
             val scanner =
                 MusicScanService(
                     context,
-                    database.songDao(),
-                    database.albumDao(),
+                    database,
                     ScanFolderRepositoryImpl(database.scanFolderDao()),
                     rules,
-                    PreferencesManager(context),
                     LibraryAccessGate(),
                 )
             scanner.scanMediaStore()
@@ -434,22 +435,22 @@ class CompletePackageInstrumentedTest {
         return SongEntity(
             mediaStoreId = ContentUris.parseId(uri),
             path = "/$name",
+            size = wav().size.toLong(),
+            mimeType = "audio/wav",
+            dateModified = 0,
             displayName = title,
             artist = "测试歌手",
-            size = wav().size.toLong(),
-            like = favorite,
-            duration = 1000,
-            sort = 0,
-            sortName = title,
-            mimeType = "audio/wav",
-            albumId = 0,
             album = "测试专辑",
+            duration = 1000,
             sampleRate = 8000,
             bitRate = 128000,
             channels = 1,
             digit = 16,
-            isIgnore = false,
             codec = "pcm",
+            tagStatus = TagStatus.TAGLIB,
+            tagVersion = SongRowBuilder.TAG_VERSION,
+            sortName = title,
+            like = favorite,
         )
     }
 

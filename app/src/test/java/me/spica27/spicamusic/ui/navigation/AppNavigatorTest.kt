@@ -72,8 +72,8 @@ class AppNavigatorTest {
         val routes =
             listOf<ScreenRoute>(
                 HomeRoute,
-                AlbumDetailRoute(Album(id = "1", title = "Album", artist = "Artist")),
-                ArtistDetailRoute(Artist(name = "Artist", songCount = 1, coverAlbumId = 1L)),
+                AlbumDetailRoute(Album(id = 1L, title = "Album", artist = "Artist")),
+                ArtistDetailRoute(Artist(artistId = 1L, name = "Artist", songCount = 1)),
                 PlaylistDetailRoute(Playlist(playlistId = 1L, playlistName = "Playlist")),
                 AllPlaylistsRoute,
                 PlaylistCreatorRoute,

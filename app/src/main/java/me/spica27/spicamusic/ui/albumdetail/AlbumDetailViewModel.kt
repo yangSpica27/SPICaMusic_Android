@@ -3,15 +3,10 @@ package me.spica27.spicamusic.ui.albumdetail
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.App
@@ -27,7 +22,7 @@ import timber.log.Timber
 
 @Stable
 class AlbumDetailViewModel(
-    private val albumId: String,
+    private val albumId: Long,
     private val albumRepository: AlbumUseCases,
     private val playlistRepository: PlaylistUseCases,
     private val player: PlayerUseCases,
@@ -40,22 +35,12 @@ class AlbumDetailViewModel(
         )
 
     /**
-     * 同一歌手的其他专辑
+     * 同一专辑艺人的其他专辑（群星、未知艺人不算同一艺人）
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
     val otherAlbums: StateFlow<List<Album>> =
-        songs
-            .map { it.firstOrNull()?.artist.orEmpty() }
-            .distinctUntilChanged()
-            .flatMapLatest { artist ->
-                if (artist.isBlank()) {
-                    flowOf(emptyList())
-                } else {
-                    albumRepository
-                        .getAlbumsByArtistFlow(artist)
-                        .map { albums -> albums.filter { it.id != albumId } }
-                }
-            }.stateIn(
+        albumRepository
+            .getRelatedAlbumsFlow(albumId)
+            .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList(),

@@ -5,16 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.spica27.spicamusic.common.entity.Album
-import me.spica27.spicamusic.common.entity.Artist
+import me.spica27.spicamusic.common.entity.ArtistCredit
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
-import me.spica27.spicamusic.common.entity.SongFilter
-import me.spica27.spicamusic.common.entity.artistOf
 import me.spica27.spicamusic.feature.library.domain.AlbumUseCases
+import me.spica27.spicamusic.feature.library.domain.ArtistUseCases
 import me.spica27.spicamusic.feature.library.domain.PlaylistUseCases
 import me.spica27.spicamusic.feature.library.domain.SongUseCases
 import me.spica27.spicamusic.feature.player.domain.PlayerUseCases
@@ -27,6 +27,7 @@ class SongMenuViewModel(
     private val songRepository: SongUseCases,
     private val playlistRepository: PlaylistUseCases,
     private val albumRepository: AlbumUseCases,
+    private val artistRepository: ArtistUseCases,
     private val player: PlayerUseCases,
 ) : ViewModel() {
     val isLiked: StateFlow<Boolean> =
@@ -43,42 +44,21 @@ class SongMenuViewModel(
             initialValue = emptyList(),
         )
 
-    val albumDetail: StateFlow<Album> =
-        albumRepository
-            .getAlbumSongsFlow(song.albumId.toString())
-            .map { songs ->
-                Album(
-                    id = song.albumId.toString(),
-                    title = song.album,
-                    artist = song.artist,
-                    numberOfSongs = songs.size,
-                )
-            }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue =
-                    Album(
-                        id = song.albumId.toString(),
-                        title = song.album,
-                        artist = song.artist,
-                    ),
-            )
+    /** 歌曲所属专辑；没有专辑标签的歌曲为 null */
+    val albumDetail: StateFlow<Album?> =
+        (song.albumId?.let(albumRepository::getAlbumFlow) ?: flowOf(null)).stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null,
+        )
 
-    val artistDetail: StateFlow<Artist> =
-        songRepository
-            .getSongsFlow(filter = SongFilter(artists = listOf(song.artist)))
-            .map { songs -> artistOf(song.artist, songs) }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue =
-                    Artist(
-                        name = song.artist,
-                        songCount = 0,
-                        coverAlbumId = song.albumId,
-                        coverMediaStoreId = song.mediaStoreId,
-                    ),
-            )
+    /** 这首歌的全部署名（演唱 / 作曲 / 作词），供"查看艺人"选择 */
+    val credits: StateFlow<List<ArtistCredit>> =
+        flow { emit(artistRepository.getSongCredits(song.mediaStoreId)) }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList(),
+        )
 
     fun addToNext() {
         player.doAction(PlayerAction.AddToNext(song.mediaStoreId.toString()))

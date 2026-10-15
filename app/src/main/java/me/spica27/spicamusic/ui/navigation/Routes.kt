@@ -5,6 +5,7 @@ import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
 import me.spica27.spicamusic.common.entity.Album
 import me.spica27.spicamusic.common.entity.Artist
+import me.spica27.spicamusic.common.entity.ArtistCredit
 import me.spica27.spicamusic.common.entity.Playlist
 import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.ui.dialog.SortMenuOption
@@ -113,6 +114,11 @@ data class SongInfoRoute(
 
 data class AlbumMenuRoute(
     val album: Album,
+) : DialogRoute
+
+/** 一首歌有多位署名时选择要查看的艺人 */
+data class ArtistPickerRoute(
+    val credits: List<ArtistCredit>,
 ) : DialogRoute
 
 data class PlaylistPickerRoute(

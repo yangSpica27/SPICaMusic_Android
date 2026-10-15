@@ -28,10 +28,15 @@ android {
     targetCompatibility = JavaVersion.VERSION_11
   }
 
+  // 迁移测试从导出的 schema 构造旧版本数据库
+  sourceSets {
+    androidTest.assets.srcDirs += files("$projectDir/schemas")
+  }
+
 }
 
 ksp {
-  arg("room.schemaLocation", "$projectDir\\schemas")
+  arg("room.schemaLocation", "$projectDir/schemas")
   arg("room.generateKotlin", "true")
 }
 
@@ -56,6 +61,7 @@ dependencies {
 
   // Coroutines
   implementation libs.kotlinx.coroutines.guava
+  implementation libs.kotlinx.serialization.json
   implementation(libs.taglib)
 
   // Koin

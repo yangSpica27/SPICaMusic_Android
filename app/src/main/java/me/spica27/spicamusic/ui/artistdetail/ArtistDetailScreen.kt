@@ -116,6 +116,7 @@ import me.spica27.spicamusic.ui.widget.AudioCover
 import me.spica27.spicamusic.ui.widget.IOSOverscrollEffect
 import me.spica27.spicamusic.ui.widget.OtherAlbumsShelf
 import me.spica27.spicamusic.ui.widget.clickHighlight
+import me.spica27.spicamusic.ui.widget.displayName
 import me.spica27.spicamusic.ui.widget.materialSharedAxisZ
 import me.spica27.spicamusic.utils.rememberDominantColorFromUri
 import org.koin.compose.viewmodel.koinViewModel
@@ -221,20 +222,25 @@ private class ArtistHeaderState(
 fun ArtistDetailScreen(artist: Artist) {
     val backStack = LocalBackStack.current
     val viewModel: ArtistDetailViewModel =
-        koinViewModel(key = "ArtistDetailViewModel_${artist.name}") {
-            parametersOf(artist.name)
+        koinViewModel(key = "ArtistDetailViewModel_${artist.artistId}") {
+            parametersOf(artist.artistId)
         }
     val content by viewModel.content.collectAsStateWithLifecycle()
     val songs = content?.songs.orEmpty()
     val albums = content?.albums.orEmpty()
+    val appearances = content?.appearances.orEmpty()
+    val composedSongs = content?.composedSongs.orEmpty()
+    val writtenSongs = content?.writtenSongs.orEmpty()
+    val artistName = artist.displayName()
 
     val playerViewModel = LocalPlayerViewModel.current
     val currentMediaItem by playerViewModel.currentMediaItem.collectAsStateWithLifecycle()
     val isPlaying by playerViewModel.isPlaying.collectAsStateWithLifecycle()
     val playingMediaId = currentMediaItem?.mediaId
     val playingFromArtist =
-        remember(playingMediaId, songs) {
-            playingMediaId != null && songs.any { it.mediaStoreId.toString() == playingMediaId }
+        remember(playingMediaId, content) {
+            playingMediaId != null &&
+                (songs + composedSongs + writtenSongs).any { it.mediaStoreId.toString() == playingMediaId }
         }
     val playState =
         when {
@@ -348,8 +354,8 @@ fun ArtistDetailScreen(artist: Artist) {
         // 列表末尾补位：保证头部之后的内容至少撑满一屏可视区，从而总能滚满折叠量程。
         // 只有「操作行」与补位同时可见时才能精确测量（内容短时必然同时可见）；
         // 数据或窗口变化时清零重测。
-        var fillerPx by remember(songs.size, albums.size, maxHeight) { mutableIntStateOf(0) }
-        LaunchedEffect(listState, songs.size, albums.size, maxHeight) {
+        var fillerPx by remember(content, maxHeight) { mutableIntStateOf(0) }
+        LaunchedEffect(listState, content, maxHeight) {
             snapshotFlow {
                 val info = listState.layoutInfo
                 val actions = info.visibleItemsInfo.fastFirstOrNull { it.key == KEY_ACTIONS }
@@ -398,7 +404,7 @@ fun ArtistDetailScreen(artist: Artist) {
             // 头像留白 + 名字 + meta：整块高度即折叠量程
             item(key = KEY_HERO, contentType = "hero") {
                 ArtistHero(
-                    name = artist.name,
+                    name = artistName,
                     meta =
                         artistMetaText(
                             songCount = if (content == null) artist.songCount else songs.size,
@@ -414,7 +420,7 @@ fun ArtistDetailScreen(artist: Artist) {
             item(key = KEY_ACTIONS, contentType = "actions") {
                 ArtistActionRow(
                     playState = playState,
-                    enabled = content == null || songs.isNotEmpty(),
+                    enabled = content == null || songs.isNotEmpty() || composedSongs.isNotEmpty() || writtenSongs.isNotEmpty(),
                     onPrimary = onPrimaryAction,
                     onShuffle = viewModel::shufflePlay,
                     modifier = Modifier.entrance(order = 2),
@@ -425,7 +431,7 @@ fun ArtistDetailScreen(artist: Artist) {
             if (albums.size > 1) {
                 item(key = "albums", contentType = "album_shelf") {
                     OtherAlbumsShelf(
-                        artistName = artist.name,
+                        artistName = artistName,
                         albums = albums,
                         onAlbumClick = { backStack.add(AlbumDetailRoute(it)) },
                         title = stringResource(R.string.albums_title),
@@ -448,6 +454,21 @@ fun ArtistDetailScreen(artist: Artist) {
                             onClick = { backStack.add(AlbumDetailRoute(albums.first())) },
                         )
                     }
+                }
+            }
+
+            if (appearances.isNotEmpty()) {
+                item(key = "appearances", contentType = "album_shelf") {
+                    OtherAlbumsShelf(
+                        artistName = artistName,
+                        albums = appearances,
+                        onAlbumClick = { backStack.add(AlbumDetailRoute(it)) },
+                        title = stringResource(R.string.artist_appearances_title),
+                        modifier =
+                            Modifier
+                                .padding(top = Spacing.Small)
+                                .entrance(order = 3, play = listEntrancePlay),
+                    )
                 }
             }
 
@@ -474,7 +495,7 @@ fun ArtistDetailScreen(artist: Artist) {
                     song = song,
                     isCurrent = isCurrent,
                     isPlaying = isCurrent && isPlaying,
-                    onClick = { viewModel.playSongInList(song) },
+                    onClick = { viewModel.playSongInList(song, songs) },
                     onMore = { backStack.add(SongMenuRoute(song)) },
                     modifier =
                         Modifier
@@ -487,6 +508,40 @@ fun ArtistDetailScreen(artist: Artist) {
                                 play = listEntrancePlay,
                             ),
                 )
+            }
+
+            // 作曲 / 作词作品：只作词作曲的艺人从歌曲署名进入时，这里是主要内容
+            listOf(
+                Triple("composed", R.string.artist_composed_title, composedSongs),
+                Triple("written", R.string.artist_written_title, writtenSongs),
+            ).filter { it.third.isNotEmpty() }.forEach { (section, titleRes, sectionSongs) ->
+                item(key = "${section}_title", contentType = "section_title") {
+                    SectionTitle(
+                        text = stringResource(titleRes),
+                        modifier = Modifier.padding(top = Spacing.Large),
+                    )
+                }
+                items(
+                    count = sectionSongs.size,
+                    key = { index -> "$section:${sectionSongs[index].mediaStoreId}" },
+                    contentType = { "song" },
+                ) { index ->
+                    val song = sectionSongs[index]
+                    val isCurrent = playingMediaId == song.mediaStoreId.toString()
+                    ArtistSongRow(
+                        song = song,
+                        isCurrent = isCurrent,
+                        isPlaying = isCurrent && isPlaying,
+                        onClick = { viewModel.playSongInList(song, sectionSongs) },
+                        onMore = { backStack.add(SongMenuRoute(song)) },
+                        modifier =
+                            Modifier.animateItem(
+                                fadeInSpec = ListItemFadeInSpec,
+                                placementSpec = ItemPlacementSpringSpec,
+                                fadeOutSpec = ListItemFadeOutSpec,
+                            ),
+                    )
+                }
             }
 
             item(key = KEY_FILLER, contentType = "filler") {
@@ -581,7 +636,7 @@ fun ArtistDetailScreen(artist: Artist) {
                 )
             }
             Text(
-                text = artist.name,
+                text = artistName,
                 modifier =
                     Modifier
                         .weight(1f)

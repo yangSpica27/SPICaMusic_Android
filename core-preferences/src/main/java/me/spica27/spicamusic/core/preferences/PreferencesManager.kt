@@ -5,7 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -37,8 +36,8 @@ class PreferencesManager(
         val SCAN_ENABLED_FORMATS = stringPreferencesKey("scan_enabled_formats")
         val SCAN_LAST_COMPLETED_AT = stringPreferencesKey("scan_last_completed_at")
 
-        // 已完成补扫的扫描 schema 版本号（用于新增字段时的启动静默重扫）
-        val SCAN_SCHEMA_VERSION = intPreferencesKey("scan_schema_version")
+        // 是否把 "A/B"、"A、B"、"A & B" 等单个艺人字符串拆成多位艺人（默认关闭）
+        val ARTIST_SPLIT_ENABLED = booleanPreferencesKey("artist_split_enabled")
     }
 
     fun getBoolean(

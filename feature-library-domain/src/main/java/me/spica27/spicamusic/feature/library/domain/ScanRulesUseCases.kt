@@ -24,4 +24,8 @@ class ScanRulesUseCases(
     suspend fun setEnabledFormats(keys: Set<String>) {
         repository.setEnabledFormats(keys)
     }
+
+    suspend fun setSplitArtistNames(enabled: Boolean) {
+        repository.setSplitArtistNames(enabled)
+    }
 }

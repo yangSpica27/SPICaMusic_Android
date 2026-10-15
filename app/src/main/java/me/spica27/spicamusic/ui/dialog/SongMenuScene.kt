@@ -63,7 +63,6 @@ import me.spica27.spicamusic.common.entity.Song
 import me.spica27.spicamusic.ui.component.DialogContainer
 import me.spica27.spicamusic.ui.component.DialogMenuItem
 import me.spica27.spicamusic.ui.navigation.AlbumDetailRoute
-import me.spica27.spicamusic.ui.navigation.ArtistDetailRoute
 import me.spica27.spicamusic.ui.navigation.CreatePlaylistForSongRoute
 import me.spica27.spicamusic.ui.navigation.LocalBackStack
 import me.spica27.spicamusic.ui.navigation.PlaylistCreatorRoute
@@ -84,7 +83,7 @@ fun SongMenuDialogContent(song: Song) {
     val isLiked by viewModel.isLiked.collectAsStateWithLifecycle()
     val playlists by viewModel.availablePlaylists.collectAsStateWithLifecycle()
     val album by viewModel.albumDetail.collectAsStateWithLifecycle()
-    val artist by viewModel.artistDetail.collectAsStateWithLifecycle()
+    val credits by viewModel.credits.collectAsStateWithLifecycle()
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -131,8 +130,14 @@ fun SongMenuDialogContent(song: Song) {
                 Unit
             }
         }
-    val onOpenAlbum = remember(album) { { closeAndNavigate { backStack.add(AlbumDetailRoute(album)) } } }
-    val onOpenArtist = remember(artist) { { closeAndNavigate { backStack.add(ArtistDetailRoute(artist)) } } }
+    val onOpenAlbum =
+        remember(album) {
+            { album?.let { closeAndNavigate { backStack.add(AlbumDetailRoute(it)) } } ?: Unit }
+        }
+    val onOpenArtist =
+        remember(credits) {
+            { artistRouteFor(credits)?.let { route -> closeAndNavigate { backStack.add(route) } } ?: Unit }
+        }
     val onOpenSongInfo = remember { { closeAndNavigate { backStack.add(SongInfoRoute(song)) } } }
     val onIgnoreSong =
         remember {
@@ -150,7 +155,7 @@ fun SongMenuDialogContent(song: Song) {
         onAddToQueue = onAddToQueue,
         onToggleLike = onToggleLike,
         onShowPlaylistDialog = onShowPlaylistDialog,
-        onOpenAlbum = onOpenAlbum,
+        onOpenAlbum = onOpenAlbum.takeIf { song.albumId != null },
         onOpenArtist = onOpenArtist,
         onOpenSongInfo = onOpenSongInfo,
         onIgnoreSong = onIgnoreSong,
@@ -217,7 +222,8 @@ private fun SongMenuContent(
     onAddToQueue: () -> Unit,
     onToggleLike: () -> Unit,
     onShowPlaylistDialog: () -> Unit,
-    onOpenAlbum: () -> Unit,
+    /** 没有专辑的歌曲为 null，不显示入口 */
+    onOpenAlbum: (() -> Unit)?,
     onOpenArtist: () -> Unit,
     onOpenSongInfo: () -> Unit,
     onIgnoreSong: () -> Unit,
@@ -361,16 +367,18 @@ private fun SongMenuContent(
                 onClick = onIgnoreSong,
                 showDivider = true,
             )
-            DialogMenuItem(
-                title = stringResource(R.string.view_album),
-                subtitle = song.album,
-                icon = Icons.Default.Album,
-                onClick = onOpenAlbum,
-                showDivider = true,
-            )
+            if (onOpenAlbum != null) {
+                DialogMenuItem(
+                    title = stringResource(R.string.view_album),
+                    subtitle = song.album,
+                    icon = Icons.Default.Album,
+                    onClick = onOpenAlbum,
+                    showDivider = true,
+                )
+            }
             DialogMenuItem(
                 title = stringResource(R.string.view_artist),
-                subtitle = song.artist,
+                subtitle = song.artist.ifBlank { stringResource(R.string.unknown_artist) },
                 icon = Icons.Default.SportsMartialArts,
                 onClick = onOpenArtist,
                 showDivider = true,
@@ -549,7 +557,7 @@ private fun CreatePlaylistContent(
 }
 
 @Composable
-private fun DialogTitle(
+internal fun DialogTitle(
     title: String,
     subtitle: String,
     icon: ImageVector,

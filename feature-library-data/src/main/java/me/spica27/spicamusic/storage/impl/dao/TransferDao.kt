@@ -14,9 +14,10 @@ import me.spica27.spicamusic.storage.impl.entity.TransferReceiptEntity
 @Dao
 interface TransferDao {
     @Query(
-        """SELECT songId, mediaStoreId, path, displayName, artist, size, `like`, duration,
-        sort, sortName, mimeType, albumId, album, sampleRate, bitRate, channels, digit,
-        isIgnore, dateModified, codec, trackNumber, NULL AS waveformData FROM Song ORDER BY songId""",
+        """SELECT songId, mediaStoreId, path, size, mimeType, dateModified, displayName, artist, album,
+        artistTags, albumArtistTags, composerTags, lyricistTags, trackNumber, discNumber, year, isCompilation,
+        duration, sampleRate, bitRate, channels, digit, codec, tagStatus, tagVersion, albumId, sortName,
+        `like`, isIgnore, isImported, sort, NULL AS waveformData FROM Song ORDER BY songId""",
     )
     suspend fun songs(): List<SongEntity>
 
