@@ -445,11 +445,15 @@ fun MusicPage(bottomContentPadding: Dp = 0.dp) {
         backStack.add(route)
     }
 
-    // 开始滚动时收起键盘
-    LaunchedEffect(gridState) {
+    // 用户开始浏览时结束本轮入场，避免滚动中新出现或复用的条目继续等待入场。
+    LaunchedEffect(gridState, itemEntranceReplayKey) {
         snapshotFlow { gridState.isScrollInProgress }
             .filter { it }
-            .collect { dismissKeyboard() }
+            .collect {
+                playEntrance = false
+                playItemEntrance = false
+                dismissKeyboard()
+            }
     }
 
     Box(

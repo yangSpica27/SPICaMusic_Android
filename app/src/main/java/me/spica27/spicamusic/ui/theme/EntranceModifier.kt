@@ -74,32 +74,21 @@ private class EntranceModifierNode(
         get() = false
 
     override fun onAttach() {
+        // 复用时参数可能未变化，不一定会经过 update；重新绑定当前进度的图层读取。
+        updateLayerBlock(layerBlock)
         if (play && !hasStarted && progress.value < 1f) {
             startAnimation()
         }
     }
 
     override fun onDetach() {
-        animationJob?.cancel()
-        animationJob = null
-
-        // 动画未完成时允许下次 attach 继续播放。
-        if (progress.value < 1f) {
-            if (play) {
-                hasStarted = false
-            } else {
-                // 未播放状态必须保持完全可见。
-                progress = Animatable(1f)
-                hasStarted = true
-            }
-        }
+        finishAnimation()
     }
 
     override fun onReset() {
-        animationJob?.cancel()
-        animationJob = null
-        progress = Animatable(if (play) 0f else 1f)
-        hasStarted = !play
+        // 滚出屏幕后进入复用池，不应把旧 item 的隐藏状态带给下一个 item。
+        // 只有显式开启 play 或改变 replayKey 才重新入场。
+        finishAnimation()
     }
 
     override fun MeasureScope.measure(
@@ -128,7 +117,10 @@ private class EntranceModifierNode(
         replayKey = newReplayKey
 
         // 标识变化时允许打断并重播，覆盖快速切页时 play 一直为 true 的情况。
-        if (newPlay && (oldReplayKey != newReplayKey || !oldPlay && progress.value >= 1f)) {
+        if (!newPlay) {
+            // 入场窗口关闭或被用户滚动打断时，立即收敛到完全可见状态。
+            finishAnimation()
+        } else if (oldReplayKey != newReplayKey || !oldPlay) {
             animationJob?.cancel()
             animationJob = null
             progress = Animatable(0f)
@@ -153,6 +145,15 @@ private class EntranceModifierNode(
     }
 
     private fun isReducedMotion(): Boolean = reducedMotionOverride ?: currentValueOf(LocalReducedMotion)
+
+    private fun finishAnimation() {
+        animationJob?.cancel()
+        animationJob = null
+        if (progress.value < 1f) {
+            progress = Animatable(1f)
+        }
+        hasStarted = true
+    }
 
     private fun startAnimation() {
         if (!isAttached || !play || hasStarted && animationJob?.isActive == true) return
@@ -219,7 +220,7 @@ private data class EntranceNodeElement(
     }
 }
 
-/** 添加交错入场动画；[play] 为 true 时，改变 [replayKey] 可重新播放。 */
+/** 添加交错入场动画；[play] 为 false 时立即显示，为 true 时改变 [replayKey] 可重新播放。 */
 @Stable
 fun Modifier.entrance(
     order: Int,
