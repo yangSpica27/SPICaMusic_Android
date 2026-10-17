@@ -335,14 +335,15 @@ fun SettingsScreen() {
                 }
             }
 
-            item(key = "settings_library_transfer") {
-                LibraryTransferSettings(
-                    modifier =
-                        Modifier
-                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
-                            .entrance(order = 5, play = !entrancePlayed),
-                )
-            }
+            // 临时屏蔽导入导入功能
+//            item(key = "settings_library_transfer") {
+//                LibraryTransferSettings(
+//                    modifier =
+//                        Modifier
+//                            .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding)
+//                            .entrance(order = 5, play = !entrancePlayed),
+//                )
+//            }
 
             item(key = "settings_about") {
                 SettingsSectionCard(
