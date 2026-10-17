@@ -94,7 +94,7 @@ fun ScanRulesDialogContent() {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 560.dp)
+                        .heightIn(max = 590.dp)
                         .verticalScroll(rememberScrollState())
                         .padding(bottom = Spacing.Large),
                 verticalArrangement = Arrangement.spacedBy(Spacing.Large),

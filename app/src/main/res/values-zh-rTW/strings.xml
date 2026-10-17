@@ -613,7 +613,7 @@
   <string name="settings_liquid_glass_title">液態玻璃</string>
   <string name="settings_bottom_bar_layout_title">底欄佈局</string>
   <string name="settings_bottom_bar_layout_subtitle">選擇迷你播放器與導覽列的排列方式</string>
-  <string name="bottom_bar_layout_traditional">傳統（預設）</string>
+  <string name="bottom_bar_layout_traditional">傳統</string>
   <string name="bottom_bar_layout_traditional_desc">播放器與導覽列貼底排列，緊密銜接</string>
   <string name="bottom_bar_layout_floating">懸浮分欄</string>
   <string name="bottom_bar_layout_floating_desc">兩條獨立圓角列，周圍保留間距</string>

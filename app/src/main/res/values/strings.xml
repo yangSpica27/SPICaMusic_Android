@@ -615,7 +615,7 @@
   <string name="settings_liquid_glass_title">Liquid glass</string>
   <string name="settings_bottom_bar_layout_title">Bottom bar layout</string>
   <string name="settings_bottom_bar_layout_subtitle">Choose how the mini player and navigation bar are arranged</string>
-  <string name="bottom_bar_layout_traditional">Traditional (default)</string>
+  <string name="bottom_bar_layout_traditional">Traditional</string>
   <string name="bottom_bar_layout_traditional_desc">Full-width player and navigation bars attached to the bottom</string>
   <string name="bottom_bar_layout_floating">Floating split bars</string>
   <string name="bottom_bar_layout_floating_desc">Separate rounded bars with space around them</string>
