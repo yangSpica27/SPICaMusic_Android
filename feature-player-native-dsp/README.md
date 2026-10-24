@@ -1,47 +1,53 @@
-# Native DSP
+# Rust / OxiMedia 音频处理引擎
 
-`NativeDspEngine` is the format-preserving native audio path used by the
-player on `arm64-v8a`:
+公共 PCM 处理链在 `arm64-v8a` 上使用一个 Rust 动态库：
 
+```text
+FFmpeg AAR / 系统解码器
+  -> SpicaDspAudioSink（在 DefaultAudioSink 转换格式前处理）
+  -> Rust JNI / 交错 PCM -> 复用的 f64 缓冲区
+  -> OxiMedia 十段 EQ
+  -> OxiMedia K 加权的 400 ms 瞬时 LUFS 测量
+  -> 平滑增益 + 声道联动的样本峰值保护
+  -> 编码回原始 PCM 格式
+  -> DefaultAudioSink / AudioTrack
 ```
-Media3 AudioProcessor (DirectByteBuffer)
-  -> JNI
-  -> PCM decode (8/16/24/32-bit LE/BE and float)
-  -> PFFFT analyzer (4096-sample non-overlapping window, asynchronous)
-  -> DSPFilters RBJ EQ (10 bands)
-  -> libebur128 measurement + native gain/limiter
-  -> encode to the original PCM format
+
+## 构建
+
+使用 Rust 1.90.0、`aarch64-linux-android` 编译目标和 Android NDK
+28.2.13676358。Gradle 任务通过 NDK API 29 链接器生成 ELF 段按 16 KB 对齐的动态库，
+输出目录为 `build/generated/rustJniLibs`。
+
+Cargo 按以下顺序查找：`-PspicaCargo`、`CARGO` 环境变量、标准 rustup 目录、
+项目本地工具链目录，最后使用 PATH。Cargo 缓存目录可通过 `-PspicaCargoHome`
+或 `CARGO_HOME` 环境变量指定。
+
+Linux x86_64 环境尚未安装 Rust 时，可运行：
+
+```sh
+sh feature-player-native-dsp/scripts/bootstrap-rust.sh
 ```
 
-For 88.2/96/176.4/192 kHz input the analyzer performs analysis-only
-decimation to a rate at or below 48 kHz, while the negotiated PCM stream is
-passed through at its original rate and encoding. FFT bin mapping uses that
-effective analysis rate, so Hi-Res tones remain at their actual frequencies.
+脚本会将固定版本的工具链下载到项目已忽略的 `.gradle/spica-rust` 目录，
+不会修改终端配置。
 
-The analyzer follows the Kotlin path's non-overlapping window cadence. Native
-results wake the Kotlin reader as soon as they are published; there is no
-fixed-rate JNI polling stage. If analysis falls more than two windows behind,
-the worker skips stale windows instead of replaying a long queue.
+在项目根目录执行测试和构建：
 
-FFT visualization uses the arithmetic mean of the first two decoded channels
-as its mono source. Mono input uses its only channel unchanged; extra surround
-channels remain in the playback path but are not included in visualization.
+```sh
+./gradlew :feature-player-native-dsp:testRustDsp
+./gradlew :feature-player-native-dsp:testDebugUnitTest
+./gradlew :app:assembleDebug
+./gradlew :app:assembleRelease
+```
 
-The negotiated `AudioFormat` is returned unchanged. If the native library is
-unavailable or a block cannot be processed, the adapter returns
-`AudioFormat.NOT_SET` or copies the original block so Media3 bypasses
-processing without interrupting playback.
+单元测试会为主机编译真实的 JNI 动态库，验证动态库加载、参数控制、处理和资源释放，
+避免动态库不可用时静默旁路而导致测试误判。Robolectric 测试负责验证 Media3
+音频输出层的接口约定。
 
-The native path supports up to 16 interleaved channels. Unsupported channel
-layouts or encodings return `AudioProcessor.AudioFormat.NOT_SET`, allowing
-Media3 to bypass the processor and preserve the original stream unchanged.
+## 开源许可
 
-Third-party sources are vendored under `src/main/cpp/third_party`:
-
-- PFFFT 1.1.0 (permissive BSD-style license),
-- DSPFilters (MIT),
-- libebur128 1.2.6 (MIT).
-
-See each upstream license file next to its source. Spatial effects are
-intentionally outside this first native rollout and can be added later as a
-separate processor without changing the PCM/JNI boundary.
+OxiMedia 和 OxiFFT 使用 Apache-2.0，导入源码已保留来源署名和修改说明。
+精简源码以外的项目 Rust 实现沿用本项目的 MIT 许可证。依赖及 Rust 标准库的
+完整许可文本随应用打包到 `assets/oss/oximedia-dsp-licenses.txt`，应用的开源许可页面
+也已列出新增的库。

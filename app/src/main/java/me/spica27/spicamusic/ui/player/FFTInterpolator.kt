@@ -1,11 +1,14 @@
 package me.spica27.spicamusic.ui.player
 
 import android.os.SystemClock
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -21,10 +24,13 @@ import me.spica27.spicamusic.player.api.IFFTProcessor
  * - UI 通过 collectAsStateWithLifecycle 收集 [interpolatedData] 时自动开始计算
  * - 页面不可见或应用进入后台时收集停止，计算随之自动结束
  * - 输出已收敛且无新 FFT 帧时（暂停/静音），循环挂起等待，不空转耗电
+ * - 跨线程传递时只保留最新绘制帧，避免积压旧位置的插值结果
  */
 class FFTInterpolator(
     private val fftProcessor: IFFTProcessor,
     scope: CoroutineScope,
+    private val clock: () -> Long = { SystemClock.elapsedRealtime() },
+    dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
     companion object {
         // 绘制帧间隔（约 120fps）
@@ -33,6 +39,9 @@ class FFTInterpolator(
         // FFT 帧间隔的插值时长上下限
         private const val MIN_TRANSITION_MS = 8L
         private const val MAX_TRANSITION_MS = 250L
+
+        // 跳转后的短时间内保持足够过渡时长，避免连续重置把动画压缩到一个节拍。
+        private const val RESET_TRANSITION_MS = 100L
 
         // 无订阅者后延迟停止，避免页面切换瞬间反复重启
         private const val STOP_TIMEOUT_MS = 2_000L
@@ -51,12 +60,26 @@ class FFTInterpolator(
             val toBands = FloatArray(bandCount)
             var lastOutput = FloatArray(bandCount)
             var lastFrame: FloatArray? = null
+            var lastGeneration = Long.MIN_VALUE
             var transitionStart = 0L
             var transitionDuration = 100L
+            var recoveryUntil = 0L
 
             while (true) {
-                val now = SystemClock.elapsedRealtime()
+                val now = clock()
+                val generation = fftProcessor.generation.value
                 val target = fftProcessor.bands.value
+                // 读取期间发生重置时重新取快照，避免拼接两个代次的状态。
+                if (generation != fftProcessor.generation.value) continue
+                if (generation != lastGeneration) {
+                    // 丢弃旧分析目标，但保留已经绘制的高度作为动画起点。
+                    // 采样隔离由原生代次保证，显示层不能直接归零，否则会产生跳变。
+                    lastFrame = null
+                    transitionDuration = RESET_TRANSITION_MS
+                    transitionStart = now
+                    recoveryUntil = now + MAX_TRANSITION_MS
+                    lastGeneration = generation
+                }
                 if (target !== lastFrame) {
                     // 收到新 FFT 帧：以当前输出为起点，向新数据过渡
                     lastOutput.copyInto(fromBands)
@@ -64,7 +87,10 @@ class FFTInterpolator(
                     if (lastFrame != null) {
                         transitionDuration =
                             (now - transitionStart)
-                                .coerceIn(MIN_TRANSITION_MS, MAX_TRANSITION_MS)
+                                .coerceIn(
+                                    if (now < recoveryUntil) RESET_TRANSITION_MS else MIN_TRANSITION_MS,
+                                    MAX_TRANSITION_MS,
+                                )
                     }
                     transitionStart = now
                     lastFrame = target
@@ -84,12 +110,15 @@ class FFTInterpolator(
 
                 if (progress >= 1f) {
                     // 已收敛且暂无新数据：挂起等待下一帧 FFT，避免空转
-                    fftProcessor.bands.first { it !== lastFrame }
+                    combine(fftProcessor.bands, fftProcessor.generation) { bands, epoch ->
+                        bands !== lastFrame || epoch != lastGeneration
+                    }.first { it }
                 } else {
                     delay(FRAME_INTERVAL_MS)
                 }
             }
-        }.flowOn(Dispatchers.Default)
+        }.conflate()
+            .flowOn(dispatcher)
             .stateIn(
                 scope,
                 SharingStarted.WhileSubscribed(

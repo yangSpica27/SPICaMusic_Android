@@ -11,6 +11,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
@@ -24,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.guava.future
+import me.spica27.spicamusic.dsp.InteractiveAudioTrackBufferSizeProvider
 import me.spica27.spicamusic.player.api.IMusicPlayer
 import me.spica27.spicamusic.player.impl.utils.MediaLibrary
 import org.koin.android.ext.android.inject
@@ -32,7 +34,7 @@ import timber.log.Timber
 /**
  * 媒体播放后台服务
  * 使用 Media3 MediaLibraryService 实现后台播放
- * 集成 native DSP 音频处理器进行频谱分析、EQ 和响度处理
+ * 通过 Rust/OxiMedia 引擎进行频谱分析、EQ 和响度处理
  */
 @UnstableApi
 class PlaybackService : MediaLibraryService() {
@@ -50,7 +52,7 @@ class PlaybackService : MediaLibraryService() {
         super.onCreate()
         notificationProvider = SpicaNotificationProvider(this)
         setMediaNotificationProvider(notificationProvider)
-        // 创建自定义渲染器工厂，添加 native DSP（FFT、EQ、响度归一化）
+        // 创建自定义渲染器工厂，在公共 PCM 输出层接入 Rust/OxiMedia 引擎。
         val renderersFactory =
             object : DefaultRenderersFactory(this) {
                 init {
@@ -62,17 +64,18 @@ class PlaybackService : MediaLibraryService() {
                     enableFloatOutput: Boolean,
                     enableAudioTrackPlaybackParams: Boolean,
                 ): AudioSink =
-                    DefaultAudioSink
-                        .Builder(context)
-                        .setEnableFloatOutput(enableFloatOutput)
-                        .setEnableAudioOutputPlaybackParameters(enableAudioTrackPlaybackParams)
-                        .setAudioProcessors(
-                            // 音频处理链由 Native DSP 提供；Native 不可用时由
-                            // AudioFormat.NOT_SET 触发 Media3 原样旁路。
-                            (player as? me.spica27.spicamusic.player.impl.SpicaPlayer)
-                                ?.getAudioProcessors()
-                                ?: arrayOf(player.fftAudioProcessor),
-                        ).build()
+                    player.wrapAudioSink(
+                        DefaultAudioSink
+                            .Builder(context)
+                            .setEnableFloatOutput(true)
+                            .setEnableAudioOutputPlaybackParameters(true)
+                            .setAudioOutputProvider(
+                                AudioTrackAudioOutputProvider
+                                    .Builder(context)
+                                    .setAudioTrackBufferSizeProvider(InteractiveAudioTrackBufferSizeProvider())
+                                    .build(),
+                            ).build(),
+                    )
             }
         exoPlayer =
             ExoPlayer

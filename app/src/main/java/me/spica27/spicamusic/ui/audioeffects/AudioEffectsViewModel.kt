@@ -49,7 +49,7 @@ class AudioEffectsViewModel(
             .getBoolean(SettingsUseCases.Keys.LOUDNESS_NORMALIZATION_ENABLED, false)
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    // 目标响度（LUFS），与 native libebur128 AGC 的范围保持一致。
+    // 目标响度（LUFS），与 Rust/OxiMedia 实时增益控制的范围保持一致。
     val loudnessTargetLufs: StateFlow<Float> =
         settingsUseCases
             .getFloat(SettingsUseCases.Keys.LOUDNESS_TARGET_LUFS, DEFAULT_TARGET_LUFS)

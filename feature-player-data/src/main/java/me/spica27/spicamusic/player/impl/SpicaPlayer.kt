@@ -7,7 +7,6 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
-import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaBrowser
 import androidx.media3.session.MediaController
@@ -27,7 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import me.spica27.spicamusic.common.entity.PlayHistory
-import me.spica27.spicamusic.dsp.NativeDspAudioProcessor
+import me.spica27.spicamusic.dsp.SpicaDspAudioSink
 import me.spica27.spicamusic.dsp.NativeDspEngine
 import me.spica27.spicamusic.player.api.IFFTProcessor
 import me.spica27.spicamusic.player.api.IMusicPlayer
@@ -70,25 +69,20 @@ class SpicaPlayer(
         SessionToken(context, ComponentName(context, playbackServiceClass))
     }
 
-    // Native DSP is the only audio-effects implementation. If the shared
-    // library is unavailable on an ABI, NativeDspAudioProcessor reports
-    // AudioFormat.NOT_SET and Media3 bypasses it without changing the PCM
-    // stream.
+    // UI 音效控制与公共 PCM 输出层共用同一个 Rust/OxiMedia 引擎。
     private val _nativeDspEngine = NativeDspEngine()
     private val _nativeFftProcessor = NativeFftProcessor(_nativeDspEngine)
     override val fftProcessor: IFFTProcessor = _nativeFftProcessor
 
-    // Native processor performs FFT + EQ + loudness in one format-preserving
-    // block. No Java/Kotlin DSP processor is inserted in the audio sink.
-    private val _nativeAudioProcessor: AudioProcessor = NativeDspAudioProcessor(_nativeDspEngine)
-    override val fftAudioProcessor: AudioProcessor = _nativeAudioProcessor
+    override fun wrapAudioSink(audioSink: androidx.media3.exoplayer.audio.AudioSink): androidx.media3.exoplayer.audio.AudioSink =
+        SpicaDspAudioSink(audioSink, _nativeDspEngine)
 
 
     private val _initializing = AtomicBoolean(false)
 
     private var browserInstance: MediaBrowser? = null
 
-    // Nullable var instead of `by lazy` so it can be reset after release(), allowing re-init.
+    // 使用可空变量而非 by lazy，以便在 release() 后清空并重新初始化。
     private var _browserFuture: ListenableFuture<MediaBrowser>? = null
 
     private val playbackPositionSmoother = PlaybackPositionSmoother()
@@ -206,14 +200,13 @@ class SpicaPlayer(
         if (browserInstance == null) {
             init()
         }
-        // 10-second timeout prevents doAction from hanging forever if PlaybackService
-        // fails to start (process death, system kill, manifest misconfiguration).
+        // 设置 10 秒超时，避免 PlaybackService 因进程退出、系统终止
+        // 或清单配置错误而启动失败时，doAction 一直挂起。
         return withTimeoutOrNull(10_000L) { getOrCreateBrowserFuture().await() }
             ?.also { browser ->
-                // On a fresh install there is no history, so init() returns before it
-                // can restore the mode. Apply the persisted/default mode whenever a
-                // controller is acquired so the first playlist uses the same mode
-                // that the UI exposes.
+                // 首次安装没有播放历史，init() 会在恢复播放模式前返回。
+                // 每次取得控制器后都应用已保存的模式或默认模式，
+                // 保证首次播放的歌单与界面显示的模式一致。
                 applyPlayMode(browser, PlayMode.from(playerKVUtils.getPlayMode()))
             }
     }
@@ -233,13 +226,9 @@ class SpicaPlayer(
                     }
                     PlayerAction.Pause -> browser.pause()
 
-                    PlayerAction.SkipToNext -> {
-                        browser.seekToNext()
-                    }
+                    PlayerAction.SkipToNext -> browser.seekToNext()
 
-                    PlayerAction.SkipToPrevious -> {
-                        browser.seekToPrevious()
-                    }
+                    PlayerAction.SkipToPrevious -> browser.seekToPrevious()
 
                     is PlayerAction.RemoveWithMediaId -> {
                         val index = browser.currentTimeline.indexOf(action.mediaId)
@@ -301,9 +290,8 @@ class SpicaPlayer(
                     }
 
                     is PlayerAction.SeekTo -> {
-                        // Reset immediately so the lyric UI follows a user seek
-                        // during the small window before Media3 dispatches its
-                        // position-discontinuity callback.
+                        // 立即重置进度，避免等待 Media3 的位置跳变回调时，
+                        // 歌词界面不能及时跟随用户的跳转操作。
                         val mediaId =
                             browser.currentMediaItem?.mediaId
                                 ?: _currentMediaItem.value?.mediaId
@@ -347,9 +335,8 @@ class SpicaPlayer(
                             ?.takeIf { it >= 0 } ?: 0
                         val items = withContext(Dispatchers.IO) { MediaLibrary.mediaIdToMediaItems(action.mediaIds) }
                         browser.setMediaItems(items, index, 0)
-                        // Setting a playlist can leave a newly-created player at
-                        // REPEAT_MODE_OFF. Reapply the saved mode after replacing the
-                        // timeline, including the first-play path on a fresh install.
+                        // 设置播放列表后，新建的播放器可能仍处于 REPEAT_MODE_OFF。
+                        // 替换时间线后重新应用已保存的模式，也覆盖首次安装后的首次播放。
                         applyPlayMode(browser, PlayMode.from(playerKVUtils.getPlayMode()))
                         if (action.start) {
                             browser.play()
@@ -438,7 +425,7 @@ class SpicaPlayer(
                         }
                     }
 
-                // null means this job was superseded or explicitly cancelled.
+                // null 表示该任务已被新任务替代，或已被显式取消。
                 if (remaining == null) return
                 if (remaining <= 0L) {
                     val shouldPause =
@@ -450,8 +437,8 @@ class SpicaPlayer(
                                 false
                             }
                         }
-                    // If playback was manually paused before expiry, avoid waking/reconnecting
-                    // the MediaBrowser just to issue a redundant pause command.
+                    // 如果用户已在到期前手动暂停，就不再唤醒或重连 MediaBrowser，
+                    // 避免发送多余的暂停命令。
                     if (shouldPause && _isPlaying.value) {
                         doAction(PlayerAction.Pause)
                     }
@@ -505,12 +492,9 @@ class SpicaPlayer(
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         this@SpicaPlayer._isPlaying.value = isPlaying
-        // 采样跟随播放状态：暂停时停止采样（暂停中 seek/切歌的管线预缓冲不会被采样）
+        // 采样跟随播放状态：暂停时停止采样并清空旧片段（暂停中 seek/切歌的管线预缓冲不会被采样），
+        // 插值层在没有新数据时自动挂起。
         _nativeFftProcessor.setPlaybackActive(isPlaying)
-        if (!isPlaying) {
-            // 暂停/停止时清空频谱数据，可视化平滑归零后插值循环自动挂起
-            fftProcessor.reset()
-        }
         if (isPlaying) {
             startPlaySession(
                 mediaId = _currentMediaItem.value?.mediaId,
@@ -522,7 +506,7 @@ class SpicaPlayer(
                 val currentPos = browserInstance?.currentPosition ?: 0L
                 val dur = _currentDuration.value
                 val rawPlayedDuration = playbackDurationTracker.playedDurationFromPosition(currentPos)
-                // Cap to song duration as a safety net.
+                // 以歌曲总时长为上限，避免记录超出有效范围。
                 val playedDuration = if (dur > 0) rawPlayedDuration.coerceAtMost(dur) else rawPlayedDuration
                 val completed = dur > 0 && playedDuration >= (dur * 0.9)
                 if (mediaId != null && playedDuration > 0L) {
@@ -562,6 +546,7 @@ class SpicaPlayer(
         newPosition: Player.PositionInfo,
         reason: Int,
     ) {
+        // 频谱片段由音频输出层在 flush 时按 PCM 边界重置；控制器回调与该边界没有时序保证，这里不再重置。
         if (
             reason == Player.DISCONTINUITY_REASON_SEEK ||
                 reason == Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT
@@ -589,13 +574,16 @@ class SpicaPlayer(
         mediaItem: MediaItem?,
         reason: Int,
     ) {
+        // 同格式连续切歌和单曲循环不一定触发 sink 重配，但 renderer 处理到新 stream 时
+        // 会调用 handleDiscontinuity，频谱片段在那里按 PCM 边界重置。此回调按播放头触发，
+        // 晚于该边界，再次重置会丢弃新歌已入队的数据。
         val previousMediaId = playSessionMediaId
         if (previousMediaId != null && isRecordingPlay) {
             val now = SystemClock.elapsedRealtime()
             val dur = _currentDuration.value
             val rawPlayedDuration = playbackDurationTracker.playedDurationFromElapsed(now)
-            // Cap to actual song duration to guard against wall-clock jumps or any
-            // accounting anomaly that would inflate the stored duration.
+            // 以实际歌曲时长为上限，避免系统时间跳变或统计异常
+            // 导致保存的播放时长偏大。
             val playedDuration = if (dur > 0) rawPlayedDuration.coerceAtMost(dur) else rawPlayedDuration
             val completed = dur > 0 && playedDuration >= (dur * 0.9)
             if (playedDuration > 0L) {
@@ -630,10 +618,8 @@ class SpicaPlayer(
         Timber.e("onMediaItemTransition $mediaItem $reason")
         _currentMediaItem.value = mediaItem
         _currentMediaItemIndex.value = browserInstance?.currentMediaItemIndex ?: -1
-        // A repeat transition can keep the same media ID while resetting the
-        // position to zero, so it must establish a fresh position anchor too.
-        // Do not read browser.currentPosition here: during the callback it can
-        // still contain the previous media item's final position.
+        // 单曲循环时媒体 ID 可能不变，但进度会归零，因此也需要重新建立进度基准。
+        // 此处不读取 browser.currentPosition，因为回调期间它可能仍是上一媒体项的最终进度。
         playbackPositionSmoother.resetTo(
             mediaId = mediaItem?.mediaId,
             positionMs = 0L,
@@ -783,20 +769,6 @@ class SpicaPlayer(
 
     override fun setLoudnessTargetLufs(targetLufs: Float) {
         _nativeDspEngine.setTargetLufs(targetLufs)
-    }
-
-    /**
-     * 获取音效处理器数组
-     * 用于在 PlaybackService 中配置 ExoPlayer
-     *
-     * ⚠️ 这里依赖 PlaybackService 与本类处于**同一进程**：service 在清单里没有
-     * android:process，且两者拿到的是同一个 Koin 单例，所以这些处理器实例正是
-     * DefaultAudioSink 正在使用的对象，setXxx 方法能直接生效。
-     * 若将来给 service 加了 android:process，`as?` 转型仍会成功，
-     * 但拿到的是另一个进程里的**不同实例**，所有音效开关都会静默失效。
-     */
-    fun getAudioProcessors(): Array<AudioProcessor> {
-        return arrayOf(_nativeAudioProcessor)
     }
 
     private fun buildExtraFromMetadata(metadata: MediaMetadata?): String {

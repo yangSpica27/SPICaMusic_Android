@@ -1,0 +1,11 @@
+[package]
+name = "oximedia-audio-dsp"
+version = "0.2.1-spica.1"
+edition = "2021"
+license = "Apache-2.0"
+description = "Audited DSP subset of OxiMedia 5263510 for SPICa Music"
+repository = "https://github.com/cool-japan/oximedia"
+publish = false
+
+[dependencies]
+oxifft.workspace = true

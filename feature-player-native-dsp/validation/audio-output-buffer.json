@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-24",
+  "source": "AudioFlinger per-track dumpsys snapshots from the connected device",
+  "format": "PCM_FLOAT stereo",
+  "before": {
+    "sample_rate_hz": 44100,
+    "buffer_frames": 176400,
+    "ready_frames": 176400,
+    "nominal_queue_ms": 4000
+  },
+  "after": {
+    "sample_rate_hz": 44100,
+    "buffer_frames": 8820,
+    "ready_frames": 8820,
+    "nominal_queue_ms": 200
+  },
+  "max_dsp_chunk_ms": 20,
+  "note": "Paused/prepared queue-capacity observations; this is not an acoustic end-to-end latency measurement."
+}

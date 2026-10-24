@@ -1,0 +1,194 @@
+[
+  {
+    "engine": "cpp",
+    "rate": 48000,
+    "channels": 2,
+    "mode": "bypass",
+    "p50_us": 0.138,
+    "p99_us": 0.139
+  },
+  {
+    "engine": "rust",
+    "rate": 48000,
+    "channels": 2,
+    "mode": "bypass",
+    "p50_us": 0.14,
+    "p99_us": 0.142
+  },
+  {
+    "engine": "cpp",
+    "rate": 48000,
+    "channels": 2,
+    "mode": "eq",
+    "p50_us": 46.573,
+    "p99_us": 110.261
+  },
+  {
+    "engine": "rust",
+    "rate": 48000,
+    "channels": 2,
+    "mode": "eq",
+    "p50_us": 31.643,
+    "p99_us": 48.121
+  },
+  {
+    "engine": "cpp",
+    "rate": 48000,
+    "channels": 2,
+    "mode": "loudness",
+    "p50_us": 31.097,
+    "p99_us": 35.133
+  },
+  {
+    "engine": "rust",
+    "rate": 48000,
+    "channels": 2,
+    "mode": "loudness",
+    "p50_us": 18.833,
+    "p99_us": 34.623
+  },
+  {
+    "engine": "cpp",
+    "rate": 48000,
+    "channels": 2,
+    "mode": "all",
+    "p50_us": 75.372,
+    "p99_us": 139.799
+  },
+  {
+    "engine": "rust",
+    "rate": 48000,
+    "channels": 2,
+    "mode": "all",
+    "p50_us": 44.131,
+    "p99_us": 63.752
+  },
+  {
+    "engine": "cpp",
+    "rate": 192000,
+    "channels": 2,
+    "mode": "bypass",
+    "p50_us": 0.235,
+    "p99_us": 0.236
+  },
+  {
+    "engine": "rust",
+    "rate": 192000,
+    "channels": 2,
+    "mode": "bypass",
+    "p50_us": 0.141,
+    "p99_us": 0.142
+  },
+  {
+    "engine": "cpp",
+    "rate": 192000,
+    "channels": 2,
+    "mode": "eq",
+    "p50_us": 46.667,
+    "p99_us": 115.218
+  },
+  {
+    "engine": "rust",
+    "rate": 192000,
+    "channels": 2,
+    "mode": "eq",
+    "p50_us": 31.793,
+    "p99_us": 47.777
+  },
+  {
+    "engine": "cpp",
+    "rate": 192000,
+    "channels": 2,
+    "mode": "loudness",
+    "p50_us": 75.687,
+    "p99_us": 246.838
+  },
+  {
+    "engine": "rust",
+    "rate": 192000,
+    "channels": 2,
+    "mode": "loudness",
+    "p50_us": 18.836,
+    "p99_us": 26.059
+  },
+  {
+    "engine": "cpp",
+    "rate": 192000,
+    "channels": 2,
+    "mode": "all",
+    "p50_us": 119.647,
+    "p99_us": 154.093
+  },
+  {
+    "engine": "rust",
+    "rate": 192000,
+    "channels": 2,
+    "mode": "all",
+    "p50_us": 43.979,
+    "p99_us": 58.491
+  },
+  {
+    "engine": "cpp",
+    "rate": 192000,
+    "channels": 8,
+    "mode": "bypass",
+    "p50_us": 0.532,
+    "p99_us": 0.548
+  },
+  {
+    "engine": "rust",
+    "rate": 192000,
+    "channels": 8,
+    "mode": "bypass",
+    "p50_us": 0.532,
+    "p99_us": 0.547
+  },
+  {
+    "engine": "cpp",
+    "rate": 192000,
+    "channels": 8,
+    "mode": "eq",
+    "p50_us": 187.019,
+    "p99_us": 422.572
+  },
+  {
+    "engine": "rust",
+    "rate": 192000,
+    "channels": 8,
+    "mode": "eq",
+    "p50_us": 126.877,
+    "p99_us": 182.882
+  },
+  {
+    "engine": "cpp",
+    "rate": 192000,
+    "channels": 8,
+    "mode": "loudness",
+    "p50_us": 503.961,
+    "p99_us": 691.897
+  },
+  {
+    "engine": "rust",
+    "rate": 192000,
+    "channels": 8,
+    "mode": "loudness",
+    "p50_us": 37.213,
+    "p99_us": 62.688
+  },
+  {
+    "engine": "cpp",
+    "rate": 192000,
+    "channels": 8,
+    "mode": "all",
+    "p50_us": 681.384,
+    "p99_us": 710.811
+  },
+  {
+    "engine": "rust",
+    "rate": 192000,
+    "channels": 8,
+    "mode": "all",
+    "p50_us": 146.857,
+    "p99_us": 218.912
+  }
+]

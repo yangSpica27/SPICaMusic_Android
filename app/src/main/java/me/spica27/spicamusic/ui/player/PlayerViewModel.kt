@@ -149,13 +149,13 @@ class PlayerViewModel(
 
     /**
      * FFT 数据插值器
-     * 自动将原始 FFT 数据插值为适合绘制的 60fps 数据
+     * 自动将原始 FFT 数据插值为约 120fps 的绘制数据，播放片段变化时平滑衔接画面。
      */
     private val fftInterpolator = FFTInterpolator(player.fftProcessor, viewModelScope)
 
     /**
      * 插值后的 FFT 绘制数据 (31个频段, 0.0-1.0)
-     * 适合直接用于 UI 绘制，约 60fps 平滑更新
+     * 适合直接用于 UI 绘制，约 120fps 平滑更新
      *
      * 直接通过 collectAsStateWithLifecycle 收集即可：
      * 计算随收集自动启停，页面不可见/应用后台时自动停止，无需手动订阅管理。

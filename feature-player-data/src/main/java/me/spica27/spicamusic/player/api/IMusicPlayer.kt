@@ -3,7 +3,7 @@ package me.spica27.spicamusic.player.api
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import androidx.media3.common.audio.AudioProcessor
+import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.flow.StateFlow
 
@@ -73,11 +73,10 @@ interface IMusicPlayer {
     val fftProcessor: IFFTProcessor
 
     /**
-     * 获取用于 ExoPlayer 的 FFT AudioProcessor
-     * 需要在创建 ExoPlayer 时添加到渲染器
+     * 包装所有解码器共用的 PCM 输出，接入 FFT、EQ 和响度处理。
      */
     @OptIn(UnstableApi::class)
-    val fftAudioProcessor: AudioProcessor
+    fun wrapAudioSink(audioSink: AudioSink): AudioSink
 
     /**
      * 初始化播放器
@@ -122,7 +121,7 @@ interface IMusicPlayer {
     /**
      * 设置均衡器频段增益
      * @param band 频段索引 (0-9)
-     * @param gainDb 增益值 (-12.0 to +12.0 dB)
+     * @param gainDb 增益值（-12.0～+12.0 dB）
      */
     fun setEQBandGain(band: Int, gainDb: Float)
 

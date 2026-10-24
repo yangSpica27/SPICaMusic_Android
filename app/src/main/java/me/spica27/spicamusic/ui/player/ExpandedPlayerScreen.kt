@@ -921,6 +921,7 @@ private fun SeekBarSection(
         progressBarStyle == ProgressBarStyle.DynamicWaveform &&
             isAppInForeground &&
             animationsEnabled
+    // 保存已绘制的画面；播放片段变化由插值器平滑处理，不直接重建成空白。
     val fftDataHolder = remember { FftDrawDataHolder() }
     Column(
         modifier =

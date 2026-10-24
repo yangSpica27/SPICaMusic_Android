@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["dsp-core", "dsp-jni", "vendor/oximedia-audio"]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.90"
+license = "MIT"
+
+[workspace.dependencies]
+oximedia-audio-dsp = { path = "vendor/oximedia-audio" }
+oxifft = { version = "=0.4.2", default-features = false, features = ["std"] }
+jni = { version = "=0.21.1", default-features = false }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+debug = "line-tables-only"
+panic = "unwind"

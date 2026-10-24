@@ -19,6 +19,12 @@ interface IFFTProcessor {
     val bands: StateFlow<FloatArray>
 
     /**
+     * 当前频谱片段的代次；由音频输出层在 seek、切歌、单曲循环等 PCM 边界及暂停时递增。
+     * 绘制层发现变化后应丢弃旧分析目标，但保留已绘制状态以平滑过渡。
+     */
+    val generation: StateFlow<Long>
+
+    /**
      * 是否启用 FFT 采样分析
      */
     val isEnabled: StateFlow<Boolean>
@@ -32,28 +38,6 @@ interface IFFTProcessor {
      * 禁用 FFT 采样并清空频谱数据（应用进入后台时调用）
      */
     fun disable()
-
-    /**
-     * 处理音频数据
-     * @param audioData 交错线性 PCM 音频数据
-     * @param sampleRate 采样率
-     * @param channelCount 声道数
-     * @param encoding PCM 编码，取值为 androidx.media3.common.C.ENCODING_PCM_*
-     *                 （支持 8/16/24/32-bit 整型与 32-bit 浮点，含大端变体）
-     * @param audioDataSize 有效字节数，默认为 audioData.size；传入复用缓冲区时需指定实际大小
-     */
-    fun process(
-        audioData: ByteArray,
-        sampleRate: Int,
-        channelCount: Int,
-        encoding: Int,
-        audioDataSize: Int = audioData.size,
-    )
-
-    /**
-     * 重置处理器状态并清空频谱数据
-     */
-    fun reset()
 
     companion object {
         /**

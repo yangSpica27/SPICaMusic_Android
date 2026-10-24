@@ -10,26 +10,26 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.LockSupport
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
- * Native FFT/EQ/loudness engine.
+ * 基于 Rust/OxiMedia 的 FFT、EQ 和响度处理引擎。
  *
- * The engine accepts and returns the exact same packed PCM format negotiated by
- * Media3. Conversion to float happens only inside native code and is re-encoded
- * at the original bit depth/endianness after processing. If the
- * native library cannot be loaded, [isAvailable] is false and the Media3
- * adapter bypasses processing so the original PCM stream continues unchanged.
+ * 输入和输出保持 Media3 协商的交错 PCM 格式。仅在原生代码内部转换为 f64，
+ * 处理后按原位深和大小端顺序重新编码。动态库加载失败时，[isAvailable] 为 false，
+ * 上层 Media3 适配器直接旁路，继续传递原始 PCM 数据。
  */
 @UnstableApi
-class NativeDspEngine : Closeable {
+class NativeDspEngine : Closeable, PcmDspProcessor {
 
     companion object {
         private const val BAND_WAIT_TIMEOUT_MS = 250
-        private const val IDLE_RECHECK_INTERVAL_MS = 16L
-        private const val DEFAULT_MAX_FRAMES = 32 * 1024
         private const val BAND_COUNT = 31
 
-        /** True when the ABI contains the native DSP shared object. */
+        /** 当前 ABI 对应的 DSP 动态库加载成功时为 true。 */
         val isNativeLibraryLoaded: Boolean = runCatching {
             System.loadLibrary("spica_native_dsp")
         }.isSuccess
@@ -42,13 +42,20 @@ class NativeDspEngine : Closeable {
     private val _bands = MutableStateFlow(FloatArray(BAND_COUNT))
     val bands: StateFlow<FloatArray> = _bands.asStateFlow()
 
+    private val _spectrumGeneration = MutableStateFlow(0L)
+    /** 频谱片段的代次，绘制层据此替换 seek 或切歌前的分析目标。 */
+    val spectrumGeneration: StateFlow<Long> = _spectrumGeneration.asStateFlow()
+
     private val _isFftEnabled = MutableStateFlow(false)
     val isFftEnabled: StateFlow<Boolean> = _isFftEnabled.asStateFlow()
 
-    val isAvailable: Boolean
+    override val isAvailable: Boolean
         get() = handle.get() != 0L
 
     private val stateLock = Any()
+    // 音频处理和 UI 参数发布可以并发进行。
+    // 释放资源时独占写锁，等待所有 JNI 读操作结束后再销毁句柄。
+    private val nativeLifecycle = ReentrantReadWriteLock()
     private val eqGains = FloatArray(10)
     private var eqEnabled = false
     private var loudnessEnabled = false
@@ -60,9 +67,14 @@ class NativeDspEngine : Closeable {
     @Volatile private var closing = false
     private var pollBuffer = FloatArray(BAND_COUNT)
 
+    // 必须声明在 bandReader 之前，否则其初始化会覆盖线程工厂写入的值。
+    @Volatile private var bandReaderThread: Thread? = null
     private val bandReader: ExecutorService? = if (isAvailable) {
         Executors.newSingleThreadExecutor { runnable ->
-            Thread(runnable, "Native-DSP-Bands").apply { priority = Thread.NORM_PRIORITY }
+            Thread(runnable, "Native-DSP-Bands").apply {
+                priority = Thread.NORM_PRIORITY
+                bandReaderThread = this
+            }
         }.also { executor ->
             executor.execute(::readBandsLoop)
         }
@@ -70,31 +82,36 @@ class NativeDspEngine : Closeable {
         null
     }
 
-    /** Configure a new Media3 PCM stream. Must be called before [process]. */
-    fun configure(
+    /** 配置新的 Media3 PCM 音频流，必须在调用 [process] 前完成。 */
+    override fun configure(
         sampleRate: Int,
         channelCount: Int,
         encoding: Int,
-        maxFrames: Int = DEFAULT_MAX_FRAMES,
+        maxFrames: Int,
+        channelMask: Int,
     ): Boolean {
-        synchronized(stateLock) {
+        // 重建原生引擎会停止旧 FFT 线程并分配缓冲区，放在 stateLock 之外，
+        // 避免主线程的 EQ 和频谱操作在切歌时被阻塞；生命周期读锁保证句柄不被释放。
+        val success = nativeLifecycle.read {
             val currentHandle = handle.get()
-            if (currentHandle == 0L) return false
-            bandStateGeneration++
-            val success = nativeConfigure(
+            currentHandle != 0L && nativeConfigure(
                 currentHandle, sampleRate, channelCount, encoding,
                 maxFrames.coerceAtLeast(1),
+                channelMask,
             )
-            configured = success
-            lastBandSequence = 0L
-            if (success) _bands.value = FloatArray(BAND_COUNT)
-            return success
+        }
+        synchronized(stateLock) {
+            bandStateGeneration++
+            configured = success && handle.get() != 0L
+            clearSpectrumLocked()
+            if (configured) wakeBandReader()
+            return configured
         }
     }
 
-    /** Process one packed PCM block into [output]. Both buffers must be direct. */
-    fun process(input: ByteBuffer, output: ByteBuffer, byteCount: Int): Int {
-        synchronized(stateLock) {
+    /** 将一块交错 PCM 数据处理后写入 [output]，输入和输出都必须是直接缓冲区。 */
+    override fun process(input: ByteBuffer, output: ByteBuffer, byteCount: Int): Int {
+        nativeLifecycle.read {
             val currentHandle = handle.get()
             if (currentHandle == 0L || !configured || byteCount < 0 ||
                 input.position() < 0 || output.position() < 0 ||
@@ -143,6 +160,7 @@ class NativeDspEngine : Closeable {
         synchronized(stateLock) {
             handle.get().takeIf { it != 0L }?.let { nativeSetFftEnabled(it, true) }
         }
+        wakeBandReader()
     }
 
     fun disableFft() {
@@ -150,8 +168,7 @@ class NativeDspEngine : Closeable {
         synchronized(stateLock) {
             bandStateGeneration++
             handle.get().takeIf { it != 0L }?.let { nativeSetFftEnabled(it, false) }
-            lastBandSequence = 0L
-            _bands.value = FloatArray(BAND_COUNT)
+            clearSpectrumLocked()
         }
     }
 
@@ -161,19 +178,38 @@ class NativeDspEngine : Closeable {
             if (!active) bandStateGeneration++
             handle.get().takeIf { it != 0L }?.let { nativeSetPlaybackActive(it, active) }
             if (!active) {
-                lastBandSequence = 0L
-                _bands.value = FloatArray(BAND_COUNT)
+                clearSpectrumLocked()
             }
         }
+        if (active) wakeBandReader()
     }
 
-    fun reset() {
+    override fun reset() {
         synchronized(stateLock) {
             bandStateGeneration++
             handle.get().takeIf { it != 0L }?.let { nativeReset(it) }
-            lastBandSequence = 0L
-            _bands.value = FloatArray(BAND_COUNT)
+            clearSpectrumLocked()
         }
+    }
+
+    /** 只清理频谱，播放器事件不能在音频线程外重置 EQ 或响度状态。 */
+    fun resetFft() {
+        synchronized(stateLock) {
+            bandStateGeneration++
+            handle.get().takeIf { it != 0L }?.let { nativeResetFft(it) }
+            clearSpectrumLocked()
+        }
+    }
+
+    /** 先发布空频谱，再发布代次；消费者读取新代次时不会看到旧片段数据。 */
+    private fun clearSpectrumLocked() {
+        lastBandSequence = 0L
+        _bands.value = FloatArray(BAND_COUNT)
+        _spectrumGeneration.value = bandStateGeneration
+    }
+
+    private fun wakeBandReader() {
+        bandReaderThread?.let(LockSupport::unpark)
     }
 
     private fun publishParameters() {
@@ -196,23 +232,26 @@ class NativeDspEngine : Closeable {
             if (currentHandle == 0L) return
 
             if (!configured || !_isFftEnabled.value || !playbackActive) {
-                try {
-                    Thread.sleep(IDLE_RECHECK_INTERVAL_MS)
-                } catch (_: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    return
-                }
+                // 空闲时不轮询：configure、enableFft、setPlaybackActive(true) 会 unpark，
+                // close 的 shutdownNow 会中断 park。先到的 unpark 留有许可，不会丢失。
+                LockSupport.park(this)
                 continue
             }
 
             val generation = bandStateGeneration
             val observedSequence = lastBandSequence
-            val sequence = nativeAwaitBands(
-                currentHandle,
-                observedSequence,
-                pollBuffer,
-                BAND_WAIT_TIMEOUT_MS,
-            )
+            val sequence = nativeLifecycle.read {
+                if (handle.get() != currentHandle) {
+                    0L
+                } else {
+                    nativeAwaitBands(
+                        currentHandle,
+                        observedSequence,
+                        pollBuffer,
+                        BAND_WAIT_TIMEOUT_MS,
+                    )
+                }
+            }
             if (sequence == 0L || sequence == observedSequence) continue
 
             synchronized(stateLock) {
@@ -223,8 +262,8 @@ class NativeDspEngine : Closeable {
                 ) return@synchronized
 
                 lastBandSequence = sequence
-                // StateFlow consumers may retain the array; publish a copy
-                // before the next native wait reuses pollBuffer.
+                // StateFlow 消费方可能持有数组引用，因此发布副本，
+                // 避免下一次原生等待复用 pollBuffer 时修改已发布的数据。
                 _bands.value = pollBuffer.copyOf()
             }
         }
@@ -236,9 +275,10 @@ class NativeDspEngine : Closeable {
             synchronized(stateLock) {
                 bandStateGeneration++
                 configured = false
+                clearSpectrumLocked()
                 handle.getAndSet(0L).also { value ->
-                    // reset() inside setFftEnabled wakes a native await so the
-                    // reader can observe closing without waiting for timeout.
+                    // 关闭 FFT 会重置并唤醒原生等待，
+                    // 使读取线程立即感知关闭状态，无需等到超时。
                     if (value != 0L) nativeSetFftEnabled(value, false)
                 }
             }
@@ -247,14 +287,14 @@ class NativeDspEngine : Closeable {
             BAND_WAIT_TIMEOUT_MS.toLong() + 250L,
             TimeUnit.MILLISECONDS,
         )
-        synchronized(stateLock) {
+        nativeLifecycle.write {
             if (currentHandle != 0L) nativeRelease(currentHandle)
         }
     }
 
     private external fun nativeCreate(): Long
     private external fun nativeConfigure(
-        handle: Long, sampleRate: Int, channels: Int, encoding: Int, maxFrames: Int,
+        handle: Long, sampleRate: Int, channels: Int, encoding: Int, maxFrames: Int, channelMask: Int,
     ): Boolean
     private external fun nativeProcess(
         handle: Long, input: ByteBuffer, output: ByteBuffer,
@@ -273,7 +313,6 @@ class NativeDspEngine : Closeable {
         timeoutMs: Int,
     ): Long
     private external fun nativeReset(handle: Long)
-    @Suppress("unused")
     private external fun nativeResetFft(handle: Long)
     private external fun nativeRelease(handle: Long)
 }

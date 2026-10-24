@@ -1,0 +1,15 @@
+[package]
+name = "spica-dsp-jni"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+name = "spica_native_dsp"
+crate-type = ["cdylib"]
+
+[dependencies]
+spica-dsp-core = { path = "../dsp-core" }
+jni.workspace = true

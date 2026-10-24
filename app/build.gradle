@@ -119,6 +119,7 @@ dependencies {
   implementation project(':core-preferences')
   implementation project(':feature-library-data')
   implementation project(':feature-player-data')
+  implementation project(':feature-player-native-dsp')
   implementation project(':feature-lyrics-data')
   implementation project(':feature-library-domain')
   implementation project(':feature-player-domain')

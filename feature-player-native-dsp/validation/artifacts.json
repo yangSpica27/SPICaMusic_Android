@@ -1,0 +1,66 @@
+{
+  "debug": {
+    "apk_bytes": 108336394,
+    "dsp_bytes": 1911392,
+    "dsp_sha256": "0f1a0ebe817266d89a3356e8f35a1b5ea95120644cde18926f9c23effc4b8f37",
+    "ffmpeg_present": true,
+    "license_bundle_present": true,
+    "rust_dsp_present": true
+  },
+  "release": {
+    "apk_bytes": 13969621,
+    "dsp_bytes": 935208,
+    "dsp_sha256": "d1368414c5fc14b14cf5379af2832d2ff71c7d6dd9b293e8aa61bec4770a1d26",
+    "ffmpeg_present": true,
+    "license_bundle_present": true,
+    "rust_dsp_present": true
+  },
+  "comparable_stripped_bytes": {
+    "old": 445808,
+    "new": 935208
+  },
+  "jvm_tests": [
+    {
+      "name": "me.spica27.spicamusic.dsp.NativeDspEngineTest",
+      "tests": "5",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-24T11:52:18.953Z",
+      "hostname": "Fairy",
+      "time": "0.18"
+    },
+    {
+      "name": "me.spica27.spicamusic.dsp.SpicaDspAudioSinkTest",
+      "tests": "8",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-24T11:52:19.136Z",
+      "hostname": "Fairy",
+      "time": "0.092"
+    },
+    {
+      "name": "me.spica27.spicamusic.dsp.InteractiveAudioTrackBufferSizeProviderTest",
+      "tests": "3",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-24T11:52:16.947Z",
+      "hostname": "Fairy",
+      "time": "2.004"
+    }
+  ],
+  "app_fft_tests": [
+    {
+      "name": "me.spica27.spicamusic.ui.player.FFTInterpolatorTest",
+      "tests": "4",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-24T11:52:22.462Z",
+      "hostname": "Fairy",
+      "time": "0.093"
+    }
+  ]
+}

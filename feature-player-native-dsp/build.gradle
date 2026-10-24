@@ -1,3 +1,8 @@
+import org.gradle.process.ExecOperations
+import javax.inject.Inject
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 plugins {
   alias(libs.plugins.android.library)
 }
@@ -5,6 +10,7 @@ plugins {
 android {
   namespace = 'me.spica27.spicamusic.dsp'
   compileSdk = 37
+  ndkVersion = '28.2.13676358'
 
   defaultConfig {
     minSdk = 29
@@ -17,12 +23,6 @@ android {
     consumerProguardFiles 'consumer-rules.pro'
   }
 
-  externalNativeBuild {
-    cmake {
-      path file('src/main/cpp/CMakeLists.txt')
-    }
-  }
-
   buildTypes {
     release {
       minifyEnabled = false
@@ -33,9 +33,109 @@ android {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
   }
+
+  testOptions {
+    unitTests.includeAndroidResources = true
+  }
 }
 
 dependencies {
   api libs.androidx.media3.common
+  api libs.androidx.media3.exoplayer
   implementation libs.kotlinx.coroutines.core
+  testImplementation libs.junit
+  testImplementation 'org.robolectric:robolectric:4.16.1'
+}
+
+abstract class BuildRustDsp extends DefaultTask {
+  @InputFiles @PathSensitive(PathSensitivity.RELATIVE)
+  abstract ConfigurableFileCollection getRustInputs()
+  @Internal abstract DirectoryProperty getRustRoot()
+  @Internal abstract DirectoryProperty getNdkRoot()
+  @Input abstract Property<String> getCargoExecutable()
+  @Input abstract Property<String> getCargoHomePath()
+  @Input abstract Property<Boolean> getOptimized()
+  @OutputDirectory abstract DirectoryProperty getJniOutput()
+  @LocalState abstract DirectoryProperty getTargetDirectory()
+  @Inject protected abstract ExecOperations getExecOperations()
+
+  @TaskAction
+  void buildNative() {
+    def os = System.getProperty('os.name').toLowerCase(Locale.ROOT)
+    def host = os.contains('mac') ? 'darwin-x86_64' : os.contains('windows') ? 'windows-x86_64' : 'linux-x86_64'
+    def suffix = os.contains('windows') ? '.cmd' : ''
+    def linker = new File(ndkRoot.get().asFile, 'toolchains/llvm/prebuilt/' + host + '/bin/aarch64-linux-android29-clang' + suffix)
+    if (!linker.isFile()) throw new GradleException('Android NDK linker is missing: ' + linker)
+    def args = [cargoExecutable.get(), 'build', '--locked', '-p', 'spica-dsp-jni',
+                '--target', 'aarch64-linux-android', '--target-dir', targetDirectory.get().asFile.absolutePath]
+    if (optimized.get()) args.add('--release')
+    execOperations.exec {
+      workingDir rustRoot.get().asFile
+      commandLine args
+      environment 'CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER', linker.absolutePath
+      environment 'CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS', '-C link-arg=-Wl,-z,max-page-size=16384'
+      if (cargoHomePath.get()) environment 'CARGO_HOME', cargoHomePath.get()
+      def compiler = new File(new File(cargoExecutable.get()).parentFile ?: new File('.'), os.contains('windows') ? 'rustc.exe' : 'rustc')
+      if (compiler.isFile()) environment 'RUSTC', compiler.absolutePath
+    }
+    def profile = optimized.get() ? 'release' : 'debug'
+    def source = new File(targetDirectory.get().asFile, 'aarch64-linux-android/' + profile + '/libspica_native_dsp.so')
+    def output = new File(jniOutput.get().asFile, 'arm64-v8a/libspica_native_dsp.so')
+    Files.createDirectories(output.parentFile.toPath())
+    Files.copy(source.toPath(), output.toPath(), StandardCopyOption.REPLACE_EXISTING)
+  }
+}
+
+def rustRootDir = layout.projectDirectory.dir('src/main/rust')
+def rustInputsTree = fileTree(rustRootDir) { exclude '**/target/**' }
+def bootstrapRoot = rootProject.layout.projectDirectory.dir('.gradle/spica-rust')
+def localCargo = bootstrapRoot.file('rustup/toolchains/1.90.0-x86_64-unknown-linux-gnu/bin/cargo').asFile
+def standardCargo = new File(System.getProperty('user.home'), '.cargo/bin/cargo')
+def discoveredCargo = providers.provider {
+  standardCargo.isFile() ? standardCargo.absolutePath : localCargo.isFile() ? localCargo.absolutePath : 'cargo'
+}
+def cargoPath = providers.gradleProperty('spicaCargo').orElse(providers.environmentVariable('CARGO')).orElse(discoveredCargo)
+def cargoHome = providers.gradleProperty('spicaCargoHome').orElse(providers.environmentVariable('CARGO_HOME'))
+    .orElse(providers.provider { cargoPath.get() == localCargo.absolutePath ? bootstrapRoot.dir('cargo').asFile.absolutePath : '' })
+
+androidComponents {
+  onVariants(selector().all()) { variant ->
+    def rustTask = tasks.register('build' + variant.name.capitalize() + 'RustDsp', BuildRustDsp) {
+      rustInputs.from(rustInputsTree)
+      rustRoot.set(rustRootDir)
+      ndkRoot.set(androidComponents.sdkComponents.ndkDirectory)
+      cargoExecutable.set(cargoPath)
+      cargoHomePath.set(cargoHome)
+      optimized.set(variant.buildType == 'release')
+      jniOutput.set(layout.buildDirectory.dir('generated/rustJniLibs/' + variant.name))
+      targetDirectory.set(layout.buildDirectory.dir('rustTarget/' + variant.name))
+    }
+    variant.sources.jniLibs.addGeneratedSourceDirectory(rustTask, { it.jniOutput })
+  }
+}
+
+def hostTarget = layout.buildDirectory.dir('rustHost')
+def buildHostRust = tasks.register('buildHostRustDsp', Exec) {
+  inputs.files(rustInputsTree)
+  outputs.dir(hostTarget.map { it.dir('debug') })
+  workingDir rustRootDir
+  commandLine cargoPath.get(), 'build', '--locked', '-p', 'spica-dsp-jni', '--target-dir', hostTarget.get().asFile.absolutePath
+  if (cargoHome.get()) environment 'CARGO_HOME', cargoHome.get()
+  def rustc = new File(new File(cargoPath.get()).parentFile ?: new File('.'), 'rustc')
+  if (rustc.isFile()) environment 'RUSTC', rustc.absolutePath
+}
+tasks.withType(Test).configureEach {
+  dependsOn buildHostRust
+  systemProperty 'java.library.path', hostTarget.get().dir('debug').asFile.absolutePath
+}
+
+tasks.register('testRustDsp', Exec) {
+  group = 'verification'
+  description = 'Runs OxiMedia and DSP correctness and allocation tests on the host.'
+  workingDir rustRootDir
+  commandLine cargoPath.get(), 'test', '--workspace', '--locked', '--lib', '--tests',
+      '--target-dir', hostTarget.get().asFile.absolutePath
+  if (cargoHome.get()) environment 'CARGO_HOME', cargoHome.get()
+  def rustc = new File(new File(cargoPath.get()).parentFile ?: new File('.'), 'rustc')
+  if (rustc.isFile()) environment 'RUSTC', rustc.absolutePath
 }
