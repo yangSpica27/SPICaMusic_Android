@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
@@ -32,7 +33,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,15 +40,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Scanner
@@ -117,14 +116,25 @@ import org.koin.compose.viewmodel.koinActivityViewModel
 /** 大标题收缩归一化距离的上限（实际取刊头实测滚出高度，见 mastheadCollapse） */
 private val MastheadCollapseDistance = 140.dp
 
-/** 参与入场编排的最大歌单卡数（之后的卡片直接呈现） */
-private const val ENTRANCE_MAX_CARD = 6
+/** 参与入场编排的最大歌单行数（之后的行直接呈现） */
+private const val ENTRANCE_MAX_ROW = 8
 
-/** 首屏元素在编排中的槽位：刊头=0 操作行=1 收藏区头=2 歌单区头=3 歌单卡从 4 开始 */
-private const val ENTRANCE_ORDER_CARD_BASE = 2
+/** 首屏元素在编排中的槽位：刊头=0 操作行=1 歌单区头=3 歌单行从 4 开始 */
+private const val ENTRANCE_ORDER_ROW_BASE = 4
 
 /** 收藏预览最多展示的歌曲数 */
 private const val FavoritePreviewSongCount = 5
+
+/** 歌单行封面边长 */
+private val PlaylistRowCoverSize = 56.dp
+
+/** 歌单行增删/重排的位移弹簧 */
+private val PlaylistPlacementSpec: FiniteAnimationSpec<IntOffset> =
+    spring(
+        dampingRatio = Spring.DampingRatioLowBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+        visibilityThreshold = IntOffset.VisibilityThreshold,
+    )
 
 @Composable
 fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
@@ -157,8 +167,9 @@ fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
         }
     }
 
-    val gridState = rememberLazyGridState()
+    val listState = rememberLazyListState()
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val pageGutter = LayoutTokens.MusicHeaderHorizontalPadding
 
     Box(
         modifier =
@@ -166,32 +177,27 @@ fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background),
     ) {
-        LazyVerticalGrid(
-            state = gridState,
-            columns = GridCells.Fixed(2),
-            modifier =
-                Modifier
-                    .fillMaxSize(),
+        // 歌单行通栏铺满、行间零间距，故不设统一 spacedBy：分区间距由各条目的上内边距给出
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
             contentPadding =
                 PaddingValues(
-                    start = LayoutTokens.MusicHeaderHorizontalPadding,
-                    end = LayoutTokens.MusicHeaderHorizontalPadding,
                     top = statusBarTop + 56.dp,
                     bottom = bottomContentPadding + Spacing.Large,
                 ),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
-            verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
             overscrollEffect = rememberIOSOverScrollEffect(Orientation.Vertical),
         ) {
-            item(key = "masthead", span = { GridItemSpan(maxLineSpan) }, contentType = "masthead") {
+            item(key = "masthead", contentType = "masthead") {
                 LibraryMasthead(
                     playlistCount = playlists.size,
                     modifier =
                         Modifier
+                            .padding(horizontal = pageGutter)
                             .padding(top = Spacing.Large)
                             .entrance(order = 0, play = playEntrance)
                             .graphicsLayer {
-                                val t = mastheadCollapse(gridState)
+                                val t = mastheadCollapse(listState)
                                 transformOrigin = TransformOrigin(0f, 0f)
                                 alpha = 1f - t
                                 translationY = -t * 16.dp.toPx()
@@ -201,12 +207,13 @@ fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
                 )
             }
 
-            item(key = "actions", span = { GridItemSpan(maxLineSpan) }, contentType = "actions") {
+            item(key = "actions", contentType = "actions") {
                 Row(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(top = Spacing.Small)
+                            .padding(horizontal = pageGutter)
+                            .padding(top = Spacing.Small + Spacing.Medium)
                             .entrance(order = 1, play = playEntrance),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
                 ) {
@@ -229,11 +236,7 @@ fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
                 }
             }
 
-            item(
-                key = "favorites_header",
-                span = { GridItemSpan(maxLineSpan) },
-                contentType = "section_header",
-            ) {
+            item(key = "favorites_header", contentType = "section_header") {
                 SectionHeader(
                     title = stringResource(R.string.my_favorites),
                     subtitle = stringResource(R.string.songs_count_format, favoriteSongs.size),
@@ -249,31 +252,26 @@ fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
                                 fadeInSpec = ListItemFadeInSpec,
                                 placementSpec = null,
                                 fadeOutSpec = ListItemFadeOutSpec,
-                            ).padding(top = Spacing.Medium),
+                            ).padding(horizontal = pageGutter)
+                            .padding(top = Spacing.ExtraLarge),
                 )
             }
 
             if (favoriteSongs.isEmpty()) {
-                item(
-                    key = "favorites_empty",
-                    span = { GridItemSpan(maxLineSpan) },
-                    contentType = "empty",
-                ) {
+                item(key = "favorites_empty", contentType = "empty") {
                     FavoritesEmptyRow(
                         modifier =
-                            Modifier.animateItem(
-                                fadeInSpec = ListItemFadeInSpec,
-                                placementSpec = null,
-                                fadeOutSpec = ListItemFadeOutSpec,
-                            ),
+                            Modifier
+                                .animateItem(
+                                    fadeInSpec = ListItemFadeInSpec,
+                                    placementSpec = null,
+                                    fadeOutSpec = ListItemFadeOutSpec,
+                                ).padding(horizontal = pageGutter)
+                                .padding(top = Spacing.Medium),
                     )
                 }
             } else {
-                item(
-                    key = "favorites_card",
-                    span = { GridItemSpan(maxLineSpan) },
-                    contentType = "favorites",
-                ) {
+                item(key = "favorites_card", contentType = "favorites") {
                     FavoritesCard(
                         songs = favoritePreviewSongs,
                         onPlayAll = {
@@ -297,20 +295,18 @@ fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
                             )
                         },
                         modifier =
-                            Modifier.animateItem(
-                                fadeInSpec = ListItemFadeInSpec,
-                                placementSpec = null,
-                                fadeOutSpec = ListItemFadeOutSpec,
-                            ),
+                            Modifier
+                                .animateItem(
+                                    fadeInSpec = ListItemFadeInSpec,
+                                    placementSpec = null,
+                                    fadeOutSpec = ListItemFadeOutSpec,
+                                ).padding(horizontal = pageGutter)
+                                .padding(top = Spacing.Medium),
                     )
                 }
             }
 
-            item(
-                key = "playlists_header",
-                span = { GridItemSpan(maxLineSpan) },
-                contentType = "section_header",
-            ) {
+            item(key = "playlists_header", contentType = "section_header") {
                 Text(
                     text = stringResource(R.string.my_playlists),
                     style = MaterialTheme.typography.titleMedium,
@@ -318,17 +314,14 @@ fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier =
                         Modifier
-                            .padding(top = Spacing.Medium)
+                            .padding(horizontal = pageGutter)
+                            .padding(top = Spacing.ExtraLarge, bottom = Spacing.ExtraSmall)
                             .entrance(order = 3, play = playEntrance),
                 )
             }
 
             if (playlists.isEmpty()) {
-                item(
-                    key = "playlists_empty",
-                    span = { GridItemSpan(maxLineSpan) },
-                    contentType = "empty",
-                ) {
+                item(key = "playlists_empty", contentType = "empty") {
                     PlaylistsEmptyState(
                         modifier =
                             Modifier
@@ -337,7 +330,7 @@ fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
                                     fadeInSpec = ListItemFadeInSpec,
                                     placementSpec = null,
                                     fadeOutSpec = ListItemFadeOutSpec,
-                                ),
+                                ).padding(horizontal = pageGutter),
                     )
                 }
             } else {
@@ -350,37 +343,31 @@ fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
                     },
                     contentType = { _, _ -> "playlist" },
                 ) { index, item ->
-                    val cardModifier =
+                    val rowModifier =
                         Modifier.animateItem(
                             fadeInSpec = ListItemFadeInSpec,
-                            placementSpec =
-                                spring(
-                                    dampingRatio = Spring.DampingRatioLowBouncy,
-                                    stiffness = Spring.StiffnessMediumLow,
-                                    visibilityThreshold = IntOffset.VisibilityThreshold,
-                                ),
+                            placementSpec = PlaylistPlacementSpec,
                             fadeOutSpec = ListItemFadeOutSpec,
                         )
-                    val entranceModifier =
-                        if (playEntrance && index < ENTRANCE_MAX_CARD) {
-                            cardModifier.entrance(
-                                order = ENTRANCE_ORDER_CARD_BASE + index,
-                                play = true,
-                            )
-                        } else {
-                            cardModifier
-                        }
-                    PlaylistCard(
+                    PlaylistRow(
                         item = item,
                         onClick = { backStack.add(PlaylistDetailRoute(item.playlist)) },
-                        modifier = entranceModifier,
+                        modifier =
+                            if (playEntrance && index < ENTRANCE_MAX_ROW) {
+                                rowModifier.entrance(
+                                    order = ENTRANCE_ORDER_ROW_BASE + index,
+                                    play = true,
+                                )
+                            } else {
+                                rowModifier
+                            },
                     )
                 }
             }
         }
 
         LibraryTopBar(
-            gridState = gridState,
+            listState = listState,
             onCreateClick = { backStack.add(PlaylistCreatorRoute) },
             modifier = Modifier.align(Alignment.TopStart),
         )
@@ -390,34 +377,34 @@ fun LibraryPage(bottomContentPadding: Dp = 0.dp) {
 /**
  * 大标题收缩进度：0f=完全展开 1f=完全收进顶栏（在绘制阶段读取，避免滚动触发重组）
  */
-private fun Density.mastheadCollapse(gridState: LazyGridState): Float {
-    if (gridState.firstVisibleItemIndex > 0) return 1f
-    val layoutInfo = gridState.layoutInfo
+private fun Density.mastheadCollapse(listState: LazyListState): Float {
+    if (listState.firstVisibleItemIndex > 0) return 1f
+    val layoutInfo = listState.layoutInfo
     val masthead = layoutInfo.visibleItemsInfo.firstOrNull() ?: return 0f
     val scrollOutDistance =
-        (masthead.size.height + layoutInfo.mainAxisItemSpacing)
+        (masthead.size + layoutInfo.mainAxisItemSpacing)
             .toFloat()
             .coerceIn(1f, MastheadCollapseDistance.toPx())
-    return (gridState.firstVisibleItemScrollOffset / scrollOutDistance).coerceIn(0f, 1f)
+    return (listState.firstVisibleItemScrollOffset / scrollOutDistance).coerceIn(0f, 1f)
 }
 
 /** 固定顶栏：背景与标题透明度跟随刊头收缩进度，收起后弹出迷你「新建歌单」药丸 */
 @Composable
 private fun LibraryTopBar(
-    gridState: LazyGridState,
+    listState: LazyListState,
     onCreateClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val backgroundColor = MaterialTheme.colorScheme.background
-    val solid by remember { derivedStateOf { gridState.firstVisibleItemIndex > 0 } }
+    val solid by remember { derivedStateOf { listState.firstVisibleItemIndex > 0 } }
     Box(
         modifier =
             modifier
                 .fillMaxWidth()
                 .height(statusBarTop + 56.dp)
                 .drawBehind {
-                    drawRect(color = backgroundColor.copy(alpha = mastheadCollapse(gridState)))
+                    drawRect(color = backgroundColor.copy(alpha = mastheadCollapse(listState)))
                 },
     ) {
         if (solid) {
@@ -444,7 +431,7 @@ private fun LibraryTopBar(
                 modifier =
                     Modifier
                         .weight(1f)
-                        .graphicsLayer { alpha = mastheadCollapse(gridState) },
+                        .graphicsLayer { alpha = mastheadCollapse(listState) },
             )
             AnimatedVisibility(
                 visible = solid,
@@ -848,35 +835,38 @@ private fun FavoritesEmptyRow(modifier: Modifier = Modifier) {
     }
 }
 
-/** 歌单卡：组合封面 + 名称 + 歌曲数 */
+/** 歌单行 */
 @Composable
-private fun PlaylistCard(
+private fun PlaylistRow(
     item: PlaylistWithCover,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
+    Row(
         modifier =
             modifier
-                .clip(Shapes.ExtraLargeCornerBasedShape)
-                .clickHighlight(onClick = onClick),
-        verticalArrangement = Arrangement.spacedBy(Spacing.Small),
+                .fillMaxWidth()
+                .clickHighlight(onClick = onClick)
+                .padding(horizontal = LayoutTokens.MusicHeaderHorizontalPadding, vertical = Spacing.Small),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
     ) {
+        // 组合封面在空闲时才淡入，先铺容器底色避免快速滚动时露出空洞
         PlaylistCoverView(
             coverMediaStoreIds = item.coverMediaStoreIds,
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(Shapes.ExtraLargeCornerBasedShape),
+                    .size(PlaylistRowCoverSize)
+                    .clip(Shapes.MediumCornerBasedShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         )
         Column(
-            modifier = Modifier.padding(bottom = Spacing.Small),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
                 text = item.playlist.playlistName,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -890,6 +880,12 @@ private fun PlaylistCard(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        Icon(
+            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
