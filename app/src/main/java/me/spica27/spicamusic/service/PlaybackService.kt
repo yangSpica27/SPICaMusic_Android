@@ -72,6 +72,8 @@ class PlaybackService : MediaLibraryService() {
                             .setAudioOutputProvider(
                                 AudioTrackAudioOutputProvider
                                     .Builder(context)
+                                    // 倍速上限与缓冲策略必须一致，否则加速时 AudioTrack 缓冲会欠载。
+                                    .setMaxPlaybackSpeed(InteractiveAudioTrackBufferSizeProvider.MAX_PLAYBACK_SPEED)
                                     .setAudioTrackBufferSizeProvider(InteractiveAudioTrackBufferSizeProvider())
                                     .build(),
                             ).build(),

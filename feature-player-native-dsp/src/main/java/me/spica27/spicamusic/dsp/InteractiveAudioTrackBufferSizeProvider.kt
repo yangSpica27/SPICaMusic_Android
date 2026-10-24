@@ -6,10 +6,6 @@ import androidx.media3.exoplayer.audio.DefaultAudioTrackBufferSizeProvider
 
 /**
  * 为交互式音效控制限制 PCM 预处理音频的排队时长。
- *
- * Media3 默认按最高支持倍速放大缓冲；开启平台倍速控制后，500 ms 会被放大到 4 s。
- * PCM 按正常播放时 200 ms 的目标分配，并由默认实现保证不低于设备要求的最小容量。
- * 这里只调整缓冲策略，不限制播放器可设置的倍速范围。
  */
 @UnstableApi
 class InteractiveAudioTrackBufferSizeProvider : DefaultAudioSink.AudioTrackBufferSizeProvider {
@@ -32,10 +28,16 @@ class InteractiveAudioTrackBufferSizeProvider : DefaultAudioSink.AudioTrackBuffe
         pcmFrameSize,
         sampleRate,
         bitrate,
-        if (outputMode == DefaultAudioSink.OUTPUT_MODE_PCM) 1.0 else maxAudioTrackPlaybackSpeed,
+        // 必须与 AudioTrack 实际允许的倍速一致；调高上限时缓冲随之放大，加速播放不会欠载。
+        maxAudioTrackPlaybackSpeed,
     )
 
-    private companion object {
-        const val TARGET_PCM_BUFFER_US = 200_000
+    companion object {
+        /**
+         * AudioTrack 允许的最高倍速，需通过 `AudioTrackAudioOutputProvider.Builder.setMaxPlaybackSpeed`
+         * 设置。为保持 200 ms 的音效响应不允许加速：更高的倍速请求会被截断，播放器上报实际生效的速度；减速不受影响。
+         */
+        const val MAX_PLAYBACK_SPEED = 1f
+        private const val TARGET_PCM_BUFFER_US = 200_000
     }
 }
