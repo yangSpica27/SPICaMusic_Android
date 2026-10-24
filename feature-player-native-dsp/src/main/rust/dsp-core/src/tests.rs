@@ -184,6 +184,51 @@ fn limiter_links_stereo_and_stays_within_sample_ceiling() {
 }
 
 #[test]
+fn eq_boost_without_loudness_is_peak_limited_instead_of_hard_clipped() {
+    let mut effects = effects::Effects::new(48000, 2);
+    let mut gains = [0.0; 10];
+    gains[1] = 12.0;
+    effects.set_parameters(true, false, -14.0, gains);
+    // A -6 dBFS 62 Hz tone reaches about +6 dBFS after the +12 dB boost; the
+    // PCM encoder would hard clip it without protection.
+    let mut peak = 0.0_f64;
+    for block_index in 0..100 {
+        let mut block: Vec<f64> = (0..960)
+            .flat_map(|i| {
+                let n = (block_index * 960 + i) as f64;
+                let value = 0.5 * (2.0 * PI * 62.0 * n / 48000.0).sin();
+                [value, value * 0.5]
+            })
+            .collect();
+        effects.process(&mut block);
+        for frame in block.chunks_exact(2) {
+            peak = peak.max(frame[0].abs());
+            // Channel-linked gain keeps the image instead of clipping one side.
+            assert!((frame[0] - 2.0 * frame[1]).abs() < 1e-9);
+        }
+    }
+    assert!(peak <= 1.0, "peak {peak}");
+    assert!(
+        peak > 0.9,
+        "protection must limit peaks, not attenuate everything"
+    );
+}
+
+#[test]
+fn eq_protection_leaves_in_range_full_scale_audio_bit_exact() {
+    // Enabling a flat EQ must not touch hot masters that peak just below 0 dBFS,
+    // which the 0.98 loudness ceiling would.
+    let mut effects = effects::Effects::new(48000, 2);
+    effects.set_parameters(true, false, -14.0, [0.0; 10]);
+    let input: Vec<f64> = (0..960 * 2)
+        .map(|i| if i % 4 < 2 { 0.999 } else { -1.0 })
+        .collect();
+    let mut output = input.clone();
+    effects.process(&mut output);
+    assert_eq!(input, output);
+}
+
+#[test]
 fn invalid_configuration_is_rejected() {
     for (rate, channels, frames) in [
         (0, 2, 1024),

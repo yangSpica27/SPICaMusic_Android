@@ -7,6 +7,10 @@ pub const EQ_FREQUENCIES: [f64; 10] = [
     31.0, 62.0, 125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0, 16000.0,
 ];
 const SILENT_BAND_DB: f64 = 1e-4;
+/// Sample-peak ceilings of the channel-linked, zero-lookahead protection.
+/// Loudness gain (up to 4x) keeps headroom; EQ alone only prevents clipping.
+const LOUDNESS_CEILING: f64 = 0.98;
+const FULL_SCALE: f64 = 1.0;
 pub fn octave_q(frequency: f64, sample_rate: u32) -> f64 {
     let w = 2.0 * PI * frequency / sample_rate as f64;
     1.0 / (2.0 * (LN_2 * 0.5 * w / w.sin()).sinh())
@@ -101,6 +105,10 @@ impl Effects {
                 meter.reset();
             }
             self.gain = 1.0;
+        }
+        if loudness != self.loudness_enabled || eq != self.eq_enabled {
+            // The protection ceiling depends on the mode; instant attack keeps
+            // the output under the new ceiling right after this reset.
             self.limiter_gain = 1.0;
         }
         self.eq_enabled = eq;
@@ -161,26 +169,32 @@ impl Effects {
                 self.eq.process_interleaved(samples, frames);
             }
         }
-        if !self.loudness_enabled {
-            return;
-        }
-        let Some(meter) = &mut self.meter else {
-            return;
+        let (next_gain, ceiling) = match &mut self.meter {
+            Some(meter) if self.loudness_enabled => {
+                for frame in samples.chunks_exact(self.channels) {
+                    meter.process_frame(frame);
+                }
+                let lufs = meter.loudness();
+                let target_gain = if lufs.is_finite() && lufs > -70.0 {
+                    10.0_f64
+                        .powf((self.target_lufs - lufs) / 20.0)
+                        .clamp(0.25, 4.0)
+                } else {
+                    self.gain
+                };
+                let seconds = if target_gain > self.gain { 0.8 } else { 0.2 };
+                let amount = 1.0 - (-(frames as f64) / (seconds * self.sample_rate as f64)).exp();
+                (
+                    self.gain + (target_gain - self.gain) * amount,
+                    LOUDNESS_CEILING,
+                )
+            }
+            // EQ boosts can exceed full scale, which the PCM encoder would hard
+            // clip. Engage only above full scale so flat EQ and masters that
+            // stay in range pass bit-exactly (gain stays 1.0 without loudness).
+            _ if self.eq_enabled => (self.gain, FULL_SCALE),
+            _ => return,
         };
-        for frame in samples.chunks_exact(self.channels) {
-            meter.process_frame(frame);
-        }
-        let lufs = meter.loudness();
-        let target_gain = if lufs.is_finite() && lufs > -70.0 {
-            10.0_f64
-                .powf((self.target_lufs - lufs) / 20.0)
-                .clamp(0.25, 4.0)
-        } else {
-            self.gain
-        };
-        let seconds = if target_gain > self.gain { 0.8 } else { 0.2 };
-        let amount = 1.0 - (-(frames as f64) / (seconds * self.sample_rate as f64)).exp();
-        let next_gain = self.gain + (target_gain - self.gain) * amount;
         let release = 1.0 - (-1.0 / (0.15 * self.sample_rate as f64)).exp();
         for (i, frame) in samples.chunks_exact_mut(self.channels).enumerate() {
             let t = if frames > 1 {
@@ -190,7 +204,7 @@ impl Effects {
             };
             let gain = self.gain + (next_gain - self.gain) * t;
             let peak = frame.iter().map(|v| (v * gain).abs()).fold(0.0, f64::max);
-            let desired = if peak > 0.98 { 0.98 / peak } else { 1.0 };
+            let desired = if peak > ceiling { ceiling / peak } else { 1.0 };
             if desired < self.limiter_gain {
                 self.limiter_gain = desired;
             } else {
