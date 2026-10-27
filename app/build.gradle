@@ -96,11 +96,8 @@ composeCompiler {
   // Generate Compose Compiler stability reports for Phase 2 diagnosis
   reportsDestination = layout.buildDirectory.dir("compose_metrics")
 
-  // Enable Strong Skipping mode (default in Kotlin 2.0.20+, but explicit is better)
-  enableStrongSkippingMode = true
-
   // Treat all interfaces as stable (uncomment after adding stabilityConfigurationFile if needed)
-  // stabilityConfigurationFile = rootProject.file("compose_compiler_config.conf")
+  // stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("compose_compiler_config.conf"))
 }
 
 //build.gradle
@@ -157,7 +154,7 @@ dependencies {
   implementation libs.kotlinx.serialization.core
   implementation libs.androidx.adaptive
   implementation libs.androidx.adaptive.layout
-//  implementation libs.androidx.adaptive.navigation
+  implementation libs.androidx.adaptive.navigation
   // Jetpack Compose integration - Navigation 3
   implementation libs.androidx.navigation3.runtime
   implementation libs.androidx.navigation3.ui
@@ -191,7 +188,6 @@ dependencies {
   implementation libs.androidx.compose.material.icons.core
   implementation libs.prettytime
   implementation libs.koin.androidx.compose
-//  implementation(libs.pinyin4j)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.palette.ktx)
   implementation(libs.cloudy)
