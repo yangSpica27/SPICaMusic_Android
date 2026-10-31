@@ -155,6 +155,7 @@ dependencies {
   implementation libs.androidx.adaptive
   implementation libs.androidx.adaptive.layout
   implementation libs.androidx.adaptive.navigation
+  implementation libs.androidx.material3.adaptive.navigation.suite
   // Jetpack Compose integration - Navigation 3
   implementation libs.androidx.navigation3.runtime
   implementation libs.androidx.navigation3.ui

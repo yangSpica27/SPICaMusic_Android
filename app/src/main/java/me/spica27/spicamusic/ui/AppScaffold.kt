@@ -21,6 +21,12 @@ import com.skydoves.landscapist.image.LocalLandscapist
 import dev.chrisbanes.haze.rememberHazeState
 import me.spica27.spicamusic.common.entity.ThemeColorStyle
 import me.spica27.spicamusic.core.preferences.PreferencesManager
+import me.spica27.spicamusic.ui.adaptive.LocalPaneInfo
+import me.spica27.spicamusic.ui.adaptive.LocalShellInsets
+import me.spica27.spicamusic.ui.adaptive.LocalWindowLayout
+import me.spica27.spicamusic.ui.adaptive.PaneInfo
+import me.spica27.spicamusic.ui.adaptive.ShellInsets
+import me.spica27.spicamusic.ui.adaptive.rememberWindowLayout
 import me.spica27.spicamusic.ui.glass.LiquidGlassConfig
 import me.spica27.spicamusic.ui.glass.LocalDialogHazeState
 import me.spica27.spicamusic.ui.glass.LocalLiquidGlassConfig
@@ -85,6 +91,8 @@ fun AppScaffold() {
     val entryProvider = appEntryProvider()
     val dialogHazeState = rememberHazeState()
 
+    val windowLayout = rememberWindowLayout()
+
     SPICaMusicTheme(
         darkTheme = isDarkMode,
         themeColor = color,
@@ -96,6 +104,9 @@ fun AppScaffold() {
             LocalPlayerViewModel provides playerViewModel,
             LocalBackStack provides navigator,
             LocalLandscapist provides Landscapist.getInstance(),
+            LocalWindowLayout provides windowLayout,
+            LocalShellInsets provides ShellInsets(),
+            LocalPaneInfo provides PaneInfo(),
         ) {
             // 页面层单独提供模糊源，避免对话框采样到自身。
             SharedTransitionLayout {
